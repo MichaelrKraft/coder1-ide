@@ -238,7 +238,7 @@ export class IntegrationTestService {
 
       return { 
         active: status.isActive,
-        workspaces: status.workspacesMonitored.length
+        workspaces: 1
       };
     }));
 

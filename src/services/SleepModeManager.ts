@@ -16,7 +16,7 @@ export interface SleepModeConfig {
   maxChangesPerHour: number;
   autoCommit: boolean;
   requiresHumanReview: boolean;
-  notificationChannels: ('email' | 'sms' | 'push')[];
+  notificationChannels: ('email' | 'sms' | 'push' | 'slack')[];
 }
 
 export interface EscalationRule {
@@ -27,12 +27,12 @@ export interface EscalationRule {
 
 export interface SleepModeStatus {
   isActive: boolean;
-  startTime: Date;
-  workspacesMonitored: string[];
+  startTime?: Date;
+  endTime?: Date;
   changesApproved: number;
   changesRejected: number;
-  interventionsRequired: number;
-  lastActivity: Date;
+  escalationsTriggered: number;
+  lastActivity?: Date;
 }
 
 export class SleepModeManager {
@@ -110,10 +110,10 @@ export class SleepModeManager {
     const status: SleepModeStatus = {
       isActive: false,
       startTime: session.startTime,
-      workspacesMonitored: [workspaceId],
+      endTime: new Date(),
       changesApproved: session.metrics.changesApproved,
       changesRejected: session.metrics.changesRejected,
-      interventionsRequired: session.metrics.interventionsRequired,
+      escalationsTriggered: session.metrics.interventionsRequired,
       lastActivity: new Date()
     };
 
@@ -162,10 +162,9 @@ export class SleepModeManager {
     return {
       isActive: true,
       startTime: session.startTime,
-      workspacesMonitored: [workspaceId],
       changesApproved: session.metrics.changesApproved,
       changesRejected: session.metrics.changesRejected,
-      interventionsRequired: session.metrics.interventionsRequired,
+      escalationsTriggered: session.metrics.interventionsRequired,
       lastActivity: new Date()
     };
   }
@@ -174,10 +173,9 @@ export class SleepModeManager {
     return Array.from(this.activeSleepSessions.values()).map(session => ({
       isActive: true,
       startTime: session.startTime,
-      workspacesMonitored: [session.workspaceId],
       changesApproved: session.metrics.changesApproved,
       changesRejected: session.metrics.changesRejected,
-      interventionsRequired: session.metrics.interventionsRequired,
+      escalationsTriggered: session.metrics.interventionsRequired,
       lastActivity: new Date()
     }));
   }

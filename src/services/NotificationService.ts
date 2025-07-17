@@ -1,7 +1,7 @@
 export interface NotificationConfig {
   type: 'sleep_mode_active' | 'auto_approved' | 'auto_rejected' | 'intervention_required' | 'escalation' | 'sleep_summary' | 'sleep_mode_paused';
   message: string;
-  channels: ('email' | 'sms' | 'push')[];
+  channels: ('email' | 'sms' | 'push' | 'slack')[];
   priority: 'low' | 'medium' | 'high' | 'critical';
   requiresAction?: boolean;
   actionButtons?: ActionButton[];

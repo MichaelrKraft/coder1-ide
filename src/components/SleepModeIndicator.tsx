@@ -92,11 +92,11 @@ export const SleepModeIndicator: React.FC<SleepModeIndicatorProps> = ({
               </div>
               <div className="info-item">
                 <span className="label">Last Activity:</span>
-                <span className="value">{formatTime(status.lastActivity)}</span>
+                <span className="value">{status.lastActivity ? formatTime(status.lastActivity) : 'N/A'}</span>
               </div>
               <div className="info-item">
                 <span className="label">Start Time:</span>
-                <span className="value">{formatTime(status.startTime)}</span>
+                <span className="value">{status.startTime ? formatTime(status.startTime) : 'N/A'}</span>
               </div>
             </div></div>
 
@@ -112,12 +112,12 @@ export const SleepModeIndicator: React.FC<SleepModeIndicatorProps> = ({
                 <span className="value">{status.changesRejected}</span>
               </div>
               <div className="info-item">
-                <span className="label">Interventions Required:</span>
-                <span className="value">{status.interventionsRequired}</span>
+                <span className="label">Escalations Triggered:</span>
+                <span className="value">{status.escalationsTriggered}</span>
               </div>
               <div className="info-item">
-                <span className="label">Workspaces Monitored:</span>
-                <span className="value">{status.workspacesMonitored.length}</span>
+                <span className="label">Workspace:</span>
+                <span className="value">{workspaceId}</span>
               </div>
             </div>
           </div>
