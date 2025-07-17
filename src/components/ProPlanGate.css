@@ -1,0 +1,135 @@
+.pro-plan-gate {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.gate-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(4px);
+}
+
+.gate-content {
+  background: #2d2d2d;
+  border-radius: 12px;
+  padding: 32px;
+  max-width: 500px;
+  width: 90%;
+  text-align: center;
+  border: 1px solid #404040;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+}
+
+.gate-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+
+.gate-content h3 {
+  margin: 0 0 12px 0;
+  color: #ffffff;
+  font-size: 24px;
+  font-weight: 600;
+}
+
+.gate-content p {
+  margin: 0 0 24px 0;
+  color: #cccccc;
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+.gate-features {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 32px;
+  text-align: left;
+}
+
+.feature-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  background: #1e1e1e;
+  border-radius: 6px;
+}
+
+.feature-check {
+  color: #4caf50;
+  font-weight: 600;
+  font-size: 16px;
+}
+
+.feature-item span:last-child {
+  color: #cccccc;
+  font-size: 14px;
+}
+
+.upgrade-button {
+  background: linear-gradient(135deg, #007acc, #005a9e);
+  border: none;
+  border-radius: 8px;
+  color: #ffffff;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 600;
+  padding: 16px 32px;
+  transition: all 0.3s ease;
+  width: 100%;
+  margin-bottom: 16px;
+}
+
+.upgrade-button:hover {
+  background: linear-gradient(135deg, #005a9e, #004080);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0, 122, 204, 0.3);
+}
+
+.gate-note {
+  margin: 0;
+  color: #888888;
+  font-size: 12px;
+  font-style: italic;
+}
+
+.gate-preview {
+  filter: blur(2px);
+  opacity: 0.3;
+  pointer-events: none;
+  user-select: none;
+}
+
+@media (max-width: 768px) {
+  .gate-content {
+    padding: 24px;
+    margin: 16px;
+  }
+  
+  .gate-content h3 {
+    font-size: 20px;
+  }
+  
+  .gate-content p {
+    font-size: 14px;
+  }
+  
+  .gate-icon {
+    font-size: 36px;
+  }
+  
+  .upgrade-button {
+    font-size: 14px;
+    padding: 14px 24px;
+  }
+}
