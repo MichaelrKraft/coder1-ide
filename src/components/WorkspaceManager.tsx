@@ -172,13 +172,7 @@ export const WorkspaceManager: React.FC<WorkspaceManagerProps> = ({
 
       {activeWorkspace && (
         <div className="workspace-content">
-          <IDE
-            workspaceId={activeWorkspace.id}
-            initialFiles={activeWorkspace.files}
-            claudePersona={activeWorkspace.claudePersona}
-            onFilesChange={(files) => updateWorkspace(activeWorkspace.id, { files })}
-            onOpenFilesChange={(openFiles) => updateWorkspace(activeWorkspace.id, { openFiles })}
-          />
+          <IDE />
         </div>
       )}
 
