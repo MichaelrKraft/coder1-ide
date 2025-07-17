@@ -436,7 +436,7 @@ export class MultiPersonaConsultation {
   private identifyConflicts(opinions: PersonaOpinion[]): string[] {
     const conflicts: string[] = [];
     const recommendations = opinions.map(o => o.recommendation);
-    const uniqueRecommendations = [...new Set(recommendations)];
+    const uniqueRecommendations = Array.from(new Set(recommendations));
 
     if (uniqueRecommendations.length > 1) {
       for (const rec of uniqueRecommendations) {
@@ -460,12 +460,12 @@ export class MultiPersonaConsultation {
 
   private mergeSuggestions(opinions: PersonaOpinion[]): string[] {
     const allSuggestions = opinions.flatMap(o => o.suggestions);
-    return [...new Set(allSuggestions)];
+    return Array.from(new Set(allSuggestions));
   }
 
   private mergeConcerns(opinions: PersonaOpinion[]): string[] {
     const allConcerns = opinions.flatMap(o => o.concerns);
-    return [...new Set(allConcerns)];
+    return Array.from(new Set(allConcerns));
   }
 
   private calculateAverageConfidence(opinions: PersonaOpinion[]): number {
@@ -486,11 +486,11 @@ export class MultiPersonaConsultation {
 
   clearConsultationHistory(workspaceId?: string): void {
     if (workspaceId) {
-      for (const [key, result] of this.consultationHistory) {
+      Array.from(this.consultationHistory.entries()).forEach(([key, result]) => {
         if (result.finalDecision.workspaceId === workspaceId) {
           this.consultationHistory.delete(key);
         }
-      }
+      });
     } else {
       this.consultationHistory.clear();
     }
