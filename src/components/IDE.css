@@ -81,6 +81,15 @@
 
 .action-btn.active {
   background: #3b82f6;
+  color: #fff;
+}
+
+.action-btn.active:hover {
+  background: #2563eb;
+}
+
+.action-btn.active {
+  background: #3b82f6;
   border-color: #3b82f6;
 }
 

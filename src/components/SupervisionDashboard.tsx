@@ -4,7 +4,7 @@ import './SupervisionDashboard.css';
 
 interface SupervisionDashboardProps {
   isVisible: boolean;
-  onClose: () => void;
+  onClose?: (() => void) | null;
 }
 
 interface WorkspaceStatus {
@@ -84,7 +84,9 @@ export const SupervisionDashboard: React.FC<SupervisionDashboardProps> = ({
           <span className="header-icon">{Shield({ size: 20 })}</span>
           <h2>Claude Agent Supervision</h2>
         </div>
-        <button className="close-btn" onClick={onClose}>×</button>
+        {onClose && (
+          <button className="close-btn" onClick={onClose}>×</button>
+        )}
       </div>
 
       <div className="dashboard-content">

@@ -1,19 +1,21 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Terminal, Play, Settings, Shield } from 'lucide-react';
-import { SupervisionDashboard } from './SupervisionDashboard';
 
 interface HeaderProps {
   onTerminalToggle: () => void;
   onInspectorToggle: (enabled: boolean) => void;
   isInspectorEnabled: boolean;
+  currentPage: 'ide' | 'supervision';
+  onPageChange: (page: 'ide' | 'supervision') => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({ 
   onTerminalToggle, 
   onInspectorToggle, 
-  isInspectorEnabled 
+  isInspectorEnabled,
+  currentPage,
+  onPageChange
 }) => {
-  const [showSupervisionDashboard, setShowSupervisionDashboard] = useState(false);
 
   return (
     <>
@@ -54,12 +56,12 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
 
             <button 
-              className="action-btn supervision-btn"
-              onClick={() => setShowSupervisionDashboard(true)}
+              className={`action-btn supervision-btn ${currentPage === 'supervision' ? 'active' : ''}`}
+              onClick={() => onPageChange(currentPage === 'supervision' ? 'ide' : 'supervision')}
               title="Claude Agent Supervision"
             >
               <Shield size={16} />
-              <span className="btn-label">Supervision</span>
+              <span className="btn-label">{currentPage === 'supervision' ? 'IDE' : 'Supervision'}</span>
             </button>
 
             <button className="action-btn run-btn" title="Run Project">
@@ -69,11 +71,6 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         </div>
       </header>
-
-      <SupervisionDashboard 
-        isVisible={showSupervisionDashboard}
-        onClose={() => setShowSupervisionDashboard(false)}
-      />
     </>
   );
 };

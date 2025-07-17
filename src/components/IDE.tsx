@@ -6,6 +6,7 @@ import { LivePreview } from './LivePreview';
 import { Terminal } from './Terminal';
 import { Header } from './Header';
 import { GeneratedComponentDisplay } from './GeneratedComponentDisplay';
+import { SupervisionPage } from './SupervisionPage';
 import './IDE.css';
 
 interface IDEProps {}
@@ -167,6 +168,7 @@ export default App;`,
   const [showComponentDisplay, setShowComponentDisplay] = useState(false);
   const [selectedElement, setSelectedElement] = useState<HTMLElement | null>(null);
   const [elementContext, setElementContext] = useState<any>(null);
+  const [currentPage, setCurrentPage] = useState<'ide' | 'supervision'>('ide');
 
   const handleFileOpen = (filePath: string) => {
     const file = findFileByPath(files, filePath);
@@ -285,73 +287,79 @@ export default App;`,
         onTerminalToggle={toggleTerminal} 
         onInspectorToggle={handleInspectorToggle}
         isInspectorEnabled={isInspectorEnabled}
+        currentPage={currentPage}
+        onPageChange={setCurrentPage}
       />
       
-      <div className="ide-content">
-        <PanelGroup direction="horizontal" className="panel-group">
-          {/* File Explorer Panel */}
-          <Panel defaultSize={25} minSize={15} maxSize={40} className="panel">
-            <FileTree 
-              files={files} 
-              onFileOpen={handleFileOpen}
-              onFileToggle={(path) => {
-                const file = findFileByPath(files, path);
-                if (file && file.type === 'directory') {
-                  file.isOpen = !file.isOpen;
-                  setFiles([...files]);
-                }
-              }}
-            />
-          </Panel>
+      {currentPage === 'ide' ? (
+        <div className="ide-content">
+          <PanelGroup direction="horizontal" className="panel-group">
+            {/* File Explorer Panel */}
+            <Panel defaultSize={25} minSize={15} maxSize={40} className="panel">
+              <FileTree 
+                files={files} 
+                onFileOpen={handleFileOpen}
+                onFileToggle={(path) => {
+                  const file = findFileByPath(files, path);
+                  if (file && file.type === 'directory') {
+                    file.isOpen = !file.isOpen;
+                    setFiles([...files]);
+                  }
+                }}
+              />
+            </Panel>
 
-          <PanelResizeHandle className="resize-handle horizontal" />
+            <PanelResizeHandle className="resize-handle horizontal" />
 
-          {/* Editor and Terminal Panel */}
-          <Panel defaultSize={50} minSize={30} className="panel">
-            <div className="editor-container">
-              <PanelGroup direction="vertical" className="panel-group">
-                <Panel 
-                  defaultSize={isTerminalOpen ? 70 : 100} 
-                  minSize={40} 
-                  className="panel"
-                >
-                  <CodeEditor
-                    files={openFiles}
-                    activeFile={activeFile}
-                    onFileChange={handleFileChange}
-                    onFileClose={handleFileClose}
-                    onFileSelect={setActiveFile}
-                  />
-                </Panel>
+            {/* Editor and Terminal Panel */}
+            <Panel defaultSize={50} minSize={30} className="panel">
+              <div className="editor-container">
+                <PanelGroup direction="vertical" className="panel-group">
+                  <Panel 
+                    defaultSize={isTerminalOpen ? 70 : 100} 
+                    minSize={40} 
+                    className="panel"
+                  >
+                    <CodeEditor
+                      files={openFiles}
+                      activeFile={activeFile}
+                      onFileChange={handleFileChange}
+                      onFileClose={handleFileClose}
+                      onFileSelect={setActiveFile}
+                    />
+                  </Panel>
 
-                {isTerminalOpen && (
-                  <>
-                    <PanelResizeHandle className="resize-handle vertical" />
-                    <Panel 
-                      defaultSize={30} 
-                      minSize={20} 
-                      maxSize={60} 
-                      className="panel"
-                    >
-                      <Terminal selectedElement={selectedElement} elementContext={elementContext} />
-                    </Panel>
-                  </>
-                )}
-              </PanelGroup>
-            </div>
-          </Panel>
+                  {isTerminalOpen && (
+                    <>
+                      <PanelResizeHandle className="resize-handle vertical" />
+                      <Panel 
+                        defaultSize={30} 
+                        minSize={20} 
+                        maxSize={60} 
+                        className="panel"
+                      >
+                        <Terminal selectedElement={selectedElement} elementContext={elementContext} />
+                      </Panel>
+                    </>
+                  )}
+                </PanelGroup>
+              </div>
+            </Panel>
 
-          <PanelResizeHandle className="resize-handle horizontal" />
+            <PanelResizeHandle className="resize-handle horizontal" />
 
-          {/* Live Preview Panel */}
-          <Panel defaultSize={25} minSize={15} maxSize={40} className="panel">
-            <LivePreview 
-              isInspectorEnabled={isInspectorEnabled} 
-              onElementSelected={handleElementSelected}
-            />
-          </Panel>
-        </PanelGroup>
-      </div>
+            {/* Live Preview Panel */}
+            <Panel defaultSize={25} minSize={15} maxSize={40} className="panel">
+              <LivePreview 
+                isInspectorEnabled={isInspectorEnabled} 
+                onElementSelected={handleElementSelected}
+              />
+            </Panel>
+          </PanelGroup>
+        </div>
+      ) : (
+        <SupervisionPage />
+      )}
       
       {/* Generated Component Display Overlay */}
       <GeneratedComponentDisplay 

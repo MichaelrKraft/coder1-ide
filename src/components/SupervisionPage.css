@@ -1,0 +1,24 @@
+.supervision-page {
+  height: calc(100vh - 48px);
+  width: 100%;
+  background: #1a1b26;
+  display: flex;
+  justify-content: center;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+.supervision-page-content {
+  width: 100%;
+  max-width: 1200px;
+  height: 100%;
+}
+
+.supervision-page .supervision-dashboard {
+  position: static;
+  width: 100%;
+  height: 100%;
+  box-shadow: none;
+  border: 1px solid #333;
+  border-radius: 8px;
+}
