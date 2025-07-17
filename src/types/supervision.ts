@@ -1,4 +1,4 @@
-export type ClaudePersona = 'analyzer' | 'architect' | 'frontend' | 'backend' | 'security' | 'qa' | 'devops' | 'mobile' | 'ai';
+export type ClaudePersona = 'analyzer' | 'architect' | 'frontend' | 'backend' | 'security' | 'qa' | 'devops' | 'mobile' | 'ai' | 'performance' | 'refactorer' | 'mentor';
 
 export interface CodeAnalysis {
   qualityScore: number;
@@ -86,4 +86,38 @@ export interface FileChange {
   content: string;
   changeType: 'create' | 'modify' | 'delete';
   timestamp?: Date;
+}
+
+export interface FileNode {
+  id: string;
+  name: string;
+  type: 'file' | 'directory';
+  path: string;
+  children?: FileNode[];
+  isOpen?: boolean;
+  content?: string;
+  lastModified?: Date;
+}
+
+export interface OpenFile {
+  id: string;
+  name: string;
+  path: string;
+  content: string;
+  isDirty: boolean;
+  language: string;
+  cursorPosition?: {
+    line: number;
+    column: number;
+  };
+}
+
+export interface TerminalSession {
+  id: string;
+  name: string;
+  workspaceId: string;
+  isActive: boolean;
+  history: string[];
+  currentDirectory: string;
+  environment: Record<string, string>;
 }

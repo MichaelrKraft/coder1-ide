@@ -1,0 +1,224 @@
+.workspace-manager {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+.workspace-tabs {
+  display: flex;
+  background: #2d2d2d;
+  border-bottom: 1px solid #404040;
+  padding: 0 10px;
+  overflow-x: auto;
+}
+
+.workspace-tab {
+  display: flex;
+  align-items: center;
+  padding: 8px 16px;
+  margin: 4px 2px;
+  background: #404040;
+  border-radius: 4px 4px 0 0;
+  cursor: pointer;
+  min-width: 120px;
+  position: relative;
+  transition: background-color 0.2s;
+}
+
+.workspace-tab:hover {
+  background: #4a4a4a;
+}
+
+.workspace-tab.active {
+  background: #1e1e1e;
+  border-bottom: 2px solid #007acc;
+}
+
+.workspace-name {
+  font-size: 12px;
+  font-weight: 500;
+  color: #cccccc;
+  margin-right: 8px;
+}
+
+.workspace-persona {
+  font-size: 10px;
+  color: #888888;
+  background: #555555;
+  padding: 2px 6px;
+  border-radius: 10px;
+  margin-right: 8px;
+}
+
+.close-workspace {
+  background: none;
+  border: none;
+  color: #888888;
+  font-size: 16px;
+  cursor: pointer;
+  padding: 0;
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 2px;
+}
+
+.close-workspace:hover {
+  background: #666666;
+  color: #ffffff;
+}
+
+.add-workspace {
+  background: #007acc;
+  border: none;
+  color: white;
+  width: 32px;
+  height: 32px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 18px;
+  margin: 4px 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.add-workspace:hover:not(:disabled) {
+  background: #005a9e;
+}
+
+.add-workspace:disabled {
+  background: #555555;
+  cursor: not-allowed;
+}
+
+.workspace-content {
+  flex: 1;
+  overflow: hidden;
+}
+
+.workspace-status {
+  display: flex;
+  gap: 20px;
+  padding: 4px 16px;
+  background: #2d2d2d;
+  border-top: 1px solid #404040;
+  font-size: 11px;
+  color: #888888;
+}
+
+.workspace-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.workspace-modal {
+  background: #2d2d2d;
+  border-radius: 8px;
+  padding: 24px;
+  width: 400px;
+  max-width: 90vw;
+  border: 1px solid #404040;
+}
+
+.workspace-modal h3 {
+  margin: 0 0 20px 0;
+  color: #cccccc;
+  font-size: 18px;
+}
+
+.form-group {
+  margin-bottom: 16px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 4px;
+  color: #cccccc;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.form-group input,
+.form-group select {
+  width: 100%;
+  padding: 8px 12px;
+  background: #1e1e1e;
+  border: 1px solid #404040;
+  border-radius: 4px;
+  color: #cccccc;
+  font-size: 14px;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+  outline: none;
+  border-color: #007acc;
+}
+
+.form-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  margin-top: 24px;
+}
+
+.form-actions button {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.form-actions button[type="button"] {
+  background: #555555;
+  color: #cccccc;
+}
+
+.form-actions button[type="button"]:hover {
+  background: #666666;
+}
+
+.form-actions button[type="submit"] {
+  background: #007acc;
+  color: white;
+}
+
+.form-actions button[type="submit"]:hover {
+  background: #005a9e;
+}
+
+@media (max-width: 768px) {
+  .workspace-tabs {
+    padding: 0 5px;
+  }
+  
+  .workspace-tab {
+    min-width: 100px;
+    padding: 6px 12px;
+  }
+  
+  .workspace-name {
+    font-size: 11px;
+  }
+  
+  .workspace-persona {
+    font-size: 9px;
+  }
+  
+  .workspace-status {
+    flex-direction: column;
+    gap: 4px;
+  }
+}
