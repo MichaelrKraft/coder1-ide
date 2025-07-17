@@ -81,7 +81,7 @@ export const SupervisionDashboard: React.FC<SupervisionDashboardProps> = ({
     <div className="supervision-dashboard">
       <div className="dashboard-header">
         <div className="header-left">
-          <Shield size={20} />
+          <span className="header-icon">{Shield({ size: 20 })}</span>
           <h2>Claude Agent Supervision</h2>
         </div>
         <button className="close-btn" onClick={onClose}>×</button>
@@ -91,7 +91,7 @@ export const SupervisionDashboard: React.FC<SupervisionDashboardProps> = ({
         <div className="metrics-grid">
           <div className="metric-card">
             <div className="metric-header">
-              <CheckCircle size={16} className="metric-icon success" />
+              <span className="metric-icon success">{CheckCircle({ size: 16 })}</span>
               <span>Code Quality</span>
             </div>
             <div className="metric-value">{qualityMetrics.codeQuality}%</div>
@@ -99,7 +99,7 @@ export const SupervisionDashboard: React.FC<SupervisionDashboardProps> = ({
 
           <div className="metric-card">
             <div className="metric-header">
-              <Shield size={16} className="metric-icon security" />
+              <span className="metric-icon security">{Shield({ size: 16 })}</span>
               <span>Security Score</span>
             </div>
             <div className="metric-value">{qualityMetrics.securityScore}%</div>
@@ -107,7 +107,7 @@ export const SupervisionDashboard: React.FC<SupervisionDashboardProps> = ({
 
           <div className="metric-card">
             <div className="metric-header">
-              <Activity size={16} className="metric-icon performance" />
+              <span className="metric-icon performance">{Activity({ size: 16 })}</span>
               <span>Performance</span>
             </div>
             <div className="metric-value">{qualityMetrics.performanceScore}%</div>
@@ -115,7 +115,7 @@ export const SupervisionDashboard: React.FC<SupervisionDashboardProps> = ({
 
           <div className="metric-card">
             <div className="metric-header">
-              <CheckCircle size={16} className="metric-icon coverage" />
+              <span className="metric-icon coverage">{CheckCircle({ size: 16 })}</span>
               <span>Test Coverage</span>
             </div>
             <div className="metric-value">{qualityMetrics.testCoverage}%</div>
@@ -149,9 +149,9 @@ export const SupervisionDashboard: React.FC<SupervisionDashboardProps> = ({
               {recentDecisions.map(decision => (
                 <div key={decision.id} className="decision-item">
                   <div className="decision-icon">
-                    {decision.action === 'approve' && <CheckCircle size={16} className="approve" />}
-                    {decision.action === 'reject' && <XCircle size={16} className="reject" />}
-                    {decision.action === 'escalate' && <AlertTriangle size={16} className="escalate" />}
+                    {decision.action === 'approve' && <span className="approve">{CheckCircle({ size: 16 })}</span>}
+                    {decision.action === 'reject' && <span className="reject">{XCircle({ size: 16 })}</span>}
+                    {decision.action === 'escalate' && <span className="escalate">{AlertTriangle({ size: 16 })}</span>}
                   </div>
                   <div className="decision-info">
                     <span className="decision-file">{decision.filePath}</span>
@@ -170,7 +170,7 @@ export const SupervisionDashboard: React.FC<SupervisionDashboardProps> = ({
             <h3>Sleep Mode</h3>
             <div className="sleep-mode-section">
               <div className="sleep-mode-status">
-                <Moon size={16} />
+                <span className="sleep-icon">{Moon({ size: 16 })}</span>
                 <span>24/7 Autonomous Supervision</span>
                 <span className={`status-badge ${sleepModeActive ? 'active' : 'inactive'}`}>
                   {sleepModeActive ? 'Active' : 'Inactive'}

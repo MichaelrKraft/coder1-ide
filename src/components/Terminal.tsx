@@ -43,8 +43,8 @@ export const Terminal: React.FC<TerminalProps> = ({
   const [isExecuting, setIsExecuting] = useState(false);
   const [commandHistory, setCommandHistory] = useState<string[]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
-  const terminalRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const terminalRef = useRef<HTMLDivElement | null>(null);
+  const inputRef = useRef<HTMLInputElement | null>(null);
   const superClaudeProcessor = useRef(new SuperClaudeCommandProcessor());
   const { state: supervisionState, enableSupervision, disableSupervision, enableSleepMode } = useSupervision();
 
@@ -427,17 +427,17 @@ export const Terminal: React.FC<TerminalProps> = ({
     <div className="terminal">
       <div className="terminal-header">
         <div className="header-left">
-          <TerminalIcon size={16} />
+          <span className="header-icon">{TerminalIcon({ size: 16 })}</span>
           <span className="header-title">Terminal</span>
           <span className="header-subtitle">Coder1 AI Integration</span>
         </div>
         
         <div className="header-actions">
           <button className="action-btn" onClick={copyOutput} title="Copy Output">
-            <Copy size={14} />
+            <span>{Copy({ size: 14 })}</span>
           </button>
           <button className="action-btn" onClick={clearTerminal} title="Clear Terminal">
-            <Trash2 size={14} />
+            <span>{Trash2({ size: 14 })}</span>
           </button>
         </div>
       </div>

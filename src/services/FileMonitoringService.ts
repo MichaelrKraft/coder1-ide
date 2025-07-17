@@ -63,8 +63,8 @@ export class FileMonitoringService {
       change.content.toLowerCase().includes(indicator)
     );
 
-    const isRapidChange = change.timestamp && 
-      Date.now() - change.timestamp.getTime() < 5000;
+    const isRapidChange = change.timestamp ? 
+      Date.now() - change.timestamp.getTime() < 5000 : false;
 
     const hasAIPatterns = this.detectAICodePatterns(change.content);
 
@@ -192,10 +192,12 @@ export class FileMonitoringService {
     config: MonitoringConfig,
     reason: string
   ): Promise<void> {
+    const changeId = 'id' in change ? change.id : change.filePath;
+    
     this.logSupervisionAction({
       workspaceId: config.workspaceId,
       action: 'escalate',
-      changeId: 'filePath' in change ? change.filePath : change.id,
+      changeId,
       reason,
       timestamp: new Date()
     });

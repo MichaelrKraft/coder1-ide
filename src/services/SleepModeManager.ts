@@ -1,4 +1,5 @@
 import { ClaudeAgentSupervisor } from './SupervisionEngine';
+import { ClaudePersona } from '../types/supervision';
 import { FileMonitoringService } from './FileMonitoringService';
 import { NotificationService } from './NotificationService';
 import { GitService } from './GitService';
@@ -117,7 +118,7 @@ export class SleepModeManager {
     };
 
     await this.notificationService.send({
-      type: 'sleep_mode_summary',
+      type: 'sleep_summary',
       message: this.generateSleepSummary(session),
       channels: session.config.notificationChannels,
       priority: 'low'
@@ -322,7 +323,7 @@ export class SleepModeManager {
     return `🌙 Sleep summary (${duration}h): ${session.metrics.changesApproved} approved, ${session.metrics.changesRejected} rejected, ${session.metrics.interventionsRequired} interventions. Quality score: ${session.metrics.qualityScore}%`;
   }
 
-  private selectOptimalPersona(autonomyLevel: string): string {
+  private selectOptimalPersona(autonomyLevel: string): ClaudePersona {
     switch (autonomyLevel) {
       case 'conservative': return 'qa';
       case 'balanced': return 'analyzer';
@@ -381,7 +382,7 @@ interface SleepSession {
 }
 
 interface SupervisorConfig {
-  autonomyLevel: string;
+  autonomyLevel: 'conservative' | 'balanced' | 'aggressive';
   approvalThresholds: any;
   escalationRules: EscalationRule[];
   maxChangesPerHour: number;

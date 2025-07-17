@@ -1,5 +1,13 @@
 import { ClaudePersona } from '../types/supervision';
 
+export interface PersonaMetadata {
+  id: string;
+  name: string;
+  description: string;
+  capabilities: string[];
+  mcpServers: string[];
+}
+
 export interface SuperClaudeCommand {
   name: string;
   description: string;
@@ -108,7 +116,7 @@ export const SUPER_CLAUDE_COMMANDS: Record<string, SuperClaudeCommand> = {
   }
 };
 
-export const CLAUDE_PERSONAS: Record<string, ClaudePersona> = {
+export const CLAUDE_PERSONAS: Record<string, PersonaMetadata> = {
   frontend: {
     id: 'frontend',
     name: 'Frontend Developer',
@@ -223,7 +231,7 @@ export class SuperClaudeCommandProcessor {
     const personaInfo = CLAUDE_PERSONAS[persona];
     
     return `🤖 Super Claude ${command} executed:
-📋 Persona: ${personaInfo.name} (${personaInfo.description})
+📋 Persona: ${personaInfo?.name || persona} (${personaInfo?.description || 'No description'})
 🔧 MCP Servers: ${mcpServers.join(', ')}
 🏷️ Flags: ${flags.join(', ')}
 ✅ Command completed successfully with ${persona} persona analysis`;

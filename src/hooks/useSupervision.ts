@@ -45,7 +45,7 @@ export const useSupervision = () => {
         id: 'supervisor-1',
         workspaceId: 'default',
         status: 'monitoring',
-        persona: { id: 'analyzer', name: 'Analyzer', description: '', capabilities: [], mcpServers: [] },
+        persona: 'analyzer',
         autonomyLevel: 'balanced',
         approvalThresholds: {
           codeQuality: 80,

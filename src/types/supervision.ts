@@ -1,10 +1,4 @@
-export interface ClaudePersona {
-  id: string;
-  name: string;
-  description: string;
-  capabilities: string[];
-  mcpServers: string[];
-}
+export type ClaudePersona = 'analyzer' | 'architect' | 'frontend' | 'backend' | 'security' | 'qa' | 'devops' | 'mobile' | 'ai';
 
 export interface CodeAnalysis {
   qualityScore: number;
