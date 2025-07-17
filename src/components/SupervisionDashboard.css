@@ -1,0 +1,245 @@
+.supervision-dashboard {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 400px;
+  height: 100vh;
+  background: #1e1e1e;
+  border-left: 1px solid #333;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+}
+
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  border-bottom: 1px solid #333;
+  background: #252525;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #fff;
+}
+
+.header-left h2 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  color: #999;
+  font-size: 20px;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+}
+
+.close-btn:hover {
+  background: #333;
+  color: #fff;
+}
+
+.dashboard-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+}
+
+.metrics-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.metric-card {
+  background: #252525;
+  border: 1px solid #333;
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.metric-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+  font-size: 12px;
+  color: #999;
+}
+
+.metric-icon.success { color: #10b981; }
+.metric-icon.security { color: #3b82f6; }
+.metric-icon.performance { color: #f59e0b; }
+.metric-icon.coverage { color: #8b5cf6; }
+
+.metric-value {
+  font-size: 20px;
+  font-weight: 600;
+  color: #fff;
+}
+
+.dashboard-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.section h3 {
+  margin: 0 0 12px 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+}
+
+.workspace-list, .decisions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.workspace-item {
+  background: #252525;
+  border: 1px solid #333;
+  border-radius: 6px;
+  padding: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.workspace-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.workspace-name {
+  font-weight: 500;
+  color: #fff;
+}
+
+.workspace-persona {
+  font-size: 12px;
+  color: #999;
+}
+
+.workspace-status {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.status-badge {
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.status-badge.active {
+  background: #10b981;
+  color: #fff;
+}
+
+.status-badge.inactive {
+  background: #374151;
+  color: #9ca3af;
+}
+
+.approval-rate {
+  font-size: 11px;
+  color: #999;
+}
+
+.decision-item {
+  background: #252525;
+  border: 1px solid #333;
+  border-radius: 6px;
+  padding: 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.decision-icon .approve { color: #10b981; }
+.decision-icon .reject { color: #ef4444; }
+.decision-icon .escalate { color: #f59e0b; }
+
+.decision-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.decision-file {
+  font-weight: 500;
+  color: #fff;
+  font-size: 13px;
+}
+
+.decision-reason {
+  font-size: 12px;
+  color: #999;
+}
+
+.decision-time {
+  font-size: 11px;
+  color: #666;
+}
+
+.decision-confidence {
+  font-size: 12px;
+  font-weight: 500;
+  color: #3b82f6;
+}
+
+.sleep-mode-section {
+  background: #252525;
+  border: 1px solid #333;
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.sleep-mode-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  color: #fff;
+}
+
+.sleep-mode-btn {
+  background: #3b82f6;
+  color: #fff;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.sleep-mode-btn:hover {
+  background: #2563eb;
+}
+
+.status-separator {
+  color: #666;
+  margin: 0 8px;
+}
+
+.supervision-indicator {
+  font-size: 14px;
+}

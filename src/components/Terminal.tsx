@@ -1,8 +1,12 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Terminal as TerminalIcon, Play, Square, Copy, Trash2 } from 'lucide-react';
+import { React, useState, useEffect, useRef } from '../utils/react-stubs';
+import { Terminal as TerminalIcon, Play, Square, Copy, Trash2 } from '../utils/icon-stubs';
+import { SuperClaudeCommandProcessor, SUPER_CLAUDE_COMMANDS } from '../services/SuperClaudeCommands';
+import { useSupervision } from '../hooks/useSupervision';
 import './Terminal.css';
 
 interface TerminalProps {
+  isVisible?: boolean;
+  onToggle?: () => void;
   selectedElement?: HTMLElement | null;
   elementContext?: any;
 }
@@ -14,7 +18,12 @@ interface TerminalLine {
   timestamp: number;
 }
 
-export const Terminal: React.FC<TerminalProps> = ({ selectedElement, elementContext }) => {
+export const Terminal: React.FC<TerminalProps> = ({ 
+  isVisible = true, 
+  onToggle = () => {}, 
+  selectedElement = null, 
+  elementContext = null 
+}) => {
   const [lines, setLines] = useState<TerminalLine[]>([
     {
       id: 1,
@@ -36,6 +45,8 @@ export const Terminal: React.FC<TerminalProps> = ({ selectedElement, elementCont
   const [historyIndex, setHistoryIndex] = useState(-1);
   const terminalRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const superClaudeProcessor = useRef(new SuperClaudeCommandProcessor());
+  const { state: supervisionState, enableSupervision, disableSupervision, enableSleepMode } = useSupervision();
 
   useEffect(() => {
     // Scroll to bottom when new lines are added
@@ -64,7 +75,7 @@ export const Terminal: React.FC<TerminalProps> = ({ selectedElement, elementCont
     buildSequence.forEach(({ delay, content, type }) => {
       totalDelay += delay;
       setTimeout(() => {
-        setLines(prev => [...prev, {
+        setLines((prev: TerminalLine[]) => [...prev, {
           id: Date.now() + Math.random(),
           type,
           content,
@@ -80,11 +91,11 @@ export const Terminal: React.FC<TerminalProps> = ({ selectedElement, elementCont
     setIsExecuting(true);
     
     // Add command to history
-    setCommandHistory(prev => [...prev, command]);
+    setCommandHistory((prev: string[]) => [...prev, command]);
     setHistoryIndex(-1);
 
     // Add input line
-    setLines(prev => [...prev, {
+    setLines((prev: TerminalLine[]) => [...prev, {
       id: Date.now(),
       type: 'input',
       content: `$ ${command}`,
@@ -103,7 +114,7 @@ export const Terminal: React.FC<TerminalProps> = ({ selectedElement, elementCont
     // Add output lines
     output.forEach((line, index) => {
       setTimeout(() => {
-        setLines(prev => [...prev, {
+        setLines((prev: TerminalLine[]) => [...prev, {
           id: Date.now() + index,
           type: line.type,
           content: line.content,
@@ -117,6 +128,36 @@ export const Terminal: React.FC<TerminalProps> = ({ selectedElement, elementCont
 
   const processCommand = async (command: string): Promise<{type: 'output' | 'error'; content: string}[]> => {
     const cmd = command.toLowerCase().trim();
+    
+    // Handle Super Claude Framework commands
+    if (cmd.startsWith('/')) {
+      const [commandName, ...args] = cmd.split(' ');
+      
+      if (SUPER_CLAUDE_COMMANDS[commandName]) {
+        try {
+          const result = await superClaudeProcessor.current?.processCommand(commandName, args) || 'Command processed';
+          return [
+            { type: 'output', content: result }
+          ];
+        } catch (error) {
+          return [
+            { type: 'error', content: `Super Claude command failed: ${error}` }
+          ];
+        }
+      }
+      
+      if (commandName === '/help') {
+        const helpCommand = args[0];
+        const helpText = superClaudeProcessor.current?.getCommandHelp(helpCommand) || 'Help not available';
+        return [
+          { type: 'output', content: helpText }
+        ];
+      }
+      
+      if (commandName === '/supervision') {
+        return await handleSupervisionCommand(args);
+      }
+    }
     
     // Handle /ui command for 21st.dev Magic integration
     if (cmd.startsWith('/ui')) {
@@ -252,7 +293,27 @@ export const Terminal: React.FC<TerminalProps> = ({ selectedElement, elementCont
     if (cmd === 'help') {
       return [
         { type: 'output', content: '🤖 Coder1 IDE Terminal Commands:' },
+        { type: 'output', content: '' },
+        { type: 'output', content: '🎨 UI Generation:' },
         { type: 'output', content: '  /ui <description> - Generate React components with 21st.dev Magic' },
+        { type: 'output', content: '' },
+        { type: 'output', content: '🤖 Super Claude Framework:' },
+        { type: 'output', content: '  /analyze - Comprehensive code and architecture analysis' },
+        { type: 'output', content: '  /build - Feature implementation and project creation' },
+        { type: 'output', content: '  /design - Architectural design and system planning' },
+        { type: 'output', content: '  /test - Comprehensive testing and validation' },
+        { type: 'output', content: '  /security - Security analysis and hardening' },
+        { type: 'output', content: '  /improve - Code quality and performance improvements' },
+        { type: 'output', content: '  /troubleshoot - Debug and investigate issues' },
+        { type: 'output', content: '  /explain - Code explanation and documentation' },
+        { type: 'output', content: '' },
+        { type: 'output', content: '🛡️ Autonomous Supervision:' },
+        { type: 'output', content: '  /supervision enable - Enable autonomous Claude agent supervision' },
+        { type: 'output', content: '  /supervision disable - Disable supervision' },
+        { type: 'output', content: '  /supervision status - Show supervision status' },
+        { type: 'output', content: '  /supervision sleep - Enable sleep mode (Pro Plan)' },
+        { type: 'output', content: '' },
+        { type: 'output', content: '🔧 System Commands:' },
         { type: 'output', content: '  coder1 build <project> - Build project with AI assistance' },
         { type: 'output', content: '  coder1 deploy - Deploy project automatically' },
         { type: 'output', content: '  coder1 analyze - Analyze code quality' },
@@ -261,10 +322,7 @@ export const Terminal: React.FC<TerminalProps> = ({ selectedElement, elementCont
         { type: 'output', content: '  clear - Clear terminal' },
         { type: 'output', content: '  help - Show this help message' },
         { type: 'output', content: '' },
-        { type: 'output', content: '✨ 21st.dev Magic Examples:' },
-        { type: 'output', content: '  /ui create a modern button with hover effects' },
-        { type: 'output', content: '  /ui build a responsive navigation bar' },
-        { type: 'output', content: '  /ui make a card component with shadow' }
+        { type: 'output', content: '💡 Use "/help <command>" for detailed command information' }
       ];
     }
     
@@ -276,7 +334,62 @@ export const Terminal: React.FC<TerminalProps> = ({ selectedElement, elementCont
     return [{ type: 'error', content: `Command not found: ${command}` }];
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
+  const handleSupervisionCommand = async (args: string[]): Promise<{type: 'output' | 'error'; content: string}[]> => {
+    const subCommand = args[0];
+    
+    switch (subCommand) {
+      case 'enable':
+        await enableSupervision();
+        return [
+          { type: 'output', content: '🛡️ Autonomous Claude Agent Supervision enabled' },
+          { type: 'output', content: '📊 Quality gates: TypeScript, ESLint, Security, Performance' },
+          { type: 'output', content: '🤖 Decision engine: Active with balanced autonomy level' },
+          { type: 'output', content: '📁 File monitoring: Watching for Claude Code changes' }
+        ];
+        
+      case 'disable':
+        await disableSupervision();
+        return [
+          { type: 'output', content: '⏹️ Autonomous supervision disabled' },
+          { type: 'output', content: '👤 Manual review mode activated' }
+        ];
+        
+      case 'status':
+        return [
+          { type: 'output', content: `🛡️ Supervision Status: ${supervisionState.isEnabled ? 'ACTIVE' : 'DISABLED'}` },
+          { type: 'output', content: `🤖 Decision Engine: ${supervisionState.isEnabled ? 'Monitoring' : 'Standby'}` },
+          { type: 'output', content: `📊 Quality Gates: 4 active (TypeScript, Security, Performance, Testing)` },
+          { type: 'output', content: `🎭 Active Persona: ${supervisionState.currentPersona}` },
+          { type: 'output', content: `📈 Approval Rate: ${supervisionState.approvalRate}% (last 24h)` }
+        ];
+        
+      case 'sleep':
+        if (supervisionState.sleepModeActive) {
+          return [
+            { type: 'output', content: '🌙 Sleep Mode: ACTIVE' },
+            { type: 'output', content: '💤 24/7 autonomous supervision running' },
+            { type: 'output', content: '📱 Mobile notifications enabled' },
+            { type: 'output', content: '🔄 Auto-commit: enabled' }
+          ];
+        } else {
+          await enableSleepMode();
+          return [
+            { type: 'output', content: '🌙 Sleep Mode enabled (Pro Plan)' },
+            { type: 'output', content: '💤 24/7 autonomous Claude agent supervision active' },
+            { type: 'output', content: '📱 Mobile notifications configured' },
+            { type: 'output', content: '🔄 Auto-commit approved changes enabled' }
+          ];
+        }
+        
+      default:
+        return [
+          { type: 'error', content: 'Unknown supervision command' },
+          { type: 'output', content: 'Available: enable, disable, status, sleep' }
+        ];
+    }
+  };
+
+  const handleKeyDown = (e: any) => {
     if (e.key === 'Enter') {
       executeCommand(currentInput);
     } else if (e.key === 'ArrowUp') {
@@ -306,7 +419,7 @@ export const Terminal: React.FC<TerminalProps> = ({ selectedElement, elementCont
   };
 
   const copyOutput = () => {
-    const text = lines.map(line => line.content).join('\n');
+    const text = lines.map((line: TerminalLine) => line.content).join('\n');
     navigator.clipboard.writeText(text);
   };
 
@@ -331,7 +444,7 @@ export const Terminal: React.FC<TerminalProps> = ({ selectedElement, elementCont
 
       <div className="terminal-content" ref={terminalRef}>
         <div className="terminal-lines">
-          {lines.map(line => (
+          {lines.map((line: TerminalLine) => (
             <div key={line.id} className={`terminal-line ${line.type}`}>
               {line.type === 'input' && (
                 <span className="terminal-prompt">➜</span>
@@ -381,6 +494,13 @@ export const Terminal: React.FC<TerminalProps> = ({ selectedElement, elementCont
         <div className="status-left">
           <span className="status-indicator">●</span>
           <span className="status-text">Connected to Coder1</span>
+          {supervisionState.isEnabled && (
+            <>
+              <span className="status-separator">|</span>
+              <span className="supervision-indicator">🛡️</span>
+              <span className="status-text">Supervision Active</span>
+            </>
+          )}
         </div>
         <div className="status-right">
           <span className="status-text">Lines: {lines.length}</span>
