@@ -1,0 +1,344 @@
+.persona-consultation-panel {
+  background: #1e1e1e;
+  border: 1px solid #333;
+  border-radius: 8px;
+  padding: 16px;
+  margin: 16px 0;
+  color: #fff;
+}
+
+.consultation-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #333;
+}
+
+.consultation-header h3 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.consultation-stats {
+  display: flex;
+  gap: 16px;
+}
+
+.consultation-stats .stat {
+  font-size: 12px;
+  color: #9ca3af;
+  background: #2a2a2a;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.new-consultation {
+  margin-bottom: 24px;
+  padding: 16px;
+  background: #2a2a2a;
+  border-radius: 6px;
+}
+
+.new-consultation h4 {
+  margin: 0 0 16px 0;
+  font-size: 16px;
+  color: #fff;
+}
+
+.consultation-form .form-group {
+  margin-bottom: 16px;
+}
+
+.consultation-form label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 14px;
+  color: #d1d5db;
+  font-weight: 500;
+}
+
+.consultation-form textarea {
+  width: 100%;
+  background: #374151;
+  border: 1px solid #4b5563;
+  border-radius: 4px;
+  padding: 12px;
+  color: #fff;
+  font-size: 14px;
+  font-family: inherit;
+  resize: vertical;
+}
+
+.consultation-form textarea:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
+
+.persona-selection {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 8px;
+}
+
+.persona-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: #374151;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.persona-checkbox:hover {
+  background: #4b5563;
+}
+
+.persona-checkbox input[type="checkbox"] {
+  margin: 0;
+}
+
+.persona-name {
+  font-size: 14px;
+  color: #d1d5db;
+}
+
+.btn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background: #3b82f6;
+  color: white;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: #2563eb;
+  transform: translateY(-1px);
+}
+
+.consultation-history h4 {
+  margin: 0 0 16px 0;
+  font-size: 16px;
+  color: #fff;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  color: #9ca3af;
+}
+
+.consultations-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.consultation-item {
+  background: #2a2a2a;
+  border: 1px solid #374151;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.consultation-summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  cursor: pointer;
+}
+
+.consultation-info h5 {
+  margin: 0 0 8px 0;
+  font-size: 14px;
+  color: #fff;
+  line-height: 1.4;
+}
+
+.consultation-meta {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.consultation-meta span {
+  font-size: 12px;
+  color: #9ca3af;
+}
+
+.confidence-badge {
+  padding: 2px 6px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: bold;
+  color: #000;
+}
+
+.expand-btn {
+  background: none;
+  border: none;
+  color: #9ca3af;
+  font-size: 16px;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.expand-btn:hover {
+  background: #374151;
+}
+
+.consultation-details {
+  padding: 0 16px 16px 16px;
+  border-top: 1px solid #374151;
+}
+
+.consensus-summary {
+  margin-bottom: 20px;
+  padding: 12px;
+  background: #374151;
+  border-radius: 4px;
+}
+
+.consensus-summary h6 {
+  margin: 0 0 12px 0;
+  font-size: 14px;
+  color: #fff;
+}
+
+.consensus-info {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 12px;
+}
+
+.consensus-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.consensus-stat .label {
+  font-size: 12px;
+  color: #9ca3af;
+}
+
+.consensus-stat .value {
+  font-size: 14px;
+  color: #fff;
+  font-weight: 500;
+}
+
+.final-decision,
+.synthesized-approach {
+  margin-top: 12px;
+  padding: 8px;
+  background: #4b5563;
+  border-radius: 4px;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.persona-opinions h6 {
+  margin: 0 0 12px 0;
+  font-size: 14px;
+  color: #fff;
+}
+
+.opinion-card {
+  background: #374151;
+  border-radius: 4px;
+  padding: 12px;
+  margin-bottom: 12px;
+}
+
+.opinion-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.opinion-header .persona-name {
+  font-weight: 500;
+  color: #fff;
+}
+
+.opinion-meta {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.opinion-meta .vote {
+  font-size: 12px;
+}
+
+.opinion-meta .confidence {
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.opinion-content p {
+  margin: 8px 0;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.suggestions {
+  margin-top: 8px;
+}
+
+.suggestions ul {
+  margin: 4px 0 0 16px;
+  padding: 0;
+}
+
+.suggestions li {
+  font-size: 12px;
+  color: #d1d5db;
+  margin-bottom: 2px;
+}
+
+.conflict-areas {
+  margin-top: 16px;
+  padding: 12px;
+  background: #7f1d1d;
+  border-radius: 4px;
+}
+
+.conflict-areas h6 {
+  margin: 0 0 8px 0;
+  font-size: 14px;
+  color: #fff;
+}
+
+.conflict-areas ul {
+  margin: 0 0 0 16px;
+  padding: 0;
+}
+
+.conflict-areas li {
+  font-size: 13px;
+  color: #fca5a5;
+  margin-bottom: 4px;
+}

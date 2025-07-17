@@ -1,0 +1,243 @@
+.sleep-mode-controls {
+  background: #1e1e1e;
+  border: 1px solid #333;
+  border-radius: 8px;
+  padding: 16px;
+  margin: 16px 0;
+  color: #fff;
+}
+
+.sleep-mode-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.sleep-mode-header h3 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.status-indicator {
+  padding: 4px 12px;
+  border-radius: 16px;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.status-indicator.active {
+  background: #22c55e;
+  color: #000;
+}
+
+.status-indicator.paused {
+  background: #f59e0b;
+  color: #000;
+}
+
+.status-indicator.inactive {
+  background: #6b7280;
+  color: #fff;
+}
+
+.sleep-mode-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+  padding: 12px;
+  background: #2a2a2a;
+  border-radius: 6px;
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.stat-label {
+  font-size: 12px;
+  color: #9ca3af;
+  margin-bottom: 4px;
+}
+
+.stat-value {
+  font-size: 16px;
+  font-weight: bold;
+  color: #fff;
+}
+
+.sleep-mode-actions {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.active-controls {
+  display: flex;
+  gap: 8px;
+}
+
+.btn {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.btn:hover {
+  transform: translateY(-1px);
+}
+
+.btn-primary {
+  background: #3b82f6;
+  color: white;
+}
+
+.btn-primary:hover {
+  background: #2563eb;
+}
+
+.btn-success {
+  background: #22c55e;
+  color: white;
+}
+
+.btn-success:hover {
+  background: #16a34a;
+}
+
+.btn-warning {
+  background: #f59e0b;
+  color: white;
+}
+
+.btn-warning:hover {
+  background: #d97706;
+}
+
+.btn-danger {
+  background: #ef4444;
+  color: white;
+}
+
+.btn-danger:hover {
+  background: #dc2626;
+}
+
+.btn-secondary {
+  background: #6b7280;
+  color: white;
+}
+
+.btn-secondary:hover {
+  background: #4b5563;
+}
+
+.sleep-mode-config {
+  border-top: 1px solid #333;
+  padding-top: 16px;
+}
+
+.sleep-mode-config h4 {
+  margin: 0 0 16px 0;
+  font-size: 16px;
+  color: #fff;
+}
+
+.config-section {
+  margin-bottom: 16px;
+}
+
+.config-section label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 14px;
+  color: #d1d5db;
+  font-weight: 500;
+}
+
+.config-section select,
+.config-section input[type="time"],
+.config-section input[type="number"] {
+  background: #374151;
+  border: 1px solid #4b5563;
+  border-radius: 4px;
+  padding: 8px 12px;
+  color: #fff;
+  font-size: 14px;
+  width: 100%;
+  max-width: 200px;
+}
+
+.config-section select:focus,
+.config-section input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
+
+.schedule-inputs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.schedule-inputs span {
+  color: #9ca3af;
+  font-size: 14px;
+}
+
+.threshold-inputs {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+}
+
+.threshold-input {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.threshold-input label {
+  margin: 0;
+  font-size: 12px;
+  min-width: 80px;
+}
+
+.threshold-input input {
+  max-width: 60px;
+}
+
+.threshold-input span {
+  color: #9ca3af;
+  font-size: 12px;
+}
+
+.notification-channels {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+  gap: 8px;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  color: #d1d5db;
+  cursor: pointer;
+  margin: 0;
+}
+
+.checkbox-label input[type="checkbox"] {
+  width: auto;
+  max-width: none;
+}
