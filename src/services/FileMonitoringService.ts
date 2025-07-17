@@ -1,4 +1,4 @@
-import { ClaudeAgentSupervisor, AutonomousDecisionEngine } from './SupervisionEngine';
+import { ClaudeAgentSupervisor, SupervisionEngine } from './SupervisionEngine';
 import { ProjectContext, CodeChange, FileChange } from '../types/supervision';
 
 export interface MonitoringConfig {
@@ -11,11 +11,11 @@ export interface MonitoringConfig {
 
 export class FileMonitoringService {
   private watchers: Map<string, FileSystemWatcher> = new Map();
-  private decisionEngine: AutonomousDecisionEngine;
+  private decisionEngine: SupervisionEngine;
   private monitoringConfigs: Map<string, MonitoringConfig> = new Map();
 
   constructor() {
-    this.decisionEngine = new AutonomousDecisionEngine();
+    this.decisionEngine = new SupervisionEngine();
   }
 
   async startMonitoring(config: MonitoringConfig): Promise<void> {
@@ -42,6 +42,10 @@ export class FileMonitoringService {
       this.watchers.delete(workspaceId);
     }
     this.monitoringConfigs.delete(workspaceId);
+  }
+
+  isMonitoring(workspaceId: string): boolean {
+    return this.monitoringConfigs.has(workspaceId);
   }
 
   watchFileChanges(workspaceId: string, callback: (change: CodeChange) => void): void {

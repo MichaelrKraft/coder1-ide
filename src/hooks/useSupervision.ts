@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { AutonomousDecisionEngine } from '../services/SupervisionEngine';
+import { SupervisionEngine } from '../services/SupervisionEngine';
 import { FileMonitoringService } from '../services/FileMonitoringService';
 import { SleepModeManager } from '../services/SleepModeManager';
 
@@ -32,7 +32,7 @@ export const useSupervision = () => {
     }
   });
 
-  const [decisionEngine] = useState(() => new AutonomousDecisionEngine());
+  const [decisionEngine] = useState(() => new SupervisionEngine());
   const [monitoringService] = useState(() => new FileMonitoringService());
   const [sleepModeManager] = useState(() => new SleepModeManager());
 

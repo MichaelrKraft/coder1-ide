@@ -112,6 +112,38 @@ export interface OpenFile {
   };
 }
 
+export interface WorkspaceSettings {
+  autoSave: boolean;
+  formatOnSave: boolean;
+  lintOnSave: boolean;
+  autoImports: boolean;
+  tabSize: number;
+  theme: 'dark' | 'light' | 'auto';
+  fontSize: number;
+  wordWrap: boolean;
+  minimap: boolean;
+  lineNumbers: boolean;
+  supervisionEnabled: boolean;
+  supervisionLevel: 'conservative' | 'balanced' | 'aggressive';
+  autoApprovalThresholds: {
+    codeQuality: number;
+    securityRisk: number;
+    performanceImpact: number;
+    testCoverage: number;
+  };
+}
+
+export interface ClaudeAgentSupervisor {
+  id: string;
+  workspaceId: string;
+  status: 'active' | 'sleeping' | 'monitoring' | 'intervening';
+  persona: ClaudePersona;
+  autonomyLevel: 'conservative' | 'balanced' | 'aggressive';
+  approvalThresholds: ApprovalThresholds;
+  monitoringRules?: any[];
+  interventionHistory?: any[];
+}
+
 export interface TerminalSession {
   id: string;
   name: string;

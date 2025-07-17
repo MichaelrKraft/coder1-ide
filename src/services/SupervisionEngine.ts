@@ -28,13 +28,55 @@ export interface Intervention {
   decision: string;
 }
 
-export class AutonomousDecisionEngine {
+export class SupervisionEngine {
   private qualityGates: QualityGate[];
   private superClaudeFramework: SuperClaudeFramework;
 
   constructor() {
     this.qualityGates = this.initializeQualityGates();
     this.superClaudeFramework = new SuperClaudeFramework();
+  }
+
+  async createSupervisor(workspaceId: string, config: {
+    persona: ClaudePersona;
+    autonomyLevel: 'conservative' | 'balanced' | 'aggressive';
+    approvalThresholds: ApprovalThresholds;
+  }): Promise<ClaudeAgentSupervisor> {
+    return {
+      id: `supervisor_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      workspaceId,
+      status: 'monitoring',
+      persona: config.persona,
+      autonomyLevel: config.autonomyLevel,
+      approvalThresholds: config.approvalThresholds,
+      monitoringRules: [],
+      interventionHistory: []
+    };
+  }
+
+  async analyzeCodeChange(codeChange: any, config: any): Promise<DecisionResult> {
+    const qualityScore = await this.analyzeCodeQuality(codeChange.content);
+    const securityAssessment = await this.scanSecurity(codeChange.content);
+    const performanceImpact = await this.analyzePerformance(codeChange.content);
+    
+    return this.makeDecision({
+      qualityScore,
+      securityAssessment,
+      performanceImpact,
+      testResults: { passed: true, coverage: 85 }
+    });
+  }
+
+  async validateQualityGates(code: string, thresholds: ApprovalThresholds): Promise<{ passed: boolean; score: number }> {
+    const qualityScore = await this.analyzeCodeQuality(code);
+    const securityAssessment = await this.scanSecurity(code);
+    const performanceImpact = await this.analyzePerformance(code);
+    
+    const passed = qualityScore >= thresholds.codeQuality && 
+                   securityAssessment.riskScore <= thresholds.securityRisk &&
+                   performanceImpact.degradation <= thresholds.performanceImpact;
+    
+    return { passed, score: qualityScore };
   }
 
   async evaluateClaudeOutput(

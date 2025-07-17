@@ -241,7 +241,7 @@ const PerformanceDashboard: React.FC<{
 
   const toggleMonitoring = () => {
     if (isMonitoring) {
-      performanceMonitor.stopMonitoring();
+      performanceMonitor.stopMonitoring(workspaceId);
     } else {
       performanceMonitor.startMonitoring(workspaceId);
     }

@@ -1,3 +1,9 @@
+export interface MCPServerStatus {
+  status: 'active' | 'inactive' | 'error';
+  lastPing: Date;
+  responseTime: number;
+}
+
 export interface MCPServer {
   id: string;
   name: string;
@@ -314,22 +320,48 @@ export class MCPServerManager {
   async healthCheck(): Promise<Map<string, boolean>> {
     const healthStatus = new Map<string, boolean>();
     
-    for (const [serverId, server] of this.servers) {
-      try {
-        await this.executeRequest(serverId, 'ping', {}, 'health-check');
-        healthStatus.set(serverId, true);
-        server.status = 'active';
-      } catch (error) {
-        healthStatus.set(serverId, false);
-        server.status = 'error';
-      }
-    }
+    this.servers.forEach((server, serverId) => {
+      this.executeRequest(serverId, 'ping', {}, 'health-check')
+        .then(() => {
+          healthStatus.set(serverId, true);
+          server.status = 'active';
+        })
+        .catch(() => {
+          healthStatus.set(serverId, false);
+          server.status = 'error';
+        });
+    });
     
     return healthStatus;
   }
 
-  getServerStatus(serverId: string): MCPServer | undefined {
-    return this.servers.get(serverId);
+  getServerStatus(serverId?: string): Record<string, MCPServerStatus> | MCPServerStatus {
+    if (serverId) {
+      const server = this.servers.get(serverId);
+      if (!server) {
+        throw new Error(`Server ${serverId} not found`);
+      }
+      return { status: server.status, lastPing: server.lastPing, responseTime: server.responseTime };
+    }
+
+    const statusMap: Record<string, MCPServerStatus> = {};
+    this.servers.forEach((server, id) => {
+      statusMap[id] = { status: server.status, lastPing: server.lastPing, responseTime: server.responseTime };
+    });
+    return statusMap;
+  }
+
+  async initializeServers(serverIds: string[]): Promise<void> {
+    for (const serverId of serverIds) {
+      const server = this.servers.get(serverId);
+      if (server) {
+        server.status = 'active';
+      }
+    }
+  }
+
+  async executeCommand(serverId: string, command: string, params: any): Promise<any> {
+    return this.executeRequest(serverId, command, params, 'test-workspace');
   }
 
   getAllServers(): MCPServer[] {

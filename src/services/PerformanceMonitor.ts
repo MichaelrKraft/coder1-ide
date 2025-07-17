@@ -60,7 +60,6 @@ export class PerformanceMonitor {
   private alerts: Map<string, PerformanceAlert[]> = new Map();
   private thresholds: PerformanceThresholds;
   private monitoringInterval: NodeJS.Timeout | null = null;
-  private isMonitoring: boolean = false;
 
   constructor(thresholds: PerformanceThresholds = {
     cpu: 80,
@@ -74,27 +73,27 @@ export class PerformanceMonitor {
     this.thresholds = thresholds;
   }
 
-  startMonitoring(workspaceId: string, intervalMs: number = 5000): void {
-    if (this.isMonitoring) {
-      console.warn('Performance monitoring is already running');
+  async startMonitoring(workspaceId: string, intervalMs: number = 5000): Promise<void> {
+    if (this.monitoringIntervals.has(workspaceId)) {
+      console.warn(`Performance monitoring is already running for workspace ${workspaceId}`);
       return;
     }
 
-    this.isMonitoring = true;
-    this.monitoringInterval = setInterval(() => {
+    const interval = setInterval(() => {
       this.collectMetrics(workspaceId);
     }, intervalMs);
 
+    this.monitoringIntervals.set(workspaceId, interval);
     console.log(`Performance monitoring started for workspace ${workspaceId}`);
   }
 
-  stopMonitoring(): void {
-    if (this.monitoringInterval) {
-      clearInterval(this.monitoringInterval);
-      this.monitoringInterval = null;
+  async stopMonitoring(workspaceId: string): Promise<void> {
+    const interval = this.monitoringIntervals.get(workspaceId);
+    if (interval) {
+      clearInterval(interval);
+      this.monitoringIntervals.delete(workspaceId);
     }
-    this.isMonitoring = false;
-    console.log('Performance monitoring stopped');
+    console.log(`Performance monitoring stopped for workspace ${workspaceId}`);
   }
 
   private async collectMetrics(workspaceId: string): Promise<void> {
@@ -470,15 +469,21 @@ export class PerformanceMonitor {
   }
 
   resolveAlert(alertId: string): boolean {
-    for (const alerts of this.alerts.values()) {
-      const alert = alerts.find(a => a.id === alertId);
+    this.alerts.forEach((alerts) => {
+      const alert = alerts.find((a: PerformanceAlert) => a.id === alertId);
       if (alert) {
         alert.resolved = true;
         return true;
       }
-    }
+    });
     return false;
   }
+
+  isMonitoring(workspaceId: string): boolean {
+    return this.monitoringIntervals.has(workspaceId);
+  }
+
+  private monitoringIntervals: Map<string, NodeJS.Timeout> = new Map();
 
   updateThresholds(newThresholds: Partial<PerformanceThresholds>): void {
     this.thresholds = { ...this.thresholds, ...newThresholds };
@@ -507,6 +512,6 @@ export class PerformanceMonitor {
   }
 
   isMonitoringActive(): boolean {
-    return this.isMonitoring;
+    return this.monitoringIntervals.size > 0;
   }
 }

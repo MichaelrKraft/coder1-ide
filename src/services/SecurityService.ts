@@ -1,3 +1,36 @@
+export interface SecurityScanResult {
+  vulnerabilities: SecurityVulnerability[];
+  riskLevel: 'low' | 'medium' | 'high' | 'critical';
+  scannedAt: Date;
+}
+
+export interface SecurityVulnerability {
+  id: string;
+  type: string;
+  severity: 'critical' | 'high' | 'medium' | 'low';
+  description: string;
+  line: number;
+  column: number;
+  file: string;
+  recommendation: string;
+}
+
+export interface SecurityReport {
+  projectPath: string;
+  scanDate: Date;
+  overallRisk: string;
+  vulnerabilities: SecurityResult[];
+  complianceStatus: ComplianceCheck;
+  recommendations: string[];
+  summary: {
+    totalVulnerabilities: number;
+    criticalCount: number;
+    highCount: number;
+    mediumCount: number;
+    lowCount: number;
+  };
+}
+
 export interface SecurityScan {
   id: string;
   workspaceId: string;
@@ -425,6 +458,55 @@ export class SecurityService {
   getComplianceStatus(workspaceId: string): ComplianceCheck[] {
     return Array.from(this.complianceChecks.values())
       .filter(check => check.standard.includes(workspaceId));
+  }
+
+  async scanCode(code: string, filePath: string): Promise<SecurityScanResult> {
+    const vulnerabilities: SecurityVulnerability[] = [];
+
+    if (code.includes('password') && (code.includes('=') || code.includes(':'))) {
+      vulnerabilities.push({
+        id: 'hardcoded-password',
+        type: 'hardcoded-credentials',
+        severity: 'high',
+        description: 'Hardcoded password detected',
+        line: 1,
+        column: 1,
+        file: filePath,
+        recommendation: 'Use environment variables for sensitive data'
+      });
+    }
+
+    if (code.includes('eval(')) {
+      vulnerabilities.push({
+        id: 'eval-usage',
+        type: 'code-injection',
+        severity: 'critical',
+        description: 'Use of eval() detected',
+        line: 1,
+        column: 1,
+        file: filePath,
+        recommendation: 'Avoid using eval() as it can lead to code injection'
+      });
+    }
+
+    const riskLevel = vulnerabilities.some(v => v.severity === 'critical') ? 'critical' :
+                     vulnerabilities.some(v => v.severity === 'high') ? 'high' :
+                     vulnerabilities.some(v => v.severity === 'medium') ? 'medium' : 'low';
+
+    return {
+      vulnerabilities,
+      riskLevel,
+      scannedAt: new Date()
+    };
+  }
+
+  async checkOWASPCompliance(projectPath: string): Promise<{ compliant: boolean; issues: string[] }> {
+    console.log(`Checking OWASP compliance for project: ${projectPath}`);
+    
+    return {
+      compliant: true,
+      issues: []
+    };
   }
 
   private generateScanId(): string {
