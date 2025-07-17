@@ -1,7 +1,7 @@
 export const React = {
-  useState: <T>(initial: T): [T, (value: T) => void] => [initial, () => {}],
+  useState: <T>(initial: T): [T, React.Dispatch<React.SetStateAction<T>>] => [initial, () => {}],
   useEffect: (fn: () => void, deps?: any[]) => {},
-  useRef: <T>(initial: T): { current: T } => ({ current: initial }),
+  useRef: <T>(initial: T | null): { current: T | null } => ({ current: initial }),
   FC: <P>(component: (props: P) => any) => component,
   KeyboardEvent: {} as any
 };

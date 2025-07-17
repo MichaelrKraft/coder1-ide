@@ -1,0 +1,100 @@
+.code-editor {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: #1e1e1e;
+}
+
+.editor-tabs {
+  display: flex;
+  background: #2d2d2d;
+  border-bottom: 1px solid #404040;
+  overflow-x: auto;
+}
+
+.editor-tab {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: none;
+  border: none;
+  color: #9ca3af;
+  cursor: pointer;
+  font-size: 14px;
+  white-space: nowrap;
+  border-right: 1px solid #404040;
+}
+
+.editor-tab:hover {
+  background: #404040;
+  color: #ffffff;
+}
+
+.editor-tab.active {
+  background: #1e1e1e;
+  color: #ffffff;
+}
+
+.editor-tab.dirty::after {
+  content: '•';
+  color: #fbbf24;
+  font-weight: bold;
+}
+
+.tab-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 2px;
+  background: none;
+  border: none;
+  color: #9ca3af;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.tab-close:hover {
+  background: #ef4444;
+  color: #ffffff;
+}
+
+.editor-content {
+  flex: 1;
+  overflow: hidden;
+}
+
+.editor-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: #9ca3af;
+  font-size: 16px;
+}
+
+.monaco-editor {
+  height: 100% !important;
+}
+
+.monaco-editor .margin {
+  background-color: #1e1e1e !important;
+}
+
+.monaco-editor .monaco-editor-background {
+  background-color: #1e1e1e !important;
+}
+
+.monaco-editor .current-line {
+  background-color: #2d2d2d !important;
+}
+
+.monaco-editor .line-numbers {
+  color: #6b7280 !important;
+}
+
+.monaco-editor .cursor {
+  color: #ffffff !important;
+}
