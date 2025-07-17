@@ -1,7 +1,7 @@
 export interface MCPServer {
   id: string;
   name: string;
-  type: 'context7' | 'sequential' | 'magic' | 'puppeteer';
+  type: 'filesystem' | 'git' | 'firecrawl' | 'browser-use';
   endpoint: string;
   status: 'active' | 'inactive' | 'error';
   capabilities: string[];
@@ -48,36 +48,36 @@ export class MCPIntegrationService {
     
     const defaultServers: Omit<MCPServer, 'lastUsed' | 'responseTime'>[] = [
       {
-        id: 'context7',
-        name: 'Context7 Analysis Server',
-        type: 'context7',
-        endpoint: 'ws://localhost:8001/context7',
+        id: 'filesystem',
+        name: 'Filesystem Operations Server',
+        type: 'filesystem',
+        endpoint: 'mcp://filesystem',
         status: 'inactive',
-        capabilities: ['code_analysis', 'pattern_recognition', 'context_understanding']
+        capabilities: ['file_operations', 'project_management', 'multi_file_analysis', 'batch_operations', 'code_migration']
       },
       {
-        id: 'sequential',
-        name: 'Sequential Processing Server',
-        type: 'sequential',
-        endpoint: 'ws://localhost:8002/sequential',
+        id: 'git',
+        name: 'Git Version Control Server',
+        type: 'git',
+        endpoint: 'mcp://git',
         status: 'inactive',
-        capabilities: ['step_by_step_analysis', 'workflow_optimization', 'dependency_tracking']
+        capabilities: ['version_control', 'repository_management', 'branch_operations', 'commit_analysis', 'collaboration_workflows']
       },
       {
-        id: 'magic',
-        name: 'Magic Enhancement Server',
-        type: 'magic',
-        endpoint: 'ws://localhost:8003/magic',
+        id: 'firecrawl',
+        name: 'Firecrawl Web Research Server',
+        type: 'firecrawl',
+        endpoint: 'mcp://firecrawl',
         status: 'inactive',
-        capabilities: ['code_generation', 'auto_completion', 'intelligent_suggestions']
+        capabilities: ['web_scraping', 'documentation_research', 'api_lookup', 'best_practices_research', 'technology_updates']
       },
       {
-        id: 'puppeteer',
-        name: 'Puppeteer Automation Server',
-        type: 'puppeteer',
-        endpoint: 'ws://localhost:8004/puppeteer',
+        id: 'browser-use',
+        name: 'Browser Automation Server',
+        type: 'browser-use',
+        endpoint: 'mcp://browser-use',
         status: 'inactive',
-        capabilities: ['browser_automation', 'ui_testing', 'screenshot_analysis']
+        capabilities: ['e2e_testing', 'visual_validation', 'user_workflow_testing', 'performance_testing', 'ai_workflow_testing']
       }
     ];
 
@@ -219,18 +219,21 @@ export class MCPIntegrationService {
 
   async getPersonaRecommendedServers(personaId: string): Promise<string[]> {
     const serverRecommendations: Record<string, string[]> = {
-      'frontend': ['magic', 'puppeteer', 'context7'],
-      'backend': ['sequential', 'context7', 'magic'],
-      'security': ['context7', 'sequential'],
-      'performance': ['sequential', 'context7', 'magic'],
-      'testing': ['puppeteer', 'sequential', 'context7'],
-      'architect': ['context7', 'sequential', 'magic'],
-      'analyzer': ['context7', 'sequential'],
-      'optimizer': ['sequential', 'magic', 'context7'],
-      'debugger': ['context7', 'sequential', 'puppeteer']
+      'frontend': ['firecrawl', 'browser-use', 'filesystem'],
+      'backend': ['filesystem', 'git', 'firecrawl'],
+      'security': ['filesystem', 'git'],
+      'performance': ['browser-use', 'filesystem', 'git'],
+      'testing': ['browser-use', 'filesystem', 'git'],
+      'architect': ['firecrawl', 'filesystem', 'git'],
+      'analyzer': ['filesystem', 'git', 'firecrawl'],
+      'optimizer': ['filesystem', 'git', 'browser-use'],
+      'debugger': ['filesystem', 'git', 'browser-use'],
+      'qa': ['browser-use', 'filesystem'],
+      'refactorer': ['filesystem', 'git'],
+      'mentor': ['firecrawl', 'filesystem']
     };
 
-    return serverRecommendations[personaId] || ['context7', 'sequential'];
+    return serverRecommendations[personaId] || ['filesystem', 'git'];
   }
 
   getServerStatus(): MCPServer[] {
@@ -279,25 +282,25 @@ export class MCPIntegrationService {
     await new Promise(resolve => setTimeout(resolve, server.responseTime));
 
     const responses: Record<string, any> = {
-      'context7': {
-        analysis: 'Context analysis completed with deep understanding of code patterns',
+      'filesystem': {
+        analysis: 'Filesystem analysis completed - multi-file operations and project structure evaluated',
+        confidence: 88,
+        recommendations: ['Optimize file organization', 'Consider batch operations for efficiency', 'Review project structure patterns']
+      },
+      'git': {
+        analysis: 'Git repository analysis completed - version control patterns and collaboration workflows assessed',
         confidence: 85,
-        recommendations: ['Consider refactoring for better maintainability', 'Add type annotations']
+        recommendations: ['Improve commit message patterns', 'Consider branch strategy optimization', 'Review merge conflict resolution']
       },
-      'sequential': {
-        analysis: 'Sequential processing identified optimal execution flow',
-        confidence: 78,
-        recommendations: ['Optimize async operations', 'Reduce dependency chain complexity']
-      },
-      'magic': {
-        analysis: 'Magic enhancement suggests intelligent code improvements',
+      'firecrawl': {
+        analysis: 'Web research completed - latest documentation and best practices gathered',
         confidence: 82,
-        recommendations: ['Auto-generate missing tests', 'Implement smart error handling']
+        recommendations: ['Apply latest framework patterns', 'Consider updated security practices', 'Implement current performance optimizations']
       },
-      'puppeteer': {
-        analysis: 'Browser automation analysis completed successfully',
-        confidence: 75,
-        recommendations: ['Add UI interaction tests', 'Implement visual regression testing']
+      'browser-use': {
+        analysis: 'Browser automation analysis completed - E2E testing and user workflows validated',
+        confidence: 79,
+        recommendations: ['Enhance visual regression testing', 'Improve user workflow coverage', 'Add performance monitoring']
       }
     };
 
