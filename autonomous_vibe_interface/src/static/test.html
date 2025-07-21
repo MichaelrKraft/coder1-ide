@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test IDE Page</title>
+    <style>
+        body {
+            background: #1a1b26;
+            color: #c0caf5;
+            font-family: Inter, sans-serif;
+            margin: 0;
+            padding: 20px;
+        }
+        .test-container {
+            max-width: 800px;
+            margin: 0 auto;
+            text-align: center;
+        }
+        .test-status {
+            background: #2a2b36;
+            border: 1px solid #3a3b46;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .success {
+            border-color: #22c55e;
+            background: rgba(34, 197, 94, 0.1);
+        }
+        .error {
+            border-color: #ef4444;
+            background: rgba(239, 68, 68, 0.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🧪 Coder1 IDE Test Page</h1>
+        
+        <div class="test-status success">
+            <h2>✅ HTML Loading Successfully</h2>
+            <p>This page confirms that the IDE route is working and HTML can be served.</p>
+        </div>
+        
+        <div class="test-status" id="jsTest">
+            <h2>⚠️ Testing JavaScript...</h2>
+            <p>JavaScript test will update this section.</p>
+        </div>
+        
+        <div class="test-status" id="cssTest">
+            <h2>⚠️ Testing CSS...</h2>
+            <p>CSS test will update this section.</p>
+        </div>
+        
+        <div class="test-status">
+            <h2>🔗 Asset URLs</h2>
+            <p><strong>JS:</strong> <code>/ide/static/js/main.d626f6eb.js</code></p>
+            <p><strong>CSS:</strong> <code>/ide/static/css/main.57baf0f8.css</code></p>
+        </div>
+        
+        <div class="test-status">
+            <h2>🚀 Next Steps</h2>
+            <p>If this page loads correctly, we can debug the React app loading issue.</p>
+        </div>
+    </div>
+    
+    <script>
+        // Test JavaScript loading
+        document.getElementById('jsTest').innerHTML = `
+            <h2>✅ JavaScript Loading Successfully</h2>
+            <p>JavaScript is working correctly. Time: ${new Date().toLocaleTimeString()}</p>
+        `;
+        document.getElementById('jsTest').className = 'test-status success';
+        
+        // Test CSS loading by checking computed styles
+        const testElement = document.body;
+        const bgColor = window.getComputedStyle(testElement).backgroundColor;
+        const isCorrectBg = bgColor === 'rgb(26, 27, 38)'; // #1a1b26
+        
+        document.getElementById('cssTest').innerHTML = `
+            <h2>${isCorrectBg ? '✅' : '❌'} CSS Loading ${isCorrectBg ? 'Successfully' : 'Failed'}</h2>
+            <p>Background color: ${bgColor} ${isCorrectBg ? '(Correct!)' : '(Should be rgb(26, 27, 38))'}</p>
+        `;
+        document.getElementById('cssTest').className = `test-status ${isCorrectBg ? 'success' : 'error'}`;
+        
+        console.log('🧪 Test page loaded successfully');
+        console.log('Background color:', bgColor);
+    </script>
+</body>
+</html>

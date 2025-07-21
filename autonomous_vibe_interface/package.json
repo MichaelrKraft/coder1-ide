@@ -1,0 +1,56 @@
+{
+  "name": "autonomous-vibe-coding-agent",
+  "version": "1.0.0",
+  "description": "An autonomous vibe coding agent that transforms natural language into code using AI",
+  "main": "src/app.js",
+  "scripts": {
+    "start": "node src/app.js",
+    "dev": "nodemon src/app.js",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "test:claude-cli": "node test-claude-cli.js",
+    "install:claude-cli": "npm install -g claude-code",
+    "rules:setup": "node setup-github-rules.js",
+    "rules:refresh": "curl -X POST http://localhost:3000/api/agent/rules/refresh",
+    "rules:status": "curl -s http://localhost:3000/api/agent/rules/status | jq",
+    "rules:validate": "node -e \"const config = require('./src/config/rules-config'); console.log('Validation:', config.validateConfig());\""
+  },
+  "keywords": [
+    "ai",
+    "coding",
+    "autonomous",
+    "agent",
+    "express",
+    "nodejs"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "dependencies": {
+    "@21st-dev/cli": "^0.0.29",
+    "@21st-dev/magic": "^0.1.0",
+    "@airtop/sdk": "^0.1.44",
+    "@xterm/addon-fit": "^0.10.0",
+    "@xterm/xterm": "^5.5.0",
+    "archiver": "^5.3.1",
+    "axios": "^1.10.0",
+    "cheerio": "^1.0.0-rc.12",
+    "cors": "^2.8.5",
+    "dotenv": "^17.0.1",
+    "express": "^4.18.2",
+    "form-data": "^4.0.4",
+    "multer": "^1.4.5-lts.1",
+    "node-fetch": "^2.6.7",
+    "node-pty": "^1.0.0",
+    "openai": "^5.10.1",
+    "sharp": "^0.33.0",
+    "socket.io": "^4.8.1",
+    "uuid": "^11.1.0",
+    "wired-elements": "^2.1.0",
+    "ws": "^8.18.3"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}

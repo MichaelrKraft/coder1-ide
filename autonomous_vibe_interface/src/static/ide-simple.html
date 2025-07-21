@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Coder1 IDE</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="voice-styles.css">
+    <style>
+        :root {
+            --bg-primary: #1a1b26;
+            --bg-secondary: #24283b;
+            --bg-tertiary: #414868;
+            --text-primary: #c0caf5;
+            --text-secondary: #9aa5ce;
+            --accent-blue: #7aa2f7;
+            --accent-purple: #bb9af7;
+            --accent-green: #9ece6a;
+            --border-color: #414868;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .ide-container {
+            display: flex;
+            height: 100vh;
+            flex-direction: column;
+        }
+
+        .ide-header {
+            background: var(--bg-secondary);
+            padding: 12px 20px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .ide-brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .ide-brand i {
+            color: var(--accent-blue);
+        }
+
+        .ide-main {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .sidebar {
+            width: 240px;
+            background: var(--bg-secondary);
+            border-right: 1px solid var(--border-color);
+            padding: 20px;
+        }
+
+        .sidebar h3 {
+            font-size: 12px;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
+            font-weight: 500;
+        }
+
+        .file-tree {
+            list-style: none;
+        }
+
+        .file-tree li {
+            padding: 6px 0;
+            cursor: pointer;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+        }
+
+        .file-tree li:hover {
+            color: var(--text-primary);
+        }
+
+        .file-tree li i {
+            font-size: 12px;
+        }
+
+        .editor-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .editor-tabs {
+            background: var(--bg-secondary);
+            display: flex;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .editor-tab {
+            padding: 10px 20px;
+            background: var(--bg-tertiary);
+            border-right: 1px solid var(--border-color);
+            cursor: pointer;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .editor-tab.active {
+            background: var(--bg-primary);
+            color: var(--text-primary);
+        }
+
+        .editor-content {
+            flex: 1;
+            padding: 20px;
+            background: var(--bg-primary);
+            overflow-y: auto;
+        }
+
+        .terminal-section {
+            height: 200px;
+            background: #000;
+            border-top: 1px solid var(--border-color);
+            padding: 10px;
+            font-family: 'Courier New', monospace;
+            color: #0f0;
+            overflow-y: auto;
+        }
+
+        .terminal-line {
+            margin-bottom: 4px;
+        }
+
+        .status-bar {
+            background: var(--bg-secondary);
+            padding: 6px 20px;
+            border-top: 1px solid var(--border-color);
+            font-size: 12px;
+            display: flex;
+            justify-content: space-between;
+            color: var(--text-secondary);
+        }
+
+        .back-button {
+            padding: 6px 12px;
+            background: var(--accent-blue);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .back-button:hover {
+            background: var(--accent-purple);
+        }
+    </style>
+</head>
+<body class="dark-theme">
+    <div class="ide-container">
+        <div class="ide-header">
+            <div class="ide-brand">
+                <i class="fas fa-code"></i>
+                <span>Coder1 IDE</span>
+            </div>
+            <button class="back-button" onclick="window.location.href='/'">
+                <i class="fas fa-arrow-left"></i>
+                Back to Home
+            </button>
+        </div>
+        
+        <div class="ide-main">
+            <div class="sidebar">
+                <h3>Explorer</h3>
+                <ul class="file-tree">
+                    <li><i class="fas fa-folder"></i> src</li>
+                    <li style="padding-left: 20px;"><i class="fas fa-file-code"></i> app.js</li>
+                    <li style="padding-left: 20px;"><i class="fas fa-file-code"></i> index.html</li>
+                    <li style="padding-left: 20px;"><i class="fas fa-file-code"></i> styles.css</li>
+                    <li><i class="fas fa-folder"></i> components</li>
+                    <li><i class="fas fa-file"></i> package.json</li>
+                    <li><i class="fas fa-file"></i> README.md</li>
+                </ul>
+            </div>
+            
+            <div class="editor-area">
+                <div class="editor-tabs">
+                    <div class="editor-tab active">
+                        <i class="fas fa-file-code"></i>
+                        app.js
+                    </div>
+                </div>
+                
+                <div class="editor-content">
+                    <pre style="color: #c0caf5; font-family: 'Courier New', monospace; line-height: 1.5;">
+<span style="color: #bb9af7;">const</span> express = <span style="color: #9ece6a;">require</span>(<span style="color: #9ece6a;">'express'</span>);
+<span style="color: #bb9af7;">const</span> cors = <span style="color: #9ece6a;">require</span>(<span style="color: #9ece6a;">'cors'</span>);
+<span style="color: #bb9af7;">const</span> path = <span style="color: #9ece6a;">require</span>(<span style="color: #9ece6a;">'path'</span>);
+<span style="color: #9ece6a;">require</span>(<span style="color: #9ece6a;">'dotenv'</span>).<span style="color: #7aa2f7;">config</span>();
+
+<span style="color: #bb9af7;">const</span> app = <span style="color: #7aa2f7;">express</span>();
+<span style="color: #bb9af7;">const</span> PORT = process.env.PORT || <span style="color: #ff9e64;">3000</span>;
+
+<span style="color: #565f89;">// Middleware</span>
+app.<span style="color: #7aa2f7;">use</span>(<span style="color: #7aa2f7;">cors</span>());
+app.<span style="color: #7aa2f7;">use</span>(express.<span style="color: #7aa2f7;">json</span>());
+app.<span style="color: #7aa2f7;">use</span>(express.<span style="color: #7aa2f7;">static</span>(path.<span style="color: #7aa2f7;">join</span>(__dirname, <span style="color: #9ece6a;">'static'</span>)));
+
+<span style="color: #565f89;">// Start server</span>
+app.<span style="color: #7aa2f7;">listen</span>(PORT, () => {
+    console.<span style="color: #7aa2f7;">log</span>(<span style="color: #9ece6a;">`🚀 Server running on http://localhost:${PORT}`</span>);
+});
+                    </pre>
+                </div>
+                
+                <div class="terminal-section">
+                    <div class="terminal-line">$ npm run dev</div>
+                    <div class="terminal-line">[nodemon] starting `node src/app.js`</div>
+                    <div class="terminal-line">🚀 Autonomous Vibe Interface running on http://localhost:3000</div>
+                    <div class="terminal-line">📊 Health check: http://localhost:3000/health</div>
+                    <div class="terminal-line">$ <span style="animation: blink 1s infinite;">_</span></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="status-bar">
+            <div>Coder1 IDE v1.0.0</div>
+            <div>Ready</div>
+        </div>
+    </div>
+    
+    <style>
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0; }
+        }
+    </style>
+    
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="voice-notifications.js"></script>
+    <script src="voice-interface.js"></script>
+</body>
+</html>

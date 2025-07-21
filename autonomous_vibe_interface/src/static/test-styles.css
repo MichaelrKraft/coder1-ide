@@ -1,0 +1,19 @@
+/* Simple test CSS to verify loading */
+body {
+    background-color: #ff0000 !important;
+    color: #ffffff !important;
+    font-family: Arial, sans-serif !important;
+    font-size: 18px !important;
+}
+
+h1 {
+    color: #00ff00 !important;
+    text-align: center !important;
+}
+
+.test-working {
+    background: blue !important;
+    padding: 20px !important;
+    margin: 20px !important;
+    border: 3px solid yellow !important;
+}

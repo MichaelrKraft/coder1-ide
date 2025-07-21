@@ -1,0 +1,17 @@
+
+> autonomous-vibe-coding-agent@1.0.0 start
+> node src/app.js
+
+[dotenv@17.2.0] injecting env (0) from .env (tip: ⚙️  write to custom object with { processEnv: myObject })
+🚀 Autonomous Vibe Interface running on http://localhost:3000
+📊 Health check: http://localhost:3000/health
+🎤 Voice API: http://localhost:3000/api/voice/*
+🔊 Socket.IO: Voice real-time communication enabled
+TTS Error: 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, read the docs: https://platform.openai.com/docs/guides/error-codes/api-errors.
+Voice client connected: 9VyDNYB4kD95k6_nAAAB
+TTS Error: 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, read the docs: https://platform.openai.com/docs/guides/error-codes/api-errors.
+Voice client disconnected: 9VyDNYB4kD95k6_nAAAB
+Voice client connected: cq46o_2aESUsO3XlAAAD
+Voice client disconnected: cq46o_2aESUsO3XlAAAD
+Voice client connected: fFjLZlHiwucn71grAAAF
+Voice client disconnected: fFjLZlHiwucn71grAAAF

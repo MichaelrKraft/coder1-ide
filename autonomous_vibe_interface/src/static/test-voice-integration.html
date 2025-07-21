@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voice Integration Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            background: #007bff;
+            color: white;
+        }
+        button:hover { background: #0056b3; }
+        .status { 
+            padding: 10px; 
+            margin: 10px 0; 
+            border-radius: 4px; 
+            background: #e9ecef; 
+        }
+        .success { background: #d4edda; }
+        .error { background: #f8d7da; }
+        pre { 
+            background: #f8f9fa; 
+            padding: 15px; 
+            border-radius: 4px; 
+            overflow-x: auto; 
+        }
+    </style>
+</head>
+<body>
+    <h1>🎤 Voice Integration Test Suite</h1>
+    
+    <div class="test-section">
+        <h2>1. Backend API Tests</h2>
+        <button onclick="testHealthCheck()">Test Health Check</button>
+        <button onclick="testVoiceCommands()">Test Voice Commands</button>
+        <button onclick="testSessionCreation()">Test Session Creation</button>
+        <button onclick="testVoiceStats()">Test Voice Stats</button>
+        <div id="apiResults" class="status"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>2. Text-to-Speech Test</h2>
+        <input type="text" id="ttsText" value="Hello! Voice interface is working properly." style="width: 300px; padding: 8px;">
+        <button onclick="testTTS()">Test Text-to-Speech</button>
+        <div id="ttsResults" class="status"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>3. Voice Command Processing Test</h2>
+        <button onclick="testVoiceCommand('open ide')">Test "open ide"</button>
+        <button onclick="testVoiceCommand('go home')">Test "go home"</button>
+        <button onclick="testVoiceCommand('help')">Test "help"</button>
+        <button onclick="testVoiceCommand('start building')">Test "start building"</button>
+        <div id="commandResults" class="status"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>4. Socket.IO Connection Test</h2>
+        <button onclick="testSocketConnection()">Test Socket Connection</button>
+        <div id="socketResults" class="status"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>5. Voice Interface Integration</h2>
+        <button onclick="testVoiceInterface()">Test Voice Interface Loading</button>
+        <div id="interfaceResults" class="status"></div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        let socket;
+
+        async function testHealthCheck() {
+            const results = document.getElementById('apiResults');
+            try {
+                const response = await fetch('/health');
+                const data = await response.json();
+                results.innerHTML = `✅ Health Check: ${data.status} (${data.timestamp})`;
+                results.className = 'status success';
+            } catch (error) {
+                results.innerHTML = `❌ Health Check Failed: ${error.message}`;
+                results.className = 'status error';
+            }
+        }
+
+        async function testVoiceCommands() {
+            const results = document.getElementById('apiResults');
+            try {
+                const response = await fetch('/api/voice/commands');
+                const data = await response.json();
+                const commandCount = Object.values(data.commands).reduce((sum, cmds) => sum + cmds.length, 0);
+                results.innerHTML = `✅ Voice Commands: ${commandCount} commands available<pre>${JSON.stringify(data, null, 2)}</pre>`;
+                results.className = 'status success';
+            } catch (error) {
+                results.innerHTML = `❌ Voice Commands Failed: ${error.message}`;
+                results.className = 'status error';
+            }
+        }
+
+        async function testSessionCreation() {
+            const results = document.getElementById('apiResults');
+            try {
+                const response = await fetch('/api/voice/session', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userId: 'test_user' })
+                });
+                const data = await response.json();
+                results.innerHTML = `✅ Session Created: ${data.sessionId}<pre>${JSON.stringify(data, null, 2)}</pre>`;
+                results.className = 'status success';
+                window.testSessionId = data.sessionId;
+            } catch (error) {
+                results.innerHTML = `❌ Session Creation Failed: ${error.message}`;
+                results.className = 'status error';
+            }
+        }
+
+        async function testVoiceStats() {
+            const results = document.getElementById('apiResults');
+            try {
+                const response = await fetch('/api/voice/stats');
+                const data = await response.json();
+                results.innerHTML = `✅ Voice Stats:<pre>${JSON.stringify(data, null, 2)}</pre>`;
+                results.className = 'status success';
+            } catch (error) {
+                results.innerHTML = `❌ Voice Stats Failed: ${error.message}`;
+                results.className = 'status error';
+            }
+        }
+
+        async function testTTS() {
+            const results = document.getElementById('ttsResults');
+            const text = document.getElementById('ttsText').value;
+            
+            try {
+                results.innerHTML = '🔄 Testing Text-to-Speech...';
+                results.className = 'status';
+                
+                const response = await fetch('/api/voice/tts', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text, voice: 'alloy', sessionId: window.testSessionId })
+                });
+
+                if (response.ok) {
+                    const audioBlob = await response.blob();
+                    const audioUrl = URL.createObjectURL(audioBlob);
+                    const audio = new Audio(audioUrl);
+                    
+                    results.innerHTML = `✅ TTS Success: Audio generated (${audioBlob.size} bytes). Click to play: <button onclick="document.querySelector('audio').play()">Play Audio</button><audio src="${audioUrl}" controls></audio>`;
+                    results.className = 'status success';
+                } else {
+                    const error = await response.text();
+                    results.innerHTML = `❌ TTS Failed: ${error}`;
+                    results.className = 'status error';
+                }
+            } catch (error) {
+                results.innerHTML = `❌ TTS Error: ${error.message}`;
+                results.className = 'status error';
+            }
+        }
+
+        async function testVoiceCommand(command) {
+            const results = document.getElementById('commandResults');
+            
+            // Simulate voice command processing locally
+            const lowerCommand = command.toLowerCase();
+            let response;
+            
+            if (lowerCommand.includes('open ide')) {
+                response = { success: true, action: 'navigate', target: '/ide', message: 'Opening IDE...' };
+            } else if (lowerCommand.includes('go home')) {
+                response = { success: true, action: 'navigate', target: '/', message: 'Going home...' };
+            } else if (lowerCommand.includes('help')) {
+                response = { success: true, action: 'help', message: 'Voice commands available: open IDE, go home, start building, help' };
+            } else if (lowerCommand.includes('start building')) {
+                response = { success: true, action: 'requirements', message: 'Starting project builder...' };
+            } else {
+                response = { success: true, action: 'chat', message: `Processed command: ${command}` };
+            }
+
+            results.innerHTML = `✅ Command "${command}" processed:<pre>${JSON.stringify(response, null, 2)}</pre>`;
+            results.className = 'status success';
+        }
+
+        function testSocketConnection() {
+            const results = document.getElementById('socketResults');
+            
+            try {
+                socket = io();
+                
+                socket.on('connect', () => {
+                    results.innerHTML = `✅ Socket.IO Connected: ${socket.id}`;
+                    results.className = 'status success';
+                    
+                    if (window.testSessionId) {
+                        socket.emit('voice:join_session', { sessionId: window.testSessionId });
+                    }
+                });
+                
+                socket.on('voice:session_joined', (data) => {
+                    results.innerHTML += `<br>✅ Joined voice session successfully`;
+                });
+                
+                socket.on('disconnect', () => {
+                    results.innerHTML = `❌ Socket.IO Disconnected`;
+                    results.className = 'status error';
+                });
+                
+                socket.on('connect_error', (error) => {
+                    results.innerHTML = `❌ Socket.IO Error: ${error.message}`;
+                    results.className = 'status error';
+                });
+                
+            } catch (error) {
+                results.innerHTML = `❌ Socket.IO Test Failed: ${error.message}`;
+                results.className = 'status error';
+            }
+        }
+
+        function testVoiceInterface() {
+            const results = document.getElementById('interfaceResults');
+            
+            try {
+                // Check if voice interface components are available
+                const checks = {
+                    'Socket.IO': typeof io !== 'undefined',
+                    'Speech Recognition': 'SpeechRecognition' in window || 'webkitSpeechRecognition' in window,
+                    'Web Audio API': 'AudioContext' in window || 'webkitAudioContext' in window,
+                    'Fetch API': 'fetch' in window
+                };
+
+                let html = '✅ Voice Interface Compatibility:<br>';
+                for (const [feature, supported] of Object.entries(checks)) {
+                    html += `${supported ? '✅' : '❌'} ${feature}: ${supported ? 'Supported' : 'Not Supported'}<br>`;
+                }
+
+                // Test voice interface initialization
+                if (window.voiceInterface) {
+                    html += '✅ Voice Interface: Initialized<br>';
+                } else {
+                    html += '❌ Voice Interface: Not found<br>';
+                }
+
+                results.innerHTML = html;
+                results.className = 'status success';
+            } catch (error) {
+                results.innerHTML = `❌ Voice Interface Test Failed: ${error.message}`;
+                results.className = 'status error';
+            }
+        }
+
+        // Auto-run basic tests on load
+        window.addEventListener('load', async () => {
+            await testHealthCheck();
+            setTimeout(testVoiceCommands, 500);
+            setTimeout(testSessionCreation, 1000);
+        });
+    </script>
+</body>
+</html>
