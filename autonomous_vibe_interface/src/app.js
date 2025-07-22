@@ -26,9 +26,8 @@ app.use(express.urlencoded({ extended: true }));
 // Apply general rate limiting to all routes
 app.use(rateLimit);
 
-// Serve static files from CANONICAL directory
-app.use(express.static(path.join(__dirname, '../CANONICAL')));
-app.use(express.static(path.join(__dirname, '../CANONICAL/ide-build')));
+// Serve static files from public directory
+app.use(express.static(path.join(__dirname, '../public')));
 
 // Health check endpoint
 app.get('/health', (req, res) => {
@@ -91,24 +90,28 @@ app.use((err, req, res, next) => {
     });
 });
 
-// Default route - serve homepage
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, '../CANONICAL/homepage.html'));
-});
+// Default route is handled by static files in public directory
+// app.get('/', ...) removed - will serve public/index.html automatically
 
 // IDE route
 app.get('/ide', (req, res) => {
-    res.sendFile(path.join(__dirname, '../CANONICAL/ide-react.html'));
+    res.sendFile(path.join(__dirname, '../public/ide.html'));
 });
 
 // Start server
-const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
-    console.log(`🚀 Autonomous Vibe Interface running on http://localhost:${PORT}`);
-    console.log(`📊 Health check: http://localhost:${PORT}/health`);
-    console.log(`🎤 Voice API: http://localhost:${PORT}/api/voice/*`);
+const PORT = process.env.PORT || 10000; // Render uses port 10000
+const HOST = '0.0.0.0'; // Important for Render
+
+server.listen(PORT, HOST, () => {
+    console.log(`🚀 Autonomous Vibe Interface running on port ${PORT}`);
+    console.log(`📊 Health check: /health`);
+    console.log(`🎤 Voice API: /api/voice/*`);
     console.log(`🔊 Socket.IO: Voice real-time communication enabled`);
     console.log(`🛡️ Rate limiting enabled to prevent excessive API calls`);
+    
+    if (process.env.RENDER) {
+        console.log(`🌐 Running on Render at https://${process.env.RENDER_EXTERNAL_HOSTNAME}`);
+    }
 });
 
 // Graceful shutdown
