@@ -8,18 +8,17 @@
  */
 
 const { logger } = require('../monitoring/comprehensive-logger');
-const { ClaudeCodeSDK } = require('../integrations/claude-code-sdk');
+// const { ClaudeCodeSDK } = require('../integrations/claude-code-sdk'); // Disabled for now
 
 class IntelligentQuestioner {
     constructor(claudeCodeApiKey, options = {}) {
         this.claudeCodeApiKey = claudeCodeApiKey;
         this.logger = options.logger || logger;
         
-        // Initialize Claude Code SDK if key is provided
+        // Initialize Claude SDK if key is provided (disabled for now)
         if (claudeCodeApiKey && claudeCodeApiKey !== 'demo_key_for_testing') {
-            this.claudeSDK = new ClaudeCodeSDK({
-                logger: this.logger
-            });
+            // this.claudeSDK = new ClaudeCodeSDK({ logger: this.logger });
+            this.claudeSDK = null; // Disabled for now
             this.claudeAPIKey = claudeCodeApiKey;
         } else {
             this.logger.info('Running in demo mode - using template-based questions');
