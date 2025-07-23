@@ -43,6 +43,8 @@ app.use('/api/anthropic', anthropicRateLimit, require('./routes/anthropic'));
 app.use('/api/openai', openaiRateLimit, require('./routes/openai'));
 app.use('/api/agent', require('./routes/agent-simple'));
 app.use('/api/voice', require('./routes/voice'));
+app.use('/api/infinite', require('./routes/infinite'));
+app.use('/api/hivemind', require('./routes/hivemind'));
 
 // Socket.IO connection handling with cleanup
 const connectedClients = new Map();
