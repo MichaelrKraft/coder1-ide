@@ -4,6 +4,14 @@
     {
       "src": "src/app.js",
       "use": "@vercel/node"
+    },
+    {
+      "src": "coder1-ide/ide-build/**",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "public/**",
+      "use": "@vercel/static"
     }
   ],
   "routes": [
@@ -16,15 +24,24 @@
       "dest": "/src/app.js"
     },
     {
+      "src": "/ide/static/(.*)",
+      "dest": "/coder1-ide/ide-build/static/$1"
+    },
+    {
+      "src": "/ide/(.*\\.js|.*\\.css|.*\\.png|.*\\.jpg|.*\\.ico|.*\\.json)",
+      "dest": "/coder1-ide/ide-build/$1"
+    },
+    {
       "src": "/ide",
-      "dest": "/src/app.js"
+      "dest": "/coder1-ide/ide-build/index.html"
     },
     {
       "src": "/(.*)",
-      "dest": "/src/app.js"
+      "dest": "/public/$1"
     }
   ],
   "env": {
-    "NODE_ENV": "production"
+    "NODE_ENV": "production",
+    "VERCEL": "1"
   }
 }
