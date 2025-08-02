@@ -108,14 +108,13 @@ app.use((err, req, res, next) => {
 // app.get('/', ...) removed - will serve public/index.html automatically
 
 // IDE route - serve from coder1-ide directory
-if (process.env.VERCEL) {
-    // On Vercel, redirect to the static files
-    app.get('/ide', (req, res) => {
-        res.redirect('/ide/index.html');
-    });
-} else {
-    // Local development - serve with path rewriting
-    app.get('/ide', (req, res) => {
+app.get(['/ide', '/ide/'], (req, res) => {
+    if (process.env.VERCEL) {
+        // On Vercel, serve the rewritten HTML directly
+        const htmlContent = `<!doctype html><html lang="en"><head><meta charset="utf-8"/><link rel="icon" href="/ide/favicon.ico"/><meta name="viewport" content="width=device-width,initial-scale=1"/><meta name="theme-color" content="#000000"/><meta name="description" content="Web site created using create-react-app"/><link rel="apple-touch-icon" href="/ide/logo192.png"/><link rel="manifest" href="/ide/manifest.json"/><title>React App</title><script defer="defer" src="/ide/static/js/main.0c23d652.js"></script><link href="/ide/static/css/main.39b2d4d2.css" rel="stylesheet"></head><body><noscript>You need to enable JavaScript to run this app.</noscript><div id="root"></div></body></html>`;
+        res.send(htmlContent);
+    } else {
+        // Local development - serve with path rewriting
         const fs = require('fs');
         const indexPath = path.join(__dirname, '../coder1-ide/ide-build/index.html');
         let html = fs.readFileSync(indexPath, 'utf8');
@@ -125,8 +124,8 @@ if (process.env.VERCEL) {
         html = html.replace(/src="\//g, 'src="/ide/');
         
         res.send(html);
-    });
-}
+    }
+});
 
 // Serve IDE static files from the ide-build directory
 app.use('/ide', express.static(path.join(__dirname, '../coder1-ide/ide-build')));
