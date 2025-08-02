@@ -110,8 +110,8 @@ app.use((err, req, res, next) => {
 // IDE route - serve from coder1-ide directory
 app.get(['/ide', '/ide/'], (req, res) => {
     if (process.env.VERCEL) {
-        // On Vercel, serve the rewritten HTML directly
-        const htmlContent = `<!doctype html><html lang="en"><head><meta charset="utf-8"/><link rel="icon" href="/ide/favicon.ico"/><meta name="viewport" content="width=device-width,initial-scale=1"/><meta name="theme-color" content="#000000"/><meta name="description" content="Web site created using create-react-app"/><link rel="apple-touch-icon" href="/ide/logo192.png"/><link rel="manifest" href="/ide/manifest.json"/><title>React App</title><script defer="defer" src="/ide/static/js/main.0c23d652.js"></script><link href="/ide/static/css/main.39b2d4d2.css" rel="stylesheet"></head><body><noscript>You need to enable JavaScript to run this app.</noscript><div id="root"></div></body></html>`;
+        // On Vercel, serve the rewritten HTML directly with correct file names
+        const htmlContent = `<!doctype html><html lang="en"><head><meta charset="utf-8"/><link rel="icon" href="/ide/favicon.ico"/><meta name="viewport" content="width=device-width,initial-scale=1"/><meta name="theme-color" content="#000000"/><meta name="description" content="Web site created using create-react-app"/><link rel="apple-touch-icon" href="/ide/logo192.png"/><link rel="manifest" href="/ide/manifest.json"/><title>React App</title><script defer="defer" src="/ide/static/js/main.5c79c68d.js"></script><link href="/ide/static/css/main.39b2d4d2.css" rel="stylesheet"></head><body><noscript>You need to enable JavaScript to run this app.</noscript><div id="root"></div></body></html>`;
         res.send(htmlContent);
     } else {
         // Local development - serve with path rewriting
