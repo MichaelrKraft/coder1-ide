@@ -28,3 +28,24 @@ Thumbs.db
 # Temporary files
 *.tmp
 *.temp
+
+# Server logs
+server.log
+
+# Test files
+test-*.js
+test-*.html
+test-pty/
+
+# Terminal test files
+terminal-client.html
+terminal-server.js
+terminal-server-debug.js
+
+# Script files
+*.sh
+
+# Development files
+simple-terminal-test.html
+simple-test-server.js
+standalone-ide.html
