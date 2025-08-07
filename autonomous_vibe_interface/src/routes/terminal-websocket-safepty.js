@@ -53,7 +53,8 @@ class SafePTYManager {
                 throw new Error('node-pty not available - terminal features disabled');
             }
             
-            const sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+            // Use provided ID if available, otherwise generate one
+            const sessionId = options.id || `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
             const shell = process.platform === 'win32' ? 'powershell.exe' : 'bash';
             const cwd = options.cwd || process.env.HOME;
             
@@ -167,8 +168,21 @@ const safeptyManager = new SafePTYManager();
 function setupTerminalWebSocket(io) {
     console.log('[SafePTYManager] Setting up Socket.IO terminal integration...');
     
+    // Import Claude button routes for WebSocket integration
+    const claudeButtonRoutes = require('./claude-buttons');
+    
+    // Track connected clients for both voice and terminal
+    const connectedClients = new Map();
+    
     io.on('connection', (socket) => {
         console.log(`[SafePTYManager] Client connected: ${socket.id}`);
+        
+        // Track client connection (for both voice and terminal)
+        connectedClients.set(socket.id, { 
+            connectedAt: Date.now(),
+            sessionId: null,
+            type: 'mixed' // Can handle both voice and terminal
+        });
         
         // Handle terminal creation requests
         socket.on('terminal:create', (options = {}) => {
@@ -254,14 +268,70 @@ function setupTerminalWebSocket(io) {
             }
         });
         
+        // Register Claude button WebSocket handlers
+        socket.on('claude:button', ({ action, prompt, sessionId }) => {
+            console.log(`[SafePTYManager] Claude button action: ${action}`);
+            
+            // Store socket reference for later registration
+            socket.claudeSessionId = sessionId;
+            socket.claudeSocket = socket;
+            
+            // Emit appropriate action based on button
+            switch (action) {
+                case 'supervision':
+                case 'parallel':
+                case 'infinite':
+                case 'hivemind':
+                    // These are handled via REST API calls from frontend
+                    socket.emit('claude:ready', { action, sessionId });
+                    break;
+                default:
+                    socket.emit('claude:error', { message: `Unknown action: ${action}` });
+            }
+        });
+        
+        // Register for Claude session output
+        socket.on('claude:register', ({ sessionId }) => {
+            console.log(`[SafePTYManager] Registering socket for Claude session: ${sessionId}`);
+            if (claudeButtonRoutes.registerWebSocket) {
+                claudeButtonRoutes.registerWebSocket(sessionId, socket);
+            }
+        });
+        
+        // Handle voice events (moved from app.js)
+        socket.on('voice:join_session', (data) => {
+            if (data.sessionId) {
+                socket.join(`session:${data.sessionId}`);
+                const client = connectedClients.get(socket.id);
+                if (client) {
+                    client.sessionId = data.sessionId;
+                }
+                socket.emit('voice:session_joined', { sessionId: data.sessionId });
+                console.log(`[SafePTYManager] Voice session joined: ${data.sessionId}`);
+            }
+        });
+        
         // Handle client disconnect
         socket.on('disconnect', () => {
             console.log(`[SafePTYManager] Client disconnected: ${socket.id}`);
+            
+            // Remove from connected clients tracking
+            connectedClients.delete(socket.id);
             
             // Clean up sessions for this socket
             for (const [sessionId, session] of safeptyManager.sessions) {
                 if (session.socketId === socket.id) {
                     safeptyManager.destroySession(sessionId);
+                }
+            }
+            
+            // Clean up old clients periodically
+            if (connectedClients.size > 100) {
+                const now = Date.now();
+                for (const [id, client] of connectedClients.entries()) {
+                    if (now - client.connectedAt > 3600000) { // 1 hour
+                        connectedClients.delete(id);
+                    }
                 }
             }
         });

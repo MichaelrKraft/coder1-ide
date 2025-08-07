@@ -7,9 +7,9 @@ const express = require('express');
 const router = express.Router();
 const { IntelligentQuestioner } = require('../../requirements/intelligent-questioner');
 
-// Initialize questioner with API key from environment
+// Initialize questioner with Claude Code API key from environment
 const questioner = new IntelligentQuestioner(
-    process.env.ANTHROPIC_API_KEY || 'demo_key_for_testing'
+    process.env.CLAUDE_CODE_API_KEY || process.env.ANTHROPIC_API_KEY || 'demo_key_for_testing'
 );
 
 // Analyze requirements endpoint

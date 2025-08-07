@@ -1,0 +1,28 @@
+<svg viewBox="0 0 300 80" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#9CA3AF;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#D1D5DB;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#F3F4F6;stop-opacity:1" />
+    </linearGradient>
+    <style>
+      .logo-text {
+        font-family: 'Arial Black', Arial, sans-serif;
+        font-weight: 900;
+        font-size: 36px;
+        fill: url(#logoGradient);
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+      }
+      .logo-bracket {
+        font-family: 'Courier New', monospace;
+        font-weight: bold;
+        font-size: 42px;
+        fill: url(#logoGradient);
+      }
+    </style>
+  </defs>
+  <text x="5" y="50" class="logo-bracket">{</text>
+  <text x="25" y="50" class="logo-text">Coder1</text>
+  <text x="155" y="50" class="logo-bracket">}</text>
+  <text x="180" y="50" class="logo-text" style="font-size: 24px; opacity: 0.8;">IDE</text>
+</svg>

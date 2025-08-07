@@ -1,0 +1,190 @@
+[
+  {
+    "id": "1754411945446-hkix5syms",
+    "agentType": "proactive-intelligence",
+    "insightType": "suggestion",
+    "content": "I noticed some errors in recent development. Would you like me to analyze and suggest fixes?",
+    "confidence": 0.8,
+    "usageCount": 99,
+    "createdAt": 1754411945446,
+    "lastUsed": 1754601111422,
+    "metadata": {
+      "type": "error_analysis",
+      "priority": "high",
+      "action": "run parallel agents to analyze and fix recent errors",
+      "category": "codeQuality"
+    }
+  },
+  {
+    "id": "1754411945446-e4zza6vij",
+    "agentType": "proactive-intelligence",
+    "insightType": "suggestion",
+    "content": "New code has been added without corresponding tests. Shall I create comprehensive test coverage?",
+    "confidence": 0.75,
+    "usageCount": 67,
+    "createdAt": 1754411945446,
+    "lastUsed": 1754599311487,
+    "metadata": {
+      "type": "test_coverage",
+      "priority": "medium",
+      "action": "create tests for recently modified files",
+      "category": "testing"
+    }
+  },
+  {
+    "id": "1754512293905-0qt44f2pq",
+    "agentType": "context-builder",
+    "insightType": "file-change",
+    "content": "File public/ide/static/js/179.05793411.chunk.js.map was modified, suggesting active development in general development",
+    "confidence": 0.7,
+    "usageCount": 9,
+    "createdAt": 1754512293905,
+    "lastUsed": 1754548034440,
+    "metadata": {
+      "path": "public/ide/static/js/179.05793411.chunk.js.map",
+      "eventType": "change"
+    }
+  },
+  {
+    "id": "1754411794275-0k9i06jp4",
+    "agentType": "context-builder",
+    "insightType": "file-change",
+    "content": "File public/ide/static/js/453.28d5ba80.chunk.js was modified, suggesting active development in general development",
+    "confidence": 0.7,
+    "usageCount": 9,
+    "createdAt": 1754411794275,
+    "lastUsed": 1754455215201,
+    "metadata": {
+      "path": "public/ide/static/js/453.28d5ba80.chunk.js",
+      "eventType": "change"
+    }
+  },
+  {
+    "id": "1754547428554-e9vrfesp2",
+    "agentType": "context-builder",
+    "insightType": "file-change",
+    "content": "File public/ide.html was modified, suggesting active development in general development",
+    "confidence": 0.7,
+    "usageCount": 3,
+    "createdAt": 1754547428554,
+    "lastUsed": 1754547610047,
+    "metadata": {
+      "path": "public/ide.html",
+      "eventType": "change"
+    }
+  },
+  {
+    "id": "1754424902548-62q7kl5cv",
+    "agentType": "context-builder",
+    "insightType": "file-change",
+    "content": "File coder1-ide/coder1-ide-source/server.log was modified, suggesting active development in general development",
+    "confidence": 0.7,
+    "usageCount": 3,
+    "createdAt": 1754424902548,
+    "lastUsed": 1754545499236,
+    "metadata": {
+      "path": "coder1-ide/coder1-ide-source/server.log",
+      "eventType": "change"
+    }
+  },
+  {
+    "id": "1754452842188-iv3mcswpt",
+    "agentType": "context-builder",
+    "insightType": "file-change",
+    "content": "File public/ide/static/js/main.3e20aad3.js.map was modified, suggesting active development in general development",
+    "confidence": 0.7,
+    "usageCount": 3,
+    "createdAt": 1754452842188,
+    "lastUsed": 1754454148175,
+    "metadata": {
+      "path": "public/ide/static/js/main.3e20aad3.js.map",
+      "eventType": "change"
+    }
+  },
+  {
+    "id": "1754451195878-sbf2m6zng",
+    "agentType": "context-builder",
+    "insightType": "file-change",
+    "content": "File public/ide/static/js/main.db468f99.js.map was modified, suggesting active development in general development",
+    "confidence": 0.7,
+    "usageCount": 3,
+    "createdAt": 1754451195878,
+    "lastUsed": 1754451669179,
+    "metadata": {
+      "path": "public/ide/static/js/main.db468f99.js.map",
+      "eventType": "change"
+    }
+  },
+  {
+    "id": "1754510815243-w59r356zf",
+    "agentType": "context-builder",
+    "insightType": "file-change",
+    "content": "File coder1-ide/coder1-ide-source/package-lock.json was modified, suggesting active development in configuration",
+    "confidence": 0.7,
+    "usageCount": 2,
+    "createdAt": 1754510815243,
+    "lastUsed": 1754513345627,
+    "metadata": {
+      "path": "coder1-ide/coder1-ide-source/package-lock.json",
+      "eventType": "change"
+    }
+  },
+  {
+    "id": "1754546511304-9n8wp2tgm",
+    "agentType": "context-builder",
+    "insightType": "file-change",
+    "content": "File public/ide/static/js/main.a15d4714.js was modified, suggesting active development in general development",
+    "confidence": 0.7,
+    "usageCount": 1,
+    "createdAt": 1754546511304,
+    "lastUsed": 1754546511304,
+    "metadata": {
+      "path": "public/ide/static/js/main.a15d4714.js",
+      "eventType": "change"
+    }
+  },
+  {
+    "id": "1754511947503-kh9vissr9",
+    "agentType": "context-builder",
+    "insightType": "file-change",
+    "content": "File coder1-ide/coder1-ide-source/ide.log was modified, suggesting active development in general development",
+    "confidence": 0.7,
+    "usageCount": 1,
+    "createdAt": 1754511947503,
+    "lastUsed": 1754511947503,
+    "metadata": {
+      "path": "coder1-ide/coder1-ide-source/ide.log",
+      "eventType": "change"
+    }
+  },
+  {
+    "id": "1754424749641-zkmyqkhzq",
+    "agentType": "context-builder",
+    "insightType": "file-change",
+    "content": "File coder1-ide/coder1-ide-source/public/ide/static/js/453.28d5ba80.chunk.js was modified, suggesting active development in general development",
+    "confidence": 0.7,
+    "usageCount": 1,
+    "createdAt": 1754424749641,
+    "lastUsed": 1754424749641,
+    "metadata": {
+      "path": "coder1-ide/coder1-ide-source/public/ide/static/js/453.28d5ba80.chunk.js",
+      "eventType": "change"
+    }
+  },
+  {
+    "id": "1754411945446-hda22egtf",
+    "agentType": "proactive-intelligence",
+    "insightType": "suggestion",
+    "content": "New features have been added that would benefit from documentation. Shall I create or update docs?",
+    "confidence": 0.6,
+    "usageCount": 56,
+    "createdAt": 1754411945446,
+    "lastUsed": 1754601111422,
+    "metadata": {
+      "type": "documentation",
+      "priority": "low",
+      "action": "create documentation for new features",
+      "category": "documentation"
+    }
+  }
+]

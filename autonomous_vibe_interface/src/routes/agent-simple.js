@@ -6,6 +6,8 @@
  */
 
 const express = require('express');
+const fs = require('fs').promises;
+const path = require('path');
 const router = express.Router();
 
 // Import specialized route modules
@@ -51,6 +53,141 @@ router.post("/chat", async (req, res) => {
         });
     }
 });
+
+// Specialized Agent Execution endpoint
+router.post("/execute", async (req, res) => {
+    try {
+        const { agent, prompt, context } = req.body;
+        
+        if (!agent || typeof agent !== 'string') {
+            return res.status(400).json({
+                success: false,
+                error: 'Agent name is required and must be a string'
+            });
+        }
+        
+        if (!prompt || typeof prompt !== 'string') {
+            return res.status(400).json({
+                success: false,
+                error: 'Prompt is required and must be a string'
+            });
+        }
+        
+        console.log(`🤖 Executing specialized agent: ${agent}`);
+        console.log(`📝 Prompt: "${prompt.substring(0, 100)}..."`);
+        
+        // Load agent configuration
+        const agentConfig = await loadAgentConfig(agent);
+        if (!agentConfig) {
+            return res.status(404).json({
+                success: false,
+                error: `Agent '${agent}' not found. Available agents: product-manager, ux-designer, devops-engineer, architecture, frontend-engineer, backend-engineer, qa-testing, security-analyst`
+            });
+        }
+        
+        // Execute agent with specialized instructions
+        const result = await executeSpecializedAgent(agentConfig, prompt, context);
+        
+        res.json({
+            success: true,
+            agent: agentConfig.name,
+            result,
+            timestamp: new Date().toISOString()
+        });
+        
+    } catch (error) {
+        console.error('❌ Agent execution error:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+// Agent list endpoint
+router.get("/agents", async (req, res) => {
+    try {
+        const agentsDir = path.join(__dirname, '../../.coder1/agents');
+        const agentFiles = await fs.readdir(agentsDir);
+        const agents = [];
+        
+        for (const file of agentFiles) {
+            if (file.endsWith('.json')) {
+                try {
+                    const agentPath = path.join(agentsDir, file);
+                    const agentData = await fs.readFile(agentPath, 'utf8');
+                    const agent = JSON.parse(agentData);
+                    agents.push({
+                        id: file.replace('.json', ''),
+                        name: agent.name,
+                        description: agent.description,
+                        color: agent.color
+                    });
+                } catch (parseError) {
+                    console.warn(`⚠️ Error parsing agent file ${file}:`, parseError.message);
+                }
+            }
+        }
+        
+        res.json({
+            success: true,
+            agents,
+            count: agents.length
+        });
+        
+    } catch (error) {
+        console.error('❌ Error listing agents:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+/**
+ * Load agent configuration from JSON file
+ */
+async function loadAgentConfig(agentName) {
+    try {
+        const agentPath = path.join(__dirname, '../../.coder1/agents', `${agentName}.json`);
+        const agentData = await fs.readFile(agentPath, 'utf8');
+        return JSON.parse(agentData);
+    } catch (error) {
+        console.error(`❌ Error loading agent ${agentName}:`, error.message);
+        return null;
+    }
+}
+
+/**
+ * Execute specialized agent with given prompt and context
+ */
+async function executeSpecializedAgent(agentConfig, prompt, context = {}) {
+    // For now, return a structured response that follows the agent's format
+    // In a full implementation, this would integrate with the AI service
+    
+    const response = {
+        agent: agentConfig.name,
+        role: agentConfig.description,
+        analysis: `As a ${agentConfig.name}, I would analyze this request: "${prompt.substring(0, 100)}..."`,
+        recommendations: [
+            "This is a placeholder response demonstrating the specialized agent framework",
+            "In production, this would use the agent's specific instructions and model",
+            "The response would follow the structured format defined in the agent template"
+        ],
+        nextSteps: [
+            "Implement AI service integration (Claude, OpenAI, etc.)",
+            "Process the agent's specialized instructions",
+            "Return structured output based on agent template"
+        ],
+        metadata: {
+            model: agentConfig.model,
+            tools: agentConfig.tools,
+            processingTime: "0.5s (placeholder)"
+        }
+    };
+    
+    return response;
+}
 
 /**
  * Generate a simple chat response (placeholder)
@@ -102,6 +239,21 @@ router.get('/docs', (req, res) => {
                 path: '/api/agent/chat',
                 description: 'Send a chat message to the AI assistant',
                 body: { message: 'string (required, max 1000 chars)' }
+            },
+            execute: {
+                method: 'POST',
+                path: '/api/agent/execute',
+                description: 'Execute a specialized agent with a specific prompt',
+                body: { 
+                    agent: 'string (required, agent name)',
+                    prompt: 'string (required, user prompt)',
+                    context: 'object (optional, additional context)'
+                }
+            },
+            agents: {
+                method: 'GET',
+                path: '/api/agent/agents',
+                description: 'List all available specialized agents'
             },
             tasks: {
                 create: { method: 'POST', path: '/api/agent/tasks' },

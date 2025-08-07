@@ -4,10 +4,10 @@ const rateLimitMap = new Map();
 // Configuration
 const RATE_LIMIT_CONFIG = {
     windowMs: 60 * 1000, // 1 minute window
-    maxRequests: 10, // Max 10 requests per minute
+    maxRequests: 50, // Increased to 50 requests per minute for terminal functionality
     anthropicLimit: 3, // Max 3 Anthropic API calls per minute
     openaiLimit: 5, // Max 5 OpenAI API calls per minute
-    blockDuration: 5 * 60 * 1000 // Block for 5 minutes if exceeded
+    blockDuration: 2 * 60 * 1000 // Reduced to 2 minutes block if exceeded
 };
 
 // Clean up old entries periodically
@@ -22,6 +22,16 @@ setInterval(() => {
 
 // General rate limiter
 const rateLimit = (req, res, next) => {
+    // Skip rate limiting for terminal-related endpoints and AI enhancement endpoints
+    if (req.path.includes('/terminal') || 
+        req.path.includes('/health') || 
+        req.path.includes('/commands') ||
+        req.path.includes('/claude/suggestions') ||
+        req.path.includes('/claude/approvals') ||
+        req.path.includes('/claude/performance')) {
+        return next();
+    }
+    
     const clientId = req.ip || req.sessionId || 'anonymous';
     const now = Date.now();
     
@@ -149,9 +159,21 @@ const socketConnectionLimit = (socket, next) => {
     next();
 };
 
+// Function to clear rate limit data (useful for development)
+const clearRateLimit = (clientId) => {
+    if (clientId) {
+        rateLimitMap.delete(clientId);
+        connectionRateLimit.delete(clientId);
+    } else {
+        rateLimitMap.clear();
+        connectionRateLimit.clear();
+    }
+};
+
 module.exports = {
     rateLimit,
     anthropicRateLimit,
     openaiRateLimit,
-    socketConnectionLimit
+    socketConnectionLimit,
+    clearRateLimit
 };

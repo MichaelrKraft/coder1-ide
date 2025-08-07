@@ -1,0 +1,1114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>Smart Docs Generator</title>
+    <link rel="stylesheet" href="styles.css?v=<?php echo time(); ?>1754458000">
+    <link rel="stylesheet" href="product-creation-hub.css?v=<?php echo time(); ?>1754458000">
+    <link rel="stylesheet" href="prd-generator-v2-test.css?v=<?php echo time(); ?>1754458000">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        /* CODER1 Brand Colors */
+        :root {
+            --coder1-orange: #FF6B35;
+            --coder1-orange-light: #FFA500;
+            --coder1-orange-dark: #E85D2C;
+            --coder1-purple: #8B5CF6;
+            --coder1-purple-light: #A78BFA;
+            --coder1-purple-dark: #7C3AED;
+            --coder1-bg-dark: #1a1a2e;
+            --coder1-bg-darker: #16161a;
+            --coder1-bg-card: rgba(26, 26, 46, 0.8);
+            --coder1-border: rgba(139, 92, 246, 0.3);
+            --coder1-text: #FFA500;
+            --coder1-text-dim: rgba(255, 165, 0, 0.7);
+            --coder1-gradient: linear-gradient(135deg, #FF6B35, #FFA500);
+            --coder1-glow: 0 0 20px rgba(255, 107, 53, 0.5);
+        }
+
+        /* Override background */
+        body {
+            background: var(--coder1-bg-dark) !important;
+        }
+
+        /* Animated Circuit Lines Background */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: 
+                linear-gradient(90deg, transparent 49%, rgba(255, 107, 53, 0.1) 50%, transparent 51%),
+                linear-gradient(0deg, transparent 49%, rgba(255, 107, 53, 0.1) 50%, transparent 51%);
+            background-size: 50px 50px;
+            z-index: 0;
+            opacity: 0.3;
+            animation: circuit-pulse 4s ease-in-out infinite;
+        }
+
+        @keyframes circuit-pulse {
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 0.5; }
+        }
+
+        /* Header with Coder1 styling */
+        .header {
+            background: linear-gradient(135deg, rgba(26, 26, 46, 0.95), rgba(22, 22, 26, 0.95)) !important;
+            border: 1px solid var(--coder1-border) !important;
+            box-shadow: var(--coder1-glow) !important;
+        }
+
+        .header h1 {
+            background: var(--coder1-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-weight: 700 !important;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .header p {
+            color: var(--coder1-text-dim) !important;
+        }
+
+        /* Progress indicators with circuit theme */
+        .progress-indicator {
+            position: relative;
+            padding: 1rem 0;
+        }
+
+        .progress-steps {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: relative;
+        }
+
+        /* Circuit line between steps */
+        .progress-steps::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 10%;
+            right: 10%;
+            height: 2px;
+            background: linear-gradient(90deg, 
+                var(--coder1-border) 0%, 
+                var(--coder1-orange) 50%, 
+                var(--coder1-border) 100%);
+            transform: translateY(-50%);
+            z-index: 0;
+            opacity: 0.5;
+        }
+
+        .progress-step {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .step-icon {
+            width: 40px !important;
+            height: 40px !important;
+            border-radius: 50%;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            background: var(--coder1-bg-dark) !important;
+            border: 2px solid var(--coder1-border) !important;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .step-icon i {
+            font-size: 1rem !important;
+            color: var(--coder1-text-dim) !important;
+            z-index: 2;
+        }
+        
+        .progress-step.active .step-icon {
+            background: radial-gradient(circle, rgba(255, 107, 53, 0.2), var(--coder1-bg-dark)) !important;
+            border-color: var(--coder1-orange) !important;
+            box-shadow: 
+                0 0 20px rgba(255, 107, 53, 0.8),
+                inset 0 0 10px rgba(255, 107, 53, 0.3) !important;
+            animation: active-pulse 2s ease-in-out infinite;
+        }
+
+        .progress-step.active .step-icon i {
+            color: var(--coder1-orange) !important;
+            filter: brightness(1.2);
+        }
+
+        @keyframes active-pulse {
+            0%, 100% { 
+                transform: scale(1);
+                box-shadow: 0 0 20px rgba(255, 107, 53, 0.8);
+            }
+            50% { 
+                transform: scale(1.1);
+                box-shadow: 0 0 30px rgba(255, 107, 53, 1);
+            }
+        }
+        
+        .progress-step.completed .step-icon {
+            background: var(--coder1-bg-dark) !important;
+            border-color: var(--coder1-orange) !important;
+            opacity: 0.7;
+        }
+
+        .progress-step.completed .step-icon i {
+            color: var(--coder1-orange) !important;
+        }
+
+        .progress-step.completed .step-icon::after {
+            content: '✓';
+            position: absolute;
+            bottom: -5px;
+            right: -5px;
+            width: 16px;
+            height: 16px;
+            background: var(--coder1-orange);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            color: var(--coder1-bg-dark);
+            font-weight: bold;
+        }
+
+        .step-label {
+            font-size: 0.75rem !important;
+            color: var(--coder1-text-dim) !important;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: 0.25rem;
+        }
+
+        .progress-step.active .step-label {
+            color: var(--coder1-orange) !important;
+            font-weight: 600;
+        }
+
+        /* Cards with Coder1 glassmorphism */
+        .card-premium {
+            background: var(--coder1-bg-card) !important;
+            border: 1px solid var(--coder1-border) !important;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5) !important;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card-premium::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            background: var(--coder1-gradient);
+            opacity: 0;
+            z-index: -1;
+            transition: opacity 0.3s ease;
+        }
+
+        .card-premium:hover::before {
+            opacity: 0.1;
+        }
+
+        .card-premium:hover {
+            border-color: var(--coder1-orange) !important;
+            box-shadow: 0 0 10px rgba(255, 107, 53, 0.3) !important;
+        }
+
+        /* Buttons with Coder1 styling */
+        .btn-primary {
+            background: rgba(255, 107, 53, 0.2) !important;
+            border: 1px solid rgba(255, 107, 53, 0.5) !important;
+            color: var(--coder1-text) !important;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            border-color: var(--coder1-orange) !important;
+            box-shadow: 
+                0 0 10px rgba(255, 107, 53, 0.8),
+                0 0 20px rgba(255, 107, 53, 0.6),
+                0 0 30px rgba(255, 107, 53, 0.4),
+                inset 0 0 10px rgba(255, 107, 53, 0.2);
+        }
+
+        .btn-secondary {
+            background: transparent !important;
+            border: 1px solid var(--coder1-border) !important;
+            color: var(--coder1-text) !important;
+            transition: all 0.3s ease;
+        }
+
+        .btn-secondary:hover {
+            background: transparent !important;
+            border-color: var(--coder1-orange) !important;
+            box-shadow: 
+                0 0 10px rgba(255, 107, 53, 0.8),
+                0 0 20px rgba(255, 107, 53, 0.6),
+                inset 0 0 5px rgba(255, 107, 53, 0.1);
+        }
+
+        /* Rainbow button with Coder1 accent */
+        .rainbow-btn {
+            background: rgba(255, 107, 53, 0.3) !important;
+            border: 2px solid transparent !important;
+            background-image: 
+                linear-gradient(var(--coder1-bg-dark), var(--coder1-bg-dark)),
+                linear-gradient(90deg, #FF6B35, #FFA500, #FFD700, #FFA500, #FF6B35);
+            background-origin: border-box;
+            background-clip: padding-box, border-box;
+            animation: rainbow-border 3s linear infinite;
+            position: relative;
+        }
+
+        .rainbow-btn:hover {
+            box-shadow: 
+                0 0 15px rgba(255, 107, 53, 1),
+                0 0 30px rgba(255, 165, 0, 0.8),
+                0 0 45px rgba(255, 215, 0, 0.6),
+                inset 0 0 15px rgba(255, 107, 53, 0.3);
+        }
+
+        @keyframes rainbow-border {
+            0%, 100% { filter: hue-rotate(0deg); }
+            50% { filter: hue-rotate(30deg); }
+        }
+
+        /* Quick options with Coder1 colors */
+        .quick-option {
+            border: 1px solid var(--coder1-border) !important;
+            background: transparent !important;
+            transition: all 0.3s ease !important;
+            transition: all 0.3s ease;
+        }
+
+        .quick-option:hover {
+            border-color: var(--coder1-orange) !important;
+            background: transparent !important;
+            box-shadow: 
+                0 0 5px rgba(255, 107, 53, 0.3),
+                0 0 10px rgba(255, 107, 53, 0.2),
+                inset 0 0 3px rgba(255, 107, 53, 0.05);
+        }
+
+        /* Gradient icons */
+        .gradient-icon {
+            background: linear-gradient(135deg, #FFD700, #FFA500, #FF6B35);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-size: 1.5rem !important;
+            text-shadow: none !important;
+        }
+        
+        .quick-option:hover .gradient-icon {
+            filter: brightness(1.2);
+            animation: icon-pulse 1s ease-in-out infinite;
+        }
+
+        @keyframes icon-pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        /* Text colors */
+        .card-title, h2, h3, h4 {
+            color: var(--coder1-text) !important;
+        }
+
+        .message-content, p, span {
+            color: rgba(255, 255, 255, 0.9) !important;
+        }
+
+        /* Input fields */
+        input, textarea {
+            background: var(--coder1-bg-card) !important;
+            border: 1px solid var(--coder1-border) !important;
+            color: white !important;
+        }
+
+        input:focus, textarea:focus {
+            border-color: var(--coder1-orange) !important;
+            box-shadow: 0 0 8px rgba(255, 107, 53, 0.3) !important;
+        }
+
+        /* Fix text input to be full width without resize */
+        #userInput {
+            width: 100% !important;
+            resize: none !important;
+            min-height: 60px !important;
+            max-height: 60px !important;
+            overflow-y: auto !important;
+        }
+
+        /* Circuit node decorations */
+        .progress-connector {
+            background: var(--coder1-border) !important;
+            position: relative;
+        }
+
+        .progress-connector::after {
+            content: '';
+            position: absolute;
+            width: 6px;
+            height: 6px;
+            background: var(--coder1-orange);
+            border-radius: 50%;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            box-shadow: var(--coder1-glow);
+        }
+
+        /* Typing Animation Styles */
+        #typing-text {
+            position: relative;
+            display: inline-block;
+        }
+
+        .typing-cursor {
+            display: inline-block;
+            width: 3px;
+            height: 1.5rem;
+            background: var(--coder1-gradient);
+            animation: cursor-blink 1s infinite;
+            margin-left: 2px;
+            vertical-align: text-bottom;
+        }
+
+        @keyframes cursor-blink {
+            0%, 49% { opacity: 1; }
+            50%, 100% { opacity: 0; }
+        }
+
+        .typing-complete .typing-cursor {
+            display: none;
+        }
+
+        /* Circuit connections for header buttons */
+        .header-controls {
+            position: relative;
+        }
+
+        .header-controls::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: -20px;
+            right: -20px;
+            height: 1px;
+            background: linear-gradient(90deg, 
+                transparent, 
+                var(--coder1-border) 10%, 
+                var(--coder1-border) 90%, 
+                transparent);
+            z-index: -1;
+            transform: translateY(-50%);
+        }
+
+        .header-controls .btn-premium {
+            position: relative;
+        }
+
+        .header-controls .btn-premium::after {
+            content: '';
+            position: absolute;
+            width: 6px;
+            height: 6px;
+            background: var(--coder1-orange);
+            border-radius: 50%;
+            top: 50%;
+            right: -3px;
+            transform: translateY(-50%);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            box-shadow: 0 0 10px var(--coder1-orange);
+        }
+
+        .header-controls .btn-premium:not(:last-child)::after {
+            opacity: 0.6;
+        }
+
+        .header-controls .btn-premium:hover::after {
+            opacity: 1 !important;
+            animation: pulse-node 1s ease-in-out infinite;
+        }
+
+        @keyframes pulse-node {
+            0%, 100% { 
+                transform: translateY(-50%) scale(1);
+                box-shadow: 0 0 10px var(--coder1-orange);
+            }
+            50% { 
+                transform: translateY(-50%) scale(1.3);
+                box-shadow: 0 0 20px var(--coder1-orange);
+            }
+        }
+
+        /* Circuit decorative lines */
+        .circuit-decoration {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            overflow: hidden;
+            z-index: 0;
+        }
+
+        .circuit-line {
+            position: absolute;
+            background: var(--coder1-border);
+            opacity: 0.3;
+        }
+
+        .circuit-line.horizontal {
+            height: 1px;
+            width: 100px;
+        }
+
+        .circuit-line.vertical {
+            width: 1px;
+            height: 40px;
+        }
+
+        .circuit-node {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: var(--coder1-orange);
+            border-radius: 50%;
+            opacity: 0.5;
+            animation: blink-node 3s ease-in-out infinite;
+        }
+
+        @keyframes blink-node {
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 0.8; }
+        }
+
+        /* Glowing button animation for Generate PRD */
+        @keyframes glow-pulse {
+            0% {
+                box-shadow: 0 0 3px rgba(255, 107, 53, 0.4),
+                           0 0 6px rgba(255, 107, 53, 0.3);
+            }
+            50% {
+                box-shadow: 0 0 5px rgba(255, 107, 53, 0.5),
+                           0 0 10px rgba(255, 107, 53, 0.3);
+            }
+            100% {
+                box-shadow: 0 0 3px rgba(255, 107, 53, 0.4),
+                           0 0 6px rgba(255, 107, 53, 0.3);
+            }
+        }
+
+        /* Apply glowing effect to Generate PRD button */
+        #generatePRD {
+            position: relative;
+            animation: glow-pulse 2s ease-in-out infinite;
+            background: var(--coder1-gradient) !important;
+            border: 1px solid var(--coder1-orange) !important;
+            transform: translateY(0);
+            transition: all 0.3s ease;
+        }
+        
+        /* Recording state for voice input button */
+        #voiceInput.recording {
+            background: rgba(255, 107, 53, 0.1) !important;
+            border-color: var(--coder1-orange) !important;
+            animation: recording-pulse 1.5s ease-in-out infinite;
+        }
+        
+        /* Question counter hover effect */
+        .counter-text:hover {
+            border-color: var(--coder1-orange) !important;
+            background: rgba(255, 107, 53, 0.03) !important;
+            box-shadow: 0 0 5px rgba(255, 107, 53, 0.3) !important;
+        }
+        
+        /* Message avatar icons - purple to match borders */
+        .message-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(139, 92, 246, 0.1);
+            border: 1px solid var(--coder1-border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        
+        .message-avatar i {
+            color: var(--coder1-purple) !important;
+            font-size: 1.2rem;
+        }
+        
+        .message.user .message-avatar {
+            background: rgba(139, 92, 246, 0.15);
+        }
+        
+        .message.assistant .message-avatar {
+            background: rgba(139, 92, 246, 0.1);
+        }
+        
+        /* Message styling */
+        .message {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            padding: 1rem;
+            background: rgba(26, 26, 46, 0.4);
+            border-radius: 8px;
+            border: 1px solid var(--coder1-border);
+        }
+        
+        .message.user {
+            background: rgba(139, 92, 246, 0.05);
+        }
+        
+        .message-content {
+            flex: 1;
+            color: rgba(255, 255, 255, 0.9);
+            line-height: 1.6;
+        }
+        
+        /* Fullscreen PRD Modal Styling */
+        #fullscreenPRDContent {
+            color: rgba(255, 255, 255, 0.9) !important;
+        }
+        
+        #fullscreenPRDContent h1,
+        #fullscreenPRDContent h2,
+        #fullscreenPRDContent h3,
+        #fullscreenPRDContent h4 {
+            color: var(--coder1-orange) !important;
+            font-weight: 600;
+            margin-top: 1.5rem;
+            margin-bottom: 1rem;
+        }
+        
+        #fullscreenPRDContent h1 {
+            font-size: 2rem;
+            border-bottom: 2px solid var(--coder1-border);
+            padding-bottom: 0.5rem;
+        }
+        
+        #fullscreenPRDContent h2 {
+            font-size: 1.5rem;
+            margin-top: 2rem;
+        }
+        
+        #fullscreenPRDContent h3 {
+            font-size: 1.25rem;
+            color: var(--coder1-text) !important;
+        }
+        
+        #fullscreenPRDContent p {
+            margin-bottom: 1rem;
+            line-height: 1.6;
+            color: rgba(255, 255, 255, 0.85);
+        }
+        
+        #fullscreenPRDContent ul,
+        #fullscreenPRDContent ol {
+            margin-left: 2rem;
+            margin-bottom: 1rem;
+        }
+        
+        #fullscreenPRDContent li {
+            margin-bottom: 0.5rem;
+            color: rgba(255, 255, 255, 0.85);
+        }
+        
+        #fullscreenPRDContent strong {
+            color: var(--coder1-text);
+            font-weight: 600;
+        }
+        
+        #fullscreenPRDContent code {
+            background: rgba(139, 92, 246, 0.1);
+            border: 1px solid var(--coder1-border);
+            padding: 0.2rem 0.4rem;
+            border-radius: 4px;
+            color: var(--coder1-text);
+            font-family: 'Courier New', monospace;
+        }
+        
+        #fullscreenPRDContent pre {
+            background: rgba(26, 26, 46, 0.8);
+            border: 1px solid var(--coder1-border);
+            border-radius: 8px;
+            padding: 1rem;
+            overflow-x: auto;
+            margin-bottom: 1rem;
+        }
+        
+        #fullscreenPRDContent blockquote {
+            border-left: 4px solid var(--coder1-orange);
+            padding-left: 1rem;
+            margin: 1rem 0;
+            color: rgba(255, 255, 255, 0.8);
+            font-style: italic;
+        }
+        
+        /* Tab button active state */
+        .tab-btn.active {
+            border-bottom-color: var(--coder1-orange) !important;
+            color: var(--coder1-orange) !important;
+        }
+        
+        .tab-btn:not(.active) {
+            opacity: 0.7;
+        }
+        
+        .tab-btn:not(.active):hover {
+            opacity: 1;
+            border-bottom-color: var(--coder1-orange) !important;
+        }
+        
+        @keyframes recording-pulse {
+            0%, 100% {
+                box-shadow: 0 0 5px rgba(255, 107, 53, 0.5);
+            }
+            50% {
+                box-shadow: 0 0 15px rgba(255, 107, 53, 0.8);
+            }
+        }
+
+        #generatePRD:hover {
+            animation: glow-pulse 1s ease-in-out infinite;
+            transform: translateY(-2px);
+            box-shadow: 0 0 8px rgba(255, 107, 53, 0.5),
+                       0 0 15px rgba(255, 107, 53, 0.3) !important;
+        }
+
+        /* Apply orange glow to all premium buttons */
+        .btn-premium {
+            background: transparent !important;
+            border: 1px solid var(--coder1-border) !important;
+            color: var(--coder1-text) !important;
+            transition: all 0.3s ease !important;
+            transition: all 0.3s ease;
+        }
+
+        .btn-premium:hover {
+            border-color: var(--coder1-orange) !important;
+            background: transparent !important;
+            box-shadow: 
+                0 0 5px rgba(255, 107, 53, 0.3),
+                0 0 10px rgba(255, 107, 53, 0.2),
+                inset 0 0 3px rgba(255, 107, 53, 0.05);
+            transform: translateY(-2px);
+        }
+
+        /* Icons within buttons should glow too */
+        .btn-premium i {
+            color: var(--coder1-orange) !important;
+        }
+
+        .btn-premium:hover i {
+            filter: brightness(1.3);
+        }
+    </style>
+</head>
+<body>
+    <!-- Animated background with orbs -->
+    <div class="animated-background">
+        <div class="gradient-orb orb-1" style="background: radial-gradient(circle at 30% 30%, rgba(157, 78, 221, 0.15), rgba(123, 44, 191, 0.1), transparent 70%);"></div>
+        <div class="gradient-orb orb-2" style="background: radial-gradient(circle at 30% 30%, rgba(255, 107, 53, 0.15), rgba(232, 93, 44, 0.1), transparent 70%);"></div>
+        <div class="gradient-orb orb-3" style="background: radial-gradient(circle at 30% 30%, rgba(255, 215, 0, 0.15), rgba(255, 165, 0, 0.1), transparent 70%);"></div>
+    </div>
+
+    <div class="container prd-v2-container" style="min-height: auto; padding-bottom: 2rem;">
+        <!-- Header with glassmorphism -->
+        <header class="header glassmorphism" style="margin-bottom: 1.5rem; position: relative; overflow: visible;">
+            <!-- Circuit decoration elements -->
+            <div class="circuit-decoration" style="position: absolute; inset: 0; pointer-events: none;">
+                <div class="circuit-line horizontal" style="top: 20%; left: 5%;"></div>
+                <div class="circuit-node" style="top: 20%; left: calc(5% + 100px);"></div>
+                <div class="circuit-line horizontal" style="bottom: 25%; right: 10%;"></div>
+                <div class="circuit-node" style="bottom: 25%; right: calc(10% + 100px);"></div>
+                <div class="circuit-line vertical" style="top: 10%; left: 15%;"></div>
+                <div class="circuit-node" style="top: calc(10% + 40px); left: 15%;"></div>
+            </div>
+            <div class="header-content" style="display: flex; justify-content: space-between; align-items: center; padding: 1.275rem;">
+                <div class="logo" style="width: 200px;">
+                    <img 
+                        src="Coder1-Logo-Tran-Newest.svg"
+                        alt="Coder1 Logo" 
+                        style="height: 48px; width: auto;"
+                    />
+                </div>
+                <div style="display: flex; flex-direction: column; align-items: center; flex: 1;">
+                    <h1 id="typing-text" style="margin: 0; font-size: 1.5rem; font-weight: 600; color: var(--text-primary, #e2e8f0); min-height: 1.5rem; text-align: center;">
+                        <span class="typing-cursor"></span>
+                    </h1>
+                    <p id="tagline" style="margin: 0; font-size: 0.875rem; color: var(--text-secondary, #94a3b8); opacity: 0; transition: opacity 0.5s ease-in; text-align: center;">
+                        Intelligent product requirements for Claude Code
+                    </p>
+                </div>
+                <div class="header-controls">
+                    <button class="btn-premium btn-secondary" id="themeToggle" title="Toggle Theme">
+                        <i class="fas fa-moon"></i>
+                        <span>Theme</span>
+                    </button>
+                    <a href="/ide" class="btn-premium btn-primary">
+                        <i class="fas fa-code"></i>
+                        <span>Open IDE</span>
+                    </a>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content Grid -->
+        <div class="main-content" id="mainContent" style="margin-top: 0.5rem; display: grid; grid-template-columns: 1fr 200px; gap: 2rem; transition: grid-template-columns 0.3s ease;">
+            <!-- Left Column -->
+            <div class="left-column">
+
+                <!-- Main Conversation Card -->
+                <div class="card-premium conversation-card">
+                    <div class="card-header">
+                        <h3 class="card-title"><i class="fas fa-comments"></i> PRD Conversation</h3>
+                        <div class="question-counter-premium" id="questionCounter" style="display: none; width: fit-content; margin-left: auto;">
+                            <div class="counter-text" style="padding: 0.25rem 0.75rem; border: 1px solid rgba(139, 92, 246, 0.3); border-radius: 8px; background: rgba(139, 92, 246, 0.05); width: fit-content; transition: all 0.3s ease;">
+                                Question <span class="counter-current">1</span> of <span class="counter-total">5</span>
+                            </div>
+                            <div class="counter-progress" data-progress="20" style="display: none;"></div>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <!-- Conversation Thread -->
+                        <div class="conversation-thread" id="conversationThread">
+                            <!-- Welcome Message -->
+                            <div class="message assistant welcome-message">
+                                <div class="message-avatar">
+                                    <i class="fas fa-robot"></i>
+                                </div>
+                                <div class="message-content">
+                                    <h2 style="margin: 0 0 0.5rem 0; color: var(--coder1-text); font-weight: 700; font-size: 1.5rem;">Welcome to the Smart PRD Generator!</h2>
+                                    <p style="margin-bottom: 1rem; line-height: 1.4; font-size: 0.95rem;">I'll help you create a comprehensive Product Requirements Document through an intelligent conversation.</p>
+                                    <p class="highlight-text" style="font-weight: 600; color: var(--coder1-orange); margin-bottom: 1.5rem;">What would you like to build?</p>
+                                    <div class="quick-start-options" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; margin-top: 1rem;">
+                                        <button class="btn-premium btn-secondary quick-option" data-type="saas" style="display: flex; flex-direction: column; align-items: center; padding: 0.75rem; min-height: 60px;">
+                                            <i class="fas fa-cloud gradient-icon" style="font-size: 1.5rem; margin-bottom: 0.25rem;"></i>
+                                            <span style="font-size: 0.8rem;">SaaS Platform</span>
+                                        </button>
+                                        <button class="btn-premium btn-secondary quick-option" data-type="ecommerce" style="display: flex; flex-direction: column; align-items: center; padding: 0.75rem; min-height: 60px;">
+                                            <i class="fas fa-shopping-cart gradient-icon" style="font-size: 1.5rem; margin-bottom: 0.25rem;"></i>
+                                            <span style="font-size: 0.8rem;">E-commerce Site</span>
+                                        </button>
+                                        <button class="btn-premium btn-secondary quick-option" data-type="mobile" style="display: flex; flex-direction: column; align-items: center; padding: 0.75rem; min-height: 60px;">
+                                            <i class="fas fa-mobile-alt gradient-icon" style="font-size: 1.5rem; margin-bottom: 0.25rem;"></i>
+                                            <span style="font-size: 0.8rem;">Mobile App</span>
+                                        </button>
+                                        <button class="btn-premium btn-secondary quick-option" data-type="marketplace" style="display: flex; flex-direction: column; align-items: center; padding: 0.75rem; min-height: 60px;">
+                                            <i class="fas fa-store gradient-icon" style="font-size: 1.5rem; margin-bottom: 0.25rem;"></i>
+                                            <span style="font-size: 0.8rem;">Marketplace</span>
+                                        </button>
+                                        <button class="btn-premium btn-secondary quick-option" data-type="internal" style="display: flex; flex-direction: column; align-items: center; padding: 0.75rem; min-height: 60px;">
+                                            <i class="fas fa-building gradient-icon" style="font-size: 1.5rem; margin-bottom: 0.25rem;"></i>
+                                            <span style="font-size: 0.8rem;">Internal Tool</span>
+                                        </button>
+                                        <button class="btn-premium btn-secondary quick-option" data-type="other" style="display: flex; flex-direction: column; align-items: center; padding: 0.75rem; min-height: 60px;">
+                                            <i class="fas fa-ellipsis-h gradient-icon" style="font-size: 1.5rem; margin-bottom: 0.25rem;"></i>
+                                            <span style="font-size: 0.8rem;">Other</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Smart Input Area -->
+                        <div class="smart-input-area" style="margin-top: 1.5rem;">
+                            <div class="input-container" style="display: flex; gap: 0.5rem; align-items: center;">
+                                <!-- Microphone button on the left -->
+                                <button class="btn-premium btn-secondary" id="voiceInput" title="Click once to speak." style="padding: 0.5rem; min-height: 40px; width: 40px;">
+                                    <i class="fas fa-microphone"></i>
+                                </button>
+                                
+                                <!-- Text input wrapper with send button inside -->
+                                <div class="input-wrapper-with-send" style="flex: 1; position: relative;">
+                                    <textarea 
+                                        id="userInput" 
+                                        class="input-premium" 
+                                        placeholder="Describe your project or answer the question..."
+                                        rows="1"
+                                        style="padding-right: 3rem;"
+                                    ></textarea>
+                                    <!-- Send button inside the text box -->
+                                    <button class="btn-premium btn-secondary send-button-inside" id="sendButton" title="Send Message" style="position: absolute; right: 0.5rem; top: 50%; transform: translateY(-50%); padding: 0.4rem; width: 32px; height: 32px; border-radius: 6px;">
+                                        <i class="fas fa-paper-plane"></i>
+                                    </button>
+                                </div>
+                                
+                                <!-- Attach file button on the right -->
+                                <button class="btn-premium btn-secondary" id="attachFile" title="Attach File" style="padding: 0.5rem; min-height: 40px; width: 40px;">
+                                    <i class="fas fa-paperclip"></i>
+                                </button>
+                                <!-- Hidden file input -->
+                                <input type="file" id="fileInput" style="display: none;" accept=".txt,.pdf,.doc,.docx,.md,.json,.csv" multiple>
+                            </div>
+                            
+                            <!-- Action buttons moved inside conversation card -->
+                            <div class="conversation-actions" style="padding: 0.5rem 0 1rem; border-top: 1px solid var(--coder1-border); margin-top: 0.5rem;">
+                                <div class="action-buttons-premium" id="smartActionsBar" style="display: flex; justify-content: center;">
+                                    <div class="btn-group" id="discoveryActions" style="display: flex; gap: 0.5rem; justify-content: center;">
+                                        <button class="btn-premium btn-secondary" id="detailedMode" style="padding: 0.4rem 0.8rem; font-size: 0.85rem; min-height: 32px;" title="Best output">
+                                            <i class="fas fa-list-check" style="font-size: 0.85rem;"></i>
+                                            <span style="font-size: 0.85rem;">Detailed Mode</span>
+                                        </button>
+                                        <button class="btn-premium btn-secondary" id="quickMode" style="padding: 0.4rem 0.8rem; font-size: 0.85rem; min-height: 32px;">
+                                            <i class="fas fa-bolt" style="font-size: 0.85rem;"></i>
+                                            <span style="font-size: 0.85rem;">Quick Mode</span>
+                                        </button>
+                                        <button class="btn-premium btn-secondary" id="skipQuestion" style="padding: 0.4rem 0.8rem; font-size: 0.85rem; min-height: 32px;">
+                                            <i class="fas fa-forward" style="font-size: 0.85rem;"></i>
+                                            <span style="font-size: 0.85rem;">Skip Question</span>
+                                        </button>
+                                    </div>
+                                    
+                                    <div class="btn-group" id="creationActions" style="display: none; gap: 0.5rem; justify-content: center;">
+                                        <button class="btn-premium btn-primary" id="generatePRD" style="font-weight: 600; font-size: 1rem; padding: 0.75rem 1.5rem;">
+                                            <i class="fas fa-file-alt" style="font-size: 1.1rem;"></i>
+                                            <span style="font-size: 1rem;">Generate PRD</span>
+                                        </button>
+                                        <button class="btn-premium btn-secondary" id="refineAnswers">
+                                            <i class="fas fa-edit"></i>
+                                            <span>Refine Answers</span>
+                                        </button>
+                                    </div>
+                                    
+                                    <div class="btn-group" id="deliveryActions" style="display: none; gap: 0.5rem; justify-content: center;">
+                                        <button class="btn-premium btn-primary rainbow-btn" id="sendToClaudeCode">
+                                            <i class="fas fa-code"></i>
+                                            <span>Send to Claude Code</span>
+                                        </button>
+                                        <button class="btn-premium btn-secondary" id="exportAll">
+                                            <i class="fas fa-download"></i>
+                                            <span>Export</span>
+                                        </button>
+                                        <button class="btn-premium btn-secondary" id="shareProject">
+                                            <i class="fas fa-share"></i>
+                                            <span>Share</span>
+                                        </button>
+                                        <button class="btn-premium btn-success" id="startNew">
+                                            <i class="fas fa-plus"></i>
+                                            <span>New Project</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Right Column - Vertical Progress Bar -->
+            <div class="right-column">
+                <div class="card-premium vertical-progress-card">
+                    <div class="card-header">
+                        <h3 class="card-title"><i class="fas fa-tasks"></i> Progress</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="progress-indicator-vertical" id="progressIndicator">
+                            <div class="progress-steps-vertical">
+                                <div class="progress-step-vertical active" data-phase="discovery">
+                                    <div class="step-icon-vertical">
+                                        <i class="fas fa-search"></i>
+                                    </div>
+                                    <span class="step-label-vertical">Discovery</span>
+                                </div>
+                                <div class="progress-line-vertical"></div>
+                                <div class="progress-step-vertical" data-phase="creation">
+                                    <div class="step-icon-vertical">
+                                        <i class="fas fa-magic"></i>
+                                    </div>
+                                    <span class="step-label-vertical">Creation</span>
+                                </div>
+                                <div class="progress-line-vertical"></div>
+                                <div class="progress-step-vertical" data-phase="delivery">
+                                    <div class="step-icon-vertical">
+                                        <i class="fas fa-rocket"></i>
+                                    </div>
+                                    <span class="step-label-vertical">Delivery</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Preview Panel Removed - Using Fullscreen Modal Only -->
+        </div>
+    </div>
+
+
+    <!-- Fullscreen PRD Modal -->
+    <div class="modal" id="fullscreenModal" style="display: none;">
+        <div class="modal-content card-premium" style="max-width: 90%; width: 90%; max-height: 90vh; height: 90vh; background: var(--coder1-bg-card) !important; border: 1px solid var(--coder1-border) !important;">
+            <div class="modal-header" style="background: linear-gradient(135deg, rgba(26, 26, 46, 0.95), rgba(22, 22, 26, 0.95)); border-bottom: 1px solid var(--coder1-border); padding: 1.5rem 2rem;">
+                <h3 id="fullscreenTitle" style="background: linear-gradient(135deg, var(--coder1-orange), var(--coder1-orange-light), #FFD700); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; font-weight: 600; font-size: 1.5rem; display: inline-flex; align-items: center;">
+                    <i class="fas fa-file-alt" style="margin-right: 0.5rem; background: linear-gradient(135deg, var(--coder1-orange), var(--coder1-orange-light)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;"></i>
+                    Product Requirements Document
+                </h3>
+                <div style="display: flex; gap: 0.5rem; align-items: center;">
+                    <button class="btn-premium btn-secondary" id="editPRD" style="padding: 0.5rem 1rem; min-height: 36px;">
+                        <i class="fas fa-edit"></i>
+                        <span>Edit</span>
+                    </button>
+                    <button class="btn-premium btn-primary" id="savePRD" style="padding: 0.5rem 1rem; min-height: 36px; display: none; background: var(--coder1-gradient) !important;">
+                        <i class="fas fa-save"></i>
+                        <span>Save</span>
+                    </button>
+                    <button class="btn-premium btn-secondary" id="cancelEdit" style="padding: 0.5rem 1rem; min-height: 36px; display: none;">
+                        <i class="fas fa-times"></i>
+                        <span>Cancel</span>
+                    </button>
+                    <button class="btn-premium btn-secondary" id="copyPRD" style="padding: 0.5rem 1rem; min-height: 36px;">
+                        <i class="fas fa-copy"></i>
+                        <span>Copy</span>
+                    </button>
+                    <button class="btn-premium btn-secondary" id="downloadFromFullscreen" style="padding: 0.5rem 1rem; min-height: 36px;">
+                        <i class="fas fa-download"></i>
+                        <span>Download</span>
+                    </button>
+                    <button class="btn-premium btn-primary" id="sendToClaudeFromFullscreen" style="padding: 0.5rem 1rem; min-height: 36px; background: var(--coder1-gradient) !important; animation: glow-pulse 2s ease-in-out infinite;">
+                        <i class="fas fa-code"></i>
+                        <span style="font-weight: 600;">SEND TO CLAUDE CODE</span>
+                    </button>
+                    <button class="btn-premium btn-secondary modal-close" id="closeFullscreen" style="padding: 0.5rem; min-height: 36px; width: 36px; margin-left: 0.5rem;">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+            <!-- Tabs for PRD and CLAUDE.md -->
+            <div class="preview-tabs" style="padding: 1rem 2rem 0; background: rgba(26, 26, 46, 0.5); border-bottom: 1px solid var(--coder1-border);">
+                <button class="btn-premium tab-btn active" id="fullscreenPRDTab" style="padding: 0.75rem 1.5rem; margin-right: 0.5rem; border-bottom: 2px solid var(--coder1-orange);">
+                    <i class="fas fa-file-alt"></i> 
+                    <span>PRD Document</span>
+                </button>
+                <button class="btn-premium tab-btn" id="fullscreenClaudeTab" style="padding: 0.75rem 1.5rem; border-bottom: 2px solid transparent;">
+                    <i class="fas fa-robot"></i> 
+                    <span>CLAUDE.md</span>
+                </button>
+            </div>
+            <div class="modal-body" style="overflow-y: auto; padding: 2rem; background: rgba(26, 26, 46, 0.6);">
+                <div id="fullscreenPRDContent" style="font-family: 'Inter', sans-serif; line-height: 1.8; outline: none;">
+                    <!-- PRD content will be inserted here -->
+                </div>
+                <div id="fullscreenClaudeContent" style="display: none; font-family: 'Courier New', monospace; line-height: 1.6; white-space: pre-wrap; background: rgba(26, 26, 46, 0.8); padding: 1.5rem; border-radius: 8px; border: 1px solid var(--coder1-border); color: rgba(255, 255, 255, 0.9); outline: none;">
+                    <!-- CLAUDE.md content will be inserted here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Export Modal -->
+    <div class="modal" id="exportModal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Export Project</h3>
+                <button class="modal-close" id="closeExport">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="export-options">
+                    <button class="export-option" data-format="pdf">
+                        <i class="fas fa-file-pdf"></i>
+                        <span>PDF Document</span>
+                        <small>Professional format for stakeholders</small>
+                    </button>
+                    <button class="export-option" data-format="markdown">
+                        <i class="fas fa-file-code"></i>
+                        <span>Markdown</span>
+                        <small>For documentation systems</small>
+                    </button>
+                    <button class="export-option" data-format="json">
+                        <i class="fas fa-file-code"></i>
+                        <span>JSON</span>
+                        <small>For API integration</small>
+                    </button>
+                    <button class="export-option" data-format="html">
+                        <i class="fas fa-file-code"></i>
+                        <span>HTML Bundle</span>
+                        <small>Self-contained web page</small>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay" style="display: none;">
+        <div class="loading-spinner">
+            <div class="spinner"></div>
+            <p id="loadingText">Generating your PRD...</p>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script src="prd-generator-v2-test.js?v=1754458000&cb=<?php echo microtime(); ?>"></script>
+    
+    <script>
+        // Typing Animation Effect
+        (function() {
+            const text = "Smart Docs Generator";
+            const typingElement = document.getElementById('typing-text');
+            const taglineElement = document.getElementById('tagline');
+            const duration = 100; // milliseconds per character
+            let i = 0;
+            
+            // Clear the initial cursor
+            typingElement.innerHTML = '<span class="typing-cursor"></span>';
+            
+            function typeText() {
+                if (i < text.length) {
+                    // Insert character before cursor
+                    const cursor = typingElement.querySelector('.typing-cursor');
+                    const char = document.createTextNode(text.charAt(i));
+                    typingElement.insertBefore(char, cursor);
+                    i++;
+                    setTimeout(typeText, duration);
+                } else {
+                    // Animation complete
+                    setTimeout(() => {
+                        typingElement.classList.add('typing-complete');
+                        // Fade in tagline
+                        taglineElement.style.opacity = '1';
+                    }, 500);
+                }
+            }
+            
+            // Start typing after a short delay
+            setTimeout(typeText, 300);
+        })();
+    </script>
+</body>
+</html>

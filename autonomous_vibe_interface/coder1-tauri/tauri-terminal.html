@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Coder1 IDE with Terminal</title>
+    <link rel="stylesheet" href="node_modules/@xterm/xterm/css/xterm.css">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        
+        #ide-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        
+        #ide-frame {
+            flex: 1;
+            width: 100%;
+            border: none;
+        }
+        
+        #terminal-container {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 0;
+            background-color: #1e1e1e;
+            border-top: 1px solid #444;
+            transition: height 0.3s ease;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        #terminal-container.open {
+            height: 40vh;
+        }
+        
+        .terminal-header {
+            background-color: #2d2d2d;
+            padding: 8px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #444;
+            flex-shrink: 0;
+        }
+        
+        .terminal-close {
+            background: none;
+            border: none;
+            color: #d4d4d4;
+            cursor: pointer;
+            font-size: 20px;
+        }
+        
+        .terminal-close:hover {
+            color: #ff6b6b;
+        }
+        
+        #terminal {
+            flex: 1;
+            overflow: hidden;
+        }
+        
+        .terminal-button {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background-color: #007acc;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 12px 24px;
+            font-size: 16px;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+            z-index: 1000;
+            transition: all 0.3s ease;
+        }
+        
+        .terminal-button:hover {
+            background-color: #005a9e;
+        }
+        
+        .terminal-button.terminal-open {
+            bottom: calc(40vh + 20px);
+        }
+    </style>
+</head>
+<body>
+    <div id="ide-container">
+        <iframe id="ide-frame" src="http://localhost:10000/ide"></iframe>
+    </div>
+    
+    <button class="terminal-button" id="terminal-toggle">Open Terminal</button>
+    
+    <div id="terminal-container">
+        <div class="terminal-header">
+            <span>Terminal - Claude CLI Ready</span>
+            <button class="terminal-close" id="terminal-close">×</button>
+        </div>
+        <div id="terminal"></div>
+    </div>
+
+    <script type="module">
+        import { Command } from '@tauri-apps/plugin-shell';
+        import { Terminal } from '@xterm/xterm';
+        import { FitAddon } from '@xterm/addon-fit';
+        
+        let terminal = null;
+        let fitAddon = null;
+        let terminalOpen = false;
+        let shellProcess = null;
+        
+        const terminalButton = document.getElementById('terminal-toggle');
+        const terminalContainer = document.getElementById('terminal-container');
+        const terminalClose = document.getElementById('terminal-close');
+        const ideFrame = document.getElementById('ide-frame');
+        
+        async function initializeTerminal() {
+            if (terminal) return;
+            
+            // Create xterm.js terminal
+            terminal = new Terminal({
+                cursorBlink: true,
+                fontSize: 14,
+                fontFamily: 'Menlo, Monaco, "Courier New", monospace',
+                theme: {
+                    background: '#1e1e1e',
+                    foreground: '#d4d4d4',
+                    cursor: '#ffffff',
+                    selection: 'rgba(255, 255, 255, 0.3)'
+                }
+            });
+            
+            // Add fit addon
+            fitAddon = new FitAddon();
+            terminal.loadAddon(fitAddon);
+            
+            // Mount terminal to DOM
+            terminal.open(document.getElementById('terminal'));
+            fitAddon.fit();
+            
+            // Write initial message
+            terminal.writeln('🚀 Coder1 IDE Terminal');
+            terminal.writeln('Starting shell session...');
+            terminal.writeln('');
+            
+            try {
+                // Create a shell command
+                const command = new Command('bash', ['-l']);
+                
+                // Set environment variables for Claude
+                command.env({
+                    'TERM': 'xterm-256color',
+                    'COLORTERM': 'truecolor',
+                    'PATH': `/opt/homebrew/bin:${process.env.PATH || '/usr/local/bin:/usr/bin:/bin'}`,
+                    'FORCE_COLOR': '1',
+                    'DISABLE_ERROR_REPORTING': '1',
+                    'DISABLE_TELEMETRY': '1',
+                    'ANTHROPIC_API_KEY': process.env.ANTHROPIC_API_KEY || ''
+                });
+                
+                // Handle command output
+                command.on('data', (data) => {
+                    terminal.write(typeof data === 'string' ? data : new TextDecoder().decode(data));
+                });
+                
+                command.on('error', (error) => {
+                    terminal.writeln(`\r\n\x1b[31mError: ${error}\x1b[0m`);
+                });
+                
+                command.on('close', (data) => {
+                    terminal.writeln(`\r\n\x1b[33mShell exited with code ${data.code}\x1b[0m`);
+                    shellProcess = null;
+                });
+                
+                // Spawn the shell
+                shellProcess = await command.spawn();
+                
+                // Handle terminal input
+                terminal.onData((data) => {
+                    if (shellProcess) {
+                        shellProcess.write(data);
+                    }
+                });
+                
+                // Handle resize
+                terminal.onResize(({ cols, rows }) => {
+                    fitAddon.fit();
+                    // Note: Tauri shell plugin doesn't support PTY resize yet
+                });
+                
+            } catch (error) {
+                terminal.writeln(`\r\n\x1b[31mFailed to start shell: ${error.message}\x1b[0m`);
+                console.error('Shell error:', error);
+            }
+        }
+        
+        // Terminal toggle button
+        terminalButton.addEventListener('click', async () => {
+            if (!terminalOpen) {
+                terminalContainer.classList.add('open');
+                terminalButton.classList.add('terminal-open');
+                terminalButton.textContent = 'Close Terminal';
+                terminalOpen = true;
+                
+                // Initialize terminal on first open
+                await initializeTerminal();
+                
+                // Fit terminal to container
+                setTimeout(() => fitAddon && fitAddon.fit(), 100);
+            } else {
+                terminalContainer.classList.remove('open');
+                terminalButton.classList.remove('terminal-open');
+                terminalButton.textContent = 'Open Terminal';
+                terminalOpen = false;
+            }
+        });
+        
+        // Terminal close button
+        terminalClose.addEventListener('click', () => {
+            terminalContainer.classList.remove('open');
+            terminalButton.classList.remove('terminal-open');
+            terminalButton.textContent = 'Open Terminal';
+            terminalOpen = false;
+        });
+        
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            if (fitAddon && terminalOpen) {
+                fitAddon.fit();
+            }
+        });
+        
+        // Clean up on window close
+        window.addEventListener('beforeunload', async () => {
+            if (shellProcess) {
+                await shellProcess.kill();
+            }
+        });
+    </script>
+</body>
+</html>

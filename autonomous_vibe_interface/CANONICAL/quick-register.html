@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quick Register - Coder1</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0a0a0a;
+            color: #e0e0e0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+        .container {
+            background: #1a1a1a;
+            padding: 40px;
+            border-radius: 12px;
+            border: 1px solid #333;
+            width: 400px;
+        }
+        h2 {
+            color: #00d4ff;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #ccc;
+        }
+        input {
+            width: 100%;
+            padding: 12px;
+            background: #0a0a0a;
+            border: 1px solid #333;
+            border-radius: 6px;
+            color: #e0e0e0;
+            font-size: 16px;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(45deg, #007bff, #00d4ff);
+            border: none;
+            border-radius: 6px;
+            color: white;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+        button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 123, 255, 0.4);
+        }
+        .message {
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .success {
+            background: #00ff001a;
+            border: 1px solid #00ff00;
+            color: #51cf66;
+        }
+        .error {
+            background: #ff00001a;
+            border: 1px solid #ff0000;
+            color: #ff6b6b;
+        }
+        .info {
+            margin-top: 20px;
+            text-align: center;
+            color: #666;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Quick Register</h2>
+        <div id="message" style="display: none;"></div>
+        <form id="registerForm">
+            <div class="form-group">
+                <label for="email">Email</label>
+                <input type="email" id="email" value="support@leadpoint.ai" required>
+            </div>
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" placeholder="Enter your password" required>
+            </div>
+            <div class="form-group">
+                <label for="apiKey">Claude API Key (Optional)</label>
+                <input type="password" id="apiKey" placeholder="sk-ant-api03-...">
+            </div>
+            <button type="submit">Login & Save API Key</button>
+        </form>
+        <div class="info">
+            This will login to your account and save your API key.<br>
+            You'll be automatically redirected to the IDE.
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('registerForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const apiKey = document.getElementById('apiKey').value;
+            const messageEl = document.getElementById('message');
+            
+            try {
+                // Try to login first
+                const loginResponse = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+                
+                const loginData = await loginResponse.json();
+                
+                if (!loginResponse.ok || !loginData.success) {
+                    // If login fails, try to register
+                    const registerResponse = await fetch('/api/auth/register', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ email, password })
+                    });
+                    
+                    const registerData = await registerResponse.json();
+                    
+                    if (!registerResponse.ok || !registerData.success) {
+                        throw new Error('Invalid credentials');
+                    }
+                    
+                    // Try login again after registration
+                    const loginRetry = await fetch('/api/auth/login', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ email, password })
+                    });
+                    
+                    const loginRetryData = await loginRetry.json();
+                    if (!loginRetry.ok || !loginRetryData.success) {
+                        throw new Error('Login failed after registration');
+                    }
+                    
+                    loginData.token = loginRetryData.token;
+                    loginData.success = true;
+                }
+                
+                if (!loginResponse.ok || !loginData.success) {
+                    throw new Error(loginData.error || 'Login failed');
+                }
+                
+                // Save token
+                localStorage.setItem('authToken', loginData.token);
+                localStorage.setItem('userEmail', email);
+                
+                // Step 3: Save API key if provided
+                if (apiKey) {
+                    const apiKeyResponse = await fetch('/api/auth/api-key', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${loginData.token}`
+                        },
+                        body: JSON.stringify({ apiKey, provider: 'anthropic' })
+                    });
+                    
+                    const apiKeyData = await apiKeyResponse.json();
+                    
+                    if (!apiKeyResponse.ok || !apiKeyData.success) {
+                        console.error('Failed to save API key:', apiKeyData.error);
+                    }
+                }
+                
+                // Show success message
+                messageEl.className = 'message success';
+                messageEl.textContent = 'Registration successful! Redirecting to IDE...';
+                messageEl.style.display = 'block';
+                
+                // Redirect to IDE
+                setTimeout(() => {
+                    window.location.href = '/ide';
+                }, 1500);
+                
+            } catch (error) {
+                messageEl.className = 'message error';
+                messageEl.textContent = error.message;
+                messageEl.style.display = 'block';
+            }
+        });
+    </script>
+</body>
+</html>

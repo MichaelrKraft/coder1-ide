@@ -33,8 +33,14 @@ Claude Agents: This is the OFFICIAL version - do not modify copies elsewhere
         <header class="header glassmorphism">
             <div class="header-content">
                 <div class="logo">
-                    <h1>Coder1 IDE</h1>
-                    <span class="version">v0.1.0</span>
+                    <img 
+                        src="coder1-logo.png" 
+                        alt="Coder1" 
+                        class="logo-image"
+                        style="height: 60px; width: auto;"
+                        onerror="this.style.display='none'; this.nextElementSibling.style.display='block';"
+                    />
+                    <div style="display: none; color: #f97316; font-weight: bold;">CODER1</div>
                 </div>
                 <div class="header-controls">
                     <div class="website-selector">
@@ -93,6 +99,9 @@ Claude Agents: This is the OFFICIAL version - do not modify copies elsewhere
                             rows="2"
                         ></textarea>
                         <div class="input-controls">
+                            <button class="mic-btn" id="voiceMicButton" title="Click to start voice input">
+                                <i class="fas fa-microphone"></i>
+                            </button>
                             <button class="send-btn" id="sendMessage">
                                 <i class="fas fa-paper-plane"></i>
                             </button>

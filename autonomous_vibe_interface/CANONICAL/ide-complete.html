@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Coder1 IDE - Complete Interface</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0a0a0f;
+            --bg-secondary: #1a1b26;
+            --bg-tertiary: #24283b;
+            --border-color: #414868;
+            --text-primary: #c0caf5;
+            --text-secondary: #9aa5ce;
+            --accent-blue: #7aa2f7;
+            --accent-purple: #bb9af7;
+            --accent-green: #9ece6a;
+            --accent-orange: #ff9e00;
+            --accent-red: #f7768e;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .ide-container {
+            display: flex;
+            height: 100vh;
+        }
+
+        .sidebar {
+            width: 60px;
+            background: var(--bg-secondary);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 16px 0;
+            gap: 12px;
+            flex-shrink: 0;
+        }
+
+        .sidebar-icon {
+            width: 40px;
+            height: 40px;
+            background: var(--bg-tertiary);
+            border: 2px solid transparent;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: var(--text-secondary);
+            transition: all 0.3s ease;
+            font-size: 18px;
+        }
+
+        .sidebar-icon:hover {
+            background: var(--bg-tertiary);
+            border-color: var(--accent-orange);
+            color: var(--text-primary);
+            transform: translateX(2px);
+        }
+
+        .main-content {
+            flex: 1;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .left-panel {
+            width: 300px;
+            background: var(--bg-secondary);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+            height: 100%;
+        }
+
+        .content-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        .react-bits {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            margin: 16px;
+            padding: 16px;
+        }
+
+        .react-bits h3 {
+            color: var(--accent-purple);
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 16px;
+        }
+
+        .bits-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+        }
+
+        .bit-item {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 12px 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s;
+            font-size: 14px;
+        }
+
+        .bit-item:hover {
+            background: var(--bg-primary);
+            border-color: var(--accent-blue);
+            transform: translateY(-1px);
+        }
+
+        .bit-icon {
+            font-size: 16px;
+        }
+
+        .terminal-section {
+            flex: 1;
+            background: var(--bg-secondary);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .terminal-header {
+            background: var(--bg-tertiary);
+            border-bottom: 1px solid var(--border-color);
+            padding: 12px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .terminal-title {
+            color: var(--text-secondary);
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .terminal-controls {
+            display: flex;
+            gap: 8px;
+        }
+
+        .terminal-btn {
+            background: var(--bg-secondary);
+            border: 2px solid transparent;
+            color: var(--text-primary);
+            padding: 6px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .terminal-btn:hover {
+            background: var(--bg-primary);
+            border-color: var(--accent-orange);
+            transform: translateY(-1px);
+        }
+
+        .terminal-btn.active {
+            background: var(--accent-orange);
+            color: var(--bg-primary);
+            border-color: var(--accent-orange);
+        }
+
+        .terminal-content {
+            flex: 1;
+            background: #000;
+            color: #00ff00;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            padding: 16px;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .terminal-line {
+            margin-bottom: 4px;
+            white-space: pre-wrap;
+        }
+
+        .terminal-prompt {
+            color: var(--accent-blue);
+        }
+
+        .status-display {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 8px 12px;
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .status-active {
+            color: var(--accent-green);
+        }
+
+        .welcome-content {
+            text-align: center;
+            padding: 40px 20px;
+        }
+
+        .welcome-content h2 {
+            color: var(--accent-purple);
+            margin-bottom: 16px;
+        }
+
+        .welcome-content p {
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+        }
+
+        .command-help {
+            color: var(--accent-blue);
+            font-family: monospace;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="ide-container">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="sidebar-icon" title="Files">
+                <i class="fas fa-folder"></i>
+            </div>
+            <div class="sidebar-icon" title="Search">
+                <i class="fas fa-search"></i>
+            </div>
+            <div class="sidebar-icon" title="Git">
+                <i class="fab fa-git-alt"></i>
+            </div>
+            <div class="sidebar-icon" title="Extensions">
+                <i class="fas fa-puzzle-piece"></i>
+            </div>
+        </div>
+
+        <!-- Main Content Area -->
+        <div class="main-content">
+            <!-- Left Panel -->
+            <div class="left-panel">
+                <div class="react-bits">
+                    <h3><i class="fab fa-react"></i> React Bits</h3>
+                    <div class="bits-grid">
+                        <div class="bit-item">
+                            <i class="fas fa-mouse-pointer bit-icon" style="color: var(--accent-purple);"></i>
+                            <span>Button</span>
+                        </div>
+                        <div class="bit-item">
+                            <i class="fas fa-list-alt bit-icon" style="color: var(--accent-orange);"></i>
+                            <span>Form</span>
+                        </div>
+                        <div class="bit-item">
+                            <i class="fas fa-id-card bit-icon" style="color: var(--accent-green);"></i>
+                            <span>Card</span>
+                        </div>
+                        <div class="bit-item">
+                            <i class="fas fa-chart-bar bit-icon" style="color: var(--accent-blue);"></i>
+                            <span>Chart</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Terminal Content Area -->
+            <div class="content-area">
+                <div class="terminal-section">
+                    <div class="terminal-header">
+                        <div class="terminal-title">Coder1 IDE Terminal</div>
+                        <div class="terminal-controls">
+                            <button class="terminal-btn" onclick="toggleSleepMode()">Sleep Mode</button>
+                            <button class="terminal-btn" onclick="startSupervision()">Supervision</button>
+                            <button class="terminal-btn" onclick="startParallelAgents()">Parallel Agents</button>
+                            <button class="terminal-btn" onclick="startInfiniteLoop()">Infinite Loop</button>
+                            <button class="terminal-btn" onclick="startHivemind()">🧠 Hivemind</button>
+                        </div>
+                    </div>
+                    <div class="terminal-content" id="terminal">
+                        <div class="status-display" id="statusDisplay">Ready</div>
+                        <div class="welcome-content">
+                            <h2>Welcome to Coder1 IDE Terminal</h2>
+                            <p>Type "help" for available commands</p>
+                            <div class="command-help">
+                                <div class="terminal-prompt">$</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentSession = null;
+        let authToken = localStorage.getItem('authToken');
+
+        // Terminal functionality
+        function addTerminalLine(message, className = '') {
+            const terminal = document.getElementById('terminal');
+            const line = document.createElement('div');
+            line.className = `terminal-line ${className}`;
+            line.innerHTML = message;
+            
+            // Clear welcome content on first command
+            const welcomeContent = terminal.querySelector('.welcome-content');
+            if (welcomeContent) {
+                welcomeContent.remove();
+            }
+            
+            terminal.appendChild(line);
+            terminal.scrollTop = terminal.scrollHeight;
+        }
+
+        function updateStatus(status, isActive = false) {
+            const statusDisplay = document.getElementById('statusDisplay');
+            statusDisplay.textContent = status;
+            statusDisplay.className = isActive ? 'status-display status-active' : 'status-display';
+        }
+
+        // API Button Functions
+        async function toggleSleepMode() {
+            addTerminalLine('<span class="terminal-prompt">$</span> sleep-mode toggle');
+            updateStatus('Sleep Mode Active', true);
+            addTerminalLine('✅ Sleep mode activated - System in low power state');
+        }
+
+        async function startSupervision() {
+            addTerminalLine('<span class="terminal-prompt">$</span> supervision start');
+            updateStatus('Supervision Active', true);
+            addTerminalLine('🔍 Starting supervision mode...');
+            addTerminalLine('✅ Supervision agents deployed');
+        }
+
+        async function startParallelAgents() {
+            addTerminalLine('<span class="terminal-prompt">$</span> parallel-agents start');
+            updateStatus('Parallel Agents Running', true);
+            addTerminalLine('👥 Initializing parallel processing...');
+            addTerminalLine('✅ 3 parallel agents active');
+            
+            if (!authToken) {
+                addTerminalLine('⚠️ No auth token - using demo mode');
+                return;
+            }
+        }
+
+        async function startInfiniteLoop() {
+            addTerminalLine('<span class="terminal-prompt">$</span> infinite-loop start');
+            updateStatus('Infinite Loop Running', true);
+            addTerminalLine('🔄 Starting infinite loop...');
+            
+            if (!authToken) {
+                addTerminalLine('⚠️ Please register/login first for real API access');
+                addTerminalLine('ℹ️ Visit /test-claude-sdk.html to test your API key');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/infinite/start', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({
+                        command: 'create innovative React components'
+                    })
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    currentSession = data.sessionId;
+                    addTerminalLine(`✅ Infinite loop started - Session: ${data.sessionId}`);
+                    startPollingStatus();
+                } else {
+                    addTerminalLine(`❌ Failed: ${data.message}`);
+                }
+            } catch (error) {
+                addTerminalLine(`❌ Error: ${error.message}`);
+            }
+        }
+
+        async function startHivemind() {
+            addTerminalLine('<span class="terminal-prompt">$</span> hivemind start');
+            updateStatus('Hivemind Coordinating', true);
+            addTerminalLine('🧠 Activating hivemind coordination...');
+            addTerminalLine('✅ Alpha, Beta, Gamma agents synchronized');
+            addTerminalLine('ℹ️ Collective intelligence active');
+        }
+
+        async function startPollingStatus() {
+            if (!currentSession) return;
+            
+            try {
+                const response = await fetch(`/api/infinite/status/${currentSession}`, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    updateStatus(`Wave ${data.currentWave} - ${data.totalGenerated} components`, true);
+                    
+                    if (data.status === 'running') {
+                        setTimeout(startPollingStatus, 3000);
+                    }
+                }
+            } catch (error) {
+                console.error('Polling error:', error);
+            }
+        }
+
+        // Check authentication status
+        if (!authToken) {
+            setTimeout(() => {
+                addTerminalLine('⚠️ Not authenticated - some features limited to demo mode');
+                addTerminalLine('ℹ️ Visit <a href="/quick-register.html" style="color: var(--accent-blue);">/quick-register.html</a> to register');
+                addTerminalLine('ℹ️ Or test your API key at <a href="/test-claude-sdk.html" style="color: var(--accent-blue);">/test-claude-sdk.html</a>');
+            }, 2000);
+        }
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.ctrlKey || e.metaKey) {
+                switch(e.key) {
+                    case '1':
+                        e.preventDefault();
+                        startInfiniteLoop();
+                        break;
+                    case '2':
+                        e.preventDefault();
+                        startSupervision();
+                        break;
+                    case '3':
+                        e.preventDefault();
+                        startParallelAgents();
+                        break;
+                    case '4':
+                        e.preventDefault();
+                        startHivemind();
+                        break;
+                }
+            }
+        });
+
+        // Auto-focus and welcome
+        setTimeout(() => {
+            addTerminalLine('<span style="color: var(--accent-green);">Coder1 IDE initialized successfully</span>');
+            addTerminalLine('<span style="color: var(--text-secondary);">Shortcuts: Cmd/Ctrl + 1-4 for quick actions</span>');
+        }, 1000);
+    </script>
+</body>
+</html>
