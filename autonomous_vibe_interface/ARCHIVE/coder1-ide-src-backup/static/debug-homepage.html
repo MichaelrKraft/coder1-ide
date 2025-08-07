@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Homepage</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #fff;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            background: #2a2a2a;
+            border-radius: 8px;
+        }
+        .status {
+            color: #00ff00;
+        }
+        .error {
+            color: #ff0000;
+        }
+    </style>
+</head>
+<body>
+    <h1>Coder1 Homepage Debug</h1>
+    
+    <div class="test-section">
+        <h2>CSS Loading Test</h2>
+        <p id="css-status">Testing CSS...</p>
+        <p style="color: var(--accent-blue, #7aa2f7);">This should be blue if CSS variables are working</p>
+    </div>
+
+    <div class="test-section">
+        <h2>JavaScript Loading Test</h2>
+        <p id="js-status">Testing JavaScript...</p>
+        <button onclick="testJS()">Test JS Function</button>
+    </div>
+
+    <div class="test-section">
+        <h2>Resource Loading Test</h2>
+        <p id="resources-status">Testing resources...</p>
+        <ul id="resource-list"></ul>
+    </div>
+
+    <div class="test-section">
+        <h2>Quick Links</h2>
+        <a href="/" target="_blank" style="color: #7aa2f7;">Homepage</a> | 
+        <a href="/terminal-interface.html" target="_blank" style="color: #7aa2f7;">Terminal Interface</a> | 
+        <a href="/test-react-bits.html" target="_blank" style="color: #7aa2f7;">React Bits Test</a>
+    </div>
+
+    <script>
+        function testJS() {
+            document.getElementById('js-status').innerHTML = '<span class="status">✅ JavaScript is working!</span>';
+        }
+
+        // Test CSS loading
+        setTimeout(() => {
+            const computed = getComputedStyle(document.documentElement);
+            const blueColor = computed.getPropertyValue('--accent-blue');
+            if (blueColor) {
+                document.getElementById('css-status').innerHTML = '<span class="status">✅ CSS variables loaded</span>';
+            } else {
+                document.getElementById('css-status').innerHTML = '<span class="error">❌ CSS variables not found</span>';
+            }
+        }, 100);
+
+        // Test resource loading
+        async function testResources() {
+            const resources = [
+                '/styles-streamlined.css',
+                '/script-streamlined.js',
+                '/api/agent/health'
+            ];
+            
+            const list = document.getElementById('resource-list');
+            const statusEl = document.getElementById('resources-status');
+            
+            for (const resource of resources) {
+                try {
+                    const response = await fetch(resource);
+                    const li = document.createElement('li');
+                    if (response.ok) {
+                        li.innerHTML = `<span class="status">✅ ${resource} (${response.status})</span>`;
+                    } else {
+                        li.innerHTML = `<span class="error">❌ ${resource} (${response.status})</span>`;
+                    }
+                    list.appendChild(li);
+                } catch (error) {
+                    const li = document.createElement('li');
+                    li.innerHTML = `<span class="error">❌ ${resource} (${error.message})</span>`;
+                    list.appendChild(li);
+                }
+            }
+            
+            statusEl.innerHTML = '<span class="status">✅ Resource test completed</span>';
+        }
+
+        // Run tests
+        testResources();
+        
+        // Test if main page loads
+        setTimeout(() => {
+            const iframe = document.createElement('iframe');
+            iframe.src = '/';
+            iframe.style.display = 'none';
+            iframe.onload = () => {
+                console.log('Homepage loaded successfully in iframe');
+            };
+            iframe.onerror = () => {
+                console.error('Homepage failed to load in iframe');
+            };
+            document.body.appendChild(iframe);
+        }, 1000);
+    </script>
+</body>
+</html>

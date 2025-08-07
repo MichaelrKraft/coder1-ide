@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Component Sandbox</title>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    body { 
+      margin: 0; 
+      padding: 16px; 
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+      background: white;
+    }
+    #root { 
+      width: 100%; 
+      min-height: 100px;
+    }
+    .error {
+      color: #dc3545;
+      padding: 12px;
+      background: #f8d7da;
+      border: 1px solid #f5c6cb;
+      border-radius: 4px;
+      margin: 8px 0;
+    }
+    .console-output {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      max-height: 150px;
+      overflow-y: auto;
+      background: #1a1b26;
+      color: #a9b1d6;
+      padding: 8px;
+      font-family: 'Monaco', 'Menlo', monospace;
+      font-size: 12px;
+      border-top: 1px solid #414868;
+    }
+    .console-log { color: #a9b1d6; }
+    .console-error { color: #f7768e; }
+    .console-warn { color: #e0af68; }
+    .console-info { color: #7aa2f7; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <div id="console-output" class="console-output" style="display: none;"></div>
+  
+  <script>
+    // Console capture
+    const originalConsole = {
+      log: console.log,
+      error: console.error,
+      warn: console.warn,
+      info: console.info
+    };
+
+    const consoleOutput = [];
+    const maxConsoleEntries = 100;
+
+    function captureConsole(type, args) {
+      const message = Array.from(args).map(arg => {
+        if (typeof arg === 'object') {
+          try {
+            return JSON.stringify(arg, null, 2);
+          } catch (e) {
+            return String(arg);
+          }
+        }
+        return String(arg);
+      }).join(' ');
+
+      consoleOutput.push({ type, message, timestamp: Date.now() });
+      
+      // Keep only last N entries
+      if (consoleOutput.length > maxConsoleEntries) {
+        consoleOutput.shift();
+      }
+
+      // Send to parent
+      window.parent.postMessage({
+        type: 'CONSOLE_OUTPUT',
+        data: { type, message, timestamp: Date.now() }
+      }, '*');
+
+      // Display in sandbox console
+      const consoleEl = document.getElementById('console-output');
+      if (consoleEl) {
+        consoleEl.style.display = 'block';
+        const entry = document.createElement('div');
+        entry.className = `console-${type}`;
+        entry.textContent = `[${type}] ${message}`;
+        consoleEl.appendChild(entry);
+        consoleEl.scrollTop = consoleEl.scrollHeight;
+      }
+
+      // Call original console method
+      originalConsole[type].apply(console, args);
+    }
+
+    console.log = function() { captureConsole('log', arguments); };
+    console.error = function() { captureConsole('error', arguments); };
+    console.warn = function() { captureConsole('warn', arguments); };
+    console.info = function() { captureConsole('info', arguments); };
+
+    // Error handling
+    window.addEventListener('error', (event) => {
+      console.error(`Runtime error: ${event.message} at ${event.filename}:${event.lineno}:${event.colno}`);
+      window.parent.postMessage({
+        type: 'SANDBOX_ERROR',
+        error: event.message
+      }, '*');
+    });
+
+    window.addEventListener('unhandledrejection', (event) => {
+      console.error('Unhandled promise rejection:', event.reason);
+      window.parent.postMessage({
+        type: 'SANDBOX_ERROR',
+        error: `Unhandled promise rejection: ${event.reason}`
+      }, '*');
+    });
+
+    // Message handling
+    window.addEventListener('message', (event) => {
+      console.log('Sandbox received message:', event.data);
+      
+      if (event.data.type === 'RENDER_COMPONENT') {
+        renderComponent(event.data.component);
+      } else if (event.data.type === 'UPDATE_PROPS') {
+        updateProps(event.data.props);
+      } else if (event.data.type === 'CLEAR_CONSOLE') {
+        const consoleEl = document.getElementById('console-output');
+        if (consoleEl) {
+          consoleEl.innerHTML = '';
+          consoleEl.style.display = 'none';
+        }
+        consoleOutput.length = 0;
+      }
+    });
+
+    let currentComponent = null;
+    let currentProps = {};
+
+    function renderComponent(component) {
+      try {
+        if (!component || !component.code) {
+          throw new Error('Invalid component data');
+        }
+
+        console.log('Rendering component:', component.name);
+        
+        // Clear previous content
+        const root = document.getElementById('root');
+        root.innerHTML = '';
+
+        // Store current component
+        currentComponent = component;
+        currentProps = component.props || {};
+
+        // Transform JSX to JavaScript
+        const transformed = Babel.transform(component.code, {
+          presets: ['react'],
+          plugins: []
+        }).code;
+
+        // Create a function that returns the component
+        const componentFactory = new Function('React', 'ReactDOM', 'props', `
+          ${transformed}
+          
+          // Try to find the component
+          const componentName = '${component.name}';
+          let Component = null;
+          
+          // Check for various export patterns
+          if (typeof ${component.name} !== 'undefined') {
+            Component = ${component.name};
+          } else if (typeof exports !== 'undefined' && exports.default) {
+            Component = exports.default;
+          } else if (typeof module !== 'undefined' && module.exports) {
+            Component = module.exports;
+          }
+          
+          if (Component) {
+            const root = ReactDOM.createRoot(document.getElementById('root'));
+            root.render(React.createElement(Component, props));
+            return true;
+          }
+          return false;
+        `);
+
+        const success = componentFactory(React, ReactDOM, currentProps);
+        
+        if (success) {
+          console.log('Component rendered successfully');
+          window.parent.postMessage({
+            type: 'COMPONENT_RENDERED',
+            component: component.name
+          }, '*');
+        } else {
+          throw new Error('Could not find component to render');
+        }
+      } catch (error) {
+        console.error('Failed to render component:', error);
+        document.getElementById('root').innerHTML = `
+          <div class="error">
+            <strong>Error rendering component:</strong><br>
+            ${error.message}
+          </div>
+        `;
+        
+        window.parent.postMessage({
+          type: 'SANDBOX_ERROR',
+          error: error.message
+        }, '*');
+      }
+    }
+
+    function updateProps(newProps) {
+      if (currentComponent) {
+        currentProps = { ...currentProps, ...newProps };
+        renderComponent({ ...currentComponent, props: currentProps });
+      }
+    }
+
+    // Signal that sandbox is ready
+    console.log('Sandbox initialized and ready');
+    window.parent.postMessage({ type: 'SANDBOX_READY' }, '*');
+  </script>
+</body>
+</html>

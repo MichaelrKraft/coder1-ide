@@ -1,0 +1,875 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Coder1 - Smart PRD & Wireframe Generator</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="product-creation-hub.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="animated-background">
+        <div class="gradient-orb orb-1"></div>
+        <div class="gradient-orb orb-2"></div>
+        <div class="gradient-orb orb-3"></div>
+    </div>
+
+    <div class="container">
+        <header class="header glassmorphism">
+            <div class="header-content">
+                <div class="logo">
+                    <h1>Coder1 IDE</h1>
+                    <span class="version">v0.1.0</span>
+                </div>
+                <div class="header-controls">
+                    <div class="website-selector">
+                        <label for="websiteInput">Working on:</label>
+                        <input type="text" id="websiteInput" placeholder="Enter project name..." value="New Project">
+                        <button class="set-website-btn" id="setWebsite">
+                            <i class="fas fa-check"></i>
+                        </button>
+                    </div>
+                    <button class="theme-toggle" id="themeToggle">
+                        <i class="fas fa-moon"></i>
+                    </button>
+                    <button class="ide-enter-btn" id="enterIDE">
+                        <i class="fas fa-code"></i>
+                        Enter Coder1 IDE
+                    </button>
+                    <div class="status-indicator">
+                        <span class="status-dot"></span>
+                        <span class="status-text">Active</span>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <main class="main-content">
+            <div class="left-column">
+                <div class="chat-container glassmorphism">
+                <div class="chat-header">
+                    <h2>Smart PRD & Wireframe Generator</h2>
+                    <div class="chat-actions">
+                        <button class="action-btn" id="clearChat">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                        <button class="action-btn" id="exportChat">
+                            <i class="fas fa-download"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="chat-messages" id="chatMessages">
+                    <div class="message assistant-message">
+                        <div class="message-avatar">
+                            <i class="fas fa-robot"></i>
+                        </div>
+                        <div class="message-content">
+                            <p>Welcome to the Coder1 Smart PRD & Wireframe Generator! I'll help you create professional Product Requirements Documents and wireframes for your project. The more context that is entered here the better Claude Code will do at creating what you want. Let's start by describing what you want to build.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="chat-input-container">
+                    <div class="input-wrapper glassmorphism">
+                        <textarea 
+                            id="messageInput" 
+                            placeholder="Describe your project idea (e.g., 'I want to build an e-commerce website for handmade jewelry')..."
+                            rows="2"
+                        ></textarea>
+                        <div class="input-controls">
+                            <button class="send-btn" id="sendMessage">
+                                <i class="fas fa-paper-plane"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Live PRD Assistant -->
+            <div class="creation-panel glassmorphism" id="prdAssistant">
+                <div class="panel-header">
+                    <h3><i class="fas fa-document"></i> Live PRD Assistant</h3>
+                    <div class="prd-status">
+                        <span class="status-badge" id="prdStatus">Not Started</span>
+                    </div>
+                </div>
+                
+                <div class="prd-content">
+                    <div class="prd-preview" id="prdPreview">
+                        <div class="prd-placeholder">
+                            <i class="fas fa-file-text"></i>
+                            <p>Your PRD will appear here as you progress through the wizard</p>
+                        </div>
+                    </div>
+                    
+                    <div class="prd-metrics" id="prdMetrics" style="display: none;">
+                        <div class="metric">
+                            <span class="metric-label">Completeness</span>
+                            <div class="metric-bar">
+                                <div class="metric-fill" id="completenessBar" style="width: 0%"></div>
+                            </div>
+                            <span class="metric-value" id="completenessValue">0%</span>
+                        </div>
+                        
+                        <div class="metric">
+                            <span class="metric-label">Confidence</span>
+                            <div class="confidence-indicator" id="confidenceIndicator">
+                                <span class="confidence-level">Medium</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="prd-actions" id="prdActions" style="display: none;">
+                        <button class="prd-btn" id="viewFullPRD">
+                            <i class="fas fa-expand"></i>
+                            View Full PRD
+                        </button>
+                        <button class="prd-btn" id="exportPRD">
+                            <i class="fas fa-download"></i>
+                            Export
+                        </button>
+                        <button class="prd-btn" id="sharePRD">
+                            <i class="fas fa-share"></i>
+                            Share
+                        </button>
+                        <button class="prd-btn primary" id="sendToClaudeCode">
+                            <i class="fas fa-code"></i>
+                            Send to Claude Code
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Success Accelerators -->
+            <div class="creation-panel glassmorphism" id="successAccelerators">
+                <div class="panel-header">
+                    <h3><i class="fas fa-rocket"></i> Success Accelerators</h3>
+                    <div class="success-score">
+                        <span class="score-label">Success Score</span>
+                        <span class="score-value" id="successScore">--</span>
+                    </div>
+                </div>
+                
+                <div class="accelerators-content">
+                    <div class="accelerator-sections">
+                        <!-- Market Insights -->
+                        <div class="accelerator-section" id="marketInsights">
+                            <div class="section-header">
+                                <i class="fas fa-chart-line"></i>
+                                <span>Market Insights</span>
+                                <button class="expand-btn" data-section="market">
+                                    <i class="fas fa-chevron-down"></i>
+                                </button>
+                            </div>
+                            <div class="section-content collapsed">
+                                <div class="insight-placeholder">
+                                    <p>Market analysis will appear here once you start the wizard</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- AI Recommendations -->
+                        <div class="accelerator-section" id="aiRecommendations">
+                            <div class="section-header">
+                                <i class="fas fa-brain"></i>
+                                <span>AI Recommendations</span>
+                                <button class="expand-btn" data-section="recommendations">
+                                    <i class="fas fa-chevron-down"></i>
+                                </button>
+                            </div>
+                            <div class="section-content collapsed">
+                                <div class="recommendations-placeholder">
+                                    <p>Intelligent recommendations will appear here</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Trending Features -->
+                        <div class="accelerator-section" id="trendingFeatures">
+                            <div class="section-header">
+                                <i class="fas fa-fire"></i>
+                                <span>Trending Features</span>
+                                <button class="expand-btn" data-section="trending">
+                                    <i class="fas fa-chevron-down"></i>
+                                </button>
+                            </div>
+                            <div class="section-content collapsed">
+                                <div class="trending-placeholder">
+                                    <p>Popular features for your project type will appear here</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Quick Actions -->
+                        <div class="accelerator-section" id="quickActions">
+                            <div class="section-header">
+                                <i class="fas fa-bolt"></i>
+                                <span>Quick Actions</span>
+                                <button class="expand-btn" data-section="actions">
+                                    <i class="fas fa-chevron-down"></i>
+                                </button>
+                            </div>
+                            <div class="section-content collapsed">
+                                <div class="quick-actions-grid">
+                                    <button class="quick-action" id="duplicateProject">
+                                        <i class="fas fa-copy"></i>
+                                        <span>Duplicate</span>
+                                    </button>
+                                    <button class="quick-action" id="shareProject">
+                                        <i class="fas fa-share-alt"></i>
+                                        <span>Share</span>
+                                    </button>
+                                    <button class="quick-action" id="exportAll">
+                                        <i class="fas fa-file-export"></i>
+                                        <span>Export All</span>
+                                    </button>
+                                    <button class="quick-action" id="viewAnalytics">
+                                        <i class="fas fa-chart-bar"></i>
+                                        <span>Analytics</span>
+                                    </button>
+                                    <button class="quick-action" id="getHelp">
+                                        <i class="fas fa-question"></i>
+                                        <span>Get Help</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            </div>
+
+            <!-- Product Creation Hub Sidebar -->
+            <div class="product-creation-sidebar">
+                <!-- Product Creation Wizard -->
+                <div class="creation-panel glassmorphism" id="creationWizard">
+                    <div class="panel-header">
+                        <h3><i class="fas fa-magic"></i> Product Creation Wizard</h3>
+                        <div class="wizard-progress">
+                            <div class="progress-bar">
+                                <div class="progress-fill" id="wizardProgress" style="width: 0%"></div>
+                            </div>
+                            <span class="progress-text" id="progressText">Ready to Start</span>
+                        </div>
+                    </div>
+                    
+                    <div class="wizard-content">
+                        <div class="wizard-step active" id="step-1">
+                            <div class="step-icon">
+                                <button class="glass-icon-btn" type="button">
+                                    <span class="glass-icon-btn__back" style="background: linear-gradient(hsl(223, 90%, 50%), hsl(208, 90%, 50%))"></span>
+                                    <span class="glass-icon-btn__front">
+                                        <span class="glass-icon-btn__icon">
+                                            <i class="fas fa-lightbulb"></i>
+                                        </span>
+                                    </span>
+                                </button>
+                            </div>
+                            <div class="step-center-text">Step 1</div>
+                            <h4>1. Describe Your Idea</h4>
+                            <p>Tell us what you want to build in the chat above</p>
+                            <div class="step-actions">
+                                <button class="wizard-btn primary" id="startWizard" disabled>
+                                    <i class="fas fa-rocket"></i>
+                                    Start Building
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="wizard-step" id="step-2">
+                            <div class="step-icon">
+                                <button class="glass-icon-btn" type="button">
+                                    <span class="glass-icon-btn__back" style="background: linear-gradient(hsl(283, 90%, 50%), hsl(268, 90%, 50%))"></span>
+                                    <span class="glass-icon-btn__front">
+                                        <span class="glass-icon-btn__icon">
+                                            <i class="fas fa-question-circle"></i>
+                                        </span>
+                                    </span>
+                                </button>
+                            </div>
+                            <div class="step-center-text">Step 2</div>
+                            <h4>2. Answer 5 Questions</h4>
+                            <p>Help us understand your requirements</p>
+                            <div class="step-progress">
+                                <span id="questionProgress">0/5 questions answered</span>
+                            </div>
+                        </div>
+
+                        <div class="wizard-step" id="step-3">
+                            <div class="step-icon">
+                                <button class="glass-icon-btn" type="button">
+                                    <span class="glass-icon-btn__back" style="background: linear-gradient(hsl(3, 90%, 50%), hsl(348, 90%, 50%))"></span>
+                                    <span class="glass-icon-btn__front">
+                                        <span class="glass-icon-btn__icon">
+                                            <i class="fas fa-file-alt"></i>
+                                        </span>
+                                    </span>
+                                </button>
+                            </div>
+                            <div class="step-center-text">Step 3</div>
+                            <h4>3. Generate PRD</h4>
+                            <p>Create comprehensive project requirements</p>
+                            <div class="step-actions">
+                                <button class="wizard-btn secondary" id="generatePRD" disabled>
+                                    <i class="fas fa-file-text"></i>
+                                    Generate PRD
+                                </button>
+                                <button class="wizard-btn skip" id="skipPRD" disabled>
+                                    <i class="fas fa-arrow-right"></i>
+                                    Skip
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="wizard-step" id="step-4">
+                            <div class="step-icon">
+                                <button class="glass-icon-btn" type="button">
+                                    <span class="glass-icon-btn__back" style="background: linear-gradient(hsl(253, 90%, 50%), hsl(238, 90%, 50%))"></span>
+                                    <span class="glass-icon-btn__front">
+                                        <span class="glass-icon-btn__icon">
+                                            <i class="fas fa-users"></i>
+                                        </span>
+                                    </span>
+                                </button>
+                            </div>
+                            <div class="step-center-text">Step 4</div>
+                            <h4>4. Expert Consultation</h4>
+                            <p>Get insights from AI expert personas</p>
+                            <div class="step-actions">
+                                <button class="wizard-btn secondary" id="startConsultation" disabled>
+                                    <i class="fas fa-brain"></i>
+                                    Consult Experts
+                                </button>
+                                <button class="wizard-btn skip" id="skipConsultation" disabled>
+                                    <i class="fas fa-arrow-right"></i>
+                                    Skip
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="wizard-step" id="step-5">
+                            <div class="step-icon">
+                                <button class="glass-icon-btn" type="button">
+                                    <span class="glass-icon-btn__back" style="background: linear-gradient(hsl(43, 90%, 50%), hsl(28, 90%, 50%))"></span>
+                                    <span class="glass-icon-btn__front">
+                                        <span class="glass-icon-btn__icon">
+                                            <i class="fas fa-drafting-compass"></i>
+                                        </span>
+                                    </span>
+                                </button>
+                            </div>
+                            <div class="step-center-text">Step 5</div>
+                            <h4>5. Create Wireframes</h4>
+                            <p>Visualize your project layout</p>
+                            <div class="step-actions">
+                                <button class="wizard-btn secondary" id="generateWireframes" disabled>
+                                    <i class="fas fa-drawing"></i>
+                                    Create Wireframes
+                                </button>
+                                <button class="wizard-btn skip" id="skipWireframes" disabled>
+                                    <i class="fas fa-arrow-right"></i>
+                                    Skip
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="wizard-step" id="step-6">
+                            <div class="step-icon">
+                                <button class="glass-icon-btn" type="button">
+                                    <span class="glass-icon-btn__back" style="background: linear-gradient(hsl(123, 90%, 40%), hsl(108, 90%, 40%))"></span>
+                                    <span class="glass-icon-btn__front">
+                                        <span class="glass-icon-btn__icon">
+                                            <i class="fas fa-code-branch"></i>
+                                        </span>
+                                    </span>
+                                </button>
+                            </div>
+                            <div class="step-center-text">Step 6</div>
+                            <h4>6. Version Control</h4>
+                            <p>Track changes and manage iterations</p>
+                            <div class="step-actions">
+                                <button class="wizard-btn secondary" id="manageVersions" disabled>
+                                    <i class="fas fa-history"></i>
+                                    Manage Versions
+                                </button>
+                                <button class="wizard-btn skip" id="skipVersions" disabled>
+                                    <i class="fas fa-arrow-right"></i>
+                                    Skip
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="wizard-step" id="step-7">
+                            <div class="step-icon">
+                                <button class="glass-icon-btn" type="button">
+                                    <span class="glass-icon-btn__back" style="background: linear-gradient(hsl(283, 90%, 50%), hsl(268, 90%, 50%))"></span>
+                                    <span class="glass-icon-btn__front">
+                                        <span class="glass-icon-btn__icon">
+                                            <i class="fas fa-check-circle"></i>
+                                        </span>
+                                    </span>
+                                </button>
+                            </div>
+                            <div class="step-center-text">Step 7</div>
+                            <h4>7. Ready to Build!</h4>
+                            <p>Your project documentation is complete</p>
+                            <div class="step-actions">
+                                <button class="wizard-btn success" id="exportProject" disabled>
+                                    <i class="fas fa-download"></i>
+                                    Export Project
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+
+        <!-- PRD Modal -->
+        <div class="modal-overlay" id="prdModal" style="display: none;">
+            <div class="modal-content prd-modal">
+                <div class="modal-header">
+                    <h3>Product Requirements Document</h3>
+                    <button class="modal-close" id="closePRDModal">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body" id="prdModalContent">
+                    <!-- PRD content will be inserted here -->
+                </div>
+                <div class="modal-footer">
+                    <button class="btn secondary" id="editPRD">
+                        <i class="fas fa-edit"></i>
+                        Edit PRD
+                    </button>
+                    <button class="btn primary" id="downloadPRD">
+                        <i class="fas fa-download"></i>
+                        Download PRD
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Wireframes Modal -->
+        <div class="modal-overlay" id="wireframesModal" style="display: none;">
+            <div class="modal-content wireframes-modal">
+                <div class="modal-header">
+                    <h3>Project Wireframes</h3>
+                    <button class="modal-close" id="closeWireframesModal">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body" id="wireframesModalContent">
+                    <!-- Wireframes will be inserted here -->
+                </div>
+                <div class="modal-footer">
+                    <button class="btn secondary" id="customizeWireframes">
+                        <i class="fas fa-edit"></i>
+                        Customize
+                    </button>
+                    <button class="btn primary" id="downloadWireframes">
+                        <i class="fas fa-download"></i>
+                        Download All
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Success Metrics Modal -->
+        <div class="modal-overlay" id="successModal" style="display: none;">
+            <div class="modal-content success-modal">
+                <div class="modal-header">
+                    <h3>Project Success Analysis</h3>
+                    <button class="modal-close" id="closeSuccessModal">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body" id="successModalContent">
+                    <!-- Success analysis will be inserted here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Multi-Persona Consultation Modal -->
+        <div class="modal-overlay" id="consultationModal" style="display: none;">
+            <div class="modal-content consultation-modal">
+                <div class="modal-header">
+                    <h3>Multi-Persona Expert Consultation</h3>
+                    <button class="modal-close" id="closeConsultationModal">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <!-- Step 1: Persona Selection -->
+                    <div class="consultation-step" id="personaSelection">
+                        <h4>Select Expert Personas</h4>
+                        <p>Choose the AI experts you'd like to consult for your project:</p>
+                        
+                        <div class="persona-grid" id="personaGrid">
+                            <!-- Personas will be populated here -->
+                        </div>
+                        
+                        <div class="consultation-actions">
+                            <button class="btn secondary" id="selectAllPersonas">
+                                <i class="fas fa-check-double"></i>
+                                Select All
+                            </button>
+                            <button class="btn primary" id="startPersonaConsultation" disabled>
+                                <i class="fas fa-rocket"></i>
+                                Start Consultation
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Step 2: Consultation Results -->
+                    <div class="consultation-step" id="consultationResults" style="display: none;">
+                        <div class="consultation-summary">
+                            <h4>Expert Consultation Summary</h4>
+                            <div class="summary-metrics">
+                                <div class="metric-item">
+                                    <span class="metric-label">Experts Consulted</span>
+                                    <span class="metric-value" id="totalPersonas">0</span>
+                                </div>
+                                <div class="metric-item">
+                                    <span class="metric-label">Critical Findings</span>
+                                    <span class="metric-value critical" id="criticalFindings">0</span>
+                                </div>
+                                <div class="metric-item">
+                                    <span class="metric-label">Success Probability</span>
+                                    <span class="metric-value" id="successProbability">0%</span>
+                                </div>
+                                <div class="metric-item">
+                                    <span class="metric-label">Expert Consensus</span>
+                                    <span class="metric-value" id="consensusLevel">0%</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="consultation-tabs">
+                            <button class="tab-btn active" data-tab="overview">Overview</button>
+                            <button class="tab-btn" data-tab="insights">Expert Insights</button>
+                            <button class="tab-btn" data-tab="actions">Action Plan</button>
+                            <button class="tab-btn" data-tab="risks">Risk Matrix</button>
+                        </div>
+
+                        <div class="tab-content">
+                            <!-- Overview Tab -->
+                            <div class="tab-panel active" id="overview">
+                                <div class="overview-section">
+                                    <h5>Expert Agreements</h5>
+                                    <ul id="expertAgreements">
+                                        <!-- Agreements will be populated here -->
+                                    </ul>
+                                </div>
+                                
+                                <div class="overview-section">
+                                    <h5>Areas Requiring Balance</h5>
+                                    <ul id="expertConflicts">
+                                        <!-- Conflicts will be populated here -->
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <!-- Expert Insights Tab -->
+                            <div class="tab-panel" id="insights">
+                                <div id="personaInsights">
+                                    <!-- Individual persona insights will be populated here -->
+                                </div>
+                            </div>
+
+                            <!-- Action Plan Tab -->
+                            <div class="tab-panel" id="actions">
+                                <div class="action-section">
+                                    <h5>Immediate Actions (1-2 weeks)</h5>
+                                    <ul id="immediateActions">
+                                        <!-- Immediate actions will be populated here -->
+                                    </ul>
+                                </div>
+                                
+                                <div class="action-section">
+                                    <h5>Short-term Actions (1-2 months)</h5>
+                                    <ul id="shortTermActions">
+                                        <!-- Short-term actions will be populated here -->
+                                    </ul>
+                                </div>
+                                
+                                <div class="action-section">
+                                    <h5>Long-term Considerations (3+ months)</h5>
+                                    <ul id="longTermActions">
+                                        <!-- Long-term actions will be populated here -->
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <!-- Risk Matrix Tab -->
+                            <div class="tab-panel" id="risks">
+                                <div class="risk-grid">
+                                    <div class="risk-category">
+                                        <h5><i class="fas fa-shield-alt"></i> Security Risks</h5>
+                                        <ul id="securityRisks">
+                                            <!-- Security risks will be populated here -->
+                                        </ul>
+                                    </div>
+                                    
+                                    <div class="risk-category">
+                                        <h5><i class="fas fa-cog"></i> Technical Risks</h5>
+                                        <ul id="technicalRisks">
+                                            <!-- Technical risks will be populated here -->
+                                        </ul>
+                                    </div>
+                                    
+                                    <div class="risk-category">
+                                        <h5><i class="fas fa-chart-line"></i> Business Risks</h5>
+                                        <ul id="businessRisks">
+                                            <!-- Business risks will be populated here -->
+                                        </ul>
+                                    </div>
+                                    
+                                    <div class="risk-category">
+                                        <h5><i class="fas fa-tools"></i> Operational Risks</h5>
+                                        <ul id="operationalRisks">
+                                            <!-- Operational risks will be populated here -->
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="modal-footer">
+                    <button class="btn secondary" id="exportConsultationReport">
+                        <i class="fas fa-download"></i>
+                        Export Report
+                    </button>
+                    <button class="btn primary" id="applyRecommendations">
+                        <i class="fas fa-check"></i>
+                        Apply Recommendations
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Version Management Modal -->
+    <div class="modal-overlay" id="versionModal" style="display: none;">
+        <div class="modal-container">
+            <div class="modal-header">
+                <h2><i class="fas fa-code-branch"></i> Version Management</h2>
+                <button class="modal-close" id="closeVersionModal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="modal-content">
+                <div class="version-tabs">
+                    <button class="tab-btn active" data-tab="history">
+                        <i class="fas fa-history"></i>
+                        Version History
+                    </button>
+                    <button class="tab-btn" data-tab="compare">
+                        <i class="fas fa-code-compare"></i>
+                        Compare Versions
+                    </button>
+                    <button class="tab-btn" data-tab="iterations">
+                        <i class="fas fa-tasks"></i>
+                        Iteration Plans
+                    </button>
+                </div>
+
+                <div class="tab-content">
+                    <!-- Version History Tab -->
+                    <div class="tab-panel active" id="history-panel">
+                        <div class="version-controls">
+                            <button class="btn primary" id="createVersion">
+                                <i class="fas fa-plus"></i>
+                                Create New Version
+                            </button>
+                            <button class="btn secondary" id="createBranch">
+                                <i class="fas fa-code-branch"></i>
+                                Create Branch
+                            </button>
+                        </div>
+
+                        <div class="version-tree-container">
+                            <div class="version-tree" id="versionTree">
+                                <!-- Version tree will be populated dynamically -->
+                            </div>
+                        </div>
+
+                        <div class="version-list" id="versionList">
+                            <!-- Version list will be populated dynamically -->
+                        </div>
+                    </div>
+
+                    <!-- Compare Versions Tab -->
+                    <div class="tab-panel" id="compare-panel">
+                        <div class="compare-controls">
+                            <div class="version-selector">
+                                <label>Version A:</label>
+                                <select id="versionA">
+                                    <option value="">Select version...</option>
+                                </select>
+                            </div>
+                            <div class="version-selector">
+                                <label>Version B:</label>
+                                <select id="versionB">
+                                    <option value="">Select version...</option>
+                                </select>
+                            </div>
+                            <button class="btn primary" id="compareVersions">
+                                <i class="fas fa-balance-scale"></i>
+                                Compare
+                            </button>
+                        </div>
+
+                        <div class="comparison-results" id="comparisonResults">
+                            <!-- Comparison results will be populated dynamically -->
+                        </div>
+                    </div>
+
+                    <!-- Iteration Plans Tab -->
+                    <div class="tab-panel" id="iterations-panel">
+                        <div class="iteration-controls">
+                            <button class="btn primary" id="createIterationPlan">
+                                <i class="fas fa-plus"></i>
+                                Create Iteration Plan
+                            </button>
+                        </div>
+
+                        <div class="iteration-list" id="iterationList">
+                            <!-- Iteration plans will be populated dynamically -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="modal-footer">
+                <button class="btn secondary" id="exportVersionHistory">
+                    <i class="fas fa-download"></i>
+                    Export History
+                </button>
+                <button class="btn secondary" id="rollbackVersion" disabled>
+                    <i class="fas fa-undo"></i>
+                    Rollback
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Analytics Dashboard Modal -->
+    <div class="modal-overlay" id="analyticsModal" style="display: none;">
+        <div class="modal-container analytics-modal">
+            <div class="modal-header">
+                <h2><i class="fas fa-chart-bar"></i> Analytics Dashboard</h2>
+                <button class="modal-close" id="closeAnalyticsModal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="modal-content">
+                <div class="analytics-controls">
+                    <div class="date-range-selector">
+                        <label>Date Range:</label>
+                        <select id="analyticsDateRange">
+                            <option value="7">Last 7 days</option>
+                            <option value="30" selected>Last 30 days</option>
+                            <option value="90">Last 90 days</option>
+                            <option value="365">Last year</option>
+                        </select>
+                    </div>
+                    <button class="btn secondary" id="refreshAnalytics">
+                        <i class="fas fa-sync"></i>
+                        Refresh
+                    </button>
+                    <button class="btn secondary" id="exportAnalytics">
+                        <i class="fas fa-download"></i>
+                        Export
+                    </button>
+                </div>
+
+                <div class="analytics-grid">
+                    <!-- Overview Cards -->
+                    <div class="analytics-section">
+                        <h3><i class="fas fa-tachometer-alt"></i> Overview</h3>
+                        <div class="metrics-grid" id="overviewMetrics">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
+
+                    <!-- Project Analytics -->
+                    <div class="analytics-section">
+                        <h3><i class="fas fa-project-diagram"></i> Project Analytics</h3>
+                        <div class="analytics-charts">
+                            <div class="chart-container">
+                                <div class="chart-header">
+                                    <h4>Project Types Distribution</h4>
+                                </div>
+                                <div class="chart-content" id="projectTypesChart">
+                                    <!-- Chart will be rendered here -->
+                                </div>
+                            </div>
+                            
+                            <div class="chart-container">
+                                <div class="chart-header">
+                                    <h4>Completion Times</h4>
+                                </div>
+                                <div class="chart-content" id="completionTimesChart">
+                                    <!-- Chart will be rendered here -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Feature Adoption -->
+                    <div class="analytics-section">
+                        <h3><i class="fas fa-puzzle-piece"></i> Feature Adoption</h3>
+                        <div class="adoption-metrics" id="featureAdoption">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
+
+                    <!-- User Engagement -->
+                    <div class="analytics-section">
+                        <h3><i class="fas fa-users"></i> User Engagement</h3>
+                        <div class="engagement-metrics" id="userEngagement">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
+
+                    <!-- Performance Metrics -->
+                    <div class="analytics-section">
+                        <h3><i class="fas fa-tachometer-alt"></i> System Performance</h3>
+                        <div class="performance-grid" id="performanceMetrics">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
+
+                    <!-- AI Insights -->
+                    <div class="analytics-section full-width">
+                        <h3><i class="fas fa-brain"></i> AI-Generated Insights</h3>
+                        <div class="insights-container" id="aiInsights">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
+
+                    <!-- Recommendations -->
+                    <div class="analytics-section full-width">
+                        <h3><i class="fas fa-lightbulb"></i> Recommendations</h3>
+                        <div class="recommendations-container" id="recommendations">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="utils.js"></script>
+    <script src="product-creation-hub.js"></script>
+</body>
+</html>

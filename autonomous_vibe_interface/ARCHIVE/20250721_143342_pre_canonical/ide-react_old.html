@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <link rel="icon" href="/favicon.ico"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1"/>
+    <meta name="theme-color" content="#000000"/>
+    <meta name="description" content="Coder1 IDE - Smart PRD & Wireframe Generator with Voice Control"/>
+    <title>Coder1 IDE - Smart PRD & Wireframe Generator</title>
+    <link rel="stylesheet" href="voice-styles.css">
+    <style>
+        body{
+            margin:0;
+            font-family:Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubuntu,Cantarell,'Fira Sans','Droid Sans','Helvetica Neue',sans-serif;
+            -webkit-font-smoothing:antialiased;
+            -moz-osx-font-smoothing:grayscale;
+            background:#1a1b26;
+            color:#c0caf5;
+            overflow:hidden
+        }
+        code{
+            font-family:Monaco,Menlo,'Ubuntu Mono',monospace
+        }
+        *{
+            box-sizing:border-box
+        }
+        /* Welcome overlay for first-time users */
+        .welcome-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(26, 27, 38, 0.95);
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+        .welcome-overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+        .welcome-content {
+            background: #24283b;
+            border-radius: 15px;
+            padding: 2rem;
+            max-width: 500px;
+            text-align: center;
+            border: 1px solid #414868;
+        }
+        .welcome-title {
+            color: #7aa2f7;
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+        }
+        .welcome-text {
+            color: #c0caf5;
+            margin-bottom: 2rem;
+            line-height: 1.6;
+        }
+        .welcome-button {
+            background: #7aa2f7;
+            color: white;
+            border: none;
+            padding: 0.8rem 1.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            margin: 0.5rem;
+            transition: background 0.3s ease;
+        }
+        .welcome-button:hover {
+            background: #9aa5ce;
+        }
+    </style>
+    <script defer="defer" src="/static/js/main.a0df5d05.js"></script>
+    <link href="/static/css/main.a3f18c56.css" rel="stylesheet">
+</head>
+<body>
+    <noscript>You need to enable JavaScript to run this app.</noscript>
+    
+    <!-- Welcome Overlay -->
+    <div class="welcome-overlay" id="welcomeOverlay">
+        <div class="welcome-content">
+            <div class="welcome-title">🎯 Welcome to Coder1 IDE!</div>
+            <div class="welcome-text">
+                Your Smart PRD & Wireframe Generator with voice control. 
+                <br><br>
+                <strong>Voice Commands:</strong><br>
+                • "Start building" - Begin new project<br>
+                • "Generate PRD" - Create requirements<br>
+                • "Create wireframes" - Generate layouts<br>
+                • "Help" - Show all commands
+            </div>
+            <button class="welcome-button" onclick="startVoiceTour()">🎤 Voice Tour</button>
+            <button class="welcome-button" onclick="closeWelcome()">Get Started</button>
+        </div>
+    </div>
+    
+    <div id="root"></div>
+    
+    <!-- Voice Integration Scripts -->
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="voice-notifications.js"></script>
+    <script src="voice-interface.js"></script>
+    
+    <!-- IDE Voice Integration Script -->
+    <script>
+        // Welcome overlay functions
+        function showWelcome() {
+            const overlay = document.getElementById('welcomeOverlay');
+            if (overlay && !localStorage.getItem('coder1-welcome-shown')) {
+                overlay.classList.add('show');
+            }
+        }
+        
+        function closeWelcome() {
+            const overlay = document.getElementById('welcomeOverlay');
+            if (overlay) {
+                overlay.classList.remove('show');
+                localStorage.setItem('coder1-welcome-shown', 'true');
+            }
+        }
+        
+        function startVoiceTour() {
+            closeWelcome();
+            setTimeout(() => {
+                if (window.voiceInterface) {
+                    window.voiceInterface.speak("Welcome to Coder1 IDE! This is your Smart PRD and Wireframe Generator. You can say 'Start building' to begin a new project, 'Generate PRD' to create requirements, or 'Create wireframes' to design layouts. Try saying 'Help' anytime for more commands.");
+                }
+            }, 500);
+        }
+        
+        // Enhanced voice commands for IDE
+        document.addEventListener('DOMContentLoaded', function() {
+            // Show welcome for new users
+            setTimeout(showWelcome, 1000);
+            
+            // Wait for voice interface to initialize
+            setTimeout(function() {
+                if (window.voiceInterface && window.voiceInterface.processTextCommand) {
+                    // Extend the voice command processing for IDE-specific commands
+                    const originalProcessTextCommand = window.voiceInterface.processTextCommand;
+                    
+                    window.voiceInterface.processTextCommand = async function(text) {
+                        const lowerText = text.toLowerCase();
+                        
+                        // IDE-specific voice commands
+                        if (lowerText.includes('generate prd') || lowerText.includes('create prd') || lowerText.includes('build prd')) {
+                            return { success: true, action: 'ide_action', target: 'generatePRD', message: 'Generating Product Requirements Document...' };
+                        }
+                        
+                        if (lowerText.includes('create wireframes') || lowerText.includes('generate wireframes') || lowerText.includes('build wireframes')) {
+                            return { success: true, action: 'ide_action', target: 'generateWireframes', message: 'Creating wireframes for your project...' };
+                        }
+                        
+                        if (lowerText.includes('consult experts') || lowerText.includes('expert consultation') || lowerText.includes('get advice')) {
+                            return { success: true, action: 'ide_action', target: 'startConsultation', message: 'Starting expert consultation session...' };
+                        }
+                        
+                        if (lowerText.includes('start building') || lowerText.includes('start wizard') || lowerText.includes('new project') || lowerText.includes('create project')) {
+                            return { success: true, action: 'ide_action', target: 'startWizard', message: 'Starting the Smart PRD wizard...' };
+                        }
+                        
+                        if (lowerText.includes('export project') || lowerText.includes('download project')) {
+                            return { success: true, action: 'ide_action', target: 'exportProject', message: 'Preparing project export...' };
+                        }
+                        
+                        if (lowerText.includes('manage versions') || lowerText.includes('version control')) {
+                            return { success: true, action: 'ide_action', target: 'manageVersions', message: 'Opening version manager...' };
+                        }
+                        
+                        if (lowerText.includes('show me around') || lowerText.includes('tour') || lowerText.includes('guide me')) {
+                            return { success: true, action: 'ide_tour', message: 'Welcome to Coder1 IDE! This is your Smart PRD and Wireframe Generator. The main features are: Start Building to create projects, Generate PRD for requirements, Create Wireframes for layouts, and Expert Consultation for advice. Try any of these voice commands!' };
+                        }
+                        
+                        if (lowerText.includes('help') || lowerText.includes('what can you do') || lowerText.includes('commands')) {
+                            return { 
+                                success: true, 
+                                action: 'ide_help', 
+                                message: 'Coder1 IDE Voice Commands: "Start building" for new projects, "Generate PRD" for requirements, "Create wireframes" for layouts, "Consult experts" for advice, "Go home" to return to homepage, "Export project" to download, and "Manage versions" for version control.' 
+                            };
+                        }
+                        
+                        // Fall back to original command processing
+                        return await originalProcessTextCommand.call(this, text);
+                    };
+                    
+                    // Extend the handleCommandResponse for IDE actions
+                    const originalHandleCommandResponse = window.voiceInterface.handleCommandResponse;
+                    
+                    window.voiceInterface.handleCommandResponse = async function(response) {
+                        if (response.action === 'ide_action') {
+                            this.showNotification(response.message, 'info');
+                            this.speak(response.message);
+                            
+                            // Trigger IDE-specific actions
+                            setTimeout(() => {
+                                // Try multiple selector strategies to find the right button
+                                const selectors = [
+                                    `#${response.target}`,
+                                    `[onclick*="${response.target}"]`,
+                                    `.${response.target}`,
+                                    `[data-action="${response.target}"]`,
+                                    `button[class*="${response.target}"]`,
+                                    `[role="button"][class*="${response.target}"]`
+                                ];
+                                
+                                let button = null;
+                                for (let selector of selectors) {
+                                    button = document.querySelector(selector);
+                                    if (button) break;
+                                }
+                                
+                                if (button && typeof button.click === 'function') {
+                                    button.click();
+                                    this.showNotification('✅ Action executed', 'success');
+                                } else {
+                                    // If no button found, provide guidance
+                                    this.showNotification('🔍 Action not available yet - try building a project first', 'warning');
+                                }
+                            }, 1500);
+                            
+                            this.updateUI('success');
+                            return;
+                        } else if (response.action === 'ide_tour' || response.action === 'ide_help') {
+                            this.showNotification('🎯 IDE Help', 'info');
+                            this.speak(response.message);
+                            this.updateUI('success');
+                            return;
+                        }
+                        
+                        // Fall back to original handler
+                        await originalHandleCommandResponse.call(this, response);
+                    };
+                    
+                    console.log('🎤 Coder1 IDE voice commands initialized');
+                }
+            }, 3000);
+        });
+    </script>
+</body>
+</html>

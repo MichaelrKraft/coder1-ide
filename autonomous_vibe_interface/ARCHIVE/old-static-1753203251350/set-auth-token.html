@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Set Auth Token - Coder1</title>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #0a0a0a;
+            color: #fff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+        .container {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 40px;
+            max-width: 500px;
+            width: 100%;
+            text-align: center;
+        }
+        h1 {
+            margin-bottom: 30px;
+            font-size: 24px;
+        }
+        .token-input {
+            width: 100%;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            color: #fff;
+            font-size: 14px;
+            margin-bottom: 20px;
+            box-sizing: border-box;
+        }
+        .token-input:focus {
+            outline: none;
+            border-color: #3b82f6;
+        }
+        .btn {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 10px;
+            transition: background 0.2s;
+        }
+        .btn:hover {
+            background: #2563eb;
+        }
+        .btn-secondary {
+            background: #6b7280;
+        }
+        .btn-secondary:hover {
+            background: #4b5563;
+        }
+        .message {
+            margin-top: 20px;
+            padding: 12px;
+            border-radius: 8px;
+            display: none;
+        }
+        .message.success {
+            background: rgba(34, 197, 94, 0.2);
+            border: 1px solid rgba(34, 197, 94, 0.5);
+            color: #22c55e;
+            display: block;
+        }
+        .message.error {
+            background: rgba(239, 68, 68, 0.2);
+            border: 1px solid rgba(239, 68, 68, 0.5);
+            color: #ef4444;
+            display: block;
+        }
+        .current-token {
+            margin: 20px 0;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            word-break: break-all;
+            font-family: monospace;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔐 Set Authentication Token</h1>
+        
+        <div id="currentToken" class="current-token" style="display: none;">
+            <strong>Current Token:</strong><br>
+            <span id="tokenDisplay"></span>
+        </div>
+        
+        <input 
+            type="text" 
+            id="tokenInput" 
+            class="token-input" 
+            placeholder="Enter your auth token or use demo token"
+            value=""
+        />
+        
+        <div>
+            <button class="btn" onclick="setToken()">Set Token</button>
+            <button class="btn btn-secondary" onclick="useDemoToken()">Use Demo Token</button>
+            <button class="btn btn-secondary" onclick="clearToken()">Clear Token</button>
+        </div>
+        
+        <div id="message" class="message"></div>
+        
+        <div style="margin-top: 30px; font-size: 14px; opacity: 0.7;">
+            <p>This token will be stored in localStorage and used for API authentication.</p>
+            <p><a href="/ide" style="color: #3b82f6;">← Back to IDE</a></p>
+        </div>
+    </div>
+
+    <script>
+        // Check if there's already a token
+        function checkCurrentToken() {
+            const token = localStorage.getItem('authToken');
+            if (token) {
+                document.getElementById('currentToken').style.display = 'block';
+                document.getElementById('tokenDisplay').textContent = token.substring(0, 20) + '...';
+            }
+        }
+
+        function showMessage(text, type) {
+            const messageEl = document.getElementById('message');
+            messageEl.textContent = text;
+            messageEl.className = 'message ' + type;
+            setTimeout(() => {
+                messageEl.className = 'message';
+            }, 3000);
+        }
+
+        function setToken() {
+            const token = document.getElementById('tokenInput').value.trim();
+            if (!token) {
+                showMessage('Please enter a token', 'error');
+                return;
+            }
+            
+            localStorage.setItem('authToken', token);
+            showMessage('Token set successfully!', 'success');
+            checkCurrentToken();
+            
+            // Redirect to IDE after 1 second
+            setTimeout(() => {
+                window.location.href = '/ide';
+            }, 1000);
+        }
+
+        function useDemoToken() {
+            // Generate a demo token (in production, this would come from the server)
+            const demoToken = 'demo_' + Math.random().toString(36).substring(2, 15);
+            document.getElementById('tokenInput').value = demoToken;
+            localStorage.setItem('authToken', demoToken);
+            showMessage('Demo token set! Redirecting...', 'success');
+            checkCurrentToken();
+            
+            // Redirect to IDE after 1 second
+            setTimeout(() => {
+                window.location.href = '/ide';
+            }, 1000);
+        }
+
+        function clearToken() {
+            localStorage.removeItem('authToken');
+            document.getElementById('tokenInput').value = '';
+            document.getElementById('currentToken').style.display = 'none';
+            showMessage('Token cleared', 'success');
+        }
+
+        // Check for token on load
+        checkCurrentToken();
+
+        // Handle enter key
+        document.getElementById('tokenInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                setToken();
+            }
+        });
+    </script>
+</body>
+</html>

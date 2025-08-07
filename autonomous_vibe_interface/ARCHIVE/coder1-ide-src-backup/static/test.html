@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interface Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #0a0a0a;
+            color: white;
+            padding: 20px;
+        }
+        .test-card {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .success { color: #00ff88; }
+        .error { color: #ff6b6b; }
+    </style>
+</head>
+<body>
+    <div class="test-card">
+        <h1>🔧 Interface Diagnostic Test</h1>
+        <p>This page helps diagnose interface loading issues.</p>
+        
+        <h3>Resource Loading Tests:</h3>
+        <div id="css-test" class="error">❌ CSS: Not loaded</div>
+        <div id="js-test" class="error">❌ JavaScript: Not loaded</div>
+        <div id="fonts-test" class="error">❌ Fonts: Not loaded</div>
+        
+        <h3>Browser Information:</h3>
+        <div id="browser-info"></div>
+        
+        <h3>Console Errors:</h3>
+        <div id="console-errors">Check browser developer console for errors</div>
+        
+        <h3>Quick Actions:</h3>
+        <button onclick="testMainInterface()">Test Main Interface</button>
+        <button onclick="clearCache()">Clear Cache Instructions</button>
+    </div>
+
+    <script>
+        // Test JavaScript loading
+        document.getElementById('js-test').innerHTML = '✅ JavaScript: Loaded';
+        document.getElementById('js-test').className = 'success';
+        
+        // Test CSS loading
+        const testElement = document.createElement('div');
+        testElement.style.background = 'rgba(255, 255, 255, 0.1)';
+        if (getComputedStyle(testElement).background) {
+            document.getElementById('css-test').innerHTML = '✅ CSS: Loaded';
+            document.getElementById('css-test').className = 'success';
+        }
+        
+        // Test fonts
+        document.fonts.ready.then(() => {
+            document.getElementById('fonts-test').innerHTML = '✅ Fonts: Loaded';
+            document.getElementById('fonts-test').className = 'success';
+        });
+        
+        // Browser info
+        document.getElementById('browser-info').innerHTML = `
+            <strong>User Agent:</strong> ${navigator.userAgent}<br>
+            <strong>URL:</strong> ${window.location.href}<br>
+            <strong>Cookies Enabled:</strong> ${navigator.cookieEnabled}<br>
+            <strong>Local Storage:</strong> ${typeof(Storage) !== "undefined" ? 'Available' : 'Not available'}
+        `;
+        
+        function testMainInterface() {
+            window.location.href = '/';
+        }
+        
+        function clearCache() {
+            alert(`To clear cache and fix loading issues:
+
+Chrome/Edge: Ctrl+Shift+R (Cmd+Shift+R on Mac)
+Firefox: Ctrl+F5 (Cmd+Shift+R on Mac)
+Safari: Cmd+Option+R
+
+Or:
+1. Open Developer Tools (F12)
+2. Right-click refresh button
+3. Select "Empty Cache and Hard Reload"
+
+Then try accessing http://localhost:3000 again.`);
+        }
+        
+        // Capture console errors
+        window.addEventListener('error', function(e) {
+            const errorDiv = document.getElementById('console-errors');
+            errorDiv.innerHTML += `<div class="error">❌ ${e.message} at ${e.filename}:${e.lineno}</div>`;
+        });
+    </script>
+</body>
+</html>

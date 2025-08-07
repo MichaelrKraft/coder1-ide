@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple CSS Test</title>
+    <link rel="stylesheet" href="test-styles.css">
+</head>
+<body>
+    <h1>CSS Test Page</h1>
+    <div class="test-working">
+        If you see this box with a yellow border on a blue background, CSS is working.
+        The page should have a red background.
+    </div>
+    
+    <p>If CSS is working, this page should look very colorful (red background, green heading, blue box with yellow border).</p>
+    
+    <p>If CSS is NOT working, this will look like plain black text on white background.</p>
+    
+    <script>
+        console.log('JavaScript is working');
+        
+        // Test if CSS loaded
+        const testDiv = document.querySelector('.test-working');
+        const computedStyle = window.getComputedStyle(testDiv);
+        
+        if (computedStyle.backgroundColor === 'rgb(0, 0, 255)' || computedStyle.backgroundColor === 'blue') {
+            console.log('✅ CSS is loading and applying correctly');
+        } else {
+            console.log('❌ CSS is NOT applying correctly');
+            console.log('Background color detected:', computedStyle.backgroundColor);
+        }
+    </script>
+</body>
+</html>

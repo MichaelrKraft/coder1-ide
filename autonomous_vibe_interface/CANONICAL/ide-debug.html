@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IDE Debug Test</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0a0a0f;
+            color: #c0caf5;
+            margin: 0;
+            padding: 20px;
+        }
+        .debug-container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .test-section {
+            background: #1a1b26;
+            border: 1px solid #414868;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .test-button {
+            background: #7aa2f7;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+            font-family: monospace;
+        }
+        .success { background: #1a5a3e; }
+        .error { background: #5a1a1a; }
+        .info { background: #1a3a5a; }
+    </style>
+</head>
+<body>
+    <div class="debug-container">
+        <h1>🔧 IDE Debug Console</h1>
+        
+        <div class="test-section">
+            <h2>Asset Loading Tests</h2>
+            <button class="test-button" onclick="testCSSLoading()">Test CSS Loading</button>
+            <button class="test-button" onclick="testJSLoading()">Test JS Loading</button>
+            <button class="test-button" onclick="testReactMount()">Test React Mount</button>
+            <div id="asset-results" class="status info">Click buttons to test...</div>
+        </div>
+
+        <div class="test-section">
+            <h2>Console Logs</h2>
+            <div id="console-output" class="status info">Monitoring console...</div>
+        </div>
+
+        <div class="test-section">
+            <h2>React IDE Test Frame</h2>
+            <p>This should show the actual React app:</p>
+            <iframe 
+                src="/ide" 
+                width="100%" 
+                height="600" 
+                style="border: 1px solid #414868; border-radius: 4px;">
+            </iframe>
+        </div>
+    </div>
+
+    <script>
+        // Capture console logs
+        const originalLog = console.log;
+        const originalError = console.error;
+        const originalWarn = console.warn;
+        const consoleOutput = document.getElementById('console-output');
+        
+        function addConsoleMessage(level, message) {
+            const timestamp = new Date().toLocaleTimeString();
+            consoleOutput.innerHTML += `<br>[${timestamp}] ${level}: ${message}`;
+            consoleOutput.scrollTop = consoleOutput.scrollHeight;
+        }
+        
+        console.log = function(...args) {
+            addConsoleMessage('LOG', args.join(' '));
+            originalLog.apply(console, args);
+        };
+        
+        console.error = function(...args) {
+            addConsoleMessage('ERROR', args.join(' '));
+            originalError.apply(console, args);
+        };
+        
+        console.warn = function(...args) {
+            addConsoleMessage('WARN', args.join(' '));
+            originalWarn.apply(console, args);
+        };
+
+        async function testCSSLoading() {
+            const resultsDiv = document.getElementById('asset-results');
+            
+            try {
+                const response = await fetch('/static/css/main.7550d21d.css');
+                if (response.ok) {
+                    resultsDiv.className = 'status success';
+                    resultsDiv.textContent = '✅ CSS loads successfully - Status: ' + response.status;
+                } else {
+                    resultsDiv.className = 'status error';
+                    resultsDiv.textContent = '❌ CSS failed to load - Status: ' + response.status;
+                }
+            } catch (error) {
+                resultsDiv.className = 'status error';
+                resultsDiv.textContent = '❌ CSS load error: ' + error.message;
+            }
+        }
+
+        async function testJSLoading() {
+            const resultsDiv = document.getElementById('asset-results');
+            
+            try {
+                const response = await fetch('/static/js/main.3301213f.js');
+                if (response.ok) {
+                    const text = await response.text();
+                    const hasReact = text.includes('react');
+                    resultsDiv.className = 'status success';
+                    resultsDiv.textContent = `✅ JS loads successfully - Status: ${response.status}, Contains React: ${hasReact}`;
+                } else {
+                    resultsDiv.className = 'status error';
+                    resultsDiv.textContent = '❌ JS failed to load - Status: ' + response.status;
+                }
+            } catch (error) {
+                resultsDiv.className = 'status error';
+                resultsDiv.textContent = '❌ JS load error: ' + error.message;
+            }
+        }
+
+        async function testReactMount() {
+            const resultsDiv = document.getElementById('asset-results');
+            
+            // Create a test div to see if React would mount
+            const testDiv = document.createElement('div');
+            testDiv.id = 'react-test-root';
+            testDiv.style.cssText = 'width: 100%; height: 100px; border: 1px solid #414868; margin: 10px 0; display: flex; align-items: center; justify-content: center;';
+            testDiv.textContent = 'React Mount Test Area';
+            
+            resultsDiv.appendChild(testDiv);
+            
+            // Try to dynamically load and test React
+            try {
+                // Test if React globals exist
+                const script = document.createElement('script');
+                script.src = '/static/js/main.3301213f.js';
+                script.onload = function() {
+                    setTimeout(() => {
+                        const hasReactRoot = document.getElementById('react-test-root');
+                        resultsDiv.className = 'status success';
+                        resultsDiv.innerHTML += '<br>✅ React script loaded successfully';
+                    }, 1000);
+                };
+                script.onerror = function() {
+                    resultsDiv.className = 'status error';
+                    resultsDiv.innerHTML += '<br>❌ Failed to load React script';
+                };
+                document.head.appendChild(script);
+                
+            } catch (error) {
+                resultsDiv.className = 'status error';
+                resultsDiv.textContent = '❌ React mount test error: ' + error.message;
+            }
+        }
+
+        // Auto-run tests on load
+        setTimeout(() => {
+            console.log('IDE Debug page loaded');
+            testCSSLoading();
+        }, 1000);
+    </script>
+</body>
+</html>

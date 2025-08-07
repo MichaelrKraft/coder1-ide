@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Coder1 - Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0a0a0a;
+            color: #e0e0e0;
+            min-height: 100vh;
+        }
+
+        .header {
+            background: #1a1a1a;
+            border-bottom: 1px solid #333;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            background: linear-gradient(45deg, #007bff, #00d4ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .user-email {
+            color: #666;
+        }
+
+        .logout-btn {
+            padding: 8px 16px;
+            background: #333;
+            border: 1px solid #444;
+            border-radius: 6px;
+            color: #e0e0e0;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .logout-btn:hover {
+            background: #444;
+            border-color: #555;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 20px;
+        }
+
+        .card {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 12px;
+            padding: 24px;
+        }
+
+        .card h2 {
+            font-size: 20px;
+            margin-bottom: 20px;
+            color: #fff;
+        }
+
+        .api-key-form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        label {
+            color: #ccc;
+            font-size: 14px;
+        }
+
+        input, select {
+            padding: 12px;
+            background: #0a0a0a;
+            border: 1px solid #333;
+            border-radius: 6px;
+            color: #e0e0e0;
+            font-size: 16px;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: #007bff;
+        }
+
+        .btn-primary {
+            padding: 12px 24px;
+            background: linear-gradient(45deg, #007bff, #00d4ff);
+            border: none;
+            border-radius: 6px;
+            color: white;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 123, 255, 0.4);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .api-key-status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px;
+            background: #0a0a0a;
+            border: 1px solid #333;
+            border-radius: 6px;
+            margin-top: 10px;
+        }
+
+        .status-icon {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .status-active {
+            background: #51cf66;
+        }
+
+        .status-missing {
+            background: #ff6b6b;
+        }
+
+        .usage-stats {
+            margin-top: 20px;
+        }
+
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #333;
+        }
+
+        .stat-row:last-child {
+            border-bottom: none;
+        }
+
+        .stat-label {
+            color: #666;
+        }
+
+        .stat-value {
+            font-weight: 600;
+            color: #e0e0e0;
+        }
+
+        .action-buttons {
+            margin-top: 20px;
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-secondary {
+            padding: 10px 20px;
+            background: #333;
+            border: 1px solid #444;
+            border-radius: 6px;
+            color: #e0e0e0;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-secondary:hover {
+            background: #444;
+            border-color: #555;
+        }
+
+        .message {
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .error-message {
+            background: #ff00001a;
+            border: 1px solid #ff0000;
+            color: #ff6b6b;
+        }
+
+        .success-message {
+            background: #00ff001a;
+            border: 1px solid #00ff00;
+            color: #51cf66;
+        }
+
+        .sessions-list {
+            margin-top: 20px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .session-item {
+            padding: 12px;
+            background: #0a0a0a;
+            border: 1px solid #333;
+            border-radius: 6px;
+            margin-bottom: 10px;
+        }
+
+        .session-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .session-command {
+            font-family: monospace;
+            color: #8ab4f8;
+            font-size: 14px;
+        }
+
+        .session-status {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .status-running {
+            background: #51cf6633;
+            color: #51cf66;
+        }
+
+        .status-stopped {
+            background: #ff6b6b33;
+            color: #ff6b6b;
+        }
+
+        .session-stats {
+            display: flex;
+            gap: 20px;
+            font-size: 14px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Coder1 Dashboard</h1>
+        <div class="user-info">
+            <span class="user-email" id="userEmail">Loading...</span>
+            <button class="logout-btn" onclick="logout()">Logout</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="message error-message" id="errorMessage"></div>
+        <div class="message success-message" id="successMessage"></div>
+
+        <div class="dashboard-grid">
+            <div class="card">
+                <h2>API Configuration</h2>
+                <form id="apiKeyForm" class="api-key-form">
+                    <div class="form-group">
+                        <label for="provider">Provider</label>
+                        <select id="provider" name="provider">
+                            <option value="anthropic">Anthropic (Claude)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="apiKey">API Key</label>
+                        <input type="password" id="apiKey" name="apiKey" placeholder="sk-ant-api03-..." required>
+                    </div>
+                    <button type="submit" class="btn-primary">Save API Key</button>
+                </form>
+                
+                <div class="api-key-status" id="apiKeyStatus">
+                    <div class="status-icon status-missing"></div>
+                    <span>No API key configured</span>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>Usage Statistics</h2>
+                <div class="usage-stats" id="usageStats">
+                    <div class="stat-row">
+                        <span class="stat-label">Total Requests</span>
+                        <span class="stat-value" id="totalRequests">0</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">Tokens Used</span>
+                        <span class="stat-value" id="tokensUsed">0</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">Total Cost</span>
+                        <span class="stat-value" id="totalCost">$0.00</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">Period</span>
+                        <span class="stat-value">Last 30 days</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>Quick Actions</h2>
+                <div class="action-buttons">
+                    <a href="/ide" class="btn-secondary">Open IDE</a>
+                    <a href="/platform" class="btn-secondary">Platform Home</a>
+                    <button class="btn-secondary" onclick="testConnection()">Test API Connection</button>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>Recent Infinite Loop Sessions</h2>
+                <div class="sessions-list" id="sessionsList">
+                    <p style="color: #666;">No sessions found</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const token = localStorage.getItem('authToken');
+        const userEmail = localStorage.getItem('userEmail');
+
+        // Check authentication
+        if (!token) {
+            window.location.href = '/login.html';
+        }
+
+        // Set user email
+        document.getElementById('userEmail').textContent = userEmail || 'User';
+
+        // Load initial data
+        loadApiKeyStatus();
+        loadUsageStats();
+        loadSessions();
+
+        // API Key form submission
+        document.getElementById('apiKeyForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const apiKey = document.getElementById('apiKey').value;
+            const provider = document.getElementById('provider').value;
+            
+            try {
+                const response = await fetch('/api/auth/api-key', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ apiKey, provider })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.success) {
+                    showMessage('success', 'API key saved successfully!');
+                    document.getElementById('apiKey').value = '';
+                    loadApiKeyStatus();
+                } else {
+                    throw new Error(data.error || 'Failed to save API key');
+                }
+            } catch (error) {
+                showMessage('error', error.message);
+            }
+        });
+
+        async function loadApiKeyStatus() {
+            // This would typically check if the user has an API key configured
+            // For now, we'll just update the UI
+            const statusDiv = document.getElementById('apiKeyStatus');
+            // You could make an API call here to check status
+        }
+
+        async function loadUsageStats() {
+            try {
+                const response = await fetch('/api/auth/usage', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.success && data.stats.length > 0) {
+                        // Calculate totals
+                        const totals = data.stats.reduce((acc, day) => ({
+                            requests: acc.requests + parseInt(day.total_requests),
+                            tokens: acc.tokens + parseInt(day.total_tokens),
+                            cost: acc.cost + parseInt(day.total_cost_cents)
+                        }), { requests: 0, tokens: 0, cost: 0 });
+                        
+                        document.getElementById('totalRequests').textContent = totals.requests.toLocaleString();
+                        document.getElementById('tokensUsed').textContent = totals.tokens.toLocaleString();
+                        document.getElementById('totalCost').textContent = `$${(totals.cost / 100).toFixed(2)}`;
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to load usage stats:', error);
+            }
+        }
+
+        async function loadSessions() {
+            try {
+                const response = await fetch('/api/infinite/sessions', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.success && data.sessions.length > 0) {
+                        const sessionsList = document.getElementById('sessionsList');
+                        sessionsList.innerHTML = data.sessions.map(session => `
+                            <div class="session-item">
+                                <div class="session-header">
+                                    <span class="session-command">${session.command}</span>
+                                    <span class="session-status status-${session.status}">${session.status}</span>
+                                </div>
+                                <div class="session-stats">
+                                    <span>Waves: ${session.waves_completed || 0}</span>
+                                    <span>Components: ${session.components_generated || 0}</span>
+                                    <span>${new Date(session.started_at).toLocaleDateString()}</span>
+                                </div>
+                            </div>
+                        `).join('');
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to load sessions:', error);
+            }
+        }
+
+        async function testConnection() {
+            try {
+                const response = await fetch('/api/infinite/test-connection', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showMessage('success', 'API connection successful!');
+                    // Update status indicator
+                    const statusDiv = document.getElementById('apiKeyStatus');
+                    statusDiv.innerHTML = `
+                        <div class="status-icon status-active"></div>
+                        <span>API key is active and working</span>
+                    `;
+                } else {
+                    showMessage('error', data.message || 'Connection test failed');
+                }
+            } catch (error) {
+                showMessage('error', 'Failed to test connection');
+            }
+        }
+
+        function showMessage(type, message) {
+            const errorMsg = document.getElementById('errorMessage');
+            const successMsg = document.getElementById('successMessage');
+            
+            errorMsg.style.display = 'none';
+            successMsg.style.display = 'none';
+            
+            if (type === 'error') {
+                errorMsg.textContent = message;
+                errorMsg.style.display = 'block';
+            } else {
+                successMsg.textContent = message;
+                successMsg.style.display = 'block';
+            }
+            
+            // Auto-hide after 5 seconds
+            setTimeout(() => {
+                errorMsg.style.display = 'none';
+                successMsg.style.display = 'none';
+            }, 5000);
+        }
+
+        function logout() {
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('userEmail');
+            window.location.href = '/login.html';
+        }
+    </script>
+</body>
+</html>

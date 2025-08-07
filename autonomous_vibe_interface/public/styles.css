@@ -150,7 +150,7 @@ body {
 /* Header */
 .header {
     margin-bottom: 30px;
-    padding: 20px 30px;
+    padding: 10px 30px;
     position: relative;
     overflow: hidden;
 }
@@ -1074,7 +1074,7 @@ body {
 .send-btn {
     width: 40px;
     height: 40px;
-    border: none;
+    border: 2px solid transparent;
     background: linear-gradient(135deg, #8b5cf6, #06b6d4);
     color: #ffffff;
     border-radius: 8px;
@@ -1087,7 +1087,64 @@ body {
 
 .send-btn:hover {
     transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(139, 92, 246, 0.4);
+    box-shadow: 0 0 20px rgba(249, 115, 22, 0.6);
+    border-color: #f97316;
+}
+
+.mic-btn {
+    width: 40px;
+    height: 40px;
+    border: 2px solid #3b82f6;
+    background: transparent;
+    color: #3b82f6;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 8px;
+    box-shadow: 0 0 10px rgba(59, 130, 246, 0.3);
+}
+
+.mic-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0 20px rgba(249, 115, 22, 0.6);
+    border-color: #f97316;
+    color: #f97316;
+    text-shadow: 0 0 10px rgba(249, 115, 22, 0.8);
+}
+
+.mic-btn.listening {
+    border-color: #10b981;
+    color: #10b981;
+    background: rgba(16, 185, 129, 0.1);
+    box-shadow: 0 0 15px rgba(16, 185, 129, 0.5);
+    text-shadow: 0 0 8px rgba(16, 185, 129, 0.8);
+    animation: pulse 1.5s infinite;
+}
+
+.mic-btn.processing {
+    border-color: #f59e0b;
+    color: #f59e0b;
+    background: rgba(245, 158, 11, 0.1);
+    box-shadow: 0 0 15px rgba(245, 158, 11, 0.5);
+    text-shadow: 0 0 8px rgba(245, 158, 11, 0.8);
+}
+
+@keyframes pulse {
+    0% { 
+        transform: scale(1) translateY(-2px); 
+        box-shadow: 0 0 15px rgba(16, 185, 129, 0.5);
+    }
+    50% { 
+        transform: scale(1.05) translateY(-2px); 
+        box-shadow: 0 0 25px rgba(16, 185, 129, 0.8);
+    }
+    100% { 
+        transform: scale(1) translateY(-2px); 
+        box-shadow: 0 0 15px rgba(16, 185, 129, 0.5);
+    }
 }
 
 /* Sidebar */

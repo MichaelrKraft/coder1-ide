@@ -135,4 +135,32 @@ router.get('/demo/status', (req, res) => {
     });
 });
 
+router.post('/stop/:sessionId', (req, res) => {
+    const { sessionId } = req.params;
+    const session = hivemindSessions.get(sessionId);
+    
+    if (!session) {
+        return res.json({
+            success: false,
+            message: 'Session not found'
+        });
+    }
+    
+    session.status = 'stopped';
+    session.stopTime = Date.now();
+    
+    console.log('Stopping Hivemind session:', sessionId);
+    
+    res.json({
+        success: true,
+        message: 'Hivemind session stopped successfully',
+        sessionId: sessionId,
+        finalStats: {
+            runtime: session.stopTime - session.startTime,
+            tasksCompleted: session.tasksCompleted,
+            memorySize: session.sharedMemory.length
+        }
+    });
+});
+
 module.exports = router;

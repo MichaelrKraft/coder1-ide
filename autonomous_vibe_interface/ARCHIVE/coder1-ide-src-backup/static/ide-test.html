@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>IDE Port Test</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            padding: 20px;
+            background: #1a1b26;
+            color: #c0caf5;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 10px;
+            background: #414868;
+            color: #c0caf5;
+            border: 1px solid #565f89;
+            cursor: pointer;
+            border-radius: 6px;
+        }
+        button:hover {
+            background: #565f89;
+        }
+        .info {
+            background: #24283b;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border: 1px solid #414868;
+        }
+        iframe {
+            width: 100%;
+            height: 600px;
+            border: 2px solid #414868;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 IDE Access Diagnostic</h1>
+    
+    <div class="info">
+        <h3>Current Setup:</h3>
+        <ul>
+            <li>Port 3000: Main Coder1 Interface</li>
+            <li>Port 3001: Coder1 IDE (React App)</li>
+        </ul>
+    </div>
+    
+    <h3>Test Different Access Methods:</h3>
+    
+    <button onclick="testDirectNav()">
+        1. Direct Navigation (Current Tab)
+    </button>
+    
+    <button onclick="testNewTab()">
+        2. Open in New Tab
+    </button>
+    
+    <button onclick="testNewWindow()">
+        3. Open in New Window
+    </button>
+    
+    <button onclick="testIframe()">
+        4. Load in iFrame Below
+    </button>
+    
+    <button onclick="checkPorts()">
+        5. Check Both Ports (Console)
+    </button>
+    
+    <div id="iframe-container"></div>
+    
+    <div class="info" id="results" style="display: none;">
+        <h3>Results:</h3>
+        <div id="results-content"></div>
+    </div>
+    
+    <script>
+        function testDirectNav() {
+            console.log('Testing direct navigation to port 3001...');
+            window.location.href = 'http://localhost:3001';
+        }
+        
+        function testNewTab() {
+            console.log('Testing new tab to port 3001...');
+            const win = window.open('http://localhost:3001', '_blank');
+            if (!win) {
+                alert('Popup blocked! Please allow popups for this site.');
+            }
+        }
+        
+        function testNewWindow() {
+            console.log('Testing new window to port 3001...');
+            const win = window.open('http://localhost:3001', 'coder1-ide', 'width=1200,height=800');
+            if (!win) {
+                alert('Popup blocked! Please allow popups for this site.');
+            }
+        }
+        
+        function testIframe() {
+            console.log('Testing iframe to port 3001...');
+            const container = document.getElementById('iframe-container');
+            container.innerHTML = '<iframe src="http://localhost:3001" title="Coder1 IDE"></iframe>';
+        }
+        
+        async function checkPorts() {
+            console.log('Checking both ports...');
+            const results = document.getElementById('results');
+            const content = document.getElementById('results-content');
+            results.style.display = 'block';
+            
+            try {
+                // Check port 3000
+                const res3000 = await fetch('http://localhost:3000');
+                const text3000 = await res3000.text();
+                const title3000 = text3000.match(/<title>(.*?)<\/title>/)?.[1] || 'Unknown';
+                
+                // Check port 3001
+                const res3001 = await fetch('http://localhost:3001');
+                const text3001 = await res3001.text();
+                const title3001 = text3001.match(/<title>(.*?)<\/title>/)?.[1] || 'Unknown';
+                
+                content.innerHTML = `
+                    <strong>Port 3000:</strong> ${title3000}<br>
+                    <strong>Port 3001:</strong> ${title3001}<br><br>
+                    ${title3001.includes('IDE') ? '✅ IDE is correctly on port 3001!' : '❌ IDE not found on port 3001'}
+                `;
+                
+                console.log('Port 3000 title:', title3000);
+                console.log('Port 3001 title:', title3001);
+                
+            } catch (error) {
+                content.innerHTML = 'Error checking ports: ' + error.message;
+            }
+        }
+        
+        // Auto-check on load
+        window.onload = () => {
+            console.log('IDE Test Page loaded at', new Date());
+            checkPorts();
+        };
+    </script>
+</body>
+</html>

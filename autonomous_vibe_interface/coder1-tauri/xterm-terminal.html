@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Coder1 IDE with Terminal</title>
+    <link rel="stylesheet" href="node_modules/@xterm/xterm/css/xterm.css" />
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            background-color: #1e1e1e;
+        }
+        
+        .header {
+            background-color: #2d2d2d;
+            color: #d4d4d4;
+            padding: 10px 20px;
+            text-align: center;
+            font-size: 18px;
+            border-bottom: 1px solid #444;
+        }
+        
+        #ide-container {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #d4d4d4;
+            font-size: 24px;
+            background-color: #1e1e1e;
+        }
+        
+        #terminal-container {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 0;
+            background-color: #1e1e1e;
+            border-top: 1px solid #444;
+            transition: height 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        
+        #terminal-container.open {
+            height: 40vh;
+        }
+        
+        .terminal-header {
+            background-color: #2d2d2d;
+            padding: 8px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #444;
+            flex-shrink: 0;
+        }
+        
+        .terminal-close {
+            background: none;
+            border: none;
+            color: #d4d4d4;
+            cursor: pointer;
+            font-size: 20px;
+        }
+        
+        .terminal-close:hover {
+            color: #ff6b6b;
+        }
+        
+        #terminal {
+            flex: 1;
+            overflow: hidden;
+        }
+        
+        .terminal-button {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background-color: #007acc;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 12px 24px;
+            font-size: 16px;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+            z-index: 1000;
+            transition: all 0.3s ease;
+        }
+        
+        .terminal-button:hover {
+            background-color: #005a9e;
+        }
+        
+        .terminal-button.terminal-open {
+            bottom: calc(40vh + 20px);
+        }
+    </style>
+</head>
+<body>
+    <div class="header">Coder1 IDE - Terminal Test</div>
+    
+    <div id="ide-container">
+        <div>Click the blue button to open terminal</div>
+    </div>
+    
+    <button class="terminal-button" id="terminal-toggle">Open Terminal</button>
+    
+    <div id="terminal-container">
+        <div class="terminal-header">
+            <span>Terminal - Claude CLI Ready</span>
+            <button class="terminal-close" id="terminal-close">×</button>
+        </div>
+        <div id="terminal"></div>
+    </div>
+
+    <script type="module">
+        import { Terminal } from './node_modules/@xterm/xterm/lib/xterm.js';
+        import { FitAddon } from './node_modules/@xterm/addon-fit/lib/addon-fit.js';
+        
+        const { invoke } = window.__TAURI__ || {};
+        const { listen } = window.__TAURI__.event || {};
+        
+        let term = null;
+        let fitAddon = null;
+        let terminalId = null;
+        let terminalOpen = false;
+        
+        const terminalButton = document.getElementById('terminal-toggle');
+        const terminalContainer = document.getElementById('terminal-container');
+        const terminalClose = document.getElementById('terminal-close');
+        const terminalDiv = document.getElementById('terminal');
+        
+        async function initTerminal() {
+            if (term) return;
+            
+            // Create xterm.js instance
+            term = new Terminal({
+                cursorBlink: true,
+                fontSize: 14,
+                fontFamily: 'Menlo, Monaco, "Courier New", monospace',
+                theme: {
+                    background: '#1e1e1e',
+                    foreground: '#d4d4d4',
+                    cursor: '#d4d4d4',
+                    black: '#000000',
+                    red: '#cc0000',
+                    green: '#4e9a06',
+                    yellow: '#c4a000',
+                    blue: '#3465a4',
+                    magenta: '#75507b',
+                    cyan: '#06989a',
+                    white: '#d3d7cf',
+                    brightBlack: '#555753',
+                    brightRed: '#ef2929',
+                    brightGreen: '#8ae234',
+                    brightYellow: '#fce94f',
+                    brightBlue: '#729fcf',
+                    brightMagenta: '#ad7fa8',
+                    brightCyan: '#34e2e2',
+                    brightWhite: '#eeeeec'
+                }
+            });
+            
+            fitAddon = new FitAddon();
+            term.loadAddon(fitAddon);
+            
+            term.open(terminalDiv);
+            fitAddon.fit();
+            
+            // Create PTY backend
+            terminalId = 'terminal-' + Date.now();
+            
+            try {
+                await invoke('create_terminal', { 
+                    id: terminalId 
+                });
+                
+                // Listen for output from PTY
+                await listen('terminal-output', (event) => {
+                    const [id, data] = event.payload;
+                    if (id === terminalId && term) {
+                        term.write(data);
+                    }
+                });
+                
+                // Send input to PTY
+                term.onData((data) => {
+                    if (terminalId) {
+                        invoke('write_terminal', {
+                            id: terminalId,
+                            data: data
+                        }).catch(console.error);
+                    }
+                });
+                
+                // Handle resize
+                const resizeObserver = new ResizeObserver(() => {
+                    if (term && terminalOpen) {
+                        fitAddon.fit();
+                        const dimensions = fitAddon.proposeDimensions();
+                        if (dimensions && terminalId) {
+                            invoke('resize_terminal', {
+                                id: terminalId,
+                                rows: dimensions.rows,
+                                cols: dimensions.cols
+                            }).catch(console.error);
+                        }
+                    }
+                });
+                resizeObserver.observe(terminalDiv);
+                
+                term.write('🚀 Coder1 IDE Terminal\r\n');
+                term.write('Type commands and press Enter. Try "claude" to start Claude CLI.\r\n\r\n');
+                
+            } catch (error) {
+                console.error('Failed to create terminal:', error);
+                term.write('\r\n\x1b[31mError: Failed to create terminal backend\x1b[0m\r\n');
+            }
+        }
+        
+        // Terminal toggle button
+        terminalButton.addEventListener('click', async () => {
+            if (!terminalOpen) {
+                terminalContainer.classList.add('open');
+                terminalButton.classList.add('terminal-open');
+                terminalButton.textContent = 'Close Terminal';
+                terminalOpen = true;
+                
+                await initTerminal();
+                
+                if (fitAddon) {
+                    setTimeout(() => fitAddon.fit(), 100);
+                }
+            } else {
+                terminalContainer.classList.remove('open');
+                terminalButton.classList.remove('terminal-open');
+                terminalButton.textContent = 'Open Terminal';
+                terminalOpen = false;
+            }
+        });
+        
+        // Terminal close button
+        terminalClose.addEventListener('click', () => {
+            terminalContainer.classList.remove('open');
+            terminalButton.classList.remove('terminal-open');
+            terminalButton.textContent = 'Open Terminal';
+            terminalOpen = false;
+        });
+        
+        // Cleanup on window close
+        window.addEventListener('beforeunload', () => {
+            if (terminalId) {
+                invoke('close_terminal', { id: terminalId }).catch(console.error);
+            }
+        });
+    </script>
+</body>
+</html>

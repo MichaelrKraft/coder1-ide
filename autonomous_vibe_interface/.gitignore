@@ -49,3 +49,4 @@ terminal-server-debug.js
 simple-terminal-test.html
 simple-test-server.js
 standalone-ide.html
+.vercel

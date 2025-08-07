@@ -2,16 +2,2125 @@
 > autonomous-vibe-coding-agent@1.0.0 start
 > node src/app.js
 
-[dotenv@17.2.0] injecting env (0) from .env (tip: ⚙️  write to custom object with { processEnv: myObject })
-🚀 Autonomous Vibe Interface running on http://localhost:3000
-📊 Health check: http://localhost:3000/health
-🎤 Voice API: http://localhost:3000/api/voice/*
-🔊 Socket.IO: Voice real-time communication enabled
-TTS Error: 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, read the docs: https://platform.openai.com/docs/guides/error-codes/api-errors.
-Voice client connected: 9VyDNYB4kD95k6_nAAAB
-TTS Error: 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, read the docs: https://platform.openai.com/docs/guides/error-codes/api-errors.
-Voice client disconnected: 9VyDNYB4kD95k6_nAAAB
-Voice client connected: cq46o_2aESUsO3XlAAAD
-Voice client disconnected: cq46o_2aESUsO3XlAAAD
-Voice client connected: fFjLZlHiwucn71grAAAF
-Voice client disconnected: fFjLZlHiwucn71grAAAF
+[dotenv@17.2.0] injecting env (0) from .env (tip: 🔐 encrypt with dotenvx: https://dotenvx.com)
+✅ node-pty loaded successfully
+[INFO] 2025-08-07T06:31:52.360Z - Running in demo mode - using template-based questions
+🤖 Running in demo mode - no real AI API calls
+✅ Memory System: Loaded 23 items from persistent storage
+🧠 Memory System: Initialized at /Users/michaelkraft/autonomous_vibe_interface/.coder1/memory
+🔮 Proactive Intelligence: Initialized and watching for opportunities
+✅ Approval Workflows: Initialized with smart approval system
+⚡ Performance Optimizer: Initialized with intelligent resource management
+🔍 Context Builder: Starting passive project analysis...
+🚀 Enhanced Claude Bridge: All intelligence systems active
+🤖 Running in demo mode - no real AI API calls
+✅ Memory System: Loaded 23 items from persistent storage
+🧠 Memory System: Initialized at /Users/michaelkraft/autonomous_vibe_interface/.coder1/memory
+🔮 Proactive Intelligence: Initialized and watching for opportunities
+✅ Approval Workflows: Initialized with smart approval system
+⚡ Performance Optimizer: Initialized with intelligent resource management
+🔍 Context Builder: Starting passive project analysis...
+🚀 Enhanced Claude Bridge: All intelligence systems active
+[SafePTYManager] Initialized with rate limiting and session management
+[SafePTYManager] Setting up Socket.IO terminal integration...
+[SafePTYManager] Socket.IO terminal integration ready
+[ENHANCED-TERMINAL] Initializing enhanced terminal commands...
+[TERMINAL REST] node-pty loaded successfully
+🚀 Autonomous Vibe Interface running on port 3000
+📊 Health check: /health
+🎤 Voice API: /api/voice/*
+🖥️ Terminal API: /api/terminal/*
+🔊 Socket.IO: Voice & Terminal real-time communication enabled
+🛡️ Rate limiting enabled to prevent excessive API calls
+💡 Terminal WebSocket: ws://127.0.0.1:3000/terminal
+👁️ Watching: src
+👁️ Watching: coder1-ide
+👁️ Watching: public
+🧠 Project patterns updated: {
+  architecture: 'microservices',
+  framework: 'react',
+  testingApproach: 'present',
+  buildSystem: 'npm',
+  codeStyle: {
+    language: 'typescript',
+    framework: 'react-express',
+    style: 'modern'
+  }
+}
+✅ Context Builder: Active and watching for changes
+👁️ Watching: src
+👁️ Watching: coder1-ide
+👁️ Watching: public
+🧠 Project patterns updated: {
+  architecture: 'microservices',
+  framework: 'react',
+  testingApproach: 'present',
+  buildSystem: 'npm',
+  codeStyle: {
+    language: 'typescript',
+    framework: 'react-express',
+    style: 'modern'
+  }
+}
+✅ Context Builder: Active and watching for changes
+🧠 Loaded 13 agent insights from memory
+🧠 Loaded 13 agent insights from memory
+✅ Enhanced Claude Bridge: Intelligence systems initialized
+✅ Enhanced Claude Bridge: Intelligence systems initialized
+[SafePTYManager] Client connected: PpVIAe2_ix1n1JafAAAB
+[SafePTYManager] Creating session: terminal-1754548329931-u8kc3g982
+[SafePTYManager] Shell: bash, CWD: /Users/michaelkraft
+[SafePTYManager] Session created: terminal-1754548329931-u8kc3g982 (1/5)
+🔋 Performance Optimizer: Entering power-save mode
+🔋 Performance Optimizer: Entering power-save mode
+📄 PRD API: Generating PRD for project: prd-v2-1754548341453-k9csde6fl
+Original request: PRD Generation Project
+Questions/Answers count: 3 / 3
+✅ PRD generated successfully, length: 4378 characters
+⚡ Performance Optimizer: Entering normal mode
+🔮 Enhanced Claude Bridge: Generated 1 proactive suggestions
+🔮 Proactive Intelligence: Generated 1 suggestions
+🔋 Performance Optimizer: Entering power-save mode
+⚡ Performance Optimizer: Entering normal mode
+🔮 Enhanced Claude Bridge: Generated 1 proactive suggestions
+🔮 Proactive Intelligence: Generated 1 suggestions
+🔋 Performance Optimizer: Entering power-save mode
+[SafePTYManager] Client disconnected: PpVIAe2_ix1n1JafAAAB
+[SafePTYManager] Session destroyed: terminal-1754548329931-u8kc3g982 (0/5)
+[SafePTYManager] Session terminal-1754548329931-u8kc3g982 exited: code=[object Object], signal=undefined
+[SafePTYManager] Client connected: hCKg-EpJUynho4xCAAAD
+[SafePTYManager] Creating session: terminal-1754548448000-s71k23ka8
+[SafePTYManager] Shell: bash, CWD: /Users/michaelkraft
+[SafePTYManager] Session created: terminal-1754548448000-s71k23ka8 (1/5)
+⚡ Performance Optimizer: System load changed from low to medium
+⚡ Performance Optimizer: Entering normal mode
+⚡ Performance Optimizer: System load changed from low to medium
+⚡ Performance Optimizer: Entering normal mode
+[SafePTYManager] Client disconnected: hCKg-EpJUynho4xCAAAD
+[SafePTYManager] Session destroyed: terminal-1754548448000-s71k23ka8 (0/5)
+[SafePTYManager] Session terminal-1754548448000-s71k23ka8 exited: code=[object Object], signal=undefined
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+💤 Performance Optimizer: Entering hibernation - Inactivity detected
+🧹 Performance Optimizer: Cleared non-essential caches
+💤 Performance Optimizer: Entering hibernation - Inactivity detected
+🧹 Performance Optimizer: Cleared non-essential caches
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔋 Performance Optimizer: Waking up after 3240s - Activity detected: suggestions_generated
+🔋 Restoring proactiveIntelligence to normal operation
+🔋 Restoring contextBuilder to normal operation
+🔋 Restoring memorySystem to normal operation
+🔮 Enhanced Claude Bridge: Generated 1 proactive suggestions
+🔮 Proactive Intelligence: Generated 1 suggestions
+🔋 Performance Optimizer: Waking up after 3240s - Activity detected: suggestions_generated
+🔋 Restoring proactiveIntelligence to normal operation
+🔋 Restoring contextBuilder to normal operation
+🔋 Restoring memorySystem to normal operation
+🔮 Enhanced Claude Bridge: Generated 1 proactive suggestions
+🔮 Proactive Intelligence: Generated 1 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+💤 Performance Optimizer: Entering hibernation - Inactivity detected
+🧹 Performance Optimizer: Cleared non-essential caches
+💤 Performance Optimizer: Entering hibernation - Inactivity detected
+🧹 Performance Optimizer: Cleared non-essential caches
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔋 Performance Optimizer: Waking up after 3300s - Activity detected: suggestions_generated
+🔋 Restoring proactiveIntelligence to normal operation
+🔋 Restoring contextBuilder to normal operation
+🔋 Restoring memorySystem to normal operation
+🔮 Enhanced Claude Bridge: Generated 1 proactive suggestions
+🔮 Proactive Intelligence: Generated 1 suggestions
+🔋 Performance Optimizer: Waking up after 3300s - Activity detected: suggestions_generated
+🔋 Restoring proactiveIntelligence to normal operation
+🔋 Restoring contextBuilder to normal operation
+🔋 Restoring memorySystem to normal operation
+🔮 Enhanced Claude Bridge: Generated 1 proactive suggestions
+🔮 Proactive Intelligence: Generated 1 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+💤 Performance Optimizer: Entering hibernation - Inactivity detected
+🧹 Performance Optimizer: Cleared non-essential caches
+💤 Performance Optimizer: Entering hibernation - Inactivity detected
+🧹 Performance Optimizer: Cleared non-essential caches
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+[SafePTYManager] Client connected: jV2kviq_I9us_NDdAAAF
+[SafePTYManager] Creating session: terminal-1754559015163-wxkrblslj
+[SafePTYManager] Shell: bash, CWD: /Users/michaelkraft
+[SafePTYManager] Session created: terminal-1754559015163-wxkrblslj (1/5)
+[SafePTYManager] Client connected: aOLKSA9gybNByBsQAAAH
+[SafePTYManager] Terminal creation error: Error: Rate limited: Max 5 sessions, min 1000ms interval
+    at SafePTYManager.createSession (/Users/michaelkraft/autonomous_vibe_interface/src/routes/terminal-websocket-safepty.js:45:19)
+    at Socket.<anonymous> (/Users/michaelkraft/autonomous_vibe_interface/src/routes/terminal-websocket-safepty.js:190:48)
+    at Socket.emit (node:events:507:28)
+    at Socket.emitUntyped (/Users/michaelkraft/autonomous_vibe_interface/node_modules/socket.io/dist/typed-events.js:69:22)
+    at /Users/michaelkraft/autonomous_vibe_interface/node_modules/socket.io/dist/socket.js:697:39
+    at process.processTicksAndRejections (node:internal/process/task_queues:85:11)
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+[SafePTYManager] Client disconnected: jV2kviq_I9us_NDdAAAF
+[SafePTYManager] Session destroyed: terminal-1754559015163-wxkrblslj (0/5)
+[SafePTYManager] Client disconnected: aOLKSA9gybNByBsQAAAH
+[SafePTYManager] Session terminal-1754559015163-wxkrblslj exited: code=[object Object], signal=undefined
+[SafePTYManager] Client connected: pC9hpT3x6glD6janAAAJ
+[SafePTYManager] Creating session: terminal-1754559171142-7p4fjqhjm
+[SafePTYManager] Shell: bash, CWD: /Users/michaelkraft
+[SafePTYManager] Session created: terminal-1754559171142-7p4fjqhjm (1/5)
+[SafePTYManager] Client connected: lU4IPs3bzXOiAB6KAAAL
+[SafePTYManager] Terminal creation error: Error: Rate limited: Max 5 sessions, min 1000ms interval
+    at SafePTYManager.createSession (/Users/michaelkraft/autonomous_vibe_interface/src/routes/terminal-websocket-safepty.js:45:19)
+    at Socket.<anonymous> (/Users/michaelkraft/autonomous_vibe_interface/src/routes/terminal-websocket-safepty.js:190:48)
+    at Socket.emit (node:events:507:28)
+    at Socket.emitUntyped (/Users/michaelkraft/autonomous_vibe_interface/node_modules/socket.io/dist/typed-events.js:69:22)
+    at /Users/michaelkraft/autonomous_vibe_interface/node_modules/socket.io/dist/socket.js:697:39
+    at process.processTicksAndRejections (node:internal/process/task_queues:85:11)
+[SafePTYManager] Client disconnected: lU4IPs3bzXOiAB6KAAAL
+[SafePTYManager] Client disconnected: pC9hpT3x6glD6janAAAJ
+[SafePTYManager] Session destroyed: terminal-1754559171142-7p4fjqhjm (0/5)
+[SafePTYManager] Session terminal-1754559171142-7p4fjqhjm exited: code=[object Object], signal=undefined
+[SafePTYManager] Client connected: 2mM-cCJLxDH2zhXyAAAN
+[SafePTYManager] Creating session: terminal-1754559182121-4gqcpolcp
+[SafePTYManager] Shell: bash, CWD: /Users/michaelkraft
+[SafePTYManager] Session created: terminal-1754559182121-4gqcpolcp (1/5)
+[SafePTYManager] Client connected: Oc6Blqmp53ZSOrE_AAAP
+[SafePTYManager] Terminal creation error: Error: Rate limited: Max 5 sessions, min 1000ms interval
+    at SafePTYManager.createSession (/Users/michaelkraft/autonomous_vibe_interface/src/routes/terminal-websocket-safepty.js:45:19)
+    at Socket.<anonymous> (/Users/michaelkraft/autonomous_vibe_interface/src/routes/terminal-websocket-safepty.js:190:48)
+    at Socket.emit (node:events:507:28)
+    at Socket.emitUntyped (/Users/michaelkraft/autonomous_vibe_interface/node_modules/socket.io/dist/typed-events.js:69:22)
+    at /Users/michaelkraft/autonomous_vibe_interface/node_modules/socket.io/dist/socket.js:697:39
+    at process.processTicksAndRejections (node:internal/process/task_queues:85:11)
+[SafePTYManager] Client disconnected: Oc6Blqmp53ZSOrE_AAAP
+[SafePTYManager] Client disconnected: 2mM-cCJLxDH2zhXyAAAN
+[SafePTYManager] Session destroyed: terminal-1754559182121-4gqcpolcp (0/5)
+[SafePTYManager] Session terminal-1754559182121-4gqcpolcp exited: code=[object Object], signal=undefined
+[SafePTYManager] Client connected: h4LwpnZ_9e4Qo6i0AAAR
+[SafePTYManager] Creating session: terminal-1754559191133-p9hfxccri
+[SafePTYManager] Shell: bash, CWD: /Users/michaelkraft
+[SafePTYManager] Session created: terminal-1754559191133-p9hfxccri (1/5)
+[SafePTYManager] Client connected: UenAjWVofEDUGYs5AAAT
+[SafePTYManager] Terminal creation error: Error: Rate limited: Max 5 sessions, min 1000ms interval
+    at SafePTYManager.createSession (/Users/michaelkraft/autonomous_vibe_interface/src/routes/terminal-websocket-safepty.js:45:19)
+    at Socket.<anonymous> (/Users/michaelkraft/autonomous_vibe_interface/src/routes/terminal-websocket-safepty.js:190:48)
+    at Socket.emit (node:events:507:28)
+    at Socket.emitUntyped (/Users/michaelkraft/autonomous_vibe_interface/node_modules/socket.io/dist/typed-events.js:69:22)
+    at /Users/michaelkraft/autonomous_vibe_interface/node_modules/socket.io/dist/socket.js:697:39
+    at process.processTicksAndRejections (node:internal/process/task_queues:85:11)
+[SafePTYManager] Client disconnected: UenAjWVofEDUGYs5AAAT
+[SafePTYManager] Client disconnected: h4LwpnZ_9e4Qo6i0AAAR
+[SafePTYManager] Session destroyed: terminal-1754559191133-p9hfxccri (0/5)
+[SafePTYManager] Session terminal-1754559191133-p9hfxccri exited: code=[object Object], signal=undefined
+[SafePTYManager] Client connected: O7ohUePd9rpRmHULAAAV
+[SafePTYManager] Creating session: terminal-1754559199147-jnm73xjp0
+[SafePTYManager] Shell: bash, CWD: /Users/michaelkraft
+[SafePTYManager] Session created: terminal-1754559199147-jnm73xjp0 (1/5)
+[SafePTYManager] Client disconnected: O7ohUePd9rpRmHULAAAV
+[SafePTYManager] Session destroyed: terminal-1754559199147-jnm73xjp0 (0/5)
+[SafePTYManager] Session terminal-1754559199147-jnm73xjp0 exited: code=[object Object], signal=undefined
+[SafePTYManager] Client connected: 2ObVePiuT2wiQ2fVAAAZ
+[SafePTYManager] Creating session: terminal-1754559243125-5zdkfcgab
+[SafePTYManager] Shell: bash, CWD: /Users/michaelkraft
+[SafePTYManager] Session created: terminal-1754559243125-5zdkfcgab (1/5)
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔋 Performance Optimizer: Waking up after 3300s - Activity detected: suggestions_generated
+🔋 Restoring proactiveIntelligence to normal operation
+🔋 Restoring contextBuilder to normal operation
+🔋 Restoring memorySystem to normal operation
+🔮 Enhanced Claude Bridge: Generated 1 proactive suggestions
+🔮 Proactive Intelligence: Generated 1 suggestions
+🔋 Performance Optimizer: Waking up after 3300s - Activity detected: suggestions_generated
+🔋 Restoring proactiveIntelligence to normal operation
+🔋 Restoring contextBuilder to normal operation
+🔋 Restoring memorySystem to normal operation
+🔮 Enhanced Claude Bridge: Generated 1 proactive suggestions
+🔮 Proactive Intelligence: Generated 1 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+💤 Performance Optimizer: Entering hibernation - Inactivity detected
+🧹 Performance Optimizer: Cleared non-essential caches
+💤 Performance Optimizer: Entering hibernation - Inactivity detected
+🧹 Performance Optimizer: Cleared non-essential caches
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+[SafePTYManager] Cleaning up old session: terminal-1754559243125-5zdkfcgab
+[SafePTYManager] Session destroyed: terminal-1754559243125-5zdkfcgab (0/5)
+[SafePTYManager] Session terminal-1754559243125-5zdkfcgab exited: code=[object Object], signal=undefined
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔋 Performance Optimizer: Waking up after 3270s - Activity detected: suggestions_generated
+🔋 Restoring proactiveIntelligence to normal operation
+🔋 Restoring contextBuilder to normal operation
+🔋 Restoring memorySystem to normal operation
+🔮 Enhanced Claude Bridge: Generated 1 proactive suggestions
+🔮 Proactive Intelligence: Generated 1 suggestions
+🔋 Performance Optimizer: Waking up after 3270s - Activity detected: suggestions_generated
+🔋 Restoring proactiveIntelligence to normal operation
+🔋 Restoring contextBuilder to normal operation
+🔋 Restoring memorySystem to normal operation
+🔮 Enhanced Claude Bridge: Generated 1 proactive suggestions
+🔮 Proactive Intelligence: Generated 1 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+💤 Performance Optimizer: Entering hibernation - Inactivity detected
+🧹 Performance Optimizer: Cleared non-essential caches
+💤 Performance Optimizer: Entering hibernation - Inactivity detected
+🧹 Performance Optimizer: Cleared non-essential caches
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔋 Performance Optimizer: Waking up after 3300s - Activity detected: suggestions_generated
+🔋 Restoring proactiveIntelligence to normal operation
+🔋 Restoring contextBuilder to normal operation
+🔋 Restoring memorySystem to normal operation
+🔮 Enhanced Claude Bridge: Generated 1 proactive suggestions
+🔮 Proactive Intelligence: Generated 1 suggestions
+🔋 Performance Optimizer: Waking up after 3300s - Activity detected: suggestions_generated
+🔋 Restoring proactiveIntelligence to normal operation
+🔋 Restoring contextBuilder to normal operation
+🔋 Restoring memorySystem to normal operation
+🔮 Enhanced Claude Bridge: Generated 1 proactive suggestions
+🔮 Proactive Intelligence: Generated 1 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚡ Performance Optimizer: System load changed from medium to high
+🚀 Performance Optimizer: Entering performance mode
+⚡ Performance Optimizer: System load changed from medium to high
+🚀 Performance Optimizer: Entering performance mode
+⚡ Performance Optimizer: System load changed from high to medium
+⚡ Performance Optimizer: Entering normal mode
+⚡ Performance Optimizer: System load changed from high to medium
+⚡ Performance Optimizer: Entering normal mode
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+💤 Performance Optimizer: Entering hibernation - Inactivity detected
+🧹 Performance Optimizer: Cleared non-essential caches
+💤 Performance Optimizer: Entering hibernation - Inactivity detected
+🧹 Performance Optimizer: Cleared non-essential caches
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚡ Performance Optimizer: System load changed from medium to high
+🚀 Performance Optimizer: Entering performance mode
+⚡ Performance Optimizer: System load changed from medium to high
+🚀 Performance Optimizer: Entering performance mode
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚡ Performance Optimizer: System load changed from high to medium
+⚡ Performance Optimizer: Entering normal mode
+⚡ Performance Optimizer: System load changed from high to medium
+⚡ Performance Optimizer: Entering normal mode
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔋 Performance Optimizer: Waking up after 3300s - Activity detected: suggestions_generated
+🔋 Restoring proactiveIntelligence to normal operation
+🔋 Restoring contextBuilder to normal operation
+🔋 Restoring memorySystem to normal operation
+🔮 Enhanced Claude Bridge: Generated 1 proactive suggestions
+🔮 Proactive Intelligence: Generated 1 suggestions
+🔋 Performance Optimizer: Waking up after 3300s - Activity detected: suggestions_generated
+🔋 Restoring proactiveIntelligence to normal operation
+🔋 Restoring contextBuilder to normal operation
+🔋 Restoring memorySystem to normal operation
+🔮 Enhanced Claude Bridge: Generated 1 proactive suggestions
+🔮 Proactive Intelligence: Generated 1 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+💤 Performance Optimizer: Entering hibernation - Inactivity detected
+🧹 Performance Optimizer: Cleared non-essential caches
+💤 Performance Optimizer: Entering hibernation - Inactivity detected
+🧹 Performance Optimizer: Cleared non-essential caches
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔋 Performance Optimizer: Waking up after 3300s - Activity detected: suggestions_generated
+🔋 Restoring proactiveIntelligence to normal operation
+🔋 Restoring contextBuilder to normal operation
+🔋 Restoring memorySystem to normal operation
+🔮 Enhanced Claude Bridge: Generated 1 proactive suggestions
+🔮 Proactive Intelligence: Generated 1 suggestions
+🔋 Performance Optimizer: Waking up after 3300s - Activity detected: suggestions_generated
+🔋 Restoring proactiveIntelligence to normal operation
+🔋 Restoring contextBuilder to normal operation
+🔋 Restoring memorySystem to normal operation
+🔮 Enhanced Claude Bridge: Generated 1 proactive suggestions
+🔮 Proactive Intelligence: Generated 1 suggestions
+[SafePTYManager] Client connected: ceiygdPlD41ttSGJAAAb
+[SafePTYManager] Creating session: terminal-1754575812584-mftkvg5so
+[SafePTYManager] Shell: bash, CWD: /Users/michaelkraft
+[SafePTYManager] Session created: terminal-1754575812584-mftkvg5so (1/5)
+[SafePTYManager] Client disconnected: ceiygdPlD41ttSGJAAAb
+[SafePTYManager] Session destroyed: terminal-1754575812584-mftkvg5so (0/5)
+[SafePTYManager] Session terminal-1754575812584-mftkvg5so exited: code=[object Object], signal=undefined
+[SafePTYManager] Client connected: 5gazNqmTG4u4dEDgAAAd
+[SafePTYManager] Creating session: terminal-1754575837073-qcska5kct
+[SafePTYManager] Shell: bash, CWD: /Users/michaelkraft
+[SafePTYManager] Session created: terminal-1754575837073-qcska5kct (1/5)
+⚡ Performance Optimizer: System load changed from medium to low
+🔋 Performance Optimizer: Entering power-save mode
+⚡ Performance Optimizer: System load changed from medium to low
+🔋 Performance Optimizer: Entering power-save mode
+📄 PRD API: Generating PRD for project: prd-v2-1754575859676-zpzi0tjyf
+Original request: PRD Generation Project
+Questions/Answers count: 3 / 3
+✅ PRD generated successfully, length: 4377 characters
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+[SafePTYManager] Client connected: UTXd4JM4KZPi1vS1AAAf
+[SafePTYManager] Creating session: terminal-1754575977883-p8jq7bwt2
+[SafePTYManager] Shell: bash, CWD: /Users/michaelkraft
+[SafePTYManager] Session created: terminal-1754575977883-p8jq7bwt2 (2/5)
+[SafePTYManager] Client disconnected: 5gazNqmTG4u4dEDgAAAd
+[SafePTYManager] Session destroyed: terminal-1754575837073-qcska5kct (1/5)
+[SafePTYManager] Session terminal-1754575837073-qcska5kct exited: code=[object Object], signal=undefined
+[SafePTYManager] Client connected: ofqBclVfV6pRYwKhAAAh
+[SafePTYManager] Creating session: terminal-1754576019713-d3lj1xqh5
+[SafePTYManager] Shell: bash, CWD: /Users/michaelkraft
+[SafePTYManager] Session created: terminal-1754576019713-d3lj1xqh5 (2/5)
+[SafePTYManager] Client disconnected: UTXd4JM4KZPi1vS1AAAf
+[SafePTYManager] Session destroyed: terminal-1754575977883-p8jq7bwt2 (1/5)
+[SafePTYManager] Session terminal-1754575977883-p8jq7bwt2 exited: code=[object Object], signal=undefined
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+💤 Performance Optimizer: Entering hibernation - Inactivity detected
+🧹 Performance Optimizer: Cleared non-essential caches
+💤 Performance Optimizer: Entering hibernation - Inactivity detected
+🧹 Performance Optimizer: Cleared non-essential caches
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+📄 PRD API: Generating PRD for project: prd-v2-1754577216759-psgw7enpz
+Original request: PRD Generation Project
+Questions/Answers count: 3 / 3
+✅ PRD generated successfully, length: 4377 characters
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚡ Performance Optimizer: System load changed from low to medium
+⚡ Performance Optimizer: Entering normal mode
+⚡ Performance Optimizer: System load changed from low to medium
+⚡ Performance Optimizer: Entering normal mode
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+📄 PRD API: Generating PRD for project: prd-v2-1754578662859-irf1wzer0
+Original request: PRD Generation Project
+Questions/Answers count: 3 / 3
+✅ PRD generated successfully, length: 4381 characters
+📄 PRD API: Generating PRD for project: prd-v2-1754578783010-x8w85rybl
+Original request: PRD Generation Project
+Questions/Answers count: 3 / 3
+✅ PRD generated successfully, length: 4381 characters
+[SafePTYManager] Client connected: iwB2GPsQf858gSShAAAj
+[SafePTYManager] Creating session: terminal-1754578878202-pmx013k2h
+[SafePTYManager] Shell: bash, CWD: /Users/michaelkraft
+[SafePTYManager] Session created: terminal-1754578878202-pmx013k2h (2/5)
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+[SafePTYManager] Client disconnected: iwB2GPsQf858gSShAAAj
+[SafePTYManager] Session destroyed: terminal-1754578878202-pmx013k2h (1/5)
+[SafePTYManager] Session terminal-1754578878202-pmx013k2h exited: code=[object Object], signal=undefined
+⚡ Performance Optimizer: System load changed from medium to low
+🔋 Performance Optimizer: Entering power-save mode
+⚡ Performance Optimizer: System load changed from medium to low
+🔋 Performance Optimizer: Entering power-save mode
+📄 PRD API: Generating PRD for project: prd-v2-1754579011144-l8en3s8xq
+Original request: PRD Generation Project
+Questions/Answers count: 3 / 1
+✅ PRD generated successfully, length: 3953 characters
+[SafePTYManager] Client connected: fNpvTR8uUGabkuUPAAAl
+[SafePTYManager] Creating session: terminal-1754579091909-v7ju9m5jh
+[SafePTYManager] Shell: bash, CWD: /Users/michaelkraft
+[SafePTYManager] Session created: terminal-1754579091909-v7ju9m5jh (2/5)
+⚡ Performance Optimizer: System load changed from low to medium
+⚡ Performance Optimizer: Entering normal mode
+⚡ Performance Optimizer: System load changed from low to medium
+⚡ Performance Optimizer: Entering normal mode
+[SafePTYManager] Client disconnected: fNpvTR8uUGabkuUPAAAl
+[SafePTYManager] Session destroyed: terminal-1754579091909-v7ju9m5jh (1/5)
+[SafePTYManager] Session terminal-1754579091909-v7ju9m5jh exited: code=[object Object], signal=undefined
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+📄 PRD API: Generating PRD for project: prd-v2-1754579372591-avcurl8f6
+Original request: PRD Generation Project
+Questions/Answers count: 3 / 3
+✅ PRD generated successfully, length: 4377 characters
+🔋 Performance Optimizer: Waking up after 3300s - Activity detected: suggestions_generated
+🔋 Restoring proactiveIntelligence to normal operation
+🔋 Restoring contextBuilder to normal operation
+🔋 Restoring memorySystem to normal operation
+🔮 Enhanced Claude Bridge: Generated 1 proactive suggestions
+🔮 Proactive Intelligence: Generated 1 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🔋 Performance Optimizer: Waking up after 3300s - Activity detected: suggestions_generated
+🔋 Restoring proactiveIntelligence to normal operation
+🔋 Restoring contextBuilder to normal operation
+🔋 Restoring memorySystem to normal operation
+🔮 Enhanced Claude Bridge: Generated 1 proactive suggestions
+🔮 Proactive Intelligence: Generated 1 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+[SafePTYManager] Client connected: 1yy4NTCLe8tExnZ7AAAn
+[SafePTYManager] Creating session: terminal-1754579514800-j8vi7b5uy
+[SafePTYManager] Shell: bash, CWD: /Users/michaelkraft
+[SafePTYManager] Session created: terminal-1754579514800-j8vi7b5uy (2/5)
+[SafePTYManager] Client disconnected: 1yy4NTCLe8tExnZ7AAAn
+[SafePTYManager] Session destroyed: terminal-1754579514800-j8vi7b5uy (1/5)
+[SafePTYManager] Session terminal-1754579514800-j8vi7b5uy exited: code=[object Object], signal=undefined
+⚡ Performance Optimizer: System load changed from medium to high
+🚀 Performance Optimizer: Entering performance mode
+⚡ Performance Optimizer: System load changed from medium to high
+🚀 Performance Optimizer: Entering performance mode
+📄 PRD API: Generating PRD for project: prd-v2-1754579575403-3mpvdg6cm
+Original request: PRD Generation Project
+Questions/Answers count: 3 / 3
+✅ PRD generated successfully, length: 4377 characters
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+[SafePTYManager] Cleaning up old session: terminal-1754576019713-d3lj1xqh5
+[SafePTYManager] Session destroyed: terminal-1754576019713-d3lj1xqh5 (0/5)
+[SafePTYManager] Session terminal-1754576019713-d3lj1xqh5 exited: code=[object Object], signal=undefined
+📄 PRD API: Generating PRD for project: prd-v2-1754579681065-24vq5hrmv
+Original request: PRD Generation Project
+Questions/Answers count: 3 / 3
+✅ PRD generated successfully, length: 4377 characters
+📄 PRD API: Generating PRD for project: prd-v2-1754579878458-63g0cwc9p
+Original request: PRD Generation Project
+Questions/Answers count: 3 / 3
+✅ PRD generated successfully, length: 4377 characters
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+📄 PRD API: Generating PRD for project: prd-v2-1754580282311-1ngw5s479
+Original request: PRD Generation Project
+Questions/Answers count: 3 / 3
+✅ PRD generated successfully, length: 4385 characters
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+📄 PRD API: Generating PRD for project: prd-v2-1754580425358-wr6kdflxc
+Original request: PRD Generation Project
+Questions/Answers count: 3 / 3
+✅ PRD generated successfully, length: 4381 characters
+[SafePTYManager] Client connected: yV3KY-CC_FYZYNOkAAAp
+[SafePTYManager] Creating session: terminal-1754580601509-igt61t9op
+[SafePTYManager] Shell: bash, CWD: /Users/michaelkraft
+[SafePTYManager] Session created: terminal-1754580601509-igt61t9op (1/5)
+⚡ Performance Optimizer: System load changed from high to medium
+💤 Performance Optimizer: Entering hibernation - Inactivity detected
+🧹 Performance Optimizer: Cleared non-essential caches
+⚡ Performance Optimizer: Entering normal mode
+⚡ Performance Optimizer: System load changed from high to medium
+💤 Performance Optimizer: Entering hibernation - Inactivity detected
+🧹 Performance Optimizer: Cleared non-essential caches
+⚡ Performance Optimizer: Entering normal mode
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+[SafePTYManager] Terminal terminal-1754580601509-igt61t9op resized to 110x13
+[SafePTYManager] Terminal terminal-1754580601509-igt61t9op resized to 104x13
+[SafePTYManager] Terminal terminal-1754580601509-igt61t9op resized to 101x13
+[SafePTYManager] Client disconnected: yV3KY-CC_FYZYNOkAAAp
+[SafePTYManager] Session destroyed: terminal-1754580601509-igt61t9op (0/5)
+[SafePTYManager] Session terminal-1754580601509-igt61t9op exited: code=[object Object], signal=undefined
+📄 PRD API: Generating PRD for project: prd-v2-1754580957801-5oy79dch4
+Original request: PRD Generation Project
+Questions/Answers count: 3 / 3
+✅ PRD generated successfully, length: 4381 characters
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🧠 Project patterns updated: {
+  architecture: 'microservices',
+  framework: 'react',
+  testingApproach: 'present',
+  buildSystem: 'npm',
+  codeStyle: {
+    language: 'typescript',
+    framework: 'react-express',
+    style: 'modern'
+  }
+}
+🔋 Performance Optimizer: Waking up after 427s - Activity detected: context_update
+🔋 Restoring proactiveIntelligence to normal operation
+🔋 Restoring contextBuilder to normal operation
+🔋 Restoring memorySystem to normal operation
+🧠 Project patterns updated: {
+  architecture: 'microservices',
+  framework: 'react',
+  testingApproach: 'present',
+  buildSystem: 'npm',
+  codeStyle: {
+    language: 'typescript',
+    framework: 'react-express',
+    style: 'modern'
+  }
+}
+🔋 Performance Optimizer: Waking up after 427s - Activity detected: context_update
+🔋 Restoring proactiveIntelligence to normal operation
+🔋 Restoring contextBuilder to normal operation
+🔋 Restoring memorySystem to normal operation
+⚡ Performance Optimizer: System load changed from medium to high
+🚀 Performance Optimizer: Entering performance mode
+⚡ Performance Optimizer: System load changed from medium to high
+🚀 Performance Optimizer: Entering performance mode
+⚡ Performance Optimizer: Entering normal mode
+🔮 Enhanced Claude Bridge: Generated 2 proactive suggestions
+🔮 Proactive Intelligence: Generated 2 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+⚡ Performance Optimizer: Entering normal mode
+🔮 Enhanced Claude Bridge: Generated 2 proactive suggestions
+🔮 Proactive Intelligence: Generated 2 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🚀 Performance Optimizer: Entering performance mode
+🚀 Performance Optimizer: Entering performance mode
+📄 PRD API: Generating PRD for project: prd-v2-1754581265929-88lyedmtu
+Original request: PRD Generation Project
+Questions/Answers count: 3 / 3
+✅ PRD generated successfully, length: 4368 characters
+⚡ Performance Optimizer: Entering normal mode
+🔮 Enhanced Claude Bridge: Generated 1 proactive suggestions
+🔮 Proactive Intelligence: Generated 1 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+⚡ Performance Optimizer: Entering normal mode
+🔮 Enhanced Claude Bridge: Generated 1 proactive suggestions
+🔮 Proactive Intelligence: Generated 1 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🚀 Performance Optimizer: Entering performance mode
+🚀 Performance Optimizer: Entering performance mode
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+📄 PRD API: Generating PRD for project: prd-v2-1754583127619-c1ur59cry
+Original request: PRD Generation Project
+Questions/Answers count: 3 / 3
+✅ PRD generated successfully, length: 4382 characters
+[SafePTYManager] Client connected: j1DkJO45Mia6vm0MAAAr
+[SafePTYManager] Creating session: terminal-1754583156623-2pi8d68ez
+[SafePTYManager] Shell: bash, CWD: /Users/michaelkraft
+[SafePTYManager] Session created: terminal-1754583156623-2pi8d68ez (1/5)
+[SafePTYManager] Client disconnected: j1DkJO45Mia6vm0MAAAr
+[SafePTYManager] Session destroyed: terminal-1754583156623-2pi8d68ez (0/5)
+[SafePTYManager] Session terminal-1754583156623-2pi8d68ez exited: code=[object Object], signal=undefined
+⚡ Performance Optimizer: System load changed from high to medium
+💤 Performance Optimizer: Entering hibernation - Inactivity detected
+🧹 Performance Optimizer: Cleared non-essential caches
+⚡ Performance Optimizer: Entering normal mode
+⚡ Performance Optimizer: System load changed from high to medium
+💤 Performance Optimizer: Entering hibernation - Inactivity detected
+🧹 Performance Optimizer: Cleared non-essential caches
+⚡ Performance Optimizer: Entering normal mode
+📄 PRD API: Generating PRD for project: prd-v2-1754583204264-ewibwnccy
+Original request: PRD Generation Project
+Questions/Answers count: 3 / 3
+✅ PRD generated successfully, length: 4382 characters
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚡ Performance Optimizer: System load changed from medium to high
+🚀 Performance Optimizer: Entering performance mode
+⚡ Performance Optimizer: System load changed from medium to high
+🚀 Performance Optimizer: Entering performance mode
+📄 PRD API: Generating PRD for project: prd-v2-1754583626848-gu40rct69
+Original request: PRD Generation Project
+Questions/Answers count: 3 / 3
+✅ PRD generated successfully, length: 4382 characters
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🧠 Project patterns updated: {
+  architecture: 'microservices',
+  framework: 'react',
+  testingApproach: 'present',
+  buildSystem: 'npm',
+  codeStyle: {
+    language: 'typescript',
+    framework: 'react-express',
+    style: 'modern'
+  }
+}
+🔋 Performance Optimizer: Waking up after 1205s - Activity detected: context_update
+🔋 Restoring proactiveIntelligence to normal operation
+🔋 Restoring contextBuilder to normal operation
+🔋 Restoring memorySystem to normal operation
+🧠 Project patterns updated: {
+  architecture: 'microservices',
+  framework: 'react',
+  testingApproach: 'present',
+  buildSystem: 'npm',
+  codeStyle: {
+    language: 'typescript',
+    framework: 'react-express',
+    style: 'modern'
+  }
+}
+🔋 Performance Optimizer: Waking up after 1205s - Activity detected: context_update
+🔋 Restoring proactiveIntelligence to normal operation
+🔋 Restoring contextBuilder to normal operation
+🔋 Restoring memorySystem to normal operation
+🧠 Project patterns updated: {
+  architecture: 'microservices',
+  framework: 'react',
+  testingApproach: 'present',
+  buildSystem: 'npm',
+  codeStyle: {
+    language: 'typescript',
+    framework: 'react-express',
+    style: 'modern'
+  }
+}
+🧠 Project patterns updated: {
+  architecture: 'microservices',
+  framework: 'react',
+  testingApproach: 'present',
+  buildSystem: 'npm',
+  codeStyle: {
+    language: 'typescript',
+    framework: 'react-express',
+    style: 'modern'
+  }
+}
+🧠 Project patterns updated: {
+  architecture: 'microservices',
+  framework: 'react',
+  testingApproach: 'present',
+  buildSystem: 'npm',
+  codeStyle: {
+    language: 'typescript',
+    framework: 'react-express',
+    style: 'modern'
+  }
+}
+🧠 Project patterns updated: {
+  architecture: 'microservices',
+  framework: 'react',
+  testingApproach: 'present',
+  buildSystem: 'npm',
+  codeStyle: {
+    language: 'typescript',
+    framework: 'react-express',
+    style: 'modern'
+  }
+}
+🧠 Project patterns updated: {
+  architecture: 'microservices',
+  framework: 'react',
+  testingApproach: 'present',
+  buildSystem: 'npm',
+  codeStyle: {
+    language: 'typescript',
+    framework: 'react-express',
+    style: 'modern'
+  }
+}
+🧠 Project patterns updated: {
+  architecture: 'microservices',
+  framework: 'react',
+  testingApproach: 'present',
+  buildSystem: 'npm',
+  codeStyle: {
+    language: 'typescript',
+    framework: 'react-express',
+    style: 'modern'
+  }
+}
+⚡ Performance Optimizer: Entering normal mode
+🔮 Enhanced Claude Bridge: Generated 3 proactive suggestions
+🔮 Proactive Intelligence: Generated 3 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+⚡ Performance Optimizer: Entering normal mode
+🔮 Enhanced Claude Bridge: Generated 3 proactive suggestions
+🔮 Proactive Intelligence: Generated 3 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🚀 Performance Optimizer: Entering performance mode
+🚀 Performance Optimizer: Entering performance mode
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🧠 Project patterns updated: {
+  architecture: 'microservices',
+  framework: 'react',
+  testingApproach: 'present',
+  buildSystem: 'npm',
+  codeStyle: {
+    language: 'typescript',
+    framework: 'react-express',
+    style: 'modern'
+  }
+}
+🧠 Project patterns updated: {
+  architecture: 'microservices',
+  framework: 'react',
+  testingApproach: 'present',
+  buildSystem: 'npm',
+  codeStyle: {
+    language: 'typescript',
+    framework: 'react-express',
+    style: 'modern'
+  }
+}
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+⚡ Performance Optimizer: Entering normal mode
+🔮 Enhanced Claude Bridge: Generated 1 proactive suggestions
+🔮 Proactive Intelligence: Generated 1 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+⚡ Performance Optimizer: Entering normal mode
+🔮 Enhanced Claude Bridge: Generated 1 proactive suggestions
+🔮 Proactive Intelligence: Generated 1 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🚀 Performance Optimizer: Entering performance mode
+🚀 Performance Optimizer: Entering performance mode
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+⚡ Performance Optimizer: Entering normal mode
+🔮 Enhanced Claude Bridge: Generated 2 proactive suggestions
+🔮 Proactive Intelligence: Generated 2 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+⚡ Performance Optimizer: Entering normal mode
+🔮 Enhanced Claude Bridge: Generated 2 proactive suggestions
+🔮 Proactive Intelligence: Generated 2 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🚀 Performance Optimizer: Entering performance mode
+🚀 Performance Optimizer: Entering performance mode
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+📄 PRD API: Generating PRD for project: prd-v2-1754585221227-p0cuyl2l4
+Original request: I need a project management SaaS platform for remote teams
+Questions/Answers count: 3 / 0
+✅ PRD generated successfully, length: 4170 characters
+[SafePTYManager] Client connected: bxeM6AhJJyf9D89wAAAt
+[SafePTYManager] Creating session: terminal-1754587192383-yfwmlj6jm
+[SafePTYManager] Shell: bash, CWD: /Users/michaelkraft
+[SafePTYManager] Session created: terminal-1754587192383-yfwmlj6jm (1/5)
+⚡ Performance Optimizer: System load changed from high to medium
+⚡ Performance Optimizer: Entering normal mode
+⚡ Performance Optimizer: System load changed from high to medium
+⚡ Performance Optimizer: Entering normal mode
+⚡ Performance Optimizer: System load changed from medium to low
+🔋 Performance Optimizer: Entering power-save mode
+⚡ Performance Optimizer: System load changed from medium to low
+🔋 Performance Optimizer: Entering power-save mode
+[SafePTYManager] Client disconnected: bxeM6AhJJyf9D89wAAAt
+[SafePTYManager] Session destroyed: terminal-1754587192383-yfwmlj6jm (0/5)
+[SafePTYManager] Session terminal-1754587192383-yfwmlj6jm exited: code=[object Object], signal=undefined
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+💤 Performance Optimizer: Entering hibernation - Inactivity detected
+🧹 Performance Optimizer: Cleared non-essential caches
+💤 Performance Optimizer: Entering hibernation - Inactivity detected
+🧹 Performance Optimizer: Cleared non-essential caches
+⚡ Performance Optimizer: System load changed from low to high
+🚀 Performance Optimizer: Entering performance mode
+⚡ Performance Optimizer: System load changed from low to high
+🚀 Performance Optimizer: Entering performance mode
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+📄 PRD API: Generating PRD for project: prd-v2-1754588643802-ogq886tp5
+Original request: PRD Generation Project
+Questions/Answers count: 3 / 0
+✅ PRD generated successfully, length: 4062 characters
+[SafePTYManager] Client connected: Fvr6iSPijw3n47ZyAAAv
+[SafePTYManager] Creating session: terminal-1754588972246-vojkd55xu
+[SafePTYManager] Shell: bash, CWD: /Users/michaelkraft
+[SafePTYManager] Session created: terminal-1754588972246-vojkd55xu (1/5)
+⚡ Performance Optimizer: System load changed from high to medium
+⚡ Performance Optimizer: Entering normal mode
+⚡ Performance Optimizer: System load changed from high to medium
+⚡ Performance Optimizer: Entering normal mode
+[SafePTYManager] Client disconnected: Fvr6iSPijw3n47ZyAAAv
+[SafePTYManager] Session destroyed: terminal-1754588972246-vojkd55xu (0/5)
+[SafePTYManager] Session terminal-1754588972246-vojkd55xu exited: code=[object Object], signal=undefined
+📄 PRD API: Generating PRD for project: prd-v2-1754589013621-nl1wz41wr
+Original request: PRD Generation Project
+Questions/Answers count: 11 / 3
+✅ PRD generated successfully, length: 4425 characters
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+[SafePTYManager] Client connected: wXu6cUZrodL9fJAPAAAx
+[SafePTYManager] Creating session: terminal-1754589149842-kp2twv0r3
+[SafePTYManager] Shell: bash, CWD: /Users/michaelkraft
+[SafePTYManager] Session created: terminal-1754589149842-kp2twv0r3 (1/5)
+[SafePTYManager] Client disconnected: wXu6cUZrodL9fJAPAAAx
+[SafePTYManager] Session destroyed: terminal-1754589149842-kp2twv0r3 (0/5)
+[SafePTYManager] Session terminal-1754589149842-kp2twv0r3 exited: code=[object Object], signal=undefined
+📄 PRD API: Generating PRD for project: prd-v2-1754589151777-6836h858a
+Original request: PRD Generation Project
+Questions/Answers count: 3 / 1
+✅ PRD generated successfully, length: 4041 characters
+⚡ Performance Optimizer: System load changed from medium to high
+🚀 Performance Optimizer: Entering performance mode
+⚡ Performance Optimizer: System load changed from medium to high
+🚀 Performance Optimizer: Entering performance mode
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🔋 Performance Optimizer: Waking up after 2388s - Activity detected: suggestions_generated
+🔋 Restoring proactiveIntelligence to normal operation
+🔋 Restoring contextBuilder to normal operation
+🔋 Restoring memorySystem to normal operation
+⚡ Performance Optimizer: Entering normal mode
+🔮 Enhanced Claude Bridge: Generated 1 proactive suggestions
+🔮 Proactive Intelligence: Generated 1 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🔋 Performance Optimizer: Waking up after 2388s - Activity detected: suggestions_generated
+🔋 Restoring proactiveIntelligence to normal operation
+🔋 Restoring contextBuilder to normal operation
+🔋 Restoring memorySystem to normal operation
+⚡ Performance Optimizer: Entering normal mode
+🔮 Enhanced Claude Bridge: Generated 1 proactive suggestions
+🔮 Proactive Intelligence: Generated 1 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+[SafePTYManager] Client disconnected: 2ObVePiuT2wiQ2fVAAAZ
+[SafePTYManager] Client connected: yPTJolp3OdOnSX4zAAAz
+[SafePTYManager] Creating session: terminal-1754589725655-jj5ktqp1t
+[SafePTYManager] Shell: bash, CWD: /Users/michaelkraft
+[SafePTYManager] Session created: terminal-1754589725655-jj5ktqp1t (1/5)
+[SafePTYManager] Client disconnected: yPTJolp3OdOnSX4zAAAz
+[SafePTYManager] Session destroyed: terminal-1754589725655-jj5ktqp1t (0/5)
+[SafePTYManager] Session terminal-1754589725655-jj5ktqp1t exited: code=[object Object], signal=undefined
+[SafePTYManager] Client connected: yLl6DKf42xjFoWAfAAA1
+[SafePTYManager] Creating session: terminal-1754589740464-cj448dl3d
+[SafePTYManager] Shell: bash, CWD: /Users/michaelkraft
+[SafePTYManager] Session created: terminal-1754589740464-cj448dl3d (1/5)
+⚡ Performance Optimizer: System load changed from high to medium
+⚡ Performance Optimizer: System load changed from high to medium
+⚡ Performance Optimizer: System load changed from medium to high
+🚀 Performance Optimizer: Entering performance mode
+⚡ Performance Optimizer: System load changed from medium to high
+🚀 Performance Optimizer: Entering performance mode
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+📄 PRD API: Generating PRD for project: prd-v2-1754590535762-l2qtgj3zv
+Original request: supervise the development of an e-commerce checkout system with real-time quality monitoring and approval workflows
+Questions/Answers count: 5 / 0
+✅ PRD generated successfully, length: 4341 characters
+⚡ Performance Optimizer: Entering normal mode
+🔮 Enhanced Claude Bridge: Generated 2 proactive suggestions
+🔮 Proactive Intelligence: Generated 2 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+⚡ Performance Optimizer: Entering normal mode
+🔮 Enhanced Claude Bridge: Generated 2 proactive suggestions
+🔮 Proactive Intelligence: Generated 2 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🚀 Performance Optimizer: Entering performance mode
+🚀 Performance Optimizer: Entering performance mode
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+[SafePTYManager] Client connected: QwY86NadZDvNw80xAAA3
+[SafePTYManager] Creating session: terminal-1754590946811-m06eqnxz5
+[SafePTYManager] Shell: bash, CWD: /Users/michaelkraft
+[SafePTYManager] Session created: terminal-1754590946811-m06eqnxz5 (2/5)
+⚡ Performance Optimizer: System load changed from high to medium
+⚡ Performance Optimizer: Entering normal mode
+⚡ Performance Optimizer: System load changed from high to medium
+⚡ Performance Optimizer: Entering normal mode
+[SafePTYManager] Terminal terminal-1754590946811-m06eqnxz5 resized to 112x11
+[SafePTYManager] Terminal terminal-1754590946811-m06eqnxz5 resized to 111x11
+[SafePTYManager] Terminal terminal-1754590946811-m06eqnxz5 resized to 109x11
+[SafePTYManager] Terminal terminal-1754590946811-m06eqnxz5 resized to 108x11
+[SafePTYManager] Terminal terminal-1754590946811-m06eqnxz5 resized to 107x11
+[SafePTYManager] Terminal terminal-1754590946811-m06eqnxz5 resized to 106x11
+[SafePTYManager] Claude button action: supervision
+👁️ Starting Supervision mode: supervision-1754591078192
+[SafePTYManager] Registering socket for Claude session: supervision-1754591078192
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+💤 Performance Optimizer: Entering hibernation - Inactivity detected
+🧹 Performance Optimizer: Cleared non-essential caches
+💤 Performance Optimizer: Entering hibernation - Inactivity detected
+🧹 Performance Optimizer: Cleared non-essential caches
+[SafePTYManager] Client disconnected: QwY86NadZDvNw80xAAA3
+[SafePTYManager] Session destroyed: terminal-1754590946811-m06eqnxz5 (1/5)
+[SafePTYManager] Session terminal-1754590946811-m06eqnxz5 exited: code=[object Object], signal=undefined
+📄 PRD API: Generating PRD for project: prd-v2-1754591250575-1fsh0h1s6
+Original request: Build a complete e-commerce checkout system with payment processing, inventory management, user authentication, order tracking, fraud detection, tax calculation, shipping integration, and real-time inventory updates. Include security features, error handling, and comprehensive logging.
+Questions/Answers count: 5 / 0
+✅ PRD generated successfully, length: 4854 characters
+[SafePTYManager] Client connected: YvT5d07FJxh7TuSDAAA5
+[SafePTYManager] Creating session: terminal-1754591300659-t51iftp13
+[SafePTYManager] Shell: bash, CWD: /Users/michaelkraft
+[SafePTYManager] Session created: terminal-1754591300659-t51iftp13 (2/5)
+[SafePTYManager] Claude button action: supervision
+👁️ Starting Supervision mode: supervision-1754591345627
+[SafePTYManager] Registering socket for Claude session: supervision-1754591345627
+[SafePTYManager] Terminal terminal-1754591300659-t51iftp13 resized to 115x13
+[SafePTYManager] Terminal terminal-1754591300659-t51iftp13 resized to 115x19
+[SafePTYManager] Terminal terminal-1754591300659-t51iftp13 resized to 115x20
+[SafePTYManager] Terminal terminal-1754591300659-t51iftp13 resized to 115x21
+⚡ Performance Optimizer: System load changed from medium to high
+🚀 Performance Optimizer: Entering performance mode
+⚡ Performance Optimizer: System load changed from medium to high
+🚀 Performance Optimizer: Entering performance mode
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+[SafePTYManager] Client disconnected: YvT5d07FJxh7TuSDAAA5
+[SafePTYManager] Session destroyed: terminal-1754591300659-t51iftp13 (1/5)
+[SafePTYManager] Session terminal-1754591300659-t51iftp13 exited: code=[object Object], signal=undefined
+[SafePTYManager] Client connected: ET0reyHZOITxfIMdAAA7
+[SafePTYManager] Creating session: terminal-1754592429426-bzbz4dff5
+[SafePTYManager] Shell: bash, CWD: /Users/michaelkraft
+[SafePTYManager] Session created: terminal-1754592429426-bzbz4dff5 (2/5)
+[SafePTYManager] Claude button action: supervision
+👁️ Starting Supervision mode: supervision-1754592455011
+[SafePTYManager] Registering socket for Claude session: supervision-1754592455011
+⚡ Performance Optimizer: System load changed from high to medium
+⚡ Performance Optimizer: Entering normal mode
+⚡ Performance Optimizer: System load changed from high to medium
+⚡ Performance Optimizer: Entering normal mode
+⚡ Performance Optimizer: System load changed from medium to high
+🚀 Performance Optimizer: Entering performance mode
+⚡ Performance Optimizer: System load changed from medium to high
+🚀 Performance Optimizer: Entering performance mode
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🧠 Project patterns updated: {
+  architecture: 'microservices',
+  framework: 'react',
+  testingApproach: 'present',
+  buildSystem: 'npm',
+  codeStyle: {
+    language: 'typescript',
+    framework: 'react-express',
+    style: 'modern'
+  }
+}
+🔋 Performance Optimizer: Waking up after 1606s - Activity detected: context_update
+🔋 Restoring proactiveIntelligence to normal operation
+🔋 Restoring contextBuilder to normal operation
+🔋 Restoring memorySystem to normal operation
+🧠 Project patterns updated: {
+  architecture: 'microservices',
+  framework: 'react',
+  testingApproach: 'present',
+  buildSystem: 'npm',
+  codeStyle: {
+    language: 'typescript',
+    framework: 'react-express',
+    style: 'modern'
+  }
+}
+🔋 Performance Optimizer: Waking up after 1606s - Activity detected: context_update
+🔋 Restoring proactiveIntelligence to normal operation
+🔋 Restoring contextBuilder to normal operation
+🔋 Restoring memorySystem to normal operation
+🧠 Project patterns updated: {
+  architecture: 'microservices',
+  framework: 'react',
+  testingApproach: 'present',
+  buildSystem: 'npm',
+  codeStyle: {
+    language: 'typescript',
+    framework: 'react-express',
+    style: 'modern'
+  }
+}
+🧠 Project patterns updated: {
+  architecture: 'microservices',
+  framework: 'react',
+  testingApproach: 'present',
+  buildSystem: 'npm',
+  codeStyle: {
+    language: 'typescript',
+    framework: 'react-express',
+    style: 'modern'
+  }
+}
+[SafePTYManager] Client disconnected: ET0reyHZOITxfIMdAAA7
+[SafePTYManager] Session destroyed: terminal-1754592429426-bzbz4dff5 (1/5)
+[SafePTYManager] Session terminal-1754592429426-bzbz4dff5 exited: code=[object Object], signal=undefined
+[SafePTYManager] Client connected: zv6jA_7Gg9AAA-SQAAA9
+[SafePTYManager] Creating session: terminal-1754592959669-gsbbzzbp7
+[SafePTYManager] Shell: bash, CWD: /Users/michaelkraft
+[SafePTYManager] Session created: terminal-1754592959669-gsbbzzbp7 (2/5)
+⚡ Performance Optimizer: System load changed from high to medium
+⚡ Performance Optimizer: Entering normal mode
+⚡ Performance Optimizer: System load changed from high to medium
+⚡ Performance Optimizer: Entering normal mode
+[SafePTYManager] Terminal terminal-1754592959669-gsbbzzbp7 resized to 100x11
+🔮 Enhanced Claude Bridge: Generated 3 proactive suggestions
+🔮 Proactive Intelligence: Generated 3 suggestions
+🔮 Enhanced Claude Bridge: Generated 3 proactive suggestions
+🔮 Proactive Intelligence: Generated 3 suggestions
+🧠 Project patterns updated: {
+  architecture: 'microservices',
+  framework: 'react',
+  testingApproach: 'present',
+  buildSystem: 'npm',
+  codeStyle: {
+    language: 'typescript',
+    framework: 'react-express',
+    style: 'modern'
+  }
+}
+🧠 Project patterns updated: {
+  architecture: 'microservices',
+  framework: 'react',
+  testingApproach: 'present',
+  buildSystem: 'npm',
+  codeStyle: {
+    language: 'typescript',
+    framework: 'react-express',
+    style: 'modern'
+  }
+}
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+⚡ Performance Optimizer: System load changed from medium to high
+🚀 Performance Optimizer: Entering performance mode
+⚡ Performance Optimizer: System load changed from medium to high
+🚀 Performance Optimizer: Entering performance mode
+[SafePTYManager] Client disconnected: zv6jA_7Gg9AAA-SQAAA9
+[SafePTYManager] Session destroyed: terminal-1754592959669-gsbbzzbp7 (1/5)
+[SafePTYManager] Session terminal-1754592959669-gsbbzzbp7 exited: code=[object Object], signal=undefined
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+[SafePTYManager] Cleaning up old session: terminal-1754589740464-cj448dl3d
+[SafePTYManager] Session destroyed: terminal-1754589740464-cj448dl3d (0/5)
+[SafePTYManager] Session terminal-1754589740464-cj448dl3d exited: code=[object Object], signal=undefined
+🧠 Project patterns updated: {
+  architecture: 'microservices',
+  framework: 'react',
+  testingApproach: 'present',
+  buildSystem: 'npm',
+  codeStyle: {
+    language: 'typescript',
+    framework: 'react-express',
+    style: 'modern'
+  }
+}
+🧠 Project patterns updated: {
+  architecture: 'microservices',
+  framework: 'react',
+  testingApproach: 'present',
+  buildSystem: 'npm',
+  codeStyle: {
+    language: 'typescript',
+    framework: 'react-express',
+    style: 'modern'
+  }
+}
+🧠 Project patterns updated: {
+  architecture: 'microservices',
+  framework: 'react',
+  testingApproach: 'present',
+  buildSystem: 'npm',
+  codeStyle: {
+    language: 'typescript',
+    framework: 'react-express',
+    style: 'modern'
+  }
+}
+🧠 Project patterns updated: {
+  architecture: 'microservices',
+  framework: 'react',
+  testingApproach: 'present',
+  buildSystem: 'npm',
+  codeStyle: {
+    language: 'typescript',
+    framework: 'react-express',
+    style: 'modern'
+  }
+}
+🧠 Project patterns updated: {
+  architecture: 'microservices',
+  framework: 'react',
+  testingApproach: 'present',
+  buildSystem: 'npm',
+  codeStyle: {
+    language: 'typescript',
+    framework: 'react-express',
+    style: 'modern'
+  }
+}
+🧠 Project patterns updated: {
+  architecture: 'microservices',
+  framework: 'react',
+  testingApproach: 'present',
+  buildSystem: 'npm',
+  codeStyle: {
+    language: 'typescript',
+    framework: 'react-express',
+    style: 'modern'
+  }
+}
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+[SafePTYManager] Client connected: gSaSF8t34Wjcmq70AAA_
+[SafePTYManager] Creating session: terminal-1754594083610-1emg33ntg
+[SafePTYManager] Shell: bash, CWD: /Users/michaelkraft
+[SafePTYManager] Session created: terminal-1754594083610-1emg33ntg (1/5)
+[SafePTYManager] Terminal terminal-1754594083610-1emg33ntg resized to 110x11
+[SafePTYManager] Terminal terminal-1754594083610-1emg33ntg resized to 110x12
+[SafePTYManager] Terminal terminal-1754594083610-1emg33ntg resized to 107x12
+[SafePTYManager] Terminal terminal-1754594083610-1emg33ntg resized to 106x12
+[SafePTYManager] Terminal terminal-1754594083610-1emg33ntg resized to 104x12
+[SafePTYManager] Terminal terminal-1754594083610-1emg33ntg resized to 109x12
+[SafePTYManager] Terminal terminal-1754594083610-1emg33ntg resized to 110x12
+⚡ Performance Optimizer: System load changed from high to medium
+⚡ Performance Optimizer: Entering normal mode
+⚡ Performance Optimizer: System load changed from high to medium
+⚡ Performance Optimizer: Entering normal mode
+[SafePTYManager] Terminal terminal-1754594083610-1emg33ntg resized to 109x12
+[SafePTYManager] Terminal terminal-1754594083610-1emg33ntg resized to 108x12
+[SafePTYManager] Terminal terminal-1754594083610-1emg33ntg resized to 107x12
+[SafePTYManager] Terminal terminal-1754594083610-1emg33ntg resized to 106x12
+[SafePTYManager] Terminal terminal-1754594083610-1emg33ntg resized to 103x12
+🔮 Enhanced Claude Bridge: Generated 1 proactive suggestions
+🔮 Proactive Intelligence: Generated 1 suggestions
+🔮 Enhanced Claude Bridge: Generated 1 proactive suggestions
+🔮 Proactive Intelligence: Generated 1 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+💤 Performance Optimizer: Entering hibernation - Inactivity detected
+🧹 Performance Optimizer: Cleared non-essential caches
+💤 Performance Optimizer: Entering hibernation - Inactivity detected
+🧹 Performance Optimizer: Cleared non-essential caches
+🔋 Performance Optimizer: Waking up after 284s - Activity detected: suggestions_generated
+🔋 Restoring proactiveIntelligence to normal operation
+🔋 Restoring contextBuilder to normal operation
+🔋 Restoring memorySystem to normal operation
+🔮 Enhanced Claude Bridge: Generated 2 proactive suggestions
+🔮 Proactive Intelligence: Generated 2 suggestions
+🔋 Performance Optimizer: Waking up after 284s - Activity detected: suggestions_generated
+🔋 Restoring proactiveIntelligence to normal operation
+🔋 Restoring contextBuilder to normal operation
+🔋 Restoring memorySystem to normal operation
+🔮 Enhanced Claude Bridge: Generated 2 proactive suggestions
+🔮 Proactive Intelligence: Generated 2 suggestions
+🧠 Project patterns updated: {
+  architecture: 'microservices',
+  framework: 'react',
+  testingApproach: 'present',
+  buildSystem: 'npm',
+  codeStyle: {
+    language: 'typescript',
+    framework: 'react-express',
+    style: 'modern'
+  }
+}
+🧠 Project patterns updated: {
+  architecture: 'microservices',
+  framework: 'react',
+  testingApproach: 'present',
+  buildSystem: 'npm',
+  codeStyle: {
+    language: 'typescript',
+    framework: 'react-express',
+    style: 'modern'
+  }
+}
+🧠 Project patterns updated: {
+  architecture: 'microservices',
+  framework: 'react',
+  testingApproach: 'present',
+  buildSystem: 'npm',
+  codeStyle: {
+    language: 'typescript',
+    framework: 'react-express',
+    style: 'modern'
+  }
+}
+🧠 Project patterns updated: {
+  architecture: 'microservices',
+  framework: 'react',
+  testingApproach: 'present',
+  buildSystem: 'npm',
+  codeStyle: {
+    language: 'typescript',
+    framework: 'react-express',
+    style: 'modern'
+  }
+}
+🧠 Project patterns updated: {
+  architecture: 'microservices',
+  framework: 'react',
+  testingApproach: 'present',
+  buildSystem: 'npm',
+  codeStyle: {
+    language: 'typescript',
+    framework: 'react-express',
+    style: 'modern'
+  }
+}
+🧠 Project patterns updated: {
+  architecture: 'microservices',
+  framework: 'react',
+  testingApproach: 'present',
+  buildSystem: 'npm',
+  codeStyle: {
+    language: 'typescript',
+    framework: 'react-express',
+    style: 'modern'
+  }
+}
+🧠 Project patterns updated: {
+  architecture: 'microservices',
+  framework: 'react',
+  testingApproach: 'present',
+  buildSystem: 'npm',
+  codeStyle: {
+    language: 'typescript',
+    framework: 'react-express',
+    style: 'modern'
+  }
+}
+🧠 Project patterns updated: {
+  architecture: 'microservices',
+  framework: 'react',
+  testingApproach: 'present',
+  buildSystem: 'npm',
+  codeStyle: {
+    language: 'typescript',
+    framework: 'react-express',
+    style: 'modern'
+  }
+}
+⚡ Performance Optimizer: System load changed from medium to high
+🚀 Performance Optimizer: Entering performance mode
+⚡ Performance Optimizer: System load changed from medium to high
+🚀 Performance Optimizer: Entering performance mode
+🧠 Project patterns updated: {
+  architecture: 'microservices',
+  framework: 'react',
+  testingApproach: 'present',
+  buildSystem: 'npm',
+  codeStyle: {
+    language: 'typescript',
+    framework: 'react-express',
+    style: 'modern'
+  }
+}
+🧠 Project patterns updated: {
+  architecture: 'microservices',
+  framework: 'react',
+  testingApproach: 'present',
+  buildSystem: 'npm',
+  codeStyle: {
+    language: 'typescript',
+    framework: 'react-express',
+    style: 'modern'
+  }
+}
+⚡ Performance Optimizer: Entering normal mode
+🔮 Enhanced Claude Bridge: Generated 1 proactive suggestions
+🔮 Proactive Intelligence: Generated 1 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+⚡ Performance Optimizer: Entering normal mode
+🔮 Enhanced Claude Bridge: Generated 1 proactive suggestions
+🔮 Proactive Intelligence: Generated 1 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🚀 Performance Optimizer: Entering performance mode
+🚀 Performance Optimizer: Entering performance mode
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+[SafePTYManager] Client disconnected: gSaSF8t34Wjcmq70AAA_
+[SafePTYManager] Session destroyed: terminal-1754594083610-1emg33ntg (0/5)
+[SafePTYManager] Session terminal-1754594083610-1emg33ntg exited: code=[object Object], signal=undefined
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+⚡ Performance Optimizer: Entering normal mode
+🔮 Enhanced Claude Bridge: Generated 2 proactive suggestions
+🔮 Proactive Intelligence: Generated 2 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+⚡ Performance Optimizer: Entering normal mode
+🔮 Enhanced Claude Bridge: Generated 2 proactive suggestions
+🔮 Proactive Intelligence: Generated 2 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🚀 Performance Optimizer: Entering performance mode
+🚀 Performance Optimizer: Entering performance mode
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+[SafePTYManager] Client connected: yn53WVTVq33HNS21AABB
+[SafePTYManager] Creating session: terminal-1754598217787-jm2qohq22
+[SafePTYManager] Shell: bash, CWD: /Users/michaelkraft
+[SafePTYManager] Session created: terminal-1754598217787-jm2qohq22 (1/5)
+[SafePTYManager] Terminal terminal-1754598217787-jm2qohq22 resized to 100x8
+⚡ Performance Optimizer: System load changed from high to medium
+💤 Performance Optimizer: Entering hibernation - Inactivity detected
+🧹 Performance Optimizer: Cleared non-essential caches
+⚡ Performance Optimizer: Entering normal mode
+⚡ Performance Optimizer: System load changed from high to medium
+💤 Performance Optimizer: Entering hibernation - Inactivity detected
+🧹 Performance Optimizer: Cleared non-essential caches
+⚡ Performance Optimizer: Entering normal mode
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚡ Performance Optimizer: System load changed from medium to high
+🚀 Performance Optimizer: Entering performance mode
+⚡ Performance Optimizer: System load changed from medium to high
+🚀 Performance Optimizer: Entering performance mode
+[SafePTYManager] Client disconnected: yn53WVTVq33HNS21AABB
+[SafePTYManager] Session destroyed: terminal-1754598217787-jm2qohq22 (0/5)
+[SafePTYManager] Session terminal-1754598217787-jm2qohq22 exited: code=[object Object], signal=undefined
+[SafePTYManager] Client connected: VbCWwaawYvnEiljoAABD
+[SafePTYManager] Creating session: terminal-1754598635843-awh8zq26q
+[SafePTYManager] Shell: bash, CWD: /Users/michaelkraft
+[SafePTYManager] Session created: terminal-1754598635843-awh8zq26q (1/5)
+[SafePTYManager] Terminal terminal-1754598635843-awh8zq26q resized to 100x8
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚡ Performance Optimizer: System load changed from high to low
+🔋 Performance Optimizer: Entering power-save mode
+⚡ Performance Optimizer: System load changed from high to low
+🔋 Performance Optimizer: Entering power-save mode
+[SafePTYManager] Client connected: 6dnjVpReAK4y3X2MAABF
+[SafePTYManager] Creating session: terminal-1754598715553-d84k9qsr8
+[SafePTYManager] Shell: bash, CWD: /Users/michaelkraft
+[SafePTYManager] Session created: terminal-1754598715553-d84k9qsr8 (2/5)
+[SafePTYManager] Claude button action: supervision
+👁️ Starting Supervision mode: supervision-1754598755820
+[SafePTYManager] Registering socket for Claude session: supervision-1754598755820
+[SafePTYManager] Claude button action: parallel
+[SafePTYManager] Registering socket for Claude session: parallel-1754598789989
+🤖 Parallel Agents API called with: {
+  prompt: 'Help me build a modern web application with best practices',
+  sessionId: 'parallel-1754598789989'
+}
+🤖 Executing 2 parallel agents
+🎭 Returning demo response: No API key configured
+🎭 Returning demo response: No API key configured
+Session stop error: Error: Session [object Object] not found
+    at EnhancedClaudeCodeButtonBridge.stopSession (/Users/michaelkraft/autonomous_vibe_interface/src/integrations/claude-code-button-bridge.js:299:19)
+    at /Users/michaelkraft/autonomous_vibe_interface/src/routes/claude-buttons.js:202:28
+    at Layer.handle [as handle_request] (/Users/michaelkraft/autonomous_vibe_interface/node_modules/express/lib/router/layer.js:95:5)
+    at next (/Users/michaelkraft/autonomous_vibe_interface/node_modules/express/lib/router/route.js:149:13)
+    at Route.dispatch (/Users/michaelkraft/autonomous_vibe_interface/node_modules/express/lib/router/route.js:119:3)
+    at Layer.handle [as handle_request] (/Users/michaelkraft/autonomous_vibe_interface/node_modules/express/lib/router/layer.js:95:5)
+    at /Users/michaelkraft/autonomous_vibe_interface/node_modules/express/lib/router/index.js:284:15
+    at router.process_params (/Users/michaelkraft/autonomous_vibe_interface/node_modules/express/lib/router/index.js:346:12)
+    at next (/Users/michaelkraft/autonomous_vibe_interface/node_modules/express/lib/router/index.js:280:10)
+    at router.handle (/Users/michaelkraft/autonomous_vibe_interface/node_modules/express/lib/router/index.js:175:3)
+[SafePTYManager] Claude button action: infinite
+♾ Starting infinite loop with target quality: 8
+♾ Iteration 1/10 - Current quality: 0.0
+♾ Iteration 2/10 - Current quality: 7.2
+♾ Iteration 3/10 - Current quality: 5.3
+♾ Iteration 4/10 - Current quality: 7.2
+♾ Convergence detected - improvement rate: -0.151
+[SafePTYManager] Registering socket for Claude session: [object Object]
+Session stop error: Error: Session [object Object] not found
+    at EnhancedClaudeCodeButtonBridge.stopSession (/Users/michaelkraft/autonomous_vibe_interface/src/integrations/claude-code-button-bridge.js:299:19)
+    at /Users/michaelkraft/autonomous_vibe_interface/src/routes/claude-buttons.js:202:28
+    at Layer.handle [as handle_request] (/Users/michaelkraft/autonomous_vibe_interface/node_modules/express/lib/router/layer.js:95:5)
+    at next (/Users/michaelkraft/autonomous_vibe_interface/node_modules/express/lib/router/route.js:149:13)
+    at Route.dispatch (/Users/michaelkraft/autonomous_vibe_interface/node_modules/express/lib/router/route.js:119:3)
+    at Layer.handle [as handle_request] (/Users/michaelkraft/autonomous_vibe_interface/node_modules/express/lib/router/layer.js:95:5)
+    at /Users/michaelkraft/autonomous_vibe_interface/node_modules/express/lib/router/index.js:284:15
+    at router.process_params (/Users/michaelkraft/autonomous_vibe_interface/node_modules/express/lib/router/index.js:346:12)
+    at next (/Users/michaelkraft/autonomous_vibe_interface/node_modules/express/lib/router/index.js:280:10)
+    at router.handle (/Users/michaelkraft/autonomous_vibe_interface/node_modules/express/lib/router/index.js:175:3)
+[SafePTYManager] Claude button action: hivemind
+🧠 Executing hivemind stage: sequential
+[SafePTYManager] Registering socket for Claude session: [object Object]
+Hivemind stop error: Error: Session [object Object] not found
+    at EnhancedClaudeCodeButtonBridge.stopSession (/Users/michaelkraft/autonomous_vibe_interface/src/integrations/claude-code-button-bridge.js:299:19)
+    at /Users/michaelkraft/autonomous_vibe_interface/src/routes/claude-buttons.js:178:28
+    at Layer.handle [as handle_request] (/Users/michaelkraft/autonomous_vibe_interface/node_modules/express/lib/router/layer.js:95:5)
+    at next (/Users/michaelkraft/autonomous_vibe_interface/node_modules/express/lib/router/route.js:149:13)
+    at Route.dispatch (/Users/michaelkraft/autonomous_vibe_interface/node_modules/express/lib/router/route.js:119:3)
+    at Layer.handle [as handle_request] (/Users/michaelkraft/autonomous_vibe_interface/node_modules/express/lib/router/layer.js:95:5)
+    at /Users/michaelkraft/autonomous_vibe_interface/node_modules/express/lib/router/index.js:284:15
+    at router.process_params (/Users/michaelkraft/autonomous_vibe_interface/node_modules/express/lib/router/index.js:346:12)
+    at next (/Users/michaelkraft/autonomous_vibe_interface/node_modules/express/lib/router/index.js:280:10)
+    at router.handle (/Users/michaelkraft/autonomous_vibe_interface/node_modules/express/lib/router/index.js:175:3)
+🔮 Proactive Intelligence: Generated 0 suggestions
+🔮 Proactive Intelligence: Generated 0 suggestions
+[SafePTYManager] Client disconnected: 6dnjVpReAK4y3X2MAABF
+[SafePTYManager] Session destroyed: terminal-1754598715553-d84k9qsr8 (1/5)
+[SafePTYManager] Session terminal-1754598715553-d84k9qsr8 exited: code=[object Object], signal=undefined
+[SafePTYManager] Client connected: gCMM6SKhG1slXj6BAABH
+[SafePTYManager] Creating session: terminal-1754599216308-nqtibpen5
+[SafePTYManager] Shell: bash, CWD: /Users/michaelkraft
+[SafePTYManager] Session created: terminal-1754599216308-nqtibpen5 (2/5)
+[SafePTYManager] Terminal terminal-1754599216308-nqtibpen5 resized to 115x21
+[SafePTYManager] Claude button action: supervision
+👁️ Starting Supervision mode: supervision-1754599282517
+[SafePTYManager] Registering socket for Claude session: supervision-1754599282517
+🔋 Performance Optimizer: Waking up after 1080s - Activity detected: suggestions_generated
+🔋 Restoring proactiveIntelligence to normal operation
+🔋 Restoring contextBuilder to normal operation
+🔋 Restoring memorySystem to normal operation
+⚡ Performance Optimizer: Entering normal mode
+🔮 Enhanced Claude Bridge: Generated 1 proactive suggestions
+🔮 Proactive Intelligence: Generated 1 suggestions
+🔋 Performance Optimizer: Waking up after 1080s - Activity detected: suggestions_generated
+🔋 Restoring proactiveIntelligence to normal operation
+🔋 Restoring contextBuilder to normal operation
+🔋 Restoring memorySystem to normal operation
+⚡ Performance Optimizer: Entering normal mode
+🔮 Enhanced Claude Bridge: Generated 1 proactive suggestions
+🔮 Proactive Intelligence: Generated 1 suggestions
+[SafePTYManager] Client disconnected: gCMM6SKhG1slXj6BAABH
+[SafePTYManager] Session destroyed: terminal-1754599216308-nqtibpen5 (1/5)
+[SafePTYManager] Session terminal-1754599216308-nqtibpen5 exited: code=[object Object], signal=undefined
+[SafePTYManager] Client connected: TzS7Zhlv-2Utc2bCAABJ
+[SafePTYManager] Creating session: terminal-1754599329723-tbspdoxgg
+[SafePTYManager] Shell: bash, CWD: /Users/michaelkraft
+[SafePTYManager] Session created: terminal-1754599329723-tbspdoxgg (2/5)
+[SafePTYManager] Terminal terminal-1754599329723-tbspdoxgg resized to 115x21
+🔋 Performance Optimizer: Entering power-save mode
+🔋 Performance Optimizer: Entering power-save mode
+[SafePTYManager] Terminal terminal-1754599329723-tbspdoxgg resized to 122x21
+[SafePTYManager] Terminal terminal-1754599329723-tbspdoxgg resized to 125x21
+[SafePTYManager] Claude button action: supervision
+👁️ Starting Supervision mode: supervision-1754599409415
+[SafePTYManager] Registering socket for Claude session: supervision-1754599409415
+⚡ Performance Optimizer: System load changed from low to high
+🚀 Performance Optimizer: Entering performance mode
+⚡ Performance Optimizer: System load changed from low to high
+🚀 Performance Optimizer: Entering performance mode
+[SafePTYManager] Terminal terminal-1754599329723-tbspdoxgg resized to 109x21
+[SafePTYManager] Terminal terminal-1754599329723-tbspdoxgg resized to 101x21
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+⚡ Performance Optimizer: Entering normal mode
+🔮 Enhanced Claude Bridge: Generated 2 proactive suggestions
+🔮 Proactive Intelligence: Generated 2 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+⚡ Performance Optimizer: Entering normal mode
+🔮 Enhanced Claude Bridge: Generated 2 proactive suggestions
+🔮 Proactive Intelligence: Generated 2 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🚀 Performance Optimizer: Entering performance mode
+🚀 Performance Optimizer: Entering performance mode
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+[SafePTYManager] Terminal terminal-1754599329723-tbspdoxgg resized to 101x16
+[SafePTYManager] Terminal terminal-1754599329723-tbspdoxgg resized to 109x16
+[SafePTYManager] Terminal terminal-1754599329723-tbspdoxgg resized to 110x16
+[SafePTYManager] Terminal terminal-1754599329723-tbspdoxgg resized to 111x16
+[SafePTYManager] Terminal terminal-1754599329723-tbspdoxgg resized to 103x16
+[SafePTYManager] Terminal terminal-1754599329723-tbspdoxgg resized to 106x16
+[SafePTYManager] Terminal terminal-1754599329723-tbspdoxgg resized to 102x16
+[SafePTYManager] Terminal terminal-1754599329723-tbspdoxgg resized to 101x16
+[SafePTYManager] Terminal terminal-1754599329723-tbspdoxgg resized to 101x21
+[SafePTYManager] Terminal terminal-1754599329723-tbspdoxgg resized to 95x21
+[SafePTYManager] Terminal terminal-1754599329723-tbspdoxgg resized to 94x21
+[SafePTYManager] Terminal terminal-1754599329723-tbspdoxgg resized to 93x21
+[SafePTYManager] Terminal terminal-1754599329723-tbspdoxgg resized to 100x21
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+[SafePTYManager] Cleaning up old session: terminal-1754598635843-awh8zq26q
+[SafePTYManager] Session destroyed: terminal-1754598635843-awh8zq26q (1/5)
+[SafePTYManager] Session terminal-1754598635843-awh8zq26q exited: code=[object Object], signal=undefined
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+erformance Optimizer: Reduced cache sizes due to memory pressure
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+⚡ Performance Optimizer: Entering normal mode
+🔮 Enhanced Claude Bridge: Generated 1 proactive suggestions
+🔮 Proactive Intelligence: Generated 1 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+⚡ Performance Optimizer: Entering normal mode
+🔮 Enhanced Claude Bridge: Generated 1 proactive suggestions
+🔮 Proactive Intelligence: Generated 1 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🚀 Performance Optimizer: Entering performance mode
+🚀 Performance Optimizer: Entering performance mode
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+⚡ Performance Optimizer: Entering normal mode
+🔮 Enhanced Claude Bridge: Generated 2 proactive suggestions
+🔮 Proactive Intelligence: Generated 2 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+⚡ Performance Optimizer: Entering normal mode
+🔮 Enhanced Claude Bridge: Generated 2 proactive suggestions
+🔮 Proactive Intelligence: Generated 2 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🚀 Performance Optimizer: Entering performance mode
+🚀 Performance Optimizer: Entering performance mode
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+⚡ Performance Optimizer: Entering normal mode
+🔮 Enhanced Claude Bridge: Generated 1 proactive suggestions
+🔮 Proactive Intelligence: Generated 1 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+⚡ Performance Optimizer: Entering normal mode
+🔮 Enhanced Claude Bridge: Generated 1 proactive suggestions
+🔮 Proactive Intelligence: Generated 1 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🚀 Performance Optimizer: Entering performance mode
+🚀 Performance Optimizer: Entering performance mode
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+⚡ Performance Optimizer: Entering normal mode
+🔮 Enhanced Claude Bridge: Generated 2 proactive suggestions
+🔮 Proactive Intelligence: Generated 2 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+⚡ Performance Optimizer: Entering normal mode
+🔮 Enhanced Claude Bridge: Generated 2 proactive suggestions
+🔮 Proactive Intelligence: Generated 2 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🚀 Performance Optimizer: Entering performance mode
+🚀 Performance Optimizer: Entering performance mode
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+🔮 Proactive Intelligence: Generated 0 suggestions
+⚠️ Performance Optimizer: High memory usage detected, optimizing...
+🔧 Performance Optimizer: Reduced cache sizes due to memory pressure
+[SafePTYManager] Client disconnected: qgLDd3Y1ZM7zZ5LpAAAZ
+Server closed

@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Star1 - Autonomous Coding Assistant</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="animated-background">
+        <div class="gradient-orb orb-1"></div>
+        <div class="gradient-orb orb-2"></div>
+        <div class="gradient-orb orb-3"></div>
+    </div>
+
+    <div class="container">
+        <header class="header glassmorphism">
+            <div class="header-content">
+                <div class="logo">
+                    <i class="fas fa-star"></i>
+                    <h1>Star1</h1>
+                </div>
+                <div class="header-controls">
+                    <div class="website-selector">
+                        <label for="websiteInput">Working on:</label>
+                        <input type="text" id="websiteInput" placeholder="Enter website URL or project name..." value="autonomous_vibe_interface">
+                        <button class="set-website-btn" id="setWebsite">
+                            <i class="fas fa-check"></i>
+                        </button>
+                    </div>
+                    <button class="theme-toggle" id="themeToggle">
+                        <i class="fas fa-moon"></i>
+                    </button>
+                    <div class="status-indicator">
+                        <span class="status-dot"></span>
+                        <span class="status-text">Active</span>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <main class="main-content">
+            <div class="chat-container glassmorphism">
+                <div class="chat-header">
+                    <h2>Autonomous Coding Assistant</h2>
+                    <div class="chat-actions">
+                        <button class="action-btn" id="clearChat">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                        <button class="action-btn" id="exportChat">
+                            <i class="fas fa-download"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="chat-messages" id="chatMessages">
+                    <div class="message assistant-message">
+                        <div class="message-avatar">
+                            <i class="fas fa-robot"></i>
+                        </div>
+                        <div class="message-content">
+                            <p>Hello! I'm Star1, your autonomous coding assistant. How can I help you today?</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="chat-input-container">
+                    <div class="input-wrapper glassmorphism">
+                        <textarea 
+                            id="messageInput" 
+                            placeholder="Describe your coding task or ask a question..."
+                            rows="1"
+                        ></textarea>
+                        <div class="input-controls">
+                            <button class="attach-btn" id="attachBtn" title="Attach files, images, or URLs">
+                                <i class="fas fa-paperclip"></i>
+                            </button>
+                            <button class="send-btn" id="sendMessage">
+                                <i class="fas fa-paper-plane"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Upload Panel -->
+                    <div class="upload-panel" id="uploadPanel" style="display: none;">
+                        <div class="upload-tabs">
+                            <button class="upload-tab active" data-tab="files">
+                                <i class="fas fa-file"></i>
+                                Files
+                            </button>
+                            <button class="upload-tab" data-tab="images">
+                                <i class="fas fa-image"></i>
+                                Images
+                            </button>
+                            <button class="upload-tab" data-tab="urls">
+                                <i class="fas fa-link"></i>
+                                URLs
+                            </button>
+                        </div>
+                        
+                        <div class="upload-content">
+                            <!-- Files Tab -->
+                            <div class="upload-tab-content active" id="files-tab">
+                                <div class="file-drop-zone" id="fileDropZone">
+                                    <i class="fas fa-cloud-upload-alt"></i>
+                                    <p>Drag & drop files here or click to browse</p>
+                                    <p class="file-types">Supports: .txt, .md, .json, .js, .py, .css, .html, .pdf</p>
+                                </div>
+                                <input type="file" id="fileInput" multiple accept=".txt,.md,.json,.js,.py,.css,.html,.pdf" style="display: none;">
+                            </div>
+                            
+                            <!-- Images Tab -->
+                            <div class="upload-tab-content" id="images-tab">
+                                <div class="image-drop-zone" id="imageDropZone">
+                                    <i class="fas fa-images"></i>
+                                    <p>Drag & drop images here or click to browse</p>
+                                    <p class="file-types">Supports: .jpg, .jpeg, .png, .gif, .bmp, .webp</p>
+                                </div>
+                                <input type="file" id="imageInput" multiple accept="image/*" style="display: none;">
+                            </div>
+                            
+                            <!-- URLs Tab -->
+                            <div class="upload-tab-content" id="urls-tab">
+                                <div class="url-input-section">
+                                    <input type="url" id="urlInput" placeholder="Enter URL to fetch content from...">
+                                    <button class="fetch-url-btn" id="fetchUrlBtn">
+                                        <i class="fas fa-download"></i>
+                                        Fetch
+                                    </button>
+                                </div>
+                                <div class="url-preview" id="urlPreview" style="display: none;"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="upload-actions">
+                            <button class="clear-uploads-btn" id="clearUploads">
+                                <i class="fas fa-trash"></i>
+                                Clear All
+                            </button>
+                            <button class="close-upload-btn" id="closeUpload">
+                                <i class="fas fa-times"></i>
+                                Close
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Context Display -->
+                    <div class="context-display" id="contextDisplay" style="display: none;">
+                        <div class="context-header">
+                            <h4>Context Added</h4>
+                            <button class="context-toggle" id="contextToggle">
+                                <i class="fas fa-chevron-up"></i>
+                            </button>
+                        </div>
+                        <div class="context-items" id="contextItems"></div>
+                    </div>
+                </div>
+
+                <!-- Task Display Container -->
+                <div class="task-display-area" id="taskDisplayArea" style="display: none;">
+                    <!-- Task displays will be inserted here -->
+                </div>
+            </div>
+
+            <div class="sidebar">
+                <div class="sidebar-card glassmorphism">
+                    <h3>Quick Actions</h3>
+                    <div class="action-buttons">
+                        <button class="quick-action-btn">
+                            <i class="fas fa-file-code"></i>
+                            <span>New File</span>
+                        </button>
+                        <button class="quick-action-btn">
+                            <i class="fas fa-folder-open"></i>
+                            <span>Open Project</span>
+                        </button>
+                        <button class="quick-action-btn">
+                            <i class="fas fa-git-alt"></i>
+                            <span>Git Status</span>
+                        </button>
+                        <button class="quick-action-btn">
+                            <i class="fas fa-terminal"></i>
+                            <span>Terminal</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="sidebar-card glassmorphism">
+                    <h3>Project Status</h3>
+                    <div class="status-grid">
+                        <div class="status-item clickable" data-action="show-pending-tasks">
+                            <span class="status-label">Tasks Pending</span>
+                            <span class="status-value">0</span>
+                        </div>
+                        <div class="status-item clickable" data-action="show-active-tasks">
+                            <span class="status-label">Tasks Active</span>
+                            <span class="status-value">0</span>
+                        </div>
+                        <div class="status-item clickable" data-action="show-completed-tasks">
+                            <span class="status-label">Tasks Completed</span>
+                            <span class="status-value">0</span>
+                        </div>
+                        <div class="status-item clickable" data-action="show-modified-files">
+                            <span class="status-label">Files Modified</span>
+                            <span class="status-value">0</span>
+                        </div>
+                        <div class="status-item clickable" data-action="show-code-stats">
+                            <span class="status-label">Lines of Code</span>
+                            <span class="status-value">0</span>
+                        </div>
+                        <div class="status-item clickable help-item" data-action="show-help-support">
+                            <span class="status-label">Help & Support</span>
+                            <span class="status-value"><i class="fas fa-question-circle"></i></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="sidebar-card glassmorphism">
+                    <h3>Recent Files</h3>
+                    <div class="file-list">
+                        <div class="file-item">
+                            <i class="fas fa-file-code"></i>
+                            <span>utils.js</span>
+                        </div>
+                        <div class="file-item">
+                            <i class="fas fa-file-code"></i>
+                            <span>package.json</span>
+                        </div>
+                        <div class="file-item">
+                            <i class="fas fa-file-code"></i>
+                            <span>package-lock.json</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Project Status Display Area -->
+        <section class="project-status-display-section" id="projectStatusSection" style="display: none;">
+            <div class="project-status-display-container glassmorphism">
+                <div class="project-status-display-header">
+                    <h3 id="projectStatusTitle">Project Information</h3>
+                    <div class="project-status-controls">
+                        <button class="action-btn" id="closeProjectStatus">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="project-status-display-content" id="projectStatusContent">
+                    <!-- Project status content will be inserted here -->
+                </div>
+            </div>
+        </section>
+
+        <!-- Execution Log Section -->
+        <section class="execution-log-section">
+            <div class="execution-log-container glassmorphism">
+                <div class="execution-log-header">
+                    <h3>Execution Log</h3>
+                    <div class="log-controls">
+                        <button class="action-btn" id="clearLog">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                        <button class="action-btn" id="exportLog">
+                            <i class="fas fa-download"></i>
+                        </button>
+                        <button class="action-btn" id="toggleAutoScroll">
+                            <i class="fas fa-lock"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="execution-log-content" id="executionLog">
+                    <div class="log-entry system">
+                        <span class="log-timestamp">[--:--:--]</span>
+                        <span class="log-level">SYSTEM</span>
+                        <span class="log-message">Star1 initializing...</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <script src="utils.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>

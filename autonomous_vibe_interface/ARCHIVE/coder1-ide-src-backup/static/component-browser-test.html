@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Component Browser Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #1a1b26;
+            color: #c0caf5;
+            margin: 0;
+            padding: 20px;
+        }
+        
+        .test-container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .test-section {
+            background: #24283b;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            border: 1px solid #414868;
+        }
+        
+        .test-button {
+            background: #7aa2f7;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        
+        .test-button:hover {
+            background: #5a7fc7;
+        }
+        
+        .preview-demo {
+            display: flex;
+            height: 300px;
+            border: 1px solid #414868;
+            border-radius: 8px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+        
+        .preview-panel {
+            flex: 1;
+            background: #16161e;
+            padding: 20px;
+            transition: width 0.3s ease;
+            position: relative;
+        }
+        
+        .code-panel {
+            width: 40%;
+            background: #24283b;
+            border-left: 1px solid #414868;
+            transition: width 0.3s ease;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .code-panel.collapsed {
+            width: 0;
+            overflow: hidden;
+        }
+        
+        .code-panel.minimized {
+            width: 20%;
+        }
+        
+        .preview-panel.expanded {
+            width: 100%;
+        }
+        
+        .preview-panel.super-expanded {
+            width: 120%;
+            position: relative;
+            z-index: 5;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            margin-right: -20%;
+        }
+        
+        .panel-toggle {
+            position: absolute;
+            top: 50%;
+            right: -15px;
+            transform: translateY(-50%);
+            background: #7aa2f7;
+            color: white;
+            border: none;
+            width: 30px;
+            height: 60px;
+            border-radius: 15px 0 0 15px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            z-index: 10;
+            transition: all 0.3s ease;
+            font-weight: bold;
+        }
+        
+        .status {
+            background: #414868;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🧪 Component Browser Panel Test</h1>
+        
+        <div class="test-section">
+            <h2>Panel Expansion Test</h2>
+            <p>This tests the 4-state panel system:</p>
+            
+            <div class="preview-demo" id="demoContainer">
+                <div class="preview-panel" id="previewPanel">
+                    <h3>Preview Panel</h3>
+                    <p>This is where component previews appear.</p>
+                    <p>Current state: <span id="currentState">normal</span></p>
+                </div>
+                <div class="code-panel" id="codePanel">
+                    <div>Code Panel</div>
+                    <button class="panel-toggle" id="panelToggle">⬅</button>
+                </div>
+            </div>
+            
+            <div class="status" id="status">
+                State: normal | Preview: 60% | Code: 40%
+            </div>
+            
+            <div>
+                <button class="test-button" onclick="togglePanel()">Toggle Panel State</button>
+                <button class="test-button" onclick="resetPanel()">Reset to Normal</button>
+                <button class="test-button" onclick="goSuperExpanded()">Go Super Expanded</button>
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h2>Access Links</h2>
+            <p>Try these direct links:</p>
+            <ul>
+                <li><a href="http://localhost:3001/component-browser.html" target="_blank" style="color: #7aa2f7;">Component Browser (Port 3001)</a></li>
+                <li><a href="http://localhost:3000/component-browser.html" target="_blank" style="color: #7aa2f7;">Component Browser (Port 3000)</a></li>
+            </ul>
+        </div>
+        
+        <div class="test-section">
+            <h2>Troubleshooting Steps</h2>
+            <ol>
+                <li><strong>Hard Refresh:</strong> Press Ctrl+F5 (or Cmd+Shift+R on Mac)</li>
+                <li><strong>Clear Cache:</strong> Open Dev Tools → Application → Clear Storage</li>
+                <li><strong>Check Console:</strong> Open Dev Tools → Console for JavaScript errors</li>
+                <li><strong>Select Component:</strong> Make sure you've selected a component first</li>
+            </ol>
+        </div>
+    </div>
+
+    <script>
+        let panelState = 'normal';
+        const states = ['normal', 'minimized', 'collapsed', 'super-expanded'];
+        
+        const previewPanel = document.getElementById('previewPanel');
+        const codePanel = document.getElementById('codePanel');
+        const panelToggle = document.getElementById('panelToggle');
+        const status = document.getElementById('status');
+        const currentState = document.getElementById('currentState');
+        
+        function applyPanelState() {
+            // Remove all state classes
+            codePanel.classList.remove('collapsed', 'minimized');
+            previewPanel.classList.remove('expanded', 'super-expanded');
+            
+            // Apply current state
+            switch (panelState) {
+                case 'minimized':
+                    codePanel.classList.add('minimized');
+                    break;
+                case 'collapsed':
+                    codePanel.classList.add('collapsed');
+                    previewPanel.classList.add('expanded');
+                    break;
+                case 'super-expanded':
+                    codePanel.classList.add('collapsed');
+                    previewPanel.classList.add('super-expanded');
+                    break;
+                default: // normal
+                    break;
+            }
+            
+            // Update UI
+            const stateConfig = {
+                'normal': { icon: '⬅', preview: '60%', code: '40%' },
+                'minimized': { icon: '◀', preview: '80%', code: '20%' },
+                'collapsed': { icon: '⬅⬅', preview: '100%', code: '0%' },
+                'super-expanded': { icon: '➡', preview: '120%', code: '0%' }
+            };
+            
+            const config = stateConfig[panelState];
+            panelToggle.innerHTML = config.icon;
+            currentState.textContent = panelState;
+            status.textContent = `State: ${panelState} | Preview: ${config.preview} | Code: ${config.code}`;
+            
+            console.log('Panel state changed to:', panelState);
+        }
+        
+        function togglePanel() {
+            const currentIndex = states.indexOf(panelState);
+            const nextIndex = (currentIndex + 1) % states.length;
+            panelState = states[nextIndex];
+            applyPanelState();
+        }
+        
+        function resetPanel() {
+            panelState = 'normal';
+            applyPanelState();
+        }
+        
+        function goSuperExpanded() {
+            panelState = 'super-expanded';
+            applyPanelState();
+        }
+        
+        // Bind toggle button
+        panelToggle.addEventListener('click', togglePanel);
+        
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'e') {
+                e.preventDefault();
+                togglePanel();
+            }
+            
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'E') {
+                e.preventDefault();
+                goSuperExpanded();
+            }
+        });
+        
+        // Initialize
+        applyPanelState();
+    </script>
+</body>
+</html>

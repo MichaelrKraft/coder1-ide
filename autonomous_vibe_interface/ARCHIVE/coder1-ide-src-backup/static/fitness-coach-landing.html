@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sarah - Professional Fitness Coach</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-color: #FF6B6B;
+            --secondary-color: #4ECDC4;
+            --bg-dark: #0F0F0F;
+            --bg-section: #1A1A1A;
+            --text-light: #FFFFFF;
+            --text-gray: #B0B0B0;
+            --accent-gradient: linear-gradient(135deg, #FF6B6B 0%, #4ECDC4 100%);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-light);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        /* Header and Navigation */
+        header {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            background-color: rgba(15, 15, 15, 0.95);
+            backdrop-filter: blur(10px);
+            z-index: 1000;
+            padding: 1rem 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        nav {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 2rem;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+            background: var(--accent-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            list-style: none;
+        }
+
+        .nav-links a {
+            color: var(--text-light);
+            text-decoration: none;
+            transition: color 0.3s ease;
+            font-weight: 500;
+        }
+
+        .nav-links a:hover {
+            color: var(--primary-color);
+        }
+
+        /* Hero Section */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(rgba(15, 15, 15, 0.7), rgba(15, 15, 15, 0.7)),
+                        url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080"><rect fill="%230F0F0F" width="1920" height="1080"/><path fill="%23FF6B6B" opacity="0.1" d="M0 540L45.7 525C91.3 510 182.7 480 274.2 495C365.7 510 457.3 570 548.8 585C640.3 600 731.7 570 823 540C914.3 510 1005.7 480 1097 480C1188.3 480 1279.7 510 1371.2 525C1462.7 540 1554.3 540 1645.8 525C1737.3 510 1828.7 480 1874.3 465L1920 450V1080H0V540Z"/></svg>') no-repeat center;
+            background-size: cover;
+            padding: 2rem;
+            text-align: center;
+        }
+
+        .hero-content h1 {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            background: var(--accent-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero-content p {
+            font-size: 1.5rem;
+            color: var(--text-gray);
+            margin-bottom: 2rem;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .cta-button {
+            display: inline-block;
+            padding: 1rem 3rem;
+            background: var(--accent-gradient);
+            color: var(--text-light);
+            text-decoration: none;
+            border-radius: 50px;
+            font-weight: bold;
+            font-size: 1.1rem;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .cta-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 30px rgba(255, 107, 107, 0.3);
+        }
+
+        /* Section Styles */
+        section {
+            padding: 5rem 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .section-title {
+            font-size: 3rem;
+            text-align: center;
+            margin-bottom: 3rem;
+            background: var(--accent-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* Services Section */
+        .services {
+            background-color: var(--bg-section);
+            border-radius: 20px;
+            padding: 3rem;
+            margin-bottom: 5rem;
+        }
+
+        .services-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-top: 3rem;
+        }
+
+        .service-card {
+            background-color: rgba(255, 255, 255, 0.05);
+            padding: 2rem;
+            border-radius: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: transform 0.3s ease, border-color 0.3s ease;
+        }
+
+        .service-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--primary-color);
+        }
+
+        .service-card h3 {
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+            font-size: 1.5rem;
+        }
+
+        .service-card p {
+            color: var(--text-gray);
+        }
+
+        /* Testimonials Section */
+        .testimonials {
+            margin-bottom: 5rem;
+        }
+
+        .testimonials-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 2rem;
+            margin-top: 3rem;
+        }
+
+        .testimonial-card {
+            background-color: var(--bg-section);
+            padding: 2rem;
+            border-radius: 15px;
+            position: relative;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .testimonial-card::before {
+            content: '"';
+            position: absolute;
+            top: -10px;
+            left: 20px;
+            font-size: 4rem;
+            color: var(--primary-color);
+            opacity: 0.3;
+        }
+
+        .testimonial-text {
+            margin-bottom: 1.5rem;
+            color: var(--text-gray);
+            font-style: italic;
+        }
+
+        .testimonial-author {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .author-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: var(--accent-gradient);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+
+        .author-info h4 {
+            color: var(--text-light);
+            margin-bottom: 0.25rem;
+        }
+
+        .author-info p {
+            color: var(--text-gray);
+            font-size: 0.9rem;
+        }
+
+        /* Contact Form Section */
+        .contact {
+            background-color: var(--bg-section);
+            border-radius: 20px;
+            padding: 3rem;
+            margin-bottom: 5rem;
+        }
+
+        .contact-form {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--text-light);
+            font-weight: 500;
+        }
+
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 1rem;
+            background-color: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            color: var(--text-light);
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 150px;
+        }
+
+        .submit-button {
+            width: 100%;
+            padding: 1rem;
+            background: var(--accent-gradient);
+            color: var(--text-light);
+            border: none;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .submit-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 30px rgba(255, 107, 107, 0.3);
+        }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: 2rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--text-gray);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .nav-links {
+                display: none;
+            }
+
+            .hero-content h1 {
+                font-size: 2.5rem;
+            }
+
+            .hero-content p {
+                font-size: 1.2rem;
+            }
+
+            .section-title {
+                font-size: 2rem;
+            }
+
+            .services-grid,
+            .testimonials-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header and Navigation -->
+    <header>
+        <nav>
+            <div class="logo">Sarah Fitness</div>
+            <ul class="nav-links">
+                <li><a href="#home">Home</a></li>
+                <li><a href="#services">Services</a></li>
+                <li><a href="#testimonials">Testimonials</a></li>
+                <li><a href="#contact">Contact</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <!-- Hero Section -->
+    <section id="home" class="hero">
+        <div class="hero-content">
+            <h1>Transform Your Body, Transform Your Life</h1>
+            <p>Hi, I'm Sarah - Your dedicated fitness coach helping you achieve your health and wellness goals with personalized training programs.</p>
+            <a href="#contact" class="cta-button">Start Your Journey Today</a>
+        </div>
+    </section>
+
+    <!-- Services Section -->
+    <section id="services" class="services">
+        <h2 class="section-title">My Services</h2>
+        <div class="services-grid">
+            <div class="service-card">
+                <h3>Personal Training</h3>
+                <p>One-on-one customized workout sessions tailored to your specific goals, fitness level, and preferences. Get the attention and guidance you deserve.</p>
+            </div>
+            <div class="service-card">
+                <h3>Online Coaching</h3>
+                <p>Flexible training programs you can follow from anywhere. Includes personalized workout plans, nutrition guidance, and weekly check-ins.</p>
+            </div>
+            <div class="service-card">
+                <h3>Group Fitness Classes</h3>
+                <p>High-energy group sessions that combine cardio, strength training, and functional movements. Perfect for those who thrive in a community setting.</p>
+            </div>
+            <div class="service-card">
+                <h3>Nutrition Planning</h3>
+                <p>Comprehensive meal plans and nutritional guidance to complement your fitness journey. Learn how to fuel your body for optimal performance.</p>
+            </div>
+            <div class="service-card">
+                <h3>Fitness Assessments</h3>
+                <p>Detailed evaluations of your current fitness level, body composition, and movement patterns to create the most effective training strategy.</p>
+            </div>
+            <div class="service-card">
+                <h3>Competition Prep</h3>
+                <p>Specialized training for athletes and competitors. Whether it's a marathon or bodybuilding show, I'll help you peak at the right time.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Testimonials Section -->
+    <section id="testimonials" class="testimonials">
+        <h2 class="section-title">Success Stories</h2>
+        <div class="testimonials-grid">
+            <div class="testimonial-card">
+                <p class="testimonial-text">Sarah completely transformed my approach to fitness. Her personalized training plan helped me lose 30 pounds and gain confidence I never knew I had. She's not just a coach, she's a life changer!</p>
+                <div class="testimonial-author">
+                    <div class="author-avatar">JD</div>
+                    <div class="author-info">
+                        <h4>Jessica Davis</h4>
+                        <p>Lost 30 lbs in 4 months</p>
+                    </div>
+                </div>
+            </div>
+            <div class="testimonial-card">
+                <p class="testimonial-text">As a busy professional, I struggled to find time for fitness. Sarah's online coaching program fit perfectly into my schedule and her constant support kept me motivated. Best investment I've made in myself!</p>
+                <div class="testimonial-author">
+                    <div class="author-avatar">MT</div>
+                    <div class="author-info">
+                        <h4>Michael Thompson</h4>
+                        <p>Online Coaching Client</p>
+                    </div>
+                </div>
+            </div>
+            <div class="testimonial-card">
+                <p class="testimonial-text">The group fitness classes are incredible! Sarah creates such a positive and encouraging environment. I've made great friends and achieved fitness goals I never thought possible at 45.</p>
+                <div class="testimonial-author">
+                    <div class="author-avatar">LC</div>
+                    <div class="author-info">
+                        <h4>Linda Chen</h4>
+                        <p>Group Fitness Member</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Contact Form Section -->
+    <section id="contact" class="contact">
+        <h2 class="section-title">Get Started Today</h2>
+        <form class="contact-form" onsubmit="handleSubmit(event)">
+            <div class="form-group">
+                <label for="name">Your Name</label>
+                <input type="text" id="name" name="name" required>
+            </div>
+            <div class="form-group">
+                <label for="email">Email Address</label>
+                <input type="email" id="email" name="email" required>
+            </div>
+            <div class="form-group">
+                <label for="phone">Phone Number</label>
+                <input type="tel" id="phone" name="phone">
+            </div>
+            <div class="form-group">
+                <label for="goals">Tell me about your fitness goals</label>
+                <textarea id="goals" name="goals" required></textarea>
+            </div>
+            <button type="submit" class="submit-button">Send Message</button>
+        </form>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <p>&copy; 2024 Sarah Fitness. All rights reserved. | Transform your body, transform your life.</p>
+    </footer>
+
+    <script>
+        // Smooth scrolling for navigation links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+
+        // Form submission handler
+        function handleSubmit(event) {
+            event.preventDefault();
+            
+            // Get form data
+            const formData = new FormData(event.target);
+            const data = Object.fromEntries(formData);
+            
+            // In a real application, you would send this data to a server
+            console.log('Form submitted:', data);
+            
+            // Show success message
+            alert('Thank you for your message! Sarah will get back to you within 24 hours.');
+            
+            // Reset form
+            event.target.reset();
+        }
+
+        // Add header background on scroll
+        window.addEventListener('scroll', function() {
+            const header = document.querySelector('header');
+            if (window.scrollY > 100) {
+                header.style.backgroundColor = 'rgba(15, 15, 15, 0.98)';
+            } else {
+                header.style.backgroundColor = 'rgba(15, 15, 15, 0.95)';
+            }
+        });
+    </script>
+</body>
+</html>

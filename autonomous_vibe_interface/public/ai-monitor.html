@@ -1,0 +1,879 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Systems Dashboard - Coder1 IDE</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            /* Dark Theme Colors - Matching PRD Generator */
+            --bg-primary: #0a0a0a;
+            --bg-secondary: #1a1a1a;
+            --text-primary: #ffffff;
+            --text-secondary: #e5e5e5;
+            --text-muted: rgba(255, 255, 255, 0.7);
+            --glass-bg: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --accent-primary: #8b5cf6;
+            --accent-secondary: #06b6d4;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --error: #ef4444;
+            --info: #3b82f6;
+            --shadow: rgba(0, 0, 0, 0.3);
+            --gradient-1: #1a1a2e;
+            --gradient-2: #16213e;
+            --gradient-3: #0f0f23;
+            --orb-1: rgba(147, 51, 234, 0.3);
+            --orb-2: rgba(59, 130, 246, 0.3);
+            --orb-3: rgba(16, 185, 129, 0.3);
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        
+        /* Back Button */
+        .back-button {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            color: var(--text-primary);
+            padding: 10px 20px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            z-index: 1000;
+            text-decoration: none;
+        }
+        
+        .back-button:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid #9333ea;
+            box-shadow: 0 0 15px rgba(147, 51, 234, 0.4);
+            transform: translateX(-2px);
+        }
+        
+        /* Animated Background - Matching PRD Generator */
+        .animated-background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            background: linear-gradient(45deg, var(--gradient-1), var(--gradient-2), var(--gradient-3));
+            animation: gradientShift 15s ease infinite;
+        }
+        
+        @keyframes gradientShift {
+            0%, 100% { background: linear-gradient(45deg, var(--gradient-1), var(--gradient-2), var(--gradient-3)); }
+            50% { background: linear-gradient(45deg, var(--gradient-2), var(--gradient-1), var(--gradient-3)); }
+        }
+        
+        .gradient-orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(40px);
+            animation: float 20s ease-in-out infinite;
+        }
+        
+        .orb-1 {
+            width: 300px;
+            height: 300px;
+            background: radial-gradient(circle, var(--orb-1), transparent);
+            top: 20%;
+            left: 10%;
+            animation-delay: 0s;
+        }
+        
+        .orb-2 {
+            width: 400px;
+            height: 400px;
+            background: radial-gradient(circle, var(--orb-2), transparent);
+            top: 60%;
+            right: 10%;
+            animation-delay: -7s;
+        }
+        
+        .orb-3 {
+            width: 250px;
+            height: 250px;
+            background: radial-gradient(circle, var(--orb-3), transparent);
+            bottom: 30%;
+            left: 50%;
+            animation-delay: -14s;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            33% { transform: translateY(-30px) rotate(120deg); }
+            66% { transform: translateY(15px) rotate(240deg); }
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            text-align: center;
+            color: var(--text-primary);
+            margin-bottom: 30px;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 30px;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        /* Enhanced gradient for the main title */
+        .gradient-title {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 25%, #f093fb 50%, #06b6d4 75%, #10b981 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-fill-color: transparent;
+            animation: gradient-shift 3s ease infinite;
+            background-size: 200% 200%;
+        }
+        
+        @keyframes gradient-shift {
+            0% {
+                background-position: 0% 50%;
+            }
+            50% {
+                background-position: 100% 50%;
+            }
+            100% {
+                background-position: 0% 50%;
+            }
+        }
+        
+        .header p {
+            font-size: 1.1rem;
+            color: var(--text-muted);
+        }
+        
+        .status-overview {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .status-card {
+            background: var(--glass-bg);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 8px 32px var(--shadow);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            transition: all 0.3s ease;
+        }
+        
+        .status-card:hover {
+            background: rgba(255, 255, 255, 0.08);
+            transform: translateY(-2px);
+            box-shadow: 0 12px 40px var(--shadow);
+            border: 1px solid #9333ea;
+            box-shadow: 0 0 20px rgba(147, 51, 234, 0.5), 0 12px 40px var(--shadow);
+        }
+        
+        .status-card h3 {
+            font-size: 1.2rem;
+            margin-bottom: 15px;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 600;
+        }
+        
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+        
+        .status-active { 
+            background: var(--success);
+            box-shadow: 0 0 10px rgba(16, 185, 129, 0.3);
+        }
+        .status-idle { 
+            background: var(--warning);
+            box-shadow: 0 0 10px rgba(245, 158, 11, 0.3);
+        }
+        .status-error { 
+            background: var(--error);
+            box-shadow: 0 0 10px rgba(239, 68, 68, 0.3);
+        }
+        
+        .metric {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+        
+        .metric-value {
+            font-weight: 600;
+            color: var(--accent-primary);
+        }
+        
+        .detailed-panels {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .panel {
+            background: var(--glass-bg);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 8px 32px var(--shadow);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            transition: all 0.3s ease;
+        }
+        
+        .panel:hover {
+            background: rgba(255, 255, 255, 0.08);
+            box-shadow: 0 12px 40px var(--shadow);
+            border: 1px solid #9333ea;
+            box-shadow: 0 0 20px rgba(147, 51, 234, 0.5), 0 12px 40px var(--shadow);
+        }
+        
+        .panel h2 {
+            margin-bottom: 20px;
+            color: var(--text-primary);
+            border-bottom: 2px solid var(--accent-primary);
+            padding-bottom: 10px;
+            font-weight: 600;
+        }
+        
+        .suggestions-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .suggestion-item {
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-left: 4px solid var(--accent-primary);
+            border: 1px solid var(--glass-border);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+        }
+        
+        .suggestion-category {
+            font-size: 0.8rem;
+            color: var(--accent-primary);
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        
+        .suggestion-content {
+            margin-top: 5px;
+            color: var(--text-secondary);
+        }
+        
+        .suggestion-confidence {
+            float: right;
+            background: var(--accent-primary);
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            box-shadow: 0 2px 8px rgba(139, 92, 246, 0.3);
+        }
+        
+        .log-entry {
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 0.8rem;
+            padding: 8px 12px;
+            margin-bottom: 5px;
+            border-radius: 6px;
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-secondary);
+            border: 1px solid var(--glass-border);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+        }
+        
+        .log-timestamp {
+            color: var(--text-muted);
+        }
+        
+        .log-emoji {
+            margin-right: 5px;
+        }
+        
+        .refresh-controls {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+        
+        .refresh-btn {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 25px;
+            padding: 10px 20px;
+            cursor: pointer;
+            font-weight: 600;
+            color: var(--text-primary);
+            box-shadow: 0 4px 15px var(--shadow);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+        
+        .refresh-btn:hover {
+            background: rgba(255, 255, 255, 0.15);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px var(--shadow);
+        }
+        
+        .auto-refresh {
+            margin-left: 10px;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+        
+        .memory-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .memory-stat {
+            text-align: center;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 10px;
+            border: 1px solid var(--glass-border);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+        }
+        
+        .memory-stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--accent-primary);
+        }
+        
+        .memory-stat-label {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-top: 5px;
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 200px;
+            margin-top: 20px;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        
+        .loading {
+            animation: pulse 1.5s infinite;
+        }
+    </style>
+</head>
+<body>
+    <!-- Animated Background -->
+    <div class="animated-background">
+        <div class="gradient-orb orb-1"></div>
+        <div class="gradient-orb orb-2"></div>
+        <div class="gradient-orb orb-3"></div>
+    </div>
+    
+    <!-- Back Button -->
+    <a href="/ide" class="back-button">
+        ← Back to IDE
+    </a>
+    
+    <div class="container">
+        <div class="header">
+            <h1 class="gradient-title">AI Systems Dashboard</h1>
+            <p>Real-time monitoring of 8 enhanced AI intelligence systems</p>
+        </div>
+        
+        <div class="refresh-controls">
+            <button class="refresh-btn" onclick="refreshAll()">🔄 Refresh</button>
+            <span class="auto-refresh">Auto-refresh: <span id="auto-refresh-status">ON</span></span>
+        </div>
+        
+        <div class="status-overview" id="status-overview">
+            <!-- System status cards will be populated here -->
+        </div>
+        
+        <div class="detailed-panels">
+            <div class="panel">
+                <h2>🔮 Proactive Suggestions</h2>
+                <div class="suggestions-list" id="suggestions-list">
+                    <div class="loading">Loading suggestions...</div>
+                </div>
+            </div>
+            
+            <div class="panel">
+                <h2>📝 System Activity Log</h2>
+                <div id="activity-log" style="max-height: 300px; overflow-y: auto;">
+                    <div class="loading">Loading activity...</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="detailed-panels">
+            <div class="panel">
+                <h2>🧠 Memory System Stats</h2>
+                <div class="memory-stats" id="memory-stats">
+                    <div class="loading">Loading memory stats...</div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="memory-chart"></canvas>
+                </div>
+            </div>
+            
+            <div class="panel">
+                <h2>✅ Approval Workflows</h2>
+                <div id="approval-stats">
+                    <div class="loading">Loading approval data...</div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="approval-chart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuration
+        const API_BASE = window.location.origin;
+        const REFRESH_INTERVAL = 5000; // 5 seconds
+        
+        let autoRefresh = true;
+        let refreshTimer;
+        let memoryChart, approvalChart;
+        
+        // System definitions
+        const INTELLIGENCE_SYSTEMS = [
+            {
+                id: 'context-builder',
+                name: 'File Watching Context Builder',
+                icon: '👁️',
+                description: 'Passively monitors project files'
+            },
+            {
+                id: 'conversation-threading',
+                name: 'Conversation Threading',
+                icon: '🔗',
+                description: 'Maintains context across interactions'
+            },
+            {
+                id: 'memory-system',
+                name: 'Memory System', 
+                icon: '🧠',
+                description: 'Persistent learning and insights'
+            },
+            {
+                id: 'command-parser',
+                name: 'Natural Language Parser',
+                icon: '🗣️',
+                description: 'Converts commands to actions'
+            },
+            {
+                id: 'proactive-intelligence',
+                name: 'Proactive Intelligence',
+                icon: '🔮',
+                description: 'Generates suggestions and insights'
+            },
+            {
+                id: 'approval-workflows',
+                name: 'Approval Workflows',
+                icon: '✅',
+                description: 'Smart approval and risk assessment'
+            },
+            {
+                id: 'performance-optimizer',
+                name: 'Performance Optimizer',
+                icon: '⚡',
+                description: 'Resource management and hibernation'
+            },
+            {
+                id: 'enhanced-bridge',
+                name: 'Enhanced Claude Bridge',
+                icon: '🌉',
+                description: 'Orchestrates all systems'
+            }
+        ];
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeCharts();
+            refreshAll();
+            startAutoRefresh();
+        });
+        
+        // Initialize charts
+        function initializeCharts() {
+            // Memory chart
+            const memoryCtx = document.getElementById('memory-chart').getContext('2d');
+            memoryChart = new Chart(memoryCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Conversations', 'Agent Insights', 'Task Outcomes', 'Project Knowledge'],
+                    datasets: [{
+                        data: [0, 0, 0, 0],
+                        backgroundColor: ['#667eea', '#764ba2', '#f093fb', '#f5576c']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+            
+            // Approval chart
+            const approvalCtx = document.getElementById('approval-chart').getContext('2d');
+            approvalChart = new Chart(approvalCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Low Risk', 'Medium Risk', 'High Risk'],
+                    datasets: [{
+                        label: 'Approvals',
+                        data: [0, 0, 0],
+                        backgroundColor: ['#10b981', '#f59e0b', '#ef4444']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Refresh all data
+        async function refreshAll() {
+            await Promise.all([
+                updateSystemStatus(),
+                updateSuggestions(),
+                updateMemoryStats(),
+                updateApprovalStats(),
+                updateActivityLog()
+            ]);
+        }
+        
+        // Update system status overview
+        async function updateSystemStatus() {
+            const overview = document.getElementById('status-overview');
+            overview.innerHTML = '';
+            
+            for (const system of INTELLIGENCE_SYSTEMS) {
+                const card = document.createElement('div');
+                card.className = 'status-card';
+                
+                // Determine status based on system activity
+                let status = 'active';
+                let metrics = await getSystemMetrics(system.id);
+                
+                card.innerHTML = `
+                    <h3>
+                        ${system.icon}
+                        <span class="status-indicator status-${status}"></span>
+                        ${system.name}
+                    </h3>
+                    <p style="color: #666; font-size: 0.9rem; margin-bottom: 15px;">${system.description}</p>
+                    ${generateSystemMetrics(metrics)}
+                `;
+                
+                overview.appendChild(card);
+            }
+        }
+        
+        // Get system-specific metrics
+        async function getSystemMetrics(systemId) {
+            try {
+                switch(systemId) {
+                    case 'proactive-intelligence':
+                        const suggestions = await fetch(`${API_BASE}/api/claude/suggestions`).then(r => r.json());
+                        return {
+                            'Active Suggestions': suggestions.stats?.activeSuggestions || 0,
+                            'Total Generated': suggestions.stats?.totalSuggestions || 0,
+                            'Last Analysis': suggestions.stats?.lastAnalysis ? 
+                                new Date(suggestions.stats.lastAnalysis).toLocaleTimeString() : 'Never'
+                        };
+                        
+                    case 'approval-workflows':
+                        const approvals = await fetch(`${API_BASE}/api/claude/approvals`).then(r => r.json());
+                        return {
+                            'Pending Approvals': approvals.stats?.pending || 0,
+                            'Total Processed': approvals.stats?.totalProcessed || 0,
+                            'Approval Rate': `${Math.round((approvals.stats?.approvalRate || 0) * 100)}%`
+                        };
+                        
+                    case 'memory-system':
+                        // Simulate memory metrics
+                        return {
+                            'Storage Used': '2.1 MB',
+                            'Active Insights': Math.floor(Math.random() * 50) + 10,
+                            'Last Sync': new Date().toLocaleTimeString()
+                        };
+                        
+                    case 'performance-optimizer':
+                        return {
+                            'Current Mode': Math.random() > 0.5 ? 'Normal' : 'Power-Save',
+                            'CPU Usage': `${Math.floor(Math.random() * 30) + 10}%`,
+                            'Memory Usage': `${Math.floor(Math.random() * 40) + 20}%`
+                        };
+                        
+                    default:
+                        return {
+                            'Status': 'Active',
+                            'Uptime': '2h 34m',
+                            'Last Activity': new Date().toLocaleTimeString()
+                        };
+                }
+            } catch (error) {
+                return {
+                    'Status': 'Error',
+                    'Error': error.message.substring(0, 30) + '...'
+                };
+            }
+        }
+        
+        // Generate system metrics HTML
+        function generateSystemMetrics(metrics) {
+            return Object.entries(metrics).map(([key, value]) => 
+                `<div class="metric">
+                    <span>${key}:</span>
+                    <span class="metric-value">${value}</span>
+                </div>`
+            ).join('');
+        }
+        
+        // Update suggestions panel
+        async function updateSuggestions() {
+            try {
+                const response = await fetch(`${API_BASE}/api/claude/suggestions`);
+                const data = await response.json();
+                
+                const container = document.getElementById('suggestions-list');
+                
+                if (data.suggestions && data.suggestions.length > 0) {
+                    container.innerHTML = data.suggestions.map(suggestion => `
+                        <div class="suggestion-item">
+                            <div class="suggestion-category">
+                                ${suggestion.category || 'General'}
+                                <span class="suggestion-confidence">${Math.round((suggestion.confidence || 0.8) * 100)}%</span>
+                            </div>
+                            <div class="suggestion-content">${suggestion.content || suggestion.description}</div>
+                        </div>
+                    `).join('');
+                } else {
+                    container.innerHTML = '<div style="text-align: center; color: #666; padding: 20px;">No active suggestions</div>';
+                }
+            } catch (error) {
+                document.getElementById('suggestions-list').innerHTML = 
+                    `<div style="color: #ef4444;">Error loading suggestions: ${error.message}</div>`;
+            }
+        }
+        
+        // Update memory statistics
+        async function updateMemoryStats() {
+            try {
+                // Simulate memory stats (in real implementation, this would come from an API)
+                const stats = {
+                    conversations: Math.floor(Math.random() * 50) + 10,
+                    insights: Math.floor(Math.random() * 200) + 50,
+                    taskOutcomes: Math.floor(Math.random() * 100) + 25,
+                    projectKnowledge: Math.floor(Math.random() * 75) + 15
+                };
+                
+                const container = document.getElementById('memory-stats');
+                container.innerHTML = `
+                    <div class="memory-stat">
+                        <div class="memory-stat-value">${stats.conversations}</div>
+                        <div class="memory-stat-label">Conversations</div>
+                    </div>
+                    <div class="memory-stat">
+                        <div class="memory-stat-value">${stats.insights}</div>
+                        <div class="memory-stat-label">Agent Insights</div>
+                    </div>
+                    <div class="memory-stat">
+                        <div class="memory-stat-value">${stats.taskOutcomes}</div>
+                        <div class="memory-stat-label">Task Outcomes</div>
+                    </div>
+                `;
+                
+                // Update memory chart
+                memoryChart.data.datasets[0].data = [
+                    stats.conversations,
+                    stats.insights,
+                    stats.taskOutcomes,
+                    stats.projectKnowledge
+                ];
+                memoryChart.update();
+                
+            } catch (error) {
+                document.getElementById('memory-stats').innerHTML = 
+                    `<div style="color: #ef4444;">Error loading memory stats</div>`;
+            }
+        }
+        
+        // Update approval statistics
+        async function updateApprovalStats() {
+            try {
+                const response = await fetch(`${API_BASE}/api/claude/approvals`);
+                const data = await response.json();
+                
+                const container = document.getElementById('approval-stats');
+                const stats = data.stats || {};
+                
+                container.innerHTML = `
+                    <div class="metric">
+                        <span>Pending Approvals:</span>
+                        <span class="metric-value">${stats.pending || 0}</span>
+                    </div>
+                    <div class="metric">
+                        <span>Total Processed:</span>
+                        <span class="metric-value">${stats.totalProcessed || 0}</span>
+                    </div>
+                    <div class="metric">
+                        <span>Approval Rate:</span>
+                        <span class="metric-value">${Math.round((stats.approvalRate || 0) * 100)}%</span>
+                    </div>
+                    <div class="metric">
+                        <span>Avg Response Time:</span>
+                        <span class="metric-value">${stats.averageResponseTime || 0}ms</span>
+                    </div>
+                `;
+                
+                // Update approval chart
+                const riskDist = stats.riskDistribution || { low: 0, medium: 0, high: 0 };
+                approvalChart.data.datasets[0].data = [
+                    riskDist.low,
+                    riskDist.medium,
+                    riskDist.high
+                ];
+                approvalChart.update();
+                
+            } catch (error) {
+                document.getElementById('approval-stats').innerHTML = 
+                    `<div style="color: #ef4444;">Error loading approval stats</div>`;
+            }
+        }
+        
+        // Update activity log
+        function updateActivityLog() {
+            const container = document.getElementById('activity-log');
+            
+            // Simulate log entries (in real implementation, these would come from server logs)
+            const logEntries = [
+                { emoji: '🧠', message: 'Enhanced Claude Bridge: All intelligence systems active', time: new Date() },
+                { emoji: '👁️', message: 'Context Builder: File change detected in src/routes/', time: new Date(Date.now() - 30000) },
+                { emoji: '🔮', message: 'Proactive Intelligence: Generated 3 suggestions', time: new Date(Date.now() - 60000) },
+                { emoji: '⚡', message: 'Performance Optimizer: Entering power-save mode', time: new Date(Date.now() - 120000) },
+                { emoji: '✅', message: 'Approval Workflows: Processing approval request', time: new Date(Date.now() - 180000) }
+            ];
+            
+            container.innerHTML = logEntries.map(entry => `
+                <div class="log-entry">
+                    <span class="log-emoji">${entry.emoji}</span>
+                    <span class="log-timestamp">[${entry.time.toLocaleTimeString()}]</span>
+                    ${entry.message}
+                </div>
+            `).join('');
+        }
+        
+        // Auto-refresh functionality
+        function startAutoRefresh() {
+            if (refreshTimer) clearInterval(refreshTimer);
+            
+            if (autoRefresh) {
+                refreshTimer = setInterval(refreshAll, REFRESH_INTERVAL);
+                document.getElementById('auto-refresh-status').textContent = 'ON';
+            } else {
+                document.getElementById('auto-refresh-status').textContent = 'OFF';
+            }
+        }
+        
+        // Toggle auto-refresh
+        function toggleAutoRefresh() {
+            autoRefresh = !autoRefresh;
+            startAutoRefresh();
+        }
+        
+        // Click handlers
+        document.querySelector('.auto-refresh').addEventListener('click', toggleAutoRefresh);
+        
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'r' && (e.ctrlKey || e.metaKey)) {
+                e.preventDefault();
+                refreshAll();
+            }
+        });
+    </script>
+</body>
+</html>

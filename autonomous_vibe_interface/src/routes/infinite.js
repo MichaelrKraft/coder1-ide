@@ -16,7 +16,7 @@ router.post('/test-connection', (req, res) => {
 });
 
 router.post('/start', (req, res) => {
-    const { command } = req.body;
+    const { command, maxIterations } = req.body;
     const sessionId = uuidv4();
     
     console.log('Starting infinite loop session:', sessionId);
@@ -26,6 +26,7 @@ router.post('/start', (req, res) => {
     const session = {
         id: sessionId,
         command: command || 'create innovative React components',
+        maxIterations: parseInt(maxIterations) || parseInt(process.env.INFINITE_LOOP_MAX_ITERATIONS) || 20,
         status: 'running',
         startTime: Date.now(),
         currentWave: 1,
@@ -57,10 +58,11 @@ router.post('/start', (req, res) => {
             session.currentWave++;
         }
         
-        // Auto-stop after 20 components for demo
-        if (session.totalGenerated >= 20) {
+        // Auto-stop after configured limit
+        if (session.totalGenerated >= session.maxIterations) {
             session.status = 'completed';
             clearInterval(interval);
+            console.log(`Session ${sessionId} completed after ${session.totalGenerated} iterations`);
         }
     }, 3000); // Generate component every 3 seconds
     

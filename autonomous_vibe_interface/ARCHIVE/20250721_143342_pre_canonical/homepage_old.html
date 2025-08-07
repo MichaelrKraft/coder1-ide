@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Autonomous Vibe Interface - AI-Powered Development Platform</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="voice-styles.css">
+    <style>
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            position: relative;
+        }
+        .container {
+            text-align: center;
+            max-width: 600px;
+            padding: 2rem;
+            z-index: 10;
+        }
+        h1 {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            font-weight: 700;
+            background: linear-gradient(45deg, #ffffff, #a8edea);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .subtitle {
+            font-size: 1.2rem;
+            margin-bottom: 2rem;
+            opacity: 0.9;
+            line-height: 1.6;
+        }
+        .ide-button {
+            display: inline-block;
+            padding: 1.2rem 2.5rem;
+            background: rgba(255, 255, 255, 0.15);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 15px;
+            color: white;
+            text-decoration: none;
+            font-size: 1.2rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            cursor: pointer;
+            margin: 0.5rem;
+        }
+        .ide-button:hover {
+            background: rgba(255, 255, 255, 0.25);
+            border-color: rgba(255, 255, 255, 0.5);
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+        }
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            max-width: 1200px;
+            margin: 4rem auto;
+            padding: 0 2rem;
+        }
+        .feature-card {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 2rem;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            text-align: left;
+            transition: transform 0.3s ease;
+        }
+        .feature-card:hover {
+            transform: translateY(-5px);
+        }
+        .feature-card h3 {
+            color: #a8edea;
+            margin-bottom: 1rem;
+            font-size: 1.3rem;
+        }
+        .voice-hint {
+            position: absolute;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.7);
+            padding: 1rem 1.5rem;
+            border-radius: 10px;
+            backdrop-filter: blur(10px);
+            color: #a8edea;
+            font-size: 0.9rem;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 0.7; }
+            50% { opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Autonomous Vibe Interface</h1>
+        <p class="subtitle">AI-powered development platform with Smart PRD Generation, Voice Control, and Intelligent Wireframing</p>
+        <a href="/ide" class="ide-button">🎯 Enter Coder1 IDE</a>
+        <button onclick="showVoiceDemo()" class="ide-button">🎤 Try Voice Commands</button>
+    </div>
+    
+    <div class="features">
+        <div class="feature-card">
+            <h3>🎤 Voice-Powered Interface</h3>
+            <p>Control your development environment with natural language voice commands. Say "Open IDE" or "Start building" to get started.</p>
+        </div>
+        <div class="feature-card">
+            <h3>📋 Smart PRD Generator</h3>
+            <p>Transform your ideas into comprehensive Product Requirements Documents through an intelligent 5-step wizard.</p>
+        </div>
+        <div class="feature-card">
+            <h3>🎨 AI Wireframe Creation</h3>
+            <p>Generate professional wireframes and mockups automatically from your project requirements.</p>
+        </div>
+        <div class="feature-card">
+            <h3>👥 Expert Consultation</h3>
+            <p>Get insights from AI expert personas to validate and enhance your project specifications.</p>
+        </div>
+    </div>
+    
+    <div class="voice-hint">
+        💬 Try saying: "Open IDE", "Help", or "Show me around"<br>
+        ⌨️ Keyboard shortcuts: Ctrl+Shift+V (Voice) • Ctrl+Shift+H (Help)
+    </div>
+    
+    <!-- Voice Integration Scripts -->
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="voice-notifications.js"></script>
+    <script src="voice-interface.js"></script>
+    
+    <script>
+        function showVoiceDemo() {
+            if (window.voiceInterface) {
+                window.voiceInterface.speak("Welcome to Autonomous Vibe Interface! Try saying 'Open IDE' to enter the development environment, or 'Help' to see all available voice commands.");
+                window.voiceInterface.showNotification("🎤 Voice Demo - Try speaking now!", 'info', 5000);
+            } else {
+                alert("Voice interface is loading... Please try again in a moment.");
+            }
+        }
+        
+        // Enhanced welcome experience
+        window.addEventListener('load', function() {
+            setTimeout(function() {
+                if (window.voiceInterface) {
+                    const firstTime = !localStorage.getItem('autonomousVibeWelcome');
+                    
+                    if (firstTime) {
+                        // First time user experience
+                        window.voiceInterface.speak("Welcome to Autonomous Vibe Interface! I'm your AI assistant. This platform combines Smart PRD generation, voice control, and intelligent wireframing. Try saying 'Show me around' for a guided tour, or 'Open IDE' to get started!");
+                        localStorage.setItem('autonomousVibeWelcome', 'true');
+                        
+                        // Show contextual hints
+                        setTimeout(() => {
+                            window.voiceInterface.showNotification("💡 Try saying: 'Show me around' or 'Open IDE'", 'info', 8000);
+                        }, 5000);
+                    } else {
+                        // Returning user
+                        window.voiceInterface.speak("Welcome back! Say 'Open IDE' to continue, or 'Help' for voice commands.");
+                    }
+                }
+            }, 3000);
+        });
+        
+        // Add keyboard shortcuts for accessibility
+        document.addEventListener('keydown', function(event) {
+            // Ctrl+Shift+V to activate voice
+            if (event.ctrlKey && event.shiftKey && event.key === 'V') {
+                event.preventDefault();
+                if (window.voiceInterface) {
+                    window.voiceInterface.startListening();
+                }
+            }
+            // Ctrl+Shift+H for help
+            if (event.ctrlKey && event.shiftKey && event.key === 'H') {
+                event.preventDefault();
+                if (window.voiceInterface) {
+                    window.voiceInterface.speak("Keyboard shortcuts: Ctrl+Shift+V to activate voice, Ctrl+Shift+H for help. Voice commands include: Open IDE, Start building, Show me around, and Help.");
+                }
+            }
+        });
+    </script>
+</body>
+</html>

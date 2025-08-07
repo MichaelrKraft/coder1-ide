@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Coder1 - Autonomous Coding Assistant</title>
+    <link rel="stylesheet" href="styles-streamlined.css?v=2.8">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/lucide@latest/font/lucide.css" rel="stylesheet">
+</head>
+<body class="tokyo-night">
+    <!-- Background Gradient Animation -->
+    <div class="background-gradient-animation">
+        <svg class="hidden">
+            <defs>
+                <filter id="blurMe">
+                    <feGaussianBlur in="SourceGraphic" stdDeviation="10" result="blur" />
+                    <feColorMatrix in="blur" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 18 -8" result="goo" />
+                    <feBlend in="SourceGraphic" in2="goo" />
+                </filter>
+            </defs>
+        </svg>
+        <div class="gradients-container">
+            <div class="gradient-orb gradient-first"></div>
+            <div class="gradient-orb gradient-second"></div>
+            <div class="gradient-orb gradient-third"></div>
+            <div class="gradient-orb gradient-fourth"></div>
+            <div class="gradient-orb gradient-fifth"></div>
+            <div class="gradient-orb gradient-interactive" id="interactiveGradient"></div>
+        </div>
+    </div>
+
+    <div class="app-container">
+        <!-- Streamlined Header -->
+        <header class="header">
+            <div class="header-left">
+                <div class="logo">
+                    <img src="coder1-logo.svg" alt="Coder1" class="logo-image" style="height: 48px;" />
+                </div>
+                <div class="project-info">
+                    <span class="project-label">Project:</span>
+                    <span class="project-name" id="currentProject">autonomous_vibe_interface</span>
+                </div>
+            </div>
+            <div class="header-right">
+                <div class="status-indicator">
+                    <span class="status-dot active"></span>
+                    <span class="status-text">Ready</span>
+                </div>
+                <button class="theme-toggle" id="themeToggle">
+                    <i class="lucide-moon"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <!-- Chat Interface -->
+            <div class="chat-section">
+                <div class="chat-container">
+                    <div class="chat-messages" id="chatMessages">
+                        <div class="message ai-message">
+                            <div class="message-avatar">🤖</div>
+                            <div class="message-content">
+                                <p>Hello! I'm Coder1, your autonomous coding assistant. I can help you:</p>
+                                <ul>
+                                    <li><strong>Build websites</strong> - Complete projects from idea to deployment</li>
+                                    <li><strong>Write code</strong> - Real-time AI programming assistance</li>
+                                    <li><strong>Debug issues</strong> - Intelligent problem solving</li>
+                                    <li><strong>Deploy applications</strong> - Automated hosting and deployment</li>
+                                </ul>
+                                <p>What would you like to create today?</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- V0-Style Input Area -->
+                    <div class="v0-chat-container">
+                        <h1 class="v0-title">What can I help you ship?</h1>
+                        
+                        <div class="v0-input-wrapper">
+                            <div class="v0-input-container">
+                                <div class="v0-textarea-wrapper">
+                                    <textarea 
+                                        id="messageInput" 
+                                        placeholder="Ask Coder1 a question..."
+                                        rows="1"
+                                        class="v0-textarea"
+                                    ></textarea>
+                                    
+                                    <!-- Send Button Inside Textarea -->
+                                    <div class="v0-send-container">
+                                        <button class="v0-send-btn-inside" id="sendBtnInside">
+                                            ↑
+                                        </button>
+                                    </div>
+                                    
+                                    <!-- Attachment Badge -->
+                                    <div class="v0-attachment-badge" id="attachmentBadge" style="display: none;">
+                                        <span class="badge-count" id="badgeCount">0</span>
+                                    </div>
+                                </div>
+                                
+                                <div class="v0-input-footer">
+                                    <div class="v0-input-right">
+                                        <!-- Attachment Button in Footer -->
+                                        <div class="v0-attach-dropdown" id="attachDropdown">
+                                            <button class="v0-attach-trigger" id="attachTrigger" title="Attach files, URLs, or images">
+                                                📎
+                                            </button>
+                                            
+                                            <!-- Attachment Options Dropdown -->
+                                            <div class="v0-attach-menu" id="attachMenu">
+                                                <button class="v0-attach-option" data-type="file">
+                                                    📄
+                                                    <span>Upload Files</span>
+                                                </button>
+                                                <button class="v0-attach-option" data-type="url">
+                                                    🔗
+                                                    <span>Add URL</span>
+                                                </button>
+                                                <button class="v0-attach-option" data-type="image">
+                                                    🖼️
+                                                    <span>Upload Images</span>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- V0-Style Action Buttons -->
+                            <div class="v0-actions">
+                                <button class="v0-action-btn" data-action="clone-screenshot">
+                                    <i class="lucide-image"></i>
+                                    <span>Clone a Screenshot</span>
+                                </button>
+                                <button class="v0-action-btn" data-action="import-figma">
+                                    <i class="lucide-figma"></i>
+                                    <span>Import from Figma</span>
+                                </button>
+                                <button class="v0-action-btn" data-action="upload-project">
+                                    <i class="lucide-file-up"></i>
+                                    <span>Upload a Project</span>
+                                </button>
+                                <button class="v0-action-btn" data-action="landing-page">
+                                    <i class="lucide-monitor"></i>
+                                    <span>Landing Page</span>
+                                </button>
+                                <button class="v0-action-btn" data-action="signup-form">
+                                    <i class="lucide-circle-user-round"></i>
+                                    <span>Sign Up Form</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Project Manager Sidebar -->
+            <div class="sidebar">
+                <!-- Active Projects -->
+                <div class="sidebar-card projects-card">
+                    <div class="card-header">
+                        <h3>Active Projects</h3>
+                        <button class="create-project-btn" id="createProject">
+                            <i class="lucide-plus"></i>
+                        </button>
+                    </div>
+                    <div class="projects-list" id="projectsList">
+                        <div class="no-projects" id="noProjects">
+                            <div class="no-projects-icon">📁</div>
+                            <p>No active projects</p>
+                            <button class="create-first-project" id="createFirstProject">
+                                Create Your First Project
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Project Templates -->
+                <div class="sidebar-card templates-card">
+                    <div class="card-header">
+                        <h3>Quick Start Templates</h3>
+                    </div>
+                    <div class="template-grid">
+                        <div class="template-item" data-template="react-dashboard">
+                            <div class="template-icon">⚛️</div>
+                            <span class="template-name">React Dashboard</span>
+                        </div>
+                        <div class="template-item" data-template="nextjs-app">
+                            <div class="template-icon">▲</div>
+                            <span class="template-name">Next.js App</span>
+                        </div>
+                        <div class="template-item" data-template="vue-spa">
+                            <div class="template-icon">💚</div>
+                            <span class="template-name">Vue SPA</span>
+                        </div>
+                        <div class="template-item" data-template="express-api">
+                            <div class="template-icon">🚀</div>
+                            <span class="template-name">Express API</span>
+                        </div>
+                        <div class="template-item" data-template="custom">
+                            <div class="template-icon">🎯</div>
+                            <span class="template-name">Custom Project</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- System Status -->
+                <div class="sidebar-card status-card">
+                    <div class="card-header">
+                        <h3>System Status</h3>
+                        <div class="status-dot connected" id="systemStatus"></div>
+                    </div>
+                    <div class="status-grid">
+                        <div class="status-item">
+                            <span class="label">Active Projects</span>
+                            <span class="value" id="activeProjectsCount">0</span>
+                        </div>
+                        <div class="status-item">
+                            <span class="label">Running IDEs</span>
+                            <span class="value" id="runningIDEs">0</span>
+                        </div>
+                        <div class="status-item">
+                            <span class="label">Available Ports</span>
+                            <span class="value" id="availablePorts">10</span>
+                        </div>
+                        <div class="status-item">
+                            <span class="label">CPU Usage</span>
+                            <span class="value" id="cpuUsage">12%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Bottom Action Bar -->
+        <footer class="action-bar">
+            <div class="action-group">
+                <button class="action-btn primary large" id="openCodeEditor">
+                    <i class="lucide-code"></i>
+                    <span>Enter the IDE</span>
+                </button>
+                <button class="action-btn" id="componentBrowser">
+                    <i class="lucide-layout"></i>
+                    <span>Components</span>
+                </button>
+            </div>
+            <div class="action-group">
+                <button class="action-btn" id="helpSupport">
+                    <i class="lucide-help-circle"></i>
+                    <span>Help</span>
+                </button>
+                <button class="action-btn" id="settings">
+                    <i class="lucide-settings"></i>
+                    <span>Settings</span>
+                </button>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Upload Panel (Hidden by default) -->
+    <div class="upload-panel" id="uploadPanel" style="display: none;">
+        <div class="upload-header">
+            <h3>Attach Files</h3>
+            <button class="close-btn" id="closeUpload">
+                <i class="lucide-x"></i>
+            </button>
+        </div>
+        <div class="upload-content">
+            <div class="upload-zone" id="uploadZone">
+                <i class="lucide-upload"></i>
+                <p>Drag & drop files here or click to browse</p>
+                <p class="file-types">Supports: .txt, .md, .json, .js, .py, .css, .html, .pdf, images</p>
+            </div>
+            <input type="file" id="fileInput" multiple style="display: none;">
+        </div>
+    </div>
+
+    <!-- Project Creation Modal -->
+    <div class="project-modal" id="projectModal" style="display: none;">
+        <div class="project-modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Create New Project</h2>
+                <button class="modal-close" id="closeProjectModal">
+                    <i class="lucide-x"></i>
+                </button>
+            </div>
+            
+            <form id="projectForm">
+                <div class="form-group">
+                    <label class="form-label" for="projectName">Project Name</label>
+                    <input type="text" id="projectName" name="projectName" class="form-input" placeholder="my-awesome-project" required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="projectDescription">Description (Optional)</label>
+                    <textarea id="projectDescription" name="projectDescription" class="form-input form-textarea" placeholder="Describe your project..."></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="projectTemplate">Template</label>
+                    <select id="projectTemplate" name="projectTemplate" class="form-select" required>
+                        <option value="">Select a template...</option>
+                        <option value="react-dashboard">⚛️ React Dashboard</option>
+                        <option value="nextjs-app">▲ Next.js App</option>
+                        <option value="vue-spa">💚 Vue SPA</option>
+                        <option value="express-api">🚀 Express API</option>
+                        <option value="custom">🎯 Custom Project (5-Question AI Workflow)</option>
+                    </select>
+                </div>
+                
+                <div class="form-group" id="customQuestions" style="display: none;">
+                    <label class="form-label">AI-Powered Project Setup</label>
+                    <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 1rem;">
+                        Our AI will ask you 5 intelligent questions to understand your project requirements and generate the perfect codebase.
+                    </p>
+                    <div style="background: var(--bg-tertiary); padding: 1rem; border-radius: 6px; border: 1px solid var(--border-color);">
+                        <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+                            <span style="color: var(--accent-blue);">🤖</span>
+                            <strong>SuperClaude AI Integration</strong>
+                        </div>
+                        <p style="margin: 0; font-size: 0.9rem; color: var(--text-secondary);">
+                            Powered by specialized personas and evidence-based development practices
+                        </p>
+                    </div>
+                </div>
+            </form>
+            
+            <div class="modal-actions">
+                <button type="button" class="modal-btn secondary" id="cancelProject">Cancel</button>
+                <button type="submit" class="modal-btn primary" id="createProjectBtn" form="projectForm">Create Project</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="script-streamlined.js"></script>
+</body>
+</html>

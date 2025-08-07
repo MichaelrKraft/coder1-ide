@@ -1,0 +1,63 @@
+/* Default Panel Layout Override - Terminal 55%, Explorer 25% */
+/* This file sets the default panel layout for new users */
+
+/* File Explorer Panel (Left) - 25% width */
+.allotment-module_splitView__L-yRc .allotment-module_splitViewContainer__rQnVa > .allotment-module_splitViewView__MGZ6O:first-child {
+  width: 25% !important;
+  min-width: 200px !important;
+  max-width: 30% !important;
+}
+
+/* Terminal Panel (Right) - 55% width */
+.allotment-module_splitView__L-yRc .allotment-module_splitViewContainer__rQnVa > .allotment-module_splitViewView__MGZ6O:last-child {
+  width: 55% !important;
+  min-width: 400px !important;
+}
+
+/* Alternative approach - using flex-basis for better layout control */
+.main-content .allotment-module_splitViewView__MGZ6O:first-child {
+  flex-basis: 25% !important;
+}
+
+.main-content .allotment-module_splitViewView__MGZ6O:last-child {
+  flex-basis: 55% !important;
+}
+
+/* Terminal-focused layout class */
+.terminal-focused .allotment-module_splitViewView__MGZ6O:first-child {
+  width: 25% !important;
+  flex: 0 0 25% !important;
+}
+
+.terminal-focused .allotment-module_splitViewView__MGZ6O:last-child {
+  width: 55% !important;
+  flex: 0 0 55% !important;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1200px) {
+  .allotment-module_splitView__L-yRc .allotment-module_splitViewContainer__rQnVa > .allotment-module_splitViewView__MGZ6O:first-child {
+    width: 30% !important;
+  }
+  
+  .allotment-module_splitView__L-yRc .allotment-module_splitViewContainer__rQnVa > .allotment-module_splitViewView__MGZ6O:last-child {
+    width: 50% !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .allotment-module_splitView__L-yRc .allotment-module_splitViewContainer__rQnVa > .allotment-module_splitViewView__MGZ6O:first-child {
+    width: 35% !important;
+  }
+  
+  .allotment-module_splitView__L-yRc .allotment-module_splitViewContainer__rQnVa > .allotment-module_splitViewView__MGZ6O:last-child {
+    width: 45% !important;
+  }
+}
+
+/* Default layout initialization */
+.app.loaded {
+  --default-explorer-width: 25%;
+  --default-terminal-width: 55%;
+  --default-center-width: 20%;
+}
