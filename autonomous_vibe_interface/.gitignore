@@ -18,6 +18,14 @@ npm-debug.log*
 dist/
 build/
 
+# React build artifacts
+public/ide/static/css/main.*.css
+public/ide/static/css/main.*.css.map
+public/ide/static/js/main.*.js
+public/ide/static/js/main.*.js.map
+public/ide/static/js/*.chunk.js
+public/ide/static/js/*.chunk.js.map
+
 # Logs
 logs/
 *.log
@@ -36,6 +44,13 @@ server.log
 test-*.js
 test-*.html
 test-pty/
+test-supervision/
+
+# GitHub CLI integration test files
+playwright-*.js
+comprehensive-*.js
+*-test.png
+github-cli-*.png
 
 # Terminal test files
 terminal-client.html
@@ -50,3 +65,14 @@ simple-terminal-test.html
 simple-test-server.js
 standalone-ide.html
 .vercel
+
+# Memory and cache files  
+.coder1/memory/
+.coder1/cache/
+
+# IDE build assets
+public/ide/ide/
+public/index.html
+
+# Testing reports and documentation
+*_TESTING_REPORT.md
