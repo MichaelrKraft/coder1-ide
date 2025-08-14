@@ -1,3 +1,5 @@
+// Load environment variables - .env.local takes priority over .env
+require('dotenv').config({ path: '.env.local' });
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
@@ -12,9 +14,12 @@ const app = express();
 const server = http.createServer(app);
 const io = socketIO(server, {
     cors: {
-        origin: "*",
-        methods: ["GET", "POST"]
-    }
+        origin: ["http://localhost:3000", "http://localhost:3001", "http://127.0.0.1:3000", "http://127.0.0.1:3001", "*"],
+        methods: ["GET", "POST"],
+        credentials: true,
+        allowedHeaders: ["Content-Type", "Authorization"]
+    },
+    transports: ['websocket', 'polling']
 });
 
 // Apply rate limiting to Socket.IO connections
@@ -120,7 +125,7 @@ app.post('/api/beta-access', (req, res) => {
 // Friend access authentication gate
 app.use((req, res, next) => {
     // Bypass auth during development/testing or for public paths
-    const publicPaths = ['/', '/health', '/beta-access', '/api/beta-access', '/invite', '/api/market-insights', '/api/intelligence', '/api/analytics', '/ide'];
+    const publicPaths = ['/', '/health', '/beta-access', '/api/beta-access', '/invite', '/api/market-insights', '/api/intelligence', '/api/analytics', '/ide', '/hooks'];
     const isPublicPath = publicPaths.some(path => req.path.startsWith(path)) || 
                         req.path.startsWith('/static/') || 
                         req.path.startsWith('/ide/static/') ||
@@ -155,10 +160,10 @@ app.use((req, res, next) => {
 // Apply general rate limiting to all routes AFTER health check and auth
 app.use(rateLimit);
 
-// ⚠️ FIXED: Now serving from /CANONICAL/ which contains working implementations
-// Previous issue: served from /public/ which had broken wireframes/personas
-// See CLAUDE.md for full details
-// Serve static files from CANONICAL directory (working versions)
+// ✅ Serving from /CANONICAL/ - contains the correct, updated PRD generator
+// Note: /public/ was temporarily used but had wrong PRD generator version with misplaced supervision
+// CANONICAL has the working wireframes/personas and correct PRD generator
+// Serve static files from CANONICAL directory (correct PRD generator, no supervision elements)
 app.use(express.static(path.join(__dirname, '../CANONICAL')));
 
 // Serve static files from public/static directory for AI navigation and other scripts
@@ -181,6 +186,12 @@ app.use('/api/wireframes', require('./routes/wireframes'));
 app.use('/api/market-insights', require('./routes/market-insights'));
 app.use('/api/intelligence', require('./routes/intelligence'));
 app.use('/api/analytics', require('./routes/analytics'));
+app.use('/api/magic', require('./routes/magic'));  // AI Magic component generation
+app.use('/api/error-doctor', require('./routes/error-doctor'));  // AI Error Doctor
+app.use('/api/claude/coaching', require('./routes/vibe-coach'));  // VibeCoach AI Dashboard
+app.use('/api/hooks', require('./routes/hooks'));  // Claude Code Hooks Management
+app.use('/api/github', require('./routes/github-push'));  // Educational GitHub Push
+app.use('/api/github/cli', require('./routes/github-cli'));  // GitHub CLI integration (PRs, issues, workflows)
 app.use('/api', require('./routes/prettier-config'));
 // Remove duplicate terminal-rest route - using terminal-rest-api.js instead
 // app.use('/api/terminal-rest', require('./routes/terminal-rest'));
@@ -256,12 +267,18 @@ app.get('/beta-access', (req, res) => {
     res.sendFile(path.join(__dirname, '../CANONICAL/beta-access.html'));
 });
 
+// Hooks Management route - serve the hooks manager page
+app.get('/hooks', (req, res) => {
+    res.sendFile(path.join(__dirname, '../CANONICAL/hooks.html'));
+});
+
 // IDE route - serve from coder1-ide directory
 app.get(['/ide', '/ide/'], (req, res) => {
+    console.log('[IDE Route] Handling request for:', req.path);
     if (process.env.VERCEL) {
         // On Vercel, serve the rewritten HTML directly with correct file names
-        const cacheBuster = Date.now() + Math.random().toString(36);
-        const htmlContent = `<!doctype html><html lang="en"><head><meta charset="utf-8"/><link rel="icon" href="/ide/favicon.ico"/><meta name="viewport" content="width=device-width,initial-scale=1"/><meta name="theme-color" content="#000000"/><meta name="description" content="Coder1 IDE - AI-Powered Development Environment with Enhanced Live Preview"/><link rel="apple-touch-icon" href="/ide/logo192.png"/><link rel="manifest" href="/ide/manifest.json"/><title>Coder1 IDE v2 - Live Preview</title><script defer="defer" src="/ide/static/js/main.c9ecf8b9.js?cb=${cacheBuster}"></script><link href="/ide/static/css/main.e43e0e88.css?cb=${cacheBuster}" rel="stylesheet"></head><body><noscript>You need to enable JavaScript to run this app.</noscript><div id="root"></div><script src="/static/ai-navigation.js"></script></body></html>`;
+        const cacheBuster = 'explorer-fix-' + Date.now() + Math.random().toString(36);
+        const htmlContent = `<!doctype html><html lang="en"><head><meta charset="utf-8"/><link rel="icon" href="/ide/favicon.ico"/><meta name="viewport" content="width=device-width,initial-scale=1"/><meta name="theme-color" content="#000000"/><meta name="description" content="Coder1 IDE - PRD Style Session Summary"/><link rel="apple-touch-icon" href="/ide/logo192.png"/><link rel="manifest" href="/ide/manifest.json"/><title>Coder1 IDE v2 - PRD Style UI</title><link rel="stylesheet" href="/ide/static/css/xterm.css"/><script src="/ide/static/lib/xterm.js"></script><script src="/ide/static/lib/addon-fit.js"></script><script src="/ide/static/lib/xterm-loader.js"></script><script defer="defer" src="/ide/static/js/main.7006252c.js?cb=${cacheBuster}"></script><link href="/ide/static/css/main.20028d8b.css?cb=${cacheBuster}" rel="stylesheet"></head><body><noscript>You need to enable JavaScript to run this app.</noscript><div id="root"></div><script src="/static/ai-navigation.js"></script></body></html>`;
         
         // Set aggressive no-cache headers
         res.set({
@@ -276,7 +293,7 @@ app.get(['/ide', '/ide/'], (req, res) => {
     } else {
         // Local development - serve with path rewriting and aggressive cache busting
         const fs = require('fs');
-        const indexPath = path.join(__dirname, '../coder1-ide/ide-build/index.html');
+        const indexPath = path.join(__dirname, '../public/ide/index.html');
         let html = fs.readFileSync(indexPath, 'utf8');
         
         // Add cache-busting timestamp to all assets
@@ -287,6 +304,14 @@ app.get(['/ide', '/ide/'], (req, res) => {
         // Rewrite remaining absolute paths to work under /ide (but not already processed ones)
         html = html.replace(/href="\/(?!ide\/)/g, 'href="/ide/');
         html = html.replace(/src="\/(?!ide\/)/g, 'src="/ide/');
+        
+        // Inject XTerm.js and related scripts BEFORE the main React script
+        const xtermScripts = `
+    <link rel="stylesheet" href="/ide/static/css/xterm.css"/>
+    <script src="/ide/static/lib/xterm.js"></script>
+    <script src="/ide/static/lib/addon-fit.js"></script>
+    <script src="/ide/static/lib/xterm-loader.js"></script>`;
+        html = html.replace('</head>', `${xtermScripts}\n</head>`);
         
         // Inject AI navigation script
         html = html.replace('</body>', '<script src="/static/ai-navigation.js"></script></body>');
@@ -303,8 +328,29 @@ app.get(['/ide', '/ide/'], (req, res) => {
 });
 
 // Serve IDE static files from multiple locations (order matters - more specific first)
-app.use('/ide', express.static(path.join(__dirname, '../public/ide')));
-app.use('/ide', express.static(path.join(__dirname, '../coder1-ide/ide-build')));
+// Add no-cache headers for CSS files to prevent stale styles
+app.use('/ide', express.static(path.join(__dirname, '../public/ide'), {
+    setHeaders: (res, path) => {
+        if (path.endsWith('.css')) {
+            res.set({
+                'Cache-Control': 'no-cache, no-store, must-revalidate',
+                'Pragma': 'no-cache',
+                'Expires': '0'
+            });
+        }
+    }
+}));
+app.use('/ide', express.static(path.join(__dirname, '../coder1-ide/ide-build'), {
+    setHeaders: (res, path) => {
+        if (path.endsWith('.css')) {
+            res.set({
+                'Cache-Control': 'no-cache, no-store, must-revalidate',
+                'Pragma': 'no-cache',
+                'Expires': '0'
+            });
+        }
+    }
+}));
 
 // Setup SafePTYManager WebSocket handler for terminal connections
 // NOTE: Disabled old terminal handler to prevent conflicts
@@ -315,6 +361,37 @@ setupTerminalWebSocket(io);
 // Add REST API for terminal session creation
 const { router: terminalRestRouter } = require('./routes/terminal-rest-api');
 app.use('/api/terminal-rest', terminalRestRouter);
+
+// Initialize Supervision System globally
+const { IntegratedSupervisionSystem } = require('./services/supervision/IntegratedSupervisionSystem');
+const { SupervisionEngine } = require('./services/supervision/SupervisionEngine');
+const globalSupervisionSystem = new IntegratedSupervisionSystem();
+
+// Set global supervision engine immediately for terminal integration
+global.supervisionEngine = globalSupervisionSystem.supervisionEngine;
+global.supervisionSystem = globalSupervisionSystem;
+console.log('🌍 [SUPERVISION] Global supervision engine initialized on startup');
+
+// Initialize VibeCoach WebSocket service for real-time dashboard updates
+const VibeCoachWebSocket = require('./services/vibe-coach/VibeCoachWebSocket');
+const VibeCoachService = require('./services/vibe-coach/VibeCoachService');
+
+let globalVibeCoachWebSocket;
+let globalVibeCoachService;
+
+try {
+    globalVibeCoachService = new VibeCoachService();
+    globalVibeCoachWebSocket = new VibeCoachWebSocket(io);
+    globalVibeCoachWebSocket.connectToVibeCoach(globalVibeCoachService);
+    
+    // Make services globally available for route integration
+    global.vibeCoachService = globalVibeCoachService;
+    global.vibeCoachWebSocket = globalVibeCoachWebSocket;
+    
+    console.log('🎯 [VIBECOACH] WebSocket service initialized for real-time coaching updates');
+} catch (error) {
+    console.warn('⚠️ [VIBECOACH] Failed to initialize WebSocket service:', error.message);
+}
 
 // Start server
 const PORT = process.env.PORT || 3000; // Main server runs on port 3000
@@ -328,6 +405,7 @@ server.listen(PORT, HOST, () => {
     console.log(`🔊 Socket.IO: Voice & Terminal real-time communication enabled`);
     console.log(`🛡️ Rate limiting enabled to prevent excessive API calls`);
     console.log(`💡 Terminal WebSocket: ws://127.0.0.1:${PORT}/terminal`);
+    console.log(`🤖 Supervision System: Initialized and ready`);
     
     if (process.env.RENDER) {
         console.log(`🌐 Running on Render at https://${process.env.RENDER_EXTERNAL_HOSTNAME}`);
