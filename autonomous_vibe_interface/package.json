@@ -13,7 +13,13 @@
     "rules:setup": "node setup-github-rules.js",
     "rules:refresh": "curl -X POST http://localhost:3000/api/agent/rules/refresh",
     "rules:status": "curl -s http://localhost:3000/api/agent/rules/status | jq",
-    "rules:validate": "node -e \"const config = require('./src/config/rules-config'); console.log('Validation:', config.validateConfig());\""
+    "rules:validate": "node -e \"const config = require('./src/config/rules-config'); console.log('Validation:', config.validateConfig());\"",
+    "preload": "curl -X POST http://localhost:3000/api/repository-admin/preload/start -H 'Content-Type: application/json'",
+    "preload:test": "TEST_PRELOAD=true npm start",
+    "preload:skip": "SKIP_PRELOAD=true npm start",
+    "preload:status": "curl -s http://localhost:3000/api/repository-admin/preload/status | jq",
+    "preload:stop": "curl -X POST http://localhost:3000/api/repository-admin/preload/stop",
+    "preload:list": "curl -s http://localhost:3000/api/repository-admin/preload/list | jq"
   },
   "keywords": [
     "ai",
