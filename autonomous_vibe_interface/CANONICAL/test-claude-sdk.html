@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Claude SDK Test Page</title>
+    <style>
+        body {
+            background: #0a0a0a;
+            color: #fff;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            padding: 20px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .container {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 30px;
+            margin-top: 50px;
+        }
+        h1 {
+            text-align: center;
+            color: #3b82f6;
+        }
+        .test-section {
+            margin: 30px 0;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 8px;
+        }
+        button {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+            transition: all 0.2s;
+        }
+        button:hover {
+            background: #2563eb;
+            transform: translateY(-1px);
+        }
+        button:disabled {
+            background: #475569;
+            cursor: not-allowed;
+        }
+        .output {
+            background: #000;
+            padding: 15px;
+            border-radius: 6px;
+            margin-top: 15px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            min-height: 100px;
+            border: 1px solid #333;
+        }
+        .success {
+            color: #10b981;
+        }
+        .error {
+            color: #ef4444;
+        }
+        .api-key-input {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 6px;
+            color: white;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Claude SDK Test Suite</h1>
+        
+        <div class="test-section">
+            <h2>1. API Key Setup</h2>
+            <input type="password" 
+                   class="api-key-input" 
+                   id="apiKey" 
+                   placeholder="Enter your Anthropic API key (sk-ant-api03-...)"
+                   value="">
+            <button onclick="saveApiKey()">Save API Key</button>
+            <div id="apiKeyOutput" class="output"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>2. Test Connection</h2>
+            <button onclick="testConnection()">Test Claude SDK Connection</button>
+            <div id="connectionOutput" class="output"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>3. Test Infinite Loop</h2>
+            <button onclick="testInfiniteLoop()">Start Infinite Loop Test</button>
+            <button onclick="stopInfiniteLoop()" disabled id="stopBtn">Stop Infinite Loop</button>
+            <div id="infiniteOutput" class="output"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>4. Test PRD Generation</h2>
+            <input type="text" 
+                   class="api-key-input" 
+                   id="projectIdea" 
+                   placeholder="Enter your project idea..."
+                   value="I want to build an e-commerce website for handmade jewelry">
+            <button onclick="testPRD()">Generate PRD</button>
+            <div id="prdOutput" class="output"></div>
+        </div>
+    </div>
+
+    <script src="/js/toast-notifications.js"></script>
+    <script src="/js/loading-states.js"></script>
+    <script>
+        let authToken = localStorage.getItem('authToken');
+        let currentSessionId = null;
+
+        function log(elementId, message, type = '') {
+            const output = document.getElementById(elementId);
+            const timestamp = new Date().toLocaleTimeString();
+            const className = type ? ` class="${type}"` : '';
+            output.innerHTML += `<div${className}>[${timestamp}] ${message}</div>`;
+            output.scrollTop = output.scrollHeight;
+        }
+
+        async function saveApiKey() {
+            const apiKey = document.getElementById('apiKey').value;
+            if (!apiKey) {
+                log('apiKeyOutput', 'Please enter an API key', 'error');
+                toast.error('Please enter an API key');
+                return;
+            }
+
+            if (!authToken) {
+                log('apiKeyOutput', 'Please login first or register a new account', 'error');
+                toast.error('Please login first');
+                return;
+            }
+
+            try {
+                loadingStates.setButtonLoading(event.target, true, 'Saving...');
+                
+                const response = await fetch('/api/auth/api-key', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({ apiKey })
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    log('apiKeyOutput', 'API key saved successfully!', 'success');
+                    toast.success('API key saved successfully!');
+                } else {
+                    log('apiKeyOutput', `Error: ${data.error}`, 'error');
+                    toast.error(data.error);
+                }
+            } catch (error) {
+                log('apiKeyOutput', `Error: ${error.message}`, 'error');
+                toast.error(`Failed to save API key: ${error.message}`);
+            } finally {
+                loadingStates.setButtonLoading(event.target, false);
+            }
+        }
+
+        async function testConnection() {
+            if (!authToken) {
+                log('connectionOutput', 'Please login first', 'error');
+                toast.warning('Please login first');
+                return;
+            }
+
+            try {
+                loadingStates.setButtonLoading(event.target, true, 'Testing...');
+                log('connectionOutput', 'Testing Claude SDK connection...');
+                
+                const response = await fetch('/api/infinite/test-connection', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    log('connectionOutput', data.message, 'success');
+                    toast.success('Connection successful!');
+                } else {
+                    log('connectionOutput', `Failed: ${data.message}`, 'error');
+                    toast.error(data.message);
+                }
+            } catch (error) {
+                log('connectionOutput', `Error: ${error.message}`, 'error');
+                toast.error(`Connection test failed: ${error.message}`);
+            } finally {
+                loadingStates.setButtonLoading(event.target, false);
+            }
+        }
+
+        async function testInfiniteLoop() {
+            if (!authToken) {
+                log('infiniteOutput', 'Please login first', 'error');
+                toast.warning('Please login first');
+                return;
+            }
+
+            try {
+                loadingStates.setButtonLoading(event.target, true, 'Starting...');
+                log('infiniteOutput', 'Starting infinite loop...');
+                
+                const response = await fetch('/api/infinite/start', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({
+                        command: 'Generate creative React components for a modern web app'
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    currentSessionId = data.sessionId;
+                    log('infiniteOutput', `Started! Session ID: ${data.sessionId}`, 'success');
+                    toast.success('Infinite loop started!');
+                    
+                    document.getElementById('stopBtn').disabled = false;
+                    event.target.disabled = true;
+                    
+                    // Poll for status
+                    pollStatus();
+                } else {
+                    log('infiniteOutput', `Failed: ${data.message}`, 'error');
+                    toast.error(data.message);
+                }
+            } catch (error) {
+                log('infiniteOutput', `Error: ${error.message}`, 'error');
+                toast.error(`Failed to start: ${error.message}`);
+            } finally {
+                loadingStates.setButtonLoading(event.target, false);
+            }
+        }
+
+        async function pollStatus() {
+            if (!currentSessionId) return;
+            
+            try {
+                const response = await fetch(`/api/infinite/status/${currentSessionId}`, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    log('infiniteOutput', `Status: ${data.status}, Waves: ${data.currentWave}, Components: ${data.totalGenerated}`);
+                    
+                    if (data.status === 'running') {
+                        setTimeout(pollStatus, 2000);
+                    }
+                }
+            } catch (error) {
+                console.error('Polling error:', error);
+            }
+        }
+
+        async function stopInfiniteLoop() {
+            if (!currentSessionId) return;
+            
+            try {
+                loadingStates.setButtonLoading(event.target, true, 'Stopping...');
+                
+                const response = await fetch(`/api/infinite/stop/${currentSessionId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    log('infiniteOutput', 'Infinite loop stopped', 'success');
+                    toast.success('Stopped successfully');
+                    
+                    document.getElementById('stopBtn').disabled = true;
+                    document.querySelector('[onclick="testInfiniteLoop()"]').disabled = false;
+                    currentSessionId = null;
+                }
+            } catch (error) {
+                log('infiniteOutput', `Error: ${error.message}`, 'error');
+                toast.error(`Failed to stop: ${error.message}`);
+            } finally {
+                loadingStates.setButtonLoading(event.target, false);
+            }
+        }
+
+        async function testPRD() {
+            const projectIdea = document.getElementById('projectIdea').value;
+            if (!projectIdea) {
+                log('prdOutput', 'Please enter a project idea', 'error');
+                toast.error('Please enter a project idea');
+                return;
+            }
+
+            try {
+                loadingStates.showLoadingMessage(document.getElementById('prdOutput'));
+                
+                const response = await fetch('/api/generate-prd', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': authToken ? `Bearer ${authToken}` : ''
+                    },
+                    body: JSON.stringify({
+                        projectName: 'Test Project',
+                        description: projectIdea
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    loadingStates.showSuccess(document.getElementById('prdOutput'), 'PRD Generated!');
+                    setTimeout(() => {
+                        document.getElementById('prdOutput').innerHTML = `<pre>${JSON.stringify(data.prd, null, 2)}</pre>`;
+                    }, 2000);
+                    toast.success('PRD generated successfully!');
+                } else {
+                    loadingStates.hide(document.getElementById('prdOutput'));
+                    log('prdOutput', `Failed: ${data.error}`, 'error');
+                    toast.error(data.error);
+                }
+            } catch (error) {
+                loadingStates.hide(document.getElementById('prdOutput'));
+                log('prdOutput', `Error: ${error.message}`, 'error');
+                toast.error(`Failed to generate PRD: ${error.message}`);
+            }
+        }
+
+        // Check if user is logged in
+        if (!authToken) {
+            document.body.innerHTML += `
+                <div style="position: fixed; top: 20px; right: 20px; background: #ef4444; padding: 15px; border-radius: 8px;">
+                    Not logged in! Please <a href="/quick-register.html" style="color: white; text-decoration: underline;">register</a> or login first.
+                </div>
+            `;
+        }
+    </script>
+</body>
+</html>

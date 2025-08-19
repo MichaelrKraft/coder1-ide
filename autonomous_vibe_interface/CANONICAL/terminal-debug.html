@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Terminal Debug</title>
+    <link rel="stylesheet" href="/ide/static/css/xterm.css"/>
+    <style>
+        body { 
+            font-family: monospace; 
+            padding: 20px; 
+            background: #1a1a1a; 
+            color: #fff; 
+        }
+        #terminal { 
+            width: 800px; 
+            height: 400px; 
+            background: #000; 
+            border: 1px solid #333;
+            margin: 20px 0;
+        }
+        .status { 
+            padding: 10px; 
+            margin: 10px 0; 
+            background: #333; 
+            border-radius: 4px;
+        }
+        .success { color: #4CAF50; }
+        .error { color: #f44336; }
+        .warning { color: #ff9800; }
+        .info { color: #2196F3; }
+        button { 
+            margin: 5px; 
+            padding: 10px 20px; 
+            background: #2196F3;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover { background: #1976D2; }
+        #log {
+            background: #000;
+            padding: 10px;
+            margin: 20px 0;
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid #333;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 Terminal Debug Page</h1>
+    
+    <div class="status">
+        <h2>Library Loading Status</h2>
+        <div id="xterm-status">⏳ Checking XTerm.js...</div>
+        <div id="fitaddon-status">⏳ Checking FitAddon...</div>
+        <div id="socket-status">⏳ Checking Socket.IO...</div>
+    </div>
+    
+    <button onclick="debugWindow()">Debug Window Object</button>
+    <button onclick="loadLibraries()">Force Load Libraries</button>
+    <button onclick="createTerminal()">Create Terminal</button>
+    <button onclick="connectSocket()">Connect Socket</button>
+    
+    <div id="terminal"></div>
+    
+    <div id="log"></div>
+    
+    <!-- Load libraries in correct order -->
+    <script src="/ide/static/lib/xterm.js"></script>
+    <script src="/ide/static/lib/addon-fit.js"></script>
+    <script src="/ide/static/lib/xterm-init.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    
+    <script>
+        let terminal = null;
+        let fitAddon = null;
+        let socket = null;
+        
+        function log(message, type = 'info') {
+            const logDiv = document.getElementById('log');
+            const timestamp = new Date().toLocaleTimeString();
+            logDiv.innerHTML += `<div class="${type}">[${timestamp}] ${message}</div>`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+            console.log(`[${type}] ${message}`);
+        }
+        
+        function updateStatus(id, message, type = 'info') {
+            const element = document.getElementById(id);
+            if (element) {
+                element.className = type;
+                element.textContent = message;
+            }
+        }
+        
+        function debugWindow() {
+            log('=== Window Object Debug ===', 'info');
+            
+            // Check for Terminal in various locations
+            const checks = [
+                { name: 'window.Terminal', value: window.Terminal },
+                { name: 'window.exports', value: window.exports },
+                { name: 'window.exports?.Terminal', value: window.exports?.Terminal },
+                { name: 'window.FitAddon', value: window.FitAddon },
+                { name: 'window.exports?.FitAddon', value: window.exports?.FitAddon },
+                { name: 'window.module', value: window.module },
+                { name: 'window.module?.exports', value: window.module?.exports },
+                { name: 'globalThis.Terminal', value: globalThis.Terminal },
+                { name: 'self.Terminal', value: self.Terminal },
+            ];
+            
+            checks.forEach(check => {
+                if (check.value) {
+                    log(`✅ ${check.name} exists: ${typeof check.value}`, 'success');
+                    if (typeof check.value === 'object') {
+                        log(`   Keys: ${Object.keys(check.value).slice(0, 5).join(', ')}...`, 'info');
+                    }
+                } else {
+                    log(`❌ ${check.name} is undefined`, 'warning');
+                }
+            });
+            
+            // Check if libraries loaded
+            if (typeof Terminal !== 'undefined') {
+                log('✅ Terminal is defined globally', 'success');
+            }
+            if (typeof FitAddon !== 'undefined') {
+                log('✅ FitAddon is defined globally', 'success');
+            }
+            if (typeof io !== 'undefined') {
+                log('✅ Socket.IO is defined globally', 'success');
+            }
+        }
+        
+        function loadLibraries() {
+            log('Attempting to load libraries...', 'info');
+            
+            // Try to extract from various locations
+            if (!window.Terminal) {
+                if (window.exports && window.exports.Terminal) {
+                    window.Terminal = window.exports.Terminal;
+                    log('✅ Extracted Terminal from window.exports', 'success');
+                } else if (typeof exports !== 'undefined' && exports.Terminal) {
+                    window.Terminal = exports.Terminal;
+                    log('✅ Extracted Terminal from exports', 'success');
+                } else {
+                    log('❌ Could not find Terminal constructor', 'error');
+                }
+            }
+            
+            if (!window.FitAddon) {
+                if (window.exports && window.exports.FitAddon) {
+                    window.FitAddon = window.exports.FitAddon;
+                    log('✅ Extracted FitAddon from window.exports', 'success');
+                } else if (typeof exports !== 'undefined' && exports.FitAddon) {
+                    window.FitAddon = exports.FitAddon;
+                    log('✅ Extracted FitAddon from exports', 'success');
+                } else {
+                    log('⚠️ Could not find FitAddon, creating fallback', 'warning');
+                    window.FitAddon = class {
+                        activate(terminal) { this._terminal = terminal; }
+                        fit() { 
+                            if (this._terminal) {
+                                log('Using fallback FitAddon.fit()', 'warning');
+                            }
+                        }
+                        dispose() {}
+                    };
+                }
+            }
+            
+            checkLibraries();
+        }
+        
+        function checkLibraries() {
+            // Check XTerm
+            if (window.Terminal) {
+                updateStatus('xterm-status', '✅ XTerm.js loaded', 'success');
+                log('XTerm.js is available', 'success');
+            } else {
+                updateStatus('xterm-status', '❌ XTerm.js not loaded', 'error');
+                log('XTerm.js is NOT available', 'error');
+            }
+            
+            // Check FitAddon
+            if (window.FitAddon) {
+                updateStatus('fitaddon-status', '✅ FitAddon loaded', 'success');
+                log('FitAddon is available', 'success');
+            } else {
+                updateStatus('fitaddon-status', '❌ FitAddon not loaded', 'error');
+                log('FitAddon is NOT available', 'error');
+            }
+            
+            // Check Socket.IO
+            if (typeof io !== 'undefined') {
+                updateStatus('socket-status', '✅ Socket.IO loaded', 'success');
+                log('Socket.IO is available', 'success');
+            } else {
+                updateStatus('socket-status', '❌ Socket.IO not loaded', 'error');
+                log('Socket.IO is NOT available', 'error');
+            }
+        }
+        
+        function createTerminal() {
+            if (!window.Terminal) {
+                log('❌ Terminal not available, trying to load...', 'error');
+                loadLibraries();
+                if (!window.Terminal) {
+                    log('❌ Still no Terminal after load attempt', 'error');
+                    return;
+                }
+            }
+            
+            if (terminal) {
+                log('⚠️ Terminal already exists, disposing...', 'warning');
+                terminal.dispose();
+            }
+            
+            try {
+                log('Creating new Terminal instance...', 'info');
+                terminal = new window.Terminal({
+                    theme: {
+                        background: '#1a1b26',
+                        foreground: '#c0caf5'
+                    },
+                    fontSize: 14,
+                    cursorBlink: true
+                });
+                
+                log('✅ Terminal created successfully', 'success');
+                
+                if (window.FitAddon) {
+                    log('Creating FitAddon...', 'info');
+                    fitAddon = new window.FitAddon();
+                    terminal.loadAddon(fitAddon);
+                    log('✅ FitAddon loaded', 'success');
+                }
+                
+                const container = document.getElementById('terminal');
+                terminal.open(container);
+                log('✅ Terminal opened in container', 'success');
+                
+                if (fitAddon) {
+                    setTimeout(() => {
+                        fitAddon.fit();
+                        log('✅ Terminal fitted to container', 'success');
+                    }, 100);
+                }
+                
+                terminal.writeln('🎉 Terminal initialized successfully!');
+                terminal.writeln('Type to test keyboard input...');
+                terminal.focus();
+                
+                // Test keyboard input
+                terminal.onData(data => {
+                    log(`Keyboard input: "${data}" (code: ${data.charCodeAt(0)})`, 'info');
+                    terminal.write(data);
+                });
+                
+            } catch (error) {
+                log(`❌ Error creating terminal: ${error.message}`, 'error');
+                console.error(error);
+            }
+        }
+        
+        function connectSocket() {
+            if (!terminal) {
+                log('❌ Create terminal first', 'error');
+                return;
+            }
+            
+            log('Connecting to Socket.IO...', 'info');
+            
+            socket = io('http://localhost:3000', {
+                transports: ['websocket'],
+                reconnection: true
+            });
+            
+            socket.on('connect', () => {
+                log(`✅ Socket connected! ID: ${socket.id}`, 'success');
+                
+                log('Creating terminal session...', 'info');
+                socket.emit('terminal:create', {
+                    cols: terminal.cols || 80,
+                    rows: terminal.rows || 24
+                });
+            });
+            
+            socket.on('terminal:created', (data) => {
+                log(`✅ Terminal session created! ID: ${data.id}`, 'success');
+                terminal.writeln(`\r\n✅ Connected to backend (Session: ${data.id})`);
+            });
+            
+            socket.on('terminal:data', (data) => {
+                log(`Received data from backend (${data.data.length} bytes)`, 'info');
+                terminal.write(data.data);
+            });
+            
+            socket.on('disconnect', () => {
+                log('❌ Socket disconnected', 'error');
+                terminal.writeln('\r\n❌ Disconnected from backend');
+            });
+            
+            socket.on('error', (error) => {
+                log(`❌ Socket error: ${error}`, 'error');
+            });
+            
+            // Forward terminal input to backend
+            terminal.onData(data => {
+                if (socket && socket.connected) {
+                    socket.emit('terminal:input', { data });
+                }
+            });
+        }
+        
+        // Check libraries on load
+        window.addEventListener('load', () => {
+            log('Page loaded, checking libraries...', 'info');
+            setTimeout(() => {
+                checkLibraries();
+                debugWindow();
+            }, 500);
+        });
+        
+        // Listen for xterm-ready event
+        window.addEventListener('xterm-ready', (event) => {
+            log('🎉 xterm-ready event fired!', 'success');
+            if (event.detail) {
+                log(`Terminal: ${!!event.detail.Terminal}, FitAddon: ${!!event.detail.FitAddon}`, 'info');
+            }
+            checkLibraries();
+        });
+    </script>
+</body>
+</html>

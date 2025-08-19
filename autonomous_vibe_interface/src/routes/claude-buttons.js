@@ -53,19 +53,39 @@ claudeBridge.on('sessionComplete', ({ sessionId, duration }) => {
  */
 router.post('/supervision/start', async (req, res) => {
     try {
-        const { prompt, sessionId } = req.body;
+        const { prompt, sessionId, explicit } = req.body;
+        console.log(`[SUPERVISION] Start request received - sessionId: ${sessionId}, prompt: ${prompt?.substring(0, 50)}..., explicit: ${explicit}`);
         
         if (!prompt) {
             return res.status(400).json({ error: 'Prompt is required' });
         }
         
+        // Block automatic supervision triggers - require explicit user action
+        if (!explicit) {
+            console.log(`[SUPERVISION] Blocked auto-trigger - supervision must be explicitly started via button`);
+            return res.status(400).json({ 
+                error: 'Supervision must be explicitly started',
+                message: 'Use the supervision button in the terminal interface'
+            });
+        }
+        
+        // Start the existing supervision system
+        console.log(`[SUPERVISION] Starting claude bridge supervision...`);
         const id = await claudeBridge.startSupervision(prompt, sessionId);
+        console.log(`[SUPERVISION] Claude bridge returned session ID: ${id}`);
+        
+        // Also trigger PTY supervision if we have a WebSocket connection
+        const socket = wsConnections.get(id);
+        if (socket) {
+            console.log(`🔗 Triggering PTY supervision for session ${id}`);
+            socket.emit('supervision:start-pty', { sessionId: id });
+        }
         
         res.json({
             success: true,
             sessionId: id,
             mode: 'supervision',
-            message: 'Supervision mode started'
+            message: 'Supervision mode started with PTY integration'
         });
     } catch (error) {
         console.error('Supervision start error:', error);
@@ -77,7 +97,10 @@ router.post('/supervision/start', async (req, res) => {
  * Start Parallel Agents
  */
 router.post('/parallel/start', async (req, res) => {
-    console.log('🤖 Parallel Agents API called with:', { prompt: req.body.prompt, sessionId: req.body.sessionId });
+    console.log('🤖 [PARALLEL AGENTS] API endpoint reached!');
+    console.log('🤖 [PARALLEL AGENTS] Request body:', req.body);
+    console.log('🤖 [PARALLEL AGENTS] Prompt length:', req.body.prompt?.length);
+    console.log('🤖 [PARALLEL AGENTS] Session ID:', req.body.sessionId);
     try {
         const { prompt, sessionId } = req.body;
         
@@ -125,7 +148,22 @@ router.post('/infinite/start', async (req, res) => {
             return res.status(400).json({ error: 'Prompt is required' });
         }
         
+        // Get the socket ID from the request headers (if available)
+        const socketId = req.headers['x-socket-id'];
+        
         const id = await claudeBridge.startInfiniteLoop(prompt, sessionId);
+        
+        // If we have a socket ID, try to find and register the socket
+        if (socketId) {
+            const io = req.app.get('io');
+            if (io) {
+                const socket = io.sockets.sockets.get(socketId);
+                if (socket) {
+                    wsConnections.set(id, socket);
+                    console.log(`Registered socket ${socketId} for infinite loop session ${id}`);
+                }
+            }
+        }
         
         res.json({
             success: true,
@@ -150,7 +188,22 @@ router.post('/hivemind/start', async (req, res) => {
             return res.status(400).json({ error: 'Prompt is required' });
         }
         
+        // Get the socket ID from the request headers (if available)
+        const socketId = req.headers['x-socket-id'];
+        
         const id = await claudeBridge.startHivemind(prompt, sessionId);
+        
+        // If we have a socket ID, try to find and register the socket
+        if (socketId) {
+            const io = req.app.get('io');
+            if (io) {
+                const socket = io.sockets.sockets.get(socketId);
+                if (socket) {
+                    wsConnections.set(id, socket);
+                    console.log(`Registered socket ${socketId} for hivemind session ${id}`);
+                }
+            }
+        }
         
         res.json({
             success: true,
@@ -510,6 +563,153 @@ router.post('/performance/clear-cache', (req, res) => {
     } catch (error) {
         console.error('Clear cache error:', error);
         res.status(500).json({ error: error.message });
+    }
+});
+
+/**
+ * Get project progress data for coaching dashboard
+ */
+router.get('/coaching/progress', async (req, res) => {
+    try {
+        const progressData = await claudeBridge.getProjectProgress();
+        
+        res.json({
+            success: true,
+            progress: progressData,
+            timestamp: Date.now()
+        });
+    } catch (error) {
+        console.error('Get project progress error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+/**
+ * Get learning progress for skills tracking
+ */
+router.get('/coaching/learning', async (req, res) => {
+    try {
+        const learningData = await claudeBridge.getLearningProgress();
+        
+        res.json({
+            success: true,
+            learning: learningData,
+            timestamp: Date.now()
+        });
+    } catch (error) {
+        console.error('Get learning progress error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+/**
+ * Get AI confidence levels
+ */
+router.get('/coaching/confidence', async (req, res) => {
+    try {
+        const confidenceData = await claudeBridge.getConfidenceLevels();
+        
+        res.json({
+            success: true,
+            confidence: confidenceData,
+            timestamp: Date.now()
+        });
+    } catch (error) {
+        console.error('Get confidence levels error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+/**
+ * Get smart next-step recommendations
+ */
+router.get('/coaching/next-steps', async (req, res) => {
+    try {
+        const nextSteps = await claudeBridge.getSmartNextSteps();
+        
+        res.json({
+            success: true,
+            nextSteps,
+            timestamp: Date.now()
+        });
+    } catch (error) {
+        console.error('Get next steps error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+/**
+ * Get recent achievements and wins
+ */
+router.get('/coaching/achievements', async (req, res) => {
+    try {
+        const achievements = await claudeBridge.getRecentAchievements();
+        
+        res.json({
+            success: true,
+            achievements,
+            timestamp: Date.now()
+        });
+    } catch (error) {
+        console.error('Get achievements error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+/**
+ * Get problem detection and friendly warnings
+ */
+router.get('/coaching/problems', async (req, res) => {
+    try {
+        const problems = await claudeBridge.detectProblems();
+        
+        res.json({
+            success: true,
+            problems,
+            timestamp: Date.now()
+        });
+    } catch (error) {
+        console.error('Get problems error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Session Summary Endpoint for Agent Handoff
+router.post('/session-summary', async (req, res) => {
+    try {
+        console.log('📋 Session summary requested');
+        
+        const { sessionData, prompt } = req.body;
+        
+        if (!sessionData || !prompt) {
+            return res.status(400).json({ 
+                error: 'Session data and prompt are required',
+                required: ['sessionData', 'prompt']
+            });
+        }
+
+        // Generate session summary using enhanced claude bridge
+        const result = await claudeBridge.generateSessionSummary(sessionData, prompt);
+        
+        console.log('✅ Session summary generated:', result.source);
+        
+        res.json({
+            success: result.success,
+            summary: result.summary,
+            metadata: {
+                source: result.source,
+                timestamp: result.timestamp,
+                note: result.note,
+                error: result.error
+            }
+        });
+        
+    } catch (error) {
+        console.error('❌ Session summary generation error:', error);
+        res.status(500).json({ 
+            error: 'Failed to generate session summary',
+            details: error.message 
+        });
     }
 });
 

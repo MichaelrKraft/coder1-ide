@@ -39,29 +39,22 @@ class ClaudeCodeAPI {
                 model = 'claude-3-haiku-20240307',
                 maxTokens = 1000,
                 temperature = 0.3,
-                systemPrompt = null
+                systemPrompt = null,
+                timeout = this.timeout  // Support per-request timeout
             } = options;
 
             this.logger.info('Sending message to Claude Code API', {
                 model,
                 contentLength: content.length,
-                hasSystemPrompt: !!systemPrompt
+                hasSystemPrompt: !!systemPrompt,
+                timeout: timeout
             });
 
             // Prepare messages array
-            const messages = [];
-            
-            if (systemPrompt) {
-                messages.push({
-                    role: 'system',
-                    content: systemPrompt
-                });
-            }
-            
-            messages.push({
+            const messages = [{
                 role: 'user',
                 content: content
-            });
+            }];
 
             const requestBody = {
                 model,
@@ -69,8 +62,19 @@ class ClaudeCodeAPI {
                 temperature,
                 messages
             };
+            
+            // Add system prompt as a separate field if provided
+            if (systemPrompt) {
+                requestBody.system = systemPrompt;
+            }
 
-            const response = await this.client.post('/v1/messages', requestBody);
+            // Create request config with dynamic timeout
+            const requestConfig = {
+                timeout: timeout,
+                headers: this.client.defaults.headers.common
+            };
+
+            const response = await this.client.post('/v1/messages', requestBody, requestConfig);
             
             if (response.data && response.data.content && response.data.content[0]) {
                 const responseText = response.data.content[0].text;

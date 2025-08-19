@@ -104,13 +104,17 @@ class IntegratedSupervisionSystem extends EventEmitter {
             // Start supervision engine
             const supervisionResult = await this.supervisionEngine.startSupervision(prdContent, options);
             
-            // Get Claude Code process from supervision engine
+            // Make supervision engine globally accessible for terminal integration
+            console.log('🌍 [SUPERVISION] Setting global supervisionEngine and supervisionSystem');
+            global.supervisionEngine = this.supervisionEngine;
+            global.supervisionSystem = this;
+            console.log('🌍 [SUPERVISION] Global engine set. Available methods:', Object.getOwnPropertyNames(this.supervisionEngine.__proto__).filter(name => name !== 'constructor').slice(0, 5));
+            
+            // Get Claude Code process from supervision engine (null for terminal monitoring)
             this.state.claudeCodeProcess = this.supervisionEngine.claudeCodeProcess;
             
-            // Attach monitor to Claude Code process
-            if (this.state.claudeCodeProcess) {
-                this.monitor.attachToProcess(this.state.claudeCodeProcess);
-            }
+            // For terminal monitoring, we don't have a process to attach
+            // The terminal will send us output directly
             
             this.emit('supervisionStarted', {
                 sessionId: this.sessionId,

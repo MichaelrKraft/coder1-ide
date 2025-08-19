@@ -1,0 +1,62 @@
+{
+  "repoId": "3612263b02aa7e3a84821c2d8cc4b5c6",
+  "url": "https://github.com/tailwindlabs/tailwindcss",
+  "name": "tailwindlabs/tailwindcss",
+  "analyzedAt": "2025-08-19T19:53:02.518Z",
+  "metadata": {
+    "description": "",
+    "language": "",
+    "stars": 0,
+    "forks": 0
+  },
+  "semantics": {
+    "architecture": {
+      "type": "unknown",
+      "patterns": []
+    },
+    "dependencies": {
+      "dependencies": [],
+      "devDependencies": []
+    },
+    "patterns": {
+      "patterns": []
+    },
+    "conventions": {
+      "conventions": []
+    },
+    "complexity": {
+      "complexity": "medium"
+    },
+    "relationships": {
+      "relationships": []
+    }
+  },
+  "patterns": {
+    "common": [],
+    "framework": [],
+    "design": [],
+    "antipatterns": [],
+    "best_practices": []
+  },
+  "knowledge": {
+    "nodes": [],
+    "edges": [],
+    "clusters": [],
+    "paths": [],
+    "embeddings": {}
+  },
+  "intelligence": {
+    "suggestions": [],
+    "explanations": [],
+    "improvements": [],
+    "examples": [],
+    "documentation": [],
+    "testing": []
+  },
+  "stats": {
+    "fileCount": 0,
+    "patternCount": 5,
+    "suggestionCount": 0,
+    "analysisTime": 1755633182518
+  }
+}

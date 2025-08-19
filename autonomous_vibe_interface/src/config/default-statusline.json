@@ -1,0 +1,33 @@
+{
+  "statusLine": "🔧 Coder One | $(basename \"$(pwd)\") | $(git branch --show-current 2>/dev/null || echo 'no-git') | $(date +'%H:%M') | ${MODEL_NAME:-Claude}",
+  "description": "Default Coder One statusLine template for all users",
+  "version": "1.0",
+  "branding": {
+    "icon": "🔧",
+    "name": "Coder One"
+  },
+  "components": {
+    "branding": "🔧 Coder One",
+    "project": "$(basename \"$(pwd)\")",
+    "git_branch": "$(git branch --show-current 2>/dev/null || echo 'no-git')",
+    "time": "$(date +'%H:%M')",
+    "model": "${MODEL_NAME:-Claude}"
+  },
+  "format": "{branding} | {project} | {git_branch} | {time} | {model}",
+  "examples": [
+    "🔧 Coder One | autonomous_vibe_interface | main | 14:32 | Claude",
+    "🔧 Coder One | n8n-simplifier | feature/upload | 09:15 | GPT-5",
+    "🔧 Coder One | chat-application | development | 16:45 | Claude"
+  ],
+  "usage_instructions": {
+    "manual_setup": "Copy the statusLine value to your ~/.claude/settings.json file",
+    "automatic_setup": "This template will be automatically applied during Coder One onboarding",
+    "customization": "Users can modify individual components while maintaining Coder One branding"
+  },
+  "notes": [
+    "The statusLine provides consistent branding across all Coder One sessions",
+    "Shows current project context, git branch, time, and AI model",
+    "Gracefully handles projects without git repositories",
+    "Uses environment variable MODEL_NAME if available, falls back to 'Claude'"
+  ]
+}
