@@ -160,6 +160,21 @@ app.use((req, res, next) => {
 // Apply general rate limiting to all routes AFTER health check and auth
 app.use(rateLimit);
 
+// Add CSP middleware to allow scripts for IDE and development
+app.use((req, res, next) => {
+  if (req.path.startsWith('/ide') || req.path.startsWith('/test') || req.path.startsWith('/component-studio')) {
+    res.setHeader('Content-Security-Policy', 
+      "default-src 'self'; " +
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://unpkg.com https://cdn.tailwindcss.com https://cdn.jsdelivr.net; " +
+      "style-src 'self' 'unsafe-inline' https://unpkg.com https://cdn.tailwindcss.com; " +
+      "img-src 'self' data: https:; " +
+      "connect-src 'self' ws: wss: http: https: localhost:3000; " +
+      "frame-src 'self' data:;"
+    );
+  }
+  next();
+});
+
 // ✅ Serving from /CANONICAL/ - contains the correct, updated PRD generator
 // Note: /public/ was temporarily used but had wrong PRD generator version with misplaced supervision
 // CANONICAL has the working wireframes/personas and correct PRD generator
@@ -169,6 +184,23 @@ app.use(express.static(path.join(__dirname, '../CANONICAL')));
 // Serve static files from public/static directory for AI navigation and other scripts
 app.use('/static', express.static(path.join(__dirname, '../public/static')));
 
+// Serve static files for Component Studio with cache control
+app.use('/studio-assets', express.static(path.join(__dirname, '../public/studio-assets'), {
+    setHeaders: (res, path) => {
+        if (path.endsWith('.js')) {
+            res.set({
+                'Cache-Control': 'no-cache, no-store, must-revalidate, max-age=0',
+                'Pragma': 'no-cache',
+                'Expires': '0',
+                'Last-Modified': new Date().toUTCString()
+            });
+        }
+    }
+}));
+
+// Serve public directory files (including logos and images)
+app.use('/public', express.static(path.join(__dirname, '../public')));
+
 // API routes with specific rate limiting
 app.use('/api/anthropic', anthropicRateLimit, require('./routes/anthropic'));
 app.use('/api/openai', openaiRateLimit, require('./routes/openai'));
@@ -176,6 +208,7 @@ app.use('/api/agent', require('./routes/agent-simple'));
 app.use('/api/voice', require('./routes/voice'));
 app.use('/api/infinite', require('./routes/infinite'));
 app.use('/api/hivemind', require('./routes/hivemind'));
+app.use('/api/task-delegation', require('./routes/task-delegation'));
 app.use('/api/files', require('./routes/files'));
 app.use('/api/terminal', terminalRouter);
 app.use('/api/claude', require('./routes/claude-buttons'));
@@ -186,12 +219,18 @@ app.use('/api/wireframes', require('./routes/wireframes'));
 app.use('/api/market-insights', require('./routes/market-insights'));
 app.use('/api/intelligence', require('./routes/intelligence'));
 app.use('/api/analytics', require('./routes/analytics'));
+app.use('/api/vibe-flow', require('./routes/vibe-flow'));  // Vibe Flow analytics and budget tracking
 app.use('/api/magic', require('./routes/magic'));  // AI Magic component generation
+app.use('/api/component-ai', require('./routes/component-ai'));  // Component Studio AI Integration
 app.use('/api/error-doctor', require('./routes/error-doctor'));  // AI Error Doctor
 app.use('/api/claude/coaching', require('./routes/vibe-coach'));  // VibeCoach AI Dashboard
 app.use('/api/hooks', require('./routes/hooks'));  // Claude Code Hooks Management
+app.use('/api/vibe-hooks', require('./routes/vibe-hooks'));  // Vibe Hooks Pattern-based Automation
 app.use('/api/github', require('./routes/github-push'));  // Educational GitHub Push
 app.use('/api/github/cli', require('./routes/github-cli'));  // GitHub CLI integration (PRs, issues, workflows)
+app.use('/api/project-pipeline', require('./routes/project-pipeline'));  // Project Pipeline Management
+app.use('/api/repository', require('./routes/repository-intelligence'));  // Repository Intelligence for IDE
+app.use('/api/repository-admin', require('./routes/repository-admin'));  // Repository Admin endpoints
 app.use('/api', require('./routes/prettier-config'));
 // Remove duplicate terminal-rest route - using terminal-rest-api.js instead
 // app.use('/api/terminal-rest', require('./routes/terminal-rest'));
@@ -257,6 +296,11 @@ app.get('/ai-monitor', (req, res) => {
     res.sendFile(path.join(__dirname, '../public/ai-monitor.html'));
 });
 
+// Vibe Dashboard route - NEW dashboard for vibe coders and newer developers
+app.get('/vibe-dashboard', (req, res) => {
+    res.sendFile(path.join(__dirname, '../CANONICAL/vibe-dashboard.html'));
+});
+
 // Natural Commands route - serve the natural commands page
 app.get('/natural-commands', (req, res) => {
     res.sendFile(path.join(__dirname, '../public/natural-commands.html'));
@@ -272,13 +316,20 @@ app.get('/hooks', (req, res) => {
     res.sendFile(path.join(__dirname, '../CANONICAL/hooks.html'));
 });
 
+// Component Studio route - NEW visual component development environment
+app.get('/component-studio', (req, res) => {
+    res.sendFile(path.join(__dirname, '../public/component-studio.html'));
+});
+
 // IDE route - serve from coder1-ide directory
 app.get(['/ide', '/ide/'], (req, res) => {
     console.log('[IDE Route] Handling request for:', req.path);
     if (process.env.VERCEL) {
         // On Vercel, serve the rewritten HTML directly with correct file names
         const cacheBuster = 'explorer-fix-' + Date.now() + Math.random().toString(36);
-        const htmlContent = `<!doctype html><html lang="en"><head><meta charset="utf-8"/><link rel="icon" href="/ide/favicon.ico"/><meta name="viewport" content="width=device-width,initial-scale=1"/><meta name="theme-color" content="#000000"/><meta name="description" content="Coder1 IDE - PRD Style Session Summary"/><link rel="apple-touch-icon" href="/ide/logo192.png"/><link rel="manifest" href="/ide/manifest.json"/><title>Coder1 IDE v2 - PRD Style UI</title><link rel="stylesheet" href="/ide/static/css/xterm.css"/><script src="/ide/static/lib/xterm.js"></script><script src="/ide/static/lib/addon-fit.js"></script><script src="/ide/static/lib/xterm-loader.js"></script><script defer="defer" src="/ide/static/js/main.7006252c.js?cb=${cacheBuster}"></script><link href="/ide/static/css/main.20028d8b.css?cb=${cacheBuster}" rel="stylesheet"></head><body><noscript>You need to enable JavaScript to run this app.</noscript><div id="root"></div><script src="/static/ai-navigation.js"></script></body></html>`;
+        // WARNING: UPDATE main.XXX.js HASH AFTER EACH BUILD! Check /public/ide/static/js/ for latest
+        console.warn('⚠️ SERVING HARDCODED HTML: main.c75d6022.js - AI BUTTON FIX!');
+        const htmlContent = `<!doctype html><html lang="en"><head><meta charset="utf-8"/><link rel="icon" href="/ide/favicon.ico"/><meta name="viewport" content="width=device-width,initial-scale=1"/><meta name="theme-color" content="#000000"/><meta name="description" content="Coder1 IDE - PRD Style Session Summary"/><link rel="apple-touch-icon" href="/ide/logo192.png"/><link rel="manifest" href="/ide/manifest.json"/><title>Coder1 IDE v2 - PRD Style UI</title><link rel="stylesheet" href="/ide/static/css/xterm.css"/><script src="/ide/static/lib/xterm.js"></script><script src="/ide/static/lib/addon-fit.js"></script><script src="/ide/static/lib/xterm-loader.js"></script><script defer="defer" src="/ide/static/js/main.c75d6022.js?cb=${cacheBuster}"></script><link href="/ide/static/css/main.c3ebf90c.css?cb=${cacheBuster}" rel="stylesheet"></head><body><noscript>You need to enable JavaScript to run this app.</noscript><div id="root"></div></body></html>`;
         
         // Set aggressive no-cache headers
         res.set({
@@ -313,8 +364,8 @@ app.get(['/ide', '/ide/'], (req, res) => {
     <script src="/ide/static/lib/xterm-loader.js"></script>`;
         html = html.replace('</head>', `${xtermScripts}\n</head>`);
         
-        // Inject AI navigation script
-        html = html.replace('</body>', '<script src="/static/ai-navigation.js"></script></body>');
+        // Removed AI navigation script injection - React app now handles AI button
+        // html = html.replace('</body>', '<script src="/static/ai-navigation.js"></script></body>');
         
         // Add no-cache headers for development
         res.set({
@@ -376,6 +427,12 @@ console.log('🌍 [SUPERVISION] Global supervision engine initialized on startup
 const VibeCoachWebSocket = require('./services/vibe-coach/VibeCoachWebSocket');
 const VibeCoachService = require('./services/vibe-coach/VibeCoachService');
 
+// Repository Pre-loader for competitive advantage
+const { getInstance: getRepositoryPreloader } = require('./services/repository-preloader');
+
+// Claude Code Usage Monitor integration for real usage tracking
+const claudeUsageBridge = require('./services/claude-usage-bridge');
+
 let globalVibeCoachWebSocket;
 let globalVibeCoachService;
 
@@ -393,11 +450,82 @@ try {
     console.warn('⚠️ [VIBECOACH] Failed to initialize WebSocket service:', error.message);
 }
 
+/**
+ * Initialize Repository Pre-loader
+ * Non-blocking background process that pre-loads strategic repositories
+ * Creates instant AI intelligence for users with zero wait time
+ */
+async function initializeRepositoryPreloader() {
+    try {
+        const preloaderConfig = require('./config/preload-repositories.json');
+        
+        // Check if auto-preload is enabled
+        if (!preloaderConfig.settings.autoPreloadOnStartup) {
+            console.log('📋 [PRELOADER] Auto pre-loading disabled in config');
+            return;
+        }
+        
+        // Skip pre-loading in development mode if specified
+        if (process.env.SKIP_PRELOAD === 'true') {
+            console.log('📋 [PRELOADER] Skipping pre-load (SKIP_PRELOAD=true)');
+            return;
+        }
+        
+        const preloader = getRepositoryPreloader();
+        const initialized = await preloader.initialize();
+        
+        if (!initialized) {
+            console.warn('⚠️ [PRELOADER] Failed to initialize pre-loader');
+            return;
+        }
+        
+        // Make preloader globally available for monitoring
+        global.repositoryPreloader = preloader;
+        
+        // Wait before starting pre-load to let server stabilize
+        const delay = preloaderConfig.settings.preloadDelay || 30000;
+        console.log(`⏱️ [PRELOADER] Waiting ${delay/1000}s before starting pre-load...`);
+        
+        setTimeout(async () => {
+            console.log('🚀 [PRELOADER] Starting background repository pre-loading...');
+            
+            // Use test repositories in development
+            const isDevelopment = process.env.NODE_ENV === 'development' || process.env.TEST_PRELOAD === 'true';
+            if (isDevelopment && preloaderConfig.testRepositories) {
+                preloader.preloadQueue = [...preloaderConfig.testRepositories];
+                console.log('🧪 [PRELOADER] Using test repository list (3 repos)');
+            }
+            
+            // Start pre-loading in background (non-blocking)
+            preloader.startPreloading({
+                batchSize: isDevelopment ? 1 : 3,
+                maxConcurrent: isDevelopment ? 1 : 2,
+                delayBetweenBatches: isDevelopment ? 5000 : 15000
+            }).then(() => {
+                console.log('✅ [PRELOADER] Background pre-loading complete');
+            }).catch(error => {
+                console.error('❌ [PRELOADER] Background pre-loading failed:', error);
+            });
+            
+            // Set up event listeners for monitoring
+            preloader.on('preload:progress', (data) => {
+                const percent = Math.round((data.processed / data.total) * 100);
+                console.log(`📊 [PRELOADER] Progress: ${percent}% (${data.successful} successful, ${data.failed} failed)`);
+            });
+            
+        }, delay);
+        
+    } catch (error) {
+        console.error('❌ [PRELOADER] Failed to initialize repository pre-loader:', error);
+        // Don't throw - pre-loading failure shouldn't affect server startup
+    }
+}
+
 // Start server
 const PORT = process.env.PORT || 3000; // Main server runs on port 3000
 const HOST = '0.0.0.0'; // Important for Render
 
-server.listen(PORT, HOST, () => {
+server.listen(PORT, HOST, async () => {
     console.log(`🚀 Autonomous Vibe Interface running on port ${PORT}`);
     console.log(`📊 Health check: /health`);
     console.log(`🎤 Voice API: /api/voice/*`);
@@ -410,6 +538,22 @@ server.listen(PORT, HOST, () => {
     if (process.env.RENDER) {
         console.log(`🌐 Running on Render at https://${process.env.RENDER_EXTERNAL_HOSTNAME}`);
     }
+    
+    // Initialize Claude Code Usage Monitor Bridge (non-blocking)
+    try {
+        const usageInitialized = await claudeUsageBridge.initialize();
+        if (usageInitialized) {
+            claudeUsageBridge.startWatching(5000); // Watch for changes every 5 seconds
+            console.log('📊 [USAGE-BRIDGE] Claude Code Usage Monitor integration active');
+        } else {
+            console.log('📊 [USAGE-BRIDGE] Claude Code Usage Monitor not detected - using mock data');
+        }
+    } catch (error) {
+        console.warn('⚠️ [USAGE-BRIDGE] Failed to initialize usage monitoring:', error.message);
+    }
+    
+    // Initialize Repository Pre-loader (non-blocking background process)
+    initializeRepositoryPreloader();
 });
 
 // Graceful shutdown

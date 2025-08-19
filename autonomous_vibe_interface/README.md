@@ -1,6 +1,8 @@
-# Autonomous Vibe Interface
+# Autonomous Vibe Interface (Coder1)
 
-AI-powered web development platform with intelligent requirements gathering.
+AI-powered web development platform with intelligent requirements gathering, Monaco IDE, and Claude Code integration.
+
+📋 **For complete project status, features, and documentation**: See [PROJECT_STATUS.md](./PROJECT_STATUS.md)
 
 ## Quick Start
 
@@ -36,12 +38,19 @@ autonomous-vibe-interface/
 └── render.yaml      # Render deployment configuration
 ```
 
-## API Endpoints
+## Key Features
 
-- `GET /health` - Health check
-- `POST /api/agent/analyze-requirements` - Analyze project requirements
-- `POST /api/agent/create-project` - Create a new project
-- `GET /api/agent/status` - Check agent status
+- **Smart PRD Generator**: AI-guided requirements gathering with wireframe generation
+- **Monaco IDE**: Professional code editor with syntax highlighting and IntelliSense  
+- **Terminal Integration**: Real PTY sessions with Claude Code supervision
+- **AI Intelligence Systems**: 8 integrated AI systems for enhanced development
+
+## Main URLs
+
+- **Homepage/PRD Generator**: `http://localhost:3000`
+- **Monaco IDE**: `http://localhost:3000/ide`
+- **AI Monitor Dashboard**: `http://localhost:3000/ai-monitor.html`
+- **Health Check**: `http://localhost:3000/health`
 
 ## Deployment
 
@@ -59,9 +68,24 @@ This project is configured for easy deployment on Render:
 ## Environment Variables
 
 Required for production:
-- `OPENAI_API_KEY` - For AI features
-- `ANTHROPIC_API_KEY` - For Claude integration
+- `ANTHROPIC_API_KEY` - Primary Claude API integration
+- `CLAUDE_CODE_API_KEY` - Claude Code CLI integration (preferred)
+- `OPENAI_API_KEY` - Additional AI features
+- `SESSION_SECRET` - Session encryption key
 
 Optional:
-- `AIRTOP_API_KEY` - For browser automation features
-- `PORT` - Server port (default: 3000, Render uses 10000)
+- `AIRTOP_API_KEY` - Browser automation features
+- `BYPASS_FRIEND_AUTH` - Set to 'true' to disable authentication (dev only)
+- `PORT` - Server port (default: 3000)
+
+## Documentation
+
+- **[PROJECT_STATUS.md](./PROJECT_STATUS.md)** - Complete project overview and status
+- **[PRODUCTION_SETUP.md](./PRODUCTION_SETUP.md)** - Deployment and configuration guide
+- **[IDE_DEVELOPMENT_GUIDE.md](./IDE_DEVELOPMENT_GUIDE.md)** - Monaco IDE development guide
+- **[TERMINAL_STARTUP_GUIDE.md](./TERMINAL_STARTUP_GUIDE.md)** - Terminal integration guide
+- **[CANONICAL/README.md](./CANONICAL/README.md)** - File organization and structure
+
+## Support
+
+Contact Michael for beta access codes and technical assistance.
