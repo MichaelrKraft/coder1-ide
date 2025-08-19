@@ -18,7 +18,17 @@ class ReactBitsClient {
             modals: { name: 'Modals', icon: '🪟', description: 'Modal and dialog components', count: 0 },
             icons: { name: 'Icons', icon: '🎨', description: 'Icon components and animations', count: 0 },
             data: { name: 'Data Display', icon: '📊', description: 'Tables, lists, and data visualization', count: 0 },
-            backgrounds: { name: 'Backgrounds', icon: '🌄', description: 'Background effects and patterns', count: 0 }
+            backgrounds: { name: 'Backgrounds', icon: '🌄', description: 'Background effects and patterns', count: 0 },
+            // === NEW ENHANCED CATEGORIES ===
+            pricing: { name: 'Pricing', icon: '💰', description: 'Pricing tables and subscription components', count: 0 },
+            ecommerce: { name: 'E-commerce', icon: '🛒', description: 'Product cards, checkout, shopping components', count: 0 },
+            dashboard: { name: 'Dashboard', icon: '📈', description: 'Analytics, charts, dashboard components', count: 0 },
+            testimonials: { name: 'Testimonials', icon: '💬', description: 'Reviews, testimonials, social proof', count: 0 },
+            hero: { name: 'Hero Sections', icon: '🚀', description: 'Landing page heroes and banners', count: 0 },
+            features: { name: 'Features', icon: '⭐', description: 'Feature grids, comparisons, highlights', count: 0 },
+            team: { name: 'Team', icon: '👥', description: 'Team member cards and bios', count: 0 },
+            blog: { name: 'Blog', icon: '📰', description: 'Article cards, blog layouts', count: 0 },
+            social: { name: 'Social', icon: '📱', description: 'Social media integration, sharing buttons', count: 0 }
         };
     }
 
@@ -2278,7 +2288,530 @@ class ReactBitsClient {
         </div>
     );
 };`
+            },
+            // === ENHANCED PRICING COMPONENTS ===
+            'pricing-enterprise': {
+                name: 'Enterprise Pricing Table',
+                category: 'pricing',
+                description: 'Professional pricing table with feature comparisons and recommended plans',
+                tags: ['pricing', 'comparison', 'enterprise', 'professional'],
+                code: `const EnterprisePricing = () => {
+    const plans = [
+        {
+            name: 'Starter',
+            price: '$9',
+            period: '/month',
+            description: 'Perfect for individuals',
+            features: ['5 Projects', 'Basic Support', '1GB Storage', 'API Access'],
+            buttonText: 'Start Free Trial',
+            highlighted: false
+        },
+        {
+            name: 'Professional',
+            price: '$29',
+            period: '/month',
+            description: 'Best for growing teams',
+            features: ['Unlimited Projects', 'Priority Support', '10GB Storage', 'Advanced API', 'Analytics Dashboard', 'Custom Integrations'],
+            buttonText: 'Get Started',
+            highlighted: true,
+            badge: 'MOST POPULAR'
+        },
+        {
+            name: 'Enterprise',
+            price: '$99',
+            period: '/month',
+            description: 'For large organizations',
+            features: ['Everything in Pro', 'Dedicated Support', 'Unlimited Storage', 'Custom Features', 'SLA Guarantee', 'Advanced Security'],
+            buttonText: 'Contact Sales',
+            highlighted: false
+        }
+    ];
+
+    return (
+        <div className="py-16 px-6 bg-gradient-to-br from-gray-50 to-blue-50">
+            <div className="max-w-6xl mx-auto">
+                <div className="text-center mb-12">
+                    <h2 className="text-4xl font-bold text-gray-900 mb-4">Choose Your Plan</h2>
+                    <p className="text-xl text-gray-600">Start free, upgrade when you need</p>
+                </div>
+                
+                <div className="grid md:grid-cols-3 gap-8">
+                    {plans.map((plan, index) => (
+                        <div 
+                            key={index}
+                            className={\`relative rounded-2xl p-8 \${
+                                plan.highlighted 
+                                    ? 'bg-gradient-to-br from-blue-600 to-purple-600 text-white shadow-2xl scale-105 border-4 border-blue-200' 
+                                    : 'bg-white border-2 border-gray-200 hover:border-blue-400 hover:shadow-lg'
+                            } transition-all duration-300\`}
+                        >
+                            {plan.badge && (
+                                <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
+                                    <span className="bg-gradient-to-r from-yellow-400 to-orange-500 text-black px-4 py-1 rounded-full text-sm font-bold">
+                                        {plan.badge}
+                                    </span>
+                                </div>
+                            )}
+                            
+                            <div className="mb-8">
+                                <h3 className={\`text-2xl font-bold mb-2 \${plan.highlighted ? 'text-white' : 'text-gray-900'}\`}>
+                                    {plan.name}
+                                </h3>
+                                <p className={\`text-sm mb-4 \${plan.highlighted ? 'text-blue-100' : 'text-gray-600'}\`}>
+                                    {plan.description}
+                                </p>
+                                <div className="flex items-baseline">
+                                    <span className={\`text-5xl font-bold \${plan.highlighted ? 'text-white' : 'text-gray-900'}\`}>
+                                        {plan.price}
+                                    </span>
+                                    <span className={\`ml-2 \${plan.highlighted ? 'text-blue-100' : 'text-gray-600'}\`}>
+                                        {plan.period}
+                                    </span>
+                                </div>
+                            </div>
+                            
+                            <ul className="space-y-3 mb-8">
+                                {plan.features.map((feature, featureIndex) => (
+                                    <li 
+                                        key={featureIndex} 
+                                        className={\`flex items-center \${plan.highlighted ? 'text-blue-100' : 'text-gray-700'}\`}
+                                    >
+                                        <svg className={\`w-5 h-5 mr-3 \${plan.highlighted ? 'text-blue-200' : 'text-green-500'}\`} fill="currentColor" viewBox="0 0 20 20">
+                                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                        </svg>
+                                        {feature}
+                                    </li>
+                                ))}
+                            </ul>
+                            
+                            <button
+                                className={\`w-full py-3 px-6 rounded-lg font-bold transition-all duration-300 \${
+                                    plan.highlighted
+                                        ? 'bg-white text-blue-600 hover:bg-gray-100 hover:shadow-lg'
+                                        : 'bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:shadow-lg hover:scale-105'
+                                }\`}
+                            >
+                                {plan.buttonText}
+                            </button>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        </div>
+    );
+};`
+            },
+
+            // === ENHANCED E-COMMERCE COMPONENTS ===
+            'product-card-modern': {
+                name: 'Modern Product Card',
+                category: 'ecommerce',
+                description: 'Professional product card with hover effects, badges, and quick actions',
+                tags: ['product', 'ecommerce', 'card', 'shopping'],
+                code: `const ModernProductCard = ({ 
+    product = {
+        name: "Premium Headphones",
+        price: 299,
+        originalPrice: 399,
+        image: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400",
+        badge: "SALE",
+        rating: 4.5,
+        reviews: 128
+    }
+}) => {
+    const [isWishlisted, setIsWishlisted] = useState(false);
+    
+    return (
+        <div className="group relative bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-2xl transition-all duration-300 hover:-translate-y-2">
+            {product.badge && (
+                <div className="absolute top-4 left-4 z-10">
+                    <span className="bg-red-500 text-white px-3 py-1 rounded-full text-sm font-bold">
+                        {product.badge}
+                    </span>
+                </div>
+            )}
+            
+            <button 
+                onClick={() => setIsWishlisted(!isWishlisted)}
+                className="absolute top-4 right-4 z-10 p-2 rounded-full bg-white shadow-md hover:shadow-lg transition-all duration-200"
+            >
+                <svg className={\`w-5 h-5 \${isWishlisted ? 'text-red-500 fill-current' : 'text-gray-400'}\`} viewBox="0 0 24 24">
+                    <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                </svg>
+            </button>
+            
+            <div className="aspect-w-16 aspect-h-12 overflow-hidden">
+                <img 
+                    src={product.image} 
+                    alt={product.name}
+                    className="w-full h-64 object-cover group-hover:scale-110 transition-transform duration-300"
+                />
+            </div>
+            
+            <div className="p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors">
+                    {product.name}
+                </h3>
+                
+                <div className="flex items-center mb-3">
+                    <div className="flex items-center">
+                        {[...Array(5)].map((_, i) => (
+                            <svg 
+                                key={i}
+                                className={\`w-4 h-4 \${i < Math.floor(product.rating) ? 'text-yellow-400 fill-current' : 'text-gray-300'}\`}
+                                viewBox="0 0 24 24"
+                            >
+                                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                            </svg>
+                        ))}
+                        <span className="ml-2 text-sm text-gray-600">({product.reviews})</span>
+                    </div>
+                </div>
+                
+                <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center space-x-2">
+                        <span className="text-2xl font-bold text-gray-900">\${product.price}</span>
+                        {product.originalPrice > product.price && (
+                            <span className="text-lg text-gray-500 line-through">\${product.originalPrice}</span>
+                        )}
+                    </div>
+                    {product.originalPrice > product.price && (
+                        <span className="bg-green-100 text-green-800 px-2 py-1 rounded text-sm font-medium">
+                            Save \${product.originalPrice - product.price}
+                        </span>
+                    )}
+                </div>
+                
+                <button className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 rounded-lg font-semibold hover:shadow-lg transform hover:scale-105 transition-all duration-200">
+                    Add to Cart
+                </button>
+            </div>
+        </div>
+    );
+};`
+            },
+
+            // === ENHANCED DASHBOARD COMPONENTS ===
+            'analytics-dashboard': {
+                name: 'Analytics Dashboard',
+                category: 'dashboard',
+                description: 'Complete analytics dashboard with metrics, charts, and trend indicators',
+                tags: ['analytics', 'dashboard', 'metrics', 'charts'],
+                code: `const AnalyticsDashboard = () => {
+    const metrics = [
+        { label: 'Total Revenue', value: '$124,892', change: '+12.5%', trend: 'up', color: 'green' },
+        { label: 'Active Users', value: '8,249', change: '+8.2%', trend: 'up', color: 'blue' },
+        { label: 'Conversion Rate', value: '3.24%', change: '-2.1%', trend: 'down', color: 'red' },
+        { label: 'Avg. Order Value', value: '$89.50', change: '+5.7%', trend: 'up', color: 'purple' }
+    ];
+
+    return (
+        <div className="p-6 bg-gray-50 min-h-screen">
+            <div className="max-w-7xl mx-auto">
+                <div className="mb-8">
+                    <h1 className="text-3xl font-bold text-gray-900 mb-2">Analytics Dashboard</h1>
+                    <p className="text-gray-600">Track your business performance and growth</p>
+                </div>
+                
+                {/* Metrics Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                    {metrics.map((metric, index) => (
+                        <div key={index} className="bg-white rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow">
+                            <div className="flex items-center justify-between mb-4">
+                                <h3 className="text-sm font-medium text-gray-600">{metric.label}</h3>
+                                <div className={\`flex items-center space-x-1 \${
+                                    metric.trend === 'up' ? 'text-green-600' : 'text-red-600'
+                                }\`}>
+                                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fillRule="evenodd" d={
+                                            metric.trend === 'up' 
+                                                ? "M5.293 9.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L10 6.414l-3.293 3.293a1 1 0 01-1.414 0z"
+                                                : "M14.707 10.293a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L10 13.586l3.293-3.293a1 1 0 011.414 0z"
+                                        } clipRule="evenodd" />
+                                    </svg>
+                                    <span className="text-sm font-medium">{metric.change}</span>
+                                </div>
+                            </div>
+                            <div className="text-3xl font-bold text-gray-900">{metric.value}</div>
+                        </div>
+                    ))}
+                </div>
+                
+                {/* Charts Section */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div className="bg-white rounded-xl p-6 shadow-sm">
+                        <h3 className="text-lg font-semibold text-gray-900 mb-4">Revenue Trend</h3>
+                        <div className="h-64 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg flex items-center justify-center">
+                            <div className="text-center">
+                                <div className="text-4xl mb-2">📈</div>
+                                <p className="text-gray-600">Chart visualization would go here</p>
+                                <p className="text-sm text-gray-500">Integration with Chart.js or similar</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div className="bg-white rounded-xl p-6 shadow-sm">
+                        <h3 className="text-lg font-semibold text-gray-900 mb-4">Top Products</h3>
+                        <div className="space-y-4">
+                            {[
+                                { name: 'Premium Headphones', sales: 2840, percentage: 85 },
+                                { name: 'Wireless Speaker', sales: 1920, percentage: 65 },
+                                { name: 'Smart Watch', sales: 1560, percentage: 52 },
+                                { name: 'Phone Case', sales: 890, percentage: 30 }
+                            ].map((product, index) => (
+                                <div key={index} className="flex items-center justify-between">
+                                    <div>
+                                        <p className="font-medium text-gray-900">{product.name}</p>
+                                        <p className="text-sm text-gray-600">{product.sales} sales</p>
+                                    </div>
+                                    <div className="flex items-center space-x-3">
+                                        <div className="w-24 bg-gray-200 rounded-full h-2">
+                                            <div 
+                                                className="bg-gradient-to-r from-blue-500 to-purple-600 h-2 rounded-full"
+                                                style={{ width: \`\${product.percentage}%\` }}
+                                            ></div>
+                                        </div>
+                                        <span className="text-sm font-medium text-gray-900">{product.percentage}%</span>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};`
+            },
+
+            // === ENHANCED TESTIMONIALS COMPONENTS ===
+            'testimonials-grid': {
+                name: 'Testimonials Grid',
+                category: 'testimonials',
+                description: 'Professional testimonials grid with author photos and company logos',
+                tags: ['testimonials', 'reviews', 'social-proof', 'grid'],
+                code: `const TestimonialsGrid = () => {
+    const testimonials = [
+        {
+            content: "This platform has completely transformed how we handle our workflow. The automation features alone have saved us 20+ hours per week.",
+            author: "Sarah Chen",
+            role: "Product Manager",
+            company: "TechFlow Inc.",
+            avatar: "https://images.unsplash.com/photo-1494790108755-2616b73ea867?w=100",
+            rating: 5
+        },
+        {
+            content: "Outstanding customer support and incredibly intuitive interface. Our team was up and running in minutes, not days.",
+            author: "Michael Rodriguez",
+            role: "CTO",
+            company: "StartupXYZ",
+            avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100",
+            rating: 5
+        },
+        {
+            content: "The ROI has been phenomenal. We've increased productivity by 40% since implementing this solution last quarter.",
+            author: "Emily Thompson",
+            role: "Operations Director",
+            company: "GrowthCorp",
+            avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100",
+            rating: 5
+        },
+        {
+            content: "Seamless integration with our existing tools. The API documentation is excellent and the onboarding process was smooth.",
+            author: "David Park",
+            role: "Lead Developer",
+            company: "CodeMasters",
+            avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100",
+            rating: 5
+        },
+        {
+            content: "Game-changer for our remote team collaboration. The real-time features keep everyone synchronized and productive.",
+            author: "Lisa Wang",
+            role: "Team Lead",
+            company: "RemoteFirst",
+            avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100",
+            rating: 5
+        },
+        {
+            content: "Incredible value for money. The enterprise features rival solutions costing 10x more. Highly recommended!",
+            author: "James Wilson",
+            role: "CFO",
+            company: "FinanceHub",
+            avatar: "https://images.unsplash.com/photo-1560250097-0b93528c311a?w=100",
+            rating: 5
+        }
+    ];
+
+    return (
+        <div className="py-16 px-6 bg-gradient-to-br from-gray-50 to-blue-50">
+            <div className="max-w-6xl mx-auto">
+                <div className="text-center mb-12">
+                    <h2 className="text-4xl font-bold text-gray-900 mb-4">What Our Customers Say</h2>
+                    <p className="text-xl text-gray-600">Join thousands of satisfied customers worldwide</p>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    {testimonials.map((testimonial, index) => (
+                        <div 
+                            key={index}
+                            className="bg-white rounded-2xl p-8 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-2"
+                        >
+                            {/* Rating Stars */}
+                            <div className="flex items-center mb-4">
+                                {[...Array(testimonial.rating)].map((_, i) => (
+                                    <svg key={i} className="w-5 h-5 text-yellow-400 fill-current" viewBox="0 0 24 24">
+                                        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                                    </svg>
+                                ))}
+                            </div>
+                            
+                            {/* Testimonial Content */}
+                            <blockquote className="text-gray-700 mb-6 leading-relaxed">
+                                "{testimonial.content}"
+                            </blockquote>
+                            
+                            {/* Author Info */}
+                            <div className="flex items-center">
+                                <img 
+                                    src={testimonial.avatar} 
+                                    alt={testimonial.author}
+                                    className="w-12 h-12 rounded-full object-cover mr-4"
+                                />
+                                <div>
+                                    <p className="font-semibold text-gray-900">{testimonial.author}</p>
+                                    <p className="text-sm text-gray-600">{testimonial.role}</p>
+                                    <p className="text-sm font-medium text-blue-600">{testimonial.company}</p>
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+                
+                {/* Trust Indicators */}
+                <div className="mt-16 text-center">
+                    <p className="text-gray-600 mb-6">Trusted by teams at</p>
+                    <div className="flex items-center justify-center space-x-8 opacity-60">
+                        {['Google', 'Microsoft', 'Amazon', 'Netflix', 'Spotify'].map((company, index) => (
+                            <div key={index} className="text-2xl font-bold text-gray-400">
+                                {company}
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};`
+            },
+
+            // === ENHANCED HERO COMPONENTS ===
+            'hero-modern-split': {
+                name: 'Modern Split Hero',
+                category: 'hero',
+                description: 'Modern hero section with split layout, CTA buttons, and background elements',
+                tags: ['hero', 'landing', 'split-layout', 'modern'],
+                code: `const ModernSplitHero = () => {
+    return (
+        <div className="relative min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 overflow-hidden">
+            {/* Background Elements */}
+            <div className="absolute inset-0">
+                <div className="absolute top-10 left-10 w-72 h-72 bg-purple-200 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob"></div>
+                <div className="absolute top-10 right-10 w-72 h-72 bg-yellow-200 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-2000"></div>
+                <div className="absolute -bottom-8 left-20 w-72 h-72 bg-pink-200 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-4000"></div>
+            </div>
+            
+            <div className="relative z-10 max-w-7xl mx-auto px-6 py-20">
+                <div className="grid lg:grid-cols-2 gap-12 items-center min-h-screen">
+                    {/* Left Content */}
+                    <div className="text-center lg:text-left">
+                        <div className="mb-6">
+                            <span className="inline-flex items-center px-4 py-2 rounded-full bg-gradient-to-r from-purple-100 to-pink-100 text-purple-800 text-sm font-medium">
+                                🚀 New Product Launch
+                            </span>
+                        </div>
+                        
+                        <h1 className="text-5xl lg:text-6xl font-bold text-gray-900 mb-6 leading-tight">
+                            Build Amazing
+                            <span className="block bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+                                Digital Products
+                            </span>
+                            Faster Than Ever
+                        </h1>
+                        
+                        <p className="text-xl text-gray-600 mb-8 leading-relaxed">
+                            Create, launch, and scale your SaaS products with our comprehensive platform. 
+                            Everything you need to go from idea to revenue in record time.
+                        </p>
+                        
+                        <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
+                            <button className="px-8 py-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold rounded-lg hover:shadow-2xl transform hover:scale-105 transition-all duration-300">
+                                Start Free Trial
+                            </button>
+                            <button className="px-8 py-4 border-2 border-purple-600 text-purple-600 font-bold rounded-lg hover:bg-purple-600 hover:text-white transition-all duration-300">
+                                Watch Demo
+                            </button>
+                        </div>
+                        
+                        <div className="mt-8 flex items-center justify-center lg:justify-start space-x-6">
+                            <div className="flex items-center space-x-2">
+                                <div className="flex -space-x-2">
+                                    {[1,2,3,4].map(i => (
+                                        <img key={i} className="w-8 h-8 rounded-full border-2 border-white" src={\`https://images.unsplash.com/photo-150000000\${i}?w=32&h=32&fit=crop&crop=face\`} alt="" />
+                                    ))}
+                                </div>
+                                <span className="text-sm text-gray-600">Trusted by 50K+ users</span>
+                            </div>
+                            <div className="flex items-center space-x-1">
+                                {[1,2,3,4,5].map(i => (
+                                    <svg key={i} className="w-4 h-4 text-yellow-400 fill-current" viewBox="0 0 24 24">
+                                        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                                    </svg>
+                                ))}
+                                <span className="ml-2 text-sm text-gray-600">4.9/5 rating</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {/* Right Content - Dashboard Preview */}
+                    <div className="relative">
+                        <div className="bg-white rounded-2xl shadow-2xl p-8 transform rotate-3 hover:rotate-0 transition-transform duration-300">
+                            <div className="bg-gray-100 rounded-lg p-6">
+                                <div className="flex items-center justify-between mb-4">
+                                    <h3 className="text-lg font-semibold text-gray-900">Project Dashboard</h3>
+                                    <div className="flex space-x-2">
+                                        <div className="w-3 h-3 bg-red-400 rounded-full"></div>
+                                        <div className="w-3 h-3 bg-yellow-400 rounded-full"></div>
+                                        <div className="w-3 h-3 bg-green-400 rounded-full"></div>
+                                    </div>
+                                </div>
+                                <div className="space-y-3">
+                                    <div className="h-4 bg-gradient-to-r from-purple-200 to-pink-200 rounded"></div>
+                                    <div className="h-4 bg-gradient-to-r from-blue-200 to-cyan-200 rounded w-3/4"></div>
+                                    <div className="h-4 bg-gradient-to-r from-green-200 to-emerald-200 rounded w-1/2"></div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        {/* Floating Elements */}
+                        <div className="absolute -top-4 -right-4 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-lg p-4 shadow-lg animate-bounce">
+                            <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                            </svg>
+                        </div>
+                        
+                        <div className="absolute -bottom-4 -left-4 bg-gradient-to-r from-green-400 to-blue-500 rounded-lg p-4 shadow-lg animate-pulse">
+                            <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};`
             }
+
         };
     }
 
@@ -3503,6 +4036,192 @@ class ReactBitsClient {
             results: results.slice(0, 10),
             total: results.length
         };
+    }
+
+    // Enhanced search with filters
+    searchComponentsAdvanced(query, filters = {}) {
+        const searchTerm = query.toLowerCase();
+        let results = Object.entries(this.components).filter(([key, component]) => {
+            // Text search
+            const textMatch = (
+                key.toLowerCase().includes(searchTerm) ||
+                component.name.toLowerCase().includes(searchTerm) ||
+                component.description.toLowerCase().includes(searchTerm) ||
+                component.category.toLowerCase().includes(searchTerm) ||
+                component.tags?.some(tag => tag.toLowerCase().includes(searchTerm))
+            );
+
+            // Category filter
+            if (filters.category && component.category !== filters.category) {
+                return false;
+            }
+
+            // Complexity filter (based on dependencies count)
+            if (filters.complexity) {
+                const depCount = component.dependencies?.length || 0;
+                if (filters.complexity === 'simple' && depCount > 2) return false;
+                if (filters.complexity === 'complex' && depCount <= 2) return false;
+            }
+
+            // Tag filter
+            if (filters.tags && filters.tags.length > 0) {
+                const hasRequiredTags = filters.tags.every(tag => 
+                    component.tags?.includes(tag)
+                );
+                if (!hasRequiredTags) return false;
+            }
+
+            return textMatch;
+        }).map(([key, component]) => ({ 
+            key, 
+            ...component,
+            score: this.calculateRelevanceScore(key, component, searchTerm)
+        }));
+
+        // Sort by relevance score
+        results.sort((a, b) => b.score - a.score);
+
+        return results;
+    }
+
+    calculateRelevanceScore(key, component, searchTerm) {
+        let score = 0;
+        
+        // Exact key match gets highest score
+        if (key.toLowerCase() === searchTerm) score += 100;
+        else if (key.toLowerCase().includes(searchTerm)) score += 50;
+        
+        // Name match
+        if (component.name.toLowerCase() === searchTerm) score += 80;
+        else if (component.name.toLowerCase().includes(searchTerm)) score += 30;
+        
+        // Description match
+        if (component.description.toLowerCase().includes(searchTerm)) score += 20;
+        
+        // Tag matches
+        component.tags?.forEach(tag => {
+            if (tag.toLowerCase() === searchTerm) score += 40;
+            else if (tag.toLowerCase().includes(searchTerm)) score += 10;
+        });
+        
+        return score;
+    }
+
+    // Generate standalone HTML preview for any component
+    generatePreviewHTML(componentName, props = {}) {
+        const component = this.components[componentName];
+        if (!component) {
+            throw new Error(`Component '${componentName}' not found`);
+        }
+
+        // Clean the component code for injection
+        const cleanedCode = component.code
+            .replace(/interface\s+\w+\s*{[^{}]*(?:{[^{}]*}[^{}]*)*}/gm, '')
+            .replace(/type\s+\w+\s*=\s*[^;\n]+;/gm, '')
+            .replace(/import\s+.*?from\s+['"].*?['"];?\s*/gm, '')
+            .replace(/export\s+default\s+/g, '')
+            .replace(/export\s+/g, '');
+
+        // Generate props string
+        const propsString = Object.keys(props).length > 0 
+            ? Object.entries(props)
+                .map(([key, value]) => `${key}=${JSON.stringify(value)}`)
+                .join(' ')
+            : '';
+
+        // Create complete HTML with all dependencies
+        const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Preview: ${component.name}</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { margin: 0; padding: 20px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+        .preview-container { min-height: 400px; display: flex; align-items: center; justify-content: center; }
+    </style>
+</head>
+<body>
+    <div id="root">
+        <div class="preview-container">
+            <div style="text-align: center; color: #666;">Loading preview...</div>
+        </div>
+    </div>
+    
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+        
+        // Component code
+        ${cleanedCode}
+        
+        // Extract component name from code
+        const componentMatch = cleanedCode.match(/const\\s+(\\w+)\\s*=/);
+        const ComponentName = componentMatch ? componentMatch[1] : 'Component';
+        const Component = eval(ComponentName);
+        
+        // Props for the component
+        const componentProps = ${JSON.stringify(props)};
+        
+        // Render the component
+        const App = () => React.createElement(Component, componentProps);
+        
+        // Mount to DOM
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(React.createElement(App));
+    </script>
+</body>
+</html>`;
+
+        return html;
+    }
+
+    // Generate data URL for iframe preview
+    generatePreviewDataURL(componentName, props = {}) {
+        const html = this.generatePreviewHTML(componentName, props);
+        return 'data:text/html;charset=utf-8,' + encodeURIComponent(html);
+    }
+
+    // Get all available components with enhanced metadata
+    getAllComponentsWithMetadata() {
+        return Object.entries(this.components).map(([key, component]) => ({
+            key,
+            ...component,
+            dependencies: component.dependencies || [],
+            tags: component.tags || [],
+            variants: component.variants || {},
+            hasGenerator: key in this.componentGenerators,
+            complexity: this.getComponentComplexity(component),
+            previewable: true
+        }));
+    }
+
+    getComponentComplexity(component) {
+        const depCount = component.dependencies?.length || 0;
+        const codeLength = component.code?.length || 0;
+        const hasVariants = Object.keys(component.variants || {}).length > 0;
+        
+        if (depCount > 3 || codeLength > 2000 || hasVariants) return 'complex';
+        if (depCount > 1 || codeLength > 1000) return 'medium';
+        return 'simple';
+    }
+
+    // Get components by category with search
+    getComponentsByCategory(category, searchQuery = '') {
+        const categoryComponents = Object.entries(this.components)
+            .filter(([key, component]) => component.category === category)
+            .map(([key, component]) => ({ key, ...component }));
+
+        if (!searchQuery) return categoryComponents;
+
+        return categoryComponents.filter(component => 
+            component.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            component.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            component.tags?.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))
+        );
     }
 }
 

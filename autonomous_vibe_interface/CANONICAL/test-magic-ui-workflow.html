@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Magic UI Debug Test</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            padding: 20px; 
+            background: #f0f0f0;
+        }
+        .test-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background: #45a049; }
+        .results {
+            margin-top: 20px;
+            padding: 10px;
+            background: #f9f9f9;
+            border-radius: 4px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .iframe-container {
+            margin-top: 20px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            height: 600px;
+        }
+        .iframe-container iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            border-radius: 6px;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🎨 Magic UI Debug Test</h1>
+        <p>This page tests the Magic UI workflow to debug the preview functionality.</p>
+        
+        <div>
+            <button onclick="testAPI()">🧪 Test Magic API</button>
+            <button onclick="openIDE()">🎯 Open IDE in Frame</button>
+            <button onclick="clearResults()">🧹 Clear Results</button>
+        </div>
+        
+        <div id="results" class="results">Ready to test...</div>
+        
+        <div class="iframe-container" id="iframe-container" style="display: none;">
+            <iframe id="ide-frame" src="about:blank"></iframe>
+        </div>
+    </div>
+
+    <script>
+        async function testAPI() {
+            const results = document.getElementById('results');
+            results.textContent = '🔄 Testing Magic API...\n';
+            
+            try {
+                const response = await fetch('/api/magic/generate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        prompt: 'simple card component with title and description'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    results.textContent += '✅ API Test Successful!\n';
+                    results.textContent += `📦 Component: ${data.name}\n`;
+                    results.textContent += `📏 Code Length: ${data.code?.length || 0} characters\n`;
+                    results.textContent += `🔧 Source: ${data.source}\n`;
+                    results.textContent += '\n📋 Generated Code Preview:\n';
+                    results.textContent += data.code?.substring(0, 500) + '...\n';
+                } else {
+                    results.textContent += '❌ API Test Failed:\n' + JSON.stringify(data, null, 2);
+                }
+                
+            } catch (error) {
+                results.textContent += '❌ Error testing API:\n' + error.toString();
+            }
+        }
+        
+        function openIDE() {
+            const container = document.getElementById('iframe-container');
+            const iframe = document.getElementById('ide-frame');
+            const results = document.getElementById('results');
+            
+            results.textContent += '\n🎯 Opening IDE in iframe...\n';
+            
+            iframe.src = '/ide';
+            container.style.display = 'block';
+            
+            iframe.onload = function() {
+                results.textContent += '✅ IDE loaded in iframe\n';
+                results.textContent += '👁️ You can now:\n';
+                results.textContent += '   1. Open Magic UI in the IDE\n';
+                results.textContent += '   2. Generate a component\n';
+                results.textContent += '   3. Check browser console for debug logs\n';
+                results.textContent += '   4. Look for "🚨 MagicPreview:" messages\n';
+            };
+            
+            // Listen for console messages from iframe (if possible)
+            window.addEventListener('message', function(event) {
+                if (event.origin === window.location.origin) {
+                    results.textContent += '📨 Message from IDE: ' + JSON.stringify(event.data) + '\n';
+                }
+            });
+        }
+        
+        function clearResults() {
+            document.getElementById('results').textContent = 'Ready to test...';
+        }
+        
+        // Auto-test API on load
+        window.addEventListener('load', function() {
+            setTimeout(testAPI, 1000);
+        });
+    </script>
+</body>
+</html>

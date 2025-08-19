@@ -22,13 +22,15 @@ setInterval(() => {
 
 // General rate limiter
 const rateLimit = (req, res, next) => {
-    // Skip rate limiting for terminal-related endpoints and AI enhancement endpoints
+    // Skip rate limiting for terminal-related endpoints, IDE, AI enhancement, and coaching endpoints
     if (req.path.includes('/terminal') || 
         req.path.includes('/health') || 
         req.path.includes('/commands') ||
         req.path.includes('/claude/suggestions') ||
         req.path.includes('/claude/approvals') ||
-        req.path.includes('/claude/performance')) {
+        req.path.includes('/claude/performance') ||
+        req.path.includes('/claude/coaching') ||
+        req.path.includes('/ide')) {
         return next();
     }
     

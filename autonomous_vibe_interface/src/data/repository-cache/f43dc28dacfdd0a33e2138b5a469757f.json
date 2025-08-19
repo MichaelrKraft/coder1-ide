@@ -1,0 +1,62 @@
+{
+  "repoId": "f43dc28dacfdd0a33e2138b5a469757f",
+  "url": "https://github.com/sveltejs/svelte",
+  "name": "sveltejs/svelte",
+  "analyzedAt": "2025-08-19T20:45:36.579Z",
+  "metadata": {
+    "description": "",
+    "language": "",
+    "stars": 0,
+    "forks": 0
+  },
+  "semantics": {
+    "architecture": {
+      "type": "unknown",
+      "patterns": []
+    },
+    "dependencies": {
+      "dependencies": [],
+      "devDependencies": []
+    },
+    "patterns": {
+      "patterns": []
+    },
+    "conventions": {
+      "conventions": []
+    },
+    "complexity": {
+      "complexity": "medium"
+    },
+    "relationships": {
+      "relationships": []
+    }
+  },
+  "patterns": {
+    "common": [],
+    "framework": [],
+    "design": [],
+    "antipatterns": [],
+    "best_practices": []
+  },
+  "knowledge": {
+    "nodes": [],
+    "edges": [],
+    "clusters": [],
+    "paths": [],
+    "embeddings": {}
+  },
+  "intelligence": {
+    "suggestions": [],
+    "explanations": [],
+    "improvements": [],
+    "examples": [],
+    "documentation": [],
+    "testing": []
+  },
+  "stats": {
+    "fileCount": 0,
+    "patternCount": 5,
+    "suggestionCount": 0,
+    "analysisTime": 1755636336579
+  }
+}

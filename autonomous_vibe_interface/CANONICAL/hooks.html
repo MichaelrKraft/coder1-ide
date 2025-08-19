@@ -1,0 +1,618 @@
+<!-- 
+===============================================================================
+CANONICAL FILE - MODIFY THIS VERSION ONLY
+===============================================================================
+File: hooks.html
+Purpose: Claude Code Hooks Management Interface
+Status: PRODUCTION - Last updated: 2025-01-13
+Claude Agents: This is the OFFICIAL version - do not modify copies elsewhere
+===============================================================================
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>Claude Code Hooks Manager</title>
+    <link rel="stylesheet" href="styles.css?v=<?php echo time(); ?>1754458000">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        /* CODER1 Brand Colors */
+        :root {
+            --coder1-orange: #FF6B35;
+            --coder1-orange-light: #FFA500;
+            --coder1-orange-dark: #E85D2C;
+            --coder1-purple: #8B5CF6;
+            --coder1-purple-light: #A78BFA;
+            --coder1-purple-dark: #7C3AED;
+            --coder1-bg-dark: #1a1a2e;
+            --coder1-bg-darker: #16161a;
+            --coder1-bg-card: rgba(26, 26, 46, 0.8);
+            --coder1-border: rgba(139, 92, 246, 0.3);
+            --coder1-text: #FFA500;
+            --coder1-text-dim: rgba(255, 165, 0, 0.7);
+            --coder1-gradient: linear-gradient(135deg, #FF6B35, #FFA500);
+            --coder1-glow: 0 0 20px rgba(255, 107, 53, 0.5);
+        }
+
+        body {
+            background: var(--coder1-bg-dark);
+            color: var(--coder1-text);
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+        }
+
+        /* Navigation */
+        .nav-container {
+            background: rgba(26, 26, 46, 0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--coder1-border);
+            padding: 1rem 2rem;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .nav-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .nav-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--coder1-orange);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .nav-link {
+            color: var(--coder1-text-dim);
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .nav-link:hover {
+            color: var(--coder1-orange);
+            background: rgba(255, 107, 53, 0.1);
+        }
+
+        /* Main Container */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        /* Header Section */
+        .header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: var(--coder1-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 1rem;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            color: var(--coder1-text-dim);
+            max-width: 600px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+
+        /* Status Cards */
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 3rem;
+        }
+
+        .status-card {
+            background: var(--coder1-bg-card);
+            border: 1px solid var(--coder1-border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            backdrop-filter: blur(10px);
+        }
+
+        .status-card h3 {
+            margin: 0 0 0.5rem 0;
+            color: var(--coder1-orange);
+            font-size: 1.1rem;
+        }
+
+        .status-card .value {
+            font-size: 2rem;
+            font-weight: 600;
+            color: var(--coder1-text);
+            margin-bottom: 0.5rem;
+        }
+
+        .status-card .label {
+            color: var(--coder1-text-dim);
+            font-size: 0.9rem;
+        }
+
+        /* Action Buttons */
+        .actions {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 3rem;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            text-decoration: none;
+        }
+
+        .btn-primary {
+            background: var(--coder1-gradient);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            box-shadow: var(--coder1-glow);
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: rgba(139, 92, 246, 0.2);
+            color: var(--coder1-purple-light);
+            border: 1px solid var(--coder1-purple);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(139, 92, 246, 0.3);
+            color: var(--coder1-purple);
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 2rem;
+            border-bottom: 1px solid var(--coder1-border);
+        }
+
+        .tab {
+            padding: 1rem 2rem;
+            background: none;
+            border: none;
+            color: var(--coder1-text-dim);
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .tab.active {
+            color: var(--coder1-orange);
+            border-bottom-color: var(--coder1-orange);
+        }
+
+        .tab:hover {
+            color: var(--coder1-text);
+        }
+
+        /* Content Sections */
+        .content-section {
+            display: none;
+        }
+
+        .content-section.active {
+            display: block;
+        }
+
+        /* Recommendations */
+        .recommendations {
+            margin-bottom: 3rem;
+        }
+
+        .recommendation-card {
+            background: var(--coder1-bg-card);
+            border: 1px solid var(--coder1-border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            backdrop-filter: blur(10px);
+        }
+
+        .recommendation-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1rem;
+        }
+
+        .recommendation-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--coder1-orange);
+            margin-bottom: 0.5rem;
+        }
+
+        .recommendation-priority {
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        .priority-high {
+            background: rgba(255, 107, 53, 0.2);
+            color: var(--coder1-orange);
+            border: 1px solid var(--coder1-orange);
+        }
+
+        .priority-medium {
+            background: rgba(139, 92, 246, 0.2);
+            color: var(--coder1-purple-light);
+            border: 1px solid var(--coder1-purple);
+        }
+
+        .priority-low {
+            background: rgba(75, 85, 99, 0.2);
+            color: #9CA3AF;
+            border: 1px solid #4B5563;
+        }
+
+        .recommendation-description {
+            color: var(--coder1-text-dim);
+            margin-bottom: 1rem;
+            line-height: 1.5;
+        }
+
+        .recommendation-reason {
+            font-size: 0.9rem;
+            color: var(--coder1-text-dim);
+            font-style: italic;
+            margin-bottom: 1rem;
+        }
+
+        .hook-tags {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            margin-bottom: 1rem;
+        }
+
+        .hook-tag {
+            background: rgba(139, 92, 246, 0.1);
+            color: var(--coder1-purple-light);
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            border: 1px solid var(--coder1-purple);
+        }
+
+        /* Templates Grid */
+        .templates-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .template-card {
+            background: var(--coder1-bg-card);
+            border: 1px solid var(--coder1-border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+
+        .template-card:hover {
+            border-color: var(--coder1-orange);
+            box-shadow: 0 4px 20px rgba(255, 107, 53, 0.1);
+        }
+
+        .template-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+
+        .template-icon {
+            font-size: 1.5rem;
+        }
+
+        .template-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--coder1-orange);
+        }
+
+        .template-description {
+            color: var(--coder1-text-dim);
+            margin-bottom: 1rem;
+            line-height: 1.5;
+        }
+
+        .template-preview {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            font-size: 0.9rem;
+        }
+
+        .preview-when {
+            color: var(--coder1-purple-light);
+            margin-bottom: 0.5rem;
+        }
+
+        .preview-action {
+            color: var(--coder1-orange-light);
+            font-family: monospace;
+            margin-bottom: 0.5rem;
+        }
+
+        .preview-result {
+            color: var(--coder1-text-dim);
+        }
+
+        /* Loading States */
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 3rem;
+            color: var(--coder1-text-dim);
+        }
+
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--coder1-border);
+            border-top: 2px solid var(--coder1-orange);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 0.5rem;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Error States */
+        .error {
+            background: rgba(220, 38, 38, 0.1);
+            border: 1px solid rgba(220, 38, 38, 0.3);
+            color: #FCA5A5;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+        }
+
+        /* Success States */
+        .success {
+            background: rgba(34, 197, 94, 0.1);
+            border: 1px solid rgba(34, 197, 94, 0.3);
+            color: #86EFAC;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+        }
+
+        /* Checkbox Styling */
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        .checkbox {
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border: 2px solid var(--coder1-border);
+            border-radius: 4px;
+            position: relative;
+            cursor: pointer;
+        }
+
+        .checkbox:checked {
+            background: var(--coder1-orange);
+            border-color: var(--coder1-orange);
+        }
+
+        .checkbox:checked::after {
+            content: '✓';
+            position: absolute;
+            top: -2px;
+            left: 2px;
+            color: white;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+
+            .nav-container {
+                padding: 1rem;
+            }
+
+            .nav-content {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .actions {
+                flex-direction: column;
+            }
+
+            .templates-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .status-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <div class="nav-container">
+        <div class="nav-content">
+            <div class="nav-title">
+                <i class="fas fa-hook"></i>
+                Claude Code Hooks
+            </div>
+            <div class="nav-links">
+                <a href="/" class="nav-link">
+                    <i class="fas fa-home"></i>
+                    Home
+                </a>
+                <a href="/ai-monitor" class="nav-link">
+                    <i class="fas fa-chart-bar"></i>
+                    AI Monitor
+                </a>
+                <a href="/ide" class="nav-link">
+                    <i class="fas fa-code"></i>
+                    IDE
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>Claude Code Hooks Manager</h1>
+            <p>Automate your development workflow with intelligent hooks that run commands when Claude Code performs actions. Set up formatting, testing, notifications, and more with just a few clicks.</p>
+        </div>
+
+        <!-- Status Cards -->
+        <div class="status-grid" id="statusGrid">
+            <div class="status-card">
+                <h3>Project Detection</h3>
+                <div class="value" id="projectType">-</div>
+                <div class="label">Detected project type</div>
+            </div>
+            <div class="status-card">
+                <h3>Available Templates</h3>
+                <div class="value" id="templateCount">-</div>
+                <div class="label">Ready-to-use hook templates</div>
+            </div>
+            <div class="status-card">
+                <h3>Active Hooks</h3>
+                <div class="value" id="activeHooks">-</div>
+                <div class="label">Currently configured</div>
+            </div>
+            <div class="status-card">
+                <h3>Recommendations</h3>
+                <div class="value" id="recommendationCount">-</div>
+                <div class="label">Suggested for your project</div>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="actions">
+            <button class="btn btn-primary" id="quickSetupBtn">
+                <i class="fas fa-magic"></i>
+                Quick Setup
+            </button>
+            <button class="btn btn-secondary" id="browseTemplatesBtn">
+                <i class="fas fa-search"></i>
+                Browse Templates
+            </button>
+            <button class="btn btn-secondary" id="manageConfigBtn">
+                <i class="fas fa-cog"></i>
+                Manage Configuration
+            </button>
+        </div>
+
+        <!-- Tabs -->
+        <div class="tabs">
+            <button class="tab active" data-section="recommendations">
+                <i class="fas fa-lightbulb"></i>
+                Smart Recommendations
+            </button>
+            <button class="tab" data-section="templates">
+                <i class="fas fa-puzzle-piece"></i>
+                All Templates
+            </button>
+            <button class="tab" data-section="configuration">
+                <i class="fas fa-file-code"></i>
+                Configuration
+            </button>
+        </div>
+
+        <!-- Content Sections -->
+        
+        <!-- Recommendations Section -->
+        <div class="content-section active" id="recommendations">
+            <div id="recommendationsContent">
+                <div class="loading">
+                    <div class="spinner"></div>
+                    Analyzing your project...
+                </div>
+            </div>
+        </div>
+
+        <!-- Templates Section -->
+        <div class="content-section" id="templates">
+            <div id="templatesContent">
+                <div class="loading">
+                    <div class="spinner"></div>
+                    Loading templates...
+                </div>
+            </div>
+        </div>
+
+        <!-- Configuration Section -->
+        <div class="content-section" id="configuration">
+            <div id="configurationContent">
+                <div class="loading">
+                    <div class="spinner"></div>
+                    Loading configuration...
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/hooks-manager.js"></script>
+</body>
+</html>

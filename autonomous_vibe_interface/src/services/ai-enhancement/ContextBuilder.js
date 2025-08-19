@@ -223,7 +223,18 @@ class ContextBuilder extends EventEmitter {
     handleFileChange(eventType, relativePath) {
         const fullPath = path.join(this.rootPath, relativePath);
         
-        // Debounce analysis
+        // Skip files that shouldn't trigger analysis
+        const skipPatterns = [
+            'server.log', '.log', '.tmp', 'node_modules/', 
+            '.git/', 'build/', 'dist/', '.cache/', 
+            'coverage/', '.nyc_output/', 'public/ide/static/'
+        ];
+        
+        if (skipPatterns.some(pattern => relativePath.includes(pattern))) {
+            return; // Skip analysis for these files
+        }
+        
+        // Debounce analysis - increased to 2 seconds
         if (this.analysisTimeout) {
             clearTimeout(this.analysisTimeout);
         }
@@ -256,7 +267,7 @@ class ContextBuilder extends EventEmitter {
                 context: this.getProjectContext()
             });
             
-        }, 500); // 500ms debounce
+        }, 2000); // 2 second debounce
     }
 
     /**
@@ -287,10 +298,16 @@ class ContextBuilder extends EventEmitter {
             codeStyle: this.detectCodeStyle()
         };
         
-        this.projectContext.patterns = patterns;
-        this.projectContext.lastAnalysis = Date.now();
+        // Only update if patterns actually changed
+        const existingPatterns = this.projectContext.patterns;
+        const patternsChanged = !existingPatterns || 
+            JSON.stringify(patterns) !== JSON.stringify(existingPatterns);
         
-        console.log('🧠 Project patterns updated:', patterns);
+        if (patternsChanged) {
+            this.projectContext.patterns = patterns;
+            this.projectContext.lastAnalysis = Date.now();
+            console.log('🧠 Project patterns updated:', patterns);
+        }
     }
 
     /**
@@ -495,6 +512,148 @@ class ContextBuilder extends EventEmitter {
             components.push(match[2] || match[3]);
         }
         return components.slice(0, 10);
+    }
+
+    /**
+     * Analyze current state for coaching dashboard
+     * Returns comprehensive project analysis for real-time coaching features
+     */
+    async analyzeCurrentState() {
+        try {
+            // Rescan project to get current state
+            await this.scanProject();
+            this.analyzeProject();
+            
+            const fileCount = this.projectContext.structure.size;
+            const fileTypes = Array.from(this.projectContext.fileTypes.entries());
+            
+            // Analyze file patterns
+            const htmlFiles = this.projectContext.fileTypes.get('.html') || 0;
+            const cssFiles = this.projectContext.fileTypes.get('.css') || 0;
+            const jsFiles = (this.projectContext.fileTypes.get('.js') || 0) + 
+                           (this.projectContext.fileTypes.get('.jsx') || 0);
+            
+            // Determine project patterns by analyzing file contents
+            let hasComplexHTML = false;
+            let hasAdvancedCSS = false;
+            let hasComplexJS = false;
+            let hasNavigation = false;
+            let hasInteractivity = false;
+            let hasGoodStructure = false;
+            let isMobileReady = false;
+            let hasUnmatchedTags = false;
+            let hasUnknownPatterns = false;
+            
+            // Analyze file structure for patterns
+            for (const [filePath, fileInfo] of this.projectContext.structure.entries()) {
+                if (fileInfo.type === 'html' && fileInfo.summary) {
+                    if (fileInfo.summary.lines > 50) hasComplexHTML = true;
+                    if (fileInfo.summary.patterns?.includes('navigation') || 
+                        filePath.includes('nav') || 
+                        (fileInfo.summary && typeof fileInfo.summary === 'object' && 
+                         JSON.stringify(fileInfo.summary).includes('nav'))) {
+                        hasNavigation = true;
+                    }
+                }
+                
+                if (fileInfo.type === 'css' && fileInfo.summary) {
+                    if (fileInfo.summary.lines > 100) hasAdvancedCSS = true;
+                    if (typeof fileInfo.summary === 'object' && 
+                        JSON.stringify(fileInfo.summary).includes('media')) {
+                        isMobileReady = true;
+                    }
+                }
+                
+                if (fileInfo.type === 'javascript' && fileInfo.summary) {
+                    if (fileInfo.summary.functions?.length > 5) hasComplexJS = true;
+                    if (fileInfo.summary.patterns?.includes('event-handlers') ||
+                        (typeof fileInfo.summary === 'object' && 
+                         JSON.stringify(fileInfo.summary).includes('addEventListener'))) {
+                        hasInteractivity = true;
+                    }
+                }
+            }
+            
+            // Determine good structure
+            hasGoodStructure = fileCount > 3 && htmlFiles > 0 && (cssFiles > 0 || jsFiles > 0);
+            
+            // Simple heuristics for unknown patterns (complex project structures)
+            hasUnknownPatterns = fileCount > 20 || 
+                               this.projectContext.fileTypes.get('.tsx') > 0 ||
+                               this.projectContext.fileTypes.get('.vue') > 0;
+            
+            return {
+                totalFiles: fileCount,
+                patterns: {
+                    htmlFiles,
+                    cssFiles, 
+                    jsFiles,
+                    hasComplexHTML,
+                    hasAdvancedCSS,
+                    hasComplexJS,
+                    hasNavigation,
+                    hasInteractivity,
+                    hasGoodStructure,
+                    isMobileReady,
+                    hasUnmatchedTags,
+                    hasUnknownPatterns,
+                    architecture: this.projectContext.patterns.architecture,
+                    framework: this.projectContext.patterns.framework,
+                    testingApproach: this.projectContext.patterns.testingApproach,
+                    buildSystem: this.projectContext.patterns.buildSystem
+                },
+                fileTypes: Object.fromEntries(fileTypes),
+                lastAnalysis: new Date().toISOString(),
+                projectHealth: this.calculateProjectHealth()
+            };
+            
+        } catch (error) {
+            console.error('Error analyzing current state:', error);
+            // Return minimal fallback data
+            return {
+                totalFiles: 0,
+                patterns: {
+                    htmlFiles: 0,
+                    cssFiles: 0,
+                    jsFiles: 0,
+                    hasComplexHTML: false,
+                    hasAdvancedCSS: false,
+                    hasComplexJS: false,
+                    hasNavigation: false,
+                    hasInteractivity: false,
+                    hasGoodStructure: false,
+                    isMobileReady: false,
+                    hasUnmatchedTags: false,
+                    hasUnknownPatterns: false,
+                    architecture: 'unknown',
+                    framework: 'unknown', 
+                    testingApproach: 'unknown',
+                    buildSystem: 'unknown'
+                },
+                fileTypes: {},
+                lastAnalysis: new Date().toISOString(),
+                projectHealth: 50
+            };
+        }
+    }
+
+    /**
+     * Calculate project health score for coaching
+     */
+    calculateProjectHealth() {
+        let health = 50; // Base score
+        
+        const fileCount = this.projectContext.structure.size;
+        if (fileCount > 0) health += 10;
+        if (fileCount > 5) health += 10;
+        if (fileCount > 10) health += 10;
+        
+        // Boost for good file organization
+        if ((this.projectContext.fileTypes.get('.html') || 0) > 0) health += 10;
+        if ((this.projectContext.fileTypes.get('.css') || 0) > 0) health += 10;
+        if ((this.projectContext.fileTypes.get('.js') || 0) > 0) health += 5;
+        
+        return Math.min(health, 100);
     }
 
     /**

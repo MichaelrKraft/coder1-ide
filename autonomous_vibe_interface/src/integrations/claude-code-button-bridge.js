@@ -36,6 +36,37 @@ class ClaudeCodeButtonBridge extends EventEmitter {
     }
 
     /**
+     * Validate and ensure session has proper structure
+     */
+    validateSession(session) {
+        if (!session) {
+            console.warn('[Claude Bridge] Invalid session: null or undefined');
+            return false;
+        }
+        
+        // Ensure processes array exists and is valid
+        if (!session.processes) {
+            console.warn(`[Claude Bridge] Session ${session.id || 'unknown'} missing processes array, initializing`);
+            session.processes = [];
+        } else if (!Array.isArray(session.processes)) {
+            console.warn(`[Claude Bridge] Session ${session.id || 'unknown'} processes is not an array, resetting`);
+            session.processes = [];
+        }
+        
+        // Ensure basic properties exist
+        if (!session.id) {
+            console.warn('[Claude Bridge] Session missing ID');
+            return false;
+        }
+        
+        if (!session.startTime) {
+            session.startTime = Date.now();
+        }
+        
+        return true;
+    }
+
+    /**
      * Start Supervision mode - verbose Claude execution
      */
     async startSupervision(prompt, sessionId) {
@@ -122,102 +153,294 @@ class ClaudeCodeButtonBridge extends EventEmitter {
     }
 
     /**
-     * Start Parallel Agents - multiple Claude instances
+     * Start Parallel Agents - using Claude Code sub-agent delegation
      */
-    async startParallelAgents(prompt, sessionId) {
+    async startParallelAgents(prompt, sessionId, options = {}) {
         const id = sessionId || uuidv4();
-        this.logger.log(`🤖 Starting Parallel Agents: ${id}`);
+        this.logger.log(`🤖 Starting Parallel Agents with delegation: ${id}`);
         
         const session = {
             id,
             mode: 'parallel',
             startTime: Date.now(),
             processes: [],
-            agents: []
+            agents: [],
+            preset: options.preset || null
         };
         
         this.activeSessions.set(id, session);
         
-        // Analyze prompt to determine agent types
-        const agents = this.analyzePromptForAgents(prompt);
+        // Determine agents to use
+        let agents;
+        if (options.preset) {
+            agents = this.getPresetAgents(options.preset);
+        } else if (options.agents) {
+            agents = options.agents;
+        } else {
+            agents = this.analyzePromptForAgents(prompt);
+        }
+        
         session.agents = agents;
         
-        // Emit header
+        // Emit header with agent info
         this.emit('output', {
             sessionId: id,
-            data: `${this.colors.bright}${this.colors.magenta}🤖 Parallel Agents Active (${agents.length} agents)${this.colors.reset}\n`
+            data: `${this.colors.bright}${this.colors.magenta}🤖 Delegating to ${agents.length} Sub-Agents${this.colors.reset}\n`
         });
         this.emit('output', {
             sessionId: id,
             data: `${this.colors.dim}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${this.colors.reset}\n`
         });
         
-        // Spawn agents in parallel
+        // Show which agents will be used
         agents.forEach((agent, index) => {
-            const agentSessionId = uuidv4();
-            const agentPrompt = this.createAgentPrompt(agent, prompt);
-            
-            console.log(`[Claude Bridge] Spawning agent ${index + 1}: ${agent.name}`);
-            console.log(`[Claude Bridge] Command: claude "${agentPrompt.substring(0, 50)}..."`);
-            
-            const claude = spawn('claude', [agentPrompt]);
-            session.processes.push(claude);
-            this.processMap.set(claude.pid, { sessionId: id, agentId: index, type: agent.type });
-            
-            // Initial status
             this.emit('output', {
                 sessionId: id,
-                data: `${this.colors.blue}[Agent ${index + 1} - ${agent.name}]${this.colors.reset} 🔄 Starting...\n`
+                data: `${this.colors.cyan}  ${index + 1}. ${agent.name}${this.colors.reset} - ${agent.focus}\n`
             });
+        });
+        
+        this.emit('output', {
+            sessionId: id,
+            data: `${this.colors.dim}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${this.colors.reset}\n\n`
+        });
+        
+        // Create delegation prompt
+        const delegationPrompt = this.createDelegationPrompt(agents, prompt);
+        
+        console.log(`[Claude Bridge] Using delegation for ${agents.length} agents`);
+        console.log(`[Claude Bridge] Agents:`, agents.map(a => a.name).join(', '));
+        
+        // Single Claude process with delegation - pipe prompt to stdin
+        console.log(`[Claude Bridge] Delegation prompt preview:`, delegationPrompt.substring(0, 200) + '...');
+        const claude = spawn('claude', [], { stdio: ['pipe', 'pipe', 'pipe'] });
+        session.processes.push(claude);
+        this.processMap.set(claude.pid, { sessionId: id, type: 'delegation' });
+        
+        // Send the delegation prompt to Claude's stdin
+        claude.stdin.write(delegationPrompt + '\n');
+        claude.stdin.end();
+        
+        // Track which agent is currently responding
+        let currentAgent = null;
+        let agentOutputs = new Map();
+        
+        // Handle stdout
+        claude.stdout.on('data', (data) => {
+            const output = data.toString();
+            console.log(`[Claude Delegation] Raw output:`, output.substring(0, 200));
             
-            // Handle stdout
-            claude.stdout.on('data', (data) => {
-                console.log(`[Claude Agent ${index + 1}] Output:`, data.toString());
-                const lines = data.toString().split('\n');
-                lines.forEach(line => {
-                    if (line.trim()) {
-                        this.emit('output', {
-                            sessionId: id,
-                            data: `${this.colors.blue}[Agent ${index + 1} - ${agent.name}]${this.colors.reset} ${line}\n`
-                        });
+            // Parse output to identify which agent is responding
+            const lines = output.split('\n');
+            lines.forEach((line, index) => {
+                console.log(`[Claude Delegation] Line ${index}:`, line.substring(0, 100));
+                // Check for agent markers - enhanced patterns for better detection
+                const agentMatch = line.match(/\*\*\[([^\]]+)\]:\*\*|\[([^\]]+)\]:|^\*\*([^:]+):\*\*|^([A-Z][a-z]+):/);
+                if (agentMatch) {
+                    // Extract agent name from any of the patterns
+                    const agentName = (agentMatch[1] || agentMatch[2] || agentMatch[3] || agentMatch[4]).toLowerCase();
+                    const matchedAgent = agents.find(a => 
+                        a.name.toLowerCase().includes(agentName) || 
+                        a.type === agentName ||
+                        agentName.includes(a.name.toLowerCase()) ||
+                        agentName.includes(a.type.toLowerCase())
+                    );
+                    
+                    if (matchedAgent) {
+                        currentAgent = matchedAgent;
+                        if (!agentOutputs.has(currentAgent.name)) {
+                            agentOutputs.set(currentAgent.name, []);
+                            // Agent-specific colors and emojis
+                            const agentColor = this.getAgentColor(currentAgent.type);
+                            const agentEmoji = this.getAgentEmoji(currentAgent.type);
+                            this.emit('output', {
+                                sessionId: id,
+                                data: `\n${agentColor}[${currentAgent.name}]${this.colors.reset} ${agentEmoji} Starting analysis...\n`
+                            });
+                        }
                     }
-                });
-            });
-            
-            // Handle stderr
-            claude.stderr.on('data', (data) => {
-                console.error(`[Claude Agent ${index + 1}] Error:`, data.toString());
-                this.emit('output', {
-                    sessionId: id,
-                    data: `${this.colors.red}[Agent ${index + 1} - Error]${this.colors.reset} ${data.toString()}`
-                });
-            });
-            
-            // Handle completion
-            claude.on('close', (code) => {
-                console.log(`[Claude Agent ${index + 1}] Closed with code:`, code);
-                this.emit('output', {
-                    sessionId: id,
-                    data: `${this.colors.green}[Agent ${index + 1} - ${agent.name}]${this.colors.reset} ✅ Completed\n`
-                });
+                }
                 
-                // Check if all agents completed
-                session.completedAgents = (session.completedAgents || 0) + 1;
-                if (session.completedAgents === agents.length) {
+                // Output the line with agent context
+                if (line.trim()) {
+                    const prefix = currentAgent 
+                        ? `${this.getAgentColor(currentAgent.type)}[${currentAgent.name}]${this.colors.reset} `
+                        : `${this.colors.dim}[Coordinator]${this.colors.reset} `;
+                    
                     this.emit('output', {
                         sessionId: id,
-                        data: `\n${this.colors.dim}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${this.colors.reset}\n`
+                        data: `${prefix}${line}\n`
                     });
-                    this.emit('output', {
-                        sessionId: id,
-                        data: `${this.colors.green}✅ All agents completed successfully!${this.colors.reset}\n`
-                    });
-                    this.cleanupSession(id);
+                    
+                    if (currentAgent) {
+                        agentOutputs.get(currentAgent.name).push(line);
+                    }
                 }
             });
         });
         
+        // Handle stderr
+        claude.stderr.on('data', (data) => {
+            const error = data.toString();
+            console.error(`[Claude Delegation] Stderr:`, error);
+            this.emit('output', {
+                sessionId: id,
+                data: `${this.colors.red}[Claude Stderr]${this.colors.reset} ${error}`
+            });
+        });
+        
+        // Handle process errors
+        claude.on('error', (error) => {
+            console.error(`[Claude Delegation] Process error:`, error);
+            this.emit('output', {
+                sessionId: id,
+                data: `${this.colors.red}[Process Error]${this.colors.reset} ${error.message}\n`
+            });
+        });
+        
+        // Handle completion
+        claude.on('close', (code) => {
+            console.log(`[Claude Delegation] Closed with code:`, code);
+            
+            // Show summary of agent contributions
+            this.emit('output', {
+                sessionId: id,
+                data: `\n${this.colors.dim}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${this.colors.reset}\n`
+            });
+            
+            if (agentOutputs.size > 0) {
+                this.emit('output', {
+                    sessionId: id,
+                    data: `${this.colors.green}✅ Sub-agent delegation completed${this.colors.reset}\n`
+                });
+                this.emit('output', {
+                    sessionId: id,
+                    data: `${this.colors.cyan}📊 Agent Contributions:${this.colors.reset}\n`
+                });
+                
+                agentOutputs.forEach((lines, agentName) => {
+                    this.emit('output', {
+                        sessionId: id,
+                        data: `  • ${agentName}: ${lines.length} responses\n`
+                    });
+                });
+            } else {
+                this.emit('output', {
+                    sessionId: id,
+                    data: `${this.colors.green}✅ Task completed${this.colors.reset}\n`
+                });
+            }
+            
+            this.cleanupSession(id);
+        });
+        
         return id;
+    }
+
+    /**
+     * Get agents for a preset configuration
+     */
+    getPresetAgents(presetName) {
+        const presets = {
+            'frontend-trio': [
+                { type: 'frontend-specialist', name: 'Frontend Specialist', focus: 'UI/UX and React components' },
+                { type: 'architect', name: 'Architect', focus: 'Component architecture' },
+                { type: 'optimizer', name: 'Optimizer', focus: 'Performance and accessibility' }
+            ],
+            'backend-squad': [
+                { type: 'backend-specialist', name: 'Backend Specialist', focus: 'API and server logic' },
+                { type: 'architect', name: 'Architect', focus: 'System architecture' },
+                { type: 'optimizer', name: 'Optimizer', focus: 'Database and performance' }
+            ],
+            'full-stack': [
+                { type: 'architect', name: 'Architect', focus: 'Full system design' },
+                { type: 'frontend-specialist', name: 'Frontend', focus: 'UI implementation' },
+                { type: 'backend-specialist', name: 'Backend', focus: 'API implementation' }
+            ],
+            'debug-force': [
+                { type: 'debugger', name: 'Debugger', focus: 'Issue analysis' },
+                { type: 'implementer', name: 'Implementer', focus: 'Fix implementation' },
+                { type: 'optimizer', name: 'Optimizer', focus: 'Prevention strategies' }
+            ]
+        };
+        
+        return presets[presetName] || presets['full-stack'];
+    }
+
+    /**
+     * Create delegation prompt for sub-agents
+     */
+    createDelegationPrompt(agents, originalPrompt) {
+        const agentDescriptions = agents.map(agent => {
+            const personality = this.getAgentPersonality(agent.type);
+            return `- **${agent.name.toUpperCase()}**: ${personality}`;
+        }).join('\n');
+        
+        return `You must respond as a team of specialized AI agents. Each agent has a unique voice and expertise. You MUST provide separate responses from each agent.
+
+AGENTS:
+${agentDescriptions}
+
+TASK: ${originalPrompt}
+
+CRITICAL REQUIREMENTS:
+1. Respond as ALL agents listed above
+2. Use EXACT format: **[AGENT-NAME]:** for each response
+3. Each agent must have a DIFFERENT perspective - no repetition
+4. Keep each response 2-3 sentences maximum
+5. Show distinct personalities and expertise areas
+
+EXAMPLE FORMAT:
+**[ARCHITECT]:** From an architectural perspective, this requires...
+**[IMPLEMENTER]:** Here's how to implement this...
+**[OPTIMIZER]:** To optimize this...
+
+Begin your multi-agent response now:`;
+    }
+
+    /**
+     * Get agent personality description
+     */
+    getAgentPersonality(agentType) {
+        const personalities = {
+            'architect': 'Strategic system designer who starts with "From an architectural perspective..." and focuses on structure, scalability, and design patterns.',
+            'implementer': 'Hands-on developer who starts with "Here\'s how to implement this..." and provides concrete coding solutions.',
+            'optimizer': 'Performance expert who starts with "To optimize this..." and focuses on efficiency, quality, and best practices.',
+            'frontend': 'UI/UX specialist focused on React components, styling, and user experience.',
+            'backend': 'Server-side expert focused on APIs, databases, and system integration.',
+            'debugger': 'Problem solver focused on identifying and fixing issues, errors, and bugs.'
+        };
+        return personalities[agentType.toLowerCase()] || 'General development specialist';
+    }
+
+    /**
+     * Get agent-specific color for terminal output
+     */
+    getAgentColor(agentType) {
+        const colorMap = {
+            'architect': this.colors.blue,
+            'implementer': this.colors.green,
+            'optimizer': this.colors.yellow,
+            'frontend': this.colors.magenta,
+            'backend': this.colors.cyan,
+            'debugger': this.colors.red
+        };
+        return colorMap[agentType.toLowerCase()] || this.colors.blue;
+    }
+
+    /**
+     * Get agent-specific emoji for terminal output
+     */
+    getAgentEmoji(agentType) {
+        const emojiMap = {
+            'architect': '🏗️',
+            'implementer': '⚡',
+            'optimizer': '🚀',
+            'frontend': '🎨',
+            'backend': '⚙️',
+            'debugger': '🔧'
+        };
+        return emojiMap[agentType.toLowerCase()] || '🤖';
     }
 
     /**
@@ -299,12 +522,26 @@ class ClaudeCodeButtonBridge extends EventEmitter {
             throw new Error(`Session ${sessionId} not found`);
         }
         
-        // Kill all processes
-        session.processes.forEach(proc => {
-            if (!proc.killed) {
-                proc.kill('SIGTERM');
-            }
-        });
+        // Validate session structure before processing
+        if (!this.validateSession(session)) {
+            console.error(`[Claude Bridge] Cannot stop session ${sessionId}: invalid session structure`);
+            return;
+        }
+        
+        // Kill all processes - with defensive null checking
+        if (session.processes && Array.isArray(session.processes)) {
+            session.processes.forEach(proc => {
+                if (proc && !proc.killed) {
+                    try {
+                        proc.kill('SIGTERM');
+                    } catch (error) {
+                        console.warn(`[Claude Bridge] Failed to kill process ${proc.pid}:`, error.message);
+                    }
+                }
+            });
+        } else {
+            console.warn(`[Claude Bridge] Session ${sessionId} has invalid processes array:`, session.processes);
+        }
         
         this.emit('output', {
             sessionId,
@@ -321,29 +558,55 @@ class ClaudeCodeButtonBridge extends EventEmitter {
         const promptLower = prompt.toLowerCase();
         const agents = [];
         
-        // Detect needed agents based on prompt content
-        if (promptLower.includes('frontend') || promptLower.includes('ui') || 
-            promptLower.includes('react') || promptLower.includes('component')) {
-            agents.push({ type: 'frontend', name: 'Frontend', focus: 'UI components and styling' });
+        console.log(`[analyzePromptForAgents] Analyzing prompt: "${prompt.substring(0, 50)}..."`);
+        
+        // Enhanced context detection with more keywords
+        const contextKeywords = {
+            architecture: ['design', 'architecture', 'system', 'structure', 'scalable', 'components', 'patterns'],
+            implementation: ['implement', 'code', 'write', 'build', 'create', 'develop', 'function'],
+            optimization: ['optimize', 'performance', 'slow', 'efficient', 'best practices', 'refactor', 'speed'],
+            frontend: ['frontend', 'ui', 'react', 'component', 'jsx', 'css', 'styling', 'interface'],
+            backend: ['backend', 'api', 'server', 'endpoint', 'database', 'auth', 'middleware'],
+            debugging: ['debug', 'fix', 'error', 'bug', 'issue', 'problem', 'troubleshoot']
+        };
+        
+        // Check for specialized contexts first
+        for (const [agentType, keywords] of Object.entries(contextKeywords)) {
+            if (keywords.some(keyword => promptLower.includes(keyword))) {
+                switch (agentType) {
+                    case 'architecture':
+                        if (!agents.find(a => a.type === 'architect')) {
+                            agents.push({ type: 'architect', name: 'Architect', focus: 'System design and architecture' });
+                        }
+                        break;
+                    case 'implementation':
+                        if (!agents.find(a => a.type === 'implementer')) {
+                            agents.push({ type: 'implementer', name: 'Implementer', focus: 'Code implementation and development' });
+                        }
+                        break;
+                    case 'optimization':
+                        if (!agents.find(a => a.type === 'optimizer')) {
+                            agents.push({ type: 'optimizer', name: 'Optimizer', focus: 'Performance and quality optimization' });
+                        }
+                        break;
+                    case 'frontend':
+                        agents.push({ type: 'frontend', name: 'Frontend Specialist', focus: 'UI components and styling' });
+                        break;
+                    case 'backend':
+                        agents.push({ type: 'backend', name: 'Backend Specialist', focus: 'API and server logic' });
+                        break;
+                    case 'debugging':
+                        agents.push({ type: 'debugger', name: 'Debugger', focus: 'Issue analysis and troubleshooting' });
+                        break;
+                }
+            }
         }
         
-        if (promptLower.includes('backend') || promptLower.includes('api') || 
-            promptLower.includes('server') || promptLower.includes('endpoint')) {
-            agents.push({ type: 'backend', name: 'Backend', focus: 'API and server logic' });
-        }
+        console.log(`[analyzePromptForAgents] Detected ${agents.length} context-specific agents`);
         
-        if (promptLower.includes('database') || promptLower.includes('schema') || 
-            promptLower.includes('migration') || promptLower.includes('sql')) {
-            agents.push({ type: 'database', name: 'Database', focus: 'Schema and data modeling' });
-        }
-        
-        if (promptLower.includes('test') || promptLower.includes('testing') || 
-            promptLower.includes('spec')) {
-            agents.push({ type: 'testing', name: 'Testing', focus: 'Test coverage and quality' });
-        }
-        
-        // Default to general agents if none detected
+        // Default to core trio if no specific context detected
         if (agents.length === 0) {
+            console.log(`[analyzePromptForAgents] No specific context detected, using core trio`);
             agents.push(
                 { type: 'architect', name: 'Architect', focus: 'System design and structure' },
                 { type: 'implementer', name: 'Implementer', focus: 'Core implementation' },
@@ -351,6 +614,7 @@ class ClaudeCodeButtonBridge extends EventEmitter {
             );
         }
         
+        console.log(`[analyzePromptForAgents] Returning ${agents.length} agents:`, agents.map(a => a.name));
         return agents;
     }
 
@@ -468,13 +732,22 @@ Focus specifically on your area of expertise and provide implementation details 
     cleanupSession(sessionId) {
         const session = this.activeSessions.get(sessionId);
         if (session) {
+            // Validate session structure before cleanup
+            this.validateSession(session);
+            
             session.endTime = Date.now();
             session.duration = session.endTime - session.startTime;
             
-            // Clear process map
-            session.processes.forEach(proc => {
-                this.processMap.delete(proc.pid);
-            });
+            // Clear process map - with defensive null checking
+            if (session.processes && Array.isArray(session.processes)) {
+                session.processes.forEach(proc => {
+                    if (proc && proc.pid) {
+                        this.processMap.delete(proc.pid);
+                    }
+                });
+            } else {
+                console.warn(`[Claude Bridge] Session ${sessionId} cleanup: invalid processes array:`, session.processes);
+            }
             
             this.activeSessions.delete(sessionId);
             this.emit('sessionComplete', { sessionId, duration: session.duration });

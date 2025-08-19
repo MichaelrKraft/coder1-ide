@@ -1,0 +1,62 @@
+{
+  "repoId": "bd03955396ace96cd6bb3a9f8b96e95a",
+  "url": "https://github.com/remix-run/remix",
+  "name": "remix-run/remix",
+  "analyzedAt": "2025-08-19T20:46:21.586Z",
+  "metadata": {
+    "description": "",
+    "language": "",
+    "stars": 0,
+    "forks": 0
+  },
+  "semantics": {
+    "architecture": {
+      "type": "unknown",
+      "patterns": []
+    },
+    "dependencies": {
+      "dependencies": [],
+      "devDependencies": []
+    },
+    "patterns": {
+      "patterns": []
+    },
+    "conventions": {
+      "conventions": []
+    },
+    "complexity": {
+      "complexity": "medium"
+    },
+    "relationships": {
+      "relationships": []
+    }
+  },
+  "patterns": {
+    "common": [],
+    "framework": [],
+    "design": [],
+    "antipatterns": [],
+    "best_practices": []
+  },
+  "knowledge": {
+    "nodes": [],
+    "edges": [],
+    "clusters": [],
+    "paths": [],
+    "embeddings": {}
+  },
+  "intelligence": {
+    "suggestions": [],
+    "explanations": [],
+    "improvements": [],
+    "examples": [],
+    "documentation": [],
+    "testing": []
+  },
+  "stats": {
+    "fileCount": 0,
+    "patternCount": 5,
+    "suggestionCount": 0,
+    "analysisTime": 1755636381586
+  }
+}

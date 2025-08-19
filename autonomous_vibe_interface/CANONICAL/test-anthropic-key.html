@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Anthropic API Key Test</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+        }
+        .info-box {
+            background: #e8f4fd;
+            border: 1px solid #bee5ff;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+        }
+        .warning-box {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+        }
+        .error-box {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+        }
+        input[type="password"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+            margin-bottom: 10px;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 4px;
+            display: none;
+        }
+        .result.success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+            display: block;
+        }
+        .result.error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+            display: block;
+        }
+        code {
+            background: #f4f4f4;
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔑 Anthropic API Key Information</h1>
+        
+        <div class="info-box">
+            <h3>ℹ️ What you need to know:</h3>
+            <ul>
+                <li>The Claude Code SDK uses your <strong>regular Anthropic API key</strong></li>
+                <li>This is the same key you use for the Anthropic API</li>
+                <li>Get your key from <a href="https://console.anthropic.com/" target="_blank">console.anthropic.com</a></li>
+                <li>Keys typically start with <code>sk-ant-</code></li>
+            </ul>
+        </div>
+
+        <div class="warning-box">
+            <h3>⚠️ Common Issues:</h3>
+            <ul>
+                <li><strong>Invalid API key error:</strong> Usually means the key is expired or has no credits</li>
+                <li><strong>No "Claude Code" specific key:</strong> Just use your regular Anthropic API key</li>
+                <li><strong>Old format keys:</strong> Some older keys may not work with the SDK</li>
+            </ul>
+        </div>
+
+        <h2>Test Your API Key</h2>
+        <p>Enter your Anthropic API key below to test if it works:</p>
+        
+        <input type="password" id="apiKey" placeholder="sk-ant-api03-..." />
+        <button onclick="testKey()">Test API Key</button>
+        
+        <div id="result" class="result"></div>
+
+        <h2>Debugging Information</h2>
+        <div class="error-box">
+            <p>If your key starts with <code>sk-ant-</code> but still shows "Invalid API key", it likely means:</p>
+            <ol>
+                <li>The key has expired</li>
+                <li>The key has no remaining credits</li>
+                <li>The key was revoked</li>
+                <li>There's a typo in the key</li>
+            </ol>
+            <p><strong>Solution:</strong> Generate a new API key from your Anthropic console.</p>
+        </div>
+    </div>
+
+    <script>
+        async function testKey() {
+            const apiKey = document.getElementById('apiKey').value;
+            const resultDiv = document.getElementById('result');
+            
+            if (!apiKey) {
+                resultDiv.className = 'result error';
+                resultDiv.innerHTML = '❌ Please enter an API key';
+                return;
+            }
+            
+            // Basic format check
+            if (!apiKey.startsWith('sk-ant-')) {
+                resultDiv.className = 'result error';
+                resultDiv.innerHTML = `❌ Your key starts with "${apiKey.substring(0, 10)}..." but Anthropic keys should start with "sk-ant-"`;
+                return;
+            }
+            
+            resultDiv.className = 'result success';
+            resultDiv.innerHTML = `✅ Your key format looks correct! It starts with "${apiKey.substring(0, 15)}..."<br><br>
+                <strong>Next steps:</strong><br>
+                1. Use this key in the Coder1 platform settings<br>
+                2. If you still get "Invalid API key" errors, the key itself may be invalid<br>
+                3. Try generating a fresh key from console.anthropic.com`;
+        }
+    </script>
+</body>
+</html>

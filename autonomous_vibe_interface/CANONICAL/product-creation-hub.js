@@ -1621,7 +1621,9 @@ Please analyze this PRD and help me build this project step by step.`;
             prd: this.prdDocument ? {
                 title: this.prdDocument.title,
                 content: this.prdDocument.content,
-                metadata: this.prdDocument.metadata
+                metadata: this.prdDocument.metadata,
+                technical_specs: this.prdDocument.technical_specs || [],
+                description: this.prdDocument.description || this.prdDocument.content
             } : null,
             wireframes: this.wireframes,
             consultation: this.consultationResult,
@@ -1631,11 +1633,12 @@ Please analyze this PRD and help me build this project step by step.`;
             status: 'ready-for-development'
         };
         
-        // Store in localStorage for IDE access
+        // Store in localStorage for IDE access (both keys for compatibility)
         localStorage.setItem('productCreationProject', JSON.stringify(projectData));
+        localStorage.setItem('prd_transfer_data', JSON.stringify(projectData)); // Key that IDE expects
         localStorage.setItem('projectTransferReady', 'true');
         
-        console.log('Project data prepared for IDE transfer:', projectData);
+        console.log('✅ Project data prepared for IDE transfer with both localStorage keys:', projectData);
     }
     
     enterIDE() {

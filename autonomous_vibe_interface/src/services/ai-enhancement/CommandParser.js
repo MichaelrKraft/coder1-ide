@@ -43,9 +43,9 @@ class CommandParser extends EventEmitter {
                     /infinite\s+(?:mode\s+)?(?:for\s+|on\s+)?(.+)/i
                 ],
                 supervision: [
-                    /(?:supervise|monitor|oversee)\s+(?:the\s+)?(.+)/i,
-                    /(?:start|enable)\s+supervision\s+(?:mode\s+)?(?:for\s+|on\s+)?(.+)/i,
-                    /(?:watch|track)\s+(?:the\s+)?(?:progress\s+of\s+)?(.+)/i
+                    /(?:start|enable)\s+supervision\s+mode/i,
+                    /(?:activate|turn\s+on)\s+supervision/i,
+                    /supervision\s+mode\s+on/i
                 ]
             },
             

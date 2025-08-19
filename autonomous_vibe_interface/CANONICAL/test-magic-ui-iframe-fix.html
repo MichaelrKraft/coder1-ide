@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Magic UI iframe Fix Test</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            padding: 20px; 
+            background: #1a1a1a;
+            color: #fff;
+        }
+        .test-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: #2a2a2a;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background: #45a049; }
+        .results {
+            margin-top: 20px;
+            padding: 10px;
+            background: #1a1a1a;
+            border-radius: 4px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid #444;
+        }
+        .iframe-container {
+            margin-top: 20px;
+            border: 2px solid #444;
+            border-radius: 8px;
+            height: 600px;
+        }
+        .iframe-container iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            border-radius: 6px;
+            background: white;
+        }
+        .success { color: #4CAF50; }
+        .error { color: #f44336; }
+        .info { color: #2196F3; }
+        .warning { color: #ff9800; }
+        h2 { color: #4CAF50; }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🎨 Magic UI iframe Fix Test</h1>
+        <p class="info">This page tests the iframe sandbox permissions and rendering fixes.</p>
+        
+        <h2>🔧 Fixes Applied:</h2>
+        <ul>
+            <li>✅ iframe sandbox permissions expanded (allow-scripts, allow-same-origin, allow-forms, allow-popups, allow-modals)</li>
+            <li>✅ Using srcdoc instead of data URL for better reliability</li>
+            <li>✅ React context properly initialized in iframe</li>
+            <li>✅ Enhanced error handling and debugging</li>
+        </ul>
+        
+        <div>
+            <button onclick="testAPI()">🧪 Test Magic API</button>
+            <button onclick="testIframeRendering()">🖼️ Test iframe Rendering</button>
+            <button onclick="openIDE()">🎯 Open IDE</button>
+            <button onclick="clearResults()">🧹 Clear Results</button>
+        </div>
+        
+        <div id="results" class="results">Ready to test...</div>
+        
+        <div class="iframe-container" id="iframe-container" style="display: none;">
+            <iframe id="test-frame" srcdoc="" sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals"></iframe>
+        </div>
+    </div>
+
+    <script>
+        async function testAPI() {
+            const results = document.getElementById('results');
+            results.innerHTML = '<span class="info">🔄 Testing Magic API...</span>\n';
+            
+            try {
+                const response = await fetch('/api/magic/generate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        prompt: 'simple card component with title and description'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    results.innerHTML += '<span class="success">✅ API Test Successful!</span>\n';
+                    results.innerHTML += '<span class="info">📦 Component: ' + data.name + '</span>\n';
+                    results.innerHTML += '<span class="info">📏 Code Length: ' + (data.code?.length || 0) + ' characters</span>\n';
+                    results.innerHTML += '<span class="info">🔧 Source: ' + data.source + '</span>\n';
+                    
+                    // Store for iframe test
+                    window.lastGeneratedCode = data.code;
+                    window.lastComponentName = data.name;
+                    
+                    results.innerHTML += '\n<span class="success">✅ Component stored for iframe test</span>\n';
+                } else {
+                    results.innerHTML += '<span class="error">❌ API Test Failed:</span>\n' + JSON.stringify(data, null, 2);
+                }
+                
+            } catch (error) {
+                results.innerHTML += '<span class="error">❌ Error testing API:</span>\n' + error.toString();
+            }
+        }
+        
+        function testIframeRendering() {
+            const results = document.getElementById('results');
+            const container = document.getElementById('iframe-container');
+            const iframe = document.getElementById('test-frame');
+            
+            if (!window.lastGeneratedCode) {
+                results.innerHTML += '\n<span class="warning">⚠️ Please test API first to generate a component</span>\n';
+                return;
+            }
+            
+            results.innerHTML += '\n<span class="info">🖼️ Testing iframe rendering with sandbox permissions...</span>\n';
+            
+            // Clean the component code (similar to MagicPreview.tsx)
+            const cleanedCode = window.lastGeneratedCode
+                .replace(/interface\s+\w+\s*{[^{}]*(?:{[^{}]*}[^{}]*)*}/gm, '')
+                .replace(/type\s+\w+\s*=\s*[^;\n]+;/gm, '')
+                .replace(/:\s*(string|number|boolean|any|void|null|undefined|object|\w+(?:\[\])?|{[^}]*}|\([^)]*\)\s*=>\s*\w+)\s*([,);=\n])/g, '$2')
+                .replace(/<[^>]+>/g, '')
+                .replace(/\s+as\s+\w+/g, '')
+                .replace(/:\s*(?:React\.)?FC(?:<[^>]*>)?/g, '')
+                .replace(/^import\s+.*?from\s+['"].*?['"];?\s*$/gm, '')
+                .replace(/^export\s+default\s+/gm, '')
+                .replace(/^export\s+/gm, '');
+            
+            const htmlContent = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Component Preview</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { 
+            margin: 0; 
+            padding: 20px; 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+    <div id="error" style="display: none;"></div>
+    
+    <script type="text/babel">
+        // Ensure React is available globally
+        window.React = React;
+        window.ReactDOM = ReactDOM;
+        const { useState, useEffect, useRef } = React;
+        
+        console.log('🎨 Starting component rendering...');
+        console.log('🔧 React available:', typeof React);
+        console.log('🔧 ReactDOM available:', typeof ReactDOM);
+        
+        try {
+            // Component code
+            ${cleanedCode}
+            
+            console.log('✅ Component code executed');
+            
+            if (typeof ${window.lastComponentName} === 'undefined') {
+                throw new Error('Component "${window.lastComponentName}" is not defined');
+            }
+            
+            // Create wrapper app
+            const App = () => {
+                return React.createElement(
+                    'div',
+                    { style: { padding: '20px' } },
+                    React.createElement(${window.lastComponentName})
+                );
+            };
+            
+            // Render using React 18 createRoot API
+            const root = ReactDOM.createRoot(document.getElementById('root'));
+            root.render(React.createElement(App));
+            console.log('✅ Component rendered successfully');
+            
+            // Send success message to parent
+            window.parent.postMessage({ type: 'render-success', component: '${window.lastComponentName}' }, '*');
+            
+        } catch (error) {
+            console.error('❌ Component render error:', error);
+            const errorDiv = document.getElementById('error');
+            errorDiv.style.display = 'block';
+            errorDiv.innerHTML = '<div style="background: #fee2e2; padding: 20px; border-radius: 8px;"><h3>Error:</h3><p>' + error.message + '</p></div>';
+            
+            // Send error message to parent
+            window.parent.postMessage({ type: 'render-error', error: error.message }, '*');
+        }
+    </script>
+</body>
+</html>`;
+            
+            // Set iframe content using srcdoc
+            iframe.srcdoc = htmlContent;
+            container.style.display = 'block';
+            
+            results.innerHTML += '<span class="success">✅ iframe content set with srcdoc</span>\n';
+            results.innerHTML += '<span class="info">📋 Sandbox: allow-scripts allow-same-origin allow-forms allow-popups allow-modals</span>\n';
+            results.innerHTML += '<span class="info">👁️ Check iframe below for rendered component</span>\n';
+            
+            // Listen for messages from iframe
+            window.addEventListener('message', function(event) {
+                if (event.data.type === 'render-success') {
+                    results.innerHTML += '<span class="success">✅ Component rendered successfully in iframe: ' + event.data.component + '</span>\n';
+                } else if (event.data.type === 'render-error') {
+                    results.innerHTML += '<span class="error">❌ iframe render error: ' + event.data.error + '</span>\n';
+                }
+            });
+        }
+        
+        function openIDE() {
+            window.open('/ide', '_blank');
+        }
+        
+        function clearResults() {
+            document.getElementById('results').innerHTML = 'Ready to test...';
+            document.getElementById('iframe-container').style.display = 'none';
+        }
+        
+        // Auto-test on load
+        window.addEventListener('load', async function() {
+            await testAPI();
+            setTimeout(() => testIframeRendering(), 1000);
+        });
+    </script>
+</body>
+</html>

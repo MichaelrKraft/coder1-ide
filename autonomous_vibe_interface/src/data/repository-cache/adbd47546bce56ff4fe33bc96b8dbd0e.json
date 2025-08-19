@@ -1,0 +1,62 @@
+{
+  "repoId": "adbd47546bce56ff4fe33bc96b8dbd0e",
+  "url": "https://github.com/clerk/javascript",
+  "name": "clerk/javascript",
+  "analyzedAt": "2025-08-19T20:47:06.592Z",
+  "metadata": {
+    "description": "",
+    "language": "",
+    "stars": 0,
+    "forks": 0
+  },
+  "semantics": {
+    "architecture": {
+      "type": "unknown",
+      "patterns": []
+    },
+    "dependencies": {
+      "dependencies": [],
+      "devDependencies": []
+    },
+    "patterns": {
+      "patterns": []
+    },
+    "conventions": {
+      "conventions": []
+    },
+    "complexity": {
+      "complexity": "medium"
+    },
+    "relationships": {
+      "relationships": []
+    }
+  },
+  "patterns": {
+    "common": [],
+    "framework": [],
+    "design": [],
+    "antipatterns": [],
+    "best_practices": []
+  },
+  "knowledge": {
+    "nodes": [],
+    "edges": [],
+    "clusters": [],
+    "paths": [],
+    "embeddings": {}
+  },
+  "intelligence": {
+    "suggestions": [],
+    "explanations": [],
+    "improvements": [],
+    "examples": [],
+    "documentation": [],
+    "testing": []
+  },
+  "stats": {
+    "fileCount": 0,
+    "patternCount": 5,
+    "suggestionCount": 0,
+    "analysisTime": 1755636426592
+  }
+}

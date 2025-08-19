@@ -66,7 +66,16 @@ class SupervisionEngine extends EventEmitter {
                 /which.*file/i,
                 /where.*should.*i/i,
                 /how.*should.*i/i,
-                /what.*next/i
+                /what.*next/i,
+                /does.*this.*look.*good/i,
+                /does.*this.*plan/i,
+                /is.*this.*okay/i,
+                /would.*you.*like/i,
+                /shall.*i.*proceed/i,
+                /should.*i.*continue/i,
+                /any.*preferences/i,
+                /what.*do.*you.*think/i,
+                /\?$/  // Any line ending with a question mark
             ],
             errorPatterns: [
                 /error/i,
@@ -86,6 +95,14 @@ class SupervisionEngine extends EventEmitter {
             successfulGuidance: 0,
             sessionStartTime: Date.now()
         };
+        
+        // Rate limiting for policy compliance
+        this.lastResponseTime = 0;
+        this.MIN_RESPONSE_INTERVAL = 3000; // 3 seconds minimum between responses
+        
+        // Track recent questions to avoid duplicates and loops
+        this.recentQuestions = new Set();
+        this.recentQuestionTimeout = 5000; // 5 seconds
         
         this.logger.log('🔍 SupervisionEngine: Initialized comprehensive AI project supervisor');
     }
@@ -194,46 +211,28 @@ class SupervisionEngine extends EventEmitter {
     }
 
     /**
-     * Phase 3: Launch Claude Code with real-time monitoring
+     * Phase 3: Monitor existing Claude session instead of launching new one
      */
     async launchClaudeCodeWithMonitoring(options = {}) {
-        this.logger.log('🚀 SupervisionEngine: Launching Claude Code with monitoring');
+        this.logger.log('🚀 SupervisionEngine: Monitoring existing Claude session');
         
-        // Prepare Claude Code command
-        const claudeArgs = [
-            '--project-path', this.projectPath,
-            '--dangerously-skip-permissions', // We'll handle permissions through supervision
-            ...(options.additionalArgs || [])
-        ];
+        // Don't spawn a new process - Claude is already running in terminal
+        // Instead, we'll monitor the terminal output through the existing connection
+        this.claudeCodeProcess = null; // No separate process needed
         
-        // Launch Claude Code process
-        this.claudeCodeProcess = spawn('claude-code', claudeArgs, {
-            cwd: this.projectPath,
-            stdio: ['pipe', 'pipe', 'pipe'],
-            env: {
-                ...process.env,
-                ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY,
-                NODE_ENV: 'production'
-            }
-        });
+        // Skip trying to send initial prompt since Claude is already interactive
+        this.logger.log('✅ Monitoring Claude session in terminal');
         
-        // Handle launch errors
-        this.claudeCodeProcess.on('error', (error) => {
-            if (error.code === 'ENOENT') {
-                this.handleClaudeCodeNotFound();
-            } else {
-                this.handleClaudeCodeError(error);
-            }
-        });
-        
-        // Set up real-time output monitoring
-        this.setupOutputMonitoring();
-        
-        // Send initial prompt to Claude Code
-        await this.sendInitialPrompt();
-        
+        // Mark as launched since Claude is already running
         this.advanceWorkflowPhase('claude_code_launched');
-        this.logger.log('✅ Claude Code launched with active supervision');
+        
+        // Emit event to indicate supervision is ready
+        this.emit('supervisionReady', {
+            sessionId: this.sessionId,
+            mode: 'terminal_monitoring'
+        });
+        
+        return true;
     }
 
     /**
@@ -248,35 +247,68 @@ class SupervisionEngine extends EventEmitter {
         }, 2000); // Check every 2 seconds
         
         // Set up workflow timeout monitoring
-        this.setupWorkflowTimeouts();
+        // this.setupWorkflowTimeouts(); // Removed - function not implemented yet
         
         this.advanceWorkflowPhase('active_supervision');
+    }
+    
+    /**
+     * Perform periodic supervision check
+     */
+    performSupervisionCheck() {
+        // Check if Claude Code is still running
+        if (!this.claudeCodeProcess || this.claudeCodeProcess.killed) {
+            this.logger.log('⚠️ Claude Code process not running');
+            clearInterval(this.supervisionInterval);
+            return;
+        }
+        
+        // Log that supervision is active
+        // Additional checks can be added here
+    }
+    
+    /**
+     * Handle Claude Code process exit
+     */
+    handleClaudeCodeExit(code) {
+        this.logger.log(`📍 Claude Code exited with code: ${code}`);
+        
+        // Clear supervision interval
+        if (this.supervisionInterval) {
+            clearInterval(this.supervisionInterval);
+        }
+        
+        // Emit exit event
+        this.emit('claudeCodeExit', {
+            sessionId: this.sessionId,
+            exitCode: code,
+            timestamp: Date.now()
+        });
+        
+        // Mark session as complete
+        this.isActive = false;
     }
 
     /**
      * Set up real-time output monitoring for Claude Code
      */
     setupOutputMonitoring() {
-        this.claudeCodeProcess.stdout.on('data', (data) => {
-            const output = data.toString();
-            this.handleClaudeCodeOutput(output);
-        });
+        // When monitoring terminal session, we don't have a separate process
+        // Output monitoring happens through the terminal WebSocket connection
+        this.logger.log('📺 Output monitoring through terminal connection');
         
-        this.claudeCodeProcess.stderr.on('data', (data) => {
-            const error = data.toString();
-            this.handleClaudeCodeError(error);
-        });
-        
-        this.claudeCodeProcess.on('close', (code) => {
-            this.handleClaudeCodeExit(code);
-        });
+        // The terminal will send us Claude's output through the existing connection
+        // No need to set up separate stdout/stderr listeners
     }
 
     /**
      * Handle real-time Claude Code output and intervene when needed
      */
     handleClaudeCodeOutput(output) {
-        this.logger.log('📺 Claude Code Output:', output.substring(0, 200) + '...');
+        // Don't log every character, only meaningful output
+        if (output.trim().length > 5) {
+            this.logger.log('📺 Monitoring:', output.substring(0, 50));
+        }
         
         // Emit raw output for other systems
         this.emit('claudeCodeOutput', {
@@ -287,11 +319,13 @@ class SupervisionEngine extends EventEmitter {
         
         // Check for confusion patterns
         if (this.detectConfusion(output)) {
+            this.logger.log('🤔 Detected confusion');
             this.handleClaudeCodeConfusion(output);
         }
         
         // Check for questions
         if (this.detectQuestion(output)) {
+            this.logger.log('❓ Detected question:', output.substring(0, 100));
             this.handleClaudeCodeQuestion(output);
         }
         
@@ -461,20 +495,21 @@ class SupervisionEngine extends EventEmitter {
      * Send intervention message to Claude Code process
      */
     async sendInterventionToClaudeCode(intervention) {
-        if (!this.claudeCodeProcess || this.claudeCodeProcess.killed) {
-            this.logger.error('❌ Cannot send intervention - Claude Code process not available');
-            return false;
-        }
+        // For terminal monitoring, we would display interventions in the terminal
+        // But we can't directly write to Claude's input when it's interactive
+        this.logger.log('💬 SupervisionEngine: Intervention ready (manual input required)');
         
-        // Format intervention as input to Claude Code
+        // Format intervention for display
         const interventionMessage = this.formatInterventionMessage(intervention);
         
-        // Send to Claude Code stdin
-        this.claudeCodeProcess.stdin.write(interventionMessage + '\n');
+        // Emit intervention event so UI can display it
+        this.emit('interventionReady', {
+            sessionId: this.sessionId,
+            intervention: interventionMessage,
+            type: intervention.type
+        });
         
-        this.logger.log('💬 SupervisionEngine: Sent intervention to Claude Code');
         this.stats.successfulGuidance++;
-        
         return true;
     }
 
@@ -683,6 +718,633 @@ Generated by SupervisionEngine on ${new Date().toISOString()}
                     'Test your work as you go'
                 ];
         }
+    }
+
+    /**
+     * Handle Claude Code CLI not found error
+     */
+    handleClaudeCodeNotFound() {
+        this.logger.error('❌ Claude Code CLI not found on system');
+        this.logger.error('Please install Claude Code CLI with: npm install -g @anthropic/claude-code');
+        
+        // Emit error event for UI notification
+        this.emit('error', {
+            type: 'claude_not_found',
+            message: 'Claude Code CLI is not installed. Please install it to use supervision features.',
+            sessionId: this.sessionId
+        });
+        
+        // Gracefully stop supervision
+        this.stopSupervision();
+    }
+
+    /**
+     * Handle Claude Code errors
+     */
+    handleClaudeCodeError(error) {
+        this.logger.error('❌ Claude Code Error:', error);
+        this.stats.interventionsCount++;
+        
+        // Classify error type
+        const errorType = this.classifyError(error);
+        
+        // Emit error event
+        this.emit('claudeCodeError', {
+            sessionId: this.sessionId,
+            error: error.toString(),
+            errorType,
+            timestamp: Date.now()
+        });
+        
+        // Attempt recovery based on error type
+        if (errorType === 'recoverable') {
+            this.attemptErrorRecovery(error);
+        }
+    }
+
+    /**
+     * Send initial prompt to Claude Code (only for spawned processes)
+     */
+    async sendInitialPrompt() {
+        // When monitoring terminal, we don't send prompts automatically
+        // User interacts directly with Claude in the terminal
+        this.logger.log('📨 User will interact directly with Claude in terminal');
+        return true;
+    }
+
+    /**
+     * Detect if output contains a question
+     */
+    detectQuestion(output) {
+        // Skip ANSI escape sequences and UI elements
+        if (output.includes('? for shortcuts') || 
+            output.includes('╭') || 
+            output.includes('│') || 
+            output.includes('╰') ||
+            output.match(/^\[.*?m.*?$/)) {
+            return false;
+        }
+        
+        // Look for actual questions with substance
+        if (output.includes('?') && output.length > 15) {
+            // Check if it's a meaningful question
+            const meaningfulQuestionPatterns = [
+                /what.*?/i,
+                /how.*?/i,
+                /which.*?/i,
+                /where.*?/i,
+                /when.*?/i,
+                /why.*?/i,
+                /do you.*?/i,
+                /would you.*?/i,
+                /should.*?/i,
+                /any.*?/i,
+                /purpose.*?/i,
+                /audience.*?/i,
+                /style.*?/i,
+                /functionality.*?/i
+            ];
+            
+            const isMeaningful = meaningfulQuestionPatterns.some(pattern => pattern.test(output));
+            if (isMeaningful) {
+                console.log('❓ [SUPERVISION ENGINE] Meaningful question detected:', output.substring(0, 100));
+                return true;
+            }
+        }
+        
+        // Also check against other question patterns
+        const patternMatch = this.monitoringConfig.questionPatterns.some(pattern => 
+            pattern.test(output)
+        );
+        
+        if (patternMatch) {
+            console.log('❓ [SUPERVISION ENGINE] Question detected by pattern match:', output.substring(0, 100));
+        }
+        
+        return patternMatch;
+    }
+
+    /**
+     * Detect if output contains a permission request
+     */
+    detectPermissionRequest(output) {
+        const permissionPatterns = [
+            /permission.*to/i,
+            /may.*i/i,
+            /can.*i.*proceed/i,
+            /should.*i.*continue/i,
+            /is it.*okay/i,
+            /do you.*approve/i,
+            /waiting.*for.*approval/i,
+            /need.*permission/i
+        ];
+        
+        return permissionPatterns.some(pattern => pattern.test(output));
+    }
+
+    /**
+     * Detect if output contains an error
+     */
+    detectError(output) {
+        // Check against error patterns
+        return this.monitoringConfig.errorPatterns.some(pattern => 
+            pattern.test(output)
+        );
+    }
+
+    /**
+     * Handle questions from Claude Code
+     */
+    async handleClaudeCodeQuestion(output) {
+        this.logger.log('❓ SupervisionEngine: Claude Code asked a question');
+        
+        // Check rate limiting to prevent policy violations
+        const now = Date.now();
+        if (now - this.lastResponseTime < this.MIN_RESPONSE_INTERVAL) {
+            this.logger.log('⏳ SupervisionEngine: Rate limit - waiting before responding');
+            // Wait for the remaining time before responding
+            const waitTime = this.MIN_RESPONSE_INTERVAL - (now - this.lastResponseTime);
+            await new Promise(resolve => setTimeout(resolve, waitTime));
+        }
+        
+        this.stats.questionsAnswered++;
+        this.lastResponseTime = Date.now();
+        
+        // Analyze question context
+        const questionContext = this.analyzeQuestionContext(output);
+        
+        // Generate intelligent answer
+        const answer = await this.generateAnswer(questionContext, output);
+        
+        // Send answer to Claude Code
+        if (this.claudeCodeProcess && !this.claudeCodeProcess.killed) {
+            this.claudeCodeProcess.stdin.write(answer + '\n');
+            this.logger.log('💬 SupervisionEngine: Answered Claude Code question via subprocess');
+        } else {
+            // When monitoring existing terminal, emit event for PTY adapter
+            this.logger.log('💬 SupervisionEngine: Emitting response for PTY delivery');
+            this.emit('responseGenerated', {
+                sessionId: this.sessionId,
+                response: answer,
+                questionContext: output,
+                timestamp: Date.now()
+            });
+        }
+        
+        // Record intervention
+        this.workflow.interventions.push({
+            type: 'question_answered',
+            question: output.substring(0, 200),
+            answer: answer.substring(0, 200),
+            timestamp: Date.now()
+        });
+        
+        this.emit('questionAnswered', {
+            sessionId: this.sessionId,
+            question: output,
+            answer
+        });
+    }
+
+    /**
+     * Handle permission requests from Claude Code
+     */
+    async handlePermissionRequest(output) {
+        this.logger.log('🔐 SupervisionEngine: Claude Code requested permission');
+        this.stats.approvalsHandled++;
+        
+        // Auto-approve common safe operations
+        const approval = this.generateApproval(output);
+        
+        // Send approval to Claude Code
+        if (this.claudeCodeProcess && !this.claudeCodeProcess.killed) {
+            this.claudeCodeProcess.stdin.write(approval + '\n');
+            this.logger.log('✅ SupervisionEngine: Granted permission to Claude Code');
+        }
+        
+        // Record approval
+        this.workflow.approvals.push({
+            request: output.substring(0, 200),
+            approval,
+            timestamp: Date.now()
+        });
+        
+        this.emit('permissionGranted', {
+            sessionId: this.sessionId,
+            request: output,
+            approval
+        });
+    }
+
+    // Helper methods for the new implementations
+    classifyError(error) {
+        const errorStr = error.toString().toLowerCase();
+        
+        if (errorStr.includes('permission') || errorStr.includes('access')) {
+            return 'recoverable';
+        }
+        if (errorStr.includes('not found') || errorStr.includes('enoent')) {
+            return 'recoverable';
+        }
+        if (errorStr.includes('syntax') || errorStr.includes('parse')) {
+            return 'critical';
+        }
+        
+        return 'unknown';
+    }
+
+    attemptErrorRecovery(error) {
+        this.logger.log('🔧 SupervisionEngine: Attempting error recovery');
+        
+        // Send recovery guidance to Claude Code
+        const recoveryMessage = `
+I noticed an error occurred. Let me help you recover:
+
+Error: ${error.toString().substring(0, 200)}
+
+Suggested recovery steps:
+1. Check if the file or directory exists
+2. Verify you have the correct permissions
+3. Try the operation again with the correct path
+4. If the issue persists, try an alternative approach
+
+Please continue with the task, and I'll assist if needed.
+`;
+        
+        if (this.claudeCodeProcess && !this.claudeCodeProcess.killed) {
+            this.claudeCodeProcess.stdin.write(recoveryMessage + '\n');
+        }
+    }
+
+    analyzeQuestionContext(output) {
+        const lowerOutput = output.toLowerCase();
+        
+        if (lowerOutput.includes('file') || lowerOutput.includes('directory')) {
+            return 'file_structure';
+        }
+        if (lowerOutput.includes('implement') || lowerOutput.includes('code')) {
+            return 'implementation';
+        }
+        if (lowerOutput.includes('test') || lowerOutput.includes('verify')) {
+            return 'testing';
+        }
+        if (lowerOutput.includes('next') || lowerOutput.includes('continue')) {
+            return 'workflow';
+        }
+        
+        return 'general';
+    }
+
+    /**
+     * Detect if a question is asking about preferences/choices
+     */
+    isPreferenceQuestion(questionText) {
+        const lowerQuestion = questionText.toLowerCase();
+        
+        // All landing page questions should be treated as preference questions
+        // since they ask for user choices/preferences about design/content
+        const preferencePatterns = [
+            // Target audience questions
+            /who.*target.*audience/i,
+            /target.*audience/i,
+            
+            // Goal/purpose questions
+            /main.*goal/i,
+            /goal.*of.*landing/i,
+            /purpose.*landing/i,
+            
+            // Style/design questions
+            /brand.*colors/i,
+            /fonts/i,
+            /visual.*style/i,
+            /style.*preferences/i,
+            /tone.*should/i,
+            /tone.*copy/i,
+            
+            // Content questions
+            /key.*features/i,
+            /features.*benefits/i,
+            /what.*highlight/i,
+            /include.*testimonials/i,
+            /pricing/i,
+            /demo.*sections/i,
+            
+            // CTA questions
+            /call-to-action/i,
+            /cta.*button/i,
+            /should.*there.*be/i,
+            
+            // Integration questions
+            /should.*landing.*page.*be.*integrated/i,
+            /integrated.*with.*existing/i,
+            /standalone.*page/i,
+            
+            // Functionality questions
+            /need.*specific.*functionality/i,
+            /contact.*forms/i,
+            /newsletter.*signup/i,
+            /user.*registration/i,
+            
+            // Inspiration questions
+            /existing.*landing.*pages/i,
+            /admire.*or.*want.*to.*emulate/i,
+            /inspiration/i,
+            
+            // General preference patterns
+            /what.*prefer/i,
+            /which.*would.*you/i,
+            /what.*should/i,
+            /what.*do.*you.*think/i,
+            /do.*you.*want/i,
+            /would.*you.*like/i
+        ];
+        
+        return preferencePatterns.some(pattern => pattern.test(questionText));
+    }
+
+    async generateAnswer(questionContext, originalQuestion) {
+        let answer = '';
+        const lowerQuestion = originalQuestion.toLowerCase();
+        
+        // Check if this is a procedural "shall I proceed" type question - auto-approve these
+        if (this.isProceduralQuestion(originalQuestion)) {
+            // Just say yes/1 to keep things moving
+            if (this.detectMultipleChoiceQuestion(originalQuestion)) {
+                return "1"; // Choose option 1 (usually "proceed")
+            }
+            return "yes"; // Simple approval
+        }
+        
+        // Check if this is a technical choice question (TypeScript vs JavaScript, framework choice, etc.)
+        if (this.isTechnicalChoiceQuestion(originalQuestion)) {
+            // Use the collaborative "I'm thinking" pattern for technical decisions
+            const choice = this.pickBestTechnicalOption(originalQuestion, questionContext);
+            answer = `[Coder1 Supervision]: I'm thinking... ${choice.reasoning}. I'd go with ${choice.option}. What do you think?`;
+            return answer;
+        }
+        
+        // Use a clear AI assistant disclosure that won't trigger policy violations
+        const DISCLOSURE = "[AI Assistant Response]: This is an automated suggestion from the project supervision system. ";
+        
+        // Check if this is a preference question first
+        if (this.isPreferenceQuestion(originalQuestion)) {
+            // For preference questions, provide context-aware but non-directive answers
+            if (lowerQuestion.includes('primary goal') || lowerQuestion.includes('target audience')) {
+                answer = "AI-powered coding platform targeting developers building AI applications";
+            } else if (lowerQuestion.includes('key features') || lowerQuestion.includes('unique selling')) {
+                answer = "Dual-mode system with intelligent requirements gathering and autonomous coding";
+            } else if (lowerQuestion.includes('design') || lowerQuestion.includes('style')) {
+                answer = "Modern minimal interface consistent with the existing Coder1 IDE design";
+            } else {
+                // Generic preference response
+                answer = "Based on project context, either approach would be suitable";
+            }
+            
+            // Add disclosure ONLY at the beginning, not in every response
+            return DISCLOSURE + answer;
+        }
+        
+        // For non-preference questions, provide helpful technical guidance
+        if (lowerQuestion.includes('error') || lowerQuestion.includes('failed') || lowerQuestion.includes('not working')) {
+            answer = "Review the error output above. Check logs in server.log for details. Verify dependencies are installed.";
+        } else {
+            // Context-based responses - more helpful while staying factual
+            switch (questionContext) {
+                case 'file_structure':
+                    answer = `Working directory: ${this.projectPath}. Standard ${this.projectContext.framework || 'JavaScript'} structure recommended.`;
+                    break;
+                    
+                case 'implementation':
+                    answer = `Implement using ${this.projectContext.framework || 'standard'} patterns. Start with core functionality first.`;
+                    break;
+                    
+                case 'testing':
+                    answer = "Run tests after implementation. Use npm test or appropriate testing command.";
+                    break;
+                    
+                case 'workflow':
+                    answer = "Proceed with next requirement. Reference project documentation if needed.";
+                    break;
+                    
+                default:
+                    answer = "Continue implementation. Check project requirements for guidance.";
+            }
+        }
+        
+        // Add disclosure for technical questions too
+        return DISCLOSURE + answer;
+    }
+    
+    /**
+     * Detect procedural questions that should be auto-approved
+     */
+    isProceduralQuestion(question) {
+        const lowerQuestion = question.toLowerCase();
+        
+        const proceduralPatterns = [
+            /shall i proceed/i,
+            /should i continue/i,
+            /would you like me to proceed/i,
+            /may i create/i,
+            /should i create/i,
+            /shall i implement/i,
+            /can i proceed/i,
+            /is it okay to/i,
+            /permission to/i,
+            /ready to continue/i,
+            /move forward/i,
+            /next step/i,
+            /continue with/i
+        ];
+        
+        return proceduralPatterns.some(pattern => pattern.test(question));
+    }
+    
+    /**
+     * Detect technical choice questions that need thoughtful consideration
+     */
+    isTechnicalChoiceQuestion(question) {
+        const lowerQuestion = question.toLowerCase();
+        
+        const technicalChoicePatterns = [
+            /typescript.*javascript|javascript.*typescript/i,
+            /react.*vue.*angular|vue.*react.*angular/i,
+            /framework.*choice|choose.*framework/i,
+            /library.*prefer|prefer.*library/i,
+            /approach.*better|which.*approach/i,
+            /design.*pattern|pattern.*use/i,
+            /architecture.*prefer|prefer.*architecture/i,
+            /database.*choice|choose.*database/i,
+            /styling.*approach|css.*framework/i,
+            /testing.*framework|test.*approach/i,
+            /deployment.*option|hosting.*choice/i,
+            /build.*tool|bundler.*prefer/i,
+            /state management|store.*solution/i
+        ];
+        
+        return technicalChoicePatterns.some(pattern => pattern.test(question));
+    }
+    
+    /**
+     * Detect if a question has multiple choice options
+     */
+    detectMultipleChoiceQuestion(question) {
+        // Patterns for multiple choice questions
+        const patterns = [
+            /\b1\.\s+.+\s+2\.\s+.+/s,  // 1. option 2. option
+            /\b1\)\s+.+\s+2\)\s+.+/s,  // 1) option 2) option
+            /\ba\)\s+.+\s+b\)\s+.+/si, // a) option b) option
+            /\bA\.\s+.+\s+B\.\s+.+/s,  // A. option B. option
+            /option 1.*option 2/si,     // option 1 ... option 2
+            /first option.*second option/si
+        ];
+        
+        return patterns.some(pattern => pattern.test(question));
+    }
+    
+    /**
+     * Pick the best technical option with reasoning
+     */
+    pickBestTechnicalOption(question, context) {
+        const lowerQuestion = question.toLowerCase();
+        
+        // TypeScript vs JavaScript
+        if (lowerQuestion.includes('typescript') && lowerQuestion.includes('javascript')) {
+            return {
+                option: 'TypeScript',
+                reasoning: 'TypeScript provides better type safety and developer experience for larger projects'
+            };
+        }
+        
+        // React vs Vue vs Angular
+        if (lowerQuestion.includes('react') || lowerQuestion.includes('vue') || lowerQuestion.includes('angular')) {
+            return {
+                option: 'React',
+                reasoning: 'React has the largest ecosystem and community support'
+            };
+        }
+        
+        // CSS frameworks
+        if (lowerQuestion.includes('tailwind') || lowerQuestion.includes('bootstrap') || lowerQuestion.includes('css')) {
+            return {
+                option: 'Tailwind CSS',
+                reasoning: 'Tailwind offers more flexibility and better maintainability'
+            };
+        }
+        
+        // Testing frameworks
+        if (lowerQuestion.includes('jest') || lowerQuestion.includes('vitest') || lowerQuestion.includes('test')) {
+            return {
+                option: 'Jest',
+                reasoning: 'Jest is the most established testing framework with excellent tooling'
+            };
+        }
+        
+        // Database choices
+        if (lowerQuestion.includes('postgresql') || lowerQuestion.includes('mysql') || lowerQuestion.includes('mongodb')) {
+            return {
+                option: 'PostgreSQL',
+                reasoning: 'PostgreSQL offers the best balance of features and reliability'
+            };
+        }
+        
+        // Build tools
+        if (lowerQuestion.includes('webpack') || lowerQuestion.includes('vite') || lowerQuestion.includes('rollup')) {
+            return {
+                option: 'Vite',
+                reasoning: 'Vite provides faster development builds and better DX'
+            };
+        }
+        
+        // Default reasoning for unknown technical choices
+        return {
+            option: 'the first option',
+            reasoning: 'it aligns well with modern development practices'
+        };
+    }
+    
+    /**
+     * Pick the best option from a multiple choice question (legacy method)
+     */
+    pickBestOption(question, context) {
+        const lowerQuestion = question.toLowerCase();
+        
+        // Extract options if possible
+        let options = [];
+        let optionPattern = /\b([1-3])[.)]?\s+([^1-3\n]+)/g;
+        let match;
+        while ((match = optionPattern.exec(question)) !== null) {
+            options.push({
+                number: match[1],
+                text: match[2].trim()
+            });
+        }
+        
+        // Default choice logic based on context
+        let chosenOption = '1'; // Default to first option
+        let reasoning = "this seems like the most straightforward approach";
+        
+        // Smart selection based on content
+        if (options.length > 0) {
+            // Look for keywords in options
+            for (let opt of options) {
+                const optText = opt.text.toLowerCase();
+                
+                // Prefer options that mention proceeding or continuing
+                if (optText.includes('proceed') || optText.includes('continue') || optText.includes('yes')) {
+                    chosenOption = opt.number;
+                    reasoning = "we should keep moving forward with the implementation";
+                    break;
+                }
+                
+                // Avoid options that stop or cancel
+                if (optText.includes('stop') || optText.includes('cancel') || optText.includes('no')) {
+                    // Skip this option
+                    continue;
+                }
+                
+                // For implementation choices, prefer simpler options
+                if (optText.includes('simple') || optText.includes('basic') || optText.includes('standard')) {
+                    chosenOption = opt.number;
+                    reasoning = "simpler implementations are usually better to start with";
+                }
+            }
+        }
+        
+        // Context-specific reasoning
+        if (lowerQuestion.includes('file') || lowerQuestion.includes('create')) {
+            reasoning = "creating the necessary files makes sense";
+        } else if (lowerQuestion.includes('test')) {
+            reasoning = "testing is important for reliability";
+        } else if (lowerQuestion.includes('error') || lowerQuestion.includes('fix')) {
+            reasoning = "fixing errors should be prioritized";
+        }
+        
+        return {
+            option: chosenOption,
+            reasoning: reasoning
+        };
+    }
+
+    generateApproval(request) {
+        const lowerRequest = request.toLowerCase();
+        
+        // Auto-approve safe operations
+        if (lowerRequest.includes('create') && lowerRequest.includes('file')) {
+            return 'Yes, approved. Please proceed with creating the file.';
+        }
+        if (lowerRequest.includes('install') && lowerRequest.includes('package')) {
+            return 'Yes, approved. Please install the necessary packages.';
+        }
+        if (lowerRequest.includes('modify') || lowerRequest.includes('update')) {
+            return 'Yes, approved. Please proceed with the modifications.';
+        }
+        if (lowerRequest.includes('continue') || lowerRequest.includes('proceed')) {
+            return 'Yes, please continue with your current approach.';
+        }
+        
+        // Default approval
+        return 'Yes, approved. Please proceed with caution and follow best practices.';
     }
 
     getRecommendedNextActions() {

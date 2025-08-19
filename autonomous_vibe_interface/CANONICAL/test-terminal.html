@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Terminal Test</title>
+    <script src="/socket.io/socket.io.js"></script>
+    <style>
+        body { font-family: monospace; padding: 20px; background: #1a1a1a; color: #fff; }
+        #status { margin: 10px 0; padding: 10px; background: #333; }
+        #output { margin: 10px 0; padding: 10px; background: #000; min-height: 200px; white-space: pre; }
+        button { margin: 5px; padding: 10px 20px; }
+        .success { color: #4CAF50; }
+        .error { color: #f44336; }
+        .info { color: #2196F3; }
+    </style>
+</head>
+<body>
+    <h1>Terminal WebSocket Test</h1>
+    <div id="status">Status: Not connected</div>
+    
+    <button onclick="connectTerminal()">Connect Terminal</button>
+    <button onclick="sendCommand()">Send 'ls' Command</button>
+    <button onclick="disconnectTerminal()">Disconnect</button>
+    
+    <div id="output"></div>
+    
+    <script>
+        let socket = null;
+        let terminalId = null;
+        
+        function log(message, type = 'info') {
+            const output = document.getElementById('output');
+            const timestamp = new Date().toLocaleTimeString();
+            output.innerHTML += `<span class="${type}">[${timestamp}] ${message}</span>\n`;
+            output.scrollTop = output.scrollHeight;
+        }
+        
+        function updateStatus(status) {
+            document.getElementById('status').textContent = `Status: ${status}`;
+        }
+        
+        function connectTerminal() {
+            log('Connecting to WebSocket...', 'info');
+            
+            socket = io('http://localhost:3000', {
+                transports: ['websocket'],
+                reconnection: true
+            });
+            
+            socket.on('connect', () => {
+                log('WebSocket connected! Socket ID: ' + socket.id, 'success');
+                updateStatus('Connected');
+                
+                // Create terminal
+                log('Creating terminal...', 'info');
+                socket.emit('terminal:create', {
+                    cols: 80,
+                    rows: 24
+                });
+            });
+            
+            socket.on('terminal:created', (data) => {
+                terminalId = data.id;
+                log('Terminal created! ID: ' + terminalId, 'success');
+                updateStatus('Terminal ready');
+            });
+            
+            socket.on('terminal:data', (data) => {
+                log('Terminal output: ' + data, 'success');
+            });
+            
+            socket.on('terminal:error', (error) => {
+                log('Terminal error: ' + error, 'error');
+            });
+            
+            socket.on('disconnect', () => {
+                log('WebSocket disconnected', 'error');
+                updateStatus('Disconnected');
+            });
+            
+            socket.on('error', (error) => {
+                log('Socket error: ' + error, 'error');
+            });
+        }
+        
+        function sendCommand() {
+            if (!socket || !terminalId) {
+                log('Not connected or no terminal ID', 'error');
+                return;
+            }
+            
+            const command = 'ls\n';
+            log('Sending command: ' + command.trim(), 'info');
+            socket.emit('terminal:input', {
+                id: terminalId,
+                data: command
+            });
+        }
+        
+        function disconnectTerminal() {
+            if (socket) {
+                socket.disconnect();
+                socket = null;
+                terminalId = null;
+                log('Disconnected', 'info');
+                updateStatus('Disconnected');
+            }
+        }
+        
+        // Auto-connect on load
+        window.onload = () => {
+            log('Terminal test page loaded', 'info');
+        };
+    </script>
+</body>
+</html>
