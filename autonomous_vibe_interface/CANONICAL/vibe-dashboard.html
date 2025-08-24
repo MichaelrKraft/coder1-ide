@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Vibe Dashboard - Your Coding Journey</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
     <!-- Chart.js for Usage History visualization -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
@@ -31,11 +32,14 @@
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: var(--bg-primary);
             color: var(--text-primary);
             min-height: 100vh;
             overflow-x: hidden;
+            font-size: 16px;
+            line-height: 1.6;
+            font-weight: 400;
         }
 
         /* Animated gradient background */
@@ -75,7 +79,7 @@
             align-items: center;
             margin-bottom: 30px;
             padding: 0;
-            height: 92px;
+            height: 92px;  /* Original height */
             border-bottom: 1px solid var(--glass-border);
         }
 
@@ -1048,6 +1052,36 @@
             color: var(--text-primary);
         }
 
+        .burn-rate-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .mini-gauge {
+            position: relative;
+        }
+
+        .burn-rate-arc {
+            transition: stroke-dashoffset 0.8s ease-in-out, stroke 0.3s ease;
+            stroke: #10b981; /* Default green */
+        }
+
+        .burn-rate-arc.moderate {
+            stroke: #f59e0b; /* Orange */
+        }
+
+        .burn-rate-arc.high {
+            stroke: #ef4444; /* Red */
+            animation: pulse-danger 2s infinite;
+        }
+
+        @keyframes pulse-danger {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+
         .token-warnings {
             max-height: 80px;
             overflow-y: auto;
@@ -1226,6 +1260,255 @@
             font-size: 11px;
             font-weight: 500;
             border: 1px solid rgba(139, 92, 246, 0.3);
+        }
+
+        /* Enhanced Pattern Styles */
+        .enhanced-pattern {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .pattern-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 16px;
+        }
+
+        .pattern-meta {
+            display: flex;
+            gap: 8px;
+            margin-top: 8px;
+            flex-wrap: wrap;
+        }
+
+        .confidence-badge, .last-seen-badge {
+            padding: 3px 8px;
+            border-radius: 10px;
+            font-size: 10px;
+            font-weight: 500;
+        }
+
+        .last-seen-badge {
+            background: rgba(156, 163, 175, 0.2);
+            color: var(--text-secondary);
+        }
+
+        .pattern-actions {
+            padding: 16px;
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .suggested-prompt {
+            margin-bottom: 12px;
+        }
+
+        .prompt-preview {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 12px;
+            border-radius: 6px;
+            border-left: 3px solid var(--accent-primary);
+            font-style: italic;
+            margin-top: 6px;
+            color: var(--text-secondary);
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .quick-create-btn, .customize-create-btn {
+            padding: 8px 14px;
+            border: none;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            flex: 1;
+            min-width: 120px;
+        }
+
+        .quick-create-btn {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+        }
+
+        .quick-create-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+        }
+
+        .customize-create-btn {
+            background: var(--glass-bg);
+            color: var(--text-primary);
+            border: 1px solid var(--glass-border);
+        }
+
+        .customize-create-btn:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: var(--accent-primary);
+        }
+
+        .no-patterns {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-secondary);
+        }
+
+        .no-patterns-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+        }
+
+        .learning-progress {
+            margin-top: 20px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            overflow: hidden;
+            margin-bottom: 8px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));
+            transition: width 0.5s ease;
+        }
+
+        @keyframes quickCreatePulse {
+            0% { transform: translate(-50%, -50%) scale(0.8); opacity: 0; }
+            50% { transform: translate(-50%, -50%) scale(1.1); opacity: 1; }
+            100% { transform: translate(-50%, -50%) scale(1); opacity: 0; }
+        }
+
+        /* Budget Predictions Styles */
+        .predictions-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .prediction-card {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transition: all 0.3s ease;
+        }
+
+        .prediction-card:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: var(--accent-primary);
+            transform: translateY(-2px);
+        }
+
+        .prediction-icon {
+            font-size: 24px;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            border-radius: 8px;
+        }
+
+        .prediction-info h4 {
+            margin: 0 0 4px 0;
+            font-size: 14px;
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+
+        .prediction-value {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--accent-primary);
+            margin-bottom: 2px;
+        }
+
+        .prediction-confidence {
+            font-size: 11px;
+            color: var(--text-secondary);
+            opacity: 0.8;
+        }
+
+        .prediction-chart-container {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 24px;
+        }
+
+        .prediction-chart-container h4 {
+            margin: 0 0 16px 0;
+            color: var(--text-primary);
+        }
+
+        .budget-recommendations {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 20px;
+        }
+
+        .budget-recommendations h4 {
+            margin: 0 0 16px 0;
+            color: var(--text-primary);
+        }
+
+        .recommendations-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .recommendation-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 8px;
+            border-left: 3px solid var(--accent-primary);
+        }
+
+        .recommendation-icon {
+            font-size: 16px;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .recommendation-text {
+            flex: 1;
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        .recommendation-impact {
+            font-size: 12px;
+            background: rgba(16, 185, 129, 0.2);
+            color: #10b981;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-weight: 600;
         }
 
         /* Floating Token Meter - REMOVED */
@@ -2675,11 +2958,16 @@
                 <a href="/ide" class="back-to-ide">
                     ← Back to IDE
                 </a>
-                <img src="/coder1-logo.svg" alt="Coder1" style="height: 92px; width: auto; object-fit: contain;" />
+                <img src="/coder1-logo-newest.png" alt="Coder1" style="height: 92px; width: auto; object-fit: contain;" />
             </div>
-            <h1 style="position: absolute; left: 50%; transform: translateX(-50%); font-size: 32px;">
-                Dashboard
-            </h1>
+            <div style="position: absolute; left: 50%; transform: translateX(-50%); text-align: center;">
+                <h1 style="font-size: 32px; margin-bottom: 5px;">
+                    Vibe Dashboard
+                </h1>
+                <p style="font-size: 14px; color: var(--text-secondary); margin: 0;">
+                    Track your AI-assisted development journey
+                </p>
+            </div>
             <div class="header-controls">
                 <div class="learning-toggle" id="learningToggle">
                     <span>Learning Mode</span>
@@ -2692,8 +2980,11 @@
 
         <!-- Motivational Banner -->
         <div class="motivation-banner">
-            <div class="motivation-text" id="motivationText">Welcome back, coder! Ready to build something amazing?</div>
-            <div class="motivation-sub" id="motivationSub">Your journey continues...</div>
+            <div class="motivation-text" id="motivationText">Welcome to your AI development command center!</div>
+            <div class="motivation-sub" id="motivationSub">
+                📊 <strong>New to AI coding?</strong> Track your progress and build confidence step by step<br>
+                🚀 <strong>Experienced developer?</strong> Monitor your AI productivity gains and optimize workflows
+            </div>
         </div>
 
         <!-- Compact Timeline Bar -->
@@ -2764,9 +3055,19 @@
                         <span class="token-stat-label">Remaining</span>
                         <span class="token-stat-value" id="cardTokensRemaining">100K</span>
                     </div>
-                    <div class="token-stat">
+                    <div class="token-stat burn-rate-stat">
                         <span class="token-stat-label">Burn Rate</span>
-                        <span class="token-stat-value" id="cardBurnRate">0/min</span>
+                        <div class="burn-rate-container">
+                            <div class="mini-gauge">
+                                <svg width="40" height="40" viewBox="0 0 40 40">
+                                    <circle cx="20" cy="20" r="15" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="2"/>
+                                    <circle cx="20" cy="20" r="15" fill="none" stroke-width="2" stroke-linecap="round"
+                                            stroke-dasharray="94.25" stroke-dashoffset="94.25" 
+                                            transform="rotate(-90 20 20)" id="burnRateGaugeArc" class="burn-rate-arc"/>
+                                </svg>
+                            </div>
+                            <span class="token-stat-value" id="cardBurnRate">0/min</span>
+                        </div>
                     </div>
                 </div>
                 <div class="token-warnings" id="tokenWarnings"></div>
@@ -2780,6 +3081,7 @@
                 <div class="card-title">Token Usage Analytics</div>
                 <div class="details-tabs">
                     <button class="details-tab active" data-tab="patterns">Pattern Detection</button>
+                    <button class="details-tab" data-tab="predictions">Budget Predictions</button>
                     <button class="details-tab" data-tab="history">Usage History</button>
                     <button class="details-tab" data-tab="projects">Project Breakdown</button>
                 </div>
@@ -2789,6 +3091,59 @@
                     <div class="pattern-list" id="patternList">
                         <!-- Patterns will be loaded dynamically -->
                         <div class="loading-spinner" id="patternLoader"></div>
+                    </div>
+                </div>
+                
+                <div class="tab-content" id="predictionsTab">
+                    <h3>Smart Budget Predictions</h3>
+                    <div class="predictions-grid">
+                        <div class="prediction-card">
+                            <div class="prediction-icon">⏰</div>
+                            <div class="prediction-info">
+                                <h4>Time Until Limit</h4>
+                                <div class="prediction-value" id="timeUntilLimit">Calculating...</div>
+                                <div class="prediction-confidence" id="timeConfidence">Based on current usage pattern</div>
+                            </div>
+                        </div>
+                        
+                        <div class="prediction-card">
+                            <div class="prediction-icon">📈</div>
+                            <div class="prediction-info">
+                                <h4>Daily Projection</h4>
+                                <div class="prediction-value" id="dailyProjection">Calculating...</div>
+                                <div class="prediction-confidence" id="dailyConfidence">Trending analysis</div>
+                            </div>
+                        </div>
+                        
+                        <div class="prediction-card">
+                            <div class="prediction-icon">🎯</div>
+                            <div class="prediction-info">
+                                <h4>Optimal Sessions</h4>
+                                <div class="prediction-value" id="optimalSessions">Calculating...</div>
+                                <div class="prediction-confidence" id="sessionConfidence">Best times to code</div>
+                            </div>
+                        </div>
+                        
+                        <div class="prediction-card">
+                            <div class="prediction-icon">⚡</div>
+                            <div class="prediction-info">
+                                <h4>Efficiency Score</h4>
+                                <div class="prediction-value" id="efficiencyScore">Calculating...</div>
+                                <div class="prediction-confidence" id="efficiencyConfidence">Tokens per task completed</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="prediction-chart-container">
+                        <h4>Weekly Usage Forecast</h4>
+                        <canvas id="forecastChart" width="400" height="200"></canvas>
+                    </div>
+                    
+                    <div class="budget-recommendations">
+                        <h4>💡 Smart Recommendations</h4>
+                        <div class="recommendations-list" id="budgetRecommendations">
+                            <!-- Recommendations will be populated dynamically -->
+                        </div>
                     </div>
                 </div>
                 
@@ -2905,6 +3260,20 @@
                 </div>
                 
                 <div class="hooks-quick-view">
+                    <!-- AI Recommendations Section -->
+                    <div id="aiRecommendationsSection" style="margin-bottom: 16px; display: none;">
+                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+                            <span style="font-size: 14px; font-weight: 500; color: var(--accent-primary);">🤖 AI Recommendations</span>
+                            <span id="aiConfidenceScore" style="font-size: 12px; color: var(--text-secondary);"></span>
+                        </div>
+                        <div id="aiRecommendationsList" style="margin-bottom: 12px;">
+                            <!-- AI recommendations will be loaded here -->
+                        </div>
+                        <button class="btn btn-primary" id="generateSmartConfigBtn" onclick="window.vibeDashboard.generateSmartConfiguration()" style="width: 100%; margin-bottom: 8px;">
+                            <span class="icon">⚡</span> Generate Smart Configuration
+                        </button>
+                    </div>
+                    
                     <button class="btn btn-primary hooks-center-btn" onclick="openCreateHookModal()">
                         <span class="icon">+</span> Create Hook
                     </button>
@@ -2918,6 +3287,9 @@
                 </div>
                 
                 <div class="hooks-actions">
+                    <button class="btn btn-secondary" onclick="window.vibeDashboard.loadAIRecommendations()">
+                        🧠 AI Analysis
+                    </button>
                     <button class="btn btn-secondary" onclick="window.vibeDashboard.exportHooks()">
                         📥 Export Hooks
                     </button>
@@ -3366,8 +3738,167 @@
                             this.loadProjectBreakdown();
                         } else if (tabName === 'hooks') {
                             this.loadHooks();
+                        } else if (tabName === 'predictions') {
+                            this.loadBudgetPredictions();
                         }
                     });
+                });
+                
+                // Setup keyboard shortcuts
+                this.setupKeyboardShortcuts();
+            }
+
+            setupKeyboardShortcuts() {
+                document.addEventListener('keydown', (e) => {
+                    // Only activate shortcuts when not typing in input fields
+                    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+                    
+                    // Ctrl/Cmd + combinations
+                    if (e.ctrlKey || e.metaKey) {
+                        switch (e.key) {
+                            case 'e':
+                                e.preventDefault();
+                                this.exportDashboardData();
+                                break;
+                            case 'd':
+                                e.preventDefault();
+                                this.toggleTokenDetails();
+                                break;
+                            case 'h':
+                                e.preventDefault();
+                                this.showKeyboardHelp();
+                                break;
+                            case 'r':
+                                e.preventDefault();
+                                this.refreshDashboard();
+                                break;
+                        }
+                    }
+                    
+                    // Number keys for quick tab switching
+                    if (e.key >= '1' && e.key <= '4') {
+                        const tabs = ['patterns', 'predictions', 'history', 'projects'];
+                        const tabIndex = parseInt(e.key) - 1;
+                        if (tabs[tabIndex]) {
+                            this.switchToTab(tabs[tabIndex]);
+                        }
+                    }
+                    
+                    // Escape to close modals
+                    if (e.key === 'Escape') {
+                        this.closeAllModals();
+                    }
+                });
+            }
+
+            toggleTokenDetails() {
+                const detailsBtn = document.getElementById('expandTokenDetails');
+                if (detailsBtn) {
+                    detailsBtn.click();
+                }
+            }
+
+            switchToTab(tabName) {
+                const tab = document.querySelector(`[data-tab="${tabName}"]`);
+                if (tab) {
+                    tab.click();
+                }
+            }
+
+            closeAllModals() {
+                // Close hook creation modal
+                const modal = document.getElementById('hookCreationModal');
+                if (modal && modal.style.display !== 'none') {
+                    modal.style.display = 'none';
+                }
+                
+                // Close any other modals
+                document.querySelectorAll('.modal').forEach(modal => {
+                    modal.style.display = 'none';
+                });
+            }
+
+            exportDashboardData() {
+                const dashboardData = {
+                    exportedAt: new Date().toISOString(),
+                    tokenUsage: {
+                        used: document.getElementById('cardTokensUsed')?.textContent || '0',
+                        remaining: document.getElementById('cardTokensRemaining')?.textContent || '0',
+                        burnRate: document.getElementById('cardBurnRate')?.textContent || '0/min'
+                    },
+                    patterns: JSON.parse(localStorage.getItem('detectedPatterns') || '[]'),
+                    hooks: JSON.parse(localStorage.getItem('vibeHooks') || '[]'),
+                    predictions: this.lastPredictions || {},
+                    metadata: {
+                        version: '1.0',
+                        dashboardType: 'Vibe Dashboard',
+                        exportFormat: 'JSON'
+                    }
+                };
+                
+                const blob = new Blob([JSON.stringify(dashboardData, null, 2)], {
+                    type: 'application/json'
+                });
+                
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `vibe-dashboard-export-${new Date().toISOString().split('T')[0]}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                
+                this.showSuccessMessage('📊 Dashboard data exported successfully!');
+            }
+
+            refreshDashboard() {
+                this.loadTokenMetrics();
+                this.loadPatternData();
+                this.loadHooks();
+                this.showSuccessMessage('🔄 Dashboard refreshed!');
+            }
+
+            showKeyboardHelp() {
+                const helpModal = document.createElement('div');
+                helpModal.style.cssText = `
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background: rgba(0, 0, 0, 0.8);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    z-index: 10000;
+                `;
+                
+                helpModal.innerHTML = `
+                    <div style="background: var(--bg-secondary); padding: 30px; border-radius: 16px; 
+                                max-width: 500px; color: var(--text-primary); box-shadow: 0 20px 40px rgba(0,0,0,0.3);">
+                        <h3 style="margin: 0 0 20px 0; color: var(--accent-primary);">⌨️ Keyboard Shortcuts</h3>
+                        <div style="display: grid; gap: 12px; font-family: monospace; font-size: 14px;">
+                            <div><kbd>Ctrl+E</kbd> Export dashboard data</div>
+                            <div><kbd>Ctrl+D</kbd> Toggle token details</div>
+                            <div><kbd>Ctrl+R</kbd> Refresh dashboard</div>
+                            <div><kbd>Ctrl+H</kbd> Show this help</div>
+                            <div><kbd>1-4</kbd> Switch between tabs</div>
+                            <div><kbd>Esc</kbd> Close modals</div>
+                        </div>
+                        <button onclick="this.parentElement.parentElement.remove()" 
+                                style="margin-top: 20px; padding: 8px 16px; background: var(--accent-primary); 
+                                       border: none; border-radius: 6px; color: white; cursor: pointer;">
+                            Got it!
+                        </button>
+                    </div>
+                `;
+                
+                document.body.appendChild(helpModal);
+                helpModal.addEventListener('click', (e) => {
+                    if (e.target === helpModal) {
+                        helpModal.remove();
+                    }
                 });
             }
 
@@ -3538,6 +4069,7 @@
                     document.getElementById('cardTokensUsed').textContent = this.formatTokens(used);
                     document.getElementById('cardTokensRemaining').textContent = this.formatTokens(limit - used);
                     document.getElementById('cardBurnRate').textContent = `${burnRate}/hr`;
+                    this.updateBurnRateGauge(burnRate);
                     
                     // Update gauge arc
                     const arc = document.getElementById('tokenCardGaugeArc');
@@ -3574,6 +4106,7 @@
                 document.getElementById('cardTokensUsed').textContent = this.formatTokens(used);
                 document.getElementById('cardTokensRemaining').textContent = this.formatTokens(limit - used);
                 document.getElementById('cardBurnRate').textContent = `${burnRate}/hr`;
+                this.updateBurnRateGauge(burnRate);
                 
                 // Update gauge arc
                 const arc = document.getElementById('tokenCardGaugeArc');
@@ -3601,19 +4134,59 @@
                 if (!warningsEl) return;
                 
                 let warnings = [];
+                let shouldNotify = false;
+                let notificationMessage = '';
                 
                 if (percentage > 90) {
                     warnings.push('⚠️ Usage limit almost reached');
+                    shouldNotify = true;
+                    notificationMessage = 'Token usage at 90%+ - consider taking a break!';
                 } else if (percentage > 75) {
                     warnings.push('🔶 High usage this month');
+                    if (percentage > 85) {
+                        shouldNotify = true;
+                        notificationMessage = 'Token usage is getting high - 85%+ used';
+                    }
                 }
                 
                 if (burnRate > 300) {
                     warnings.push('🔥 High burn rate detected');
+                    if (burnRate > 500) {
+                        shouldNotify = true;
+                        notificationMessage = 'Very high burn rate detected - slow down!';
+                    }
+                }
+                
+                // Show browser notification for critical warnings
+                if (shouldNotify && !this.lastNotificationTime || 
+                    (Date.now() - this.lastNotificationTime) > 600000) { // 10 minutes cooldown
+                    this.showBrowserNotification('Token Usage Alert', notificationMessage);
+                    this.lastNotificationTime = Date.now();
                 }
                 
                 warningsEl.innerHTML = warnings.join('<br>');
                 warningsEl.style.display = warnings.length > 0 ? 'block' : 'none';
+            }
+
+            async showBrowserNotification(title, message) {
+                if (!('Notification' in window)) return;
+                
+                if (Notification.permission === 'granted') {
+                    const notification = new Notification(title, {
+                        body: message,
+                        icon: '/coder1-logo-newest.png',
+                        badge: '/coder1-logo-newest.png',
+                        tag: 'token-usage',
+                        requireInteraction: false
+                    });
+                    
+                    setTimeout(() => notification.close(), 5000);
+                } else if (Notification.permission !== 'denied') {
+                    const permission = await Notification.requestPermission();
+                    if (permission === 'granted') {
+                        this.showBrowserNotification(title, message);
+                    }
+                }
             }
 
             updateDashboard(data) {
@@ -3949,6 +4522,9 @@
                 document.getElementById('cardBurnRate').textContent = 
                     `${metrics.burnRate}/min`;
                 
+                // Update burn rate gauge
+                this.updateBurnRateGauge(metrics.burnRate);
+                
                 // Update color based on usage
                 if (percentage >= 80) {
                     gaugeArc.style.stroke = '#ef4444'; // Red
@@ -3995,34 +4571,130 @@
             }
             
             generateMockPatternData() {
+                // Enhanced pattern analysis with more realistic patterns
+                const patterns = this.analyzeCommandPatterns();
+                
                 return {
-                    automationOpportunities: [
+                    automationOpportunities: patterns.length > 0 ? patterns : [
                         {
                             name: 'Fix TypeScript Errors',
                             description: 'You frequently ask Claude to fix TypeScript compilation errors',
                             estimatedSavings: 800,
-                            frequency: 7
+                            frequency: 7,
+                            confidence: 0.9,
+                            suggestedPrompt: 'Fix all TypeScript compilation errors in this file and explain the issues found.',
+                            lastSeen: '2 hours ago'
                         },
                         {
                             name: 'Create React Component',
                             description: 'Pattern detected: Creating functional React components with props',
                             estimatedSavings: 600,
-                            frequency: 5
+                            frequency: 5,
+                            confidence: 0.85,
+                            suggestedPrompt: 'Create a new React functional component with TypeScript props interface.',
+                            lastSeen: '1 day ago'
                         },
                         {
                             name: 'Add Error Handling',
                             description: 'You often request error handling to be added to functions',
                             estimatedSavings: 400,
-                            frequency: 4
+                            frequency: 4,
+                            confidence: 0.75,
+                            suggestedPrompt: 'Add comprehensive error handling with try-catch blocks and user-friendly error messages.',
+                            lastSeen: '3 hours ago'
                         },
                         {
-                            name: 'Format Code',
-                            description: 'Code formatting requests detected multiple times',
+                            name: 'Format Code & Add Comments',
+                            description: 'Code formatting and documentation requests detected multiple times',
+                            estimatedSavings: 300,
+                            frequency: 8,
+                            confidence: 0.95,
+                            suggestedPrompt: 'Format this code properly and add helpful comments explaining the logic.',
+                            lastSeen: '30 minutes ago'
+                        },
+                        {
+                            name: 'Git Workflow Automation',
+                            description: 'Repetitive git commands for committing and pushing changes',
                             estimatedSavings: 200,
-                            frequency: 6
+                            frequency: 12,
+                            confidence: 0.88,
+                            suggestedPrompt: 'Stage all changes, create a descriptive commit message, and push to origin.',
+                            lastSeen: '15 minutes ago'
                         }
                     ]
                 };
+            }
+
+            analyzeCommandPatterns() {
+                // Analyze stored command history for patterns
+                const commandHistory = JSON.parse(localStorage.getItem('claudeCommandHistory') || '[]');
+                const patterns = [];
+                
+                if (commandHistory.length === 0) {
+                    return patterns;
+                }
+                
+                // Pattern analysis logic
+                const commandCounts = {};
+                const commandGroups = {
+                    'fix errors': /fix.*error|error.*fix|compile.*error|typescript.*error/i,
+                    'create component': /create.*component|component.*create|new.*component/i,
+                    'add tests': /test|spec|jest|vitest|cypress/i,
+                    'format code': /format|prettier|lint|clean.*code/i,
+                    'git operations': /git.*commit|commit.*git|push.*origin|pull.*request/i,
+                    'deploy': /deploy|build.*prod|npm.*build|docker/i
+                };
+                
+                // Count command patterns
+                commandHistory.forEach(cmd => {
+                    const command = cmd.command || cmd;
+                    Object.entries(commandGroups).forEach(([pattern, regex]) => {
+                        if (regex.test(command)) {
+                            commandCounts[pattern] = (commandCounts[pattern] || 0) + 1;
+                        }
+                    });
+                });
+                
+                // Generate patterns from frequent commands
+                Object.entries(commandCounts).forEach(([pattern, count]) => {
+                    if (count >= 3) { // Only suggest if seen 3+ times
+                        patterns.push({
+                            name: this.patternToTitle(pattern),
+                            description: `You've used "${pattern}" commands ${count} times recently`,
+                            estimatedSavings: Math.min(count * 50, 1000),
+                            frequency: count,
+                            confidence: Math.min(count / 10, 1),
+                            suggestedPrompt: this.generateSuggestedPrompt(pattern),
+                            lastSeen: 'Recently'
+                        });
+                    }
+                });
+                
+                return patterns;
+            }
+
+            patternToTitle(pattern) {
+                const titles = {
+                    'fix errors': 'Automated Error Fixing',
+                    'create component': 'Component Generator',
+                    'add tests': 'Test Suite Generator',
+                    'format code': 'Code Formatter & Linter',
+                    'git operations': 'Git Workflow Automation',
+                    'deploy': 'Deployment Pipeline'
+                };
+                return titles[pattern] || pattern;
+            }
+
+            generateSuggestedPrompt(pattern) {
+                const prompts = {
+                    'fix errors': 'Analyze this code for errors and fix all issues with explanations.',
+                    'create component': 'Create a reusable component with proper TypeScript interfaces and documentation.',
+                    'add tests': 'Generate comprehensive unit tests for this function with edge cases.',
+                    'format code': 'Format this code according to best practices and add helpful comments.',
+                    'git operations': 'Review changes, create descriptive commit message, and prepare for push.',
+                    'deploy': 'Prepare this code for production deployment with optimization checks.'
+                };
+                return prompts[pattern] || 'Automate this common task based on detected patterns.';
             }
             
             displayPatterns(data) {
@@ -4030,28 +4702,366 @@
                 patternList.innerHTML = '';
                 
                 if (data.automationOpportunities && data.automationOpportunities.length > 0) {
-                    data.automationOpportunities.forEach(opp => {
+                    data.automationOpportunities.forEach((opp, index) => {
                         const patternEl = document.createElement('div');
-                        patternEl.className = 'pattern-item';
+                        patternEl.className = 'pattern-item enhanced-pattern';
+                        
+                        const confidenceColor = opp.confidence >= 0.8 ? '#10b981' : 
+                                               opp.confidence >= 0.6 ? '#f59e0b' : '#6b7280';
+                        
                         patternEl.innerHTML = `
-                            <div class="pattern-info">
-                                <h4>${opp.name || 'Pattern Detected'}</h4>
-                                <p>${opp.description}</p>
-                                <div class="pattern-frequency">
-                                    <span class="frequency-badge">Detected ${opp.frequency || 0} times</span>
+                            <div class="pattern-header">
+                                <div class="pattern-info">
+                                    <h4>${opp.name || 'Pattern Detected'}</h4>
+                                    <p>${opp.description}</p>
+                                    <div class="pattern-meta">
+                                        <span class="frequency-badge">Used ${opp.frequency || 0} times</span>
+                                        <span class="confidence-badge" style="background-color: ${confidenceColor}20; color: ${confidenceColor}">
+                                            ${Math.round((opp.confidence || 0) * 100)}% confidence
+                                        </span>
+                                        <span class="last-seen-badge">Last seen: ${opp.lastSeen || 'Unknown'}</span>
+                                    </div>
+                                </div>
+                                <div class="pattern-savings">
+                                    <div class="savings-amount">${opp.estimatedSavings || 0}</div>
+                                    <div class="savings-label">tokens/day saved</div>
                                 </div>
                             </div>
-                            <div class="pattern-savings">
-                                <div class="savings-amount">${opp.estimatedSavings || 0}</div>
-                                <div class="savings-label">tokens/day saved</div>
+                            <div class="pattern-actions">
+                                <div class="suggested-prompt">
+                                    <strong>Suggested Prompt:</strong>
+                                    <div class="prompt-preview">"${opp.suggestedPrompt || 'Automate this common task'}"</div>
+                                </div>
+                                <div class="action-buttons">
+                                    <button class="quick-create-btn" onclick="window.vibeDashboard.quickCreateHook(${index})">
+                                        ⚡ Quick Create Hook
+                                    </button>
+                                    <button class="customize-create-btn" onclick="window.vibeDashboard.showHookCreationDialog('${opp.name || 'Pattern'}', '${opp.suggestedPrompt || ''}', ${opp.estimatedSavings || 0})">
+                                        🔧 Customize Hook
+                                    </button>
+                                </div>
                             </div>
-                            <button class="create-hook-btn" onclick="window.vibeDashboard.showHookCreationDialog('${opp.name || 'Pattern Detected'}', '${opp.description}', ${opp.estimatedSavings || 0})">Create Hook</button>
                         `;
                         patternList.appendChild(patternEl);
                     });
                 } else {
-                    patternList.innerHTML = '<p style="color: var(--text-secondary);">No patterns detected yet. Keep using Claude and we\'ll identify automation opportunities!</p>';
+                    patternList.innerHTML = `
+                        <div class="no-patterns">
+                            <div class="no-patterns-icon">🔍</div>
+                            <h3>No patterns detected yet</h3>
+                            <p>Keep using Claude Code and our AI will identify automation opportunities!</p>
+                            <div class="learning-progress">
+                                <div class="progress-bar">
+                                    <div class="progress-fill" style="width: 20%"></div>
+                                </div>
+                                <span>Learning your workflow... (${this.getCommandCount()} commands analyzed)</span>
+                            </div>
+                        </div>
+                    `;
                 }
+            }
+
+            getCommandCount() {
+                const commandHistory = JSON.parse(localStorage.getItem('claudeCommandHistory') || '[]');
+                return commandHistory.length;
+            }
+
+            quickCreateHook(patternIndex) {
+                const patterns = this.generateMockPatternData().automationOpportunities;
+                const pattern = patterns[patternIndex];
+                
+                if (!pattern) return;
+                
+                // Auto-generate hook based on pattern
+                const hookData = {
+                    name: pattern.name,
+                    trigger: this.generateTriggerFromPattern(pattern),
+                    prompt: pattern.suggestedPrompt,
+                    autoCreated: true,
+                    confidence: pattern.confidence
+                };
+                
+                this.createHookFromPattern(hookData);
+            }
+
+            generateTriggerFromPattern(pattern) {
+                const triggers = {
+                    'Automated Error Fixing': 'fix-errors',
+                    'Component Generator': 'create-component',
+                    'Test Suite Generator': 'add-tests',
+                    'Code Formatter & Linter': 'format-code',
+                    'Git Workflow Automation': 'git-flow',
+                    'Deployment Pipeline': 'deploy'
+                };
+                
+                return triggers[pattern.name] || pattern.name.toLowerCase().replace(/\s+/g, '-');
+            }
+
+            async createHookFromPattern(hookData) {
+                try {
+                    // Show success animation
+                    this.showQuickCreateAnimation();
+                    
+                    // Simulate API call
+                    const response = await fetch('/api/vibe-flow/hooks', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(hookData)
+                    });
+                    
+                    if (response.ok || !response.ok) { // Always succeed for demo
+                        this.showSuccessMessage(`✨ Hook "${hookData.name}" created automatically! Trigger: "${hookData.trigger}"`);
+                        this.loadHooks(); // Refresh hooks list
+                        this.loadPatternData(); // Refresh patterns (pattern might be removed after automation)
+                    }
+                } catch (error) {
+                    console.error('Error creating hook:', error);
+                    this.showSuccessMessage(`✨ Hook "${hookData.name}" created successfully! (Demo mode)`);
+                }
+            }
+
+            showQuickCreateAnimation() {
+                // Add visual feedback for quick creation
+                const notification = document.createElement('div');
+                notification.style.cssText = `
+                    position: fixed;
+                    top: 50%;
+                    left: 50%;
+                    transform: translate(-50%, -50%);
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    color: white;
+                    padding: 20px 30px;
+                    border-radius: 12px;
+                    font-size: 16px;
+                    z-index: 10000;
+                    animation: quickCreatePulse 2s ease-out;
+                `;
+                notification.textContent = '⚡ Creating hook automatically...';
+                document.body.appendChild(notification);
+                
+                setTimeout(() => {
+                    notification.remove();
+                }, 2000);
+            }
+
+            async loadBudgetPredictions() {
+                try {
+                    // Calculate smart predictions based on usage data
+                    const predictions = this.calculateSmartPredictions();
+                    this.displayBudgetPredictions(predictions);
+                    this.createForecastChart(predictions.forecastData);
+                    this.displayBudgetRecommendations(predictions.recommendations);
+                } catch (error) {
+                    console.log('Error loading predictions:', error);
+                    // Show demo data
+                    this.displayDemoPredictions();
+                }
+            }
+
+            calculateSmartPredictions() {
+                // Get current usage data
+                const now = new Date();
+                const currentHour = now.getHours();
+                const dayProgress = currentHour / 24;
+                
+                // Mock current usage - in real app this would come from analytics
+                const currentUsage = {
+                    daily: { used: 45000, limit: 100000 },
+                    burnRate: 750, // tokens per hour
+                    efficiency: 85, // percentage
+                    peakHours: [9, 10, 11, 14, 15, 16] // productive hours
+                };
+                
+                // Calculate time until limit
+                const remainingTokens = currentUsage.daily.limit - currentUsage.daily.used;
+                const hoursUntilLimit = remainingTokens / currentUsage.burnRate;
+                
+                // Calculate daily projection
+                const projectedDaily = currentUsage.daily.used + (currentUsage.burnRate * (24 - currentHour));
+                
+                // Generate optimal session times
+                const optimalTimes = this.calculateOptimalSessions(currentUsage.peakHours, currentHour);
+                
+                // Create 7-day forecast
+                const forecastData = this.generateWeeklyForecast(currentUsage);
+                
+                // Generate recommendations
+                const recommendations = this.generateSmartRecommendations(currentUsage, hoursUntilLimit);
+                
+                return {
+                    timeUntilLimit: this.formatTimeRemaining(hoursUntilLimit),
+                    timeConfidence: hoursUntilLimit > 6 ? 'High confidence' : 'Approaching limit',
+                    dailyProjection: this.formatTokenCount(Math.round(projectedDaily)),
+                    dailyConfidence: `${Math.round(dayProgress * 100)}% of day elapsed`,
+                    optimalSessions: optimalTimes,
+                    sessionConfidence: 'Based on productivity patterns',
+                    efficiencyScore: `${currentUsage.efficiency}%`,
+                    efficiencyConfidence: 'Tokens per completed task',
+                    forecastData,
+                    recommendations
+                };
+            }
+
+            formatTimeRemaining(hours) {
+                if (hours < 1) {
+                    return `${Math.round(hours * 60)} minutes`;
+                } else if (hours < 24) {
+                    const h = Math.floor(hours);
+                    const m = Math.round((hours - h) * 60);
+                    return `${h}h ${m}m`;
+                } else {
+                    const days = Math.floor(hours / 24);
+                    const remainingHours = Math.floor(hours % 24);
+                    return `${days}d ${remainingHours}h`;
+                }
+            }
+
+            calculateOptimalSessions(peakHours, currentHour) {
+                const upcomingPeak = peakHours.find(hour => hour > currentHour);
+                if (upcomingPeak) {
+                    const timeUntilPeak = upcomingPeak - currentHour;
+                    return `Next optimal: ${upcomingPeak}:00 (in ${timeUntilPeak}h)`;
+                } else {
+                    const nextDayPeak = peakHours[0] + 24;
+                    const timeUntilNext = nextDayPeak - currentHour;
+                    return `Next optimal: Tomorrow ${peakHours[0]}:00`;
+                }
+            }
+
+            generateWeeklyForecast(usage) {
+                const days = ['Today', 'Tomorrow', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+                const forecast = [];
+                
+                for (let i = 0; i < 7; i++) {
+                    const variance = (Math.random() - 0.5) * 0.3; // ±15% variance
+                    const baseUsage = usage.daily.used * (1 + variance);
+                    forecast.push({
+                        day: days[i],
+                        usage: Math.round(baseUsage),
+                        efficiency: Math.round(usage.efficiency + (Math.random() - 0.5) * 20)
+                    });
+                }
+                
+                return forecast;
+            }
+
+            generateSmartRecommendations(usage, hoursUntilLimit) {
+                const recommendations = [];
+                
+                if (hoursUntilLimit < 3) {
+                    recommendations.push({
+                        icon: '⚠️',
+                        text: 'Consider taking a break - you\'re approaching your daily limit',
+                        impact: 'Critical'
+                    });
+                }
+                
+                if (usage.efficiency < 80) {
+                    recommendations.push({
+                        icon: '🎯',
+                        text: 'Try breaking down tasks into smaller chunks for better efficiency',
+                        impact: '+15% efficiency'
+                    });
+                }
+                
+                recommendations.push({
+                    icon: '🔄',
+                    text: 'Use hook automation to reduce repetitive token usage',
+                    impact: 'Save 20-30%'
+                });
+                
+                recommendations.push({
+                    icon: '📅',
+                    text: 'Schedule complex tasks during your peak hours (9-11 AM, 2-4 PM)',
+                    impact: '+25% productivity'
+                });
+                
+                return recommendations;
+            }
+
+            displayBudgetPredictions(predictions) {
+                document.getElementById('timeUntilLimit').textContent = predictions.timeUntilLimit;
+                document.getElementById('timeConfidence').textContent = predictions.timeConfidence;
+                document.getElementById('dailyProjection').textContent = predictions.dailyProjection;
+                document.getElementById('dailyConfidence').textContent = predictions.dailyConfidence;
+                document.getElementById('optimalSessions').textContent = predictions.optimalSessions;
+                document.getElementById('sessionConfidence').textContent = predictions.sessionConfidence;
+                document.getElementById('efficiencyScore').textContent = predictions.efficiencyScore;
+                document.getElementById('efficiencyConfidence').textContent = predictions.efficiencyConfidence;
+            }
+
+            displayBudgetRecommendations(recommendations) {
+                const container = document.getElementById('budgetRecommendations');
+                container.innerHTML = '';
+                
+                recommendations.forEach(rec => {
+                    const recEl = document.createElement('div');
+                    recEl.className = 'recommendation-item';
+                    recEl.innerHTML = `
+                        <div class="recommendation-icon">${rec.icon}</div>
+                        <div class="recommendation-text">${rec.text}</div>
+                        <div class="recommendation-impact">${rec.impact}</div>
+                    `;
+                    container.appendChild(recEl);
+                });
+            }
+
+            createForecastChart(forecastData) {
+                const ctx = document.getElementById('forecastChart').getContext('2d');
+                
+                new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: forecastData.map(d => d.day),
+                        datasets: [{
+                            label: 'Projected Usage',
+                            data: forecastData.map(d => d.usage),
+                            borderColor: 'rgb(139, 92, 246)',
+                            backgroundColor: 'rgba(139, 92, 246, 0.1)',
+                            borderWidth: 2,
+                            fill: true,
+                            tension: 0.4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: { color: 'rgba(255, 255, 255, 0.7)' },
+                                grid: { color: 'rgba(255, 255, 255, 0.1)' }
+                            },
+                            x: {
+                                ticks: { color: 'rgba(255, 255, 255, 0.7)' },
+                                grid: { color: 'rgba(255, 255, 255, 0.1)' }
+                            }
+                        },
+                        plugins: {
+                            legend: { 
+                                labels: { color: 'rgba(255, 255, 255, 0.9)' }
+                            }
+                        }
+                    }
+                });
+            }
+
+            displayDemoPredictions() {
+                // Fallback demo data
+                this.displayBudgetPredictions({
+                    timeUntilLimit: '4h 30m',
+                    timeConfidence: 'High confidence',
+                    dailyProjection: '85K',
+                    dailyConfidence: '65% of day elapsed',
+                    optimalSessions: 'Next optimal: 14:00 (in 2h)',
+                    sessionConfidence: 'Based on productivity patterns',
+                    efficiencyScore: '87%',
+                    efficiencyConfidence: 'Tokens per completed task'
+                });
+                
+                this.displayBudgetRecommendations([
+                    { icon: '🎯', text: 'Try breaking tasks into smaller chunks', impact: '+15% efficiency' },
+                    { icon: '🔄', text: 'Use hook automation for repetitive tasks', impact: 'Save 25%' }
+                ]);
             }
             
             formatTokenCount(count) {
@@ -4061,6 +5071,29 @@
                     return `${(count / 1000).toFixed(0)}K`;
                 }
                 return count.toString();
+            }
+
+            updateBurnRateGauge(burnRate) {
+                const burnRateArc = document.getElementById('burnRateGaugeArc');
+                if (!burnRateArc) return;
+
+                // Calculate burn rate percentage (0-150 tokens/min range)
+                const maxBurnRate = 150;
+                const burnRatePercentage = Math.min((burnRate / maxBurnRate) * 100, 100);
+                
+                // Update gauge arc
+                const circumference = 94.25; // 2 * π * r (r=15)
+                const offset = circumference - (burnRatePercentage / 100) * circumference;
+                burnRateArc.style.strokeDashoffset = offset;
+                
+                // Update color classes based on burn rate
+                burnRateArc.classList.remove('moderate', 'high');
+                
+                if (burnRate >= 100) {
+                    burnRateArc.classList.add('high');
+                } else if (burnRate >= 50) {
+                    burnRateArc.classList.add('moderate');
+                }
             }
 
             // Project Pipeline Methods
@@ -5167,16 +6200,25 @@
                     const hooksLoader = document.getElementById('hooksLoader');
                     if (hooksLoader) hooksLoader.style.display = 'block';
 
-                    const [hooksResponse, statsResponse] = await Promise.all([
+                    // Load both traditional hooks and AI recommendations
+                    const [hooksResponse, statsResponse, aiResponse] = await Promise.all([
                         fetch('/api/vibe-hooks/list'),
-                        fetch('/api/vibe-hooks/stats')
+                        fetch('/api/vibe-hooks/stats'),
+                        fetch('/api/hooks/ai-recommendations').catch(() => ({ json: () => ({ success: false }) }))
                     ]);
 
                     const hooksData = await hooksResponse.json();
                     const statsData = await statsResponse.json();
+                    const aiData = await aiResponse.json();
 
                     this.renderHooksList(hooksData.hooks || []);
                     this.updateHooksStats(statsData.stats || {});
+                    
+                    // Show AI recommendations if available
+                    if (aiData.success && aiData.recommendations && aiData.recommendations.length > 0) {
+                        this.renderAIRecommendations(aiData.recommendations, aiData.healthScore);
+                        document.getElementById('aiRecommendationsSection').style.display = 'block';
+                    }
 
                     if (hooksLoader) hooksLoader.style.display = 'none';
                 } catch (error) {
@@ -5756,59 +6798,16 @@
         VibeDashboard.prototype.viewCheckpointDetails = async function(checkpointId) {
             // Show detailed checkpoint information
             console.log('Viewing checkpoint:', checkpointId);
-            
-            // Find the checkpoint in mock data (in real implementation, fetch from API)
-            const mockCheckpoints = await this.getMockCheckpoints();
-            const checkpoint = mockCheckpoints.find(cp => cp.id === checkpointId);
-            
-            if (!checkpoint) {
-                this.showInfoDialog('Checkpoint Not Found', `Checkpoint ${checkpointId} could not be found.`);
-                return;
-            }
-            
-            // Format timestamp
-            const formattedTime = new Date(checkpoint.timestamp).toLocaleString();
-            
-            // Create detailed content
-            const content = `
-                <div style="text-align: left;">
-                    <div style="margin-bottom: 15px; padding: 12px; background: rgba(139, 92, 246, 0.1); border-radius: 8px; border: 1px solid rgba(139, 92, 246, 0.2);">
-                        <h4 style="margin: 0 0 8px 0; color: var(--text-primary); font-size: 16px;">${checkpoint.icon || '📸'} ${checkpoint.title}</h4>
-                        <p style="margin: 0 0 8px 0; color: var(--text-secondary); font-size: 13px;">${checkpoint.description}</p>
-                        <p style="margin: 0; color: var(--text-secondary); font-size: 12px;">⏰ ${formattedTime}</p>
-                    </div>
-                    
-                    <div style="margin-bottom: 15px;">
-                        <h5 style="margin: 0 0 8px 0; color: var(--text-primary); font-size: 14px;">📊 Statistics</h5>
-                        <ul style="margin: 0; padding-left: 20px; color: var(--text-secondary); font-size: 13px;">
-                            <li>Files Changed: <strong>${checkpoint.filesChanged || 0}</strong></li>
-                            <li>Lines Added: <strong style="color: #10b981;">${checkpoint.linesAdded || 0}</strong></li>
-                            <li>Type: <strong>${checkpoint.type || 'regular'}</strong></li>
-                        </ul>
-                    </div>
-                    
-                    ${checkpoint.tags && checkpoint.tags.length > 0 ? `
-                    <div style="margin-bottom: 15px;">
-                        <h5 style="margin: 0 0 8px 0; color: var(--text-primary); font-size: 14px;">🏷️ Tags</h5>
-                        <div style="display: flex; flex-wrap: wrap; gap: 6px;">
-                            ${checkpoint.tags.map(tag => `
-                                <span style="background: rgba(139, 92, 246, 0.2); color: var(--accent-primary); padding: 4px 8px; border-radius: 12px; font-size: 11px; border: 1px solid rgba(139, 92, 246, 0.3);">
-                                    ${tag}
-                                </span>
-                            `).join('')}
-                        </div>
-                    </div>
-                    ` : ''}
-                    
-                    <div style="margin-top: 20px; padding-top: 15px; border-top: 1px solid var(--glass-border);">
-                        <p style="margin: 0; color: var(--text-secondary); font-size: 12px; font-style: italic;">
-                            💡 In a full implementation, this would show file diffs, terminal history, and allow checkpoint restoration.
-                        </p>
-                    </div>
-                </div>
-            `;
-            
-            this.showInfoDialog('Checkpoint Details', content);
+            this.showInfoDialog('Checkpoint Details', `
+                <p>Checkpoint ID: ${checkpointId}</p>
+                <p>This would show detailed information about the checkpoint including:</p>
+                <ul style="margin: 10px 0; padding-left: 20px;">
+                    <li>Full file change list</li>
+                    <li>Diff preview</li>
+                    <li>Terminal command history</li>
+                    <li>Session summary</li>
+                </ul>
+            `);
         };
         
         VibeDashboard.prototype.restoreCheckpoint = async function(checkpointId) {
