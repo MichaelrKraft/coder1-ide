@@ -1,0 +1,741 @@
+{
+  "version": "1.0.0",
+  "lastUpdated": "2025-01-25",
+  "prompts": [
+    {
+      "id": "quick-start",
+      "command": "/coder1/quick-start",
+      "title": "Quick Start Guide",
+      "description": "Discover all available commands and capabilities",
+      "icon": "🚀",
+      "category": "getting-started",
+      "examples": [
+        "Shows complete command list",
+        "Interactive tutorials",
+        "Capability overview"
+      ],
+      "contextTriggers": ["new-session", "first-time", "general"],
+      "priority": 10
+    },
+    {
+      "id": "find-bugs",
+      "command": "/coder1/find-bugs",
+      "title": "Bug Hunter",
+      "description": "Automatically detect and fix issues in your code",
+      "icon": "🐛",
+      "category": "debugging",
+      "examples": [
+        "Syntax error detection",
+        "Logic issue identification",
+        "Performance bottlenecks"
+      ],
+      "contextTriggers": ["has-errors", "test-failure", "javascript", "python"],
+      "priority": 9
+    },
+    {
+      "id": "optimize",
+      "command": "/coder1/optimize",
+      "title": "Performance Optimizer",
+      "description": "Make your code run faster and use less memory",
+      "icon": "⚡",
+      "category": "performance",
+      "examples": [
+        "Algorithm optimization",
+        "Memory usage reduction",
+        "Query optimization"
+      ],
+      "contextTriggers": ["large-file", "slow-performance", "general"],
+      "priority": 7
+    },
+    {
+      "id": "generate-tests",
+      "command": "/coder1/generate-tests",
+      "title": "Test Generator",
+      "description": "Create comprehensive test suites automatically",
+      "icon": "🧪",
+      "category": "testing",
+      "examples": [
+        "Unit test generation",
+        "Integration tests",
+        "Edge case coverage"
+      ],
+      "contextTriggers": ["no-tests", "new-function", "javascript", "python"],
+      "priority": 8
+    },
+    {
+      "id": "explain-code",
+      "command": "/coder1/explain",
+      "title": "Code Explainer",
+      "description": "Get plain English explanations of complex code",
+      "icon": "💡",
+      "category": "learning",
+      "examples": [
+        "Line-by-line breakdown",
+        "Architecture overview",
+        "Algorithm explanation"
+      ],
+      "contextTriggers": ["complex-code", "unfamiliar-language", "general"],
+      "priority": 6
+    },
+    {
+      "id": "implement-feature",
+      "command": "/coder1/implement",
+      "title": "Feature Builder",
+      "description": "Turn ideas into working code instantly",
+      "icon": "🔨",
+      "category": "development",
+      "examples": [
+        "API endpoint creation",
+        "UI component building",
+        "Database schema design"
+      ],
+      "contextTriggers": ["general", "morning"],
+      "priority": 9
+    },
+    {
+      "id": "refactor-code",
+      "command": "/coder1/refactor",
+      "title": "Code Refactorer",
+      "description": "Improve code structure without changing behavior",
+      "icon": "♻️",
+      "category": "quality",
+      "examples": [
+        "Extract methods",
+        "Remove duplication",
+        "Improve naming"
+      ],
+      "contextTriggers": ["complex-code", "code-smell", "general"],
+      "priority": 6
+    },
+    {
+      "id": "security-scan",
+      "command": "/coder1/security-scan",
+      "title": "Security Scanner",
+      "description": "Find and fix security vulnerabilities",
+      "icon": "🔒",
+      "category": "security",
+      "examples": [
+        "SQL injection detection",
+        "XSS vulnerability scan",
+        "Authentication issues"
+      ],
+      "contextTriggers": ["deployment", "production", "general"],
+      "priority": 8
+    },
+    {
+      "id": "smart-commit",
+      "command": "/coder1/smart-commit",
+      "title": "Intelligent Commit",
+      "description": "Generate perfect commit messages automatically",
+      "icon": "📝",
+      "category": "git",
+      "examples": [
+        "Semantic versioning",
+        "Breaking change detection",
+        "Conventional commits"
+      ],
+      "contextTriggers": ["git-changes", "evening", "general"],
+      "priority": 7
+    },
+    {
+      "id": "documentation",
+      "command": "/coder1/document",
+      "title": "Doc Generator",
+      "description": "Create comprehensive documentation instantly",
+      "icon": "📚",
+      "category": "documentation",
+      "examples": [
+        "API documentation",
+        "README generation",
+        "Code comments"
+      ],
+      "contextTriggers": ["no-docs", "new-api", "general"],
+      "priority": 5
+    },
+    {
+      "id": "code-review",
+      "command": "/coder1/review",
+      "title": "Code Reviewer",
+      "description": "Get instant code review feedback",
+      "icon": "👀",
+      "category": "quality",
+      "examples": [
+        "Best practice checks",
+        "Style guide compliance",
+        "Performance suggestions"
+      ],
+      "contextTriggers": ["pre-commit", "pull-request", "general"],
+      "priority": 7
+    },
+    {
+      "id": "find-pattern",
+      "command": "/coder1/find-pattern",
+      "title": "Pattern Finder",
+      "description": "Search for code patterns across repositories",
+      "icon": "🔍",
+      "category": "search",
+      "examples": [
+        "Implementation examples",
+        "Best practices",
+        "Similar solutions"
+      ],
+      "contextTriggers": ["general", "stuck"],
+      "priority": 6
+    },
+    {
+      "id": "api-design",
+      "command": "/coder1/design-api",
+      "title": "API Designer",
+      "description": "Design RESTful APIs with best practices",
+      "icon": "🌐",
+      "category": "architecture",
+      "examples": [
+        "Endpoint structure",
+        "Request/response schemas",
+        "Authentication flow"
+      ],
+      "contextTriggers": ["backend", "api", "general"],
+      "priority": 6
+    },
+    {
+      "id": "database-optimize",
+      "command": "/coder1/optimize-db",
+      "title": "Database Optimizer",
+      "description": "Improve database queries and schema",
+      "icon": "🗄️",
+      "category": "database",
+      "examples": [
+        "Index optimization",
+        "Query performance",
+        "Schema improvements"
+      ],
+      "contextTriggers": ["sql", "database", "slow-query"],
+      "priority": 5
+    },
+    {
+      "id": "convert-code",
+      "command": "/coder1/convert",
+      "title": "Code Converter",
+      "description": "Convert code between languages or frameworks",
+      "icon": "🔄",
+      "category": "migration",
+      "examples": [
+        "JavaScript to TypeScript",
+        "Class to hooks",
+        "SQL to ORM"
+      ],
+      "contextTriggers": ["migration", "refactor", "general"],
+      "priority": 4
+    },
+    {
+      "id": "error-handler",
+      "command": "/coder1/handle-error",
+      "title": "Error Handler",
+      "description": "Add comprehensive error handling",
+      "icon": "⚠️",
+      "category": "reliability",
+      "examples": [
+        "Try-catch blocks",
+        "Error boundaries",
+        "Fallback strategies"
+      ],
+      "contextTriggers": ["has-errors", "production", "general"],
+      "priority": 7
+    },
+    {
+      "id": "accessibility",
+      "command": "/coder1/accessibility",
+      "title": "Accessibility Checker",
+      "description": "Ensure your app is accessible to everyone",
+      "icon": "♿",
+      "category": "accessibility",
+      "examples": [
+        "ARIA labels",
+        "Keyboard navigation",
+        "Screen reader support"
+      ],
+      "contextTriggers": ["frontend", "html", "react"],
+      "priority": 5
+    },
+    {
+      "id": "deploy-ready",
+      "command": "/coder1/deploy-check",
+      "title": "Deployment Checker",
+      "description": "Verify your app is ready for production",
+      "icon": "🚢",
+      "category": "deployment",
+      "examples": [
+        "Environment variables",
+        "Build optimization",
+        "Security checks"
+      ],
+      "contextTriggers": ["deployment", "production", "general"],
+      "priority": 8
+    },
+    {
+      "id": "component-create",
+      "command": "/coder1/create-component",
+      "title": "Component Builder",
+      "description": "Generate React/Vue/Angular components",
+      "icon": "🧩",
+      "category": "frontend",
+      "examples": [
+        "Functional components",
+        "Class components",
+        "With hooks/state"
+      ],
+      "contextTriggers": ["react", "vue", "angular", "frontend"],
+      "priority": 7
+    },
+    {
+      "id": "mock-data",
+      "command": "/coder1/mock-data",
+      "title": "Mock Data Generator",
+      "description": "Create realistic test data instantly",
+      "icon": "🎲",
+      "category": "testing",
+      "examples": [
+        "User profiles",
+        "Product catalogs",
+        "API responses"
+      ],
+      "contextTriggers": ["testing", "development", "general"],
+      "priority": 4
+    },
+    {
+      "id": "dependency-check",
+      "command": "/coder1/check-deps",
+      "title": "Dependency Analyzer",
+      "description": "Find outdated or vulnerable dependencies",
+      "icon": "📦",
+      "category": "maintenance",
+      "examples": [
+        "Security vulnerabilities",
+        "Version updates",
+        "Unused packages"
+      ],
+      "contextTriggers": ["package.json", "requirements.txt", "general"],
+      "priority": 6
+    },
+    {
+      "id": "regex-builder",
+      "command": "/coder1/regex",
+      "title": "Regex Builder",
+      "description": "Create and test regular expressions",
+      "icon": "🎯",
+      "category": "utilities",
+      "examples": [
+        "Email validation",
+        "URL matching",
+        "Data extraction"
+      ],
+      "contextTriggers": ["validation", "parsing", "general"],
+      "priority": 3
+    },
+    {
+      "id": "css-optimize",
+      "command": "/coder1/optimize-css",
+      "title": "CSS Optimizer",
+      "description": "Clean up and optimize your stylesheets",
+      "icon": "🎨",
+      "category": "frontend",
+      "examples": [
+        "Remove unused CSS",
+        "Combine selectors",
+        "Autoprefixer"
+      ],
+      "contextTriggers": ["css", "scss", "frontend"],
+      "priority": 4
+    },
+    {
+      "id": "api-test",
+      "command": "/coder1/test-api",
+      "title": "API Tester",
+      "description": "Generate and run API tests",
+      "icon": "🧪",
+      "category": "testing",
+      "examples": [
+        "Endpoint testing",
+        "Load testing",
+        "Contract testing"
+      ],
+      "contextTriggers": ["api", "backend", "testing"],
+      "priority": 6
+    },
+    {
+      "id": "clean-code",
+      "command": "/coder1/clean",
+      "title": "Code Cleaner",
+      "description": "Remove dead code and improve readability",
+      "icon": "🧹",
+      "category": "quality",
+      "examples": [
+        "Remove console.logs",
+        "Delete commented code",
+        "Format consistently"
+      ],
+      "contextTriggers": ["messy-code", "pre-commit", "general"],
+      "priority": 5
+    },
+    {
+      "id": "env-setup",
+      "command": "/coder1/setup-env",
+      "title": "Environment Setup",
+      "description": "Configure development environment",
+      "icon": "⚙️",
+      "category": "setup",
+      "examples": [
+        ".env file creation",
+        "Docker compose",
+        "Dev dependencies"
+      ],
+      "contextTriggers": ["new-project", "morning", "general"],
+      "priority": 7
+    },
+    {
+      "id": "time-complexity",
+      "command": "/coder1/analyze-complexity",
+      "title": "Complexity Analyzer",
+      "description": "Analyze time and space complexity",
+      "icon": "📊",
+      "category": "performance",
+      "examples": [
+        "Big O notation",
+        "Algorithm efficiency",
+        "Memory usage"
+      ],
+      "contextTriggers": ["algorithm", "performance", "general"],
+      "priority": 4
+    },
+    {
+      "id": "design-pattern",
+      "command": "/coder1/pattern",
+      "title": "Pattern Implementer",
+      "description": "Implement design patterns correctly",
+      "icon": "🏗️",
+      "category": "architecture",
+      "examples": [
+        "Singleton pattern",
+        "Observer pattern",
+        "Factory pattern"
+      ],
+      "contextTriggers": ["architecture", "refactor", "general"],
+      "priority": 5
+    },
+    {
+      "id": "git-workflow",
+      "command": "/coder1/git-flow",
+      "title": "Git Workflow Helper",
+      "description": "Manage branches and merges efficiently",
+      "icon": "🌳",
+      "category": "git",
+      "examples": [
+        "Feature branches",
+        "Merge conflicts",
+        "Rebase strategies"
+      ],
+      "contextTriggers": ["git", "collaboration", "general"],
+      "priority": 5
+    },
+    {
+      "id": "cache-strategy",
+      "command": "/coder1/caching",
+      "title": "Cache Strategist",
+      "description": "Implement efficient caching strategies",
+      "icon": "💾",
+      "category": "performance",
+      "examples": [
+        "Redis caching",
+        "Browser caching",
+        "CDN setup"
+      ],
+      "contextTriggers": ["performance", "backend", "general"],
+      "priority": 4
+    },
+    {
+      "id": "auth-implement",
+      "command": "/coder1/auth",
+      "title": "Auth Implementation",
+      "description": "Add authentication and authorization",
+      "icon": "🔐",
+      "category": "security",
+      "examples": [
+        "JWT implementation",
+        "OAuth setup",
+        "Role-based access"
+      ],
+      "contextTriggers": ["authentication", "security", "general"],
+      "priority": 8
+    },
+    {
+      "id": "i18n-setup",
+      "command": "/coder1/i18n",
+      "title": "Internationalization",
+      "description": "Add multi-language support",
+      "icon": "🌍",
+      "category": "frontend",
+      "examples": [
+        "Translation files",
+        "Locale detection",
+        "RTL support"
+      ],
+      "contextTriggers": ["frontend", "global", "general"],
+      "priority": 3
+    },
+    {
+      "id": "websocket-setup",
+      "command": "/coder1/websocket",
+      "title": "WebSocket Implementation",
+      "description": "Add real-time communication",
+      "icon": "🔌",
+      "category": "backend",
+      "examples": [
+        "Socket.io setup",
+        "Event handling",
+        "Room management"
+      ],
+      "contextTriggers": ["realtime", "chat", "general"],
+      "priority": 5
+    },
+    {
+      "id": "docker-setup",
+      "command": "/coder1/dockerize",
+      "title": "Docker Configuration",
+      "description": "Containerize your application",
+      "icon": "🐳",
+      "category": "deployment",
+      "examples": [
+        "Dockerfile creation",
+        "Docker Compose",
+        "Multi-stage builds"
+      ],
+      "contextTriggers": ["deployment", "devops", "general"],
+      "priority": 6
+    },
+    {
+      "id": "ci-cd-setup",
+      "command": "/coder1/ci-cd",
+      "title": "CI/CD Pipeline",
+      "description": "Set up automated testing and deployment",
+      "icon": "🔄",
+      "category": "devops",
+      "examples": [
+        "GitHub Actions",
+        "GitLab CI",
+        "Jenkins pipeline"
+      ],
+      "contextTriggers": ["deployment", "automation", "general"],
+      "priority": 6
+    },
+    {
+      "id": "monitoring-setup",
+      "command": "/coder1/monitoring",
+      "title": "Monitoring Setup",
+      "description": "Add logging and monitoring",
+      "icon": "📈",
+      "category": "operations",
+      "examples": [
+        "Error tracking",
+        "Performance monitoring",
+        "Custom metrics"
+      ],
+      "contextTriggers": ["production", "debugging", "general"],
+      "priority": 5
+    },
+    {
+      "id": "graphql-setup",
+      "command": "/coder1/graphql",
+      "title": "GraphQL Implementation",
+      "description": "Set up GraphQL API",
+      "icon": "◈",
+      "category": "backend",
+      "examples": [
+        "Schema design",
+        "Resolvers",
+        "Subscriptions"
+      ],
+      "contextTriggers": ["api", "backend", "general"],
+      "priority": 4
+    },
+    {
+      "id": "microservice",
+      "command": "/coder1/microservice",
+      "title": "Microservice Builder",
+      "description": "Create microservice architecture",
+      "icon": "🔲",
+      "category": "architecture",
+      "examples": [
+        "Service decomposition",
+        "API gateway",
+        "Service mesh"
+      ],
+      "contextTriggers": ["architecture", "scalability", "general"],
+      "priority": 4
+    },
+    {
+      "id": "state-management",
+      "command": "/coder1/state",
+      "title": "State Management",
+      "description": "Implement state management solution",
+      "icon": "🗂️",
+      "category": "frontend",
+      "examples": [
+        "Redux setup",
+        "Context API",
+        "Zustand implementation"
+      ],
+      "contextTriggers": ["react", "frontend", "complex-state"],
+      "priority": 6
+    },
+    {
+      "id": "form-builder",
+      "command": "/coder1/form",
+      "title": "Form Builder",
+      "description": "Create forms with validation",
+      "icon": "📝",
+      "category": "frontend",
+      "examples": [
+        "Form validation",
+        "Dynamic fields",
+        "File uploads"
+      ],
+      "contextTriggers": ["frontend", "user-input", "general"],
+      "priority": 5
+    },
+    {
+      "id": "data-migration",
+      "command": "/coder1/migrate",
+      "title": "Data Migration",
+      "description": "Migrate data between systems",
+      "icon": "🚚",
+      "category": "database",
+      "examples": [
+        "Schema migration",
+        "Data transformation",
+        "Rollback strategies"
+      ],
+      "contextTriggers": ["database", "upgrade", "general"],
+      "priority": 4
+    },
+    {
+      "id": "rate-limiter",
+      "command": "/coder1/rate-limit",
+      "title": "Rate Limiter",
+      "description": "Implement API rate limiting",
+      "icon": "🚦",
+      "category": "backend",
+      "examples": [
+        "Token bucket",
+        "Sliding window",
+        "User quotas"
+      ],
+      "contextTriggers": ["api", "security", "general"],
+      "priority": 5
+    },
+    {
+      "id": "email-service",
+      "command": "/coder1/email",
+      "title": "Email Service",
+      "description": "Set up email sending functionality",
+      "icon": "📧",
+      "category": "backend",
+      "examples": [
+        "SMTP setup",
+        "Email templates",
+        "Queue management"
+      ],
+      "contextTriggers": ["backend", "notifications", "general"],
+      "priority": 4
+    },
+    {
+      "id": "payment-integration",
+      "command": "/coder1/payment",
+      "title": "Payment Integration",
+      "description": "Add payment processing",
+      "icon": "💳",
+      "category": "backend",
+      "examples": [
+        "Stripe integration",
+        "PayPal setup",
+        "Webhook handling"
+      ],
+      "contextTriggers": ["ecommerce", "monetization", "general"],
+      "priority": 5
+    },
+    {
+      "id": "search-implement",
+      "command": "/coder1/search",
+      "title": "Search Implementation",
+      "description": "Add search functionality",
+      "icon": "🔎",
+      "category": "features",
+      "examples": [
+        "Full-text search",
+        "Elasticsearch",
+        "Fuzzy matching"
+      ],
+      "contextTriggers": ["feature", "database", "general"],
+      "priority": 5
+    },
+    {
+      "id": "file-upload",
+      "command": "/coder1/upload",
+      "title": "File Upload Handler",
+      "description": "Implement file upload system",
+      "icon": "📤",
+      "category": "features",
+      "examples": [
+        "Multi-file upload",
+        "Progress tracking",
+        "Cloud storage"
+      ],
+      "contextTriggers": ["feature", "forms", "general"],
+      "priority": 4
+    },
+    {
+      "id": "queue-setup",
+      "command": "/coder1/queue",
+      "title": "Queue Implementation",
+      "description": "Set up job queues and workers",
+      "icon": "📬",
+      "category": "backend",
+      "examples": [
+        "Bull queue setup",
+        "Worker processes",
+        "Retry strategies"
+      ],
+      "contextTriggers": ["scalability", "async", "general"],
+      "priority": 4
+    },
+    {
+      "id": "serverless",
+      "command": "/coder1/serverless",
+      "title": "Serverless Setup",
+      "description": "Deploy serverless functions",
+      "icon": "☁️",
+      "category": "deployment",
+      "examples": [
+        "Lambda functions",
+        "Vercel functions",
+        "Edge functions"
+      ],
+      "contextTriggers": ["deployment", "scalability", "general"],
+      "priority": 4
+    },
+    {
+      "id": "learning-path",
+      "command": "/coder1/learn",
+      "title": "Learning Path",
+      "description": "Get personalized learning recommendations",
+      "icon": "🎓",
+      "category": "learning",
+      "examples": [
+        "Skill assessment",
+        "Tutorial suggestions",
+        "Practice exercises"
+      ],
+      "contextTriggers": ["beginner", "learning", "general"],
+      "priority": 8
+    }
+  ]
+}

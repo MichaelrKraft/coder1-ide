@@ -28,7 +28,9 @@
     "https://github.com/supabase/supabase",
     "https://github.com/clerk/javascript",
     "https://github.com/trpc/trpc",
-    "https://github.com/n8n-io/n8n"
+    "https://github.com/n8n-io/n8n",
+    "https://github.com/davila7/claude-code-templates",
+    "https://github.com/bmad-code-org/BMAD-METHOD"
   ],
   "testRepositories": [
     "https://github.com/vercel/next.js",

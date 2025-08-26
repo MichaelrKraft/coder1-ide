@@ -2,7 +2,7 @@
   "repoId": "a2c9c4617f9b3de5bc452314db405e69",
   "url": "https://github.com/nodejs/node",
   "name": "nodejs/node",
-  "analyzedAt": "2025-08-19T20:45:21.576Z",
+  "analyzedAt": "2025-08-25T20:12:46.665Z",
   "metadata": {
     "description": "",
     "language": "",
@@ -57,6 +57,6 @@
     "fileCount": 0,
     "patternCount": 5,
     "suggestionCount": 0,
-    "analysisTime": 1755636321576
+    "analysisTime": 1756152766665
   }
 }

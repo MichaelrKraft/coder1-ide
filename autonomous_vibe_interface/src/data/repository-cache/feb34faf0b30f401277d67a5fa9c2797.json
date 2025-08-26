@@ -2,7 +2,7 @@
   "repoId": "feb34faf0b30f401277d67a5fa9c2797",
   "url": "https://github.com/n8n-io/n8n",
   "name": "n8n-io/n8n",
-  "analyzedAt": "2025-08-19T20:47:06.592Z",
+  "analyzedAt": "2025-08-25T03:48:02.850Z",
   "metadata": {
     "description": "",
     "language": "",
@@ -57,6 +57,6 @@
     "fileCount": 0,
     "patternCount": 5,
     "suggestionCount": 0,
-    "analysisTime": 1755636426592
+    "analysisTime": 1756093682850
   }
 }

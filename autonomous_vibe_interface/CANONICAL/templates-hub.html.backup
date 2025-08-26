@@ -1,0 +1,1397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Templates Hub - Coder1 IDE</title>
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
+    <meta name="version" content="v2.1.0" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <!-- Cache buster: <?php echo time(); ?> -->
+    <style>
+        :root {
+            --bg-primary: #0a0a0a;
+            --bg-secondary: #1a1a1a;
+            --bg-card: #141414;
+            --text-primary: #ffffff;
+            --text-secondary: #a0a0a0;
+            --text-muted: #666666;
+            --accent-primary: #8b5cf6;
+            --accent-secondary: #06b6d4;
+            --border-color: rgba(139, 92, 246, 0.2);
+            --border-subtle: rgba(255, 255, 255, 0.08);
+            --success: #10b981;
+            --warning: #f59e0b;
+            --info: #3b82f6;
+            --gradient-primary: linear-gradient(135deg, #8b5cf6, #06b6d4);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+
+        /* Grid Background Pattern */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(rgba(139, 92, 246, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(139, 92, 246, 0.03) 1px, transparent 1px);
+            background-size: 50px 50px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(to bottom, var(--bg-secondary), var(--bg-primary));
+            border-bottom: 1px solid var(--border-subtle);
+            padding: 20px 0;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            backdrop-filter: blur(10px);
+        }
+
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo img {
+            height: 120px;
+            width: auto;
+            object-fit: contain;
+            margin: -40px 0;  /* Compensate to keep header height */
+        }
+        
+        /* Title styling moved inline for consistency with dashboard */
+
+        .nav-actions {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .search-box {
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: 8px;
+            padding: 10px 16px;
+            color: var(--text-primary);
+            width: 300px;
+            transition: all 0.3s;
+        }
+
+        .search-box:focus {
+            outline: none;
+            border-color: var(--accent-primary);
+            background: var(--bg-secondary);
+        }
+
+        .install-counter {
+            background: rgba(139, 92, 246, 0.1);
+            border: 1px solid var(--accent-primary);
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 14px;
+            color: var(--accent-primary);
+        }
+
+        /* Categories Section */
+        .categories-section {
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-subtle);
+            padding: 20px 0;
+            position: sticky;
+            top: 81px;
+            z-index: 99;
+            backdrop-filter: blur(10px);
+        }
+
+        .categories-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        .categories-title {
+            color: var(--text-muted);
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 12px;
+            font-weight: 600;
+        }
+
+        .category-pills {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .category-pill {
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            padding: 10px 20px;
+            border-radius: 24px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .category-pill:hover {
+            background: var(--bg-secondary);
+            border-color: var(--accent-primary);
+            transform: translateY(-2px);
+        }
+
+        .category-pill.active {
+            background: var(--gradient-primary);
+            border-color: var(--accent-primary);
+            color: white;
+        }
+
+        .category-count {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        /* Hero Section */
+        .hero-section {
+            background: linear-gradient(to bottom, var(--bg-secondary), var(--bg-primary));
+            border-bottom: 1px solid var(--border-subtle);
+            padding: 60px 0;
+        }
+
+        .hero-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 0 20px;
+            text-align: center;
+        }
+
+        .skill-indicator {
+            margin-bottom: 20px;
+        }
+
+        .skill-badge {
+            display: inline-block;
+            background: rgba(139, 92, 246, 0.2);
+            color: var(--accent-primary);
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .difficulty-note {
+            display: block;
+            color: var(--text-muted);
+            font-size: 14px;
+            font-style: italic;
+        }
+
+        .hero-section h1 {
+            font-size: 48px;
+            font-weight: 700;
+            margin-bottom: 16px;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero-subtitle {
+            font-size: 20px;
+            color: var(--text-secondary);
+            margin-bottom: 30px;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        /* Next steps section removed for cleaner UI */
+
+        /* Templates Grid */
+        .templates-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .templates-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+            gap: 24px;
+        }
+
+        /* Template Card */
+        .template-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: 12px;
+            padding: 24px;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .template-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: var(--gradient-primary);
+            transform: scaleX(0);
+            transition: transform 0.3s;
+        }
+
+        .template-card:hover {
+            background: var(--bg-secondary);
+            border-color: var(--accent-primary);
+            transform: translateY(-4px);
+            box-shadow: 0 10px 30px rgba(139, 92, 246, 0.2);
+        }
+
+        .template-card:hover::before {
+            transform: scaleX(1);
+        }
+
+        .template-header {
+            margin-bottom: 16px;
+        }
+
+        .template-category {
+            color: var(--accent-primary);
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        .template-name {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 12px;
+        }
+
+        .template-description {
+            color: var(--text-secondary);
+            font-size: 14px;
+            line-height: 1.6;
+            margin-bottom: 16px;
+        }
+
+        .template-tags {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+
+        .template-tag {
+            background: rgba(139, 92, 246, 0.1);
+            color: var(--accent-secondary);
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .template-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 20px;
+            border-top: 1px solid var(--border-subtle);
+        }
+
+        .template-stats {
+            display: flex;
+            gap: 16px;
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        .stat {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .stat i {
+            font-size: 12px;
+        }
+
+        .quick-install {
+            background: var(--gradient-primary);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .quick-install:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 15px rgba(139, 92, 246, 0.4);
+        }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(10px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 20px;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: 16px;
+            max-width: 800px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            animation: slideUp 0.3s ease-out;
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .modal-header {
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(6, 182, 212, 0.1));
+            padding: 24px;
+            border-bottom: 1px solid var(--border-subtle);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-title {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .modal-close {
+            width: 36px;
+            height: 36px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-subtle);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            color: var(--text-secondary);
+        }
+
+        .modal-close:hover {
+            background: var(--bg-card);
+            border-color: var(--accent-primary);
+            color: var(--accent-primary);
+        }
+
+        .modal-body {
+            padding: 24px;
+        }
+
+        .install-section {
+            background: var(--bg-primary);
+            border: 1px solid var(--border-subtle);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 24px;
+        }
+
+        .install-title {
+            color: var(--accent-primary);
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 12px;
+            font-weight: 600;
+        }
+
+        .install-command {
+            background: #000;
+            border: 1px solid var(--border-subtle);
+            border-radius: 6px;
+            padding: 14px;
+            font-family: 'SF Mono', 'Monaco', monospace;
+            color: var(--success);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .copy-btn {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-subtle);
+            padding: 6px 12px;
+            border-radius: 6px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .copy-btn:hover {
+            background: var(--bg-card);
+            color: var(--text-primary);
+            border-color: var(--accent-primary);
+        }
+
+        .copy-btn.copied {
+            background: var(--success);
+            color: white;
+            border-color: var(--success);
+        }
+
+        .code-preview {
+            background: var(--bg-primary);
+            border: 1px solid var(--border-subtle);
+            border-radius: 8px;
+            overflow: hidden;
+            margin-bottom: 24px;
+        }
+
+        .code-tabs {
+            background: var(--bg-secondary);
+            display: flex;
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        .code-tab {
+            padding: 12px 20px;
+            cursor: pointer;
+            border-right: 1px solid var(--border-subtle);
+            transition: all 0.3s;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-secondary);
+        }
+
+        .code-tab.active {
+            background: var(--bg-primary);
+            color: var(--accent-primary);
+            border-bottom: 2px solid var(--accent-primary);
+        }
+
+        .code-content {
+            padding: 20px;
+            font-family: 'SF Mono', 'Monaco', monospace;
+            font-size: 13px;
+            line-height: 1.6;
+            color: #d4d4d4;
+            max-height: 400px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+
+        .features-list {
+            background: var(--bg-primary);
+            border: 1px solid var(--border-subtle);
+            border-radius: 8px;
+            padding: 20px;
+        }
+
+        .features-title {
+            color: var(--accent-secondary);
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 16px;
+            font-weight: 600;
+        }
+
+        .feature-item {
+            padding: 10px 0;
+            border-bottom: 1px solid var(--border-subtle);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 14px;
+        }
+
+        .feature-item:last-child {
+            border-bottom: none;
+        }
+
+        .feature-icon {
+            color: var(--success);
+            font-size: 16px;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 12px;
+            padding: 24px;
+            border-top: 1px solid var(--border-subtle);
+            background: rgba(0, 0, 0, 0.3);
+            margin: -24px -24px 0;
+            margin-top: 24px;
+        }
+
+        .btn-primary {
+            flex: 1;
+            background: var(--gradient-primary);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 14px;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(139, 92, 246, 0.3);
+        }
+
+        .btn-secondary {
+            flex: 1;
+            background: transparent;
+            color: var(--text-secondary);
+            border: 1px solid var(--border-subtle);
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .btn-secondary:hover {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            border-color: var(--accent-secondary);
+        }
+
+        /* Loading State */
+        .loading {
+            text-align: center;
+            padding: 60px;
+            color: var(--text-secondary);
+        }
+
+        .loading i {
+            font-size: 48px;
+            color: var(--accent-primary);
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .templates-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .nav-actions {
+                flex-direction: column;
+                width: 100%;
+            }
+
+            .search-box {
+                width: 100%;
+            }
+
+            .category-pills {
+                overflow-x: auto;
+                padding-bottom: 10px;
+            }
+        }
+
+        /* Circuit Animation */
+        @keyframes blink-node {
+            0%, 100% { 
+                opacity: 0.5; 
+                box-shadow: 0 0 5px var(--accent-secondary);
+            }
+            50% { 
+                opacity: 1; 
+                box-shadow: 0 0 15px var(--accent-secondary);
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header with Circuit Decorations -->
+    <header class="header glassmorphism" style="margin-bottom: 1.5rem; position: relative; overflow: visible; background: linear-gradient(135deg, rgba(26, 26, 46, 0.95), rgba(22, 22, 26, 0.95)) !important; border: 1px solid var(--border-color) !important; box-shadow: 0 0 20px rgba(139, 92, 246, 0.5) !important; border-radius: 12px;">
+        <!-- Circuit decoration elements -->
+        <div class="circuit-decoration" style="position: absolute; inset: 0; pointer-events: none;">
+            <div class="circuit-line horizontal" style="position: absolute; height: 1px; width: 100px; background: var(--border-color); opacity: 0.3; top: 20%; left: 5%;"></div>
+            <div class="circuit-node" style="position: absolute; width: 4px; height: 4px; background: var(--accent-secondary); border-radius: 50%; opacity: 0.5; animation: blink-node 3s ease-in-out infinite; top: 20%; left: calc(5% + 100px);"></div>
+            <div class="circuit-line horizontal" style="position: absolute; height: 1px; width: 100px; background: var(--border-color); opacity: 0.3; bottom: 25%; right: 10%;"></div>
+            <div class="circuit-node" style="position: absolute; width: 4px; height: 4px; background: var(--accent-secondary); border-radius: 50%; opacity: 0.5; animation: blink-node 3s ease-in-out infinite; bottom: 25%; right: calc(10% + 100px);"></div>
+            <div class="circuit-line vertical" style="position: absolute; width: 1px; height: 40px; background: var(--border-color); opacity: 0.3; top: 10%; left: 15%;"></div>
+            <div class="circuit-node" style="position: absolute; width: 4px; height: 4px; background: var(--accent-secondary); border-radius: 50%; opacity: 0.5; animation: blink-node 3s ease-in-out infinite; top: calc(10% + 40px); left: 15%;"></div>
+        </div>
+        <div class="header-content" style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; position: relative; z-index: 1;">
+            <div class="logo" style="width: 200px;">
+                <img 
+                    src="coder1-logo-newest.png"
+                    alt="Coder1 Logo" 
+                    style="height: 106px; width: auto;"
+                />
+            </div>
+            <div style="display: flex; flex-direction: column; align-items: center; flex: 1;">
+                <h1 style="margin: 0; font-size: 1.8rem; font-weight: 700; text-align: center; text-transform: uppercase; letter-spacing: 1px; line-height: 1.2; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif; background: linear-gradient(135deg, #8b5cf6, #06b6d4); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+                    AI Templates
+                </h1>
+                <p style="margin: 0; font-size: 0.875rem; color: var(--text-secondary); text-align: center;">
+                    Pre-configured Claude Code templates for instant productivity
+                </p>
+            </div>
+            <div class="nav-actions" style="display: flex; align-items: center; gap: 1rem; width: 200px; justify-content: flex-end;">
+                <input type="text" class="search-box" placeholder="Search templates..." id="searchInput">
+            </div>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <div class="hero-section">
+        <div class="hero-container">
+            <div class="skill-indicator">
+                <span class="skill-badge intermediate">Ready to Code?</span>
+                <span class="difficulty-note">Pre-built commands for Claude Code</span>
+            </div>
+            <p class="hero-subtitle">
+                <strong>🎯 For developers:</strong> Pre-configured Claude Code commands that eliminate setup time<br>
+                <strong>⚡ For teams:</strong> Standardized AI workflows that ensure consistent, quality output<br>
+                <strong>📚 For learners:</strong> Copy-paste examples that teach best practices through real use
+            </p>
+        </div>
+    </div>
+
+    <!-- Categories -->
+    <div class="categories-section">
+        <div class="categories-container">
+            <div class="categories-title">Filter by Category</div>
+            <div class="category-pills">
+                <div class="category-pill active" data-category="all">
+                    All Templates
+                    <span class="category-count">156</span>
+                </div>
+                <div class="category-pill" data-category="ai-agents">
+                    AI Agents
+                    <span class="category-count">42</span>
+                </div>
+                <div class="category-pill" data-category="mcp">
+                    MCP Integrations
+                    <span class="category-count">28</span>
+                </div>
+                <div class="category-pill" data-category="hooks">
+                    Smart Hooks
+                    <span class="category-count">35</span>
+                </div>
+                <div class="category-pill" data-category="commands">
+                    Quick Commands
+                    <span class="category-count">31</span>
+                </div>
+                <div class="category-pill" data-category="ide">
+                    IDE Config
+                    <span class="category-count">20</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Templates Grid -->
+    <div class="templates-container">
+        <div class="templates-grid" id="templatesGrid">
+            <!-- Templates will be loaded here -->
+        </div>
+    </div>
+
+    <!-- Modal -->
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">
+                    <div class="template-category" id="modalCategory">AI AGENTS</div>
+                    <div class="template-name" id="modalName">Frontend Developer</div>
+                </div>
+                <div class="modal-close" onclick="closeModal()">
+                    <i class="fas fa-times"></i>
+                </div>
+            </div>
+            
+            <div class="modal-body">
+                <!-- Installation Section -->
+                <div class="install-section">
+                    <div class="install-title">Quick Install</div>
+                    <div class="install-command">
+                        <code id="installCommand">coderone install frontend-agent</code>
+                        <button class="copy-btn" onclick="copyCommand()">Copy</button>
+                    </div>
+                    <div style="color: var(--text-muted); font-size: 12px; margin-top: 8px;">
+                        Or use keyboard shortcut: <code style="background: var(--bg-secondary); padding: 2px 6px; border-radius: 3px;">Ctrl+Shift+I</code> in IDE
+                    </div>
+                </div>
+
+                <!-- Code Preview -->
+                <div class="code-preview">
+                    <div class="code-tabs">
+                        <div class="code-tab active" data-tab="config">Configuration</div>
+                        <div class="code-tab" data-tab="usage">Usage</div>
+                        <div class="code-tab" data-tab="example">Example</div>
+                    </div>
+                    <div class="code-content" id="codeContent">
+                        <!-- Code content will be loaded here -->
+                    </div>
+                </div>
+
+                <!-- Features -->
+                <div class="features-list">
+                    <div class="features-title">What's Included</div>
+                    <div id="featuresList">
+                        <!-- Features will be loaded here -->
+                    </div>
+                </div>
+            </div>
+
+            <div class="action-buttons">
+                <button class="btn-primary" onclick="window.installTemplate(event)" type="button">
+                    <i class="fas fa-download"></i> Install to Current Project
+                </button>
+                <button class="btn-secondary" onclick="window.viewDocs(event)" type="button">
+                    <i class="fas fa-book"></i> View Documentation
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Template data - fetched from API
+        let templates = [
+            {
+                id: 'frontend-agent',
+                name: 'Frontend Developer',
+                category: 'AI AGENTS',
+                categorySlug: 'ai-agents',
+                description: 'React specialist with TypeScript, modern CSS, accessibility testing, and component optimization.',
+                tags: ['React', 'TypeScript', 'Testing', 'CSS'],
+                stats: { rating: 4.9, downloads: 2300, comments: 89 },
+                command: 'coderone install frontend-agent',
+                features: [
+                    'Specialized React and TypeScript knowledge',
+                    'Component generation with best practices',
+                    'Automatic accessibility compliance',
+                    'Performance optimization recommendations'
+                ],
+                code: {
+                    config: `{
+  "name": "frontend-developer-agent",
+  "version": "1.0.0",
+  "type": "ai-agent",
+  "capabilities": [
+    "react-components",
+    "typescript-interfaces",
+    "css-optimization",
+    "accessibility-testing",
+    "performance-profiling"
+  ],
+  "commands": {
+    "@frontend": "Activate frontend specialist",
+    "@component": "Generate React component",
+    "@optimize": "Optimize bundle size",
+    "@a11y": "Run accessibility audit"
+  }
+}`,
+                    usage: `// Activate the agent in your IDE
+@frontend
+
+// Use specialized commands
+@component Button props={onClick, label, variant}
+@optimize analyze bundle
+@a11y check current-page
+
+// The agent will provide React-specific guidance
+// and best practices automatically`,
+                    example: `// Generated by Frontend Agent
+import React from 'react';
+import { ButtonProps } from './types';
+
+export const Button: React.FC<ButtonProps> = ({
+  onClick,
+  label,
+  variant = 'primary',
+  disabled = false
+}) => {
+  return (
+    <button
+      className={\`btn btn-\${variant}\`}
+      onClick={onClick}
+      disabled={disabled}
+      aria-label={label}
+    >
+      {label}
+    </button>
+  );
+};`
+                }
+            },
+            {
+                id: 'security-auditor',
+                name: 'Security Auditor',
+                category: 'AI AGENTS',
+                categorySlug: 'ai-agents',
+                description: 'OWASP compliance checker, vulnerability scanner, and security best practices enforcer.',
+                tags: ['Security', 'OWASP', 'Audit', 'Compliance'],
+                stats: { rating: 4.8, downloads: 1800, comments: 67 },
+                command: 'coderone install security-auditor',
+                features: [
+                    'OWASP Top 10 vulnerability detection',
+                    'Security headers configuration',
+                    'Dependency vulnerability scanning',
+                    'Code injection prevention'
+                ]
+            },
+            {
+                id: 'github-mcp',
+                name: 'GitHub MCP',
+                category: 'MCP INTEGRATIONS',
+                categorySlug: 'mcp',
+                description: 'Complete GitHub integration with PR management, issue tracking, and workflow automation.',
+                tags: ['GitHub', 'Git', 'CI/CD', 'Automation'],
+                stats: { rating: 5.0, downloads: 3100, comments: 124 },
+                command: 'coderone install github-mcp',
+                features: [
+                    'Pull request management',
+                    'Issue tracking and creation',
+                    'GitHub Actions integration',
+                    'Branch protection rules'
+                ]
+            },
+            {
+                id: 'test-generator',
+                name: 'Test Generator',
+                category: 'QUICK COMMANDS',
+                categorySlug: 'commands',
+                description: 'Automatically generates comprehensive test suites for your code with coverage reports.',
+                tags: ['Testing', 'Jest', 'Coverage', 'TDD'],
+                stats: { rating: 4.7, downloads: 1500, comments: 45 },
+                command: 'coderone install test-generator',
+                features: [
+                    'Unit test generation',
+                    'Integration test templates',
+                    'Coverage report analysis',
+                    'Test-driven development support'
+                ]
+            },
+            {
+                id: 'precommit-hook',
+                name: 'Pre-commit Validator',
+                category: 'SMART HOOKS',
+                categorySlug: 'hooks',
+                description: 'Runs linting, formatting, and tests before commits. Ensures code quality standards.',
+                tags: ['Git Hooks', 'Linting', 'Quality', 'Automation'],
+                stats: { rating: 4.9, downloads: 2700, comments: 93 },
+                command: 'coderone install precommit-hook',
+                features: [
+                    'ESLint and Prettier integration',
+                    'Unit test execution',
+                    'Commit message validation',
+                    'File size checking'
+                ]
+            },
+            {
+                id: 'database-architect',
+                name: 'Database Architect',
+                category: 'AI AGENTS',
+                categorySlug: 'ai-agents',
+                description: 'Schema design, query optimization, migrations, and database performance tuning expert.',
+                tags: ['PostgreSQL', 'MongoDB', 'Redis', 'SQL'],
+                stats: { rating: 4.8, downloads: 1900, comments: 72 },
+                command: 'coderone install database-architect',
+                features: [
+                    'Schema design and optimization',
+                    'Query performance analysis',
+                    'Migration script generation',
+                    'Index recommendation'
+                ]
+            },
+            {
+                id: 'vscode-config',
+                name: 'VS Code Settings',
+                category: 'IDE CONFIG',
+                categorySlug: 'ide',
+                description: 'Optimized VS Code configuration for maximum productivity with Coder1 IDE.',
+                tags: ['VSCode', 'Settings', 'Extensions', 'Config'],
+                stats: { rating: 4.6, downloads: 2100, comments: 58 },
+                command: 'coderone install vscode-config',
+                features: [
+                    'Optimized editor settings',
+                    'Essential extensions list',
+                    'Keyboard shortcuts',
+                    'Theme configuration'
+                ]
+            },
+            {
+                id: 'api-designer',
+                name: 'API Designer',
+                category: 'AI AGENTS',
+                categorySlug: 'ai-agents',
+                description: 'RESTful API design, OpenAPI specification, and endpoint optimization specialist.',
+                tags: ['REST', 'API', 'OpenAPI', 'Backend'],
+                stats: { rating: 4.7, downloads: 1600, comments: 61 },
+                command: 'coderone install api-designer',
+                features: [
+                    'RESTful endpoint design',
+                    'OpenAPI specification generation',
+                    'Authentication strategy',
+                    'Rate limiting configuration'
+                ]
+            }
+        ];
+
+        let currentCategory = 'all';
+        let searchQuery = '';
+
+        // Fetch templates from API
+        async function fetchTemplates() {
+            try {
+                const response = await fetch('/api/templates');
+                const data = await response.json();
+                if (data.success && data.templates) {
+                    templates = data.templates;
+                    renderTemplates();
+                    updateCategoryCounts();
+                }
+            } catch (error) {
+                console.error('Failed to fetch templates:', error);
+                // Use hardcoded templates as fallback
+                renderTemplates();
+            }
+        }
+
+        // Update category counts based on actual templates
+        function updateCategoryCounts() {
+            const categoryCounts = {};
+            templates.forEach(template => {
+                const slug = template.categorySlug || 'other';
+                categoryCounts[slug] = (categoryCounts[slug] || 0) + 1;
+            });
+            
+            // Update UI
+            document.querySelectorAll('.category-pill').forEach(pill => {
+                const category = pill.dataset.category;
+                const countElem = pill.querySelector('.category-count');
+                if (countElem) {
+                    if (category === 'all') {
+                        countElem.textContent = templates.length;
+                    } else if (categoryCounts[category]) {
+                        countElem.textContent = categoryCounts[category];
+                    }
+                }
+            });
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchTemplates();
+            setupEventListeners();
+        });
+
+        function setupEventListeners() {
+            // Category filter
+            document.querySelectorAll('.category-pill').forEach(pill => {
+                pill.addEventListener('click', (e) => {
+                    document.querySelectorAll('.category-pill').forEach(p => p.classList.remove('active'));
+                    e.currentTarget.classList.add('active');
+                    currentCategory = e.currentTarget.dataset.category;
+                    renderTemplates();
+                });
+            });
+
+            // Search
+            document.getElementById('searchInput').addEventListener('input', (e) => {
+                searchQuery = e.target.value.toLowerCase();
+                renderTemplates();
+            });
+
+            // Code tabs
+            document.querySelectorAll('.code-tab').forEach(tab => {
+                tab.addEventListener('click', (e) => {
+                    switchTab(e.currentTarget.dataset.tab);
+                });
+            });
+
+            // Modal close on overlay click
+            const modalOverlay = document.getElementById('modalOverlay');
+            if (modalOverlay) {
+                modalOverlay.addEventListener('click', (e) => {
+                    if (e.target === e.currentTarget) {
+                        closeModal();
+                    }
+                });
+            } else {
+                console.error('Modal overlay not found during initialization');
+            }
+        }
+
+        function renderTemplates() {
+            const grid = document.getElementById('templatesGrid');
+            let filtered = templates;
+
+            // Filter by category
+            if (currentCategory !== 'all') {
+                filtered = filtered.filter(t => t.categorySlug === currentCategory);
+            }
+
+            // Filter by search
+            if (searchQuery) {
+                filtered = filtered.filter(t => 
+                    t.name.toLowerCase().includes(searchQuery) ||
+                    t.description.toLowerCase().includes(searchQuery) ||
+                    t.tags.some(tag => tag.toLowerCase().includes(searchQuery))
+                );
+            }
+
+            // Render
+            grid.innerHTML = filtered.map(template => `
+                <div class="template-card" onclick="openModal('${template.id}')">
+                    <div class="template-header">
+                        <div class="template-category">${template.category}</div>
+                        <div class="template-name">${template.name}</div>
+                    </div>
+                    <div class="template-description">${template.description}</div>
+                    <div class="template-tags">
+                        ${template.tags.map(tag => `<span class="template-tag">${tag}</span>`).join('')}
+                    </div>
+                    <div class="template-footer">
+                        <div class="template-stats">
+                            <span class="stat"><i class="fas fa-star"></i> ${template.stats.rating}</span>
+                            <span class="stat"><i class="fas fa-download"></i> ${(template.stats.downloads / 1000).toFixed(1)}k</span>
+                            <span class="stat"><i class="fas fa-comment"></i> ${template.stats.comments}</span>
+                        </div>
+                        <button class="quick-install" onclick="quickInstall(event, '${template.id}')">
+                            Install
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function openModal(templateId) {
+            const template = templates.find(t => t.id === templateId);
+            if (!template) return;
+
+            document.getElementById('modalCategory').textContent = template.category;
+            document.getElementById('modalName').textContent = template.name;
+            document.getElementById('installCommand').textContent = template.command;
+
+            // Load features
+            if (template.features) {
+                document.getElementById('featuresList').innerHTML = template.features.map(f => `
+                    <div class="feature-item">
+                        <i class="fas fa-check feature-icon"></i>
+                        <span>${f}</span>
+                    </div>
+                `).join('');
+            }
+
+            // Load code
+            if (template.code) {
+                document.getElementById('codeContent').textContent = template.code.config || '// Configuration will be shown here';
+            }
+
+            document.getElementById('modalOverlay').classList.add('active');
+        }
+
+        window.closeModal = function() {
+            const modal = document.getElementById('modalOverlay');
+            if (modal) {
+                modal.classList.remove('active');
+                console.log('Modal closed');
+            }
+        }
+
+        function switchTab(tab) {
+            document.querySelectorAll('.code-tab').forEach(t => t.classList.remove('active'));
+            document.querySelector(`.code-tab[data-tab="${tab}"]`).classList.add('active');
+
+            const template = templates.find(t => t.name === document.getElementById('modalName').textContent);
+            if (template && template.code) {
+                const content = template.code[tab] || '// No content available';
+                document.getElementById('codeContent').textContent = content;
+            }
+        }
+
+        function copyCommand() {
+            const command = document.getElementById('installCommand').textContent;
+            navigator.clipboard.writeText(command);
+            
+            const btn = event.target;
+            btn.textContent = 'Copied!';
+            btn.classList.add('copied');
+            
+            setTimeout(() => {
+                btn.textContent = 'Copy';
+                btn.classList.remove('copied');
+            }, 2000);
+        }
+
+        function quickInstall(event, templateId) {
+            event.stopPropagation();
+            
+            const btn = event.target;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Installing...';
+            btn.style.background = '#666';
+            
+            setTimeout(() => {
+                btn.innerHTML = '<i class="fas fa-check"></i> Installed';
+                btn.style.background = 'var(--success)';
+                
+                setTimeout(() => {
+                    btn.textContent = 'Install';
+                    btn.style.background = '';
+                }, 3000);
+            }, 2000);
+        }
+
+        // Make functions globally available immediately
+        console.log('Initializing template functions...');
+        
+        window.installTemplate = function(event) {
+            // Prevent event bubbling
+            if (event) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            
+            // Get the button that was clicked
+            const btn = event ? event.currentTarget : document.querySelector('.modal-content .btn-primary');
+            if (!btn) {
+                console.error('Install button not found');
+                return;
+            }
+            
+            const originalContent = btn.innerHTML;
+            const originalBackground = btn.style.background;
+            
+            // Get the current template name
+            const templateName = document.getElementById('modalName').textContent;
+            const command = document.getElementById('installCommand').textContent;
+            
+            console.log('Installing template:', templateName);
+            console.log('Command:', command);
+            console.log('Button element:', btn);
+            
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Installing...';
+            btn.disabled = true;
+            
+            // Simulate installation process
+            setTimeout(() => {
+                btn.innerHTML = '<i class="fas fa-check"></i> Installed Successfully';
+                btn.style.background = 'var(--success)';
+                
+                // Show success notification
+                showNotification(`Template "${templateName}" installed successfully!`);
+                
+                setTimeout(() => {
+                    closeModal();
+                    // Reset button state
+                    btn.innerHTML = originalContent;
+                    btn.style.background = originalBackground;
+                    btn.disabled = false;
+                }, 1500);
+            }, 2000);
+        }
+
+        window.viewDocs = function(event) {
+            // Prevent event bubbling
+            if (event) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            
+            const templateName = document.getElementById('modalName').textContent;
+            console.log('Opening documentation for:', templateName);
+            
+            // Get the current template
+            const template = templates.find(t => t.name === templateName);
+            
+            if (template && template.docsUrl) {
+                window.open(template.docsUrl, '_blank');
+            } else {
+                // Default to general docs
+                window.open('https://docs.coder1.dev/templates/' + (template?.id || ''), '_blank');
+            }
+        }
+        
+        // Helper function for notifications
+        window.showNotification = function(message) {
+            // Create notification element
+            const notification = document.createElement('div');
+            notification.className = 'notification';
+            notification.textContent = message;
+            notification.style.cssText = `
+                position: fixed;
+                bottom: 20px;
+                right: 20px;
+                background: var(--success);
+                color: white;
+                padding: 16px 24px;
+                border-radius: 8px;
+                font-weight: 500;
+                z-index: 10000;
+                animation: slideIn 0.3s ease;
+            `;
+            
+            document.body.appendChild(notification);
+            
+            // Remove after 3 seconds
+            setTimeout(() => {
+                notification.style.animation = 'slideOut 0.3s ease';
+                setTimeout(() => notification.remove(), 300);
+            }, 3000);
+        }
+        
+        // Add animation keyframes
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideIn {
+                from {
+                    transform: translateX(100%);
+                    opacity: 0;
+                }
+                to {
+                    transform: translateX(0);
+                    opacity: 1;
+                }
+            }
+            @keyframes slideOut {
+                from {
+                    transform: translateX(0);
+                    opacity: 1;
+                }
+                to {
+                    transform: translateX(100%);
+                    opacity: 0;
+                }
+            }
+        `;
+        document.head.appendChild(style);
+        
+        // Test button functionality immediately
+        console.log('Testing button functions:');
+        console.log('installTemplate available:', typeof window.installTemplate);
+        console.log('viewDocs available:', typeof window.viewDocs);
+        console.log('closeModal available:', typeof window.closeModal);
+        
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('Templates Hub initialized');
+            
+            // Verify modal exists
+            const modal = document.getElementById('modalOverlay');
+            if (!modal) {
+                console.error('Modal overlay not found!');
+            } else {
+                console.log('Modal found and ready');
+                
+                // Add debug logging for button clicks
+                const installBtn = modal.querySelector('.btn-primary');
+                const docsBtn = modal.querySelector('.btn-secondary');
+                
+                if (installBtn) {
+                    console.log('Install button found, click handler attached');
+                } else {
+                    console.error('Install button not found in modal');
+                }
+                
+                if (docsBtn) {
+                    console.log('Docs button found, click handler attached');
+                } else {
+                    console.error('Docs button not found in modal');
+                }
+            }
+        });
+        
+        // Global error handler for debugging
+        window.addEventListener('error', (e) => {
+            console.error('JavaScript error:', e.message, e.filename, e.lineno, e.colno);
+        });
+    </script>
+    
+    <!-- Button Fix Script -->
+    <script src="/templates-hub-fix.js?v=2.1.0"></script>
+</body>
+</html>Cache buster added: 1756085209

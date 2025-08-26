@@ -2,7 +2,7 @@
   "repoId": "40323f7d7f94f37c54930b3cd12c89b6",
   "url": "https://github.com/trpc/trpc",
   "name": "trpc/trpc",
-  "analyzedAt": "2025-08-19T20:47:06.592Z",
+  "analyzedAt": "2025-08-25T20:14:01.693Z",
   "metadata": {
     "description": "",
     "language": "",
@@ -57,6 +57,6 @@
     "fileCount": 0,
     "patternCount": 5,
     "suggestionCount": 0,
-    "analysisTime": 1755636426592
+    "analysisTime": 1756152841693
   }
 }

@@ -2,7 +2,7 @@
   "repoId": "f43dc28dacfdd0a33e2138b5a469757f",
   "url": "https://github.com/sveltejs/svelte",
   "name": "sveltejs/svelte",
-  "analyzedAt": "2025-08-19T20:45:36.579Z",
+  "analyzedAt": "2025-08-25T20:13:01.672Z",
   "metadata": {
     "description": "",
     "language": "",
@@ -57,6 +57,6 @@
     "fileCount": 0,
     "patternCount": 5,
     "suggestionCount": 0,
-    "analysisTime": 1755636336579
+    "analysisTime": 1756152781672
   }
 }

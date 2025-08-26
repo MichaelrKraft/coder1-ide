@@ -2,7 +2,7 @@
   "repoId": "5f02491b589aa49103fc64502cf9c026",
   "url": "https://github.com/shadcn-ui/ui",
   "name": "shadcn-ui/ui",
-  "analyzedAt": "2025-08-19T20:46:51.590Z",
+  "analyzedAt": "2025-08-25T03:50:18.277Z",
   "metadata": {
     "description": "",
     "language": "",
@@ -57,6 +57,6 @@
     "fileCount": 0,
     "patternCount": 5,
     "suggestionCount": 0,
-    "analysisTime": 1755636411590
+    "analysisTime": 1756093818277
   }
 }

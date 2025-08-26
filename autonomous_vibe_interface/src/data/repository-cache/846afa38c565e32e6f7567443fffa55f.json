@@ -2,7 +2,7 @@
   "repoId": "846afa38c565e32e6f7567443fffa55f",
   "url": "https://github.com/supabase/supabase",
   "name": "supabase/supabase",
-  "analyzedAt": "2025-08-19T20:46:51.590Z",
+  "analyzedAt": "2025-08-25T03:50:18.278Z",
   "metadata": {
     "description": "",
     "language": "",
@@ -57,6 +57,6 @@
     "fileCount": 0,
     "patternCount": 5,
     "suggestionCount": 0,
-    "analysisTime": 1755636411590
+    "analysisTime": 1756093818278
   }
 }

@@ -3,11 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vibe Dashboard - Your Coding Journey</title>
+    <title>Coder1 Dashboard - Your Coding Journey</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
     <!-- Chart.js for Usage History visualization -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+    
+    <!-- Ambient Prompt Display CSS -->
+    <link rel="stylesheet" href="/css/ambient-prompts.css">
     
     <style>
         * {
@@ -127,49 +130,116 @@
             align-items: center;
         }
 
-        .learning-toggle {
+        /* Menu Button Styling */
+        .menu-button {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 8px;
+            padding: 10px 20px;
             background: var(--glass-bg);
-            padding: 8px 16px;
-            border-radius: 20px;
             border: 1px solid var(--glass-border);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 14px;
+            font-weight: 500;
             cursor: pointer;
             transition: all 0.3s ease;
+            position: relative;
         }
 
-        .learning-toggle:hover {
+        .menu-button:hover {
             background: rgba(139, 92, 246, 0.1);
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 20px rgba(139, 92, 246, 0.2);
+        }
+
+        .menu-button.active {
+            background: rgba(139, 92, 246, 0.15);
             border-color: var(--accent-primary);
         }
 
-        .toggle-switch {
-            width: 40px;
-            height: 20px;
-            background: var(--glass-border);
-            border-radius: 20px;
-            position: relative;
-            transition: background 0.3s ease;
-        }
-
-        .toggle-switch.active {
-            background: var(--accent-primary);
-        }
-
-        .toggle-knob {
-            width: 16px;
-            height: 16px;
-            background: white;
-            border-radius: 50%;
+        /* Dropdown Menu */
+        .menu-dropdown {
             position: absolute;
-            top: 2px;
-            left: 2px;
+            top: 100%;
+            right: 0;
+            margin-top: 8px;
+            min-width: 200px;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            backdrop-filter: blur(20px);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px);
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+
+        .menu-dropdown.active {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .menu-dropdown::before {
+            content: '';
+            position: absolute;
+            top: -6px;
+            right: 20px;
+            width: 12px;
+            height: 12px;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-bottom: none;
+            border-right: none;
+            transform: rotate(45deg);
+            backdrop-filter: blur(20px);
+        }
+
+        .menu-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            color: var(--text-primary);
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .menu-item:first-child {
+            border-radius: 12px 12px 0 0;
+        }
+
+        .menu-item:last-child {
+            border-bottom: none;
+            border-radius: 0 0 12px 12px;
+        }
+
+        .menu-item:hover {
+            background: rgba(139, 92, 246, 0.1);
+            color: var(--accent-primary);
+            padding-left: 20px;
+        }
+
+        .menu-item-icon {
+            font-size: 16px;
+            width: 20px;
+            text-align: center;
+        }
+
+        /* Menu button arrow animation */
+        .menu-arrow {
+            font-size: 12px;
             transition: transform 0.3s ease;
         }
 
-        .toggle-switch.active .toggle-knob {
-            transform: translateX(20px);
+        .menu-button.active .menu-arrow {
+            transform: rotate(180deg);
         }
 
         /* Dashboard Grid */
@@ -928,24 +998,165 @@
         }
 
         /* Motivational Messages */
-        .motivation-banner {
-            background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(6, 182, 212, 0.1));
-            border-radius: 12px;
-            padding: 20px;
-            text-align: center;
+        /* Hero Section */
+        .hero-section {
+            position: relative;
+            background: transparent;
+            border-radius: 0;
+            padding: 40px 30px;
             margin-bottom: 30px;
-            border: 1px solid var(--glass-border);
+            border: none;
+            overflow: visible;
         }
 
-        .motivation-text {
-            font-size: 20px;
+        .hero-background {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .hero-mesh {
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            right: -50%;
+            bottom: -50%;
+            background: 
+                radial-gradient(circle at 20% 50%, rgba(139, 92, 246, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(6, 182, 212, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 40% 80%, rgba(251, 191, 36, 0.05) 0%, transparent 50%);
+            animation: meshAnimation 20s ease-in-out infinite;
+        }
+
+        .hero-beams {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(45deg, transparent, rgba(139, 92, 246, 0.03), transparent);
+            animation: hero-beam 8s linear infinite;
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 1;
+            text-align: center;
+        }
+
+        .hero-text {
+            margin-bottom: 32px;
+        }
+
+        .hero-title {
+            font-size: 42px;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 12px;
+        }
+
+        .hero-description {
+            font-size: 18px;
+            color: var(--text-secondary);
+            max-width: 600px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+
+        .hero-features {
+            display: flex;
+            gap: 24px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .feature-card {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 24px;
+            width: 280px;
+            text-align: left;
+            position: relative;
+            cursor: pointer;
+            transition: all 0.4s ease;
+            transform-style: preserve-3d;
+            perspective: 1000px;
+        }
+
+        .feature-card:hover {
+            border-color: var(--accent-primary);
+            box-shadow: 0 8px 32px rgba(139, 92, 246, 0.3);
+            transform: translateY(-8px) rotateX(2deg);
+        }
+
+        .feature-icon {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 16px;
+            transition: transform 0.3s ease;
+        }
+
+        .feature-card:hover .feature-icon {
+            transform: scale(1.1) rotateY(5deg);
+        }
+
+        .feature-icon i {
+            font-size: 22px;
+            color: white;
+        }
+
+        .feature-content h3 {
+            font-size: 18px;
+            font-weight: 600;
             color: var(--text-primary);
             margin-bottom: 8px;
         }
 
-        .motivation-sub {
-            color: var(--text-secondary);
+        .feature-content p {
             font-size: 14px;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+
+        .feature-corner-glow {
+            position: absolute;
+            top: -1px;
+            right: -1px;
+            width: 20px;
+            height: 20px;
+            background: radial-gradient(circle, var(--accent-primary) 0%, transparent 70%);
+            border-radius: 0 12px 0 12px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .feature-card:hover .feature-corner-glow {
+            opacity: 0.8;
+        }
+
+        @keyframes meshAnimation {
+            0%, 100% { transform: rotate(0deg) scale(1); }
+            25% { transform: rotate(1deg) scale(1.02); }
+            50% { transform: rotate(0deg) scale(1.01); }
+            75% { transform: rotate(-1deg) scale(1.02); }
+        }
+
+        @keyframes hero-beam {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
         }
 
         /* Confetti Animation */
@@ -2948,42 +3159,161 @@
             max-width: 400px;
             margin: 0 auto;
         }
+
+        /* Circuit decorative lines */
+        .circuit-decoration {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            overflow: hidden;
+            z-index: 0;
+        }
+
+        .circuit-line {
+            position: absolute;
+            background: var(--glass-border);
+            opacity: 0.3;
+        }
+
+        .circuit-line.horizontal {
+            height: 1px;
+            width: 100px;
+        }
+
+        .circuit-line.vertical {
+            width: 1px;
+            height: 40px;
+        }
+
+        .circuit-node {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: var(--accent-secondary);
+            border-radius: 50%;
+            opacity: 0.5;
+            animation: blink-node 3s ease-in-out infinite;
+        }
+
+        /* Circuit Animation */
+        @keyframes blink-node {
+            0%, 100% { 
+                opacity: 0.5; 
+                box-shadow: 0 0 5px var(--accent-secondary);
+            }
+            50% { 
+                opacity: 1; 
+                box-shadow: 0 0 15px var(--accent-secondary);
+            }
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <!-- Header -->
-        <div class="header" style="position: relative;">
-            <div class="header-left">
+        <!-- Header with logo centered and light blue glow -->
+        <div class="header" style="display: flex; justify-content: space-between; align-items: center; padding: 20px; height: auto; min-height: 92px; box-shadow: 0 0 30px rgba(6, 182, 212, 0.3), 0 0 60px rgba(6, 182, 212, 0.1), inset 0 0 20px rgba(6, 182, 212, 0.05); border: 1px solid rgba(6, 182, 212, 0.2);">
+            <div class="header-left" style="display: flex; align-items: center; gap: 20px; flex: 1;">
                 <a href="/ide" class="back-to-ide">
                     ← Back to IDE
                 </a>
-                <img src="/coder1-logo-newest.png" alt="Coder1" style="height: 92px; width: auto; object-fit: contain;" />
             </div>
-            <div style="position: absolute; left: 50%; transform: translateX(-50%); text-align: center;">
-                <h1 style="font-size: 32px; margin-bottom: 5px;">
-                    Vibe Dashboard
-                </h1>
-                <p style="font-size: 14px; color: var(--text-secondary); margin: 0;">
+            <div style="flex: 2; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                <div style="display: flex; align-items: center; gap: 3px; margin-bottom: 10px;">
+                    <img src="/coder1-logo.svg" alt="Coder1" style="height: 95px; width: auto;" />
+                    <span style="font-size: 32px; font-weight: 600; background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+                        Dashboard
+                    </span>
+                </div>
+                <p style="font-size: 16px; color: var(--text-secondary); margin: 0; text-align: center;">
                     Track your AI-assisted development journey
                 </p>
             </div>
-            <div class="header-controls">
-                <div class="learning-toggle" id="learningToggle">
-                    <span>Learning Mode</span>
-                    <div class="toggle-switch" id="toggleSwitch">
-                        <div class="toggle-knob"></div>
+            <div class="header-controls" style="flex: 1; display: flex; justify-content: flex-end;">
+                <div class="menu-button" id="menuButton">
+                    <span>Menu</span>
+                    <span class="menu-arrow">▼</span>
+                    <div class="menu-dropdown" id="menuDropdown">
+                        <a href="/vibe-dashboard.html" class="menu-item">
+                            <span class="menu-item-icon">📊</span>
+                            <span>Dashboard</span>
+                        </a>
+                        <a href="/features" class="menu-item">
+                            <span class="menu-item-icon">✨</span>
+                            <span>Features</span>
+                        </a>
+                        <a href="/prd-generator-v2-test.html" class="menu-item">
+                            <span class="menu-item-icon">📝</span>
+                            <span>PRD Generator</span>
+                        </a>
+                        <a href="/templates-hub.html" class="menu-item">
+                            <span class="menu-item-icon">🧩</span>
+                            <span>Templates</span>
+                        </a>
+                        <a href="/hooks.html" class="menu-item">
+                            <span class="menu-item-icon">🔧</span>
+                            <span>Hooks</span>
+                        </a>
+                        <a href="/component-studio.html" class="menu-item">
+                            <span class="menu-item-icon">🎨</span>
+                            <span>Components</span>
+                        </a>
+                        <a href="/workflow-dashboard.html" class="menu-item">
+                            <span class="menu-item-icon">⚡</span>
+                            <span>Workflows</span>
+                        </a>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Motivational Banner -->
-        <div class="motivation-banner">
-            <div class="motivation-text" id="motivationText">Welcome to your AI development command center!</div>
-            <div class="motivation-sub" id="motivationSub">
-                📊 <strong>New to AI coding?</strong> Track your progress and build confidence step by step<br>
-                🚀 <strong>Experienced developer?</strong> Monitor your AI productivity gains and optimize workflows
+        <!-- Hero Section -->
+        <div class="hero-section">
+            <div class="hero-background">
+                <div class="hero-mesh"></div>
+                <div class="hero-beams"></div>
+            </div>
+            
+            <div class="hero-content">
+                <div class="hero-text">
+                    <h2 class="hero-title">AI Development Command Center</h2>
+                    <p class="hero-description">Monitor your Claude Code journey with real-time insights and intelligent automation</p>
+                </div>
+                
+                <div class="hero-features">
+                    <div class="feature-card" data-feature="analytics">
+                        <div class="feature-icon">
+                            <i class="fas fa-chart-line"></i>
+                        </div>
+                        <div class="feature-content">
+                            <h3>Smart Analytics</h3>
+                            <p>Track coding patterns and AI assistance effectiveness</p>
+                        </div>
+                        <div class="feature-corner-glow"></div>
+                    </div>
+                    
+                    <div class="feature-card" data-feature="timeline">
+                        <div class="feature-icon">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                        <div class="feature-content">
+                            <h3>Progress Timeline</h3>
+                            <p>Visualize your development milestones and achievements</p>
+                        </div>
+                        <div class="feature-corner-glow"></div>
+                    </div>
+                    
+                    <div class="feature-card" data-feature="insights">
+                        <div class="feature-icon">
+                            <i class="fas fa-brain"></i>
+                        </div>
+                        <div class="feature-content">
+                            <h3>AI Insights</h3>
+                            <p>Get personalized recommendations to improve your workflow</p>
+                        </div>
+                        <div class="feature-corner-glow"></div>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -3463,25 +3793,11 @@
                         </div>
                     </div>
 
-                    <!-- Quick Actions -->
+                    <!-- Ambient Prompt Display -->
                     <div class="quick-actions-section">
-                        <div class="quick-actions-grid">
-                            <button class="quick-action-card" onclick="window.vibeDashboard.quickAction('ask-claude')">
-                                <div class="qa-icon">🤖</div>
-                                <span>Ask Claude</span>
-                            </button>
-                            <button class="quick-action-card" onclick="window.vibeDashboard.quickAction('coder-thesaurus')">
-                                <div class="qa-icon">📚</div>
-                                <span>Coder Thesaurus</span>
-                            </button>
-                            <button class="quick-action-card" onclick="window.vibeDashboard.quickAction('best-practices')">
-                                <div class="qa-icon">⭐</div>
-                                <span>Best Practices</span>
-                            </button>
-                            <button class="quick-action-card" onclick="window.vibeDashboard.quickAction('productivity')">
-                                <div class="qa-icon">⚡</div>
-                                <span>Productivity</span>
-                            </button>
+                        <h5 class="section-title">💡 Discover MCP Commands</h5>
+                        <div id="ambient-prompt-container">
+                            <!-- Ambient Prompt Display will be initialized here -->
                         </div>
                     </div>
                 </div>
@@ -3693,14 +4009,32 @@
             }
 
             setupEventListeners() {
-                const learningToggle = document.getElementById('learningToggle');
-                learningToggle.addEventListener('click', () => {
-                    this.toggleLearningMode();
-                });
-
-                // Add hover effects for learnable terms
-                if (this.learningMode) {
-                    this.setupLearningMode();
+                // Menu dropdown functionality
+                const menuButton = document.getElementById('menuButton');
+                const menuDropdown = document.getElementById('menuDropdown');
+                
+                if (menuButton && menuDropdown) {
+                    menuButton.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        this.toggleMenuDropdown();
+                    });
+                    
+                    // Close dropdown when clicking outside
+                    document.addEventListener('click', () => {
+                        this.closeMenuDropdown();
+                    });
+                    
+                    // Prevent dropdown from closing when clicking inside it
+                    menuDropdown.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                    });
+                    
+                    // Handle escape key
+                    document.addEventListener('keydown', (e) => {
+                        if (e.key === 'Escape') {
+                            this.closeMenuDropdown();
+                        }
+                    });
                 }
                 
                 // Token details expand/collapse
@@ -3831,7 +4165,7 @@
                     predictions: this.lastPredictions || {},
                     metadata: {
                         version: '1.0',
-                        dashboardType: 'Vibe Dashboard',
+                        dashboardType: 'Coder1 Dashboard',
                         exportFormat: 'JSON'
                     }
                 };
@@ -3902,15 +4236,39 @@
                 });
             }
 
-            toggleLearningMode() {
-                this.learningMode = !this.learningMode;
-                const toggleSwitch = document.getElementById('toggleSwitch');
-                toggleSwitch.classList.toggle('active');
+            // Menu dropdown methods
+            toggleMenuDropdown() {
+                const menuButton = document.getElementById('menuButton');
+                const menuDropdown = document.getElementById('menuDropdown');
                 
-                if (this.learningMode) {
-                    this.setupLearningMode();
-                } else {
-                    this.removeLearningMode();
+                if (menuButton && menuDropdown) {
+                    const isActive = menuButton.classList.contains('active');
+                    
+                    if (isActive) {
+                        this.closeMenuDropdown();
+                    } else {
+                        this.openMenuDropdown();
+                    }
+                }
+            }
+            
+            openMenuDropdown() {
+                const menuButton = document.getElementById('menuButton');
+                const menuDropdown = document.getElementById('menuDropdown');
+                
+                if (menuButton && menuDropdown) {
+                    menuButton.classList.add('active');
+                    menuDropdown.classList.add('active');
+                }
+            }
+            
+            closeMenuDropdown() {
+                const menuButton = document.getElementById('menuButton');
+                const menuDropdown = document.getElementById('menuDropdown');
+                
+                if (menuButton && menuDropdown) {
+                    menuButton.classList.remove('active');
+                    menuDropdown.classList.remove('active');
                 }
             }
 
@@ -5628,7 +5986,7 @@
                 return {
                     projects: [
                         {
-                            name: 'Vibe Dashboard',
+                            name: 'Coder1 Dashboard',
                             tokens: 45000,
                             percentage: 45,
                             color: '#8b5cf6',
@@ -6933,6 +7291,104 @@
             </div>
         </div>
     </div>
+
+    <script>
+        // 3D Mouse Interactions for Hero Feature Cards
+        document.addEventListener('DOMContentLoaded', function() {
+            const featureCards = document.querySelectorAll('.feature-card');
+            const heroSection = document.querySelector('.hero-section');
+            
+            if (featureCards.length > 0 && heroSection) {
+                // Add mouse move handler for 3D effects
+                heroSection.addEventListener('mousemove', function(e) {
+                    const rect = heroSection.getBoundingClientRect();
+                    const x = e.clientX - rect.left;
+                    const y = e.clientY - rect.top;
+                    const centerX = rect.width / 2;
+                    const centerY = rect.height / 2;
+                    
+                    // Calculate rotation values
+                    const rotateX = (y - centerY) / centerY * -10; // Max 10 degrees
+                    const rotateY = (x - centerX) / centerX * 10;
+                    
+                    featureCards.forEach((card, index) => {
+                        const cardRect = card.getBoundingClientRect();
+                        const cardCenterX = cardRect.left + cardRect.width / 2 - rect.left;
+                        const cardCenterY = cardRect.top + cardRect.height / 2 - rect.top;
+                        
+                        // Calculate distance from mouse to card center
+                        const distance = Math.sqrt(
+                            Math.pow(x - cardCenterX, 2) + Math.pow(y - cardCenterY, 2)
+                        );
+                        
+                        // Apply different intensities based on proximity
+                        const maxDistance = 300;
+                        const intensity = Math.max(0, 1 - (distance / maxDistance));
+                        
+                        // Apply 3D transforms
+                        const cardRotateX = rotateX * intensity * 0.5;
+                        const cardRotateY = rotateY * intensity * 0.5;
+                        const translateZ = intensity * 20;
+                        
+                        card.style.transform = `
+                            translateY(-8px) 
+                            rotateX(${cardRotateX}deg) 
+                            rotateY(${cardRotateY}deg) 
+                            translateZ(${translateZ}px)
+                        `;
+                        
+                        // Update corner glow position
+                        const cornerGlow = card.querySelector('.feature-corner-glow');
+                        if (cornerGlow) {
+                            const glowOpacity = intensity * 0.8;
+                            cornerGlow.style.opacity = glowOpacity;
+                        }
+                    });
+                });
+                
+                // Reset transforms when mouse leaves
+                heroSection.addEventListener('mouseleave', function() {
+                    featureCards.forEach(card => {
+                        card.style.transform = '';
+                        const cornerGlow = card.querySelector('.feature-corner-glow');
+                        if (cornerGlow) {
+                            cornerGlow.style.opacity = '0';
+                        }
+                    });
+                });
+                
+                // Add individual card hover effects
+                featureCards.forEach((card, index) => {
+                    card.addEventListener('mouseenter', function() {
+                        this.style.transition = 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+                    });
+                    
+                    card.addEventListener('mouseleave', function() {
+                        this.style.transition = 'all 0.4s ease';
+                    });
+                });
+            }
+        });
+    </script>
+
+    <!-- Ambient Prompt Display JavaScript -->
+    <script src="/js/ambient-prompt-display.js"></script>
+    <script>
+        // Initialize Ambient Prompt Display after DOM is ready
+        document.addEventListener('DOMContentLoaded', () => {
+            // The ambient-prompt-display.js already handles initialization
+            // But we can pass additional context here if needed
+            if (window.ambientPromptDisplay) {
+                // Update context based on dashboard state
+                window.ambientPromptDisplay.updateContext({
+                    timeOfDay: new Date().getHours() < 12 ? 'morning' : 
+                              new Date().getHours() < 17 ? 'afternoon' : 
+                              new Date().getHours() < 21 ? 'evening' : 'night',
+                    sessionType: 'dashboard'
+                });
+            }
+        });
+    </script>
 
 </body>
 </html>
