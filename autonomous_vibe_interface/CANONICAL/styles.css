@@ -7,69 +7,69 @@
 }
 
 :root {
-    /* Dark Theme Colors */
-    --bg-primary: #0a0a0a;
-    --bg-secondary: #1a1a1a;
+    /* Dark Theme Colors - Matching AI Vibe Dashboard */
+    --bg-primary: #0a0e27;
+    --bg-secondary: #0f1835;
     --text-primary: #ffffff;
     --text-secondary: #e5e5e5;
     --text-muted: rgba(255, 255, 255, 0.7);
-    --glass-bg: rgba(255, 255, 255, 0.05);
-    --glass-border: rgba(255, 255, 255, 0.1);
-    --accent-primary: #8b5cf6;
-    --accent-secondary: #06b6d4;
-    --success: #10b981;
-    --warning: #f59e0b;
-    --error: #ef4444;
-    --info: #3b82f6;
-    --shadow: rgba(0, 0, 0, 0.3);
-    --gradient-1: #1a1a2e;
-    --gradient-2: #16213e;
-    --gradient-3: #0f0f23;
-    --orb-1: rgba(147, 51, 234, 0.3);
-    --orb-2: rgba(59, 130, 246, 0.3);
-    --orb-3: rgba(236, 72, 153, 0.35);
+    --glass-bg: rgba(15, 24, 53, 0.4);
+    --glass-border: rgba(99, 179, 237, 0.2);
+    --accent-primary: #00ffcc;
+    --accent-secondary: #63b3ed;
+    --success: #00ff88;
+    --warning: #ffc107;
+    --error: #ff4444;
+    --info: #4a9eff;
+    --shadow: rgba(0, 15, 40, 0.5);
+    --gradient-1: #0a0e27;
+    --gradient-2: #1a2454;
+    --gradient-3: #0f1835;
+    --orb-1: rgba(0, 255, 204, 0.3);
+    --orb-2: rgba(99, 179, 237, 0.3);
+    --orb-3: rgba(74, 158, 255, 0.35);
     
-    /* Enhanced Visual Variables */
-    --gradient-premium: linear-gradient(135deg, rgba(139, 92, 246, 0.8), rgba(236, 72, 153, 0.6), rgba(59, 130, 246, 0.8));
-    --glass-enhanced: rgba(255, 255, 255, 0.08);
-    --glass-border-enhanced: rgba(255, 255, 255, 0.15);
-    --shadow-premium: 0 20px 60px rgba(0, 0, 0, 0.4), 0 8px 25px rgba(139, 92, 246, 0.2);
+    /* Enhanced Visual Variables - Vibe Dashboard Theme */
+    --gradient-premium: linear-gradient(135deg, rgba(0, 255, 204, 0.8), rgba(99, 179, 237, 0.6), rgba(74, 158, 255, 0.8));
+    --glass-enhanced: rgba(15, 24, 53, 0.5);
+    --glass-border-enhanced: rgba(0, 255, 204, 0.15);
+    --shadow-premium: 0 20px 60px rgba(0, 15, 40, 0.6), 0 8px 25px rgba(0, 255, 204, 0.2);
     --text-premium: rgba(255, 255, 255, 0.95);
-    --accent-pink: #ec4899;
-    --accent-gold: #f59e0b;
+    --accent-pink: #ff0080;
+    --accent-gold: #ffc107;
 }
 
-/* Light Theme Colors */
+/* Light Theme Colors - Vibe Dashboard Light Variant */
 body.light-theme {
     --bg-primary: #ffffff;
-    --bg-secondary: #f8fafc;
-    --text-primary: #1a1a1a;
+    --bg-secondary: #f0f7ff;
+    --text-primary: #0a0e27;
     --text-secondary: #374151;
-    --text-muted: rgba(0, 0, 0, 0.7);
+    --text-muted: rgba(10, 14, 39, 0.7);
     --glass-bg: rgba(255, 255, 255, 0.8);
-    --glass-border: rgba(0, 0, 0, 0.1);
-    --accent-primary: #8b5cf6;
-    --accent-secondary: #06b6d4;
-    --success: #10b981;
-    --warning: #f59e0b;
-    --error: #ef4444;
-    --info: #3b82f6;
-    --shadow: rgba(0, 0, 0, 0.1);
+    --glass-border: rgba(99, 179, 237, 0.2);
+    --accent-primary: #00b389;
+    --accent-secondary: #4a9eff;
+    --success: #00b389;
+    --warning: #ffc107;
+    --error: #ff4444;
+    --info: #4a9eff;
+    --shadow: rgba(10, 14, 39, 0.1);
     --gradient-1: #f0f9ff;
     --gradient-2: #e0f2fe;
     --gradient-3: #f8fafc;
-    --orb-1: rgba(147, 51, 234, 0.1);
-    --orb-2: rgba(59, 130, 246, 0.1);
-    --orb-3: rgba(236, 72, 153, 0.15);
+    --orb-1: rgba(0, 179, 137, 0.1);
+    --orb-2: rgba(74, 158, 255, 0.1);
+    --orb-3: rgba(99, 179, 237, 0.15);
     
     /* Enhanced Visual Variables - Light Theme */
-    --gradient-premium: linear-gradient(135deg, rgba(139, 92, 246, 0.3), rgba(236, 72, 153, 0.2), rgba(59, 130, 246, 0.3));
+    --gradient-premium: linear-gradient(135deg, rgba(0, 179, 137, 0.3), rgba(74, 158, 255, 0.2), rgba(99, 179, 237, 0.3));
     --glass-enhanced: rgba(255, 255, 255, 0.9);
-    --glass-border-enhanced: rgba(0, 0, 0, 0.08);
-    --shadow-premium: 0 20px 60px rgba(0, 0, 0, 0.1), 0 8px 25px rgba(139, 92, 246, 0.1);
-    --text-premium: rgba(26, 26, 26, 0.95);
-    --accent-pink: #ec4899;
-    --accent-gold: #f59e0b;
+    --glass-border-enhanced: rgba(99, 179, 237, 0.15);
+    --shadow-premium: 0 20px 60px rgba(10, 14, 39, 0.15), 0 8px 25px rgba(0, 179, 137, 0.1);
+    --text-premium: rgba(10, 14, 39, 0.95);
+    --accent-pink: #ff0080;
+    --accent-gold: #ffc107;
 }
 
 body {
@@ -152,8 +152,8 @@ body {
     border-color: var(--accent-primary);
     box-shadow: 
         0 8px 32px var(--shadow),
-        0 0 20px rgba(139, 92, 246, 0.3),
-        inset 0 0 20px rgba(139, 92, 246, 0.1);
+        0 0 20px rgba(0, 255, 204, 0.3),
+        inset 0 0 20px rgba(0, 255, 204, 0.1);
     transform: translateY(-2px);
 }
 

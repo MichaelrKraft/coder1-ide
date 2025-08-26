@@ -16,7 +16,7 @@ Claude Agents: This is the OFFICIAL version - do not modify copies elsewhere
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Coder1 - Smart PRD & Wireframe Generator</title>
+    <title>Coder1 IDE - Build with AI: From Simple Components to Autonomous Development</title>
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="product-creation-hub.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -33,14 +33,8 @@ Claude Agents: This is the OFFICIAL version - do not modify copies elsewhere
         <header class="header glassmorphism">
             <div class="header-content">
                 <div class="logo">
-                    <img 
-                        src="coder1-logo.png" 
-                        alt="Coder1" 
-                        class="logo-image"
-                        style="height: 60px; width: auto;"
-                        onerror="this.style.display='none'; this.nextElementSibling.style.display='block';"
-                    />
-                    <div style="display: none; color: #f97316; font-weight: bold;">CODER1</div>
+                    <h1>Coder1 IDE</h1>
+                    <span class="version">v0.1.0</span>
                 </div>
                 <div class="header-controls">
                     <div class="website-selector">
@@ -69,7 +63,8 @@ Claude Agents: This is the OFFICIAL version - do not modify copies elsewhere
             <div class="left-column">
                 <div class="chat-container glassmorphism">
                 <div class="chat-header">
-                    <h2>Smart PRD & Wireframe Generator</h2>
+                    <h2>🚀 AI-Powered Development Hub</h2>
+                    <p class="tool-description">Transform ideas into detailed specifications for Claude Code</p>
                     <div class="chat-actions">
                         <button class="action-btn" id="clearChat">
                             <i class="fas fa-trash"></i>
@@ -86,7 +81,11 @@ Claude Agents: This is the OFFICIAL version - do not modify copies elsewhere
                             <i class="fas fa-robot"></i>
                         </div>
                         <div class="message-content">
-                            <p>Welcome to the Coder1 Smart PRD & Wireframe Generator! I'll help you create professional Product Requirements Documents and wireframes for your project. The more context that is entered here the better Claude Code will do at creating what you want. Let's start by describing what you want to build.</p>
+                            <p>Welcome to Coder1 IDE! I'll help you create detailed specifications that Claude Code can turn into amazing projects. Whether you're new to coding or an experienced developer, I'll guide you through describing exactly what you want to build.</p>
+                            <div class="getting-started-hints">
+                                <p><strong>✨ New to coding?</strong> Just describe your idea - I'll handle the technical details!</p>
+                                <p><strong>💻 Experienced developer?</strong> I can create comprehensive PRDs with technical specifications.</p>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -99,9 +98,6 @@ Claude Agents: This is the OFFICIAL version - do not modify copies elsewhere
                             rows="2"
                         ></textarea>
                         <div class="input-controls">
-                            <button class="mic-btn" id="voiceMicButton" title="Click to start voice input">
-                                <i class="fas fa-microphone"></i>
-                            </button>
                             <button class="send-btn" id="sendMessage">
                                 <i class="fas fa-paper-plane"></i>
                             </button>
@@ -266,6 +262,61 @@ Claude Agents: This is the OFFICIAL version - do not modify copies elsewhere
 
             <!-- Product Creation Hub Sidebar -->
             <div class="product-creation-sidebar">
+                <!-- Tools Navigation -->
+                <div class="creation-panel glassmorphism" id="toolsNavigation">
+                    <div class="panel-header">
+                        <h3><i class="fas fa-layer-group"></i> Development Tools</h3>
+                        <div class="tools-subtitle">Choose your path to success</div>
+                    </div>
+                    
+                    <div class="tools-grid">
+                        <a href="/component-studio.html" class="tool-card beginner" title="Visual interface for creating React components without writing code - perfect first step for non-programmers">
+                            <div class="tool-icon">🎨</div>
+                            <div class="tool-info">
+                                <h4>Component Studio</h4>
+                                <p>Build beautiful components visually</p>
+                                <span class="skill-badge beginner">Perfect for beginners</span>
+                            </div>
+                        </a>
+                        
+                        <div class="tool-card current">
+                            <div class="tool-icon">📝</div>
+                            <div class="tool-info">
+                                <h4>PRD Generator</h4>
+                                <p>Transform ideas into specifications</p>
+                                <span class="skill-badge intermediate">You are here</span>
+                            </div>
+                        </div>
+                        
+                        <a href="/templates-hub.html" class="tool-card intermediate" title="Pre-configured Claude Code commands that eliminate setup time - copy, paste, and run immediately">
+                            <div class="tool-icon">⚡</div>
+                            <div class="tool-info">
+                                <h4>Templates Hub</h4>
+                                <p>Pre-built Claude Code commands</p>
+                                <span class="skill-badge intermediate">Ready to code?</span>
+                            </div>
+                        </a>
+                        
+                        <a href="/ide" class="tool-card advanced" title="Full development environment with Monaco editor, terminal, and AI supervision - your complete coding workspace">
+                            <div class="tool-icon">💻</div>
+                            <div class="tool-info">
+                                <h4>Full IDE</h4>
+                                <p>Professional development environment</p>
+                                <span class="skill-badge advanced">For developers</span>
+                            </div>
+                        </a>
+                        
+                        <a href="/workflow-dashboard.html" class="tool-card expert" title="Autonomous AI agents handle complex development tasks automatically - one-click solutions for advanced workflows">
+                            <div class="tool-icon">🤖</div>
+                            <div class="tool-info">
+                                <h4>AI Workflows</h4>
+                                <p>Autonomous development automation</p>
+                                <span class="skill-badge expert">Advanced users</span>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+                
                 <!-- Product Creation Wizard -->
                 <div class="creation-panel glassmorphism" id="creationWizard">
                     <div class="panel-header">
@@ -294,7 +345,7 @@ Claude Agents: This is the OFFICIAL version - do not modify copies elsewhere
                             <h4>1. Describe Your Idea</h4>
                             <p>Tell us what you want to build in the chat above</p>
                             <div class="step-actions">
-                                <button class="wizard-btn primary" id="startWizard" disabled>
+                                <button class="wizard-btn primary" id="startWizard" disabled title="Begin the AI-guided 5-question process to create detailed project specifications">
                                     <i class="fas fa-rocket"></i>
                                     Start Building
                                 </button>

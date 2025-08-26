@@ -4,7 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Templates Hub - Coder1 IDE</title>
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
+    <meta name="version" content="v2.1.0" />
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <!-- Cache buster: <?php echo time(); ?> -->
     <style>
         :root {
             --bg-primary: #0a0a0a;
@@ -35,8 +40,6 @@
             color: var(--text-primary);
             min-height: 100vh;
             line-height: 1.6;
-            font-size: 16px;
-            font-weight: 400;
         }
 
         /* Grid Background Pattern */
@@ -57,13 +60,20 @@
 
         /* Header */
         .header {
-            background: linear-gradient(to bottom, var(--bg-secondary), var(--bg-primary));
-            border-bottom: 1px solid var(--border-subtle);
-            padding: 20px 0;
+            background: #050505;
+            border: 1px solid rgba(6, 182, 212, 0.2);
+            border-top: none;
+            border-left: none;
+            border-right: none;
+            padding: 24px 0;  /* Increased by 20% from 20px */
             position: sticky;
             top: 0;
             z-index: 100;
             backdrop-filter: blur(10px);
+            box-shadow: 
+                0 0 30px rgba(6, 182, 212, 0.3), 
+                0 0 60px rgba(6, 182, 212, 0.1), 
+                inset 0 0 20px rgba(6, 182, 212, 0.05);
         }
 
         .header-content {
@@ -82,28 +92,130 @@
         }
 
         .logo img {
-            height: 69px;  /* Increased by 15% from 60px */
+            height: 87px;  /* Reduced by 15% from 102px */
             width: auto;
             object-fit: contain;
-            margin: 0;
+            margin: -30px 0;  /* Adjusted for new header height */
         }
         
-        .page-title {
-            position: absolute;
-            left: 50%;
-            transform: translateX(-50%);
-            font-size: 24px;
-            font-weight: bold;
-            background: var(--gradient-primary);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
+        /* Title styling moved inline for consistency with dashboard */
 
         .nav-actions {
             display: flex;
             gap: 20px;
             align-items: center;
+        }
+
+        /* Menu Button Styling */
+        .menu-button {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .menu-button:hover {
+            background: rgba(139, 92, 246, 0.1);
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 20px rgba(139, 92, 246, 0.2);
+        }
+
+        .menu-button.active {
+            background: rgba(139, 92, 246, 0.15);
+            border-color: var(--accent-primary);
+        }
+
+        /* Dropdown Menu */
+        .menu-dropdown {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            margin-top: 8px;
+            min-width: 200px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            backdrop-filter: blur(20px);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px);
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+
+        .menu-dropdown.active {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .menu-dropdown::before {
+            content: '';
+            position: absolute;
+            top: -6px;
+            right: 20px;
+            width: 12px;
+            height: 12px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-bottom: none;
+            border-right: none;
+            transform: rotate(45deg);
+            backdrop-filter: blur(20px);
+        }
+
+        .menu-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            color: var(--text-primary);
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .menu-item:first-child {
+            border-radius: 12px 12px 0 0;
+        }
+
+        .menu-item:last-child {
+            border-bottom: none;
+            border-radius: 0 0 12px 12px;
+        }
+
+        .menu-item:hover {
+            background: rgba(139, 92, 246, 0.1);
+            color: var(--accent-primary);
+            padding-left: 20px;
+        }
+
+        .menu-item-icon {
+            font-size: 16px;
+            width: 20px;
+            text-align: center;
+        }
+
+        /* Menu button arrow animation */
+        .menu-arrow {
+            font-size: 12px;
+            transition: transform 0.3s ease;
+        }
+
+        .menu-button.active .menu-arrow {
+            transform: rotate(180deg);
         }
 
         .search-box {
@@ -198,106 +310,352 @@
         }
 
         /* Hero Section */
+        /* Advanced Hero Section with Gradient Mesh */
         .hero-section {
-            background: linear-gradient(to bottom, var(--bg-secondary), var(--bg-primary));
-            border-bottom: 1px solid var(--border-subtle);
-            padding: 60px 0;
+            position: relative;
+            padding: 40px 0 40px;
+            overflow: hidden;
+            background: #050505;
+            border-bottom: 1px solid rgba(139, 92, 246, 0.2);
+        }
+
+        /* Animated Gradient Mesh Background */
+        .hero-section::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle at 20% 50%, rgba(139, 92, 246, 0.15) 0%, transparent 50%),
+                        radial-gradient(circle at 80% 80%, rgba(6, 182, 212, 0.15) 0%, transparent 50%),
+                        radial-gradient(circle at 40% 20%, rgba(236, 72, 153, 0.1) 0%, transparent 50%),
+                        radial-gradient(circle at 90% 10%, rgba(59, 130, 246, 0.1) 0%, transparent 50%);
+            animation: meshAnimation 20s ease-in-out infinite;
+            z-index: 0;
+        }
+
+        @keyframes meshAnimation {
+            0%, 100% { transform: rotate(0deg) scale(1); }
+            25% { transform: rotate(45deg) scale(1.1); }
+            50% { transform: rotate(90deg) scale(1); }
+            75% { transform: rotate(135deg) scale(1.1); }
         }
 
         .hero-container {
-            max-width: 800px;
+            max-width: 1200px;
             margin: 0 auto;
             padding: 0 20px;
+            position: relative;
+            z-index: 2;
+        }
+
+        /* Hero Header */
+        .hero-header {
             text-align: center;
+            margin-bottom: 60px;
+            animation: fadeInUp 0.8s ease-out;
         }
 
-        .skill-indicator {
-            margin-bottom: 20px;
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
-        .skill-badge {
-            display: inline-block;
-            background: rgba(139, 92, 246, 0.2);
-            color: var(--accent-primary);
-            padding: 6px 16px;
-            border-radius: 20px;
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(6, 182, 212, 0.2));
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            padding: 8px 20px;
+            border-radius: 30px;
             font-size: 14px;
             font-weight: 600;
-            margin-bottom: 8px;
+            color: var(--accent-primary);
+            margin-bottom: 20px;
+            backdrop-filter: blur(10px);
+            animation: pulse 2s ease-in-out infinite;
         }
 
-        .difficulty-note {
-            display: block;
-            color: var(--text-muted);
-            font-size: 14px;
-            font-style: italic;
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.02); }
         }
 
-        .hero-section h1 {
-            font-size: 48px;
-            font-weight: 700;
+        .hero-title {
+            font-size: 56px;
+            font-weight: 800;
             margin-bottom: 16px;
-            background: var(--gradient-primary);
+            background: linear-gradient(135deg, #8b5cf6 0%, #06b6d4 50%, #ec4899 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
+            line-height: 1.2;
+            letter-spacing: -1px;
         }
 
         .hero-subtitle {
             font-size: 20px;
-            color: var(--text-secondary);
-            margin-bottom: 30px;
-            max-width: 900px;
-            margin-left: auto;
-            margin-right: auto;
+            color: rgba(255, 255, 255, 0.7);
+            max-width: 600px;
+            margin: 0 auto 40px;
+            line-height: 1.6;
         }
 
-        .hero-category {
-            margin-bottom: 12px;
-            text-align: left;
-            display: block;
-            line-height: 1.5;
+        /* Floating Cards Grid */
+        .feature-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 30px;
+            margin-top: 60px;
         }
 
-        .hero-category strong {
-            color: var(--text-primary);
-            margin-right: 8px;
+        .feature-card {
+            position: relative;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02));
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 32px;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            overflow: hidden;
+            animation: floatCard 6s ease-in-out infinite;
+            animation-delay: var(--delay);
+            transform-style: preserve-3d;
+            will-change: transform;
         }
 
-        .next-steps {
-            margin-top: 30px;
-            padding-top: 20px;
-            border-top: 1px solid var(--border-subtle);
+        @keyframes floatCard {
+            0%, 100% { transform: translateY(0) translateZ(0); }
+            50% { transform: translateY(-10px) translateZ(10px); }
         }
 
-        .next-steps-label {
-            color: var(--text-muted);
-            font-size: 14px;
-            margin-bottom: 10px;
+        .feature-card:hover {
+            transform: translateY(-5px) scale(1.02) translateZ(20px);
+            border-color: rgba(139, 92, 246, 0.3);
+            box-shadow: 0 20px 40px rgba(139, 92, 246, 0.3),
+                        0 0 0 1px rgba(139, 92, 246, 0.2),
+                        inset 0 0 30px rgba(255, 255, 255, 0.03);
         }
 
-        .next-tool-link {
-            display: inline-flex;
+        /* Hero card glow effect */
+        .hero-card-glow {
+            position: absolute;
+            inset: -2px;
+            border-radius: 20px;
+            opacity: 0;
+            transition: opacity 0.6s ease;
+            background: linear-gradient(135deg, 
+                rgba(139, 92, 246, 0.2),
+                rgba(6, 182, 212, 0.2));
+            filter: blur(15px);
+            z-index: -1;
+        }
+
+        .feature-card:hover .hero-card-glow {
+            opacity: 0.7;
+        }
+
+        /* Hero card light beams */
+        .hero-light-beams {
+            position: absolute;
+            inset: -1px;
+            border-radius: 20px;
+            overflow: hidden;
+            pointer-events: none;
+        }
+
+        .hero-beam {
+            position: absolute;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent);
+            filter: blur(2.5px);
+            opacity: 0;
+        }
+
+        .hero-beam-top {
+            top: 0;
+            left: 0;
+            height: 3px;
+            width: 60%;
+            animation: hero-beam-top 6s ease-in-out infinite;
+        }
+
+        .hero-beam-right {
+            top: 0;
+            right: 0;
+            width: 3px;
+            height: 60%;
+            background: linear-gradient(180deg, transparent, rgba(255,255,255,0.8), transparent);
+            animation: hero-beam-right 6s ease-in-out infinite;
+            animation-delay: 0.75s;
+        }
+
+        .hero-beam-bottom {
+            bottom: 0;
+            right: 0;
+            height: 3px;
+            width: 60%;
+            animation: hero-beam-bottom 6s ease-in-out infinite;
+            animation-delay: 1.5s;
+        }
+
+        .hero-beam-left {
+            bottom: 0;
+            left: 0;
+            width: 3px;
+            height: 60%;
+            background: linear-gradient(180deg, transparent, rgba(255,255,255,0.8), transparent);
+            animation: hero-beam-left 6s ease-in-out infinite;
+            animation-delay: 2.25s;
+        }
+
+        @keyframes hero-beam-top {
+            0%, 100% { left: -60%; opacity: 0; }
+            10% { opacity: 0.4; }
+            50% { left: 100%; opacity: 0.8; }
+            90% { opacity: 0.4; }
+        }
+
+        @keyframes hero-beam-right {
+            0%, 100% { top: -60%; opacity: 0; }
+            10% { opacity: 0.4; }
+            50% { top: 100%; opacity: 0.8; }
+            90% { opacity: 0.4; }
+        }
+
+        @keyframes hero-beam-bottom {
+            0%, 100% { right: -60%; opacity: 0; }
+            10% { opacity: 0.4; }
+            50% { right: 100%; opacity: 0.8; }
+            90% { opacity: 0.4; }
+        }
+
+        @keyframes hero-beam-left {
+            0%, 100% { bottom: -60%; opacity: 0; }
+            10% { opacity: 0.4; }
+            50% { bottom: 100%; opacity: 0.8; }
+            90% { opacity: 0.4; }
+        }
+
+        /* Hero corner glows */
+        .hero-corner-glow {
+            position: absolute;
+            border-radius: 50%;
+            pointer-events: none;
+        }
+
+        .hero-corner-tl {
+            top: 10px;
+            left: 10px;
+            width: 6px;
+            height: 6px;
+            background: rgba(255,255,255,0.5);
+            filter: blur(2px);
+            animation: hero-glow-pulse 2.5s ease-in-out infinite;
+        }
+
+        .hero-corner-tr {
+            top: 10px;
+            right: 10px;
+            width: 8px;
+            height: 8px;
+            background: rgba(139, 92, 246, 0.6);
+            filter: blur(3px);
+            animation: hero-glow-pulse 3s ease-in-out infinite;
+            animation-delay: 0.6s;
+        }
+
+        .hero-corner-br {
+            bottom: 10px;
+            right: 10px;
+            width: 8px;
+            height: 8px;
+            background: rgba(6, 182, 212, 0.6);
+            filter: blur(3px);
+            animation: hero-glow-pulse 2.8s ease-in-out infinite;
+            animation-delay: 1.2s;
+        }
+
+        .hero-corner-bl {
+            bottom: 10px;
+            left: 10px;
+            width: 6px;
+            height: 6px;
+            background: rgba(255,255,255,0.5);
+            filter: blur(2px);
+            animation: hero-glow-pulse 2.6s ease-in-out infinite;
+            animation-delay: 1.8s;
+        }
+
+        @keyframes hero-glow-pulse {
+            0%, 100% { opacity: 0.3; transform: scale(1); }
+            50% { opacity: 0.6; transform: scale(1.2); }
+        }
+
+        .feature-icon {
+            width: 56px;
+            height: 56px;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            border-radius: 16px;
+            display: flex;
             align-items: center;
-            gap: 8px;
-            padding: 10px 20px;
-            background: var(--bg-card);
-            border: 1px solid var(--border-subtle);
-            border-radius: 12px;
+            justify-content: center;
+            font-size: 28px;
+            margin-bottom: 20px;
+            box-shadow: 0 8px 20px rgba(139, 92, 246, 0.3);
+        }
+
+        .feature-title {
+            font-size: 20px;
+            font-weight: 700;
             color: var(--text-primary);
-            text-decoration: none;
-            transition: all 0.3s ease;
-            font-size: 14px;
+            margin-bottom: 12px;
+            position: relative;
+            z-index: 1;
         }
 
-        .next-tool-link:hover {
-            background: var(--bg-secondary);
-            border-color: var(--accent-primary);
-            transform: translateY(-2px);
+        .feature-description {
+            color: rgba(255, 255, 255, 0.7);
+            line-height: 1.6;
+            font-size: 15px;
+            margin-bottom: 20px;
+            position: relative;
+            z-index: 1;
         }
 
-        .next-tool-icon {
-            font-size: 16px;
+        .feature-stats {
+            display: flex;
+            gap: 20px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            position: relative;
+            z-index: 1;
         }
+
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .stat-value {
+            font-size: 20px;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* Next steps section removed for cleaner UI */
 
         /* Templates Grid */
         .templates-container {
@@ -308,49 +666,127 @@
             z-index: 1;
         }
 
+
+        /* Template Card with Advanced Effects */
+        .template-card {
+            background: rgba(20, 20, 20, 0.4);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            padding: 24px;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+            transform-style: preserve-3d;
+            will-change: transform;
+        }
+
+        /* Glass morphism inner pattern */
+        .template-card::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background-image: linear-gradient(135deg, rgba(255,255,255,0.01) 0.5px, transparent 0.5px),
+                              linear-gradient(45deg, rgba(255,255,255,0.01) 0.5px, transparent 0.5px);
+            background-size: 30px 30px;
+            opacity: 0.3;
+            pointer-events: none;
+        }
+
+        .template-card:hover {
+            background: rgba(26, 26, 26, 0.5);
+            border-color: rgba(139, 92, 246, 0.3);
+            transform: translateY(-4px) translateZ(20px);
+            box-shadow: 
+                0 10px 30px rgba(139, 92, 246, 0.25),
+                0 20px 60px rgba(6, 182, 212, 0.15),
+                inset 0 0 20px rgba(255, 255, 255, 0.03);
+        }
+
+
+        /* Perspective wrapper for 3D effect */
         .templates-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
             gap: 24px;
+            perspective: 1500px;
         }
 
-        /* Template Card */
-        .template-card {
-            background: var(--bg-card);
-            border: 1px solid var(--border-subtle);
-            border-radius: 12px;
-            padding: 24px;
-            cursor: pointer;
-            transition: all 0.3s;
+        /* Electric Border Effect for Hooks Cards */
+        .template-card[data-category="hooks"] {
             position: relative;
-            overflow: hidden;
+            background: linear-gradient(180deg, rgba(20, 20, 20, 0.8), rgba(10, 10, 10, 0.9));
+            overflow: visible;
         }
 
-        .template-card::before {
+        .template-card[data-category="hooks"]::before {
             content: '';
             position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 3px;
-            background: var(--gradient-primary);
-            transform: scaleX(0);
-            transition: transform 0.3s;
+            inset: -2px;
+            padding: 2px;
+            border-radius: 16px;
+            background: linear-gradient(
+                45deg,
+                transparent,
+                #00ffff,
+                #0080ff,
+                transparent,
+                #ff00ff,
+                #ff0080
+            );
+            background-size: 400% 100%;
+            animation: electric-border 3s linear infinite;
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: exclude;
+            mask-composite: exclude;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            z-index: -1;
         }
 
-        .template-card:hover {
-            background: var(--bg-secondary);
-            border-color: var(--accent-primary);
-            transform: translateY(-4px);
-            box-shadow: 0 10px 30px rgba(139, 92, 246, 0.2);
+        .template-card[data-category="hooks"]:hover::before {
+            opacity: 1;
         }
 
-        .template-card:hover::before {
-            transform: scaleX(1);
+        @keyframes electric-border {
+            0% {
+                background-position: 0% 50%;
+            }
+            50% {
+                background-position: 100% 50%;
+            }
+            100% {
+                background-position: 0% 50%;
+            }
+        }
+
+        /* Electric glow effect */
+        .template-card[data-category="hooks"]::after {
+            content: '';
+            position: absolute;
+            inset: -10px;
+            border-radius: 16px;
+            background: radial-gradient(
+                circle at var(--mouse-x, 50%) var(--mouse-y, 50%),
+                rgba(0, 255, 255, 0.2),
+                transparent 40%
+            );
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .template-card[data-category="hooks"]:hover::after {
+            opacity: 1;
         }
 
         .template-header {
             margin-bottom: 16px;
+            position: relative;
+            z-index: 2;
         }
 
         .template-category {
@@ -360,6 +796,8 @@
             letter-spacing: 1.5px;
             margin-bottom: 8px;
             font-weight: 600;
+            position: relative;
+            z-index: 2;
         }
 
         .template-name {
@@ -367,6 +805,8 @@
             font-weight: 700;
             color: var(--text-primary);
             margin-bottom: 12px;
+            position: relative;
+            z-index: 2;
         }
 
         .template-description {
@@ -374,6 +814,8 @@
             font-size: 14px;
             line-height: 1.6;
             margin-bottom: 16px;
+            position: relative;
+            z-index: 2;
         }
 
         .template-tags {
@@ -381,6 +823,8 @@
             gap: 8px;
             flex-wrap: wrap;
             margin-bottom: 20px;
+            position: relative;
+            z-index: 2;
         }
 
         .template-tag {
@@ -390,6 +834,14 @@
             border-radius: 6px;
             font-size: 12px;
             font-weight: 500;
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(139, 92, 246, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .template-tag:hover {
+            background: rgba(139, 92, 246, 0.2);
+            border-color: rgba(139, 92, 246, 0.3);
         }
 
         .template-footer {
@@ -397,7 +849,9 @@
             justify-content: space-between;
             align-items: center;
             padding-top: 20px;
-            border-top: 1px solid var(--border-subtle);
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            position: relative;
+            z-index: 2;
         }
 
         .template-stats {
@@ -418,20 +872,42 @@
         }
 
         .quick-install {
-            background: var(--gradient-primary);
+            background: rgba(139, 92, 246, 0.15);
+            backdrop-filter: blur(8px);
             color: white;
-            border: none;
+            border: 1px solid rgba(139, 92, 246, 0.3);
             padding: 8px 16px;
             border-radius: 8px;
             font-size: 13px;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+            z-index: 3;
+        }
+
+        .quick-install::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+            transition: left 0.4s ease;
+            z-index: -1;
         }
 
         .quick-install:hover {
             transform: scale(1.05);
-            box-shadow: 0 4px 15px rgba(139, 92, 246, 0.4);
+            background: rgba(139, 92, 246, 0.25);
+            border-color: rgba(139, 92, 246, 0.5);
+            box-shadow: 0 4px 20px rgba(139, 92, 246, 0.5);
+        }
+
+        .quick-install:hover::before {
+            left: 100%;
         }
 
         /* Modal */
@@ -656,20 +1132,40 @@
 
         .btn-primary {
             flex: 1;
-            background: var(--gradient-primary);
+            background: rgba(139, 92, 246, 0.15);
+            backdrop-filter: blur(10px);
             color: white;
-            border: none;
+            border: 1px solid rgba(139, 92, 246, 0.3);
             padding: 12px 24px;
             border-radius: 8px;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.3s;
             font-size: 14px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-primary::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s ease;
         }
 
         .btn-primary:hover {
             transform: translateY(-2px);
-            box-shadow: 0 10px 30px rgba(139, 92, 246, 0.3);
+            background: rgba(139, 92, 246, 0.25);
+            border-color: rgba(139, 92, 246, 0.5);
+            box-shadow: 0 10px 30px rgba(139, 92, 246, 0.4);
+        }
+
+        .btn-primary:hover::before {
+            left: 100%;
         }
 
         .btn-secondary {
@@ -736,43 +1232,57 @@
     <div class="header">
         <div class="header-content">
             <div class="logo">
-                <img src="/coder1-logo-newest.png" alt="Coder1" />
+                <img src="/coder1-logo.svg" alt="Coder1" />
             </div>
-            <div class="page-title">Templates Hub</div>
+            <div style="position: absolute; left: 50%; transform: translateX(-50%); text-align: center;">
+                <h1 style="font-size: 32px; margin-bottom: 5px; font-weight: 600; background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+                    Claude Code Templates
+                </h1>
+                <p style="font-size: 14px; color: var(--text-secondary); margin: 0;">
+                    Pre-configured Claude Code templates for instant productivity
+                </p>
+            </div>
             <div class="nav-actions">
+                <input type="text" class="search-box" placeholder="Search templates..." id="searchInput">
+                <div class="menu-button" id="menuButton">
+                    <span>Menu</span>
+                    <span class="menu-arrow">▼</span>
+                    <div class="menu-dropdown" id="menuDropdown">
+                        <a href="/vibe-dashboard.html" class="menu-item">
+                            <span class="menu-item-icon">📊</span>
+                            <span>Dashboard</span>
+                        </a>
+                        <a href="/features" class="menu-item">
+                            <span class="menu-item-icon">✨</span>
+                            <span>Features</span>
+                        </a>
+                        <a href="/prd-generator-v2-test.html" class="menu-item">
+                            <span class="menu-item-icon">📝</span>
+                            <span>PRD Generator</span>
+                        </a>
+                        <a href="/templates-hub.html" class="menu-item">
+                            <span class="menu-item-icon">🧩</span>
+                            <span>Templates</span>
+                        </a>
+                        <a href="/hooks.html" class="menu-item">
+                            <span class="menu-item-icon">🔧</span>
+                            <span>Hooks</span>
+                        </a>
+                        <a href="/component-studio.html" class="menu-item">
+                            <span class="menu-item-icon">🎨</span>
+                            <span>Components</span>
+                        </a>
+                        <a href="/workflow-dashboard.html" class="menu-item">
+                            <span class="menu-item-icon">⚡</span>
+                            <span>Workflows</span>
+                        </a>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- Hero Section -->
-    <div class="hero-section">
-        <div class="hero-container">
-            <div class="skill-indicator">
-                <span class="skill-badge intermediate">Ready to Code?</span>
-                <span class="difficulty-note">Pre-built commands for Claude Code</span>
-            </div>
-            <h1>Templates Hub</h1>
-            <div class="hero-subtitle">
-                <div class="hero-category">
-                    <strong>🎯 For developers:</strong> Pre-configured Claude Code commands that eliminate setup time
-                </div>
-                <div class="hero-category">
-                    <strong>⚡ For teams:</strong> Standardized AI workflows that ensure consistent, quality output
-                </div>
-                <div class="hero-category">
-                    <strong>📚 For learners:</strong> Copy-paste examples that teach best practices through real use
-                </div>
-            </div>
-            <div class="next-steps">
-                <p class="next-steps-label">New to Claude Code?</p>
-                <a href="/" class="next-tool-link">
-                    <span class="next-tool-icon">📝</span>
-                    Start with the PRD Generator for guided project creation
-                </a>
-            </div>
-        </div>
-    </div>
-
+    <!-- Advanced Hero Section with Floating Cards -->
     <!-- Categories -->
     <div class="categories-section">
         <div class="categories-container">
@@ -787,8 +1297,8 @@
                     <span class="category-count">42</span>
                 </div>
                 <div class="category-pill" data-category="mcp">
-                    MCP Quick Install
-                    <span class="category-count">10</span>
+                    MCP Integrations
+                    <span class="category-count">28</span>
                 </div>
                 <div class="category-pill" data-category="hooks">
                     Smart Hooks
@@ -797,10 +1307,6 @@
                 <div class="category-pill" data-category="commands">
                     Quick Commands
                     <span class="category-count">31</span>
-                </div>
-                <div class="category-pill" data-category="ide">
-                    IDE Config
-                    <span class="category-count">20</span>
                 </div>
             </div>
         </div>
@@ -861,10 +1367,10 @@
             </div>
 
             <div class="action-buttons">
-                <button class="btn-primary" onclick="installTemplate()">
+                <button class="btn-primary" onclick="window.installTemplate(event)" type="button">
                     <i class="fas fa-download"></i> Install to Current Project
                 </button>
-                <button class="btn-secondary" onclick="viewDocs()">
+                <button class="btn-secondary" onclick="window.viewDocs(event)" type="button">
                     <i class="fas fa-book"></i> View Documentation
                 </button>
             </div>
@@ -1097,32 +1603,11 @@ export const Button: React.FC<ButtonProps> = ({
             });
         }
 
-        // Check MCP installation status
-        async function checkMCPStatus() {
-            try {
-                const response = await fetch('/api/templates/check-mcp');
-                const data = await response.json();
-                
-                if (data.success && data.installedMCPs) {
-                    // Store installed MCPs in memory
-                    window.installedMCPs = data.installedMCPs;
-                    
-                    // Update localStorage for each installed MCP
-                    data.installedMCPs.forEach(mcpId => {
-                        localStorage.setItem(`mcp_installed_${mcpId}-mcp`, 'true');
-                    });
-                }
-            } catch (error) {
-                console.error('Failed to check MCP status:', error);
-                window.installedMCPs = [];
-            }
-        }
-
         // Initialize
-        document.addEventListener('DOMContentLoaded', async () => {
-            await checkMCPStatus();
+        document.addEventListener('DOMContentLoaded', () => {
             fetchTemplates();
             setupEventListeners();
+            initHeroCards3D();
         });
 
         function setupEventListeners() {
@@ -1136,7 +1621,11 @@ export const Button: React.FC<ButtonProps> = ({
                 });
             });
 
-            // Search functionality removed - search box no longer in header
+            // Search
+            document.getElementById('searchInput').addEventListener('input', (e) => {
+                searchQuery = e.target.value.toLowerCase();
+                renderTemplates();
+            });
 
             // Code tabs
             document.querySelectorAll('.code-tab').forEach(tab => {
@@ -1146,25 +1635,15 @@ export const Button: React.FC<ButtonProps> = ({
             });
 
             // Modal close on overlay click
-            document.getElementById('modalOverlay').addEventListener('click', (e) => {
-                if (e.target === e.currentTarget) {
-                    closeModal();
-                }
-            });
-        }
-
-        function renderInstallButton(template) {
-            const isInstalled = localStorage.getItem(`mcp_installed_${template.id}`) === 'true' ||
-                              (window.installedMCPs && window.installedMCPs.includes(template.id.replace('-mcp', '')));
-            
-            if (isInstalled) {
-                return `<button class="quick-install" style="background: var(--success); cursor: default;" disabled>
-                            <i class="fas fa-check"></i> Installed
-                        </button>`;
+            const modalOverlay = document.getElementById('modalOverlay');
+            if (modalOverlay) {
+                modalOverlay.addEventListener('click', (e) => {
+                    if (e.target === e.currentTarget) {
+                        closeModal();
+                    }
+                });
             } else {
-                return `<button class="quick-install" onclick="quickInstall(event, '${template.id}')">
-                            Install
-                        </button>`;
+                console.error('Modal overlay not found during initialization');
             }
         }
 
@@ -1188,7 +1667,7 @@ export const Button: React.FC<ButtonProps> = ({
 
             // Render
             grid.innerHTML = filtered.map(template => `
-                <div class="template-card" onclick="openModal('${template.id}')">
+                <div class="template-card" data-template-id="${template.id}" data-category="${template.categorySlug || ''}" onclick="openModal('${template.id}')">
                     <div class="template-header">
                         <div class="template-category">${template.category}</div>
                         <div class="template-name">${template.name}</div>
@@ -1203,10 +1682,75 @@ export const Button: React.FC<ButtonProps> = ({
                             <span class="stat"><i class="fas fa-download"></i> ${(template.stats.downloads / 1000).toFixed(1)}k</span>
                             <span class="stat"><i class="fas fa-comment"></i> ${template.stats.comments}</span>
                         </div>
-                        ${renderInstallButton(template)}
+                        <button class="quick-install" onclick="quickInstall(event, '${template.id}')">
+                            Install
+                        </button>
                     </div>
                 </div>
             `).join('');
+            
+            // Initialize 3D effects after rendering
+            init3DCardEffects();
+        }
+
+        // 3D Card Rotation Effect
+        function init3DCardEffects() {
+            const cards = document.querySelectorAll('.template-card');
+            
+            cards.forEach(card => {
+                // Remove existing listeners to prevent duplicates
+                const newCard = card.cloneNode(true);
+                card.parentNode.replaceChild(newCard, card);
+                
+                // Add electric border mouse tracking for hooks cards
+                if (newCard.dataset.category === 'hooks') {
+                    newCard.addEventListener('mousemove', (e) => {
+                        const rect = newCard.getBoundingClientRect();
+                        const x = ((e.clientX - rect.left) / rect.width) * 100;
+                        const y = ((e.clientY - rect.top) / rect.height) * 100;
+                        newCard.style.setProperty('--mouse-x', `${x}%`);
+                        newCard.style.setProperty('--mouse-y', `${y}%`);
+                    });
+                }
+                
+                // Add mouse move handler for 3D rotation
+                newCard.addEventListener('mousemove', (e) => {
+                    const rect = newCard.getBoundingClientRect();
+                    const centerX = rect.left + rect.width / 2;
+                    const centerY = rect.top + rect.height / 2;
+                    
+                    // Calculate rotation based on mouse position
+                    const mouseX = e.clientX - centerX;
+                    const mouseY = e.clientY - centerY;
+                    
+                    // Limit rotation to reasonable values
+                    const rotateX = (mouseY / (rect.height / 2)) * -10; // -10 to 10 degrees
+                    const rotateY = (mouseX / (rect.width / 2)) * 10;   // -10 to 10 degrees
+                    
+                    // Apply transform with smooth transition
+                    newCard.style.transform = `
+                        perspective(1500px)
+                        rotateX(${rotateX}deg)
+                        rotateY(${rotateY}deg)
+                        translateY(-4px)
+                        translateZ(20px)
+                    `;
+                    
+                });
+                
+                // Reset on mouse leave
+                newCard.addEventListener('mouseleave', () => {
+                    newCard.style.transform = '';
+                });
+                
+                // Preserve onclick functionality
+                newCard.onclick = (e) => {
+                    const templateId = newCard.dataset.templateId;
+                    if (templateId) {
+                        openModal(templateId);
+                    }
+                };
+            });
         }
 
         function openModal(templateId) {
@@ -1235,8 +1779,12 @@ export const Button: React.FC<ButtonProps> = ({
             document.getElementById('modalOverlay').classList.add('active');
         }
 
-        function closeModal() {
-            document.getElementById('modalOverlay').classList.remove('active');
+        window.closeModal = function() {
+            const modal = document.getElementById('modalOverlay');
+            if (modal) {
+                modal.classList.remove('active');
+                console.log('Modal closed');
+            }
         }
 
         function switchTab(tab) {
@@ -1264,103 +1812,123 @@ export const Button: React.FC<ButtonProps> = ({
             }, 2000);
         }
 
-        async function quickInstall(event, templateId) {
+        // 3D Effect for Hero Cards
+        function initHeroCards3D() {
+            const heroCards = document.querySelectorAll('.feature-card');
+            
+            heroCards.forEach(card => {
+                card.addEventListener('mousemove', (e) => {
+                    const rect = card.getBoundingClientRect();
+                    const centerX = rect.left + rect.width / 2;
+                    const centerY = rect.top + rect.height / 2;
+                    
+                    // Calculate rotation based on mouse position
+                    const mouseX = e.clientX - centerX;
+                    const mouseY = e.clientY - centerY;
+                    
+                    // Limit rotation to reasonable values
+                    const rotateX = (mouseY / (rect.height / 2)) * -12; // -12 to 12 degrees
+                    const rotateY = (mouseX / (rect.width / 2)) * 12;   // -12 to 12 degrees
+                    
+                    // Apply transform
+                    card.style.transform = `
+                        perspective(1500px)
+                        rotateX(${rotateX}deg)
+                        rotateY(${rotateY}deg)
+                        translateY(-5px)
+                        scale(1.02)
+                        translateZ(30px)
+                    `;
+                    
+                    // Enhanced glow effect based on mouse position
+                    const glowX = ((e.clientX - rect.left) / rect.width) * 100;
+                    const glowY = ((e.clientY - rect.top) / rect.height) * 100;
+                    
+                    const glowElement = card.querySelector('.hero-card-glow');
+                    if (glowElement) {
+                        glowElement.style.background = `
+                            radial-gradient(
+                                circle at ${glowX}% ${glowY}%,
+                                rgba(139, 92, 246, 0.4),
+                                rgba(6, 182, 212, 0.2),
+                                transparent
+                            )
+                        `;
+                        glowElement.style.opacity = '0.8';
+                    }
+                });
+                
+                // Reset on mouse leave
+                card.addEventListener('mouseleave', () => {
+                    card.style.transform = '';
+                    const glowElement = card.querySelector('.hero-card-glow');
+                    if (glowElement) {
+                        glowElement.style.background = '';
+                        glowElement.style.opacity = '';
+                    }
+                });
+            });
+        }
+
+        function quickInstall(event, templateId) {
             event.stopPropagation();
             
             const btn = event.target;
-            const originalText = btn.textContent;
-            const originalBackground = btn.style.background;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Installing...';
+            btn.style.background = '#666';
             
-            // Check if this is an MCP template
-            const template = templates.find(t => t.id === templateId);
-            const isMCP = template && template.categorySlug === 'mcp' && template.mcpConfig;
-            
-            if (isMCP) {
-                // Handle MCP installation
-                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Installing...';
-                btn.style.background = '#666';
-                btn.disabled = true;
-                
-                try {
-                    const response = await fetch('/api/templates/install-mcp', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            mcpId: templateId.replace('-mcp', ''),
-                            config: template.mcpConfig
-                        })
-                    });
-                    
-                    const result = await response.json();
-                    
-                    if (result.success) {
-                        btn.innerHTML = '<i class="fas fa-check"></i> Installed';
-                        btn.style.background = 'var(--success)';
-                        
-                        // Store installation status
-                        localStorage.setItem(`mcp_installed_${templateId}`, 'true');
-                        
-                        if (result.requiresRestart && !result.alreadyInstalled) {
-                            setTimeout(() => {
-                                alert('MCP installed successfully! Please restart Claude Code to activate the new MCP.');
-                            }, 500);
-                        }
-                        
-                        // Keep the installed state
-                        setTimeout(() => {
-                            btn.innerHTML = '<i class="fas fa-check"></i> Installed';
-                            btn.style.background = 'var(--success)';
-                            btn.disabled = true;
-                        }, 3000);
-                    } else {
-                        throw new Error(result.error || 'Installation failed');
-                    }
-                } catch (error) {
-                    console.error('MCP installation error:', error);
-                    btn.innerHTML = '<i class="fas fa-exclamation"></i> Failed';
-                    btn.style.background = 'var(--error, #ef4444)';
-                    
-                    setTimeout(() => {
-                        btn.textContent = originalText;
-                        btn.style.background = originalBackground;
-                        btn.disabled = false;
-                    }, 3000);
-                    
-                    alert('Failed to install MCP: ' + error.message);
-                }
-            } else {
-                // Handle regular template installation (existing mock behavior)
-                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Installing...';
-                btn.style.background = '#666';
+            setTimeout(() => {
+                btn.innerHTML = '<i class="fas fa-check"></i> Installed';
+                btn.style.background = 'var(--success)';
                 
                 setTimeout(() => {
-                    btn.innerHTML = '<i class="fas fa-check"></i> Installed';
-                    btn.style.background = 'var(--success)';
-                    
-                    setTimeout(() => {
-                        btn.textContent = 'Install';
-                        btn.style.background = '';
-                    }, 3000);
-                }, 2000);
-            }
+                    btn.textContent = 'Install';
+                    btn.style.background = '';
+                }, 3000);
+            }, 2000);
         }
 
-        function installTemplate() {
-            const btn = event.currentTarget || event.target;
+        // Make functions globally available immediately
+        console.log('Initializing template functions...');
+        
+        window.installTemplate = function(event) {
+            // Prevent event bubbling
+            if (event) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            
+            // Get the button that was clicked
+            const btn = event ? event.currentTarget : document.querySelector('.modal-content .btn-primary');
+            if (!btn) {
+                console.error('Install button not found');
+                return;
+            }
+            
             const originalContent = btn.innerHTML;
             const originalBackground = btn.style.background;
+            
+            // Get the current template name
+            const templateName = document.getElementById('modalName').textContent;
+            const command = document.getElementById('installCommand').textContent;
+            
+            console.log('Installing template:', templateName);
+            console.log('Command:', command);
+            console.log('Button element:', btn);
             
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Installing...';
             btn.disabled = true;
             
+            // Simulate installation process
             setTimeout(() => {
                 btn.innerHTML = '<i class="fas fa-check"></i> Installed Successfully';
                 btn.style.background = 'var(--success)';
                 
+                // Show success notification
+                showNotification(`Template "${templateName}" installed successfully!`);
+                
                 setTimeout(() => {
-                    closeModal({ target: document.getElementById('modalOverlay') });
+                    closeModal();
                     // Reset button state
                     btn.innerHTML = originalContent;
                     btn.style.background = originalBackground;
@@ -1369,10 +1937,189 @@ export const Button: React.FC<ButtonProps> = ({
             }, 2000);
         }
 
-        function viewDocs() {
-            console.log('Opening documentation...');
-            window.open('https://docs.coder1.dev', '_blank');
+        window.viewDocs = function(event) {
+            // Prevent event bubbling
+            if (event) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            
+            const templateName = document.getElementById('modalName').textContent;
+            console.log('Opening documentation for:', templateName);
+            
+            // Get the current template
+            const template = templates.find(t => t.name === templateName);
+            
+            if (template && template.docsUrl) {
+                window.open(template.docsUrl, '_blank');
+            } else {
+                // Default to general docs
+                window.open('https://docs.coder1.dev/templates/' + (template?.id || ''), '_blank');
+            }
+        }
+        
+        // Helper function for notifications
+        window.showNotification = function(message) {
+            // Create notification element
+            const notification = document.createElement('div');
+            notification.className = 'notification';
+            notification.textContent = message;
+            notification.style.cssText = `
+                position: fixed;
+                bottom: 20px;
+                right: 20px;
+                background: var(--success);
+                color: white;
+                padding: 16px 24px;
+                border-radius: 8px;
+                font-weight: 500;
+                z-index: 10000;
+                animation: slideIn 0.3s ease;
+            `;
+            
+            document.body.appendChild(notification);
+            
+            // Remove after 3 seconds
+            setTimeout(() => {
+                notification.style.animation = 'slideOut 0.3s ease';
+                setTimeout(() => notification.remove(), 300);
+            }, 3000);
+        }
+        
+        // Add animation keyframes
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideIn {
+                from {
+                    transform: translateX(100%);
+                    opacity: 0;
+                }
+                to {
+                    transform: translateX(0);
+                    opacity: 1;
+                }
+            }
+            @keyframes slideOut {
+                from {
+                    transform: translateX(0);
+                    opacity: 1;
+                }
+                to {
+                    transform: translateX(100%);
+                    opacity: 0;
+                }
+            }
+        `;
+        document.head.appendChild(style);
+        
+        // Test button functionality immediately
+        console.log('Testing button functions:');
+        console.log('installTemplate available:', typeof window.installTemplate);
+        console.log('viewDocs available:', typeof window.viewDocs);
+        console.log('closeModal available:', typeof window.closeModal);
+        
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('Templates Hub initialized');
+            
+            // Verify modal exists
+            const modal = document.getElementById('modalOverlay');
+            if (!modal) {
+                console.error('Modal overlay not found!');
+            } else {
+                console.log('Modal found and ready');
+                
+                // Add debug logging for button clicks
+                const installBtn = modal.querySelector('.btn-primary');
+                const docsBtn = modal.querySelector('.btn-secondary');
+                
+                if (installBtn) {
+                    console.log('Install button found, click handler attached');
+                } else {
+                    console.error('Install button not found in modal');
+                }
+                
+                if (docsBtn) {
+                    console.log('Docs button found, click handler attached');
+                } else {
+                    console.error('Docs button not found in modal');
+                }
+            }
+        });
+        
+        // Global error handler for debugging
+        window.addEventListener('error', (e) => {
+            console.error('JavaScript error:', e.message, e.filename, e.lineno, e.colno);
+        });
+
+        // Menu dropdown functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const menuButton = document.getElementById('menuButton');
+            const menuDropdown = document.getElementById('menuDropdown');
+            
+            if (menuButton && menuDropdown) {
+                // Toggle menu on button click
+                menuButton.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    toggleMenuDropdown();
+                });
+                
+                // Close dropdown when clicking outside
+                document.addEventListener('click', function() {
+                    closeMenuDropdown();
+                });
+                
+                // Prevent dropdown from closing when clicking inside it
+                menuDropdown.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                });
+                
+                // Handle escape key
+                document.addEventListener('keydown', function(e) {
+                    if (e.key === 'Escape') {
+                        closeMenuDropdown();
+                    }
+                });
+            }
+        });
+
+        function toggleMenuDropdown() {
+            const menuButton = document.getElementById('menuButton');
+            const menuDropdown = document.getElementById('menuDropdown');
+            
+            if (menuButton && menuDropdown) {
+                const isActive = menuButton.classList.contains('active');
+                
+                if (isActive) {
+                    closeMenuDropdown();
+                } else {
+                    openMenuDropdown();
+                }
+            }
+        }
+
+        function openMenuDropdown() {
+            const menuButton = document.getElementById('menuButton');
+            const menuDropdown = document.getElementById('menuDropdown');
+            
+            if (menuButton && menuDropdown) {
+                menuButton.classList.add('active');
+                menuDropdown.classList.add('active');
+            }
+        }
+
+        function closeMenuDropdown() {
+            const menuButton = document.getElementById('menuButton');
+            const menuDropdown = document.getElementById('menuDropdown');
+            
+            if (menuButton && menuDropdown) {
+                menuButton.classList.remove('active');
+                menuDropdown.classList.remove('active');
+            }
         }
     </script>
+    
+    <!-- Button Fix Script -->
+    <script src="/templates-hub-fix.js?v=2.1.0"></script>
 </body>
 </html>

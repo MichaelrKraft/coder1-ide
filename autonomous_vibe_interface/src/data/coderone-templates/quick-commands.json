@@ -1,0 +1,151 @@
+{
+  "category": "Quick Commands",
+  "categorySlug": "commands",
+  "description": "Powerful slash commands for instant productivity",
+  "templates": [
+    {
+      "id": "generate-tests",
+      "name": "Generate Tests",
+      "description": "Automatically generate comprehensive test suites for your code with Jest, Vitest, or your preferred testing framework.",
+      "tags": ["Testing", "Jest", "Vitest", "Unit Tests"],
+      "installCommand": "coderone install generate-tests",
+      "stats": {
+        "rating": 4.8,
+        "downloads": 2100,
+        "comments": 67
+      },
+      "features": [
+        "Smart test case generation",
+        "Multiple framework support",
+        "Edge case detection",
+        "Mock generation"
+      ]
+    },
+    {
+      "id": "optimize-bundle",
+      "name": "Optimize Bundle",
+      "description": "Analyze and optimize your bundle size with webpack, vite, or rollup configurations.",
+      "tags": ["Performance", "Webpack", "Vite", "Bundle"],
+      "installCommand": "coderone install optimize-bundle",
+      "stats": {
+        "rating": 4.7,
+        "downloads": 1800,
+        "comments": 54
+      },
+      "features": [
+        "Bundle analysis",
+        "Tree shaking optimization",
+        "Code splitting suggestions",
+        "Performance metrics"
+      ]
+    },
+    {
+      "id": "check-security",
+      "name": "Security Check",
+      "description": "Run comprehensive security audits on your codebase with OWASP best practices.",
+      "tags": ["Security", "OWASP", "Audit", "Vulnerabilities"],
+      "installCommand": "coderone install check-security",
+      "stats": {
+        "rating": 4.9,
+        "downloads": 2300,
+        "comments": 89
+      },
+      "features": [
+        "Vulnerability scanning",
+        "OWASP compliance check",
+        "Dependency audit",
+        "Security recommendations"
+      ]
+    },
+    {
+      "id": "refactor-code",
+      "name": "Refactor Code",
+      "description": "Intelligent code refactoring with modern patterns and best practices.",
+      "tags": ["Refactoring", "Clean Code", "Patterns", "Modernization"],
+      "installCommand": "coderone install refactor-code",
+      "stats": {
+        "rating": 4.6,
+        "downloads": 1650,
+        "comments": 43
+      },
+      "features": [
+        "Pattern recognition",
+        "Code smell detection",
+        "Modern syntax updates",
+        "Performance improvements"
+      ]
+    },
+    {
+      "id": "generate-docs",
+      "name": "Generate Documentation",
+      "description": "Auto-generate comprehensive documentation from your code comments and structure.",
+      "tags": ["Documentation", "JSDoc", "TypeDoc", "Markdown"],
+      "installCommand": "coderone install generate-docs",
+      "stats": {
+        "rating": 4.5,
+        "downloads": 1400,
+        "comments": 38
+      },
+      "features": [
+        "API documentation",
+        "Code examples",
+        "Markdown generation",
+        "Interactive docs"
+      ]
+    },
+    {
+      "id": "create-component",
+      "name": "Create Component",
+      "description": "Generate React, Vue, or Angular components with TypeScript and testing boilerplate.",
+      "tags": ["React", "Vue", "Angular", "Components"],
+      "installCommand": "coderone install create-component",
+      "stats": {
+        "rating": 4.8,
+        "downloads": 2500,
+        "comments": 92
+      },
+      "features": [
+        "Framework templates",
+        "TypeScript support",
+        "Test file generation",
+        "Story file creation"
+      ]
+    },
+    {
+      "id": "setup-linting",
+      "name": "Setup Linting",
+      "description": "Configure ESLint, Prettier, and other code quality tools for your project.",
+      "tags": ["ESLint", "Prettier", "Code Quality", "Configuration"],
+      "installCommand": "coderone install setup-linting",
+      "stats": {
+        "rating": 4.7,
+        "downloads": 1900,
+        "comments": 61
+      },
+      "features": [
+        "Multi-framework configs",
+        "Custom rule sets",
+        "Git hooks integration",
+        "IDE settings"
+      ]
+    },
+    {
+      "id": "api-client",
+      "name": "Generate API Client",
+      "description": "Create type-safe API clients from OpenAPI specs or GraphQL schemas.",
+      "tags": ["API", "OpenAPI", "GraphQL", "TypeScript"],
+      "installCommand": "coderone install api-client",
+      "stats": {
+        "rating": 4.9,
+        "downloads": 2200,
+        "comments": 78
+      },
+      "features": [
+        "OpenAPI generation",
+        "GraphQL codegen",
+        "Type safety",
+        "Error handling"
+      ]
+    }
+  ]
+}

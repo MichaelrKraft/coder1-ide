@@ -52,16 +52,16 @@
 .persona-card:hover {
     transform: translateY(-2px);
     border-color: var(--accent-primary);
-    box-shadow: 0 8px 25px rgba(139, 92, 246, 0.15);
+    box-shadow: 0 8px 25px rgba(0, 255, 204, 0.15);
 }
 
 .persona-card.selected {
     border-color: var(--accent-primary);
     background: linear-gradient(135deg, 
-        rgba(139, 92, 246, 0.1), 
-        rgba(59, 130, 246, 0.05)
+        rgba(0, 255, 204, 0.1), 
+        rgba(99, 179, 237, 0.05)
     );
-    box-shadow: 0 4px 20px rgba(139, 92, 246, 0.2);
+    box-shadow: 0 4px 20px rgba(0, 255, 204, 0.2);
 }
 
 .persona-card.selected::before {
@@ -307,9 +307,9 @@
 }
 
 .insight-priority.high {
-    background: rgba(245, 158, 11, 0.2);
-    color: #f59e0b;
-    border: 1px solid rgba(245, 158, 11, 0.3);
+    background: rgba(0, 255, 204, 0.2);
+    color: #00ffcc;
+    border: 1px solid rgba(0, 255, 204, 0.3);
 }
 
 .insight-priority.medium {
@@ -529,7 +529,7 @@
 
 .creation-panel:hover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 32px rgba(139, 92, 246, 0.15);
+    box-shadow: 0 8px 32px rgba(0, 255, 204, 0.15);
 }
 
 /* Panel Headers */
@@ -602,9 +602,9 @@
 
 .wizard-step.active {
     opacity: 1;
-    background: rgba(139, 92, 246, 0.1);
+    background: rgba(0, 255, 204, 0.1);
     border-color: var(--accent-primary);
-    box-shadow: 0 0 20px rgba(139, 92, 246, 0.2);
+    box-shadow: 0 0 20px rgba(0, 255, 204, 0.2);
 }
 
 .wizard-step.completed {
@@ -698,11 +698,11 @@
 }
 
 .wizard-btn.primary:hover:not(:disabled) {
-    background: #7c3aed;
+    background: #00b389;
     transform: translateY(-1px);
-    border: 2px solid #f59e0b;
+    border: 2px solid #00ffcc;
     box-shadow: 
-        0 0 15px rgba(245, 158, 11, 0.5),
+        0 0 15px rgba(0, 255, 204, 0.5),
         inset 0 0 15px rgba(245, 158, 11, 0.1);
 }
 
@@ -715,9 +715,9 @@
 .wizard-btn.secondary:hover:not(:disabled) {
     background: rgba(255, 255, 255, 0.15);
     transform: translateY(-1px);
-    border: 2px solid #f59e0b;
+    border: 2px solid #00ffcc;
     box-shadow: 
-        0 0 15px rgba(245, 158, 11, 0.5),
+        0 0 15px rgba(0, 255, 204, 0.5),
         inset 0 0 15px rgba(245, 158, 11, 0.1);
 }
 
@@ -729,9 +729,9 @@
 .wizard-btn.success:hover:not(:disabled) {
     background: #059669;
     transform: translateY(-1px);
-    border: 2px solid #f59e0b;
+    border: 2px solid #00ffcc;
     box-shadow: 
-        0 0 15px rgba(245, 158, 11, 0.5),
+        0 0 15px rgba(0, 255, 204, 0.5),
         inset 0 0 15px rgba(245, 158, 11, 0.1);
 }
 
@@ -767,16 +767,16 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3);
+    box-shadow: 0 4px 15px rgba(0, 255, 204, 0.3);
 }
 
 .ide-enter-btn:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(139, 92, 246, 0.4);
-    border: 2px solid #f59e0b;
+    box-shadow: 0 6px 20px rgba(0, 255, 204, 0.4);
+    border: 2px solid #00ffcc;
     box-shadow: 
-        0 6px 20px rgba(139, 92, 246, 0.4),
-        0 0 15px rgba(245, 158, 11, 0.5),
+        0 6px 20px rgba(0, 255, 204, 0.4),
+        0 0 15px rgba(0, 255, 204, 0.5),
         inset 0 0 15px rgba(245, 158, 11, 0.1);
 }
 
@@ -910,9 +910,9 @@
 
 .wizard-btn.success:hover:not(:disabled) {
     background: #059669;
-    border: 2px solid #f59e0b;
+    border: 2px solid #00ffcc;
     box-shadow: 
-        0 0 15px rgba(245, 158, 11, 0.5),
+        0 0 15px rgba(0, 255, 204, 0.5),
         inset 0 0 15px rgba(245, 158, 11, 0.1);
     transform: translateY(-1px);
 }
@@ -1072,11 +1072,11 @@
 }
 
 .prd-btn.primary:hover {
-    background: #7c3aed;
-    border-color: #7c3aed;
+    background: #00b389;
+    border-color: #00b389;
     box-shadow: 
-        0 0 15px rgba(139, 92, 246, 0.5),
-        inset 0 0 15px rgba(139, 92, 246, 0.1);
+        0 0 15px rgba(0, 255, 204, 0.5),
+        inset 0 0 15px rgba(0, 255, 204, 0.1);
     transform: translateY(-1px);
 }
 
@@ -1364,7 +1364,7 @@
 
 .feature-tag {
     padding: 2px 6px;
-    background: rgba(139, 92, 246, 0.2);
+    background: rgba(0, 255, 204, 0.2);
     color: var(--accent-primary);
     border-radius: 4px;
     font-size: 0.7rem;
@@ -1391,7 +1391,7 @@
 }
 
 .btn.primary:hover {
-    background: #7c3aed;
+    background: #00b389;
     transform: translateY(-1px);
 }
 
@@ -2489,7 +2489,7 @@
 
 .wireframe-item:hover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(139, 92, 246, 0.15);
+    box-shadow: 0 8px 25px rgba(0, 255, 204, 0.15);
 }
 
 .wireframe-item h4 {

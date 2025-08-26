@@ -8,10 +8,23 @@ const router = express.Router();
 const ProjectDetector = require('../services/hooks/ProjectDetector');
 const HookTemplates = require('../services/hooks/HookTemplates');
 const HookConfigGenerator = require('../services/hooks/HookConfigGenerator');
+const AIHookAnalyzer = require('../services/hooks/AIHookAnalyzer');
+const SmartHookGenerator = require('../services/hooks/SmartHookGenerator');
+const HookPerformanceTracker = require('../services/hooks/HookPerformanceTracker');
+const HybridHookManager = require('../services/hooks/HybridHookManager');
 
 // Initialize services
 const templates = new HookTemplates();
 const configGenerator = new HookConfigGenerator();
+const aiAnalyzer = new AIHookAnalyzer();
+const smartGenerator = new SmartHookGenerator();
+const performanceTracker = new HookPerformanceTracker();
+const hybridHookManager = new HybridHookManager();
+
+// Initialize hybrid hook manager
+hybridHookManager.initialize().catch(err => {
+    console.error('Failed to initialize HybridHookManager:', err);
+});
 
 /**
  * GET /api/hooks/detect-project
@@ -384,6 +397,544 @@ router.get('/status', (req, res) => {
         res.status(500).json({
             success: false,
             error: 'Failed to get status',
+            message: error.message
+        });
+    }
+});
+
+// =====================================================================
+// AI-POWERED HOOKS ENDPOINTS
+// =====================================================================
+
+/**
+ * POST /api/hooks/ai-analyze
+ * Run comprehensive AI analysis of the project
+ */
+router.post('/ai-analyze', async (req, res) => {
+    try {
+        console.log('🧠 Starting AI project analysis...');
+        const analysis = await aiAnalyzer.analyzeProject();
+        
+        res.json({
+            success: true,
+            analysis,
+            recommendations: analysis.aiRecommendations,
+            healthScore: analysis.codebaseHealth.score,
+            timestamp: analysis.timestamp
+        });
+        
+    } catch (error) {
+        console.error('AI analysis error:', error);
+        res.status(500).json({
+            success: false,
+            error: 'AI analysis failed',
+            message: error.message
+        });
+    }
+});
+
+/**
+ * POST /api/hooks/smart-generate
+ * Generate AI-optimized hook configuration
+ */
+router.post('/smart-generate', async (req, res) => {
+    try {
+        const options = req.body || {};
+        
+        console.log('🚀 Generating smart hook configuration...');
+        const result = await smartGenerator.generateSmartConfiguration(options);
+        
+        if (!result.success) {
+            return res.status(400).json(result);
+        }
+
+        res.json({
+            success: true,
+            config: result.config,
+            selectedHooks: result.selectedHooks,
+            optimizations: result.optimizations,
+            implementation: result.implementation,
+            analysis: {
+                healthScore: result.analysis.codebaseHealth.score,
+                projectType: result.analysis.projectType,
+                confidence: result.config.metadata?.confidence || 0.5
+            },
+            estimatedBenefits: result.config.metadata?.estimatedBenefits
+        });
+        
+    } catch (error) {
+        console.error('Smart generation error:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Smart configuration generation failed',
+            message: error.message
+        });
+    }
+});
+
+/**
+ * POST /api/hooks/smart-update
+ * Update existing configuration with AI recommendations
+ */
+router.post('/smart-update', async (req, res) => {
+    try {
+        const { config: existingConfig, options = {} } = req.body;
+        
+        if (!existingConfig) {
+            return res.status(400).json({
+                success: false,
+                error: 'Existing configuration required'
+            });
+        }
+
+        console.log('🔄 Analyzing configuration for AI improvements...');
+        const result = await smartGenerator.updateConfigurationWithAI(existingConfig, options);
+        
+        res.json({
+            success: result.success,
+            currentConfig: result.currentConfig,
+            improvements: result.suggestedImprovements || [],
+            analysis: result.analysis ? {
+                healthScore: result.analysis.codebaseHealth.score,
+                timestamp: result.analysis.timestamp
+            } : null,
+            implementationPlan: result.implementationPlan
+        });
+        
+    } catch (error) {
+        console.error('Smart update error:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Configuration update analysis failed',
+            message: error.message
+        });
+    }
+});
+
+/**
+ * GET /api/hooks/ai-recommendations
+ * Get AI recommendations without full analysis
+ */
+router.get('/ai-recommendations', async (req, res) => {
+    try {
+        const { category, priority } = req.query;
+        
+        console.log('💡 Fetching AI recommendations...');
+        const analysis = await aiAnalyzer.analyzeProject();
+        
+        let recommendations = analysis.aiRecommendations;
+        
+        // Filter by category if specified
+        if (category) {
+            recommendations = recommendations.filter(rec => 
+                rec.id.includes(category) || rec.name.toLowerCase().includes(category.toLowerCase())
+            );
+        }
+        
+        // Filter by priority if specified
+        if (priority) {
+            recommendations = recommendations.filter(rec => rec.priority === priority);
+        }
+        
+        res.json({
+            success: true,
+            recommendations,
+            totalCount: analysis.aiRecommendations.length,
+            filteredCount: recommendations.length,
+            healthScore: analysis.codebaseHealth.score,
+            projectType: analysis.projectType
+        });
+        
+    } catch (error) {
+        console.error('AI recommendations error:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to fetch AI recommendations',
+            message: error.message
+        });
+    }
+});
+
+/**
+ * POST /api/hooks/ai-preview
+ * Preview AI-generated configuration without saving
+ */
+router.post('/ai-preview', async (req, res) => {
+    try {
+        const options = { ...req.body, preview: true };
+        
+        console.log('👀 Generating configuration preview...');
+        const result = await smartGenerator.generateSmartConfiguration(options);
+        
+        if (!result.success) {
+            return res.status(400).json(result);
+        }
+
+        // Generate preview text
+        const preview = {
+            summary: `AI will configure ${result.selectedHooks.length} hooks based on project analysis`,
+            hooks: result.selectedHooks,
+            optimizations: result.optimizations.map(opt => ({
+                type: opt.type,
+                impact: opt.impact,
+                reason: opt.reason,
+                hooks: opt.hooks
+            })),
+            estimatedTime: result.implementation.estimatedTime,
+            confidence: result.config.metadata?.confidence || 0.5,
+            healthImpact: this.calculateHealthImpact(result.optimizations)
+        };
+
+        res.json({
+            success: true,
+            preview,
+            config: result.config,
+            implementation: result.implementation
+        });
+        
+    } catch (error) {
+        console.error('AI preview error:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Configuration preview failed',
+            message: error.message
+        });
+    }
+});
+
+/**
+ * Helper function to calculate health impact
+ */
+function calculateHealthImpact(optimizations) {
+    const impactMap = { 'very-high': 25, 'high': 15, 'medium': 8, 'low': 3 };
+    return optimizations.reduce((total, opt) => total + (impactMap[opt.impact] || 0), 0);
+}
+
+// =====================================================================
+// PERFORMANCE TRACKING ENDPOINTS
+// =====================================================================
+
+/**
+ * POST /api/hooks/tracking/start-session
+ * Start a new performance tracking session
+ */
+router.post('/tracking/start-session', async (req, res) => {
+    try {
+        const { sessionId } = req.body;
+        const sessionStarted = await performanceTracker.startSession(sessionId);
+        
+        res.json({
+            success: true,
+            sessionId: sessionStarted,
+            message: 'Performance tracking session started'
+        });
+        
+    } catch (error) {
+        console.error('Failed to start tracking session:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to start performance tracking session',
+            message: error.message
+        });
+    }
+});
+
+/**
+ * POST /api/hooks/tracking/hook-execution
+ * Track a hook execution
+ */
+router.post('/tracking/hook-execution', async (req, res) => {
+    try {
+        const { hookId, executionData } = req.body;
+        
+        if (!hookId) {
+            return res.status(400).json({
+                success: false,
+                error: 'Hook ID is required'
+            });
+        }
+
+        const result = await performanceTracker.trackHookExecution(hookId, executionData || {});
+        
+        res.json({
+            success: result.success,
+            hookMetrics: result.hookMetrics,
+            globalStats: result.globalStats,
+            error: result.error
+        });
+        
+    } catch (error) {
+        console.error('Failed to track hook execution:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to track hook execution',
+            message: error.message
+        });
+    }
+});
+
+/**
+ * POST /api/hooks/tracking/end-session
+ * End current tracking session and get ROI
+ */
+router.post('/tracking/end-session', async (req, res) => {
+    try {
+        const { feedback } = req.body;
+        const result = await performanceTracker.endSession(feedback || {});
+        
+        res.json({
+            success: result.success,
+            session: result.session,
+            roi: result.roi,
+            error: result.error
+        });
+        
+    } catch (error) {
+        console.error('Failed to end tracking session:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to end performance tracking session',
+            message: error.message
+        });
+    }
+});
+
+/**
+ * GET /api/hooks/analytics
+ * Get comprehensive performance analytics
+ */
+router.get('/analytics', async (req, res) => {
+    try {
+        const { timeframe = 'week' } = req.query;
+        const result = await performanceTracker.getPerformanceAnalytics(timeframe);
+        
+        if (!result.success) {
+            return res.status(500).json(result);
+        }
+
+        res.json({
+            success: true,
+            analytics: result.analytics,
+            timeframe,
+            timestamp: new Date().toISOString()
+        });
+        
+    } catch (error) {
+        console.error('Failed to get performance analytics:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to get performance analytics',
+            message: error.message
+        });
+    }
+});
+
+/**
+ * POST /api/hooks/tracking/ai-recommendation
+ * Track AI recommendation implementation
+ */
+router.post('/tracking/ai-recommendation', async (req, res) => {
+    try {
+        const { recommendationId, implementationData } = req.body;
+        
+        if (!recommendationId) {
+            return res.status(400).json({
+                success: false,
+                error: 'Recommendation ID is required'
+            });
+        }
+
+        const result = await performanceTracker.trackAIRecommendation(
+            recommendationId, 
+            implementationData || {}
+        );
+        
+        res.json(result);
+        
+    } catch (error) {
+        console.error('Failed to track AI recommendation:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to track AI recommendation',
+            message: error.message
+        });
+    }
+});
+
+// =====================================================================
+// HYBRID HOOK ENDPOINTS
+// =====================================================================
+
+/**
+ * GET /api/hooks/hybrid/status
+ * Get hybrid hook system status
+ */
+router.get('/hybrid/status', (req, res) => {
+    try {
+        const triggers = hybridHookManager.getAvailableTriggers();
+        const metrics = hybridHookManager.getMetrics();
+        
+        res.json({
+            success: true,
+            status: {
+                initialized: true,
+                triggersCount: triggers.length,
+                metrics,
+                triggers: triggers.map(t => ({
+                    name: t.name,
+                    description: t.description,
+                    delegates: t.delegates || []
+                }))
+            }
+        });
+    } catch (error) {
+        console.error('Failed to get hybrid status:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to get hybrid hook status',
+            message: error.message
+        });
+    }
+});
+
+/**
+ * POST /api/hooks/hybrid/execute
+ * Execute a hybrid hook
+ */
+router.post('/hybrid/execute', async (req, res) => {
+    try {
+        const { hookName, context = {} } = req.body;
+        
+        if (!hookName) {
+            return res.status(400).json({
+                success: false,
+                error: 'Hook name is required'
+            });
+        }
+        
+        const result = await hybridHookManager.executeHook(hookName, context);
+        
+        res.json({
+            success: result.success,
+            ...result
+        });
+        
+    } catch (error) {
+        console.error('Failed to execute hybrid hook:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to execute hybrid hook',
+            message: error.message
+        });
+    }
+});
+
+/**
+ * GET /api/hooks/hybrid/triggers
+ * Get available hybrid triggers
+ */
+router.get('/hybrid/triggers', (req, res) => {
+    try {
+        const triggers = hybridHookManager.getAvailableTriggers();
+        
+        res.json({
+            success: true,
+            triggers,
+            count: triggers.length
+        });
+        
+    } catch (error) {
+        console.error('Failed to get triggers:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to get hybrid triggers',
+            message: error.message
+        });
+    }
+});
+
+/**
+ * POST /api/hooks/hybrid/register
+ * Register a new hybrid trigger
+ */
+router.post('/hybrid/register', async (req, res) => {
+    try {
+        const { name, script, metadata = {} } = req.body;
+        
+        if (!name || !script) {
+            return res.status(400).json({
+                success: false,
+                error: 'Name and script are required'
+            });
+        }
+        
+        await hybridHookManager.registerTrigger(name, script, metadata);
+        
+        res.json({
+            success: true,
+            message: `Registered hybrid trigger: ${name}`
+        });
+        
+    } catch (error) {
+        console.error('Failed to register trigger:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to register hybrid trigger',
+            message: error.message
+        });
+    }
+});
+
+/**
+ * GET /api/hooks/hybrid/metrics
+ * Get hybrid hook performance metrics
+ */
+router.get('/hybrid/metrics', (req, res) => {
+    try {
+        const metrics = hybridHookManager.getMetrics();
+        
+        res.json({
+            success: true,
+            metrics,
+            summary: {
+                totalExecutions: metrics.bashExecutions,
+                aiDelegations: metrics.aiDelegations,
+                delegationRate: metrics.delegationRate,
+                performance: metrics.performance
+            }
+        });
+        
+    } catch (error) {
+        console.error('Failed to get metrics:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to get hybrid metrics',
+            message: error.message
+        });
+    }
+});
+
+/**
+ * PUT /api/hooks/hybrid/thresholds
+ * Update delegation thresholds
+ */
+router.put('/hybrid/thresholds', (req, res) => {
+    try {
+        const thresholds = req.body;
+        
+        hybridHookManager.updateThresholds(thresholds);
+        
+        res.json({
+            success: true,
+            message: 'Thresholds updated',
+            thresholds
+        });
+        
+    } catch (error) {
+        console.error('Failed to update thresholds:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to update thresholds',
             message: error.message
         });
     }

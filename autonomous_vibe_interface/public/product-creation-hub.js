@@ -19,10 +19,6 @@ class ProductCreationHub {
         this.eventListenersInitialized = false;
         this.isProcessing = false;
         
-        // Voice recognition properties
-        this.speechRecognition = null;
-        this.isListening = false;
-        
         console.log('🔧 Initial state:', {
             sessionId: this.sessionId,
             currentProject: this.currentProject,
@@ -207,15 +203,6 @@ class ProductCreationHub {
                     e.preventDefault();
                     this.sendMessage();
                 }
-            });
-        }
-
-        // Voice microphone button
-        const micBtn = document.getElementById('voiceMicButton');
-        if (micBtn) {
-            micBtn.addEventListener('click', () => {
-                console.log('🎤 Microphone button clicked');
-                this.toggleVoiceRecognition();
             });
         }
 
@@ -663,36 +650,19 @@ class ProductCreationHub {
         this.setPRDStatus('in-progress');
 
         try {
-            // Check if we're in demo mode or if API endpoint exists
-            let result;
-            const isDemoMode = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-            
-            if (isDemoMode) {
-                // Generate mock PRD in demo mode
-                console.log('🚀 Generating PRD in demo mode...');
-                result = this.generateMockPRD();
-            } else {
-                // Try the API endpoint in production
-                const response = await fetch('/api/prd/generate', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        projectId: this.currentProject.id,
-                        originalRequest: this.currentProject.originalRequest,
-                        questions: this.questions,
-                        answers: this.answers,
-                        sessionId: this.sessionId
-                    })
-                });
+            const response = await fetch('/api/prd/generate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    projectId: this.currentProject.id,
+                    originalRequest: this.currentProject.originalRequest,
+                    questions: this.questions,
+                    answers: this.answers,
+                    sessionId: this.sessionId
+                })
+            });
 
-                // If API fails, fallback to mock
-                if (!response.ok) {
-                    console.log('API failed, using mock PRD generation');
-                    result = this.generateMockPRD();
-                } else {
-                    result = await response.json();
-                }
-            }
+            const result = await response.json();
 
             if (result.success) {
                 this.prdDocument = result.prdDocument;
@@ -713,14 +683,12 @@ class ProductCreationHub {
                 await this.loadMarketInsights();
                 await this.loadProjectIntelligence();
 
-                // Track PRD generation (skip in demo)
-                if (!isDemoMode) {
-                    await this.trackEvent('prd_generated', {
-                        projectId: this.currentProject.id,
-                        contentLength: this.prdDocument.content.length,
-                        confidence: this.prdDocument.metadata.confidence
-                    });
-                }
+                // Track PRD generation
+                await this.trackEvent('prd_generated', {
+                    projectId: this.currentProject.id,
+                    contentLength: this.prdDocument.content.length,
+                    confidence: this.prdDocument.metadata.confidence
+                });
 
             } else {
                 throw new Error(result.error || 'Failed to generate PRD');
@@ -732,473 +700,21 @@ class ProductCreationHub {
         }
     }
 
-    generateMockPRD() {
-        // Generate a professional PRD based on the collected information
-        const projectName = this.currentProject?.originalRequest || 'Your Project';
-        const currentDate = new Date().toLocaleDateString();
-        
-        // Build PRD content from questions and answers
-        let prdContent = `# Product Requirements Document\n\n`;
-        prdContent += `**Project:** ${projectName}\n`;
-        prdContent += `**Date:** ${currentDate}\n`;
-        prdContent += `**Version:** 1.0\n\n`;
-        
-        prdContent += `## Executive Summary\n\n`;
-        prdContent += `This PRD outlines the requirements for ${projectName}, based on stakeholder input and market analysis.\n\n`;
-        
-        prdContent += `## Project Overview\n\n`;
-        prdContent += `**Original Request:** ${this.currentProject?.originalRequest || 'N/A'}\n\n`;
-        
-        prdContent += `## Requirements Analysis\n\n`;
-        
-        // Add questions and answers
-        if (this.questions && this.answers) {
-            this.questions.forEach((question, index) => {
-                prdContent += `### ${index + 1}. ${question}\n\n`;
-                prdContent += `**Answer:** ${this.answers[index] || 'Not provided'}\n\n`;
-            });
-        }
-        
-        prdContent += `## Technical Requirements\n\n`;
-        prdContent += `- Modern, responsive web application\n`;
-        prdContent += `- Cross-browser compatibility\n`;
-        prdContent += `- Mobile-first design approach\n`;
-        prdContent += `- Secure authentication and data handling\n`;
-        prdContent += `- Scalable architecture\n\n`;
-        
-        prdContent += `## User Stories\n\n`;
-        prdContent += `1. As a user, I want to ${this.answers[0] || 'achieve the primary goal'}\n`;
-        prdContent += `2. As a user, I expect ${this.answers[1] || 'key features and functionality'}\n`;
-        prdContent += `3. The target audience includes ${this.answers[2] || 'specified user groups'}\n\n`;
-        
-        prdContent += `## Success Metrics\n\n`;
-        prdContent += `- User engagement and satisfaction\n`;
-        prdContent += `- Performance benchmarks met\n`;
-        prdContent += `- Business objectives achieved\n\n`;
-        
-        prdContent += `## Timeline & Milestones\n\n`;
-        prdContent += `- Phase 1: Requirements gathering and design (Completed)\n`;
-        prdContent += `- Phase 2: Development and testing\n`;
-        prdContent += `- Phase 3: Deployment and launch\n`;
-        prdContent += `- Phase 4: Post-launch optimization\n\n`;
-        
-        prdContent += `## Next Steps\n\n`;
-        prdContent += `1. Review and approve this PRD\n`;
-        prdContent += `2. Proceed to technical design phase\n`;
-        prdContent += `3. Begin development sprint planning\n`;
-
-        return {
-            success: true,
-            prdDocument: {
-                id: `prd_${Date.now()}`,
-                content: prdContent,
-                metadata: {
-                    confidence: 'High',
-                    createdAt: new Date().toISOString(),
-                    version: '1.0',
-                    status: 'Draft'
-                }
-            }
-        };
-    }
-
-    generateMockPersonas() {
-        // Generate professional AI personas for multi-expert consultation
-        console.log('🎭 Generating mock AI personas for demo mode...');
-        
-        const personas = [
-            {
-                id: 'ui-ux-expert',
-                name: 'UI/UX Design Expert',
-                iconClass: 'fas fa-paint-brush',
-                color: '#FF6B9D',
-                expertise: [
-                    'User Interface Design',
-                    'User Experience Strategy',
-                    'Design Systems',
-                    'Accessibility Standards',
-                    'Responsive Design'
-                ],
-                specialization: 'Frontend Design & User Experience',
-                description: 'Specialized in creating intuitive, accessible, and visually appealing user interfaces that enhance user engagement and satisfaction.'
-            },
-            {
-                id: 'technical-architect',
-                name: 'Technical Architecture Expert',
-                iconClass: 'fas fa-code',
-                color: '#4ECDC4',
-                expertise: [
-                    'System Architecture',
-                    'Database Design',
-                    'API Development',
-                    'Scalability Planning',
-                    'Security Implementation'
-                ],
-                specialization: 'Backend Systems & Architecture',
-                description: 'Focuses on building robust, scalable, and secure backend systems with optimal performance and maintainability.'
-            },
-            {
-                id: 'product-strategist',
-                name: 'Product Strategy Expert',
-                iconClass: 'fas fa-chart-line',
-                color: '#45B7D1',
-                expertise: [
-                    'Market Analysis',
-                    'Feature Prioritization',
-                    'Business Strategy',
-                    'Competitive Analysis',
-                    'Go-to-Market Planning'
-                ],
-                specialization: 'Product Management & Strategy',
-                description: 'Specializes in aligning product features with business objectives and market opportunities for maximum impact.'
-            },
-            {
-                id: 'development-lead',
-                name: 'Development Lead Expert',
-                iconClass: 'fas fa-laptop-code',
-                color: '#96CEB4',
-                expertise: [
-                    'Full-Stack Development',
-                    'Code Quality Standards',
-                    'Testing Strategies',
-                    'DevOps Practices',
-                    'Team Leadership'
-                ],
-                specialization: 'Development Process & Quality',
-                description: 'Ensures development best practices, code quality, and efficient delivery processes throughout the project lifecycle.'
-            },
-            {
-                id: 'data-analyst',
-                name: 'Data & Analytics Expert',
-                iconClass: 'fas fa-chart-bar',
-                color: '#FFEAA7',
-                expertise: [
-                    'Data Modeling',
-                    'Analytics Implementation',
-                    'Performance Metrics',
-                    'User Behavior Analysis',
-                    'Reporting Systems'
-                ],
-                specialization: 'Data Science & Analytics',
-                description: 'Focuses on implementing data-driven insights and analytics capabilities to inform product decisions and measure success.'
-            },
-            {
-                id: 'security-expert',
-                name: 'Security & Compliance Expert',
-                iconClass: 'fas fa-shield-alt',
-                color: '#FD79A8',
-                expertise: [
-                    'Security Architecture',
-                    'Data Privacy',
-                    'Compliance Standards',
-                    'Threat Assessment',
-                    'Authentication Systems'
-                ],
-                specialization: 'Security & Risk Management',
-                description: 'Ensures robust security measures, data protection, and compliance with industry standards and regulations.'
-            }
-        ];
-
-        return {
-            success: true,
-            personas: personas
-        };
-    }
-
-    generateMockConsultation(selectedPersonas) {
-        // Generate professional consultation results based on selected personas
-        console.log('📊 Generating mock consultation for demo mode...');
-        
-        // Get the actual persona data for the selected personas
-        const selectedPersonaData = this.availablePersonas.filter(persona => 
-            selectedPersonas.includes(persona.id)
-        );
-        
-        const projectName = this.currentProject?.originalRequest || 'Your Project';
-        
-        // Generate insights for each selected persona
-        const personaInsights = selectedPersonaData.map(persona => {
-            let insights = [];
-            let recommendations = [];
-            
-            switch(persona.id) {
-                case 'ui-ux-expert':
-                    insights = [
-                        'User interface should prioritize accessibility and mobile-first design',
-                        'Consider implementing a design system for consistency',
-                        'User experience flow needs clear navigation patterns'
-                    ];
-                    recommendations = [
-                        'Implement responsive breakpoints for all screen sizes',
-                        'Add ARIA labels and semantic HTML for accessibility',
-                        'Create user personas and journey maps before design',
-                        'Use progressive disclosure for complex features'
-                    ];
-                    break;
-                    
-                case 'technical-architect':
-                    insights = [
-                        'Architecture should support scalability and maintainability',
-                        'Database design needs to handle future growth patterns',
-                        'API structure should follow RESTful principles'
-                    ];
-                    recommendations = [
-                        'Implement microservices architecture for modularity',
-                        'Use database indexing for performance optimization',
-                        'Add comprehensive API documentation',
-                        'Set up automated testing and CI/CD pipelines'
-                    ];
-                    break;
-                    
-                case 'product-strategist':
-                    insights = [
-                        'Market positioning requires clear value proposition',
-                        'Feature prioritization should align with user needs',
-                        'Competitive analysis shows opportunities for differentiation'
-                    ];
-                    recommendations = [
-                        'Define clear success metrics and KPIs',
-                        'Implement user feedback collection systems',
-                        'Plan phased rollout strategy',
-                        'Create go-to-market launch plan'
-                    ];
-                    break;
-                    
-                case 'development-lead':
-                    insights = [
-                        'Code quality standards need to be established early',
-                        'Testing strategy should include unit and integration tests',
-                        'Development workflow requires clear branching strategy'
-                    ];
-                    recommendations = [
-                        'Set up code review processes and guidelines',
-                        'Implement automated testing with >80% coverage',
-                        'Use linting and formatting tools consistently',
-                        'Plan regular code refactoring sessions'
-                    ];
-                    break;
-                    
-                case 'data-analyst':
-                    insights = [
-                        'Analytics implementation should track user behavior',
-                        'Data collection needs to comply with privacy regulations',
-                        'Performance metrics require real-time monitoring'
-                    ];
-                    recommendations = [
-                        'Set up event tracking for key user actions',
-                        'Implement A/B testing framework',
-                        'Create analytics dashboards for stakeholders',
-                        'Plan data retention and privacy policies'
-                    ];
-                    break;
-                    
-                case 'security-expert':
-                    insights = [
-                        'Security measures must be implemented from the start',
-                        'Data protection requires encryption at rest and in transit',
-                        'Authentication system needs multi-factor options'
-                    ];
-                    recommendations = [
-                        'Implement OAuth 2.0 for secure authentication',
-                        'Add rate limiting and DDoS protections',
-                        'Regular security audits and penetration testing',
-                        'Create incident response procedures'
-                    ];
-                    break;
-                    
-                default:
-                    insights = [
-                        'Project shows strong potential for success',
-                        'Implementation approach needs careful planning',
-                        'User requirements are well-defined'
-                    ];
-                    recommendations = [
-                        'Focus on core features for MVP',
-                        'Establish clear project milestones',
-                        'Plan regular stakeholder reviews'
-                    ];
-            }
-            
-            return {
-                personaId: persona.id,
-                personaName: persona.name,
-                specialization: persona.specialization,
-                confidence: 0.85 + Math.random() * 0.1, // 85-95%
-                insights: insights,
-                recommendations: recommendations,
-                priority: Math.random() > 0.7 ? 'high' : Math.random() > 0.4 ? 'medium' : 'low',
-                estimatedImpact: Math.random() > 0.6 ? 'high' : 'medium'
-            };
-        });
-        
-        // Generate overall summary
-        const summary = {
-            totalPersonas: selectedPersonas.length,
-            criticalFindings: Math.floor(Math.random() * 3) + 2, // 2-4 critical findings
-            estimatedSuccessProbability: Math.floor(0.88 * 100), // Convert to percentage
-            consensusLevel: Math.floor((0.75 + Math.random() * 0.2) * 100), // 75-95%
-            overallConfidence: 0.88,
-            recommendedNextSteps: [
-                'Prioritize high-impact recommendations',
-                'Create detailed implementation timeline',
-                'Set up development environment and tools',
-                'Begin with MVP feature development'
-            ],
-            estimatedTimeline: '6-8 weeks',
-            budgetConsiderations: [
-                'Development team scaling requirements',
-                'Third-party service integrations',
-                'Infrastructure and hosting costs',
-                'Security and compliance tools'
-            ]
-        };
-        
-        // Generate key findings
-        const keyFindings = [
-            {
-                category: 'User Experience',
-                finding: 'Strong emphasis needed on mobile-first design and accessibility',
-                impact: 'high',
-                recommendation: 'Implement responsive design patterns and ARIA compliance'
-            },
-            {
-                category: 'Technical Architecture',
-                finding: 'Scalable backend architecture is critical for future growth',
-                impact: 'high',
-                recommendation: 'Design microservices architecture with proper API versioning'
-            },
-            {
-                category: 'Market Strategy',
-                finding: 'Clear value proposition will differentiate from competitors',
-                impact: 'medium',
-                recommendation: 'Define unique selling points and target market segments'
-            }
-        ];
-        
-        // Generate cross-persona analysis
-        const crossPersonaAnalysis = {
-            agreements: [
-                'All experts agree on the importance of scalable architecture',
-                'Strong consensus on mobile-first design approach',
-                'Universal emphasis on security implementation from the start',
-                'Agreement on iterative development methodology'
-            ],
-            conflicts: [
-                'Technical complexity vs. time-to-market balance',
-                'Feature richness vs. simplicity trade-offs',
-                'Budget allocation between development and infrastructure'
-            ],
-            consensusAreas: [
-                'User experience prioritization',
-                'Security and compliance requirements',
-                'Performance optimization needs',
-                'Testing and quality assurance importance'
-            ]
-        };
-        
-        // Generate action plan
-        const actionPlan = {
-            immediate: [
-                'Set up development environment and toolchain',
-                'Define project architecture and technology stack',
-                'Create initial wireframes and user flow diagrams',
-                'Establish code quality standards and review processes',
-                'Set up version control and CI/CD pipeline basics'
-            ],
-            shortTerm: [
-                'Implement core user authentication system',
-                'Develop MVP features based on priority matrix',
-                'Create responsive UI components and design system',
-                'Set up comprehensive testing framework',
-                'Implement basic analytics and monitoring',
-                'Conduct initial user testing and feedback collection'
-            ],
-            longTerm: [
-                'Scale architecture for increased user load',
-                'Implement advanced features and integrations',
-                'Optimize performance and user experience',
-                'Expand to additional platforms or markets',
-                'Develop comprehensive documentation and training materials',
-                'Plan for ongoing maintenance and feature evolution'
-            ]
-        };
-        
-        // Generate risk matrix
-        const riskMatrix = {
-            security: [
-                'Data breach due to insufficient authentication measures',
-                'API vulnerabilities exposing sensitive information',
-                'Third-party integration security weaknesses',
-                'Inadequate encryption of data at rest and in transit'
-            ],
-            technical: [
-                'Scalability bottlenecks during peak usage',
-                'Database performance degradation with growth',
-                'Browser compatibility issues across platforms',
-                'Integration challenges with external services'
-            ],
-            business: [
-                'Market competition affecting user acquisition',
-                'Budget overruns impacting development timeline',
-                'Regulatory compliance requirements changing',
-                'Key stakeholder availability and decision delays'
-            ],
-            operational: [
-                'Team expertise gaps in required technologies',
-                'DevOps and deployment process maturity',
-                'Monitoring and incident response procedures',
-                'Documentation and knowledge transfer processes'
-            ]
-        };
-        
-        return {
-            success: true,
-            consultation: {
-                id: `consultation_${Date.now()}`,
-                projectId: this.currentProject.id,
-                timestamp: new Date().toISOString(),
-                summary: summary,
-                personaInsights: personaInsights,
-                keyFindings: keyFindings,
-                crossPersonaAnalysis: crossPersonaAnalysis,
-                actionPlan: actionPlan,
-                riskMatrix: riskMatrix,
-                overallRecommendation: `Based on expert analysis, ${projectName} shows strong potential. Focus on implementing core features with emphasis on scalability, user experience, and security from the foundation up.`
-            }
-        };
-    }
-
     async generateWireframes() {
         this.updateProgress(90, 'Creating wireframes...');
 
         try {
-            // Check if we're in demo mode
-            const isDemoMode = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-            
-            let result;
-            if (isDemoMode) {
-                // Generate mock wireframes in demo mode
-                console.log('🚀 Generating wireframes in demo mode...');
-                result = this.generateMockWireframes();
-            } else {
-                // Try the API endpoint in production
-                const response = await fetch('/api/wireframes/generate', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        projectId: this.currentProject.id,
-                        prdDocument: this.prdDocument,
-                        sessionId: this.sessionId
-                    })
-                });
+            const response = await fetch('/api/wireframes/generate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    projectId: this.currentProject.id,
+                    prdDocument: this.prdDocument,
+                    sessionId: this.sessionId
+                })
+            });
 
-                if (!response.ok) {
-                    console.log('API failed, using mock wireframes');
-                    result = this.generateMockWireframes();
-                } else {
-                    result = await response.json();
-                }
-            }
+            const result = await response.json();
 
             if (result.success) {
                 this.wireframes = result.wireframes;
@@ -1229,165 +745,6 @@ class ProductCreationHub {
             console.error('Error generating wireframes:', error);
             this.addMessageToChat('Sorry, there was an error generating wireframes. Please try again.', 'assistant');
         }
-    }
-
-    generateMockWireframes() {
-        // Generate professional wireframes based on the project data
-        const projectName = this.questions.answers[0]?.answer || 'Your Project';
-        const projectType = this.currentProject?.type || 'web-application';
-        const features = this.questions.answers.slice(1) || [];
-
-        const baseWireframes = [
-            {
-                id: 'home',
-                name: 'Homepage',
-                type: 'page',
-                description: 'Main landing page with key navigation and content overview',
-                elements: [
-                    { type: 'header', content: 'Navigation bar with logo and main menu' },
-                    { type: 'hero', content: 'Hero section with primary call-to-action' },
-                    { type: 'features', content: 'Feature highlights section' },
-                    { type: 'footer', content: 'Site footer with links and contact info' }
-                ],
-                layout: 'standard',
-                priority: 'high'
-            },
-            {
-                id: 'dashboard',
-                name: 'Dashboard',
-                type: 'page',
-                description: 'User dashboard with key metrics and quick actions',
-                elements: [
-                    { type: 'header', content: 'App header with user menu and notifications' },
-                    { type: 'sidebar', content: 'Navigation sidebar with main sections' },
-                    { type: 'stats', content: 'Key metrics cards and charts' },
-                    { type: 'actions', content: 'Quick action buttons and recent activity' }
-                ],
-                layout: 'sidebar',
-                priority: 'high'
-            },
-            {
-                id: 'login',
-                name: 'Login Page',
-                type: 'auth',
-                description: 'User authentication and login interface',
-                elements: [
-                    { type: 'form', content: 'Login form with email/username and password' },
-                    { type: 'actions', content: 'Login button and forgot password link' },
-                    { type: 'social', content: 'Social login options if applicable' }
-                ],
-                layout: 'centered',
-                priority: 'high'
-            },
-            {
-                id: 'settings',
-                name: 'Settings Page',
-                type: 'management',
-                description: 'User settings and preferences interface',
-                elements: [
-                    { type: 'tabs', content: 'Settings navigation tabs' },
-                    { type: 'form', content: 'Settings form fields' },
-                    { type: 'actions', content: 'Save and cancel buttons' }
-                ],
-                layout: 'tabbed',
-                priority: 'medium'
-            }
-        ];
-
-        // Add feature-specific wireframes
-        const featureWireframes = features.map((feature, index) => {
-            const featureName = feature.answer || feature || `Feature ${index + 1}`;
-            const wireframeId = featureName.toLowerCase().replace(/\s+/g, '-');
-            
-            return {
-                id: `feature-${wireframeId}-${index}`,
-                name: `${featureName} Interface`,
-                type: 'feature',
-                description: `User interface for ${featureName} functionality`,
-                elements: [
-                    { type: 'header', content: 'Page header with breadcrumb navigation' },
-                    { type: 'form', content: `${featureName} input form or interface` },
-                    { type: 'content', content: `${featureName} main content area` },
-                    { type: 'actions', content: 'Action buttons and controls' }
-                ],
-                layout: 'content-focused',
-                priority: 'medium'
-            };
-        });
-
-        return {
-            success: true,
-            wireframes: {
-                id: `wireframes_${Date.now()}`,
-                projectId: this.currentProject?.id || 'demo-project',
-                timestamp: new Date().toISOString(),
-                wireframes: [...baseWireframes, ...featureWireframes],
-                metadata: {
-                    totalScreens: baseWireframes.length + featureWireframes.length,
-                    projectType: projectType,
-                    complexity: 'medium',
-                    platformTargets: ['web'],
-                    generatedFeatures: features.length
-                },
-                designSystem: {
-                    colors: {
-                        primary: '#007bff',
-                        secondary: '#6c757d',
-                        success: '#28a745',
-                        warning: '#ffc107',
-                        danger: '#dc3545',
-                        background: '#f8f9fa',
-                        surface: '#ffffff',
-                        text: '#212529'
-                    },
-                    typography: {
-                        headings: 'Inter, system-ui, sans-serif',
-                        body: 'Inter, system-ui, sans-serif',
-                        code: 'JetBrains Mono, monospace'
-                    },
-                    spacing: {
-                        unit: '8px',
-                        sizes: ['4px', '8px', '16px', '24px', '32px', '48px', '64px']
-                    },
-                    breakpoints: {
-                        mobile: '375px',
-                        tablet: '768px',
-                        desktop: '1024px',
-                        wide: '1440px'
-                    }
-                },
-                interactions: [
-                    {
-                        name: 'Navigation Flow',
-                        description: 'Primary navigation between main sections',
-                        trigger: 'Menu selection',
-                        action: 'Page transition with breadcrumb update',
-                        feedback: 'Active state indication'
-                    },
-                    {
-                        name: 'Form Submission',
-                        description: 'User input validation and submission',
-                        trigger: 'Submit button click',
-                        action: 'Validation check then API call',
-                        feedback: 'Loading state then success/error message'
-                    },
-                    {
-                        name: 'Search Interaction',
-                        description: 'Content search with live results',
-                        trigger: 'Search input typing',
-                        action: 'Debounced search API call',
-                        feedback: 'Loading indicator then results update'
-                    }
-                ],
-                recommendations: [
-                    'Consider implementing a consistent navigation pattern',
-                    'Ensure mobile-first responsive design approach',
-                    'Plan for accessibility with proper contrast ratios',
-                    'Include loading states and error handling in designs'
-                ]
-            },
-            message: `Generated ${baseWireframes.length + featureWireframes.length} wireframe screens`
-        };
     }
 
     // Wireframes Viewing Method
@@ -1486,28 +843,14 @@ class ProductCreationHub {
     async loadAvailablePersonas() {
         try {
             console.log('🔄 Loading available personas...');
+            const response = await fetch('/api/personas/available');
             
-            // Check if we're in demo mode
-            const isDemoMode = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-            
-            let result;
-            if (isDemoMode) {
-                // Generate mock personas in demo mode
-                console.log('🚀 Loading personas in demo mode...');
-                result = this.generateMockPersonas();
-            } else {
-                // Try the API endpoint in production
-                const response = await fetch('/api/personas/available');
-                
-                if (!response.ok) {
-                    console.log('API failed, using mock personas');
-                    result = this.generateMockPersonas();
-                } else {
-                    result = await response.json();
-                }
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
             }
             
-            console.log('📊 Personas result:', result);
+            const result = await response.json();
+            console.log('📊 Personas API response:', result);
 
             if (result.success && result.personas) {
                 this.availablePersonas = result.personas;
@@ -1600,37 +943,21 @@ class ProductCreationHub {
         document.getElementById('consultationResults').style.display = 'block';
 
         try {
-            // Check if we're in demo mode
-            const isDemoMode = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-            
-            let result;
-            if (isDemoMode) {
-                // Generate mock consultation in demo mode
-                console.log('🚀 Generating consultation in demo mode...');
-                result = this.generateMockConsultation(selectedPersonas);
-            } else {
-                // Try the API endpoint in production
-                const response = await fetch('/api/personas/consult', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        projectId: this.currentProject.id,
-                        projectType: this.currentProject.projectType,
-                        requirements: this.answers,
-                        features: this.currentProject.questions || [],
-                        complexity: 'medium',
-                        timeline: '6 weeks',
-                        selectedPersonas: selectedPersonas
-                    })
-                });
+            const response = await fetch('/api/personas/consult', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    projectId: this.currentProject.id,
+                    projectType: this.currentProject.projectType,
+                    requirements: this.answers,
+                    features: this.currentProject.questions || [],
+                    complexity: 'medium',
+                    timeline: '6 weeks',
+                    selectedPersonas: selectedPersonas
+                })
+            });
 
-                if (!response.ok) {
-                    console.log('API failed, using mock consultation');
-                    result = this.generateMockConsultation(selectedPersonas);
-                } else {
-                    result = await response.json();
-                }
-            }
+            const result = await response.json();
 
             if (result.success) {
                 this.consultationResult = result.consultation;
@@ -1645,6 +972,9 @@ class ProductCreationHub {
                 this.setStep(5);
                 document.getElementById('generateWireframes').disabled = false;
                 document.getElementById('skipWireframes').disabled = false;
+                
+                // Close the modal so user can see the enabled buttons
+                this.closeConsultationModal();
 
                 // Track consultation
                 await this.trackEvent('consultation_completed', {
@@ -2291,7 +1621,9 @@ Please analyze this PRD and help me build this project step by step.`;
             prd: this.prdDocument ? {
                 title: this.prdDocument.title,
                 content: this.prdDocument.content,
-                metadata: this.prdDocument.metadata
+                metadata: this.prdDocument.metadata,
+                technical_specs: this.prdDocument.technical_specs || [],
+                description: this.prdDocument.description || this.prdDocument.content
             } : null,
             wireframes: this.wireframes,
             consultation: this.consultationResult,
@@ -2301,11 +1633,12 @@ Please analyze this PRD and help me build this project step by step.`;
             status: 'ready-for-development'
         };
         
-        // Store in localStorage for IDE access
+        // Store in localStorage for IDE access (both keys for compatibility)
         localStorage.setItem('productCreationProject', JSON.stringify(projectData));
+        localStorage.setItem('prd_transfer_data', JSON.stringify(projectData)); // Key that IDE expects
         localStorage.setItem('projectTransferReady', 'true');
         
-        console.log('Project data prepared for IDE transfer:', projectData);
+        console.log('✅ Project data prepared for IDE transfer with both localStorage keys:', projectData);
     }
     
     enterIDE() {
@@ -3405,102 +2738,6 @@ Please analyze this PRD and help me build this project step by step.`;
             }
         } catch (error) {
             console.error('Failed to create initial version:', error);
-        }
-    }
-
-    // Voice Recognition Methods
-    initializeVoiceRecognition() {
-        if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-            console.warn('Speech recognition not supported in this browser');
-            return false;
-        }
-
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        this.speechRecognition = new SpeechRecognition();
-        
-        this.speechRecognition.continuous = false;
-        this.speechRecognition.interimResults = true;
-        this.speechRecognition.lang = 'en-US';
-
-        this.speechRecognition.onstart = () => {
-            console.log('🎤 Voice recognition started');
-            this.isListening = true;
-            this.updateMicButtonState('listening');
-        };
-
-        this.speechRecognition.onresult = (event) => {
-            let finalTranscript = '';
-            for (let i = event.resultIndex; i < event.results.length; i++) {
-                if (event.results[i].isFinal) {
-                    finalTranscript += event.results[i][0].transcript;
-                }
-            }
-            
-            if (finalTranscript) {
-                console.log('🎤 Voice input received:', finalTranscript);
-                const messageInput = document.getElementById('messageInput');
-                if (messageInput) {
-                    messageInput.value = finalTranscript.trim();
-                    messageInput.focus();
-                }
-            }
-        };
-
-        this.speechRecognition.onerror = (event) => {
-            console.error('🎤 Voice recognition error:', event.error);
-            this.isListening = false;
-            this.updateMicButtonState('idle');
-        };
-
-        this.speechRecognition.onend = () => {
-            console.log('🎤 Voice recognition ended');
-            this.isListening = false;
-            this.updateMicButtonState('idle');
-        };
-
-        return true;
-    }
-
-    toggleVoiceRecognition() {
-        if (!this.speechRecognition) {
-            if (!this.initializeVoiceRecognition()) {
-                alert('Voice recognition is not supported in your browser. Please use Chrome or Safari.');
-                return;
-            }
-        }
-
-        if (this.isListening) {
-            this.speechRecognition.stop();
-        } else {
-            this.updateMicButtonState('processing');
-            setTimeout(() => {
-                this.speechRecognition.start();
-            }, 100);
-        }
-    }
-
-    updateMicButtonState(state) {
-        const micBtn = document.getElementById('voiceMicButton');
-        if (!micBtn) return;
-
-        // Remove all state classes
-        micBtn.classList.remove('listening', 'processing');
-        
-        switch (state) {
-            case 'listening':
-                micBtn.classList.add('listening');
-                micBtn.innerHTML = '<i class="fas fa-microphone-slash"></i>';
-                micBtn.title = 'Click to stop listening';
-                break;
-            case 'processing':
-                micBtn.classList.add('processing');
-                micBtn.innerHTML = '<i class="fas fa-microphone"></i>';
-                micBtn.title = 'Starting voice recognition...';
-                break;
-            default: // idle
-                micBtn.innerHTML = '<i class="fas fa-microphone"></i>';
-                micBtn.title = 'Click to start voice input';
-                break;
         }
     }
 }

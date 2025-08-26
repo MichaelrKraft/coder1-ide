@@ -2,7 +2,7 @@
   "repoId": "39f739e59eebe45140f93effaae72631",
   "url": "https://github.com/strapi/strapi",
   "name": "strapi/strapi",
-  "analyzedAt": "2025-08-19T20:46:21.586Z",
+  "analyzedAt": "2025-08-25T20:13:16.681Z",
   "metadata": {
     "description": "",
     "language": "",
@@ -57,6 +57,6 @@
     "fileCount": 0,
     "patternCount": 5,
     "suggestionCount": 0,
-    "analysisTime": 1755636381586
+    "analysisTime": 1756152796681
   }
 }

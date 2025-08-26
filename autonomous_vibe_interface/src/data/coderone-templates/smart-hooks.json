@@ -1,0 +1,97 @@
+{
+  "category": "Smart Hooks",
+  "categorySlug": "hooks",
+  "description": "Automated hooks for git, testing, and deployment workflows",
+  "templates": [
+    {
+      "id": "precommit-hook",
+      "name": "Pre-commit Validator",
+      "description": "Runs linting, formatting, and tests before commits. Ensures code quality standards.",
+      "tags": ["Git Hooks", "Linting", "Quality", "Automation"],
+      "installCommand": "coderone install precommit-hook",
+      "stats": {
+        "rating": 4.9,
+        "downloads": 2700,
+        "comments": 93
+      },
+      "features": [
+        "ESLint and Prettier integration",
+        "Unit test execution",
+        "Commit message validation",
+        "File size checking"
+      ]
+    },
+    {
+      "id": "prepush-hook",
+      "name": "Pre-push Validator",
+      "description": "Comprehensive checks before pushing to remote repository.",
+      "tags": ["Git Hooks", "Testing", "CI/CD", "Quality"],
+      "installCommand": "coderone install prepush-hook",
+      "stats": {
+        "rating": 4.7,
+        "downloads": 1850,
+        "comments": 64
+      },
+      "features": [
+        "Full test suite execution",
+        "Build verification",
+        "Branch protection checks",
+        "Dependency audit"
+      ]
+    },
+    {
+      "id": "postmerge-hook",
+      "name": "Post-merge Actions",
+      "description": "Automatic actions after merging branches, including dependency updates.",
+      "tags": ["Git Hooks", "Dependencies", "Automation", "NPM"],
+      "installCommand": "coderone install postmerge-hook",
+      "stats": {
+        "rating": 4.6,
+        "downloads": 1420,
+        "comments": 51
+      },
+      "features": [
+        "Dependency installation",
+        "Database migration runs",
+        "Cache clearing",
+        "Notification sending"
+      ]
+    },
+    {
+      "id": "deploy-hook",
+      "name": "Deployment Trigger",
+      "description": "Automated deployment pipeline triggered by specific git events.",
+      "tags": ["Deployment", "CI/CD", "Automation", "Production"],
+      "installCommand": "coderone install deploy-hook",
+      "stats": {
+        "rating": 4.8,
+        "downloads": 2150,
+        "comments": 77
+      },
+      "features": [
+        "Environment-based deployment",
+        "Rollback capabilities",
+        "Health check verification",
+        "Deployment notifications"
+      ]
+    },
+    {
+      "id": "test-hook",
+      "name": "Test Automation Hook",
+      "description": "Runs appropriate tests based on changed files.",
+      "tags": ["Testing", "Jest", "Automation", "TDD"],
+      "installCommand": "coderone install test-hook",
+      "stats": {
+        "rating": 4.7,
+        "downloads": 1680,
+        "comments": 59
+      },
+      "features": [
+        "Smart test selection",
+        "Parallel test execution",
+        "Coverage reporting",
+        "Failed test retry"
+      ]
+    }
+  ]
+}

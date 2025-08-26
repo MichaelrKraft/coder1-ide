@@ -3,9 +3,16 @@ const router = express.Router();
 const { v4: uuidv4 } = require('uuid');
 const ClaudeCodeExec = require('../integrations/claude-code-exec');
 const ClaudeCodeAPI = require('../integrations/claude-code-api');
+const SubAgentManager = require('../services/sub-agent-manager');
 
 // In-memory session storage
 const taskDelegationSessions = new Map();
+
+// Research mode configuration
+const isResearchMode = process.env.RESEARCH_MODE === 'true';
+
+// Initialize SubAgentManager for research prompts
+const subAgentManager = new SubAgentManager();
 
 // Check if Claude Code is available
 const checkClaudeCodeAvailability = async () => {
@@ -97,13 +104,15 @@ router.post('/start', async (req, res) => {
     context,
     mode: claudeStatus.mode, // 'cli', 'api', or 'demo'
     isRealExecution: claudeStatus.available,
+    isResearchMode: isResearchMode,
+    research: {}, // Store research results from each agent
     agents: selectedPreset.agents.map((agentName, index) => ({
       id: `agent_${index}`,
       name: agentName.charAt(0).toUpperCase() + agentName.slice(1).replace('-', ' '),
       role: agentName,
       status: index === 0 ? 'analyzing' : 'waiting',
       progress: index === 0 ? 15 : 0,
-      currentTask: index === 0 ? 'Analyzing task requirements and planning approach' : null,
+      currentTask: index === 0 ? (isResearchMode ? 'Researching task requirements and architecture' : 'Analyzing task requirements and planning approach') : null,
       tasksCompleted: 0
     })),
     progress: 5,
@@ -123,21 +132,187 @@ router.post('/start', async (req, res) => {
   res.json({
     success: true,
     sessionId: sessionId,
-    message: 'Task delegation initiated',
+    message: isResearchMode ? 'Research-based task delegation initiated' : 'Task delegation initiated',
     preset: selectedPreset.name,
     agentCount: selectedPreset.agents.length,
     mode: claudeStatus.mode,
-    isRealExecution: claudeStatus.available
+    isRealExecution: claudeStatus.available,
+    isResearchMode: isResearchMode
   });
 });
 
 // Execute real task delegation with Claude Code
 async function executeRealTaskDelegation(session, claudeStatus) {
   try {
-    const { taskDescription, preset, agents } = session;
+    const { taskDescription, preset, agents, isResearchMode } = session;
     
-    // Construct a comprehensive prompt for Claude Code Task tool
-    const taskPrompt = `
+    if (isResearchMode) {
+      // Research mode: coordinate research from each agent sequentially
+      await executeResearchModeDelegation(session, claudeStatus);
+    } else {
+      // Original implementation mode
+      await executeImplementationMode(session, claudeStatus);
+    }
+    
+  } catch (error) {
+    console.error('Error in real task delegation:', error);
+    session.status = 'error';
+    session.error = error.message;
+    
+    // Fall back to demo mode on error
+    simulateDemoProgress(session);
+  }
+}
+
+// Execute research-based delegation
+async function executeResearchModeDelegation(session, claudeStatus) {
+  const { taskDescription, agents } = session;
+  
+  console.log('🔬 Executing research-mode task delegation...');
+  
+  // Process agents sequentially for research
+  for (let i = 0; i < agents.length; i++) {
+    const agent = agents[i];
+    
+    // Update agent status
+    agent.status = 'researching';
+    agent.currentTask = `Researching ${agent.role} aspects of: ${taskDescription}`;
+    agent.progress = 10;
+    
+    // Get research prompt for this agent
+    const researchPrompt = subAgentManager.getResearchPrompt(agent.role);
+    
+    // Construct task-specific research prompt
+    const fullPrompt = `${researchPrompt}
+
+TASK TO RESEARCH: ${taskDescription}
+
+Please provide detailed research based on the format above.`;
+
+    console.log(`🔍 Agent ${agent.name} starting research...`);
+    
+    try {
+      let researchResult;
+      
+      if (claudeStatus.mode === 'cli') {
+        // Use Claude CLI
+        const claudeExec = new ClaudeCodeExec({ 
+          implementationMode: false, // Research only
+          timeout: 300000 // 5 minutes for research
+        });
+        
+        researchResult = await claudeExec.executePrompt(fullPrompt);
+        
+      } else if (claudeStatus.mode === 'api') {
+        // Use Claude API
+        const apiKey = process.env.ANTHROPIC_API_KEY || process.env.CLAUDE_API_KEY;
+        const claudeAPI = new ClaudeCodeAPI(apiKey);
+        
+        researchResult = await claudeAPI.sendMessage(fullPrompt, {
+          model: 'claude-3-opus-20240229',
+          maxTokens: 2000, // Smaller token limit for research
+          temperature: 0.3 // Lower temperature for more focused research
+        });
+      }
+      
+      // Store research result in session
+      session.research[agent.role] = researchResult;
+      
+      // Update agent completion
+      agent.status = 'completed';
+      agent.progress = 100;
+      agent.currentTask = `Research completed for ${agent.role}`;
+      agent.tasksCompleted = 1;
+      
+      console.log(`✅ Agent ${agent.name} research completed`);
+      
+    } catch (error) {
+      console.error(`❌ Research failed for agent ${agent.name}:`, error);
+      agent.status = 'error';
+      agent.currentTask = `Research failed: ${error.message}`;
+    }
+    
+    // Update overall session progress
+    const completedAgents = agents.filter(a => a.status === 'completed').length;
+    session.progress = (completedAgents / agents.length) * 80; // Reserve 20% for final implementation
+  }
+  
+  // After all research is complete, trigger final implementation
+  if (session.research && Object.keys(session.research).length > 0) {
+    await executeFinalImplementation(session, claudeStatus);
+  }
+}
+
+// Execute final implementation based on research
+async function executeFinalImplementation(session, claudeStatus) {
+  const { taskDescription, research } = session;
+  
+  console.log('🛠️ Executing final implementation based on research...');
+  
+  // Compile all research into implementation prompt
+  const researchSummary = Object.entries(research).map(([role, content]) => 
+    `## ${role.toUpperCase()} RESEARCH:\n${content}\n`
+  ).join('\n');
+  
+  const implementationPrompt = `
+Based on the following expert research, please implement the requested task.
+
+TASK: ${taskDescription}
+
+EXPERT RESEARCH:
+${researchSummary}
+
+IMPLEMENTATION INSTRUCTIONS:
+- Use the research findings to guide your implementation
+- Follow the patterns and recommendations from the specialists
+- Implement clean, production-ready code
+- Include error handling and best practices as recommended
+
+Please proceed with implementation based on this expert guidance.
+`;
+
+  try {
+    let implementationResult;
+    
+    if (claudeStatus.mode === 'cli') {
+      const claudeExec = new ClaudeCodeExec({ 
+        implementationMode: true,
+        timeout: 600000 // 10 minutes for implementation
+      });
+      
+      implementationResult = await claudeExec.executePrompt(implementationPrompt);
+      
+    } else if (claudeStatus.mode === 'api') {
+      const apiKey = process.env.ANTHROPIC_API_KEY || process.env.CLAUDE_API_KEY;
+      const claudeAPI = new ClaudeCodeAPI(apiKey);
+      
+      implementationResult = await claudeAPI.sendMessage(implementationPrompt, {
+        model: 'claude-3-opus-20240229',
+        maxTokens: 4000,
+        temperature: 0.7
+      });
+    }
+    
+    // Store implementation result
+    session.implementationResult = implementationResult;
+    session.status = 'completed';
+    session.progress = 100;
+    
+    console.log('✅ Research-based implementation completed');
+    
+  } catch (error) {
+    console.error('❌ Final implementation failed:', error);
+    session.status = 'error';
+    session.error = `Implementation failed: ${error.message}`;
+  }
+}
+
+// Execute original implementation mode
+async function executeImplementationMode(session, claudeStatus) {
+  const { taskDescription, preset, agents } = session;
+  
+  // Construct a comprehensive prompt for Claude Code Task tool
+  const taskPrompt = `
 You are coordinating a team of specialized AI agents to complete this task: "${taskDescription}"
 
 Team Configuration: ${preset}
@@ -151,66 +326,57 @@ Coordinate their work to achieve the best outcome.
 Report progress updates as agents complete their work.
 `;
 
-    console.log('🤖 Executing real Claude Code task delegation...');
+  console.log('🤖 Executing real Claude Code task delegation...');
+  
+  // Update session to show real execution
+  session.agents[0].currentTask = 'Coordinating with Claude Code Task tool...';
+  session.agents[0].progress = 25;
+  
+  if (claudeStatus.mode === 'cli') {
+    // Use Claude CLI
+    const claudeExec = new ClaudeCodeExec({ 
+      implementationMode: true,
+      timeout: 600000 // 10 minutes for complex tasks
+    });
     
-    // Update session to show real execution
-    session.agents[0].currentTask = 'Coordinating with Claude Code Task tool...';
-    session.agents[0].progress = 25;
+    claudeExec.on('data', (chunk) => {
+      // Update session with real progress from Claude
+      if (session.status === 'active') {
+        session.agents[0].currentTask = 'Receiving Claude Code response...';
+        session.agents[0].progress = Math.min(session.agents[0].progress + 5, 90);
+      }
+    });
     
-    if (claudeStatus.mode === 'cli') {
-      // Use Claude CLI
-      const claudeExec = new ClaudeCodeExec({ 
-        implementationMode: true,
-        timeout: 600000 // 10 minutes for complex tasks
-      });
-      
-      claudeExec.on('data', (chunk) => {
-        // Update session with real progress from Claude
-        if (session.status === 'active') {
-          session.agents[0].currentTask = 'Receiving Claude Code response...';
-          session.agents[0].progress = Math.min(session.agents[0].progress + 5, 90);
-        }
-      });
-      
-      const response = await claudeExec.executePrompt(taskPrompt);
-      
-      // Update session with completion
-      session.agents.forEach(agent => {
-        agent.status = 'completed';
-        agent.progress = 100;
-        agent.currentTask = 'Task completed via Claude Code';
-      });
-      session.status = 'completed';
-      session.claudeResponse = response;
-      
-    } else if (claudeStatus.mode === 'api') {
-      // Use Claude API
-      const apiKey = process.env.ANTHROPIC_API_KEY || process.env.CLAUDE_API_KEY;
-      const claudeAPI = new ClaudeCodeAPI(apiKey);
-      
-      const response = await claudeAPI.sendMessage(taskPrompt, {
-        model: 'claude-3-opus-20240229', // Use best model for task delegation
-        maxTokens: 4000,
-        temperature: 0.7
-      });
-      
-      // Update session with completion
-      session.agents.forEach(agent => {
-        agent.status = 'completed';
-        agent.progress = 100;
-        agent.currentTask = 'Task completed via Claude API';
-      });
-      session.status = 'completed';
-      session.claudeResponse = response;
-    }
+    const response = await claudeExec.executePrompt(taskPrompt);
     
-  } catch (error) {
-    console.error('Error in real task delegation:', error);
-    session.status = 'error';
-    session.error = error.message;
+    // Update session with completion
+    session.agents.forEach(agent => {
+      agent.status = 'completed';
+      agent.progress = 100;
+      agent.currentTask = 'Task completed via Claude Code';
+    });
+    session.status = 'completed';
+    session.claudeResponse = response;
     
-    // Fall back to demo mode on error
-    simulateDemoProgress(session);
+  } else if (claudeStatus.mode === 'api') {
+    // Use Claude API
+    const apiKey = process.env.ANTHROPIC_API_KEY || process.env.CLAUDE_API_KEY;
+    const claudeAPI = new ClaudeCodeAPI(apiKey);
+    
+    const response = await claudeAPI.sendMessage(taskPrompt, {
+      model: 'claude-3-opus-20240229', // Use best model for task delegation
+      maxTokens: 4000,
+      temperature: 0.7
+    });
+    
+    // Update session with completion
+    session.agents.forEach(agent => {
+      agent.status = 'completed';
+      agent.progress = 100;
+      agent.currentTask = 'Task completed via Claude API';
+    });
+    session.status = 'completed';
+    session.claudeResponse = response;
   }
 }
 
@@ -308,17 +474,32 @@ router.get('/status/:sessionId', (req, res) => {
     }
   }
   
+  // Include research data if available
+  const sessionData = {
+    id: session.id,
+    status: session.status,
+    taskDescription: session.taskDescription,
+    agents: session.agents,
+    progress: Math.round(session.progress),
+    estimatedTimeRemaining: session.estimatedTimeRemaining,
+    runtime: Date.now() - session.startTime,
+    isResearchMode: session.isResearchMode || false
+  };
+
+  // Add research results if they exist
+  if (session.research && Object.keys(session.research).length > 0) {
+    sessionData.researchAvailable = true;
+    sessionData.researchCount = Object.keys(session.research).length;
+  }
+
+  // Add implementation result if it exists
+  if (session.implementationResult) {
+    sessionData.implementationComplete = true;
+  }
+
   res.json({
     success: true,
-    session: {
-      id: session.id,
-      status: session.status,
-      taskDescription: session.taskDescription,
-      agents: session.agents,
-      progress: Math.round(session.progress),
-      estimatedTimeRemaining: session.estimatedTimeRemaining,
-      runtime: Date.now() - session.startTime
-    }
+    session: sessionData
   });
 });
 
@@ -352,6 +533,36 @@ router.post('/stop/:sessionId', (req, res) => {
   });
 });
 
+// Get research results for a session
+router.get('/research/:sessionId', (req, res) => {
+  const { sessionId } = req.params;
+  const session = taskDelegationSessions.get(sessionId);
+  
+  if (!session) {
+    return res.json({
+      success: false,
+      message: 'Session not found'
+    });
+  }
+  
+  if (!session.research || Object.keys(session.research).length === 0) {
+    return res.json({
+      success: false,
+      message: 'No research data available for this session'
+    });
+  }
+  
+  res.json({
+    success: true,
+    sessionId: sessionId,
+    taskDescription: session.taskDescription,
+    research: session.research,
+    implementationResult: session.implementationResult || null,
+    researchMode: session.isResearchMode || false,
+    completedAt: session.completedTime || null
+  });
+});
+
 // Get available presets
 router.get('/presets', (req, res) => {
   res.json({
@@ -366,14 +577,15 @@ router.get('/presets', (req, res) => {
   });
 });
 
-// Check Claude Code availability
+// Check Claude Code availability and research mode status
 router.get('/check-availability', async (req, res) => {
   const status = await checkClaudeCodeAvailability();
   res.json({
     success: true,
     ...status,
+    researchMode: isResearchMode,
     message: status.available 
-      ? `Claude Code is available via ${status.mode}` 
+      ? `Claude Code is available via ${status.mode}${isResearchMode ? ' (Research Mode Enabled)' : ''}` 
       : 'Running in demo mode (Claude Code not configured)'
   });
 });

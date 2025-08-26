@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Claude Session Helper - Reference Previous Work</title>
+    <style>
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #1e1e2e 0%, #151515 100%);
+            color: #e0e0e0;
+            padding: 40px;
+            margin: 0;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: #8b5cf6;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .subtitle {
+            text-align: center;
+            color: #a0a0a0;
+            margin-bottom: 40px;
+        }
+        .helper-section {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 25px;
+            backdrop-filter: blur(10px);
+        }
+        .command-box {
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            border-radius: 8px;
+            padding: 15px;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 14px;
+            margin: 15px 0;
+            position: relative;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .command-box:hover {
+            border-color: rgba(139, 92, 246, 0.5);
+            background: rgba(0, 0, 0, 0.5);
+        }
+        .copy-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(139, 92, 246, 0.2);
+            border: 1px solid rgba(139, 92, 246, 0.4);
+            color: #fff;
+            padding: 5px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.3s ease;
+        }
+        .copy-btn:hover {
+            background: rgba(139, 92, 246, 0.3);
+        }
+        .copy-btn.success {
+            background: rgba(34, 197, 94, 0.3);
+            border-color: rgba(34, 197, 94, 0.5);
+        }
+        .session-list {
+            max-height: 400px;
+            overflow-y: auto;
+            margin: 20px 0;
+        }
+        .session-item {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .session-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(139, 92, 246, 0.3);
+        }
+        .session-item.selected {
+            background: rgba(139, 92, 246, 0.1);
+            border-color: rgba(139, 92, 246, 0.5);
+        }
+        .session-name {
+            color: #3b82f6;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+        .session-meta {
+            color: #888;
+            font-size: 12px;
+        }
+        .search-box {
+            width: 100%;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            color: #fff;
+            font-size: 14px;
+            margin-bottom: 20px;
+        }
+        .search-box:focus {
+            outline: none;
+            border-color: rgba(139, 92, 246, 0.5);
+        }
+        button {
+            background: rgba(139, 92, 246, 0.15);
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            color: #fff;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-right: 10px;
+            transition: all 0.3s ease;
+        }
+        button:hover {
+            background: rgba(139, 92, 246, 0.25);
+            transform: translateY(-2px);
+        }
+        .generated-command {
+            background: rgba(34, 197, 94, 0.05);
+            border: 1px solid rgba(34, 197, 94, 0.3);
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+        code {
+            color: #22c55e;
+        }
+        .tip {
+            background: rgba(245, 158, 11, 0.1);
+            border: 1px solid rgba(245, 158, 11, 0.3);
+            border-radius: 8px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        .tip strong {
+            color: #fbbf24;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🤖 Claude Session Helper</h1>
+        <p class="subtitle">Easily reference your previous development sessions in new Claude conversations</p>
+
+        <div class="helper-section">
+            <h2>📚 Method 1: Direct File Reference</h2>
+            <p>Tell Claude exactly where your session summaries are stored:</p>
+            
+            <div class="command-box" onclick="copyCommand(this)">
+                <button class="copy-btn">📋 Copy</button>
+                <code>Please read my previous development sessions from /Users/michaelkraft/autonomous_vibe_interface/data/documentation/
+Look for session files (they start with session://) and help me continue where I left off.</code>
+            </div>
+
+            <div class="tip">
+                <strong>💡 Pro Tip:</strong> This works best when you remember roughly when the session was or what it was about.
+            </div>
+        </div>
+
+        <div class="helper-section">
+            <h2>🔍 Method 2: Search & Reference</h2>
+            <p>Find specific sessions and generate a Claude command:</p>
+            
+            <input type="text" class="search-box" id="searchInput" placeholder="Search sessions (e.g., 'terminal bug', 'websocket', 'testing')...">
+            
+            <div id="sessionList" class="session-list"></div>
+            
+            <button onclick="generateCommand()">Generate Claude Command</button>
+            <button onclick="loadSessions()">Refresh Sessions</button>
+            
+            <div id="generatedCommand" style="display:none;" class="generated-command"></div>
+        </div>
+
+        <div class="helper-section">
+            <h2>🎯 Method 3: Quick Context Commands</h2>
+            <p>Copy these pre-made commands for common scenarios:</p>
+            
+            <h3>Continue Latest Session:</h3>
+            <div class="command-box" onclick="copyCommand(this)">
+                <button class="copy-btn">📋 Copy</button>
+                <code>Read the most recent session summary from /Users/michaelkraft/autonomous_vibe_interface/data/documentation/
+Focus on the "Next Steps" section and help me continue that work.</code>
+            </div>
+
+            <h3>Debug Previous Issue:</h3>
+            <div class="command-box" onclick="copyCommand(this)">
+                <button class="copy-btn">📋 Copy</button>
+                <code>Search /Users/michaelkraft/autonomous_vibe_interface/data/documentation/ for sessions mentioning "error" or "bug".
+Help me understand what issues were encountered and how they were resolved.</code>
+            </div>
+
+            <h3>Feature Implementation Reference:</h3>
+            <div class="command-box" onclick="copyCommand(this)">
+                <button class="copy-btn">📋 Copy</button>
+                <code>Look through /Users/michaelkraft/autonomous_vibe_interface/data/documentation/ for sessions about feature implementation.
+Identify patterns and approaches used previously to maintain consistency.</code>
+            </div>
+        </div>
+
+        <div class="helper-section">
+            <h2>📝 Method 4: Manual Session Summary</h2>
+            <p>If you have a specific session ID, reference it directly:</p>
+            
+            <input type="text" id="sessionId" placeholder="Enter session ID (e.g., session_1234567890_abc123)" style="
+                width: 400px;
+                padding: 10px;
+                background: rgba(255, 255, 255, 0.05);
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                border-radius: 6px;
+                color: #fff;
+                margin-right: 10px;
+            ">
+            <button onclick="generateSpecificCommand()">Generate Command</button>
+            
+            <div id="specificCommand" style="display:none;"></div>
+        </div>
+
+        <div class="helper-section" style="background: rgba(139, 92, 246, 0.05); border-color: rgba(139, 92, 246, 0.2);">
+            <h2>✨ Best Practices</h2>
+            <ul style="line-height: 1.8;">
+                <li><strong>Be Specific:</strong> Tell Claude what aspect of the previous session you want to continue</li>
+                <li><strong>Provide Context:</strong> Mention if you're debugging, adding features, or refactoring</li>
+                <li><strong>Reference Files:</strong> If you remember specific files from the session, mention them</li>
+                <li><strong>Use Search Terms:</strong> Keywords like "WebSocket", "terminal", "authentication" help Claude find relevant sessions</li>
+                <li><strong>Time References:</strong> "yesterday's session" or "last week's debugging session" can help</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        let sessions = [];
+        let selectedSession = null;
+
+        async function loadSessions() {
+            try {
+                const response = await fetch('/api/docs/list');
+                const data = await response.json();
+                
+                // Filter for session documents
+                sessions = data.docs.filter(doc => doc.url && doc.url.startsWith('session://'));
+                
+                displaySessions(sessions);
+            } catch (error) {
+                console.error('Failed to load sessions:', error);
+            }
+        }
+
+        function displaySessions(sessionList) {
+            const container = document.getElementById('sessionList');
+            
+            if (sessionList.length === 0) {
+                container.innerHTML = '<p style="color: #888;">No sessions found. Generate some session summaries first!</p>';
+                return;
+            }
+            
+            container.innerHTML = sessionList.map(session => `
+                <div class="session-item" onclick="selectSession('${session.id}')" data-id="${session.id}">
+                    <div class="session-name">${session.name}</div>
+                    <div class="session-meta">
+                        ${session.description} | 
+                        ${session.wordCount} words | 
+                        ${new Date(session.addedAt).toLocaleString()}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function selectSession(sessionId) {
+            selectedSession = sessions.find(s => s.id === sessionId);
+            
+            // Update UI
+            document.querySelectorAll('.session-item').forEach(item => {
+                item.classList.toggle('selected', item.dataset.id === sessionId);
+            });
+        }
+
+        function generateCommand() {
+            if (!selectedSession) {
+                alert('Please select a session first');
+                return;
+            }
+            
+            const command = `Read the session document with ID "${selectedSession.id}" from /Users/michaelkraft/autonomous_vibe_interface/data/documentation/${selectedSession.id}.json
+
+This session is about: ${selectedSession.description}
+Session name: ${selectedSession.name}
+
+Please analyze this session and help me continue the work described in it.`;
+            
+            const container = document.getElementById('generatedCommand');
+            container.style.display = 'block';
+            container.innerHTML = `
+                <h3>📋 Generated Claude Command:</h3>
+                <div class="command-box" onclick="copyCommand(this)">
+                    <button class="copy-btn">📋 Copy</button>
+                    <code>${command}</code>
+                </div>
+            `;
+        }
+
+        function generateSpecificCommand() {
+            const sessionId = document.getElementById('sessionId').value;
+            if (!sessionId) {
+                alert('Please enter a session ID');
+                return;
+            }
+            
+            const command = `Read the specific session file: /Users/michaelkraft/autonomous_vibe_interface/data/documentation/${sessionId}.json
+Analyze the work completed and help me continue from where this session left off.`;
+            
+            const container = document.getElementById('specificCommand');
+            container.style.display = 'block';
+            container.innerHTML = `
+                <div class="command-box" onclick="copyCommand(this)" style="margin-top: 15px;">
+                    <button class="copy-btn">📋 Copy</button>
+                    <code>${command}</code>
+                </div>
+            `;
+        }
+
+        function copyCommand(element) {
+            const code = element.querySelector('code').textContent;
+            navigator.clipboard.writeText(code).then(() => {
+                const btn = element.querySelector('.copy-btn');
+                btn.textContent = '✅ Copied!';
+                btn.classList.add('success');
+                
+                setTimeout(() => {
+                    btn.textContent = '📋 Copy';
+                    btn.classList.remove('success');
+                }, 2000);
+            });
+        }
+
+        // Search functionality
+        document.getElementById('searchInput')?.addEventListener('input', (e) => {
+            const query = e.target.value.toLowerCase();
+            const filtered = sessions.filter(session => 
+                session.name.toLowerCase().includes(query) ||
+                session.description.toLowerCase().includes(query)
+            );
+            displaySessions(filtered);
+        });
+
+        // Load sessions on page load
+        window.addEventListener('load', loadSessions);
+    </script>
+</body>
+</html>

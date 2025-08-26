@@ -6,6 +6,7 @@ const { PTYSupervisionAdapter } = require('../services/supervision/PTYSupervisio
 const { SupervisionCommands } = require('../services/supervision/SupervisionCommands');
 const { ClaudeInputHandler } = require('../services/supervision/ClaudeInputHandler');
 const { getInstance: getRepositoryCommands } = require('../services/terminal-commands/repository-intelligence-commands');
+const claudeFileTracker = require('../services/claude-file-tracker');
 
 // SafePTYManager - Production-ready PTY session management
 class SafePTYManager {
@@ -299,6 +300,26 @@ function setupTerminalWebSocket(io) {
                     // Better detection of Claude's input prompt after questions
                     // Claude shows a thinking animation then waits for input
                     if (session.claudeActive) {
+                        // Track file activity from Claude's output
+                        // Throttle updates to prevent excessive events
+                        if (!session.lastOutputCheck || Date.now() - session.lastOutputCheck > 2000) {
+                            session.lastOutputCheck = Date.now();
+                            
+                            // Look for file references in Claude's output
+                            if (data.length > 10) { // Only process substantial output
+                                const fileRefs = claudeFileTracker.parseFileReferences(data);
+                                if (fileRefs.length > 0) {
+                                    const operation = claudeFileTracker.detectOperation(data);
+                                    claudeFileTracker.trackFileOperation(
+                                        fileRefs[0],
+                                        operation,
+                                        session.id,
+                                        { source: 'claude-output', dataPreview: data.substring(0, 100) }
+                                    );
+                                }
+                            }
+                        }
+                        
                         // Check for the end of Claude's output (when it stops "thinking")
                         // Also check if Claude has asked numbered questions (e.g., "1. What is..." or "2. What key...")
                         const hasQuestionPattern = data.match(/\d+\.\s+.*\?/) || data.includes('etc.)');
@@ -349,6 +370,9 @@ function setupTerminalWebSocket(io) {
                         session.claudeActive = false;
                         session.claudeWaitingForInput = false;
                         console.log('[Supervision] Claude process ended');
+                        
+                        // Set file tracker back to idle when Claude exits
+                        claudeFileTracker.setIdle(session.id);
                     }
                     
                     // If supervision is active, buffer and analyze complete lines
@@ -449,7 +473,14 @@ function setupTerminalWebSocket(io) {
                     session.commandBuffer = '';
                 }
                 
-                // Function to clean ANSI escape sequences and properly handle backspaces
+                // When AI Team is active, just pass through to PTY normally
+                // Claude Code CLI will handle all terminal I/O
+                if (session.aiTeamActive) {
+                    console.log('[AI-TEAM] AI Team active, passing through to PTY');
+                    // Fall through to normal PTY handling below
+                }
+                
+                // Helper function to clean ANSI escape sequences
                 function cleanCommand(rawData) {
                     // Remove ANSI escape sequences
                     let cleaned = rawData.replace(/\x1b\[[0-9;]*[A-Za-z]/g, '');
@@ -478,6 +509,7 @@ function setupTerminalWebSocket(io) {
                     return result;
                 }
                 
+                
                 // Build command buffer to track what's being typed
                 session.commandBuffer += data;
                 
@@ -490,6 +522,9 @@ function setupTerminalWebSocket(io) {
                     
                     // Clear the buffer for next command
                     session.commandBuffer = '';
+                    
+                    // NOTE: AI Team command handling moved earlier to prevent Claude CLI interference
+                    // The check is now at the beginning of handleTerminalInput function
                     
                     // Check if this is a coder1 command
                     if (currentClean && (currentClean.startsWith('coder1 ') || currentClean === 'coder1')) {
@@ -555,8 +590,38 @@ function setupTerminalWebSocket(io) {
                         
                         // Detect when Claude is launched
                         if (currentClean === 'claude' || currentClean.startsWith('claude ')) {
-                            console.log('[SafePTYManager] Claude command detected, tracking subprocess...');
+                            console.log('[SafePTYManager] Claude command detected:', currentClean);
+                            console.log('[SafePTYManager] Full command:', currentClean);
                             session.claudeLaunching = true;
+                            
+                            // Track file activity for Claude commands
+                            console.log('[SafePTYManager] File tracker loaded:', typeof claudeFileTracker);
+                            
+                            // Parse the Claude command for context
+                            if (currentClean.startsWith('claude ')) {
+                                const claudePrompt = currentClean.substring(7); // Remove 'claude ' prefix
+                                
+                                // Track that Claude is analyzing/working
+                                const fileRefs = claudeFileTracker.parseFileReferences(claudePrompt);
+                                if (fileRefs.length > 0) {
+                                    // Found file references in the command
+                                    const operation = claudeFileTracker.detectOperation(claudePrompt);
+                                    claudeFileTracker.trackFileOperation(
+                                        fileRefs[0],
+                                        operation,
+                                        session.id,
+                                        { source: 'terminal', prompt: claudePrompt }
+                                    );
+                                } else {
+                                    // No specific files, mark as analyzing
+                                    claudeFileTracker.trackFileOperation(
+                                        null,
+                                        'analyzing',
+                                        session.id,
+                                        { source: 'terminal', prompt: claudePrompt }
+                                    );
+                                }
+                            }
                             
                             // Try to detect Claude process after a short delay
                             setTimeout(async () => {
@@ -581,13 +646,18 @@ function setupTerminalWebSocket(io) {
                     }
                 } else {
                     // For coder1 commands, we need to echo manually since bash won't see them
-                    if (currentClean.startsWith('coder1')) {
+                    // BUT NOT when Claude is active - Claude handles its own echo
+                    if (currentClean.startsWith('coder1') && !session.claudeActive) {
                         // Echo the character back to the terminal display
                         socket.emit('terminal:data', {
                             id: session.id,
                             data: data
                         });
                         // Don't send to PTY for coder1 commands
+                    } else if (session.claudeActive) {
+                        // When Claude is active, always send input to PTY
+                        // Claude CLI handles its own echo and prompt
+                        session.process.write(data);
                     } else {
                         // Normal command, send to PTY for echo and processing
                         session.process.write(data);
@@ -878,6 +948,53 @@ function setupTerminalWebSocket(io) {
             console.log(`[SafePTYManager] Registering socket ${socket.id} for Claude session: ${sessionId}`);
             if (claudeButtonRoutes.registerWebSocket) {
                 claudeButtonRoutes.registerWebSocket(sessionId, socket);
+            }
+        });
+        
+        // Handle AI Team state updates
+        socket.on('ai-team:state', ({ terminalId, isActive, teamConfig = null }) => {
+            console.log(`[SafePTYManager] AI Team state update: terminalId=${terminalId}, active=${isActive}`);
+            
+            const session = safeptyManager.getSession(terminalId);
+            if (session) {
+                // If activating AI Team and Claude is running, kill Claude first
+                if (isActive && (session.claudePid || session.claudeActive || session.claudeLaunching)) {
+                    console.log(`[SafePTYManager] Claude is active - terminating to start AI Team`);
+                    try {
+                        // Send Ctrl+C to terminate Claude
+                        session.process.write('\x03');
+                        
+                        // Clear Claude tracking
+                        session.claudePid = null;
+                        session.claudeActive = false;
+                        session.claudeLaunching = false;
+                        session.claudePromptDetected = false;
+                        session.claudeWaitingForInput = false;
+                        
+                        // Wait a moment for Claude to exit, then clear screen
+                        setTimeout(() => {
+                            // Clear the terminal and reset cursor
+                            socket.emit('terminal:data', {
+                                id: session.id,
+                                data: '\x1b[2J\x1b[H' // Clear screen and move cursor to top
+                            });
+                            
+                            // Show fresh prompt
+                            socket.emit('terminal:data', {
+                                id: session.id,
+                                data: 'michaelkraft$ '
+                            });
+                        }, 500);
+                    } catch (error) {
+                        console.error('Error killing Claude process:', error);
+                    }
+                }
+                
+                session.aiTeamActive = isActive;
+                session.aiTeamConfig = teamConfig;
+                console.log(`[SafePTYManager] AI Team state set for session ${terminalId}: ${isActive}`);
+            } else {
+                console.warn(`[SafePTYManager] Session ${terminalId} not found for AI Team state update`);
             }
         });
         

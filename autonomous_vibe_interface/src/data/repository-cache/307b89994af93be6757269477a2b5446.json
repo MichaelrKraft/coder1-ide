@@ -2,7 +2,7 @@
   "repoId": "307b89994af93be6757269477a2b5446",
   "url": "https://github.com/microsoft/TypeScript",
   "name": "microsoft/TypeScript",
-  "analyzedAt": "2025-08-19T20:45:36.579Z",
+  "analyzedAt": "2025-08-25T20:13:01.672Z",
   "metadata": {
     "description": "",
     "language": "",
@@ -57,6 +57,6 @@
     "fileCount": 0,
     "patternCount": 5,
     "suggestionCount": 0,
-    "analysisTime": 1755636336579
+    "analysisTime": 1756152781672
   }
 }

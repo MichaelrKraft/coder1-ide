@@ -2,7 +2,7 @@
   "repoId": "bd03955396ace96cd6bb3a9f8b96e95a",
   "url": "https://github.com/remix-run/remix",
   "name": "remix-run/remix",
-  "analyzedAt": "2025-08-19T20:46:21.586Z",
+  "analyzedAt": "2025-08-25T20:13:16.680Z",
   "metadata": {
     "description": "",
     "language": "",
@@ -57,6 +57,6 @@
     "fileCount": 0,
     "patternCount": 5,
     "suggestionCount": 0,
-    "analysisTime": 1755636381586
+    "analysisTime": 1756152796680
   }
 }

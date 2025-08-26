@@ -214,19 +214,28 @@ Return as a JSON object with structure:
  */
 function generateFallbackComponent(componentType) {
     const templates = {
-        button: `function CustomButton({ 
+        button: `function GlowButton({ 
             text = "Click Me",
             backgroundColor = "#8b5cf6",
             textColor = "#ffffff",
-            padding = "12px 24px",
-            borderRadius = "8px",
+            padding = "14px 28px",
+            borderRadius = "12px",
             fontSize = "16px",
-            fontWeight = "500",
+            fontWeight = "600",
             hoverColor = "#7c3aed",
+            glowColor = "#8b5cf6",
+            glowIntensity = "25",
+            borderWidth = "2px",
+            borderColor = "#a78bfa",
             disabled = false,
             onClick = () => {}
         }) {
             const [isHovered, setIsHovered] = React.useState(false);
+            
+            // Create glow effect based on intensity
+            const glowShadow = isHovered 
+                ? \`0 0 \${glowIntensity}px \${glowColor}, 0 0 \${glowIntensity * 2}px \${glowColor}, 0 0 \${glowIntensity * 3}px \${glowColor}80, inset 0 0 \${glowIntensity/2}px \${glowColor}40\`
+                : \`0 0 \${glowIntensity/2}px \${glowColor}, 0 0 \${glowIntensity}px \${glowColor}80, 0 0 \${glowIntensity * 1.5}px \${glowColor}60\`;
             
             return (
                 <button
@@ -235,16 +244,25 @@ function generateFallbackComponent(componentType) {
                     onMouseEnter={() => setIsHovered(true)}
                     onMouseLeave={() => setIsHovered(false)}
                     style={{
+                        position: 'relative',
                         backgroundColor: disabled ? '#9ca3af' : (isHovered ? hoverColor : backgroundColor),
                         color: textColor,
                         padding: padding,
                         borderRadius: borderRadius,
                         fontSize: fontSize,
                         fontWeight: fontWeight,
-                        border: 'none',
+                        border: \`\${borderWidth} solid \${isHovered ? glowColor : borderColor}\`,
                         cursor: disabled ? 'not-allowed' : 'pointer',
                         transition: 'all 0.3s ease',
-                        opacity: disabled ? 0.6 : 1
+                        opacity: disabled ? 0.6 : 1,
+                        boxShadow: disabled ? 'none' : glowShadow,
+                        transform: isHovered ? 'translateY(-2px) scale(1.02)' : 'translateY(0) scale(1)',
+                        textShadow: isHovered ? \`0 0 8px \${textColor}50\` : 'none',
+                        letterSpacing: '0.5px',
+                        textTransform: 'uppercase',
+                        background: isHovered 
+                            ? \`linear-gradient(135deg, \${hoverColor}, \${backgroundColor})\`
+                            : backgroundColor
                     }}
                 >
                     {text}
@@ -252,53 +270,86 @@ function generateFallbackComponent(componentType) {
             );
         }`,
         
-        card: `function CustomCard({ 
+        card: `function GlassCard({ 
             title = "Card Title",
             content = "Card content goes here",
-            backgroundColor = "#ffffff",
+            backgroundColor = "rgba(255, 255, 255, 0.1)",
             textColor = "#1f2937",
-            borderColor = "#e5e7eb",
-            borderRadius = "12px",
-            padding = "24px",
-            shadow = "0 4px 6px rgba(0, 0, 0, 0.1)",
-            width = "300px"
+            borderColor = "rgba(255, 255, 255, 0.2)",
+            borderRadius = "16px",
+            padding = "28px",
+            shadow = "0 8px 32px rgba(0, 0, 0, 0.1)",
+            width = "320px",
+            glowColor = "#8b5cf6",
+            backdropBlur = "10px"
         }) {
+            const [isHovered, setIsHovered] = React.useState(false);
+            
             return (
-                <div style={{
-                    backgroundColor: backgroundColor,
-                    color: textColor,
-                    border: '1px solid ' + borderColor,
-                    borderRadius: borderRadius,
-                    padding: padding,
-                    boxShadow: shadow,
-                    width: width,
-                    transition: 'transform 0.2s ease, box-shadow 0.2s ease'
-                }}>
-                    <h3 style={{ margin: '0 0 16px 0', fontSize: '20px', fontWeight: '600' }}>
+                <div 
+                    onMouseEnter={() => setIsHovered(true)}
+                    onMouseLeave={() => setIsHovered(false)}
+                    style={{
+                        backgroundColor: backgroundColor,
+                        color: textColor,
+                        border: \`1px solid \${isHovered ? glowColor : borderColor}\`,
+                        borderRadius: borderRadius,
+                        padding: padding,
+                        boxShadow: isHovered 
+                            ? \`0 0 20px \${glowColor}40, \${shadow}\`
+                            : shadow,
+                        width: width,
+                        backdropFilter: \`blur(\${backdropBlur})\`,
+                        transition: 'all 0.3s ease',
+                        transform: isHovered ? 'translateY(-4px)' : 'translateY(0)',
+                        position: 'relative',
+                        overflow: 'hidden'
+                    }}>
+                    {isHovered && (
+                        <div style={{
+                            position: 'absolute',
+                            top: 0,
+                            left: 0,
+                            right: 0,
+                            height: '2px',
+                            background: \`linear-gradient(90deg, transparent, \${glowColor}, transparent)\`,
+                            animation: 'shimmer 2s infinite'
+                        }} />
+                    )}
+                    <h3 style={{ 
+                        margin: '0 0 16px 0', 
+                        fontSize: '22px', 
+                        fontWeight: '700',
+                        background: isHovered ? \`linear-gradient(135deg, \${glowColor}, #06b6d4)\` : 'none',
+                        WebkitBackgroundClip: isHovered ? 'text' : 'unset',
+                        WebkitTextFillColor: isHovered ? 'transparent' : textColor
+                    }}>
                         {title}
                     </h3>
-                    <p style={{ margin: 0, lineHeight: '1.6' }}>
+                    <p style={{ margin: 0, lineHeight: '1.7', opacity: 0.9 }}>
                         {content}
                     </p>
                 </div>
             );
         }`,
         
-        input: `function CustomInput({ 
+        input: `function GlowInput({ 
             placeholder = "Enter text...",
             value = "",
             onChange = () => {},
             type = "text",
-            backgroundColor = "#ffffff",
+            backgroundColor = "rgba(255, 255, 255, 0.05)",
             textColor = "#1f2937",
-            borderColor = "#d1d5db",
+            borderColor = "rgba(139, 92, 246, 0.3)",
             focusBorderColor = "#8b5cf6",
-            borderRadius = "8px",
-            padding = "12px 16px",
+            borderRadius = "10px",
+            padding = "14px 18px",
             fontSize = "16px",
-            width = "100%"
+            width = "100%",
+            glowColor = "#8b5cf6"
         }) {
             const [isFocused, setIsFocused] = React.useState(false);
+            const [isHovered, setIsHovered] = React.useState(false);
             
             return (
                 <input
@@ -308,16 +359,26 @@ function generateFallbackComponent(componentType) {
                     onChange={onChange}
                     onFocus={() => setIsFocused(true)}
                     onBlur={() => setIsFocused(false)}
+                    onMouseEnter={() => setIsHovered(true)}
+                    onMouseLeave={() => setIsHovered(false)}
                     style={{
                         backgroundColor: backgroundColor,
                         color: textColor,
-                        border: '2px solid ' + (isFocused ? focusBorderColor : borderColor),
+                        border: \`2px solid \${isFocused ? focusBorderColor : borderColor}\`,
                         borderRadius: borderRadius,
                         padding: padding,
                         fontSize: fontSize,
                         width: width,
                         outline: 'none',
-                        transition: 'border-color 0.3s ease'
+                        transition: 'all 0.3s ease',
+                        boxShadow: isFocused 
+                            ? \`0 0 15px \${glowColor}60, 0 0 30px \${glowColor}30, inset 0 0 10px \${glowColor}10\`
+                            : isHovered 
+                                ? \`0 0 10px \${glowColor}30\`
+                                : 'none',
+                        backdropFilter: 'blur(10px)',
+                        fontWeight: '500',
+                        letterSpacing: '0.3px'
                     }}
                 />
             );

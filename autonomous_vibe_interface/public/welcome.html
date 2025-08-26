@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to Coder1 IDE - Claude Code for Everyone</title>
+    <style>
+        :root {
+            /* Dark Theme Colors - Matching AI Dashboard */
+            --bg-primary: #0a0a0a;
+            --bg-secondary: #1a1a1a;
+            --text-primary: #ffffff;
+            --text-secondary: #e5e5e5;
+            --text-muted: rgba(255, 255, 255, 0.7);
+            --glass-bg: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --accent-primary: #8b5cf6;
+            --accent-secondary: #06b6d4;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --error: #ef4444;
+            --info: #3b82f6;
+            --shadow: rgba(0, 0, 0, 0.3);
+            --gradient-1: #1a1a2e;
+            --gradient-2: #16213e;
+            --gradient-3: #0f0f23;
+            --orb-1: rgba(147, 51, 234, 0.3);
+            --orb-2: rgba(59, 130, 246, 0.3);
+            --orb-3: rgba(16, 185, 129, 0.3);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            overflow-x: hidden;
+        }
+
+        /* Animated Background */
+        .animated-background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            background: linear-gradient(45deg, var(--gradient-1), var(--gradient-2), var(--gradient-3));
+            animation: gradientShift 15s ease infinite;
+        }
+
+        @keyframes gradientShift {
+            0%, 100% { background: linear-gradient(45deg, var(--gradient-1), var(--gradient-2), var(--gradient-3)); }
+            50% { background: linear-gradient(45deg, var(--gradient-2), var(--gradient-1), var(--gradient-3)); }
+        }
+
+        .gradient-orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(40px);
+            animation: float 20s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            33% { transform: translate(30px, -30px) scale(1.1); }
+            66% { transform: translate(-20px, 20px) scale(0.9); }
+        }
+
+        .welcome-container {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            max-width: 600px;
+            width: 100%;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .header {
+            background: #000000;
+            padding: 40px 30px;
+            text-align: center;
+            color: var(--text-primary);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            animation: rotate 30s linear infinite;
+        }
+
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .logo {
+            width: 360px;
+            height: 240px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            margin: 0 auto 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            z-index: 1;
+            box-shadow: 0 0 30px rgba(139, 92, 246, 0.3);
+            padding: 45px;
+        }
+        
+        .logo img {
+            width: 100%;
+            height: auto;
+            max-height: 100%;
+            object-fit: contain;
+        }
+
+        .header h1 {
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 18px;
+            opacity: 0.95;
+        }
+
+        .content {
+            padding: 40px 30px;
+            background: var(--bg-secondary);
+        }
+
+        .trial-section {
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 30px;
+            border: 1px solid var(--glass-border);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .trial-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));
+        }
+
+        .trial-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 15px;
+        }
+
+        .trial-badge {
+            background: linear-gradient(135deg, var(--success), var(--accent-secondary));
+            color: var(--text-primary);
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .trial-features {
+            list-style: none;
+            margin-top: 15px;
+        }
+
+        .trial-features li {
+            padding: 8px 0;
+            display: flex;
+            align-items: center;
+        }
+
+        .trial-features li:before {
+            content: "✓";
+            background: linear-gradient(135deg, var(--success), var(--accent-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-weight: bold;
+            margin-right: 12px;
+            font-size: 18px;
+        }
+
+        .license-section {
+            margin-bottom: 30px;
+        }
+
+        .license-section h3 {
+            font-size: 20px;
+            margin-bottom: 15px;
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+
+        .license-input {
+            width: 100%;
+            padding: 14px 16px;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            font-size: 15px;
+            margin-bottom: 12px;
+            font-family: 'JetBrains Mono', 'Courier New', monospace;
+            color: var(--text-primary);
+            transition: all 0.3s ease;
+        }
+
+        .license-input:focus {
+            outline: none;
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .license-input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn {
+            padding: 14px 28px;
+            border: none;
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+            text-transform: none;
+            letter-spacing: 0.5px;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+
+        .btn:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            color: var(--text-primary);
+            box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(139, 92, 246, 0.4);
+        }
+
+        .btn-secondary {
+            background: var(--glass-bg);
+            color: var(--text-primary);
+            border: 1px solid var(--glass-border);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: var(--accent-primary);
+            transform: translateY(-2px);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, var(--success), #059669);
+            color: var(--text-primary);
+            width: 100%;
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+        }
+
+        .btn-success:hover {
+            transform: translateY(-2px) scale(1.02);
+            box-shadow: 0 8px 25px rgba(16, 185, 129, 0.4);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        .divider {
+            text-align: center;
+            margin: 30px 0;
+            position: relative;
+        }
+
+        .divider:before {
+            content: "";
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: #dee2e6;
+        }
+
+        .divider span {
+            background: var(--bg-secondary);
+            padding: 0 15px;
+            position: relative;
+            color: var(--text-muted);
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .pricing-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .pricing-card {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .pricing-card:hover {
+            border-color: var(--accent-primary);
+            transform: translateY(-4px);
+            box-shadow: 0 10px 30px rgba(139, 92, 246, 0.2);
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .pricing-card.recommended {
+            border-color: var(--accent-primary);
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(6, 182, 212, 0.1));
+        }
+
+        .pricing-card.recommended:before {
+            content: "BEST VALUE";
+            position: absolute;
+            top: -10px;
+            right: 10px;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            color: var(--text-primary);
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            box-shadow: 0 2px 10px rgba(139, 92, 246, 0.3);
+        }
+
+        .price {
+            font-size: 28px;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin: 12px 0;
+        }
+
+        .price-period {
+            font-size: 14px;
+            color: var(--text-muted);
+        }
+
+        .alert {
+            padding: 14px 18px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            display: none;
+            backdrop-filter: blur(10px);
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .alert-success {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--success);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .alert-error {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--error);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #FF6B35;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .footer {
+            text-align: center;
+            padding: 24px;
+            color: var(--text-muted);
+            font-size: 13px;
+            border-top: 1px solid var(--glass-border);
+            background: var(--glass-bg);
+        }
+
+        .footer a {
+            color: var(--accent-primary);
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        .footer a:hover {
+            color: var(--accent-secondary);
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <!-- Animated Background -->
+    <div class="animated-background">
+        <div class="gradient-orb" style="width: 400px; height: 400px; top: -100px; left: -100px; background: var(--orb-1);"></div>
+        <div class="gradient-orb" style="width: 300px; height: 300px; bottom: -50px; right: -50px; background: var(--orb-2);"></div>
+        <div class="gradient-orb" style="width: 250px; height: 250px; top: 50%; left: 50%; background: var(--orb-3);"></div>
+    </div>
+
+    <div class="welcome-container">
+        <div class="header">
+            <div class="logo">
+                <img src="/coder1-logo.svg" alt="Coder1 Logo" />
+            </div>
+            <h1>Welcome to Coder1 IDE</h1>
+            <p>Claude Code for Everyone</p>
+        </div>
+
+        <div class="content">
+            <div class="alert alert-success" id="successAlert"></div>
+            <div class="alert alert-error" id="errorAlert"></div>
+
+            <div class="trial-section">
+                <div class="trial-header">
+                    <h3>🎉 Free 7-Day Trial</h3>
+                    <span class="trial-badge">NO CREDIT CARD</span>
+                </div>
+                <p>Experience the power of Claude Code with our risk-free trial:</p>
+                <ul class="trial-features">
+                    <li>50 Claude commands included</li>
+                    <li>Full IDE with integrated terminal</li>
+                    <li>AI-powered code assistance</li>
+                    <li>Repository intelligence</li>
+                    <li>No payment required</li>
+                </ul>
+                <button class="btn btn-success" onclick="startTrial()">
+                    Start Free Trial →
+                </button>
+            </div>
+
+            <div class="divider">
+                <span>OR</span>
+            </div>
+
+            <div class="license-section">
+                <h3>Have a Claude Code Key?</h3>
+                <input 
+                    type="text" 
+                    class="license-input" 
+                    id="licenseKey" 
+                    placeholder="Enter your Claude Code key (e.g., C1-JOHNDOE-XXXX)"
+                    onkeypress="if(event.key === 'Enter') validateLicense()"
+                >
+                <div class="button-group">
+                    <button class="btn btn-primary" onclick="validateLicense()">
+                        Activate Key
+                    </button>
+                    <button class="btn btn-secondary" onclick="showPricing()">
+                        View Pricing
+                    </button>
+                </div>
+            </div>
+
+            <div class="license-section" id="pricingSection" style="display: none;">
+                <h3>Choose Your Plan</h3>
+                <div class="pricing-grid">
+                    <div class="pricing-card" onclick="purchasePlan('monthly')">
+                        <h4>Monthly</h4>
+                        <div class="price">
+                            $29
+                            <span class="price-period">/month</span>
+                        </div>
+                        <p style="font-size: 14px; color: #6c757d;">
+                            Cancel anytime
+                        </p>
+                    </div>
+                    <div class="pricing-card recommended" onclick="purchasePlan('lifetime')">
+                        <h4>Lifetime</h4>
+                        <div class="price">
+                            $299
+                            <span class="price-period">one-time</span>
+                        </div>
+                        <p style="font-size: 14px; color: #6c757d;">
+                            Pay once, use forever
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p style="margin-top: 15px;">Processing...</p>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>
+                By using Coder1, you agree to our 
+                <a href="/terms">Terms of Service</a> and 
+                <a href="/privacy">Privacy Policy</a>
+            </p>
+            <p style="margin-top: 10px;">
+                Need help? <a href="mailto:support@coder1.dev">support@coder1.dev</a>
+            </p>
+        </div>
+    </div>
+
+    <script>
+        // Check if already has license on load
+        window.addEventListener('load', async () => {
+            try {
+                const response = await fetch('/api/license/status');
+                const data = await response.json();
+                
+                if (data.success && data.status.status === 'active') {
+                    // Already has active license or trial, redirect to IDE
+                    window.location.href = '/ide';
+                }
+            } catch (error) {
+                console.error('Error checking license status:', error);
+            }
+        });
+
+        async function startTrial() {
+            console.log('Starting trial...');
+            showLoading(true);
+            hideAlerts();
+
+            try {
+                const response = await fetch('/api/license/trial/start', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                console.log('Response status:', response.status);
+                const data = await response.json();
+                console.log('Response data:', data);
+
+                if (data.success) {
+                    showSuccess('Trial activated! Redirecting to IDE...');
+                    setTimeout(() => {
+                        window.location.href = '/ide';
+                    }, 2000);
+                } else {
+                    showError(data.message || 'Failed to start trial');
+                }
+            } catch (error) {
+                console.error('Error starting trial:', error);
+                showError('Network error. Please try again. ' + error.message);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        async function validateLicense() {
+            const licenseKey = document.getElementById('licenseKey').value.trim();
+            
+            if (!licenseKey) {
+                showError('Please enter a license key');
+                return;
+            }
+
+            showLoading(true);
+            hideAlerts();
+
+            try {
+                const response = await fetch('/api/license/validate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ licenseKey })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showSuccess('License activated! Redirecting to IDE...');
+                    setTimeout(() => {
+                        window.location.href = '/ide';
+                    }, 2000);
+                } else {
+                    showError(data.error || 'Invalid license key');
+                }
+            } catch (error) {
+                showError('Network error. Please try again.');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        function showPricing() {
+            const pricingSection = document.getElementById('pricingSection');
+            if (pricingSection.style.display === 'none') {
+                pricingSection.style.display = 'block';
+                pricingSection.scrollIntoView({ behavior: 'smooth' });
+            } else {
+                pricingSection.style.display = 'none';
+            }
+        }
+
+        function purchasePlan(type) {
+            // In production, this would redirect to payment processor
+            const url = type === 'monthly' 
+                ? 'https://buy.stripe.com/coder1-monthly' 
+                : 'https://buy.stripe.com/coder1-lifetime';
+            
+            alert(`In production, this would redirect to:\n${url}\n\nFor demo, use the trial instead.`);
+        }
+
+        function showLoading(show) {
+            document.getElementById('loading').style.display = show ? 'block' : 'none';
+        }
+
+        function showSuccess(message) {
+            const alert = document.getElementById('successAlert');
+            alert.textContent = message;
+            alert.style.display = 'block';
+        }
+
+        function showError(message) {
+            const alert = document.getElementById('errorAlert');
+            alert.textContent = message;
+            alert.style.display = 'block';
+        }
+
+        function hideAlerts() {
+            document.getElementById('successAlert').style.display = 'none';
+            document.getElementById('errorAlert').style.display = 'none';
+        }
+    </script>
+</body>
+</html>

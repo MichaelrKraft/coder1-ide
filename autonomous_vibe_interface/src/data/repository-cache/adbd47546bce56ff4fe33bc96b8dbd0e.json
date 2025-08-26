@@ -2,7 +2,7 @@
   "repoId": "adbd47546bce56ff4fe33bc96b8dbd0e",
   "url": "https://github.com/clerk/javascript",
   "name": "clerk/javascript",
-  "analyzedAt": "2025-08-19T20:47:06.592Z",
+  "analyzedAt": "2025-08-25T20:14:01.693Z",
   "metadata": {
     "description": "",
     "language": "",
@@ -57,6 +57,6 @@
     "fileCount": 0,
     "patternCount": 5,
     "suggestionCount": 0,
-    "analysisTime": 1755636426592
+    "analysisTime": 1756152841693
   }
 }

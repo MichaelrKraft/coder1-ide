@@ -2,7 +2,7 @@
   "repoId": "3612263b02aa7e3a84821c2d8cc4b5c6",
   "url": "https://github.com/tailwindlabs/tailwindcss",
   "name": "tailwindlabs/tailwindcss",
-  "analyzedAt": "2025-08-19T19:53:02.518Z",
+  "analyzedAt": "2025-08-25T20:12:46.665Z",
   "metadata": {
     "description": "",
     "language": "",
@@ -57,6 +57,6 @@
     "fileCount": 0,
     "patternCount": 5,
     "suggestionCount": 0,
-    "analysisTime": 1755633182518
+    "analysisTime": 1756152766665
   }
 }

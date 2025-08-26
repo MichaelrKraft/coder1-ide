@@ -287,6 +287,33 @@ class HookTemplates {
                 }
             },
 
+            'load-sessions': {
+                id: 'load-sessions',
+                name: 'Session Context Loader',
+                description: 'Load previous development sessions with /sessions command',
+                category: 'productivity',
+                tags: ['sessions', 'context', 'continuity', 'memory'],
+                icon: '📚',
+                difficulty: 'beginner',
+                estimatedImpact: 'high',
+                config: {
+                    hooks: {
+                        PreToolUse: [{
+                            matcher: 'Read',
+                            hooks: [{
+                                type: 'command',
+                                command: 'jq -r \'.tool_input.file_path\' | { read file_path; if echo "$file_path" | grep -q "^/sessions$"; then echo "📚 Loading previous development sessions from CoderOne..." && find /Users/michaelkraft/autonomous_vibe_interface/data/documentation -name "session_*.json" -type f 2>/dev/null | while read -r session_file; do echo "Reading: $(basename "$session_file")"; cat "$session_file" 2>/dev/null | jq -r ".name, .description, .content" 2>/dev/null | head -100; done; fi; }'
+                            }]
+                        }]
+                    }
+                },
+                preview: {
+                    when: 'When you type: Read /sessions',
+                    action: 'Automatically loads all session summaries from Documentation Intelligence',
+                    result: 'Claude gets full context from previous development sessions'
+                }
+            },
+
             // Backend Development
             'nodemon-restart': {
                 id: 'nodemon-restart',
@@ -423,7 +450,7 @@ class HookTemplates {
                 id: 'productivity-essentials',
                 name: 'Productivity Essentials',
                 description: 'Basic productivity tools for any development project',
-                hooks: ['command-logger', 'task-notifications'],
+                hooks: ['command-logger', 'task-notifications', 'load-sessions'],
                 category: 'productivity'
             }
         };

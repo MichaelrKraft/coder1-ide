@@ -3,8 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Component Studio - CoderOne</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <title>Magic UI Component Studio - CoderOne</title>
     <meta name="cache-bust" content="1755892655555">
     <!-- AI-POWERED COMPONENT STUDIO - Version 2.1 - FRESH SERVER -->
     
@@ -37,9 +36,6 @@
             color: var(--text-primary);
             min-height: 100vh;
             overflow-x: hidden;
-            font-size: 16px;
-            line-height: 1.6;
-            font-weight: 400;
         }
 
         /* Grid Background Pattern */
@@ -76,7 +72,7 @@
             position: sticky;
             top: 0;
             z-index: 100;
-            height: 100px;  /* Original height */
+            height: 100px;  /* Fixed height: 90px logo + 10px padding */
         }
 
         .header-content {
@@ -95,18 +91,11 @@
         }
 
         .logo {
-            height: 90px;  /* Original size */
+            height: 90px;  /* 60px * 1.5 = 90px */
             width: auto;
         }
 
-        .studio-title {
-            font-size: 28px;
-            font-weight: 600;
-            background: var(--accent-gradient);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            text-align: center;
-        }
+        /* Title styling moved inline for consistency with dashboard */
 
         .header-actions {
             display: flex;
@@ -176,71 +165,34 @@
             margin-bottom: 30px;
         }
 
-        .skill-indicator {
-            text-align: center;
-            margin-bottom: 20px;
-        }
-
-        .skill-badge {
-            display: inline-block;
-            background: rgba(16, 185, 129, 0.2);
-            color: #10b981;
-            padding: 6px 16px;
-            border-radius: 20px;
-            font-size: 14px;
-            font-weight: 600;
-            margin-bottom: 8px;
-        }
-
-        .difficulty-note {
-            display: block;
-            color: var(--text-muted);
-            font-size: 14px;
-            font-style: italic;
-        }
-
-        .next-steps {
-            margin-top: 30px;
-            text-align: center;
-            padding-top: 20px;
-            border-top: 1px solid var(--glass-border);
-        }
-
-        .next-steps-label {
-            color: var(--text-muted);
-            font-size: 14px;
-            margin-bottom: 10px;
-        }
-
-        .next-tool-link {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 8px 16px;
-            background: var(--glass-bg);
-            border: 1px solid var(--glass-border);
-            border-radius: 12px;
-            color: var(--text-primary);
-            text-decoration: none;
-            transition: all 0.3s ease;
-            font-size: 14px;
-        }
-
-        .next-tool-link:hover {
-            background: var(--glass-hover);
-            border-color: var(--accent-purple);
-            transform: translateY(-2px);
-        }
-
-        .next-tool-icon {
-            font-size: 16px;
-        }
-
         .hero-actions {
             display: flex;
             gap: 16px;
             justify-content: center;
             flex-wrap: wrap;
+        }
+
+        /* Header Search Styles */
+        .header-search input:focus {
+            outline: none;
+            border-color: var(--accent-purple);
+            box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.1);
+        }
+
+        .category-btn:hover:not(.active) {
+            background: rgba(139, 92, 246, 0.1) !important;
+            border-color: var(--accent-purple) !important;
+        }
+
+        /* Animation keyframes */
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.1); opacity: 0.8; }
+        }
+
+        @keyframes loading {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(200%); }
         }
 
         .quick-action {
@@ -353,7 +305,7 @@
             overflow: visible;
         }
         
-        /* Removed "Click to customize with AI" badges for cleaner interface */
+        /* Removed the "Click to customize with AI" badges for cleaner interface */
 
         .component-card::before {
             content: '';
@@ -373,6 +325,10 @@
             box-shadow: 0 8px 24px rgba(139, 92, 246, 0.15);
         }
         
+        .component-card:hover::after {
+            opacity: 1 !important;
+            transform: scale(1.05);
+        }
 
         .component-card:hover::before {
             transform: scaleX(1);
@@ -697,45 +653,44 @@
                 gap: 20px;
             }
         }
-        
-        @keyframes slideIn {
-            from {
-                transform: translateX(100%);
-                opacity: 0;
+
+        /* Circuit Animation */
+        @keyframes blink-node {
+            0%, 100% { 
+                opacity: 0.5; 
+                box-shadow: 0 0 5px var(--accent-cyan);
             }
-            to {
-                transform: translateX(0);
-                opacity: 1;
-            }
-        }
-        
-        @keyframes slideOut {
-            from {
-                transform: translateX(0);
-                opacity: 1;
-            }
-            to {
-                transform: translateX(100%);
-                opacity: 0;
+            50% { 
+                opacity: 1; 
+                box-shadow: 0 0 15px var(--accent-cyan);
             }
         }
     </style>
 </head>
 <body>
-    <!-- Header -->
-    <header class="header">
-        <div class="header-content">
-            <div class="logo-section">
-                <img src="/coder1-logo-newest.png" 
-                     alt="CoderOne" 
-                     class="logo"
-                     onerror="console.error('Logo failed to load:', this.src); this.style.display='none';">
+    <!-- Header with Circuit Decorations -->
+    <header class="header glassmorphism" style="margin-bottom: 1.5rem; position: relative; overflow: visible; background: linear-gradient(135deg, rgba(26, 26, 46, 0.95), rgba(22, 22, 26, 0.95)) !important; border: 1px solid var(--glass-border) !important; box-shadow: 0 0 20px rgba(139, 92, 246, 0.5) !important; border-radius: 12px; height: 120px; padding: 0;">
+        <!-- Circuit decoration elements -->
+        <div class="circuit-decoration" style="position: absolute; inset: 0; pointer-events: none;">
+            <div class="circuit-line horizontal" style="position: absolute; height: 1px; width: 100px; background: var(--glass-border); opacity: 0.3; top: 20%; left: 5%;"></div>
+            <div class="circuit-node" style="position: absolute; width: 4px; height: 4px; background: var(--accent-cyan); border-radius: 50%; opacity: 0.5; animation: blink-node 3s ease-in-out infinite; top: 20%; left: calc(5% + 100px);"></div>
+            <div class="circuit-line horizontal" style="position: absolute; height: 1px; width: 100px; background: var(--glass-border); opacity: 0.3; bottom: 25%; right: 10%;"></div>
+            <div class="circuit-node" style="position: absolute; width: 4px; height: 4px; background: var(--accent-cyan); border-radius: 50%; opacity: 0.5; animation: blink-node 3s ease-in-out infinite; bottom: 25%; right: calc(10% + 100px);"></div>
+            <div class="circuit-line vertical" style="position: absolute; width: 1px; height: 40px; background: var(--glass-border); opacity: 0.3; top: 10%; left: 15%;"></div>
+            <div class="circuit-node" style="position: absolute; width: 4px; height: 4px; background: var(--accent-cyan); border-radius: 50%; opacity: 0.5; animation: blink-node 3s ease-in-out infinite; top: calc(10% + 40px); left: 15%;"></div>
+        </div>
+        <div class="header-content" style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; position: relative; z-index: 1; height: 100%;">
+            <!-- Empty space on left -->
+            <div style="width: 200px;"></div>
+            <div style="display: flex; flex-direction: column; align-items: center; flex: 1;">
+                <h1 style="margin: 0; font-size: 1.8rem; font-weight: 700; background: linear-gradient(135deg, var(--accent-purple) 0%, var(--accent-cyan) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-align: center; text-transform: uppercase; letter-spacing: 1px; line-height: 1.2;">
+                    Component Studio
+                </h1>
+                <p style="margin: 0; font-size: 0.875rem; color: var(--text-secondary); text-align: center;">
+                    Create stunning React components with AI assistance
+                </p>
             </div>
-            <h1 class="studio-title">AI Component Studio</h1>
-            <div class="header-actions">
-                <button class="btn btn-primary" onclick="generateWithAI()">
-                    ✨ Generate
-                </button>
+            <div class="header-actions" style="display: flex; align-items: center; gap: 12px;">
                 <button class="btn" onclick="exportComponent()">
                     📦 Export
                 </button>
@@ -750,45 +705,23 @@
     <section class="hero">
         <div class="container">
             <div class="hero-card">
-                <div class="skill-indicator">
-                    <span class="skill-badge beginner">Perfect for Beginners</span>
-                    <span class="difficulty-note">No coding experience required</span>
-                </div>
                 <h1>Build Beautiful Components</h1>
                 <p class="hero-subtitle">
-                    Create stunning React components with AI assistance. Browse our gallery or describe what you need - perfect for anyone who wants to build without coding!
+                    Create stunning React components with AI assistance. Browse our gallery or describe what you need.
                 </p>
                 <div class="hero-actions">
-                    <button class="quick-action" onclick="quickStart('button')" title="Generate beautiful, interactive buttons with hover effects and modern styling">
+                    <button class="quick-action" onclick="quickStart('button')">
                         🎯 Create Button
                     </button>
-                    <button class="quick-action" onclick="quickStart('form')" title="Build complete forms with validation, styling, and accessibility features">
+                    <button class="quick-action" onclick="quickStart('form')">
                         📝 Build Form
                     </button>
-                    <button class="quick-action" onclick="quickStart('card')" title="Design modern cards for profiles, products, or content display">
+                    <button class="quick-action" onclick="quickStart('card')">
                         🃏 Design Card
                     </button>
-                    <button class="quick-action" onclick="quickStart('nav')" title="Create responsive navigation menus with mobile support and animations">
+                    <button class="quick-action" onclick="quickStart('nav')">
                         🧭 Make Navigation
                     </button>
-                </div>
-                
-                <div class="next-steps">
-                    <p class="next-steps-label">What's next in your development journey?</p>
-                    <div style="display: flex; flex-direction: column; gap: 10px; align-items: center;">
-                        <a href="/" class="next-tool-link">
-                            <span class="next-tool-icon">📝</span>
-                            Create complete projects with the PRD Generator
-                        </a>
-                        <a href="/templates-hub.html" class="next-tool-link">
-                            <span class="next-tool-icon">⚡</span>
-                            Browse Templates Hub for advanced Claude Code commands
-                        </a>
-                        <a href="/ide" class="next-tool-link">
-                            <span class="next-tool-icon">💻</span>
-                            Start coding in the Full IDE with AI assistance
-                        </a>
-                    </div>
                 </div>
             </div>
         </div>
@@ -822,15 +755,6 @@
         <div class="main-content">
             <!-- Component Gallery -->
             <section class="gallery-section">
-                <div class="search-bar">
-                    <span class="search-icon">🔍</span>
-                    <input 
-                        type="text" 
-                        class="search-input" 
-                        placeholder="Search components... (⌘K)"
-                        onkeyup="filterComponents(this.value)"
-                    >
-                </div>
 
                 <div class="component-categories">
                     <button class="category-chip active" onclick="filterCategory('all')">All</button>
@@ -1011,9 +935,6 @@
         // Component selection
         let selectedComponent = null;
         let currentView = 'preview';
-        
-        // Component states for live preview
-        let componentStates = {};
 
         // AI Generation State
         let aiGenerationState = {
@@ -1403,12 +1324,10 @@
             `;
             
             // Also initialize the component state for live preview
-            if (!componentStates[componentId]) {
-                componentStates[componentId] = getDefaultComponentState(componentId);
+            if (!window.componentStates) {
+                window.componentStates = {};
             }
-            
-            // Immediately render the preview
-            renderComponentPreview(componentId, componentStates[componentId]);
+            window.componentStates[componentId] = getDefaultComponentState(componentId);
 
             // Update properties section based on selected component
             // Generate AI variations for ALL components
@@ -1701,114 +1620,63 @@
         }
         
         function applyVariationToComponent(variation) {
-            try {
-                console.log('applyVariationToComponent called with:', variation);
-                
-                // Get the current component ID
-                const currentComponentId = selectedComponent || window.currentSelectedComponent || 'primary-button';
-                console.log('Current component ID:', currentComponentId);
-                
-                // Parse the variation code to extract properties
-                const extractedProps = parseVariationCode(variation.code, currentComponentId);
-                console.log('Extracted properties:', extractedProps);
-                
-                // Apply the extracted properties to the live preview
-                if (extractedProps && componentStates) {
-                    console.log('Current component state before:', componentStates[currentComponentId]);
-                    componentStates[currentComponentId] = { ...componentStates[currentComponentId], ...extractedProps };
-                    console.log('New component state after:', componentStates[currentComponentId]);
-                    renderComponentPreview(currentComponentId, componentStates[currentComponentId]);
-                    console.log('Rendered preview with variation');
-                } else {
-                    console.log('No extracted props or componentStates missing');
-                }
-                
-                // If it's Gradient Hero, use the legacy system
-                if (currentComponentId === 'gradient-hero') {
-                    extractPropertiesFromVariation(variation);
-                }
-            } catch (error) {
-                console.error('Error in applyVariationToComponent:', error);
+            // Get the current component ID
+            const currentComponentId = window.currentSelectedComponent || 'primary-button';
+            
+            // Parse the variation code to extract properties
+            const extractedProps = parseVariationCode(variation.code, currentComponentId);
+            
+            // Apply the extracted properties to the live preview
+            if (extractedProps && window.componentStates) {
+                window.componentStates[currentComponentId] = { ...window.componentStates[currentComponentId], ...extractedProps };
+                renderComponentPreview(currentComponentId, window.componentStates[currentComponentId]);
+            }
+            
+            // If it's Gradient Hero, use the legacy system
+            if (currentComponentId === 'gradient-hero') {
+                extractPropertiesFromVariation(variation);
             }
         }
         
         function parseVariationCode(code, componentType) {
             const props = {};
             
-            console.log('Parsing variation code for component type:', componentType);
-            console.log('Code to parse:', code.substring(0, 300));
-            
-            // Extract text content from children or default text
-            const childrenMatch = code.match(/\{children \|\| ["']([^"']+)["']\}/);
-            if (childrenMatch) {
-                if (!props.content) props.content = {};
-                props.content.title = childrenMatch[1];
-                console.log('Extracted text:', childrenMatch[1]);
+            // Extract text content
+            const textMatch = code.match(/(?:children|text|label)[=:]\s*["']([^"']+)["']/);
+            if (textMatch) {
+                if (!props.appearance) props.appearance = {};
+                props.appearance.text = textMatch[1];
             }
             
-            // Parse Tailwind gradient classes for gradient components
-            if (componentType.includes('gradient')) {
-                const tailwindGradient = code.match(/bg-gradient-to-(\w+)\s+from-(\w+)-(\d+)\s+to-(\w+)-(\d+)/);
-                if (tailwindGradient) {
-                    const [, direction, fromColor, fromShade, toColor, toShade] = tailwindGradient;
-                    
-                    // Convert Tailwind colors to hex
-                    const colorMap = {
-                        'blue': { 500: '#3b82f6', 600: '#2563eb' },
-                        'purple': { 500: '#8b5cf6', 600: '#7c3aed' },
-                        'pink': { 500: '#ec4899', 600: '#db2777' },
-                        'green': { 500: '#10b981', 600: '#059669' },
-                        'red': { 500: '#ef4444', 600: '#dc2626' },
-                        'yellow': { 500: '#eab308', 600: '#ca8a04' },
-                        'indigo': { 500: '#6366f1', 600: '#4f46e5' }
-                    };
-                    
-                    const startColor = colorMap[fromColor]?.[fromShade] || '#3b82f6';
-                    const endColor = colorMap[toColor]?.[toShade] || '#8b5cf6';
-                    
-                    // Convert Tailwind direction to CSS degrees
-                    const directionMap = {
-                        'r': '90deg',      // to-r = to right
-                        'l': '270deg',     // to-l = to left  
-                        't': '0deg',       // to-t = to top
-                        'b': '180deg',     // to-b = to bottom
-                        'br': '135deg',    // to-br = to bottom right
-                        'bl': '225deg',    // to-bl = to bottom left
-                        'tr': '45deg',     // to-tr = to top right
-                        'tl': '315deg'     // to-tl = to top left
-                    };
-                    
-                    if (!props.gradient) props.gradient = {};
-                    props.gradient.startColor = startColor;
-                    props.gradient.endColor = endColor;
-                    props.gradient.direction = directionMap[direction] || '135deg';
-                    
-                    console.log('Extracted gradient:', props.gradient);
+            // Extract colors
+            const colorMatches = code.matchAll(/(?:background|color|bg)[=:]\s*["']([^"']+)["']/g);
+            for (const match of colorMatches) {
+                if (!props.colors) props.colors = {};
+                if (match[0].includes('background') || match[0].includes('bg')) {
+                    props.colors.background = match[1];
+                } else {
+                    props.colors.textColor = match[1];
                 }
             }
             
-            // Extract regular colors from Tailwind classes
-            const textColorMatch = code.match(/text-(\w+)-(\d+)/);
-            if (textColorMatch) {
-                const [, color, shade] = textColorMatch;
-                if (!props.colors) props.colors = {};
-                // Map common Tailwind colors
-                if (color === 'white') props.colors.textColor = '#ffffff';
-                else if (color === 'gray' && shade === '900') props.colors.textColor = '#111827';
-                console.log('Extracted text color:', props.colors.textColor);
+            // Extract sizes
+            const sizeMatch = code.match(/size[=:]\s*["']([^"']+)["']/);
+            if (sizeMatch) {
+                if (!props.appearance) props.appearance = {};
+                props.appearance.size = sizeMatch[1];
             }
             
-            // Extract background colors
-            const bgColorMatch = code.match(/bg-(\w+)-(\d+)/);
-            if (bgColorMatch && !componentType.includes('gradient')) {
-                const [, color, shade] = bgColorMatch;
-                if (!props.colors) props.colors = {};
-                if (color === 'white') props.colors.background = '#ffffff';
-                else if (color === 'gray' && shade === '100') props.colors.background = '#f3f4f6';
-                console.log('Extracted background color:', props.colors.background);
+            // Extract padding/spacing
+            const paddingMatch = code.match(/padding[=:]\s*["']([^"']+)["']/);
+            if (paddingMatch) {
+                if (!props.spacing) props.spacing = {};
+                const paddingValue = parseInt(paddingMatch[1]);
+                if (!isNaN(paddingValue)) {
+                    props.spacing.paddingVertical = paddingValue;
+                    props.spacing.paddingHorizontal = paddingValue * 2;
+                }
             }
             
-            console.log('Final parsed properties:', props);
             return props;
         }
         
@@ -2361,8 +2229,23 @@ export default ${selectedComponent.replace('-', '')};
 
         // Quick start actions
         function quickStart(type) {
-            document.getElementById('aiInput').value = `Create a modern ${type} component`;
-            generateWithAI();
+            const typeDescriptions = {
+                'button': 'Create a modern, animated button component with hover effects and gradient background',
+                'form': 'Build a responsive form component with validation and modern styling',
+                'card': 'Design a beautiful card component with image, title, and description',
+                'nav': 'Make a responsive navigation component with mobile menu support'
+            };
+            
+            const description = typeDescriptions[type] || `Create a modern ${type} component`;
+            document.getElementById('aiInput').value = description;
+            
+            // Scroll to the AI input area
+            document.getElementById('aiInput').scrollIntoView({ behavior: 'smooth', block: 'center' });
+            
+            // Auto-generate after a short delay
+            setTimeout(() => {
+                generateWithAI();
+            }, 500);
         }
 
         // Set suggestion
@@ -2371,268 +2254,160 @@ export default ${selectedComponent.replace('-', '')};
         }
 
         // Generate with AI
-        function generateWithAI() {
-            try {
-                const input = document.getElementById('aiInput').value;
-                if (!input) {
-                    console.log('No input provided');
-                    return;
-                }
-                
-                console.log('AI prompt received:', input);
-                console.log('Selected component:', selectedComponent);
-                console.log('Component states:', componentStates);
-                
-                const inputLower = input.toLowerCase();
-                
-                // Check if there's an active component in preview
-                const previewContainer = document.getElementById('live-component-preview');
-                const hasActiveComponent = previewContainer && previewContainer.innerHTML.trim() !== '';
-                
-                console.log('Has active component:', hasActiveComponent);
-                console.log('Current component state:', componentStates[selectedComponent]);
-                
-                // Parse the intent - is this a modification or a new component request?
-                const isModification = inputLower.includes('make') || inputLower.includes('change') || 
-                                     inputLower.includes('update') || inputLower.includes('modify') ||
-                                     inputLower.includes('more') || inputLower.includes('less') ||
-                                     inputLower.includes('bigger') || inputLower.includes('smaller');
-                
-                console.log('Is modification:', isModification);
-                
-                if (isModification && selectedComponent && componentStates[selectedComponent]) {
-                    console.log('Modifying existing component');
-                    // Modify the existing component
-                    modifyComponentWithAI(input);
-                } else {
-                    console.log('Creating new component');
-                    // Generate a new component or select one based on the request
-                    createComponentWithAI(input);
-                }
-            } catch (error) {
-                console.error('Error in generateWithAI:', error);
-                showAIFeedback('❌ Error: ' + error.message);
-            }
-        }
-        
-        // Modify existing component based on AI prompt
-        function modifyComponentWithAI(prompt) {
-            try {
-                console.log('modifyComponentWithAI called with:', prompt);
-                const promptLower = prompt.toLowerCase();
-                const currentState = componentStates[selectedComponent];
-                
-                if (!currentState) {
-                    console.log('No current state found for component:', selectedComponent);
-                    return;
-                }
-                
-                console.log('Current state before modification:', currentState);
-            
-            // Clone the current state
-            let newState = JSON.parse(JSON.stringify(currentState));
-            
-            // Parse color modifications
-            const colorKeywords = {
-                'pink': '#ec4899',
-                'purple': '#a855f7',
-                'blue': '#3b82f6',
-                'green': '#10b981',
-                'red': '#ef4444',
-                'yellow': '#eab308',
-                'orange': '#f97316',
-                'indigo': '#6366f1',
-                'violet': '#8b5cf6',
-                'teal': '#14b8a6',
-                'cyan': '#06b6d4',
-                'gray': '#6b7280',
-                'black': '#000000',
-                'white': '#ffffff'
-            };
-            
-            // Handle color changes
-            const foundColors = [];
-            for (const [colorName, colorValue] of Object.entries(colorKeywords)) {
-                if (promptLower.includes(colorName)) {
-                    foundColors.push({ name: colorName, value: colorValue });
-                }
+        async function generateWithAI() {
+            const input = document.getElementById('aiInput').value;
+            if (!input || input.trim() === '') {
+                alert('Please describe the component you want to create');
+                return;
             }
             
-            console.log('Found colors:', foundColors);
+            console.log('Generating component:', input);
             
-            if (foundColors.length > 0) {
-                // Apply color based on component type
-                if (selectedComponent === 'gradient-button' || selectedComponent.includes('gradient-')) {
-                    // For gradient components, update gradient colors
-                    if (!newState.gradient) newState.gradient = {};
-                    
-                    if (foundColors.length >= 2) {
-                        // Use first two colors for gradient
-                        newState.gradient.startColor = foundColors[0].value;
-                        newState.gradient.endColor = foundColors[1].value;
-                        console.log('Applied gradient colors:', newState.gradient);
-                    } else {
-                        // Use single color with variation
-                        newState.gradient.startColor = foundColors[0].value;
-                        newState.gradient.endColor = adjustColor(foundColors[0].value, 20);
-                        console.log('Applied single color gradient:', newState.gradient);
-                    }
-                } else if (newState.colors) {
-                    // For regular components, update background or primary color
-                    newState.colors.background = foundColors[0].value;
-                    if (newState.colors.hoverBackground) {
-                        newState.colors.hoverBackground = adjustColor(foundColors[0].value, -20);
-                    }
-                    console.log('Applied regular colors:', newState.colors);
-                }
-            }
-            
-            // Handle size modifications
-            if (promptLower.includes('bigger') || promptLower.includes('larger')) {
-                if (newState.appearance?.size) {
-                    const sizes = ['small', 'medium', 'large', 'xl'];
-                    const currentIndex = sizes.indexOf(newState.appearance.size);
-                    if (currentIndex < sizes.length - 1) {
-                        newState.appearance.size = sizes[currentIndex + 1];
-                    }
-                }
-                if (newState.spacing) {
-                    newState.spacing.paddingVertical = (newState.spacing.paddingVertical || 12) * 1.2;
-                    newState.spacing.paddingHorizontal = (newState.spacing.paddingHorizontal || 24) * 1.2;
-                }
-            } else if (promptLower.includes('smaller') || promptLower.includes('less')) {
-                if (newState.appearance?.size) {
-                    const sizes = ['small', 'medium', 'large', 'xl'];
-                    const currentIndex = sizes.indexOf(newState.appearance.size);
-                    if (currentIndex > 0) {
-                        newState.appearance.size = sizes[currentIndex - 1];
-                    }
-                }
-                if (newState.spacing) {
-                    newState.spacing.paddingVertical = (newState.spacing.paddingVertical || 12) * 0.8;
-                    newState.spacing.paddingHorizontal = (newState.spacing.paddingHorizontal || 24) * 0.8;
-                }
-            }
-            
-            // Handle animation changes
-            if (promptLower.includes('animate') || promptLower.includes('animation')) {
-                if (promptLower.includes('pulse')) {
-                    if (newState.appearance) newState.appearance.animation = 'pulse';
-                } else if (promptLower.includes('glow')) {
-                    if (newState.appearance) newState.appearance.animation = 'glow';
-                } else if (promptLower.includes('none') || promptLower.includes('stop')) {
-                    if (newState.appearance) newState.appearance.animation = 'none';
-                }
-            }
-            
-            // Handle text changes
-            if (promptLower.includes('text') || promptLower.includes('label')) {
-                const textMatch = prompt.match(/"([^"]+)"/);
-                if (textMatch && newState.appearance) {
-                    newState.appearance.text = textMatch[1];
-                } else if (textMatch && newState.content) {
-                    newState.content.title = textMatch[1];
-                }
-            }
-            
-            // Apply the modified state
-            console.log('New state after modification:', newState);
-            componentStates[selectedComponent] = newState;
-            renderComponentPreview(selectedComponent, newState);
-            
-            // Show success message
-            showAIFeedback(`✅ Component updated: ${prompt}`);
-            } catch (error) {
-                console.error('Error in modifyComponentWithAI:', error);
-                showAIFeedback('❌ Error modifying component: ' + error.message);
-            }
-        }
-        
-        // Create new component based on AI prompt
-        function createComponentWithAI(prompt) {
-            const promptLower = prompt.toLowerCase();
-            
-            // Try to identify component type from prompt
-            let componentToCreate = null;
-            
-            if (promptLower.includes('button')) {
-                if (promptLower.includes('gradient')) {
-                    componentToCreate = 'gradient-button';
-                } else if (promptLower.includes('icon')) {
-                    componentToCreate = 'icon-button';
-                } else {
-                    componentToCreate = 'primary-button';
-                }
-            } else if (promptLower.includes('card')) {
-                if (promptLower.includes('product')) {
-                    componentToCreate = 'product-card';
-                } else if (promptLower.includes('profile')) {
-                    componentToCreate = 'profile-card';
-                } else if (promptLower.includes('stats')) {
-                    componentToCreate = 'stats-card';
-                }
-            } else if (promptLower.includes('gradient') || promptLower.includes('background')) {
-                // Default to a gradient background component
-                componentToCreate = 'animated-gradient';
-            } else if (promptLower.includes('input') || promptLower.includes('field')) {
-                componentToCreate = 'input-field';
-            } else if (promptLower.includes('nav')) {
-                componentToCreate = 'navbar';
-            }
-            
-            if (componentToCreate) {
-                // Select and preview the component
-                selectComponent(componentToCreate);
-                
-                // Apply any color or style modifications from the prompt
-                setTimeout(() => {
-                    if (promptLower.includes('pink') || promptLower.includes('purple') || 
-                        promptLower.includes('blue') || promptLower.includes('green')) {
-                        modifyComponentWithAI(prompt);
-                    }
-                }, 100);
-                
-                showAIFeedback(`✨ Created ${componentToCreate} component`);
-            } else {
-                showAIFeedback(`🤔 I'm not sure what component to create. Try: "gradient button", "product card", etc.`);
-            }
-        }
-        
-        // Helper function to show AI feedback
-        function showAIFeedback(message) {
-            const feedbackDiv = document.createElement('div');
-            feedbackDiv.style.cssText = `
-                position: fixed;
-                bottom: 20px;
-                right: 20px;
-                background: rgba(99, 102, 241, 0.9);
-                color: white;
-                padding: 12px 20px;
-                border-radius: 8px;
-                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-                z-index: 10000;
-                animation: slideIn 0.3s ease;
+            // Show loading state
+            const previewArea = document.getElementById('previewArea');
+            previewArea.innerHTML = `
+                <div style="text-align: center; padding: 40px;">
+                    <div style="font-size: 48px; margin-bottom: 16px; animation: pulse 1.5s ease-in-out infinite;">✨</div>
+                    <h3 style="color: var(--text-primary); margin-bottom: 8px;">Generating your component...</h3>
+                    <p style="font-size: 14px; color: var(--text-muted); margin-top: 8px;">"${input}"</p>
+                    <div style="margin-top: 20px;">
+                        <div style="width: 200px; height: 4px; background: var(--glass-bg); border-radius: 2px; margin: 0 auto; overflow: hidden;">
+                            <div style="width: 50%; height: 100%; background: var(--accent-purple); animation: loading 2s ease-in-out infinite;"></div>
+                        </div>
+                    </div>
+                </div>
             `;
-            feedbackDiv.textContent = message;
-            document.body.appendChild(feedbackDiv);
             
+            // Simulate generation and show component after delay
             setTimeout(() => {
-                feedbackDiv.style.animation = 'slideOut 0.3s ease';
-                setTimeout(() => feedbackDiv.remove(), 300);
-            }, 3000);
-        }
-        
-        // Helper function to adjust color brightness
-        function adjustColor(color, percent) {
-            const num = parseInt(color.replace('#', ''), 16);
-            const amt = Math.round(2.55 * percent);
-            const R = (num >> 16) + amt;
-            const G = (num >> 8 & 0x00FF) + amt;
-            const B = (num & 0x0000FF) + amt;
-            return '#' + (0x1000000 + (R < 255 ? R < 1 ? 0 : R : 255) * 0x10000 +
-                (G < 255 ? G < 1 ? 0 : G : 255) * 0x100 +
-                (B < 255 ? B < 1 ? 0 : B : 255))
-                .toString(16).slice(1);
+                // Generate component based on input
+                let componentHTML = '';
+                
+                if (input.toLowerCase().includes('button')) {
+                    componentHTML = `
+                        <div style="padding: 40px; text-align: center;">
+                            <h3 style="color: var(--text-primary); margin-bottom: 20px;">Generated Button Component</h3>
+                            <div style="display: flex; gap: 20px; justify-content: center; flex-wrap: wrap;">
+                                <button style="padding: 14px 32px; background: linear-gradient(135deg, #8b5cf6, #06b6d4); color: white; border: none; border-radius: 12px; font-size: 16px; font-weight: 600; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3);" 
+                                        onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 20px rgba(139, 92, 246, 0.5)'" 
+                                        onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(139, 92, 246, 0.3)'">
+                                    Primary Button
+                                </button>
+                                <button style="padding: 14px 32px; background: transparent; color: var(--accent-purple); border: 2px solid var(--accent-purple); border-radius: 12px; font-size: 16px; font-weight: 600; cursor: pointer; transition: all 0.3s ease;" 
+                                        onmouseover="this.style.background='rgba(139, 92, 246, 0.1)'; this.style.borderColor='#06b6d4'; this.style.color='#06b6d4'" 
+                                        onmouseout="this.style.background='transparent'; this.style.borderColor='var(--accent-purple)'; this.style.color='var(--accent-purple)'">
+                                    Secondary Button
+                                </button>
+                                <button style="padding: 14px 32px; background: rgba(139, 92, 246, 0.1); color: var(--accent-purple); border: 1px solid rgba(139, 92, 246, 0.3); border-radius: 12px; font-size: 16px; font-weight: 600; cursor: pointer; transition: all 0.3s ease;" 
+                                        onmouseover="this.style.background='rgba(139, 92, 246, 0.2)'" 
+                                        onmouseout="this.style.background='rgba(139, 92, 246, 0.1)'">
+                                    Ghost Button
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                } else if (input.toLowerCase().includes('form')) {
+                    componentHTML = `
+                        <div style="padding: 40px; max-width: 500px; margin: 0 auto;">
+                            <h3 style="color: var(--text-primary); margin-bottom: 20px;">Generated Form Component</h3>
+                            <form style="background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 16px; padding: 30px;">
+                                <div style="margin-bottom: 20px;">
+                                    <label style="display: block; color: var(--text-primary); margin-bottom: 8px; font-size: 14px; font-weight: 500;">Name</label>
+                                    <input type="text" placeholder="Enter your name" style="width: 100%; padding: 12px; background: rgba(20, 20, 20, 0.8); border: 1px solid var(--glass-border); border-radius: 8px; color: var(--text-primary); font-size: 14px;" />
+                                </div>
+                                <div style="margin-bottom: 20px;">
+                                    <label style="display: block; color: var(--text-primary); margin-bottom: 8px; font-size: 14px; font-weight: 500;">Email</label>
+                                    <input type="email" placeholder="Enter your email" style="width: 100%; padding: 12px; background: rgba(20, 20, 20, 0.8); border: 1px solid var(--glass-border); border-radius: 8px; color: var(--text-primary); font-size: 14px;" />
+                                </div>
+                                <div style="margin-bottom: 20px;">
+                                    <label style="display: block; color: var(--text-primary); margin-bottom: 8px; font-size: 14px; font-weight: 500;">Message</label>
+                                    <textarea placeholder="Enter your message" rows="4" style="width: 100%; padding: 12px; background: rgba(20, 20, 20, 0.8); border: 1px solid var(--glass-border); border-radius: 8px; color: var(--text-primary); font-size: 14px; resize: vertical;"></textarea>
+                                </div>
+                                <button type="submit" style="width: 100%; padding: 14px; background: linear-gradient(135deg, #8b5cf6, #06b6d4); color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; transition: all 0.3s ease;">
+                                    Submit Form
+                                </button>
+                            </form>
+                        </div>
+                    `;
+                } else if (input.toLowerCase().includes('card')) {
+                    componentHTML = `
+                        <div style="padding: 40px;">
+                            <h3 style="color: var(--text-primary); margin-bottom: 20px; text-align: center;">Generated Card Component</h3>
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; max-width: 1000px; margin: 0 auto;">
+                                <div style="background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 16px; overflow: hidden; transition: all 0.3s ease;" 
+                                     onmouseover="this.style.transform='translateY(-4px)'; this.style.boxShadow='0 8px 30px rgba(139, 92, 246, 0.3)'" 
+                                     onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'">
+                                    <div style="height: 200px; background: linear-gradient(135deg, #8b5cf6, #06b6d4);"></div>
+                                    <div style="padding: 24px;">
+                                        <h4 style="color: var(--text-primary); margin-bottom: 12px; font-size: 20px; font-weight: 600;">Card Title</h4>
+                                        <p style="color: var(--text-secondary); margin-bottom: 20px; line-height: 1.6;">This is a beautiful card component with image placeholder and content area.</p>
+                                        <button style="padding: 10px 20px; background: var(--accent-purple); color: white; border: none; border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer;">Learn More</button>
+                                    </div>
+                                </div>
+                                <div style="background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 16px; overflow: hidden; transition: all 0.3s ease;" 
+                                     onmouseover="this.style.transform='translateY(-4px)'; this.style.boxShadow='0 8px 30px rgba(6, 182, 212, 0.3)'" 
+                                     onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'">
+                                    <div style="height: 200px; background: linear-gradient(135deg, #06b6d4, #8b5cf6);"></div>
+                                    <div style="padding: 24px;">
+                                        <h4 style="color: var(--text-primary); margin-bottom: 12px; font-size: 20px; font-weight: 600;">Another Card</h4>
+                                        <p style="color: var(--text-secondary); margin-bottom: 20px; line-height: 1.6;">Cards can have different gradient styles and hover effects.</p>
+                                        <button style="padding: 10px 20px; background: var(--accent-secondary); color: white; border: none; border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer;">Explore</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                } else if (input.toLowerCase().includes('nav')) {
+                    componentHTML = `
+                        <div style="padding: 40px;">
+                            <h3 style="color: var(--text-primary); margin-bottom: 20px; text-align: center;">Generated Navigation Component</h3>
+                            <nav style="background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 12px; padding: 16px 24px;">
+                                <div style="display: flex; justify-content: space-between; align-items: center;">
+                                    <div style="font-size: 20px; font-weight: 700; background: linear-gradient(135deg, #8b5cf6, #06b6d4); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Logo</div>
+                                    <div style="display: flex; gap: 30px; align-items: center;">
+                                        <a href="#" style="color: var(--text-primary); text-decoration: none; font-weight: 500; transition: color 0.3s ease;" onmouseover="this.style.color='var(--accent-purple)'" onmouseout="this.style.color='var(--text-primary)'">Home</a>
+                                        <a href="#" style="color: var(--text-primary); text-decoration: none; font-weight: 500; transition: color 0.3s ease;" onmouseover="this.style.color='var(--accent-purple)'" onmouseout="this.style.color='var(--text-primary)'">Features</a>
+                                        <a href="#" style="color: var(--text-primary); text-decoration: none; font-weight: 500; transition: color 0.3s ease;" onmouseover="this.style.color='var(--accent-purple)'" onmouseout="this.style.color='var(--text-primary)'">Pricing</a>
+                                        <a href="#" style="color: var(--text-primary); text-decoration: none; font-weight: 500; transition: color 0.3s ease;" onmouseover="this.style.color='var(--accent-purple)'" onmouseout="this.style.color='var(--text-primary)'">About</a>
+                                        <button style="padding: 8px 20px; background: linear-gradient(135deg, #8b5cf6, #06b6d4); color: white; border: none; border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer;">Get Started</button>
+                                    </div>
+                                </div>
+                            </nav>
+                        </div>
+                    `;
+                } else {
+                    // Generic component for other descriptions
+                    componentHTML = `
+                        <div style="padding: 40px; text-align: center;">
+                            <h3 style="color: var(--text-primary); margin-bottom: 20px;">Generated Custom Component</h3>
+                            <div style="max-width: 600px; margin: 0 auto; padding: 30px; background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 16px;">
+                                <div style="width: 80px; height: 80px; margin: 0 auto 20px; background: linear-gradient(135deg, #8b5cf6, #06b6d4); border-radius: 20px; display: flex; align-items: center; justify-content: center; font-size: 36px;">
+                                    ✨
+                                </div>
+                                <h4 style="color: var(--text-primary); font-size: 24px; margin-bottom: 12px;">Custom Component</h4>
+                                <p style="color: var(--text-secondary); margin-bottom: 20px; line-height: 1.6;">
+                                    Component generated based on your description: "${input}"
+                                </p>
+                                <div style="display: flex; gap: 12px; justify-content: center;">
+                                    <button style="padding: 10px 20px; background: var(--accent-purple); color: white; border: none; border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer;">Action 1</button>
+                                    <button style="padding: 10px 20px; background: transparent; color: var(--accent-purple); border: 1px solid var(--accent-purple); border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer;">Action 2</button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                // Display the component
+                previewArea.innerHTML = componentHTML;
+                
+                // Mark as selected
+                selectedComponent = 'ai-generated';
+                
+                // Update code view if visible
+                if (currentView === 'code') {
+                    showCodeView();
+                }
+            }, 2000);
         }
 
         // Export component
@@ -3108,17 +2883,11 @@ export default ${componentName};`;
         }
 
         // Update component property and refresh preview
-        window.updateComponentProperty = function(componentId, section, property, value) {
+        function updateComponentProperty(componentId, section, property, value) {
             console.log(`Updating ${componentId} - ${section}.${property}:`, value);
             
-            // Store the property value in componentStates
-            if (!componentStates[componentId]) {
-                componentStates[componentId] = {};
-            }
-            if (!componentStates[componentId][section]) {
-                componentStates[componentId][section] = {};
-            }
-            componentStates[componentId][section][property] = value;
+            // Here you would update the preview based on the property changes
+            // For now, just log the change
             
             // Trigger a preview update
             updateComponentPreview(componentId, section, property, value);
@@ -3234,21 +3003,6 @@ export default ${componentName};`;
                     content: { items: 'Home,Category,Product', separator: '/' },
                     appearance: { showHome: true, showCurrent: true },
                     colors: { linkColor: '#6366f1', textColor: '#6b7280', separatorColor: '#9ca3af' }
-                },
-                'animated-gradient': {
-                    gradient: { startColor: '#667eea', endColor: '#764ba2', direction: '135deg' },
-                    appearance: { type: 'animated', speed: 'medium' },
-                    content: { title: 'Animated Gradient Background' }
-                },
-                'mesh-gradient': {
-                    gradient: { startColor: '#667eea', endColor: '#764ba2', direction: '135deg' },
-                    appearance: { type: 'mesh', complexity: 'medium' },
-                    content: { title: 'Mesh Gradient Background' }
-                },
-                'particle-gradient': {
-                    gradient: { startColor: '#667eea', endColor: '#764ba2', direction: '135deg' },
-                    appearance: { type: 'particle', particleCount: 50 },
-                    content: { title: 'Particle Gradient Background' }
                 }
             };
             
@@ -3438,48 +3192,6 @@ export default ${componentName};`;
                     `;
                     break;
                     
-                case 'animated-gradient':
-                case 'mesh-gradient':
-                case 'particle-gradient':
-                case 'aurora-gradient':
-                case 'wave-gradient':
-                case 'blob-gradient':
-                case 'floating-gradient':
-                case 'geometric-gradient':
-                    const gradientType = componentId.replace('-gradient', '');
-                    const startColor = state.gradient?.startColor || '#667eea';
-                    const endColor = state.gradient?.endColor || '#764ba2';
-                    const direction = state.gradient?.direction || '135deg';
-                    
-                    previewHTML = `
-                        <div style="
-                            width: 100%;
-                            height: 300px;
-                            background: linear-gradient(${direction}, ${startColor}, ${endColor});
-                            border-radius: 12px;
-                            position: relative;
-                            overflow: hidden;
-                            display: flex;
-                            align-items: center;
-                            justify-content: center;
-                            color: white;
-                            font-size: 18px;
-                            font-weight: 600;
-                            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
-                            animation: ${gradientType === 'animated' ? 'gradientAnimation 6s ease infinite' : 'none'};
-                        ">
-                            ${gradientType.charAt(0).toUpperCase() + gradientType.slice(1)} Gradient Background
-                        </div>
-                        <style>
-                            @keyframes gradientAnimation {
-                                0% { background: linear-gradient(${direction}, ${startColor}, ${endColor}); }
-                                50% { background: linear-gradient(${direction}, ${endColor}, ${startColor}); }
-                                100% { background: linear-gradient(${direction}, ${startColor}, ${endColor}); }
-                            }
-                        </style>
-                    `;
-                    break;
-                    
                 default:
                     previewHTML = `
                         <div style="color: #6b7280; font-style: italic;">
@@ -3502,12 +3214,101 @@ export default ${componentName};`;
             return sizes[size] || sizes['medium'];
         }
 
-        // Keyboard shortcuts
+        // Header search functionality
+        function handleSearchKeydown(event) {
+            if (event.key === 'Escape') {
+                event.target.blur();
+                event.target.value = '';
+                filterComponents('');
+            }
+        }
+
+        function filterComponents(searchTerm) {
+            // This will filter components in the gallery section
+            const cards = document.querySelectorAll('.component-card');
+            const searchLower = searchTerm.toLowerCase();
+            
+            cards.forEach(card => {
+                const title = card.querySelector('h3')?.textContent?.toLowerCase() || '';
+                const description = card.querySelector('p')?.textContent?.toLowerCase() || '';
+                const isVisible = title.includes(searchLower) || description.includes(searchLower);
+                
+                card.style.display = isVisible ? 'block' : 'none';
+            });
+
+            // Update the main search input too
+            const mainSearchInput = document.querySelector('.search-input');
+            if (mainSearchInput && mainSearchInput !== event.target) {
+                mainSearchInput.value = searchTerm;
+            }
+        }
+
+        function selectCategory(button, category) {
+            // Update active button
+            document.querySelectorAll('.header-categories .category-btn').forEach(btn => {
+                btn.classList.remove('active');
+                btn.style.background = 'var(--glass-bg)';
+                btn.style.color = 'var(--text-secondary)';
+                btn.style.border = '1px solid var(--glass-border)';
+            });
+            
+            button.classList.add('active');
+            button.style.background = 'var(--accent-purple)';
+            button.style.color = 'white';
+            button.style.border = 'none';
+
+            // Filter components by category
+            const cards = document.querySelectorAll('.component-card');
+            cards.forEach(card => {
+                const cardCategory = card.dataset.category?.toLowerCase() || '';
+                const isVisible = category === 'all' || cardCategory === category;
+                card.style.display = isVisible ? 'block' : 'none';
+            });
+
+            // Update main category buttons if they exist
+            const mainCategoryButtons = document.querySelectorAll('.component-categories .category-chip');
+            mainCategoryButtons.forEach(chip => {
+                chip.classList.remove('active');
+                if (chip.textContent.toLowerCase() === category || (category === 'all' && chip.textContent.toLowerCase() === 'all')) {
+                    chip.classList.add('active');
+                }
+            });
+        }
+
+        // Enhanced keyboard shortcuts
         document.addEventListener('keydown', (e) => {
             if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
                 e.preventDefault();
-                document.querySelector('.search-input').focus();
+                const headerSearch = document.getElementById('headerSearchInput');
+                const mainSearch = document.querySelector('.search-input');
+                
+                // Focus header search first, fallback to main search
+                if (headerSearch) {
+                    headerSearch.focus();
+                } else if (mainSearch) {
+                    mainSearch.focus();
+                }
             }
+        });
+
+        // Add hover effects to category buttons
+        document.addEventListener('DOMContentLoaded', function() {
+            const categoryButtons = document.querySelectorAll('.header-categories .category-btn:not(.active)');
+            categoryButtons.forEach(button => {
+                button.addEventListener('mouseenter', function() {
+                    if (!this.classList.contains('active')) {
+                        this.style.background = 'rgba(139, 92, 246, 0.1)';
+                        this.style.borderColor = 'var(--accent-purple)';
+                    }
+                });
+                
+                button.addEventListener('mouseleave', function() {
+                    if (!this.classList.contains('active')) {
+                        this.style.background = 'var(--glass-bg)';
+                        this.style.borderColor = 'var(--glass-border)';
+                    }
+                });
+            });
         });
     </script>
 </body>
