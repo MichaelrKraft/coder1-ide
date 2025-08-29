@@ -277,4 +277,160 @@ router.get('/docs', (req, res) => {
     });
 });
 
+// Template and workflow endpoints
+const SubAgentManager = require('../services/sub-agent-manager');
+const JournalExportService = require('../services/journal-export');
+const MemoryArchiverService = require('../services/memory-archiver');
+
+const subAgentManager = new SubAgentManager();
+const journalExporter = new JournalExportService();
+const memoryArchiver = new MemoryArchiverService();
+
+// Initialize services
+subAgentManager.initialize().catch(console.error);
+memoryArchiver.initialize().catch(console.error);
+
+// Template system endpoints
+router.get('/templates', async (req, res) => {
+    try {
+        const templates = await subAgentManager.getAvailableWorkflows();
+        res.json({
+            success: true,
+            templates,
+            count: templates.length
+        });
+    } catch (error) {
+        console.error('❌ Error fetching templates:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+router.get('/templates/search', async (req, res) => {
+    try {
+        const { q } = req.query;
+        if (!q) {
+            return res.status(400).json({ success: false, error: 'Query parameter "q" is required' });
+        }
+        
+        const results = await subAgentManager.searchTemplates(q);
+        res.json({
+            success: true,
+            results,
+            count: results.length,
+            query: q
+        });
+    } catch (error) {
+        console.error('❌ Error searching templates:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+router.get('/workflows/:name', async (req, res) => {
+    try {
+        const { name } = req.params;
+        const workflow = await subAgentManager.getSuggestedTeamForWorkflow(name);
+        
+        if (!workflow) {
+            return res.status(404).json({ success: false, error: 'Workflow not found' });
+        }
+        
+        res.json({
+            success: true,
+            workflow
+        });
+    } catch (error) {
+        console.error('❌ Error fetching workflow:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+// Journal export endpoints
+router.get('/journal/export', async (req, res) => {
+    try {
+        const { format = 'markdown' } = req.query;
+        const journal = await journalExporter.exportJournal(format);
+        
+        if (format === 'markdown') {
+            res.set({
+                'Content-Type': 'text/markdown',
+                'Content-Disposition': 'attachment; filename="JOURNAL.md"'
+            });
+            res.send(journal);
+        } else {
+            res.json({
+                success: true,
+                journal,
+                format
+            });
+        }
+    } catch (error) {
+        console.error('❌ Error exporting journal:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+router.post('/journal/save', async (req, res) => {
+    try {
+        const { filename = 'JOURNAL.md' } = req.body;
+        const journal = await journalExporter.exportJournal('markdown');
+        const filePath = await journalExporter.saveJournalToFile(journal, filename);
+        
+        res.json({
+            success: true,
+            message: 'Journal saved successfully',
+            filePath
+        });
+    } catch (error) {
+        console.error('❌ Error saving journal:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+// Memory archiving endpoints
+router.get('/memory/status', async (req, res) => {
+    try {
+        const checkResults = await memoryArchiver.checkAndArchiveAll();
+        const stats = await memoryArchiver.getArchiveStats();
+        
+        res.json({
+            success: true,
+            files: checkResults,
+            archiveStats: stats
+        });
+    } catch (error) {
+        console.error('❌ Error checking memory status:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+router.post('/memory/archive', async (req, res) => {
+    try {
+        const results = await memoryArchiver.checkAndArchiveAll();
+        
+        res.json({
+            success: true,
+            message: 'Memory archiving completed',
+            results
+        });
+    } catch (error) {
+        console.error('❌ Error archiving memory:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+router.get('/memory/archives', async (req, res) => {
+    try {
+        const archives = await memoryArchiver.listArchives();
+        
+        res.json({
+            success: true,
+            archives,
+            count: archives.length
+        });
+    } catch (error) {
+        console.error('❌ Error listing archives:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
 module.exports = router;

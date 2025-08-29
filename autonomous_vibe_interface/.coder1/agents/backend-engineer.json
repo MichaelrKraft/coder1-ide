@@ -9,5 +9,70 @@
     "write",
     "search",
     "bash"
-  ]
+  ],
+  "templates": {
+    "jwt-auth": {
+      "pattern": "JWT authentication system with refresh tokens",
+      "dependencies": ["jsonwebtoken", "bcryptjs", "express"],
+      "relatedAgents": ["frontend-engineer", "security-analyst"],
+      "crossReferences": ["frontend-engineer.authentication-ui", "security-analyst.token-security"],
+      "commonIssues": [
+        "Token expiration and refresh logic",
+        "Secure storage of refresh tokens",
+        "Rate limiting on auth endpoints",
+        "Password strength validation"
+      ],
+      "bestPractices": [
+        "Use HTTP-only cookies for refresh tokens",
+        "Implement proper bcrypt hashing",
+        "Add rate limiting to prevent brute force",
+        "Include proper CORS configuration"
+      ],
+      "workflow": "auth-full-stack"
+    },
+    "rest-api": {
+      "pattern": "RESTful API with validation and error handling",
+      "dependencies": ["express", "joi", "helmet"],
+      "relatedAgents": ["frontend-engineer", "qa-testing"],
+      "crossReferences": ["frontend-engineer.api-integration", "qa-testing.api-tests"],
+      "commonIssues": [
+        "Consistent error response format",
+        "Input validation and sanitization",
+        "Proper HTTP status codes",
+        "API versioning strategy"
+      ],
+      "bestPractices": [
+        "Use middleware for validation",
+        "Implement proper error handling",
+        "Add request/response logging",
+        "Include comprehensive API documentation"
+      ],
+      "workflow": "crud-with-ui"
+    },
+    "database-schema": {
+      "pattern": "Database design with proper relationships and constraints",
+      "dependencies": ["postgresql", "prisma"],
+      "relatedAgents": ["architecture"],
+      "crossReferences": ["architecture.data-modeling"],
+      "commonIssues": [
+        "Foreign key constraint violations",
+        "Index optimization for queries",
+        "Migration strategy planning",
+        "Data validation at DB level"
+      ],
+      "bestPractices": [
+        "Use proper data types and constraints",
+        "Implement database-level validations",
+        "Create appropriate indexes",
+        "Plan for soft deletes"
+      ],
+      "workflow": "crud-with-ui"
+    }
+  },
+  "templateIntegration": {
+    "version": "1.0.0", 
+    "lastUpdated": "2025-01-29",
+    "supportedWorkflows": ["auth-full-stack", "crud-with-ui", "performance-audit"],
+    "preferredCollaborators": ["frontend-engineer", "security-analyst", "qa-testing"]
+  }
 }

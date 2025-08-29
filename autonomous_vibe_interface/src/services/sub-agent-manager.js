@@ -15,11 +15,15 @@ class SubAgentManager extends EventEmitter {
         
         this.logger = options.logger || console;
         this.projectRoot = options.projectRoot || process.cwd();
-        this.agentsDir = path.join(this.projectRoot, '.claude', 'agents');
-        this.userAgentsDir = path.join(process.env.HOME, '.claude', 'agents');
+        this.agentsDir = path.join(this.projectRoot, '.coder1', 'agents');
+        this.userAgentsDir = path.join(process.env.HOME, '.coder1', 'agents');
         
         // Cache for loaded agent configurations
         this.agentCache = new Map();
+        
+        // Template system
+        this.templates = new Map();
+        this.workflows = new Map();
         
         // Preset configurations
         this.presets = {
@@ -80,6 +84,9 @@ class SubAgentManager extends EventEmitter {
             // Ensure agents directory exists
             await this.ensureAgentsDirectory();
             
+            // Load templates and workflows first
+            await this.loadTemplateSystem();
+            
             // Load all available agents
             await this.loadAvailableAgents();
             
@@ -100,6 +107,36 @@ class SubAgentManager extends EventEmitter {
         } catch {
             await fs.mkdir(this.agentsDir, { recursive: true });
             this.logger.info(`Created agents directory: ${this.agentsDir}`);
+        }
+    }
+
+    /**
+     * Load template system from templates.json
+     */
+    async loadTemplateSystem() {
+        try {
+            const templatesPath = path.join(this.agentsDir, 'templates.json');
+            const content = await fs.readFile(templatesPath, 'utf-8');
+            const templateData = JSON.parse(content);
+            
+            // Load workflows
+            if (templateData.workflows) {
+                Object.entries(templateData.workflows).forEach(([key, workflow]) => {
+                    this.workflows.set(key, workflow);
+                });
+            }
+            
+            // Load template categories  
+            if (templateData.templateCategories) {
+                Object.entries(templateData.templateCategories).forEach(([key, category]) => {
+                    this.templates.set(key, category);
+                });
+            }
+            
+            this.logger.info(`✅ Loaded ${this.workflows.size} workflows and ${this.templates.size} template categories`);
+        } catch (error) {
+            this.logger.warn('Template system not found or failed to load:', error.message);
+            // Continue without templates - this is optional functionality
         }
     }
 
@@ -145,10 +182,21 @@ class SubAgentManager extends EventEmitter {
         try {
             const files = await fs.readdir(directory);
             const mdFiles = files.filter(f => f.endsWith('.md'));
+            const jsonFiles = files.filter(f => f.endsWith('.json') && f !== 'templates.json');
             
+            // Load markdown agents
             for (const file of mdFiles) {
                 const filePath = path.join(directory, file);
                 const config = await this.loadAgentConfig(filePath);
+                if (config) {
+                    agents.set(config.name, config);
+                }
+            }
+            
+            // Load JSON agents with templates
+            for (const file of jsonFiles) {
+                const filePath = path.join(directory, file);
+                const config = await this.loadJSONAgentConfig(filePath);
                 if (config) {
                     agents.set(config.name, config);
                 }
@@ -186,6 +234,32 @@ class SubAgentManager extends EventEmitter {
             };
         } catch (error) {
             this.logger.error(`Failed to load agent config from ${filePath}:`, error);
+            return null;
+        }
+    }
+
+    /**
+     * Load a single agent configuration from a JSON file with templates
+     */
+    async loadJSONAgentConfig(filePath) {
+        try {
+            const content = await fs.readFile(filePath, 'utf-8');
+            const config = JSON.parse(content);
+            
+            return {
+                name: config.name,
+                description: config.description,
+                color: config.color,
+                model: config.model,
+                tools: config.tools || [],
+                instructions: config.instructions,
+                templates: config.templates || {},
+                templateIntegration: config.templateIntegration || {},
+                filePath: filePath,
+                type: 'json'
+            };
+        } catch (error) {
+            this.logger.error(`Failed to load JSON agent config from ${filePath}:`, error);
             return null;
         }
     }
@@ -243,6 +317,125 @@ class SubAgentManager extends EventEmitter {
             'default': 'Default Agents'
         };
         return names[presetId] || presetId;
+    }
+
+    /**
+     * Get workflow configuration by name
+     */
+    getWorkflow(workflowName) {
+        return this.workflows.get(workflowName);
+    }
+
+    /**
+     * Get all available workflows
+     */
+    getAvailableWorkflows() {
+        return Array.from(this.workflows.keys());
+    }
+
+    /**
+     * Get agent templates by agent name
+     */
+    getAgentTemplates(agentName) {
+        const agent = this.getAgent(agentName);
+        return agent?.templates || {};
+    }
+
+    /**
+     * Search templates by pattern or workflow
+     */
+    searchTemplates(query) {
+        const results = [];
+        
+        // Search through all loaded agents for templates
+        for (const [agentName, agent] of this.agentCache) {
+            if (agent.templates) {
+                for (const [templateName, template] of Object.entries(agent.templates)) {
+                    if (template.pattern.toLowerCase().includes(query.toLowerCase()) ||
+                        template.workflow === query ||
+                        templateName.toLowerCase().includes(query.toLowerCase())) {
+                        results.push({
+                            agentName,
+                            templateName,
+                            template,
+                            score: this.calculateTemplateRelevance(template, query)
+                        });
+                    }
+                }
+            }
+        }
+        
+        // Sort by relevance score
+        return results.sort((a, b) => b.score - a.score);
+    }
+
+    /**
+     * Calculate template relevance score for search
+     */
+    calculateTemplateRelevance(template, query) {
+        let score = 0;
+        const queryLower = query.toLowerCase();
+        
+        // Exact matches get highest score
+        if (template.pattern.toLowerCase().includes(queryLower)) score += 10;
+        if (template.workflow === query) score += 15;
+        
+        // Partial matches
+        template.dependencies?.forEach(dep => {
+            if (dep.toLowerCase().includes(queryLower)) score += 5;
+        });
+        
+        template.commonIssues?.forEach(issue => {
+            if (issue.toLowerCase().includes(queryLower)) score += 3;
+        });
+        
+        return score;
+    }
+
+    /**
+     * Get suggested agent team for a workflow
+     */
+    getSuggestedTeamForWorkflow(workflowName) {
+        const workflow = this.getWorkflow(workflowName);
+        if (!workflow) {
+            return null;
+        }
+        
+        return {
+            workflow: workflow.name,
+            description: workflow.description,
+            category: workflow.category,
+            agents: workflow.agents || [],
+            sequence: workflow.sequence || [],
+            estimatedTime: this.estimateWorkflowTime(workflow),
+            complexity: this.assessWorkflowComplexity(workflow)
+        };
+    }
+
+    /**
+     * Estimate time for workflow completion
+     */
+    estimateWorkflowTime(workflow) {
+        const baseTime = 30; // 30 minutes base
+        const agentTime = (workflow.agents?.length || 1) * 15; // 15 min per agent
+        const sequenceTime = (workflow.sequence?.length || 1) * 10; // 10 min per step
+        
+        return `${baseTime + agentTime + sequenceTime} minutes`;
+    }
+
+    /**
+     * Assess workflow complexity
+     */
+    assessWorkflowComplexity(workflow) {
+        const agentCount = workflow.agents?.length || 1;
+        const stepCount = workflow.sequence?.length || 1;
+        const issueCount = workflow.commonIssues?.length || 1;
+        
+        const complexityScore = agentCount * 2 + stepCount * 3 + issueCount;
+        
+        if (complexityScore <= 10) return 'Simple';
+        if (complexityScore <= 20) return 'Moderate'; 
+        return 'Complex';
     }
 
     /**

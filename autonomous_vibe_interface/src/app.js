@@ -322,7 +322,7 @@ app.use('/api/license', require('./routes/licensing'));
 // API routes with specific rate limiting
 app.use('/api/anthropic', anthropicRateLimit, require('./routes/anthropic'));
 app.use('/api/openai', openaiRateLimit, require('./routes/openai'));
-// app.use('/api/agent', require('./routes/agent-simple'));  // TEMPORARILY DISABLED - causes memory issues
+app.use('/api/agent', require('./routes/agent-simple'));  // Re-enabled with memory optimizations
 app.use('/api/voice', require('./routes/voice'));
 app.use('/api/infinite', require('./routes/infinite'));
 app.use('/api/hivemind', require('./routes/hivemind'));
@@ -706,7 +706,7 @@ app.get('/ai-consultation', (req, res) => {
 // IDE route - serve from ide-old-backup with working Menu button
 app.get(['/ide', '/ide/'], (req, res) => {
     console.log('[IDE Route] Handling request for:', req.path);
-    console.warn('✅ SERVING IDE FROM BACKUP: Using public/ide-old-backup/index.html with Menu button and 7-option navigation');
+    console.warn('✅ SERVING IDE: Using public/ide/index.html with Menu button and 8-option navigation');
     
     const fs = require('fs');
     const ideHtmlPath = path.join(__dirname, '../public/ide-old-backup/index.html');
@@ -743,7 +743,7 @@ app.get(['/ide', '/ide/'], (req, res) => {
 
 // Logo routes removed - no longer needed after cleanup
 
-// Serve IDE static files from ide-old-backup directory (working version with Menu button)
+// Serve IDE static files from ide directory
 // Add no-cache headers for CSS files to prevent stale styles
 app.use('/ide', express.static(path.join(__dirname, '../public/ide-old-backup'), {
     setHeaders: (res, path) => {

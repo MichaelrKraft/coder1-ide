@@ -9,5 +9,70 @@
     "write",
     "search",
     "bash"
-  ]
+  ],
+  "templates": {
+    "react-component": {
+      "pattern": "Create reusable React component with TypeScript",
+      "dependencies": ["react", "@types/react", "typescript"],
+      "relatedAgents": ["ux-designer", "qa-testing"],
+      "crossReferences": ["ux-designer.component-specs", "qa-testing.component-tests"],
+      "commonIssues": [
+        "State management and prop drilling",
+        "Re-render optimization with React.memo",
+        "TypeScript prop interface definitions",
+        "Accessibility attribute implementation"
+      ],
+      "bestPractices": [
+        "Use compound components for complex UI patterns",
+        "Implement proper TypeScript interfaces",
+        "Include accessibility attributes by default",
+        "Create comprehensive Storybook documentation"
+      ],
+      "codeTemplate": "export interface {ComponentName}Props {\n  // Define props here\n}\n\nexport const {ComponentName}: React.FC<{ComponentName}Props> = (props) => {\n  // Component implementation\n};"
+    },
+    "authentication-ui": {
+      "pattern": "User authentication interface components",
+      "dependencies": ["react", "react-hook-form", "yup"],
+      "relatedAgents": ["backend-engineer", "security-analyst"],
+      "crossReferences": ["backend-engineer.jwt-auth", "security-analyst.input-validation"],
+      "commonIssues": [
+        "Form validation synchronization",
+        "Secure token storage in browser",
+        "Login state management across app",
+        "Password strength validation UI"
+      ],
+      "bestPractices": [
+        "Use HTTP-only cookies for sensitive tokens",
+        "Implement proper form validation",
+        "Add loading states for auth actions",
+        "Include password visibility toggles"
+      ],
+      "workflow": "auth-full-stack"
+    },
+    "form-handling": {
+      "pattern": "Form components with validation and submission",
+      "dependencies": ["react-hook-form", "yup", "typescript"],
+      "relatedAgents": ["backend-engineer", "qa-testing"],
+      "crossReferences": ["backend-engineer.validation-middleware", "qa-testing.form-tests"],
+      "commonIssues": [
+        "Client-server validation mismatch",
+        "Form state persistence on errors",
+        "File upload handling",
+        "Dynamic form field generation"
+      ],
+      "bestPractices": [
+        "Use controlled components for form inputs",
+        "Implement debounced validation",
+        "Add proper error boundaries",
+        "Include accessible error messages"
+      ],
+      "workflow": "crud-with-ui"
+    }
+  },
+  "templateIntegration": {
+    "version": "1.0.0",
+    "lastUpdated": "2025-01-29",
+    "supportedWorkflows": ["auth-full-stack", "crud-with-ui", "component-library", "performance-audit"],
+    "preferredCollaborators": ["ux-designer", "backend-engineer", "qa-testing"]
+  }
 }

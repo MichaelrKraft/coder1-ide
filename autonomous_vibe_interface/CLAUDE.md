@@ -4,6 +4,12 @@
 
 **🚨 CRITICAL: Before working on this project, read `/MASTER_CONTEXT.md` completely**
 
+**🆕 NEW (Jan 29, 2025)**: Claude Conductor features added - see `CLAUDE_CONDUCTOR_FEATURES.md` for:
+- Template System for cross-agent workflows
+- Journal Export (JSON → Markdown conversion)
+- Auto-Archiving memory management
+- New API endpoints at `/api/agent/*`
+
 This document contains:
 - Complete YouTube video foundation that inspired the entire system
 - Evolution from tmux orchestrator concept to current AI Team implementation
@@ -49,6 +55,45 @@ We're building an IDE that bridges the gap between AI capabilities and human cre
 - **Integrated Terminal**: Full PTY support with AI supervision
 - **Session Summaries**: Comprehensive development reports for handoffs
 - **Multi-Format Exports**: Markdown, JSON, HTML for any workflow
+
+---
+
+## 🚀 CURRENT DEPLOYMENT STATUS (August 29, 2025)
+
+### ✅ IDE Menu Button Version - DEPLOYED
+
+**IMPORTANT FOR ALL CLAUDE AGENTS**: The correct Menu button version is now deployed!
+
+**What you should see at `http://localhost:3000/ide`**:
+- **Left**: File, Edit, View, Run, Help menu bar
+- **Right**: **"Menu"** button with 8 navigation options
+
+**Menu Dropdown Options**:
+1. 🏠 Dashboard  
+2. 🧩 Components
+3. 📄 Templates  
+4. 🪝 Hooks
+5. ✨ Features
+6. 📚 Documentation
+7. ⚙️ Settings  
+8. ℹ️ About
+
+**Current Build Files**:
+- JavaScript: `main.17b4a14b.js`
+- CSS: `main.954ba485.css`
+- Source Branch: `stable-terminal-working-2025-01-27`
+
+**❌ If you see a "📚 Docs" button instead of "Menu"**: Wrong version is deployed!
+
+**Recovery Commands**:
+```bash
+cd /Users/michaelkraft/autonomous_vibe_interface
+git checkout stable-terminal-working-2025-01-27
+cd coder1-ide/coder1-ide-source && npm run build
+cp -r build/* ../../public/ide/
+```
+
+**Version Verification**: Check `/public/ide/VERSION.md` for detailed information.
 
 ---
 
