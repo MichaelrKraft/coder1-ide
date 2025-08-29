@@ -198,73 +198,73 @@ function getCommonWireframes(projectType) {
 
     // Add project-type specific wireframes
     switch (projectType) {
-        case 'e-commerce':
-            commonWireframes.push(
-                {
-                    id: 'product-list',
-                    name: 'Product Catalog',
-                    type: 'catalog',
-                    description: 'Product listing with filters and search',
-                    elements: [
-                        { type: 'filters', content: 'Product filters and search bar' },
-                        { type: 'grid', content: 'Product grid with images and details' },
-                        { type: 'pagination', content: 'Page navigation controls' }
-                    ],
-                    layout: 'grid',
-                    priority: 'high'
-                },
-                {
-                    id: 'shopping-cart',
-                    name: 'Shopping Cart',
-                    type: 'cart',
-                    description: 'Shopping cart and checkout interface',
-                    elements: [
-                        { type: 'items', content: 'Cart items list with quantities' },
-                        { type: 'summary', content: 'Order summary with totals' },
-                        { type: 'checkout', content: 'Checkout button and options' }
-                    ],
-                    layout: 'two-column',
-                    priority: 'high'
-                }
-            );
-            break;
+    case 'e-commerce':
+        commonWireframes.push(
+            {
+                id: 'product-list',
+                name: 'Product Catalog',
+                type: 'catalog',
+                description: 'Product listing with filters and search',
+                elements: [
+                    { type: 'filters', content: 'Product filters and search bar' },
+                    { type: 'grid', content: 'Product grid with images and details' },
+                    { type: 'pagination', content: 'Page navigation controls' }
+                ],
+                layout: 'grid',
+                priority: 'high'
+            },
+            {
+                id: 'shopping-cart',
+                name: 'Shopping Cart',
+                type: 'cart',
+                description: 'Shopping cart and checkout interface',
+                elements: [
+                    { type: 'items', content: 'Cart items list with quantities' },
+                    { type: 'summary', content: 'Order summary with totals' },
+                    { type: 'checkout', content: 'Checkout button and options' }
+                ],
+                layout: 'two-column',
+                priority: 'high'
+            }
+        );
+        break;
             
-        case 'blog':
-        case 'content-management':
-            commonWireframes.push(
-                {
-                    id: 'article-list',
-                    name: 'Article Listing',
-                    type: 'content',
-                    description: 'Blog posts or articles listing page',
-                    elements: [
-                        { type: 'search', content: 'Content search and category filters' },
-                        { type: 'articles', content: 'Article previews with thumbnails' },
-                        { type: 'sidebar', content: 'Categories and recent posts sidebar' }
-                    ],
-                    layout: 'blog',
-                    priority: 'high'
-                }
-            );
-            break;
+    case 'blog':
+    case 'content-management':
+        commonWireframes.push(
+            {
+                id: 'article-list',
+                name: 'Article Listing',
+                type: 'content',
+                description: 'Blog posts or articles listing page',
+                elements: [
+                    { type: 'search', content: 'Content search and category filters' },
+                    { type: 'articles', content: 'Article previews with thumbnails' },
+                    { type: 'sidebar', content: 'Categories and recent posts sidebar' }
+                ],
+                layout: 'blog',
+                priority: 'high'
+            }
+        );
+        break;
             
-        case 'social':
-            commonWireframes.push(
-                {
-                    id: 'feed',
-                    name: 'Activity Feed',
-                    type: 'social',
-                    description: 'Social activity feed and interactions',
-                    elements: [
-                        { type: 'compose', content: 'Post creation area' },
-                        { type: 'feed', content: 'Activity feed with posts and interactions' },
-                        { type: 'sidebar', content: 'Friends/connections and suggestions' }
-                    ],
-                    layout: 'feed',
-                    priority: 'high'
-                }
-            );
-            break;
+    case 'social':
+        commonWireframes.push(
+            {
+                id: 'feed',
+                name: 'Activity Feed',
+                type: 'social',
+                description: 'Social activity feed and interactions',
+                elements: [
+                    { type: 'compose', content: 'Post creation area' },
+                    { type: 'feed', content: 'Activity feed with posts and interactions' },
+                    { type: 'sidebar', content: 'Friends/connections and suggestions' }
+                ],
+                layout: 'feed',
+                priority: 'high'
+            }
+        );
+        break;
     }
 
     return commonWireframes;

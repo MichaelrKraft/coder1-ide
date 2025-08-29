@@ -1,0 +1,342 @@
+{
+  "session_1756314769893_9e1fyzxrm": {
+    "id": "session_1756314769893_9e1fyzxrm",
+    "name": "Test Session from Coder1",
+    "description": "Testing session persistence feature",
+    "createdAt": 1756314769893,
+    "updatedAt": 1756402001751,
+    "metadata": {}
+  },
+  "session_1756386602909_8u3fxslfb": {
+    "id": "session_1756386602909_8u3fxslfb",
+    "name": "IDE Session 8/28/2025, 7:10:02 AM",
+    "description": "CoderOne IDE development session",
+    "createdAt": 1756386602909,
+    "updatedAt": 1756397607514,
+    "metadata": {
+      "ide": true,
+      "version": "1.0.0",
+      "createdFrom": "coder1-ide"
+    }
+  },
+  "session_1756393781418_0ctegbzaz": {
+    "id": "session_1756393781418_0ctegbzaz",
+    "name": "IDE Session 8/28/2025, 9:09:41 AM",
+    "description": "CoderOne IDE development session",
+    "createdAt": 1756393781418,
+    "updatedAt": 1756393781418,
+    "metadata": {
+      "ide": true,
+      "version": "1.0.0",
+      "createdFrom": "coder1-ide"
+    }
+  },
+  "session_1756397021672_pa2clregf": {
+    "id": "session_1756397021672_pa2clregf",
+    "name": "IDE Session 8/28/2025, 10:03:41 AM",
+    "description": "CoderOne IDE development session",
+    "createdAt": 1756397021672,
+    "updatedAt": 1756397021672,
+    "metadata": {
+      "ide": true,
+      "version": "1.0.0",
+      "createdFrom": "coder1-ide"
+    }
+  },
+  "session_1756397542946_pd5td96z7": {
+    "id": "session_1756397542946_pd5td96z7",
+    "name": "IDE Session 8/28/2025, 10:12:22 AM",
+    "description": "CoderOne IDE development session",
+    "createdAt": 1756397542946,
+    "updatedAt": 1756397542946,
+    "metadata": {
+      "ide": true,
+      "version": "1.0.0",
+      "createdFrom": "coder1-ide"
+    }
+  },
+  "session_1756397674580_h0xstpkya": {
+    "id": "session_1756397674580_h0xstpkya",
+    "name": "IDE Session 8/28/2025, 10:14:34 AM",
+    "description": "CoderOne IDE development session",
+    "createdAt": 1756397674580,
+    "updatedAt": 1756397674580,
+    "metadata": {
+      "ide": true,
+      "version": "1.0.0",
+      "createdFrom": "coder1-ide"
+    }
+  },
+  "session_1756399605919_ol7vsfcu5": {
+    "id": "session_1756399605919_ol7vsfcu5",
+    "name": "IDE Session 8/28/2025, 10:46:45 AM",
+    "description": "CoderOne IDE development session",
+    "createdAt": 1756399605919,
+    "updatedAt": 1756399605919,
+    "metadata": {
+      "ide": true,
+      "version": "1.0.0",
+      "createdFrom": "coder1-ide"
+    }
+  },
+  "session_1756400641484_2eeq8e87x": {
+    "id": "session_1756400641484_2eeq8e87x",
+    "name": "IDE Session 8/28/2025, 11:04:01 AM",
+    "description": "CoderOne IDE development session",
+    "createdAt": 1756400641484,
+    "updatedAt": 1756400641484,
+    "metadata": {
+      "ide": true,
+      "version": "1.0.0",
+      "createdFrom": "coder1-ide"
+    }
+  },
+  "session_1756401791272_5ebhycw3e": {
+    "id": "session_1756401791272_5ebhycw3e",
+    "name": "IDE Session 8/28/2025, 11:23:11 AM",
+    "description": "CoderOne IDE development session",
+    "createdAt": 1756401791272,
+    "updatedAt": 1756401791272,
+    "metadata": {
+      "ide": true,
+      "version": "1.0.0",
+      "createdFrom": "coder1-ide"
+    }
+  },
+  "session_1756402059067_mrb3nnmrv": {
+    "id": "session_1756402059067_mrb3nnmrv",
+    "name": "IDE Session 8/28/2025, 11:27:39 AM",
+    "description": "CoderOne IDE development session",
+    "createdAt": 1756402059068,
+    "updatedAt": 1756402059068,
+    "metadata": {
+      "ide": true,
+      "version": "1.0.0",
+      "createdFrom": "coder1-ide"
+    }
+  },
+  "session_1756402154721_ra4b8v50a": {
+    "id": "session_1756402154721_ra4b8v50a",
+    "name": "IDE Session 8/28/2025, 11:29:14 AM",
+    "description": "CoderOne IDE development session",
+    "createdAt": 1756402154721,
+    "updatedAt": 1756402154721,
+    "metadata": {
+      "ide": true,
+      "version": "1.0.0",
+      "createdFrom": "coder1-ide"
+    }
+  },
+  "session_1756402317617_n5wt0hz0b": {
+    "id": "session_1756402317617_n5wt0hz0b",
+    "name": "IDE Session 8/28/2025, 11:31:57 AM",
+    "description": "CoderOne IDE development session",
+    "createdAt": 1756402317617,
+    "updatedAt": 1756402317617,
+    "metadata": {
+      "ide": true,
+      "version": "1.0.0",
+      "createdFrom": "coder1-ide"
+    }
+  },
+  "session_1756402387111_ie3rsf447": {
+    "id": "session_1756402387111_ie3rsf447",
+    "name": "IDE Session 8/28/2025, 11:33:07 AM",
+    "description": "CoderOne IDE development session",
+    "createdAt": 1756402387111,
+    "updatedAt": 1756402387111,
+    "metadata": {
+      "ide": true,
+      "version": "1.0.0",
+      "createdFrom": "coder1-ide"
+    }
+  },
+  "session_1756402539169_q74usgaqe": {
+    "id": "session_1756402539169_q74usgaqe",
+    "name": "IDE Session 8/28/2025, 11:35:39 AM",
+    "description": "CoderOne IDE development session",
+    "createdAt": 1756402539169,
+    "updatedAt": 1756402539169,
+    "metadata": {
+      "ide": true,
+      "version": "1.0.0",
+      "createdFrom": "coder1-ide"
+    }
+  },
+  "session_1756403019096_4okeslb5q": {
+    "id": "session_1756403019096_4okeslb5q",
+    "name": "IDE Session 8/28/2025, 11:43:39 AM",
+    "description": "CoderOne IDE development session",
+    "createdAt": 1756403019096,
+    "updatedAt": 1756403019096,
+    "metadata": {
+      "ide": true,
+      "version": "1.0.0",
+      "createdFrom": "coder1-ide"
+    }
+  },
+  "session_1756403026028_f5prjtmo8": {
+    "id": "session_1756403026028_f5prjtmo8",
+    "name": "IDE Session 8/28/2025, 11:43:46 AM",
+    "description": "CoderOne IDE development session",
+    "createdAt": 1756403026028,
+    "updatedAt": 1756403026028,
+    "metadata": {
+      "ide": true,
+      "version": "1.0.0",
+      "createdFrom": "coder1-ide"
+    }
+  },
+  "session_1756403036806_arpk7is91": {
+    "id": "session_1756403036806_arpk7is91",
+    "name": "IDE Session 8/28/2025, 11:43:56 AM",
+    "description": "CoderOne IDE development session",
+    "createdAt": 1756403036806,
+    "updatedAt": 1756403036806,
+    "metadata": {
+      "ide": true,
+      "version": "1.0.0",
+      "createdFrom": "coder1-ide"
+    }
+  },
+  "session_1756404363085_vrs0q7pgp": {
+    "id": "session_1756404363085_vrs0q7pgp",
+    "name": "IDE Session 8/28/2025, 12:06:03 PM",
+    "description": "CoderOne IDE development session",
+    "createdAt": 1756404363085,
+    "updatedAt": 1756404363085,
+    "metadata": {
+      "ide": true,
+      "version": "1.0.0",
+      "createdFrom": "coder1-ide"
+    }
+  },
+  "session_1756405046218_fvfc4zu2e": {
+    "id": "session_1756405046218_fvfc4zu2e",
+    "name": "IDE Session 8/28/2025, 12:17:26 PM",
+    "description": "CoderOne IDE development session",
+    "createdAt": 1756405046218,
+    "updatedAt": 1756405046218,
+    "metadata": {
+      "ide": true,
+      "version": "1.0.0",
+      "createdFrom": "coder1-ide"
+    }
+  },
+  "session_1756408169175_3g10egbne": {
+    "id": "session_1756408169175_3g10egbne",
+    "name": "Session 8/28/2025, 1:09:29 PM",
+    "description": "",
+    "createdAt": 1756408169210,
+    "updatedAt": 1756408176092,
+    "metadata": {}
+  },
+  "session_1756413872314_009hfg1md": {
+    "id": "session_1756413872314_009hfg1md",
+    "name": "IDE Session 8/28/2025, 2:44:32 PM",
+    "description": "CoderOne IDE development session",
+    "createdAt": 1756413872314,
+    "updatedAt": 1756413872314,
+    "metadata": {
+      "ide": true,
+      "version": "1.0.0",
+      "createdFrom": "coder1-ide"
+    }
+  },
+  "session_1756415257664_977feaflf": {
+    "id": "session_1756415257664_977feaflf",
+    "name": "IDE Session 8/28/2025, 3:07:37 PM",
+    "description": "CoderOne IDE development session",
+    "createdAt": 1756415257664,
+    "updatedAt": 1756415257664,
+    "metadata": {
+      "ide": true,
+      "version": "1.0.0",
+      "createdFrom": "coder1-ide"
+    }
+  },
+  "session_1756415283982_nh4xgp54c": {
+    "id": "session_1756415283982_nh4xgp54c",
+    "name": "IDE Session 8/28/2025, 3:08:03 PM",
+    "description": "CoderOne IDE development session",
+    "createdAt": 1756415283982,
+    "updatedAt": 1756415283982,
+    "metadata": {
+      "ide": true,
+      "version": "1.0.0",
+      "createdFrom": "coder1-ide"
+    }
+  },
+  "session_1756429389897_2yrmsrk71": {
+    "id": "session_1756429389897_2yrmsrk71",
+    "name": "IDE Session 8/28/2025, 7:03:09 PM",
+    "description": "CoderOne IDE development session",
+    "createdAt": 1756429389897,
+    "updatedAt": 1756429389897,
+    "metadata": {
+      "ide": true,
+      "version": "1.0.0",
+      "createdFrom": "coder1-ide"
+    }
+  },
+  "session_1756429479445_4h6v8pchx": {
+    "id": "session_1756429479445_4h6v8pchx",
+    "name": "IDE Session 8/28/2025, 7:04:39 PM",
+    "description": "CoderOne IDE development session",
+    "createdAt": 1756429479445,
+    "updatedAt": 1756429479445,
+    "metadata": {
+      "ide": true,
+      "version": "1.0.0",
+      "createdFrom": "coder1-ide"
+    }
+  },
+  "session_1756429766983_9y0s14o2v": {
+    "id": "session_1756429766983_9y0s14o2v",
+    "name": "IDE Session 8/28/2025, 7:09:26 PM",
+    "description": "CoderOne IDE development session",
+    "createdAt": 1756429766983,
+    "updatedAt": 1756429766983,
+    "metadata": {
+      "ide": true,
+      "version": "1.0.0",
+      "createdFrom": "coder1-ide"
+    }
+  },
+  "session_1756431338479_3dhi7o3qd": {
+    "id": "session_1756431338479_3dhi7o3qd",
+    "name": "IDE Session 8/28/2025, 7:35:38 PM",
+    "description": "CoderOne IDE development session",
+    "createdAt": 1756431338479,
+    "updatedAt": 1756431338479,
+    "metadata": {
+      "ide": true,
+      "version": "1.0.0",
+      "createdFrom": "coder1-ide"
+    }
+  },
+  "session_1756435190226_94osnoibu": {
+    "id": "session_1756435190226_94osnoibu",
+    "name": "IDE Session 8/28/2025, 8:39:50 PM",
+    "description": "CoderOne IDE development session",
+    "createdAt": 1756435190226,
+    "updatedAt": 1756435190226,
+    "metadata": {
+      "ide": true,
+      "version": "1.0.0",
+      "createdFrom": "coder1-ide"
+    }
+  },
+  "session_1756436291849_eubq1gjyu": {
+    "id": "session_1756436291849_eubq1gjyu",
+    "name": "IDE Session 8/28/2025, 8:58:11 PM",
+    "description": "CoderOne IDE development session",
+    "createdAt": 1756436291850,
+    "updatedAt": 1756436291850,
+    "metadata": {
+      "ide": true,
+      "version": "1.0.0",
+      "createdFrom": "coder1-ide"
+    }
+  }
+}

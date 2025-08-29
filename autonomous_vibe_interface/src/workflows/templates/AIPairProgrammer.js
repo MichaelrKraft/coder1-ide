@@ -793,9 +793,9 @@ class DocumenterAgent extends BaseAgent {
             // Check for JSDoc comments
             const functions = file.functions || [];
             for (const func of functions) {
-                const hasDoc = file.content.includes(`/**`) && 
-                              file.content.includes(`@param`) || 
-                              file.content.includes(`@returns`);
+                const hasDoc = file.content.includes('/**') && 
+                              file.content.includes('@param') || 
+                              file.content.includes('@returns');
                 
                 if (!hasDoc) {
                     suggestions.push({

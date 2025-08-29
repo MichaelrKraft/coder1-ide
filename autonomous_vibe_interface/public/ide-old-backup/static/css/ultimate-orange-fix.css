@@ -1,0 +1,133 @@
+/* ULTIMATE ORANGE HOVER FIX FOR CODERONE IDE */
+/* This completely eliminates the unwanted orange glow that appears when hovering */
+/* Created to fix the issue where the entire IDE turns orange on hover */
+
+/* ============================================ */
+/* NUCLEAR OPTION: DISABLE ALL HOVER EFFECTS   */
+/* ============================================ */
+
+/* Kill ALL hover effects globally with maximum specificity */
+*:hover,
+*:hover::before,
+*:hover::after,
+body *:hover,
+html *:hover,
+#root *:hover,
+.app-container *:hover,
+div:hover,
+span:hover,
+section:hover,
+main:hover,
+aside:hover,
+nav:hover,
+header:hover,
+footer:hover {
+    box-shadow: none !important;
+    text-shadow: none !important;
+    border-color: initial !important;
+    background-color: initial !important;
+    outline: none !important;
+    filter: none !important;
+}
+
+/* ============================================ */
+/* TERMINAL SPECIFIC OVERRIDES                 */
+/* ============================================ */
+
+/* Ensure terminal NEVER gets orange effects */
+.terminal-container,
+.terminal-container:hover,
+.terminal-container *,
+.terminal-container *:hover,
+.terminal-wrapper,
+.terminal-wrapper:hover,
+.terminal-content,
+.terminal-content:hover,
+.xterm,
+.xterm:hover,
+.xterm *,
+.xterm *:hover,
+.xterm-screen,
+.xterm-screen:hover,
+.xterm-viewport,
+.xterm-viewport:hover,
+.xterm-rows,
+.xterm-rows:hover {
+    box-shadow: none !important;
+    text-shadow: none !important;
+    background: transparent !important;
+    border: none !important;
+    outline: none !important;
+    filter: none !important;
+}
+
+/* ============================================ */
+/* BODY AND HTML OVERRIDES                     */
+/* ============================================ */
+
+/* Prevent any hover effects on body/html */
+body,
+body:hover,
+html,
+html:hover,
+body *,
+body:hover *,
+html *,
+html:hover * {
+    box-shadow: none !important;
+    text-shadow: none !important;
+}
+
+/* ============================================ */
+/* ALLOWED HOVER EFFECTS (WHITELIST)           */
+/* ============================================ */
+
+/* Only these specific UI elements can have hover effects */
+
+/* Menu items - allowed to turn orange text */
+button.menu-item:hover,
+.menu-item:hover {
+    color: #ff9e64 !important;
+    text-shadow: 0 0 10px #ff9e64 !important;
+}
+
+/* Header buttons - subtle orange border allowed */
+button.header-button:hover,
+.header-button:hover {
+    border: 1px solid #ff9e64 !important;
+    box-shadow: 0 0 8px #ff9e6466 !important;
+}
+
+/* Status bar buttons - subtle orange border allowed */
+button.status-button:hover,
+.status-button:hover {
+    border: 1px solid #ff9e64 !important;
+    box-shadow: 0 0 8px #ff9e6466 !important;
+}
+
+/* Action buttons in sidebar - subtle effect allowed */
+button.action-button:hover,
+.action-button:hover {
+    border: 1px solid #ff9e64 !important;
+    box-shadow: 0 0 8px #ff9e6466 !important;
+}
+
+/* ============================================ */
+/* PROBLEMATIC CLASSES DISABLED                */
+/* ============================================ */
+
+/* Disable orange-glow class completely */
+.orange-glow,
+.orange-glow:hover {
+    box-shadow: none !important;
+    border: none !important;
+}
+
+/* Disable terminal control button orange effects */
+.terminal-control-btn:hover,
+.terminal-control-btn:disabled:hover {
+    background: inherit !important;
+    border-color: inherit !important;
+    box-shadow: none !important;
+    transform: none !important;
+}

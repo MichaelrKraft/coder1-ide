@@ -1,0 +1,73 @@
+/* Orange Hover Fix for CoderOne IDE */
+/* This file prevents the entire IDE from turning orange on hover */
+/* Issue: Terminal control buttons have overly broad hover selectors */
+
+/* AGGRESSIVE FIX: Disable ALL hover box-shadows and text-shadows first */
+*:hover {
+    box-shadow: none !important;
+    text-shadow: none !important;
+}
+
+/* Disable the orange-glow class completely */
+.orange-glow,
+.orange-glow:hover {
+    box-shadow: none !important;
+    border-color: inherit !important;
+}
+
+/* Prevent orange hover effects on main containers */
+.app-container:hover,
+.terminal-container:hover,
+.terminal-wrapper:hover,
+.terminal-content:hover,
+.xterm:hover,
+.xterm-screen:hover,
+.xterm-viewport:hover,
+body:hover,
+html:hover {
+    box-shadow: none !important;
+    background-color: inherit !important;
+    border-color: inherit !important;
+    text-shadow: none !important;
+}
+
+/* Fix problematic terminal control buttons */
+.terminal-control-btn:hover,
+.terminal-control-btn:disabled:hover {
+    background: inherit !important;
+    border-color: inherit !important;
+    box-shadow: none !important;
+    transform: none !important;
+}
+
+/* Ensure terminal area never gets orange effects */
+.terminal-container *:hover {
+    box-shadow: none !important;
+    text-shadow: none !important;
+    background-color: inherit !important;
+}
+
+/* Re-enable hover ONLY for specific intended UI elements */
+.menu-item:hover {
+    /* Menu items can have orange text */
+    color: #ff9e64 !important;
+    text-shadow: 0 0 15px #ff9e64, 0 0 25px #ff9e64cc !important;
+}
+
+.header-button:hover {
+    /* Header buttons get subtle orange border */
+    border-color: #ff9e64 !important;
+    box-shadow: 0 0 12px #ff9e6499 !important;
+}
+
+.status-button:hover {
+    /* Status buttons get subtle orange effect */
+    border-color: #ff9e64 !important;
+    box-shadow: 0 0 12px #ff9e6499 !important;
+}
+
+.action-button:hover {
+    /* Action buttons in sidebar */
+    border-color: #ff9e64 !important;
+    box-shadow: 0 0 15px #ff9e6499 !important;
+}

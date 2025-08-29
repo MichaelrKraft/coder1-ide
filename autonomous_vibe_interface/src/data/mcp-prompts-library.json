@@ -4,7 +4,7 @@
   "prompts": [
     {
       "id": "quick-start",
-      "command": "/coder1/quick-start",
+      "command": "coder1 quick-start",
       "title": "Quick Start Guide",
       "description": "Discover all available commands and capabilities",
       "icon": "🚀",
@@ -19,7 +19,7 @@
     },
     {
       "id": "find-bugs",
-      "command": "/coder1/find-bugs",
+      "command": "coder1 find-bugs",
       "title": "Bug Hunter",
       "description": "Automatically detect and fix issues in your code",
       "icon": "🐛",
@@ -34,7 +34,7 @@
     },
     {
       "id": "optimize",
-      "command": "/coder1/optimize",
+      "command": "coder1 optimize",
       "title": "Performance Optimizer",
       "description": "Make your code run faster and use less memory",
       "icon": "⚡",
@@ -49,7 +49,7 @@
     },
     {
       "id": "generate-tests",
-      "command": "/coder1/generate-tests",
+      "command": "coder1 generate-tests",
       "title": "Test Generator",
       "description": "Create comprehensive test suites automatically",
       "icon": "🧪",
@@ -64,7 +64,7 @@
     },
     {
       "id": "explain-code",
-      "command": "/coder1/explain",
+      "command": "coder1 explain",
       "title": "Code Explainer",
       "description": "Get plain English explanations of complex code",
       "icon": "💡",
@@ -79,7 +79,7 @@
     },
     {
       "id": "implement-feature",
-      "command": "/coder1/implement",
+      "command": "coder1 implement",
       "title": "Feature Builder",
       "description": "Turn ideas into working code instantly",
       "icon": "🔨",
@@ -94,7 +94,7 @@
     },
     {
       "id": "refactor-code",
-      "command": "/coder1/refactor",
+      "command": "coder1 refactor",
       "title": "Code Refactorer",
       "description": "Improve code structure without changing behavior",
       "icon": "♻️",
@@ -109,7 +109,7 @@
     },
     {
       "id": "security-scan",
-      "command": "/coder1/security-scan",
+      "command": "coder1 security-scan",
       "title": "Security Scanner",
       "description": "Find and fix security vulnerabilities",
       "icon": "🔒",
@@ -124,7 +124,7 @@
     },
     {
       "id": "smart-commit",
-      "command": "/coder1/smart-commit",
+      "command": "coder1 smart-commit",
       "title": "Intelligent Commit",
       "description": "Generate perfect commit messages automatically",
       "icon": "📝",
@@ -139,7 +139,7 @@
     },
     {
       "id": "documentation",
-      "command": "/coder1/document",
+      "command": "coder1 document",
       "title": "Doc Generator",
       "description": "Create comprehensive documentation instantly",
       "icon": "📚",
@@ -154,7 +154,7 @@
     },
     {
       "id": "code-review",
-      "command": "/coder1/review",
+      "command": "coder1 review",
       "title": "Code Reviewer",
       "description": "Get instant code review feedback",
       "icon": "👀",

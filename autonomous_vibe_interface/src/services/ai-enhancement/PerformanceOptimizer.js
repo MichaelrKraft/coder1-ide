@@ -200,15 +200,15 @@ class PerformanceOptimizer extends EventEmitter {
      */
     optimizeBasedOnLoad() {
         switch (this.state.systemLoad) {
-            case 'high':
-                this.enterPerformanceMode();
-                break;
-            case 'medium':
-                this.enterNormalMode();
-                break;
-            case 'low':
-                this.enterPowerSaveMode();
-                break;
+        case 'high':
+            this.enterPerformanceMode();
+            break;
+        case 'medium':
+            this.enterNormalMode();
+            break;
+        case 'low':
+            this.enterPowerSaveMode();
+            break;
         }
     }
 
@@ -622,17 +622,17 @@ class PerformanceOptimizer extends EventEmitter {
 
     setPerformanceMode(mode) {
         switch (mode) {
-            case 'performance':
-                this.enterPerformanceMode();
-                break;
-            case 'normal':
-                this.enterNormalMode();
-                break;
-            case 'power-save':
-                this.enterPowerSaveMode();
-                break;
-            default:
-                throw new Error(`Unknown performance mode: ${mode}`);
+        case 'performance':
+            this.enterPerformanceMode();
+            break;
+        case 'normal':
+            this.enterNormalMode();
+            break;
+        case 'power-save':
+            this.enterPowerSaveMode();
+            break;
+        default:
+            throw new Error(`Unknown performance mode: ${mode}`);
         }
     }
 

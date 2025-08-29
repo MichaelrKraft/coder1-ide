@@ -89,18 +89,18 @@ router.get('/', async (req, res) => {
 
         // Sorting
         switch (sort) {
-            case 'popular':
-                templates.sort((a, b) => b.stats.downloads - a.stats.downloads);
-                break;
-            case 'rating':
-                templates.sort((a, b) => b.stats.rating - a.stats.rating);
-                break;
-            case 'recent':
-                // Would sort by date if we had it
-                break;
-            case 'alphabetical':
-                templates.sort((a, b) => a.name.localeCompare(b.name));
-                break;
+        case 'popular':
+            templates.sort((a, b) => b.stats.downloads - a.stats.downloads);
+            break;
+        case 'rating':
+            templates.sort((a, b) => b.stats.rating - a.stats.rating);
+            break;
+        case 'recent':
+            // Would sort by date if we had it
+            break;
+        case 'alphabetical':
+            templates.sort((a, b) => a.name.localeCompare(b.name));
+            break;
         }
 
         res.json({

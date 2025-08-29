@@ -108,34 +108,34 @@ class MockTerminal {
         let response = '';
         
         switch(cmd) {
-            case 'help':
-                response = 'Available commands: help, ls, pwd, echo, clear, claude, pty-status\r\n';
-                break;
-            case 'pty-status':
-                response = `PTY Status:\r\n` +
-                          `Mode: Demo (node-pty not available)\r\n` +
+        case 'help':
+            response = 'Available commands: help, ls, pwd, echo, clear, claude, pty-status\r\n';
+            break;
+        case 'pty-status':
+            response = 'PTY Status:\r\n' +
+                          'Mode: Demo (node-pty not available)\r\n' +
                           `Active sessions: ${terminals.size}\r\n`;
-                break;
-            case 'ls':
-                response = 'src/  public/  node_modules/  package.json  README.md\r\n';
-                break;
-            case 'pwd':
-                response = '/Users/michaelkraft/autonomous_vibe_interface\r\n';
-                break;
-            case 'clear':
-                response = '\x1b[2J\x1b[H';
-                break;
-            case 'claude':
-                response = '⚠️ This is a demo terminal. To use real Claude CLI:\r\n' +
+            break;
+        case 'ls':
+            response = 'src/  public/  node_modules/  package.json  README.md\r\n';
+            break;
+        case 'pwd':
+            response = '/Users/michaelkraft/autonomous_vibe_interface\r\n';
+            break;
+        case 'clear':
+            response = '\x1b[2J\x1b[H';
+            break;
+        case 'claude':
+            response = '⚠️ This is a demo terminal. To use real Claude CLI:\r\n' +
                           '1. Fix node-pty: npm rebuild node-pty\r\n' +
                           '2. Or use Terminal.app and run: claude\r\n';
-                break;
-            default:
-                if (cmd.startsWith('echo ')) {
-                    response = cmd.substring(5) + '\r\n';
-                } else if (cmd) {
-                    response = `Command not found: ${cmd}\r\n`;
-                }
+            break;
+        default:
+            if (cmd.startsWith('echo ')) {
+                response = cmd.substring(5) + '\r\n';
+            } else if (cmd) {
+                response = `Command not found: ${cmd}\r\n`;
+            }
         }
         
         if (response && this.dataHandler) {

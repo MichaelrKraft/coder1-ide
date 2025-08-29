@@ -139,14 +139,14 @@ Return ONLY the component function code, no explanations or markdown.`;
 
     try {
         const completion = await openai.chat.completions.create({
-            model: "gpt-4",
+            model: 'gpt-4',
             messages: [
                 {
-                    role: "system",
-                    content: "You are an expert React developer. Generate high-quality, customizable React components with comprehensive prop systems. Always use inline styles and include proper TypeScript-style prop handling."
+                    role: 'system',
+                    content: 'You are an expert React developer. Generate high-quality, customizable React components with comprehensive prop systems. Always use inline styles and include proper TypeScript-style prop handling.'
                 },
                 {
-                    role: "user",
+                    role: 'user',
                     content: prompt
                 }
             ],
@@ -187,14 +187,14 @@ Return as a JSON object with structure:
 
     try {
         const completion = await openai.chat.completions.create({
-            model: "gpt-4",
+            model: 'gpt-4',
             messages: [
                 {
-                    role: "system",
-                    content: "You are an expert React developer and UX designer. Provide detailed, actionable suggestions for improving React components."
+                    role: 'system',
+                    content: 'You are an expert React developer and UX designer. Provide detailed, actionable suggestions for improving React components.'
                 },
                 {
-                    role: "user",
+                    role: 'user',
                     content: prompt
                 }
             ],
@@ -395,38 +395,38 @@ function generateFallbackEnhancements() {
     return {
         newProps: [
             {
-                name: "size",
-                type: "string",
-                description: "Component size variant (small, medium, large)",
-                defaultValue: "medium"
+                name: 'size',
+                type: 'string',
+                description: 'Component size variant (small, medium, large)',
+                defaultValue: 'medium'
             },
             {
-                name: "variant",
-                type: "string", 
-                description: "Visual style variant (primary, secondary, outline)",
-                defaultValue: "primary"
+                name: 'variant',
+                type: 'string', 
+                description: 'Visual style variant (primary, secondary, outline)',
+                defaultValue: 'primary'
             },
             {
-                name: "animation",
-                type: "string",
-                description: "Entrance animation (none, fadeIn, slideUp, scale)",
-                defaultValue: "none"
+                name: 'animation',
+                type: 'string',
+                description: 'Entrance animation (none, fadeIn, slideUp, scale)',
+                defaultValue: 'none'
             }
         ],
         styleImprovements: [
-            "Add focus states for better accessibility",
-            "Include loading state with spinner",
-            "Add smooth transitions for better UX"
+            'Add focus states for better accessibility',
+            'Include loading state with spinner',
+            'Add smooth transitions for better UX'
         ],
         accessibilityTips: [
-            "Add proper ARIA labels",
-            "Ensure keyboard navigation support",
-            "Include high contrast mode support"
+            'Add proper ARIA labels',
+            'Ensure keyboard navigation support',
+            'Include high contrast mode support'
         ],
         performanceTips: [
-            "Use React.memo for expensive re-renders",
-            "Optimize inline styles with useMemo",
-            "Consider lazy loading for large components"
+            'Use React.memo for expensive re-renders',
+            'Optimize inline styles with useMemo',
+            'Consider lazy loading for large components'
         ]
     };
 }

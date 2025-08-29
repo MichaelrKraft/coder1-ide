@@ -4,10 +4,12 @@
   "description": "An autonomous vibe coding agent that transforms natural language into code using AI",
   "main": "src/app.js",
   "scripts": {
-    "start": "node src/app.js",
-    "dev": "nodemon src/app.js",
+    "start": "node --max-old-space-size=512 --expose-gc src/app.js",
+    "dev": "nodemon --max-old-space-size=512 --expose-gc src/app.js",
     "terminal-server": "node terminal-server.js",
     "test": "echo \"Error: no test specified\" && exit 1",
+    "lint": "eslint src/",
+    "lint:fix": "eslint src/ --fix",
     "test:claude-cli": "node test-claude-cli.js",
     "install:claude-cli": "npm install -g claude-code",
     "rules:setup": "node setup-github-rules.js",
@@ -49,6 +51,8 @@
     "express-session": "^1.18.2",
     "express-validator": "^7.2.1",
     "form-data": "^4.0.4",
+    "http-proxy": "^1.18.1",
+    "http-proxy-middleware": "^3.0.5",
     "js-yaml": "^4.1.0",
     "jsonwebtoken": "^9.0.2",
     "mammoth": "^1.10.0",
@@ -59,6 +63,7 @@
     "nodemailer": "^7.0.5",
     "openai": "^5.10.1",
     "pdf-parse": "^1.1.1",
+    "session-file-store": "^1.5.0",
     "sharp": "^0.33.0",
     "socket.io": "^4.8.1",
     "socket.io-client": "^4.8.1",
@@ -69,6 +74,7 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.55.0",
+    "eslint": "^9.34.0",
     "nodemon": "^3.1.10"
   },
   "engines": {

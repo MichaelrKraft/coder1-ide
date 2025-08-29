@@ -1076,8 +1076,8 @@
                 </div>
             </div>
 
-            <!-- Quantum Code Branching (Coming Soon) -->
-            <div class="workflow-card" style="opacity: 0.6;">
+            <!-- Quantum Code Branching -->
+            <div class="workflow-card" data-workflow="QuantumCoding">
                 <span class="workflow-icon"></span>
                 <h3 class="workflow-title">Quantum Code Branching</h3>
                 <p class="workflow-description">
@@ -1089,13 +1089,13 @@
                     <span class="stat">Multi-path</span>
                     <span class="stat">Quantum</span>
                 </div>
-                <button class="execute-btn" disabled style="opacity: 0.5;">
-                    Coming Soon
+                <button class="execute-btn" onclick="executeWorkflow('QuantumCoding')">
+                    Launch Quantum Coding
                 </button>
             </div>
 
-            <!-- Swarm Coding (Coming Soon) -->
-            <div class="workflow-card" style="opacity: 0.6;">
+            <!-- Swarm Coding -->
+            <div class="workflow-card" data-workflow="SwarmCoding">
                 <span class="workflow-icon"></span>
                 <h3 class="workflow-title">Swarm Coding</h3>
                 <p class="workflow-description">
@@ -1107,13 +1107,13 @@
                     <span class="stat">Massive</span>
                     <span class="stat">Instant</span>
                 </div>
-                <button class="execute-btn" disabled style="opacity: 0.5;">
-                    Coming Soon
+                <button class="execute-btn" onclick="executeWorkflow('SwarmCoding')">
+                    Deploy AI Swarm
                 </button>
             </div>
 
-            <!-- Neural Code Evolution (Coming Soon) -->
-            <div class="workflow-card" style="opacity: 0.6;">
+            <!-- Neural Code Evolution -->
+            <div class="workflow-card" data-workflow="NeuralEvolution">
                 <span class="workflow-icon"></span>
                 <h3 class="workflow-title">Neural Code Evolution</h3>
                 <p class="workflow-description">
@@ -1125,8 +1125,26 @@
                     <span class="stat">Neural</span>
                     <span class="stat">Adaptive</span>
                 </div>
-                <button class="execute-btn" disabled style="opacity: 0.5;">
-                    Coming Soon
+                <button class="execute-btn" onclick="executeWorkflow('NeuralEvolution')">
+                    Start Evolution
+                </button>
+            </div>
+
+            <!-- EmotionEngine - Vibe Coder Special -->
+            <div class="workflow-card" data-workflow="EmotionEngine">
+                <span class="workflow-icon">🎨</span>
+                <h3 class="workflow-title">EmotionEngine</h3>
+                <p class="workflow-description">
+                    Transform emotions into scientifically-backed design systems. Say "cozy and trustworthy" 
+                    and get complete CSS with psychological research foundations.
+                </p>
+                <div class="workflow-stats">
+                    <span class="stat">Scientific</span>
+                    <span class="stat">Vibe Coder</span>
+                    <span class="stat">Psychology</span>
+                </div>
+                <button class="execute-btn" onclick="executeWorkflow('EmotionEngine')">
+                    Generate Design System
                 </button>
             </div>
         </div>

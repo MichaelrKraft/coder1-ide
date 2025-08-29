@@ -446,10 +446,10 @@ ${entries}
      */
     getOptionDescription(option) {
         switch (option) {
-            case '1': return 'Proceed';
-            case '2': return 'Proceed & don\'t ask';
-            case '3': return 'Don\'t proceed';
-            default: return `Option ${option}`;
+        case '1': return 'Proceed';
+        case '2': return 'Proceed & don\'t ask';
+        case '3': return 'Don\'t proceed';
+        default: return `Option ${option}`;
         }
     }
 }

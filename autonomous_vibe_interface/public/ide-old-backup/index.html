@@ -1,0 +1,63 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"/><link rel="icon" href="/ide/favicon.ico"/><meta name="viewport" content="width=device-width,initial-scale=1"/><meta name="theme-color" content="#000000"/><meta name="description" content="Web site created using create-react-app"/><link rel="apple-touch-icon" href="/ide/logo192.png"/><link rel="manifest" href="/ide/manifest.json"/><title>React App</title><script defer="defer" src="/ide/static/js/main.28091349.js"></script><link href="/ide/static/css/main.954ba485.css" rel="stylesheet"><link href="/ide/static/css/discover-component.css" rel="stylesheet">
+    <!-- Load XTerm.js before main app -->
+    <link href="/ide/static/css/xterm.css" rel="stylesheet">
+    <script>
+        // Store original module/exports if they exist
+        window._origModule = window.module;
+        window._origExports = window.exports;
+        // Create module exports shim for UMD modules
+        window.module = { exports: {} };
+        window.exports = window.module.exports;
+    </script>
+    <script src="/ide/static/lib/xterm.js"></script>
+    <script>
+        // XTerm.js exports to window directly in browser environment
+        // Check all possible locations
+        if (typeof Terminal === 'undefined') {
+            if (window.module && window.module.exports && window.module.exports.Terminal) {
+                window.Terminal = window.module.exports.Terminal;
+            } else if (window.exports && window.exports.Terminal) {
+                window.Terminal = window.exports.Terminal;
+            }
+        }
+        console.log('Terminal available:', typeof window.Terminal);
+    </script>
+    <script src="/ide/static/lib/xterm-addon-fit.js"></script>
+    <script>
+        // FitAddon exports to window directly in browser environment
+        // Check all possible locations
+        if (typeof FitAddon === 'undefined') {
+            if (window.module && window.module.exports && window.module.exports.FitAddon) {
+                window.FitAddon = window.module.exports.FitAddon;
+            } else if (window.exports && window.exports.FitAddon) {
+                window.FitAddon = window.exports.FitAddon;
+            }
+        }
+        console.log('FitAddon available:', typeof window.FitAddon);
+        
+        // Restore original module/exports if they existed
+        if (window._origModule !== undefined) {
+            window.module = window._origModule;
+        } else {
+            delete window.module;
+        }
+        if (window._origExports !== undefined) {
+            window.exports = window._origExports;
+        } else {
+            delete window.exports;
+        }
+        delete window._origModule;
+        delete window._origExports;
+        
+        // Final check
+        if (typeof window.Terminal === 'undefined') {
+            console.error('❌ Terminal failed to load!');
+        } else {
+            console.log('✅ Terminal loaded successfully');
+        }
+        if (typeof window.FitAddon === 'undefined') {
+            console.error('❌ FitAddon failed to load!');
+        } else {
+            console.log('✅ FitAddon loaded successfully');
+        }
+    </script></head><body><noscript>You need to enable JavaScript to run this app.</noscript><div id="root"></div></body></html>

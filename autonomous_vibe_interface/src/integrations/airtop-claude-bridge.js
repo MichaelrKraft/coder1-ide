@@ -112,7 +112,7 @@ class AirtopClaudeBridge {
             };
             
         } catch (error) {
-            console.error(`❌ Failed to start Claude Code session:`, error);
+            console.error('❌ Failed to start Claude Code session:', error);
             return {
                 success: false,
                 error: error.message,
@@ -263,7 +263,7 @@ class AirtopClaudeBridge {
                 2000
             );
             
-            console.log(`🚀 Claude Code CLI started in project`);
+            console.log('🚀 Claude Code CLI started in project');
             
             // Wait for Claude Code to initialize
             await new Promise(resolve => setTimeout(resolve, 5000));
@@ -275,7 +275,7 @@ class AirtopClaudeBridge {
             monitoringCallback('✅ Claude Code started successfully!');
             
         } catch (error) {
-            console.error(`❌ Failed to start Claude Code in project:`, error);
+            console.error('❌ Failed to start Claude Code in project:', error);
             throw error;
         }
     }
@@ -411,7 +411,7 @@ class AirtopClaudeBridge {
      * Wait for page to load
      */
     async waitForPageLoad(airtopSessionId, windowId, timeout = 30000) {
-        console.log(`⏳ Waiting for page load...`);
+        console.log('⏳ Waiting for page load...');
         
         const startTime = Date.now();
         while (Date.now() - startTime < timeout) {
@@ -421,19 +421,19 @@ class AirtopClaudeBridge {
                 });
                 
                 if (response.data && response.data.content && response.data.content.includes('loaded')) {
-                    console.log(`✅ Page loaded successfully`);
+                    console.log('✅ Page loaded successfully');
                     return;
                 }
                 
                 await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds
                 
             } catch (error) {
-                console.warn(`⚠️ Page load check failed:`, error.message);
+                console.warn('⚠️ Page load check failed:', error.message);
                 await new Promise(resolve => setTimeout(resolve, 2000));
             }
         }
         
-        console.warn(`⚠️ Page load timeout reached, continuing anyway`);
+        console.warn('⚠️ Page load timeout reached, continuing anyway');
     }
     
     /**
@@ -462,7 +462,7 @@ class AirtopClaudeBridge {
                 3000
             );
             
-            console.log(`✅ Replit project creation initiated`);
+            console.log('✅ Replit project creation initiated');
             
             // Wait for project creation
             await new Promise(resolve => setTimeout(resolve, 5000));
@@ -478,7 +478,7 @@ class AirtopClaudeBridge {
             });
             
         } catch (error) {
-            console.error(`❌ Failed to create Replit project:`, error);
+            console.error('❌ Failed to create Replit project:', error);
             throw error;
         }
     }
@@ -530,7 +530,7 @@ class AirtopClaudeBridge {
                 2000
             );
             
-            console.log(`🚀 Claude Code CLI started`);
+            console.log('🚀 Claude Code CLI started');
             
             // Wait for Claude Code to initialize
             await new Promise(resolve => setTimeout(resolve, 5000));
@@ -539,7 +539,7 @@ class AirtopClaudeBridge {
             await this.sendProjectBrief(sessionId, airtopSessionId, windowId, projectData);
             
         } catch (error) {
-            console.error(`❌ Failed to start Claude Code:`, error);
+            console.error('❌ Failed to start Claude Code:', error);
             throw error;
         }
     }
@@ -573,7 +573,7 @@ class AirtopClaudeBridge {
                 2000
             );
             
-            console.log(`✅ Project brief sent successfully`);
+            console.log('✅ Project brief sent successfully');
             
             // Update session to active
             this.sessionManager.updateSession(sessionId, {
@@ -589,7 +589,7 @@ class AirtopClaudeBridge {
             this.startCompletionMonitoring(sessionId, airtopSessionId, windowId);
             
         } catch (error) {
-            console.error(`❌ Failed to send project brief:`, error);
+            console.error('❌ Failed to send project brief:', error);
             throw error;
         }
     }
@@ -598,7 +598,7 @@ class AirtopClaudeBridge {
      * Create comprehensive brief from project data
      */
     createComprehensiveBrief(sessionData) {
-        console.log(`📋 Creating comprehensive brief from session data`);
+        console.log('📋 Creating comprehensive brief from session data');
         
         // Access the actual project data from the session
         const projectData = sessionData.projectData || sessionData;
@@ -606,7 +606,7 @@ class AirtopClaudeBridge {
         let brief = `${projectData.originalRequest}\n\n`;
         
         if (projectData.questions && projectData.answers) {
-            brief += "DETAILED REQUIREMENTS:\n";
+            brief += 'DETAILED REQUIREMENTS:\n';
             projectData.questions.forEach((question, index) => {
                 const answer = projectData.answers[index];
                 if (answer && answer.trim()) {
@@ -616,7 +616,7 @@ class AirtopClaudeBridge {
             });
         }
         
-        brief += "\nPlease build this project with modern, professional styling and best practices.";
+        brief += '\nPlease build this project with modern, professional styling and best practices.';
         
         console.log(`📝 Brief created (${brief.length} characters)`);
         return brief;
@@ -672,7 +672,7 @@ class AirtopClaudeBridge {
                     }
                     
                 } catch (error) {
-                    console.error(`❌ Error in completion monitoring:`, error);
+                    console.error('❌ Error in completion monitoring:', error);
                 }
             }, checkInterval);
             
@@ -683,7 +683,7 @@ class AirtopClaudeBridge {
             }
             
         } catch (error) {
-            console.error(`❌ Failed to start completion monitoring:`, error);
+            console.error('❌ Failed to start completion monitoring:', error);
         }
     }
     
@@ -728,7 +728,7 @@ class AirtopClaudeBridge {
             const errorType = this.classifyError(error);
             
             if (errorType === 'rate_limit') {
-                console.warn(`🚦 Rate limit while capturing terminal output, skipping this cycle`);
+                console.warn('🚦 Rate limit while capturing terminal output, skipping this cycle');
                 return [];
             }
             
@@ -867,7 +867,7 @@ class AirtopClaudeBridge {
             return isComplete;
             
         } catch (error) {
-            console.error(`❌ Error in enhanced completion detection:`, error);
+            console.error('❌ Error in enhanced completion detection:', error);
             return false;
         }
     }
@@ -927,7 +927,7 @@ class AirtopClaudeBridge {
             }
             
         } catch (error) {
-            console.error(`❌ Error in automatic file download:`, error);
+            console.error('❌ Error in automatic file download:', error);
         }
     }
     
@@ -1157,18 +1157,18 @@ class AirtopClaudeBridge {
         let baseDelay = 1000; // 1 second base delay
         
         switch (errorType) {
-            case 'rate_limit':
-                baseDelay = 5000; // 5 seconds for rate limits
-                break;
-            case 'server_error':
-                baseDelay = 2000; // 2 seconds for server errors
-                break;
-            case 'connection_error':
-                baseDelay = 1000; // 1 second for connection errors
-                break;
-            case 'timeout':
-                baseDelay = 3000; // 3 seconds for timeouts
-                break;
+        case 'rate_limit':
+            baseDelay = 5000; // 5 seconds for rate limits
+            break;
+        case 'server_error':
+            baseDelay = 2000; // 2 seconds for server errors
+            break;
+        case 'connection_error':
+            baseDelay = 1000; // 1 second for connection errors
+            break;
+        case 'timeout':
+            baseDelay = 3000; // 3 seconds for timeouts
+            break;
         }
         
         // Exponential backoff with jitter

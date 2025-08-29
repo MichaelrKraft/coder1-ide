@@ -4,10 +4,10 @@ const rateLimitMap = new Map();
 // Configuration
 const RATE_LIMIT_CONFIG = {
     windowMs: 60 * 1000, // 1 minute window
-    maxRequests: 50, // Increased to 50 requests per minute for terminal functionality
+    maxRequests: 200, // Significantly increased for IDE functionality
     anthropicLimit: 3, // Max 3 Anthropic API calls per minute
     openaiLimit: 5, // Max 5 OpenAI API calls per minute
-    blockDuration: 2 * 60 * 1000 // Reduced to 2 minutes block if exceeded
+    blockDuration: 30 * 1000 // Reduced to 30 seconds block if exceeded
 };
 
 // Clean up old entries periodically
@@ -31,7 +31,14 @@ const rateLimit = (req, res, next) => {
         req.path.includes('/claude/performance') ||
         req.path.includes('/claude/coaching') ||
         req.path.includes('/experimental') ||  // Allow AI Team polling
-        req.path.includes('/ide')) {
+        req.path.includes('/ide') ||
+        req.path.includes('/orchestrator') ||  // Allow orchestrator static files
+        req.path.includes('/github') ||        // Allow GitHub API calls
+        req.path.includes('/sessions') ||      // Allow session management
+        req.path.includes('/checkpoints') ||   // Allow checkpoint calls
+        req.path.includes('/repository') ||    // Allow repository calls
+        req.path.includes('/api/github') ||    // Allow GitHub status calls
+        req.path.includes('/api/sessions')) {  // Allow session API calls
         return next();
     }
     

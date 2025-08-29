@@ -161,11 +161,11 @@ class ClaudeCodeCLIManager extends EventEmitter {
             }
             
             if (this.claudeCodeProEnabled) {
-                this.logger.log(`🚀 Using Claude Code Pro subscription - executing authenticated CLI`);
+                this.logger.log('🚀 Using Claude Code Pro subscription - executing authenticated CLI');
             } else {
-                this.logger.log(`🤖 Using Anthropic API key - executing Claude Code CLI`);
+                this.logger.log('🤖 Using Anthropic API key - executing Claude Code CLI');
             }
-            this.logger.log(`🔧 Claude Code args:`, claudeArgs.slice(0, 4)); // Don't log the full brief
+            this.logger.log('🔧 Claude Code args:', claudeArgs.slice(0, 4)); // Don't log the full brief
             
             // Spawn Claude Code process
             const claudeProcess = spawn('claude-code', claudeArgs, {
@@ -215,7 +215,7 @@ class ClaudeCodeCLIManager extends EventEmitter {
             // Handle process completion
             claudeProcess.on('close', (code) => {
                 if (code === 0) {
-                    this.logger.log(`✅ Claude Code completed successfully`);
+                    this.logger.log('✅ Claude Code completed successfully');
                     resolve({ stdout, stderr, exitCode: code });
                 } else {
                     this.logger.error(`❌ Claude Code exited with code ${code}`);
@@ -225,7 +225,7 @@ class ClaudeCodeCLIManager extends EventEmitter {
             
             // Handle errors
             claudeProcess.on('error', (error) => {
-                this.logger.error(`❌ Claude Code process error:`, error);
+                this.logger.error('❌ Claude Code process error:', error);
                 reject(error);
             });
             
@@ -292,7 +292,7 @@ class ClaudeCodeCLIManager extends EventEmitter {
                                 analysis.framework = 'nextjs';
                             }
                         } catch (error) {
-                            this.logger.warn(`Warning: Could not parse package.json`, error.message);
+                            this.logger.warn('Warning: Could not parse package.json', error.message);
                         }
                     }
                     
@@ -311,7 +311,7 @@ class ClaudeCodeCLIManager extends EventEmitter {
             return analysis;
             
         } catch (error) {
-            this.logger.error(`Error analyzing project:`, error);
+            this.logger.error('Error analyzing project:', error);
             return {
                 hasMainFile: false,
                 files: [],
@@ -406,7 +406,7 @@ class ClaudeCodeCLIManager extends EventEmitter {
         try {
             await fs.mkdir(this.projectsDir, { recursive: true });
         } catch (error) {
-            this.logger.error(`Error creating projects directory:`, error);
+            this.logger.error('Error creating projects directory:', error);
         }
     }
 
@@ -440,7 +440,7 @@ class ClaudeCodeCLIManager extends EventEmitter {
                     
                     npmProcess.on('close', (code) => {
                         if (code === 0) {
-                            this.logger.log(`✅ Dependencies installed successfully`);
+                            this.logger.log('✅ Dependencies installed successfully');
                             resolve({ success: true, output });
                         } else {
                             this.logger.error(`❌ npm install failed with code ${code}`);

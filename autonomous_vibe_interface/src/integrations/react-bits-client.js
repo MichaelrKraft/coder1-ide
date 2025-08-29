@@ -1888,7 +1888,7 @@ class ReactBitsClient {
                     color: ['blue', 'purple', 'green', 'red', 'dark', 'primary'],
                     size: ['md', 'lg', 'xl']
                 },
-                code: `// This component uses the specialized generator`
+                code: '// This component uses the specialized generator'
             },
 
             'hero-split': {
@@ -1901,7 +1901,7 @@ class ReactBitsClient {
                     color: ['blue', 'purple', 'green', 'red', 'dark', 'primary'],
                     layout: ['left-text', 'right-text']
                 },
-                code: `// This component uses the specialized generator`
+                code: '// This component uses the specialized generator'
             },
 
             'hero-video-background': {
@@ -1914,7 +1914,7 @@ class ReactBitsClient {
                     overlay: ['light', 'medium', 'dark'],
                     style: ['centered', 'bottom-left']
                 },
-                code: `// This component uses the specialized generator`
+                code: '// This component uses the specialized generator'
             },
 
             // === BACKGROUND COMPONENTS ===
@@ -1989,7 +1989,7 @@ class ReactBitsClient {
                     color: ['blue', 'purple', 'pink', 'green', 'white'],
                     speed: ['slow', 'medium', 'fast']
                 },
-                code: `// This component uses the specialized generator`
+                code: '// This component uses the specialized generator'
             },
 
             'background-animated-waves': {
@@ -2003,7 +2003,7 @@ class ReactBitsClient {
                     color: ['blue', 'purple', 'green', 'pink', 'orange'],
                     layers: ['single', 'double', 'triple']
                 },
-                code: `// This component uses the specialized generator`
+                code: '// This component uses the specialized generator'
             },
 
             'background-pattern-dots': {
@@ -2100,7 +2100,7 @@ class ReactBitsClient {
                     speed: ['slow', 'medium', 'fast'],
                     colors: ['monochrome', 'rainbow', 'warm', 'cool']
                 },
-                code: `// This component uses the specialized generator`
+                code: '// This component uses the specialized generator'
             },
 
             'background-image-overlay': {
@@ -2172,7 +2172,7 @@ class ReactBitsClient {
                     speed: ['slow', 'medium', 'fast'],
                     colors: ['purple', 'blue', 'pink', 'green', 'gradient']
                 },
-                code: `// This component uses the specialized generator`
+                code: '// This component uses the specialized generator'
             },
 
             'background-circuit-pattern': {
@@ -2187,7 +2187,7 @@ class ReactBitsClient {
                     glow: ['none', 'subtle', 'bright'],
                     animation: ['static', 'pulse', 'flow']
                 },
-                code: `// This component uses the specialized generator`
+                code: '// This component uses the specialized generator'
             },
 
             'background-noise-texture': {
@@ -3186,8 +3186,8 @@ class ReactBitsClient {
                     clip-path: polygon(
                         0% 100%,
                         ${Array.from({ length: 21 }, (_, i) => 
-                            `${i * 5}% ${50 + Math.sin(i * style.frequency * 100) * style.amplitude}%`
-                        ).join(', ')},
+        `${i * 5}% ${50 + Math.sin(i * style.frequency * 100) * style.amplitude}%`
+    ).join(', ')},
                         100% 100%
                     );
                     animation: wave-${index} ${style.speed + index}s ease-in-out infinite;

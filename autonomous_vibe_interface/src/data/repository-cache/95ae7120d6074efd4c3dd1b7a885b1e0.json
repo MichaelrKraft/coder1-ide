@@ -2,7 +2,7 @@
   "repoId": "95ae7120d6074efd4c3dd1b7a885b1e0",
   "url": "https://github.com/davila7/claude-code-templates",
   "name": "davila7/claude-code-templates",
-  "analyzedAt": "2025-08-25T20:14:16.698Z",
+  "analyzedAt": "2025-08-26T20:17:00.557Z",
   "metadata": {
     "description": "",
     "language": "",
@@ -57,6 +57,6 @@
     "fileCount": 0,
     "patternCount": 5,
     "suggestionCount": 0,
-    "analysisTime": 1756152856698
+    "analysisTime": 1756239420557
   }
 }

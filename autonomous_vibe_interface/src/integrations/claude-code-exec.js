@@ -38,16 +38,28 @@ class ClaudeCodeExec extends EventEmitter {
             this.logger.info('🤖 Executing Claude Code CLI...');
             this.logger.info(`📝 Prompt length: ${fullPrompt.length} characters`);
             
-            // Spawn claude process directly and use stdin
+            // Use temp file to avoid escaping issues with complex prompts
+            const fs = require('fs');
+            const path = require('path');
+            const os = require('os');
+            const tempFile = path.join(os.tmpdir(), `claude-prompt-${Date.now()}.txt`);
+            
+            // Write prompt to temp file
+            try {
+                fs.writeFileSync(tempFile, fullPrompt, 'utf8');
+            } catch (writeErr) {
+                this.logger.error('Failed to write prompt to temp file:', writeErr);
+                reject(writeErr);
+                return;
+            }
+            
             // Remove ANTHROPIC_API_KEY from environment to use CLI auth
             const cleanEnv = { ...process.env };
             delete cleanEnv.ANTHROPIC_API_KEY;
             delete cleanEnv.CLAUDE_API_KEY;
             
-            // Use shell to pipe input to Claude CLI (works better than direct stdin)
-            // This mimics: echo "prompt" | claude
-            const escapedPrompt = fullPrompt.replace(/"/g, '\\"').replace(/\n/g, '\\n');
-            const shellCommand = `echo "${escapedPrompt}" | ${this.claudePath}`;
+            // Use cat to pipe file content to Claude CLI
+            const shellCommand = `cat "${tempFile}" | ${this.claudePath}`;
             
             const claudeProcess = spawn('sh', ['-c', shellCommand], {
                 env: cleanEnv,
@@ -86,6 +98,13 @@ class ClaudeCodeExec extends EventEmitter {
             claudeProcess.on('close', (code) => {
                 clearTimeout(timeoutId);
                 hasResponded = true;
+                
+                // Clean up temp file
+                try {
+                    fs.unlinkSync(tempFile);
+                } catch (cleanupErr) {
+                    // Ignore cleanup errors
+                }
 
                 if (code !== 0) {
                     this.logger.error('Claude Code CLI error:', { code, errorOutput });
@@ -100,6 +119,14 @@ class ClaudeCodeExec extends EventEmitter {
             claudeProcess.on('error', (err) => {
                 clearTimeout(timeoutId);
                 hasResponded = true;
+                
+                // Clean up temp file
+                try {
+                    fs.unlinkSync(tempFile);
+                } catch (cleanupErr) {
+                    // Ignore cleanup errors
+                }
+                
                 this.logger.error('Failed to spawn Claude Code CLI:', err);
                 reject(err);
             });
@@ -165,7 +192,7 @@ Please implement this by creating actual working code files. Do not provide sugg
     async executeWithSubAgentDelegation(prompt, agentNames) {
         try {
             const delegationPrompt = this.createSubAgentDelegationPrompt(prompt, agentNames);
-            this.logger.info(`🤖 Delegating to Claude Code with subagent awareness...`);
+            this.logger.info('🤖 Delegating to Claude Code with subagent awareness...');
             this.logger.info(`📝 Expected subagents: ${agentNames.join(', ')}`);
             
             const response = await this.executePrompt(delegationPrompt);
@@ -177,7 +204,7 @@ Please implement this by creating actual working code files. Do not provide sugg
                 delegationType: 'automatic-subagent-delegation'
             };
         } catch (error) {
-            this.logger.error(`Failed to execute subagent delegation:`, error);
+            this.logger.error('Failed to execute subagent delegation:', error);
             return {
                 success: false,
                 response: `Error: Failed to execute subagent delegation - ${error.message}`,

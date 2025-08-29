@@ -47,7 +47,7 @@ router.post('/document', async (req, res) => {
             console.log(`📚 [SESSION-DOC] Session documented: ${result.documentId}`);
             console.log(`   Title: ${result.title}`);
             console.log(`   Timestamp: ${result.timestamp}`);
-            console.log(`   Stats:`, result.stats);
+            console.log('   Stats:', result.stats);
         }
 
         res.json(result);

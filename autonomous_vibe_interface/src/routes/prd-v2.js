@@ -227,7 +227,7 @@ class DesignSystemGenerator {
                     border: '#E0E0E0'
                 },
                 typography: {
-                    fontFamily: "'Inter', -apple-system, sans-serif",
+                    fontFamily: '\'Inter\', -apple-system, sans-serif',
                     headingSizes: ['2.5rem', '2rem', '1.5rem', '1.25rem', '1rem'],
                     bodySize: '1rem',
                     lineHeight: 1.6
@@ -255,7 +255,7 @@ class DesignSystemGenerator {
                     gradient: 'linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%)'
                 },
                 typography: {
-                    fontFamily: "'Inter', -apple-system, sans-serif",
+                    fontFamily: '\'Inter\', -apple-system, sans-serif',
                     headingSizes: ['3rem', '2.25rem', '1.875rem', '1.5rem', '1.25rem'],
                     bodySize: '1rem',
                     lineHeight: 1.5
@@ -289,7 +289,7 @@ class DesignSystemGenerator {
                     accent: '#10B981'
                 },
                 typography: {
-                    fontFamily: "'Space Grotesk', 'Inter', sans-serif",
+                    fontFamily: '\'Space Grotesk\', \'Inter\', sans-serif',
                     headingSizes: ['4rem', '3rem', '2.25rem', '1.875rem', '1.5rem'],
                     bodySize: '1.125rem',
                     lineHeight: 1.4,
@@ -320,7 +320,7 @@ class DesignSystemGenerator {
                     border: '#CBD5E1'
                 },
                 typography: {
-                    fontFamily: "'IBM Plex Sans', -apple-system, sans-serif",
+                    fontFamily: '\'IBM Plex Sans\', -apple-system, sans-serif',
                     headingSizes: ['2.25rem', '1.875rem', '1.5rem', '1.25rem', '1.125rem'],
                     bodySize: '1rem',
                     lineHeight: 1.75
@@ -348,7 +348,7 @@ class DesignSystemGenerator {
                     gradient: 'linear-gradient(135deg, #EC4899 0%, #8B5CF6 50%, #3B82F6 100%)'
                 },
                 typography: {
-                    fontFamily: "'Fredoka', 'Comic Neue', sans-serif",
+                    fontFamily: '\'Fredoka\', \'Comic Neue\', sans-serif',
                     headingSizes: ['3.5rem', '2.75rem', '2rem', '1.5rem', '1.25rem'],
                     bodySize: '1.125rem',
                     lineHeight: 1.7
@@ -553,7 +553,7 @@ class PRDGenerator {
         
         // Parse core features from user input
         const featureList = Array.isArray(coreFeatures) ? coreFeatures : 
-                          coreFeatures.split(',').map(f => f.trim());
+            coreFeatures.split(',').map(f => f.trim());
         
         featureList.forEach((feature, index) => {
             features.push({
@@ -844,7 +844,7 @@ class PRDGenerator {
                     'X-Frame-Options': 'DENY',
                     'X-Content-Type-Options': 'nosniff',
                     'Strict-Transport-Security': 'max-age=31536000',
-                    'Content-Security-Policy': "default-src 'self'"
+                    'Content-Security-Policy': 'default-src \'self\''
                 }
             },
             
@@ -1188,8 +1188,8 @@ class PRDGenerator {
             name: `create_${model.tableName}`,
             sql: `CREATE TABLE ${model.tableName} (
                 ${model.fields.map(f => 
-                    `${f.name} ${f.type}${f.primaryKey ? ' PRIMARY KEY' : ''}${f.unique ? ' UNIQUE' : ''}${f.nullable ? '' : ' NOT NULL'}${f.default ? ` DEFAULT ${f.default}` : ''}`
-                ).join(',\n    ')}
+                `${f.name} ${f.type}${f.primaryKey ? ' PRIMARY KEY' : ''}${f.unique ? ' UNIQUE' : ''}${f.nullable ? '' : ' NOT NULL'}${f.default ? ` DEFAULT ${f.default}` : ''}`
+            ).join(',\n    ')}
             );`
         }));
     }

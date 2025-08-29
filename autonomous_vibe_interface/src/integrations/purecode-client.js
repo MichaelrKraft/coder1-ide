@@ -56,22 +56,22 @@ class PureCodeClient {
         
         // Generate based on type
         switch (componentType) {
-            case 'pricing':
-                return this.generatePricingComponent(prompt);
-            case 'dashboard':
-                return this.generateDashboardComponent(prompt);
-            case 'form':
-                return this.generateFormComponent(prompt);
-            case 'card':
-                return this.generateCardComponent(prompt);
-            case 'navigation':
-                return this.generateNavigationComponent(prompt);
-            case 'hero':
-                return this.generateHeroComponent(prompt);
-            case 'button':
-                return this.generateButtonComponent(prompt);
-            default:
-                return this.generateGenericComponent(prompt);
+        case 'pricing':
+            return this.generatePricingComponent(prompt);
+        case 'dashboard':
+            return this.generateDashboardComponent(prompt);
+        case 'form':
+            return this.generateFormComponent(prompt);
+        case 'card':
+            return this.generateCardComponent(prompt);
+        case 'navigation':
+            return this.generateNavigationComponent(prompt);
+        case 'hero':
+            return this.generateHeroComponent(prompt);
+        case 'button':
+            return this.generateButtonComponent(prompt);
+        default:
+            return this.generateGenericComponent(prompt);
         }
     }
 

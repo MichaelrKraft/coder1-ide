@@ -641,7 +641,7 @@ class CommandParser extends EventEmitter {
             estimatedComplexity: 'medium',
             
             userFriendlyDescription: `Process request: ${input}`,
-            suggestedConfirmation: `I'll analyze your request and provide the best assistance possible.`,
+            suggestedConfirmation: 'I\'ll analyze your request and provide the best assistance possible.',
             
             originalInput: input,
             note: 'This command was processed using general analysis since no specific pattern was matched.'

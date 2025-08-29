@@ -477,24 +477,24 @@ class AutoHealer {
         
         // Type-specific fixes
         switch (issue.type) {
-            case 'npm-vulnerabilities':
-                return this.fixNpmVulnerabilities.bind(this);
-            case 'missing-dependencies':
-                return this.fixMissingDependencies.bind(this);
-            case 'syntax-error':
-                return this.fixSyntaxError.bind(this);
-            case 'typescript-errors':
-                return this.fixTypeScriptError.bind(this);
-            case 'build-error':
-                return this.fixBuildError.bind(this);
-            case 'security-exposure':
-                return this.fixSecurityExposure.bind(this);
-            case 'git-merge-conflict':
-                return this.fixMergeConflict.bind(this);
-            case 'git-detached-head':
-                return this.fixDetachedHead.bind(this);
-            default:
-                return null;
+        case 'npm-vulnerabilities':
+            return this.fixNpmVulnerabilities.bind(this);
+        case 'missing-dependencies':
+            return this.fixMissingDependencies.bind(this);
+        case 'syntax-error':
+            return this.fixSyntaxError.bind(this);
+        case 'typescript-errors':
+            return this.fixTypeScriptError.bind(this);
+        case 'build-error':
+            return this.fixBuildError.bind(this);
+        case 'security-exposure':
+            return this.fixSecurityExposure.bind(this);
+        case 'git-merge-conflict':
+            return this.fixMergeConflict.bind(this);
+        case 'git-detached-head':
+            return this.fixDetachedHead.bind(this);
+        default:
+            return null;
         }
     }
     
@@ -534,7 +534,7 @@ class AutoHealer {
      */
     async fixPermissions(issue) {
         console.log('🔐 Fixing file permissions...');
-        await exec(`chmod -R 755 .`, { cwd: this.projectPath });
+        await exec('chmod -R 755 .', { cwd: this.projectPath });
     }
     
     /**

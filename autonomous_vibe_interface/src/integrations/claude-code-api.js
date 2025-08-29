@@ -208,12 +208,12 @@ Format as a clear, structured brief with sections for requirements, features, de
         
         return {
             projectType,
-            complexity: "moderate",
+            complexity: 'moderate',
             keyFeatures: this.extractKeywords(userRequest),
-            missingInfo: ["More details needed about specific requirements"],
+            missingInfo: ['More details needed about specific requirements'],
             technicalRequirements: [],
-            businessGoals: ["Create functional web application"],
-            targetAudience: "General users"
+            businessGoals: ['Create functional web application'],
+            targetAudience: 'General users'
         };
     }
 

@@ -85,40 +85,40 @@ class VibeCoachWebSocket {
             dataTypes.forEach(dataType => {
                 let data;
                 switch (dataType) {
-                    case 'progress':
-                        data = {
-                            currentPhase: coachingData.progress.currentPhase,
-                            milestonesReached: coachingData.progress.milestonesReached,
-                            totalMilestones: coachingData.progress.totalMilestones,
-                            recentWin: coachingData.progress.recentWin,
-                            filesCreated: coachingData.progress.filesCreated,
-                            filesModified: coachingData.progress.filesModified,
-                            sessionDuration: Math.floor((Date.now() - vibeCoach.sessionData.startTime) / 60000)
-                        };
-                        break;
-                    case 'confidence':
-                        data = coachingData.confidence;
-                        break;
-                    case 'learning':
-                        data = coachingData.learning;
-                        break;
-                    case 'problems':
-                        data = {
-                            ...coachingData.problems,
-                            errorTracking: {
-                                errorsToday: vibeCoach.sessionData.errorTracking.errorsToday,
-                                errorsResolved: vibeCoach.sessionData.errorTracking.errorsResolved,
-                                resolutionRate: vibeCoach.sessionData.errorTracking.errorsToday > 0 ? 
-                                    Math.round((vibeCoach.sessionData.errorTracking.errorsResolved / vibeCoach.sessionData.errorTracking.errorsToday) * 100) : 100
-                            }
-                        };
-                        break;
-                    case 'achievements':
-                        data = coachingData.achievements;
-                        break;
-                    case 'next-steps':
-                        data = coachingData.nextSteps;
-                        break;
+                case 'progress':
+                    data = {
+                        currentPhase: coachingData.progress.currentPhase,
+                        milestonesReached: coachingData.progress.milestonesReached,
+                        totalMilestones: coachingData.progress.totalMilestones,
+                        recentWin: coachingData.progress.recentWin,
+                        filesCreated: coachingData.progress.filesCreated,
+                        filesModified: coachingData.progress.filesModified,
+                        sessionDuration: Math.floor((Date.now() - vibeCoach.sessionData.startTime) / 60000)
+                    };
+                    break;
+                case 'confidence':
+                    data = coachingData.confidence;
+                    break;
+                case 'learning':
+                    data = coachingData.learning;
+                    break;
+                case 'problems':
+                    data = {
+                        ...coachingData.problems,
+                        errorTracking: {
+                            errorsToday: vibeCoach.sessionData.errorTracking.errorsToday,
+                            errorsResolved: vibeCoach.sessionData.errorTracking.errorsResolved,
+                            resolutionRate: vibeCoach.sessionData.errorTracking.errorsToday > 0 ? 
+                                Math.round((vibeCoach.sessionData.errorTracking.errorsResolved / vibeCoach.sessionData.errorTracking.errorsToday) * 100) : 100
+                        }
+                    };
+                    break;
+                case 'achievements':
+                    data = coachingData.achievements;
+                    break;
+                case 'next-steps':
+                    data = coachingData.nextSteps;
+                    break;
                 }
 
                 if (data) {

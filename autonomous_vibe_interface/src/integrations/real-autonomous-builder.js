@@ -230,7 +230,7 @@ class RealAutonomousBuilder extends EventEmitter {
      * Build using Claude Code CLI only
      */
     async _buildWithClaudeOnly(buildSession) {
-        this.logger.log(`🤖 Building with Claude Code CLI`);
+        this.logger.log('🤖 Building with Claude Code CLI');
         
         buildSession.progress.phase = 'claude-generation';
         buildSession.progress.currentTask = 'Executing Claude Code CLI';
@@ -257,7 +257,7 @@ class RealAutonomousBuilder extends EventEmitter {
      * Build using internal project generator only
      */
     async _buildWithGeneratorOnly(buildSession) {
-        this.logger.log(`🏗️ Building with internal project generator`);
+        this.logger.log('🏗️ Building with internal project generator');
         
         buildSession.progress.phase = 'file-generation';
         buildSession.progress.currentTask = 'Generating project files';
@@ -288,7 +288,7 @@ class RealAutonomousBuilder extends EventEmitter {
      * Build using hybrid approach (Claude first, fallback to generator)
      */
     async _buildWithHybridApproach(buildSession) {
-        this.logger.log(`🔄 Building with hybrid approach`);
+        this.logger.log('🔄 Building with hybrid approach');
         
         try {
             // First, try Claude Code CLI
@@ -301,7 +301,7 @@ class RealAutonomousBuilder extends EventEmitter {
             );
             
             if (claudeResult.success && claudeResult.analysis.hasMainFile) {
-                this.logger.log(`✅ Claude Code CLI succeeded`);
+                this.logger.log('✅ Claude Code CLI succeeded');
                 
                 // Install dependencies if needed
                 if (claudeResult.analysis.packageJson) {
@@ -310,7 +310,7 @@ class RealAutonomousBuilder extends EventEmitter {
                 
                 return claudeResult;
             } else {
-                this.logger.log(`⚠️ Claude Code CLI incomplete, falling back to generator`);
+                this.logger.log('⚠️ Claude Code CLI incomplete, falling back to generator');
                 throw new Error('Claude result incomplete or missing main file');
             }
             
@@ -354,7 +354,7 @@ class RealAutonomousBuilder extends EventEmitter {
             return result;
             
         } catch (error) {
-            this.logger.error(`❌ GitHub repository creation failed:`, error);
+            this.logger.error('❌ GitHub repository creation failed:', error);
             return {
                 success: false,
                 error: error.message
@@ -387,7 +387,7 @@ class RealAutonomousBuilder extends EventEmitter {
             return result;
             
         } catch (error) {
-            this.logger.error(`❌ Deployment failed:`, error);
+            this.logger.error('❌ Deployment failed:', error);
             return {
                 success: false,
                 error: error.message

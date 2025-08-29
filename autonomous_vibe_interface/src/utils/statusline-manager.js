@@ -185,43 +185,43 @@ if (require.main === module) {
     const command = process.argv[2];
 
     switch (command) {
-        case 'apply':
-            manager.applyCoderOneStatusLine()
-                .then(() => process.exit(0))
-                .catch(() => process.exit(1));
-            break;
+    case 'apply':
+        manager.applyCoderOneStatusLine()
+            .then(() => process.exit(0))
+            .catch(() => process.exit(1));
+        break;
 
-        case 'restore':
-            manager.restoreOriginalStatusLine()
-                .then(() => process.exit(0))
-                .catch(() => process.exit(1));
-            break;
+    case 'restore':
+        manager.restoreOriginalStatusLine()
+            .then(() => process.exit(0))
+            .catch(() => process.exit(1));
+        break;
 
-        case 'status':
-            manager.getStatusLineStatus()
-                .then(status => {
-                    console.log('📊 StatusLine Status:');
-                    console.log(JSON.stringify(status, null, 2));
-                    process.exit(0);
-                })
-                .catch(() => process.exit(1));
-            break;
+    case 'status':
+        manager.getStatusLineStatus()
+            .then(status => {
+                console.log('📊 StatusLine Status:');
+                console.log(JSON.stringify(status, null, 2));
+                process.exit(0);
+            })
+            .catch(() => process.exit(1));
+        break;
 
-        case 'preview':
-            manager.previewStatusLine()
-                .then(() => process.exit(0))
-                .catch(() => process.exit(1));
-            break;
+    case 'preview':
+        manager.previewStatusLine()
+            .then(() => process.exit(0))
+            .catch(() => process.exit(1));
+        break;
 
-        default:
-            console.log('📋 StatusLine Manager Usage:');
-            console.log('');
-            console.log('  node statusline-manager.js apply   - Apply Coder One statusLine');
-            console.log('  node statusline-manager.js restore - Restore original statusLine');
-            console.log('  node statusline-manager.js status  - Show current status');
-            console.log('  node statusline-manager.js preview - Preview the template');
-            console.log('');
-            process.exit(0);
+    default:
+        console.log('📋 StatusLine Manager Usage:');
+        console.log('');
+        console.log('  node statusline-manager.js apply   - Apply Coder One statusLine');
+        console.log('  node statusline-manager.js restore - Restore original statusLine');
+        console.log('  node statusline-manager.js status  - Show current status');
+        console.log('  node statusline-manager.js preview - Preview the template');
+        console.log('');
+        process.exit(0);
     }
 }
 

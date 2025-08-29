@@ -167,24 +167,24 @@ class WorkflowExecutor extends EventEmitter {
         const { type, action, params } = task;
         
         switch (type) {
-            case 'compute':
-                return await this.executeCompute(action, params, context);
+        case 'compute':
+            return await this.executeCompute(action, params, context);
             
-            case 'transform':
-                return await this.executeTransform(action, params, context);
+        case 'transform':
+            return await this.executeTransform(action, params, context);
             
-            case 'analyze':
-                return await this.executeAnalyze(action, params, context);
+        case 'analyze':
+            return await this.executeAnalyze(action, params, context);
             
-            case 'generate':
-                return await this.executeGenerate(action, params, context);
+        case 'generate':
+            return await this.executeGenerate(action, params, context);
             
-            default:
-                // Execute as generic function
-                if (typeof action === 'function') {
-                    return await action(params, context);
-                }
-                throw new Error(`Unknown task type: ${type}`);
+        default:
+            // Execute as generic function
+            if (typeof action === 'function') {
+                return await action(params, context);
+            }
+            throw new Error(`Unknown task type: ${type}`);
         }
     }
     

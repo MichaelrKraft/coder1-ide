@@ -214,13 +214,13 @@ class AgentPersonalityLoader {
             ['implementer', {
                 type: 'implementer',
                 name: 'Implementer',
-                signaturePhrase: "Here's how to implement this",
+                signaturePhrase: 'Here\'s how to implement this',
                 temperature: 0.3,
                 model: 'claude-3-haiku-20240307',
                 maxTokens: 800,
                 focusAreas: ['Code implementation', 'Practical solutions', 'Step-by-step guidance'],
                 responseStyle: {
-                    startWith: "Here's how to implement this",
+                    startWith: 'Here\'s how to implement this',
                     focusOn: 'Concrete code solutions and implementation steps'
                 }
             }],

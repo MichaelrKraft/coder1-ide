@@ -143,101 +143,101 @@ router.post('/consult', async (req, res) => {
             let recommendations = [];
             
             switch(persona.id) {
-                case 'ui-ux-expert':
-                    insights = [
-                        'User interface should prioritize accessibility and mobile-first design',
-                        'Consider implementing a design system for consistency',
-                        'User experience flow needs clear navigation patterns'
-                    ];
-                    recommendations = [
-                        'Implement responsive breakpoints for all screen sizes',
-                        'Add ARIA labels and semantic HTML for accessibility',
-                        'Create user personas and journey maps before design',
-                        'Use progressive disclosure for complex features'
-                    ];
-                    break;
+            case 'ui-ux-expert':
+                insights = [
+                    'User interface should prioritize accessibility and mobile-first design',
+                    'Consider implementing a design system for consistency',
+                    'User experience flow needs clear navigation patterns'
+                ];
+                recommendations = [
+                    'Implement responsive breakpoints for all screen sizes',
+                    'Add ARIA labels and semantic HTML for accessibility',
+                    'Create user personas and journey maps before design',
+                    'Use progressive disclosure for complex features'
+                ];
+                break;
                     
-                case 'technical-architect':
-                    insights = [
-                        'Architecture should support scalability and maintainability',
-                        'Database design needs to handle future growth patterns',
-                        'API structure should follow RESTful principles'
-                    ];
-                    recommendations = [
-                        'Implement microservices architecture for modularity',
-                        'Use database indexing for performance optimization',
-                        'Add comprehensive API documentation',
-                        'Set up automated testing and CI/CD pipelines'
-                    ];
-                    break;
+            case 'technical-architect':
+                insights = [
+                    'Architecture should support scalability and maintainability',
+                    'Database design needs to handle future growth patterns',
+                    'API structure should follow RESTful principles'
+                ];
+                recommendations = [
+                    'Implement microservices architecture for modularity',
+                    'Use database indexing for performance optimization',
+                    'Add comprehensive API documentation',
+                    'Set up automated testing and CI/CD pipelines'
+                ];
+                break;
                     
-                case 'product-strategist':
-                    insights = [
-                        'Market positioning requires clear value proposition',
-                        'Feature prioritization should align with user needs',
-                        'Competitive analysis shows opportunities for differentiation'
-                    ];
-                    recommendations = [
-                        'Define clear success metrics and KPIs',
-                        'Implement user feedback collection systems',
-                        'Plan phased rollout strategy',
-                        'Create go-to-market launch plan'
-                    ];
-                    break;
+            case 'product-strategist':
+                insights = [
+                    'Market positioning requires clear value proposition',
+                    'Feature prioritization should align with user needs',
+                    'Competitive analysis shows opportunities for differentiation'
+                ];
+                recommendations = [
+                    'Define clear success metrics and KPIs',
+                    'Implement user feedback collection systems',
+                    'Plan phased rollout strategy',
+                    'Create go-to-market launch plan'
+                ];
+                break;
                     
-                case 'development-lead':
-                    insights = [
-                        'Code quality standards need to be established early',
-                        'Testing strategy should include unit and integration tests',
-                        'Development workflow requires clear branching strategy'
-                    ];
-                    recommendations = [
-                        'Set up code review processes and guidelines',
-                        'Implement automated testing with >80% coverage',
-                        'Use linting and formatting tools consistently',
-                        'Plan regular code refactoring sessions'
-                    ];
-                    break;
+            case 'development-lead':
+                insights = [
+                    'Code quality standards need to be established early',
+                    'Testing strategy should include unit and integration tests',
+                    'Development workflow requires clear branching strategy'
+                ];
+                recommendations = [
+                    'Set up code review processes and guidelines',
+                    'Implement automated testing with >80% coverage',
+                    'Use linting and formatting tools consistently',
+                    'Plan regular code refactoring sessions'
+                ];
+                break;
                     
-                case 'data-analyst':
-                    insights = [
-                        'Analytics implementation should track user behavior',
-                        'Data collection needs to comply with privacy regulations',
-                        'Performance metrics require real-time monitoring'
-                    ];
-                    recommendations = [
-                        'Set up event tracking for key user actions',
-                        'Implement A/B testing framework',
-                        'Create analytics dashboards for stakeholders',
-                        'Plan data retention and privacy policies'
-                    ];
-                    break;
+            case 'data-analyst':
+                insights = [
+                    'Analytics implementation should track user behavior',
+                    'Data collection needs to comply with privacy regulations',
+                    'Performance metrics require real-time monitoring'
+                ];
+                recommendations = [
+                    'Set up event tracking for key user actions',
+                    'Implement A/B testing framework',
+                    'Create analytics dashboards for stakeholders',
+                    'Plan data retention and privacy policies'
+                ];
+                break;
                     
-                case 'security-expert':
-                    insights = [
-                        'Security measures must be implemented from the start',
-                        'Data protection requires encryption at rest and in transit',
-                        'Authentication system needs multi-factor options'
-                    ];
-                    recommendations = [
-                        'Implement OAuth 2.0 for secure authentication',
-                        'Add rate limiting and DDoS protections',
-                        'Regular security audits and penetration testing',
-                        'Create incident response procedures'
-                    ];
-                    break;
+            case 'security-expert':
+                insights = [
+                    'Security measures must be implemented from the start',
+                    'Data protection requires encryption at rest and in transit',
+                    'Authentication system needs multi-factor options'
+                ];
+                recommendations = [
+                    'Implement OAuth 2.0 for secure authentication',
+                    'Add rate limiting and DDoS protections',
+                    'Regular security audits and penetration testing',
+                    'Create incident response procedures'
+                ];
+                break;
                     
-                default:
-                    insights = [
-                        'Project shows strong potential for success',
-                        'Implementation approach needs careful planning',
-                        'User requirements are well-defined'
-                    ];
-                    recommendations = [
-                        'Focus on core features for MVP',
-                        'Establish clear project milestones',
-                        'Plan regular stakeholder reviews'
-                    ];
+            default:
+                insights = [
+                    'Project shows strong potential for success',
+                    'Implementation approach needs careful planning',
+                    'User requirements are well-defined'
+                ];
+                recommendations = [
+                    'Focus on core features for MVP',
+                    'Establish clear project milestones',
+                    'Plan regular stakeholder reviews'
+                ];
             }
             
             return {

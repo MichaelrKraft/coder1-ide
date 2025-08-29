@@ -21,7 +21,7 @@ async function loadPromptLibrary() {
         console.error('[MCP Prompts] Failed to load prompt library:', error);
         // Return default prompts if file not found
         promptLibrary = {
-            version: "1.0.0",
+            version: '1.0.0',
             prompts: [
                 {
                     id: 'quick-start',
@@ -162,36 +162,36 @@ router.post('/execute', async (req, res) => {
             
             // Add context-specific responses
             switch(action) {
-                case 'quick-start':
-                    response.message = 'Welcome to Coder1! Here are your available commands...';
-                    response.data = {
-                        commands: [
-                            '/coder1/implement - Build features',
-                            '/coder1/debug - Fix issues',
-                            '/coder1/optimize - Improve performance'
-                        ]
-                    };
-                    break;
+            case 'quick-start':
+                response.message = 'Welcome to Coder1! Here are your available commands...';
+                response.data = {
+                    commands: [
+                        '/coder1/implement - Build features',
+                        '/coder1/debug - Fix issues',
+                        '/coder1/optimize - Improve performance'
+                    ]
+                };
+                break;
                     
-                case 'find-bugs':
-                    response.message = 'Scanning for bugs...';
-                    response.data = {
-                        bugsFound: Math.floor(Math.random() * 5),
-                        severity: ['low', 'medium', 'high'][Math.floor(Math.random() * 3)]
-                    };
-                    break;
+            case 'find-bugs':
+                response.message = 'Scanning for bugs...';
+                response.data = {
+                    bugsFound: Math.floor(Math.random() * 5),
+                    severity: ['low', 'medium', 'high'][Math.floor(Math.random() * 3)]
+                };
+                break;
                     
-                case 'optimize':
-                    response.message = 'Analyzing performance...';
-                    response.data = {
-                        optimizations: Math.floor(Math.random() * 10) + 1,
-                        estimatedImprovement: `${Math.floor(Math.random() * 50) + 10}%`
-                    };
-                    break;
+            case 'optimize':
+                response.message = 'Analyzing performance...';
+                response.data = {
+                    optimizations: Math.floor(Math.random() * 10) + 1,
+                    estimatedImprovement: `${Math.floor(Math.random() * 50) + 10}%`
+                };
+                break;
                     
-                default:
-                    response.message = `Executing ${action}...`;
-                    response.data = { status: 'processing' };
+            default:
+                response.message = `Executing ${action}...`;
+                response.data = { status: 'processing' };
             }
             
             // Send response

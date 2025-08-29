@@ -650,4 +650,23 @@ class MemorySystem extends EventEmitter {
     }
 }
 
+// Singleton instance
+let instance = null;
+
+// Export singleton getter
+MemorySystem.getInstance = function(options = {}) {
+    if (!instance) {
+        instance = new MemorySystem(options);
+    }
+    return instance;
+};
+
+// Clean up method for testing or shutdown
+MemorySystem.reset = function() {
+    if (instance && instance.autoSaveInterval) {
+        clearInterval(instance.autoSaveInterval);
+    }
+    instance = null;
+};
+
 module.exports = { MemorySystem };

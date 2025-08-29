@@ -72,28 +72,28 @@ class InterventionManager extends EventEmitter {
         // Response templates
         this.responseTemplates = {
             provide_specific_guidance: {
-                intro: "I understand you need clarification. Let me provide specific guidance:",
-                structure: "step_by_step",
+                intro: 'I understand you need clarification. Let me provide specific guidance:',
+                structure: 'step_by_step',
                 includeContext: true
             },
             inject_requirements: {
-                intro: "Here are the project requirements you need:",
-                structure: "requirements_list",
+                intro: 'Here are the project requirements you need:',
+                structure: 'requirements_list',
                 includeContext: true
             },
             create_claude_md: {
-                intro: "I'll create the CLAUDE.md file with the necessary requirements:",
-                structure: "file_content",
+                intro: 'I\'ll create the CLAUDE.md file with the necessary requirements:',
+                structure: 'file_content',
                 includeContext: true
             },
             provide_file_structure: {
-                intro: "Here's the current project structure to help you navigate:",
-                structure: "tree_view",
+                intro: 'Here\'s the current project structure to help you navigate:',
+                structure: 'tree_view',
                 includeContext: true
             },
             explain_context: {
-                intro: "Let me explain the full context of what we're building:",
-                structure: "comprehensive",
+                intro: 'Let me explain the full context of what we\'re building:',
+                structure: 'comprehensive',
                 includeContext: true
             }
         };
@@ -184,34 +184,34 @@ class InterventionManager extends EventEmitter {
         
         // Generate content based on intervention type
         switch (request.type) {
-            case 'requirements_missing':
-            case 'clarification_needed':
-                response = await this.generateRequirementsResponse(response, request);
-                break;
+        case 'requirements_missing':
+        case 'clarification_needed':
+            response = await this.generateRequirementsResponse(response, request);
+            break;
                 
-            case 'claude_md_missing':
-                response = await this.generateClaudeMdResponse(response, request);
-                break;
+        case 'claude_md_missing':
+            response = await this.generateClaudeMdResponse(response, request);
+            break;
                 
-            case 'file_not_found':
-            case 'path_error':
-                response = await this.generateFileGuidanceResponse(response, request);
-                break;
+        case 'file_not_found':
+        case 'path_error':
+            response = await this.generateFileGuidanceResponse(response, request);
+            break;
                 
-            case 'permission_request':
-                response = await this.generatePermissionResponse(response, request);
-                break;
+        case 'permission_request':
+            response = await this.generatePermissionResponse(response, request);
+            break;
                 
-            case 'error_recovery':
-                response = await this.generateErrorRecoveryResponse(response, request);
-                break;
+        case 'error_recovery':
+            response = await this.generateErrorRecoveryResponse(response, request);
+            break;
                 
-            case 'question_response':
-                response = await this.generateQuestionResponse(response, request);
-                break;
+        case 'question_response':
+            response = await this.generateQuestionResponse(response, request);
+            break;
                 
-            default:
-                response = await this.generateGeneralGuidanceResponse(response, request);
+        default:
+            response = await this.generateGeneralGuidanceResponse(response, request);
         }
         
         // Add context if needed
@@ -230,18 +230,18 @@ class InterventionManager extends EventEmitter {
      * Generate requirements response
      */
     async generateRequirementsResponse(response, request) {
-        response.content += "## Project Requirements\n\n";
+        response.content += '## Project Requirements\n\n';
         
         if (this.contextCache.requirements && this.contextCache.requirements.length > 0) {
             this.contextCache.requirements.forEach((req, index) => {
                 response.content += `${index + 1}. ${req}\n`;
             });
             
-            response.content += "\n## What to do next:\n";
-            response.content += "1. Start by creating the main application file\n";
-            response.content += "2. Implement each requirement one by one\n";
-            response.content += "3. Test as you build\n";
-            response.content += "4. Ask for help if you need clarification on any requirement\n";
+            response.content += '\n## What to do next:\n';
+            response.content += '1. Start by creating the main application file\n';
+            response.content += '2. Implement each requirement one by one\n';
+            response.content += '3. Test as you build\n';
+            response.content += '4. Ask for help if you need clarification on any requirement\n';
             
             response.actions.push({
                 type: 'provide_requirements',
@@ -249,8 +249,8 @@ class InterventionManager extends EventEmitter {
             });
         } else {
             // Fallback if no requirements cached
-            response.content += "I need to provide you with the project requirements. ";
-            response.content += "Please implement a basic application structure and I'll guide you through the specific requirements.\n";
+            response.content += 'I need to provide you with the project requirements. ';
+            response.content += 'Please implement a basic application structure and I\'ll guide you through the specific requirements.\n';
             
             response.actions.push({
                 type: 'fetch_requirements',
@@ -265,7 +265,7 @@ class InterventionManager extends EventEmitter {
      * Generate CLAUDE.md creation response
      */
     async generateClaudeMdResponse(response, request) {
-        response.content += "## Creating CLAUDE.md File\n\n";
+        response.content += '## Creating CLAUDE.md File\n\n';
         
         // Generate CLAUDE.md content
         const claudeMdContent = this.generateClaudeMdContent();
@@ -276,12 +276,12 @@ class InterventionManager extends EventEmitter {
         try {
             await fs.writeFile(claudeMdPath, claudeMdContent, 'utf8');
             
-            response.content += "✅ CLAUDE.md file has been created with the project requirements.\n\n";
-            response.content += "The file contains:\n";
-            response.content += "- Project overview\n";
-            response.content += "- Complete requirements list\n";
-            response.content += "- Implementation guidelines\n\n";
-            response.content += "You can now proceed with the implementation based on these requirements.\n";
+            response.content += '✅ CLAUDE.md file has been created with the project requirements.\n\n';
+            response.content += 'The file contains:\n';
+            response.content += '- Project overview\n';
+            response.content += '- Complete requirements list\n';
+            response.content += '- Implementation guidelines\n\n';
+            response.content += 'You can now proceed with the implementation based on these requirements.\n';
             
             response.actions.push({
                 type: 'create_file',
@@ -293,9 +293,9 @@ class InterventionManager extends EventEmitter {
             this.contextCache.claudeMdContent = claudeMdContent;
             
         } catch (error) {
-            response.content += "⚠️ I tried to create CLAUDE.md but encountered an issue.\n";
-            response.content += "Here's the content you need:\n\n";
-            response.content += "```markdown\n" + claudeMdContent + "\n```\n";
+            response.content += '⚠️ I tried to create CLAUDE.md but encountered an issue.\n';
+            response.content += 'Here\'s the content you need:\n\n';
+            response.content += '```markdown\n' + claudeMdContent + '\n```\n';
             
             response.actions.push({
                 type: 'provide_content',
@@ -310,30 +310,30 @@ class InterventionManager extends EventEmitter {
      * Generate file guidance response
      */
     async generateFileGuidanceResponse(response, request) {
-        response.content += "## Project Structure Guidance\n\n";
+        response.content += '## Project Structure Guidance\n\n';
         
         if (this.contextCache.projectStructure) {
-            response.content += "Here's the current project structure:\n\n";
-            response.content += "```\n";
+            response.content += 'Here\'s the current project structure:\n\n';
+            response.content += '```\n';
             response.content += this.formatProjectStructure(this.contextCache.projectStructure);
-            response.content += "```\n\n";
+            response.content += '```\n\n';
             
-            response.content += "## Recommended file locations:\n";
-            response.content += "- Main application: `src/app.js` or `index.js`\n";
-            response.content += "- Components: `src/components/`\n";
-            response.content += "- Routes/APIs: `src/routes/`\n";
-            response.content += "- Utilities: `src/utils/`\n";
-            response.content += "- Tests: `tests/` or `__tests__/`\n";
+            response.content += '## Recommended file locations:\n';
+            response.content += '- Main application: `src/app.js` or `index.js`\n';
+            response.content += '- Components: `src/components/`\n';
+            response.content += '- Routes/APIs: `src/routes/`\n';
+            response.content += '- Utilities: `src/utils/`\n';
+            response.content += '- Tests: `tests/` or `__tests__/`\n';
             
             response.actions.push({
                 type: 'provide_structure',
                 status: 'completed'
             });
         } else {
-            response.content += "The project is currently empty. Start by creating:\n";
-            response.content += "1. A main application file (e.g., `index.js` or `app.js`)\n";
-            response.content += "2. A `package.json` file for dependencies\n";
-            response.content += "3. Source directories as needed (`src/`, `components/`, etc.)\n";
+            response.content += 'The project is currently empty. Start by creating:\n';
+            response.content += '1. A main application file (e.g., `index.js` or `app.js`)\n';
+            response.content += '2. A `package.json` file for dependencies\n';
+            response.content += '3. Source directories as needed (`src/`, `components/`, etc.)\n';
         }
         
         return response;
@@ -343,7 +343,7 @@ class InterventionManager extends EventEmitter {
      * Generate permission response
      */
     async generatePermissionResponse(response, request) {
-        response.content += "## Permission Request\n\n";
+        response.content += '## Permission Request\n\n';
         
         // Parse the permission request
         const permissionDetails = this.parsePermissionRequest(request);
@@ -351,15 +351,15 @@ class InterventionManager extends EventEmitter {
         response.content += `Claude Code is requesting permission to: **${permissionDetails.action}**\n\n`;
         
         if (permissionDetails.files && permissionDetails.files.length > 0) {
-            response.content += "Files affected:\n";
+            response.content += 'Files affected:\n';
             permissionDetails.files.forEach(file => {
                 response.content += `- ${file}\n`;
             });
-            response.content += "\n";
+            response.content += '\n';
         }
         
-        response.content += "This action is part of the implementation process.\n";
-        response.content += "**Recommendation**: This appears to be a necessary step for the project.\n";
+        response.content += 'This action is part of the implementation process.\n';
+        response.content += '**Recommendation**: This appears to be a necessary step for the project.\n';
         
         response.actions.push({
             type: 'permission_request',
@@ -382,20 +382,20 @@ class InterventionManager extends EventEmitter {
      * Generate error recovery response
      */
     async generateErrorRecoveryResponse(response, request) {
-        response.content += "## Error Recovery Assistance\n\n";
+        response.content += '## Error Recovery Assistance\n\n';
         
         // Analyze the error
         const errorAnalysis = this.analyzeError(request);
         
         response.content += `I see you've encountered an error: ${errorAnalysis.type}\n\n`;
         
-        response.content += "## Suggested solutions:\n";
+        response.content += '## Suggested solutions:\n';
         errorAnalysis.solutions.forEach((solution, index) => {
             response.content += `${index + 1}. ${solution}\n`;
         });
         
-        response.content += "\n## Alternative approach:\n";
-        response.content += errorAnalysis.alternative || "Try a different implementation approach for this requirement.\n";
+        response.content += '\n## Alternative approach:\n';
+        response.content += errorAnalysis.alternative || 'Try a different implementation approach for this requirement.\n';
         
         response.actions.push({
             type: 'error_recovery',
@@ -410,16 +410,16 @@ class InterventionManager extends EventEmitter {
      * Generate question response
      */
     async generateQuestionResponse(response, request) {
-        response.content += "## Answer to Your Question\n\n";
+        response.content += '## Answer to Your Question\n\n';
         
         // Analyze the question type
         const questionAnalysis = this.analyzeQuestion(request);
         
-        response.content += questionAnalysis.answer + "\n\n";
+        response.content += questionAnalysis.answer + '\n\n';
         
         if (questionAnalysis.additionalGuidance) {
-            response.content += "## Additional guidance:\n";
-            response.content += questionAnalysis.additionalGuidance + "\n";
+            response.content += '## Additional guidance:\n';
+            response.content += questionAnalysis.additionalGuidance + '\n';
         }
         
         response.actions.push({
@@ -435,28 +435,28 @@ class InterventionManager extends EventEmitter {
      * Generate general guidance response
      */
     async generateGeneralGuidanceResponse(response, request) {
-        response.content += "## General Guidance\n\n";
+        response.content += '## General Guidance\n\n';
         
-        response.content += "I understand you need help. Here's what I recommend:\n\n";
+        response.content += 'I understand you need help. Here\'s what I recommend:\n\n';
         
-        response.content += "1. **Current Focus**: ";
+        response.content += '1. **Current Focus**: ';
         if (request.context && request.context.currentActivity) {
             response.content += `Continue with ${request.context.currentActivity}\n`;
         } else {
-            response.content += "Start with the main application structure\n";
+            response.content += 'Start with the main application structure\n';
         }
         
-        response.content += "2. **Next Steps**:\n";
-        response.content += "   - Review the requirements in CLAUDE.md\n";
-        response.content += "   - Implement one feature at a time\n";
-        response.content += "   - Test each feature as you build\n";
-        response.content += "   - Ask specific questions when you need help\n\n";
+        response.content += '2. **Next Steps**:\n';
+        response.content += '   - Review the requirements in CLAUDE.md\n';
+        response.content += '   - Implement one feature at a time\n';
+        response.content += '   - Test each feature as you build\n';
+        response.content += '   - Ask specific questions when you need help\n\n';
         
-        response.content += "3. **Best Practices**:\n";
-        response.content += "   - Keep code modular and clean\n";
-        response.content += "   - Add comments for complex logic\n";
-        response.content += "   - Handle errors appropriately\n";
-        response.content += "   - Follow the project structure guidelines\n";
+        response.content += '3. **Best Practices**:\n';
+        response.content += '   - Keep code modular and clean\n';
+        response.content += '   - Add comments for complex logic\n';
+        response.content += '   - Handle errors appropriately\n';
+        response.content += '   - Follow the project structure guidelines\n';
         
         response.actions.push({
             type: 'general_guidance',
@@ -656,30 +656,30 @@ class InterventionManager extends EventEmitter {
             
             if (questionPattern) {
                 switch (questionPattern.type) {
-                    case 'file_selection':
-                        analysis.type = 'file_selection';
-                        analysis.answer = 'Create files in the `src/` directory for source code, or in the root for configuration files.';
-                        analysis.additionalGuidance = 'Follow the standard project structure for the framework you\'re using.';
-                        break;
+                case 'file_selection':
+                    analysis.type = 'file_selection';
+                    analysis.answer = 'Create files in the `src/` directory for source code, or in the root for configuration files.';
+                    analysis.additionalGuidance = 'Follow the standard project structure for the framework you\'re using.';
+                    break;
                         
-                    case 'location_question':
-                        analysis.type = 'location';
-                        analysis.answer = 'Place new files in appropriate directories based on their purpose.';
-                        break;
+                case 'location_question':
+                    analysis.type = 'location';
+                    analysis.answer = 'Place new files in appropriate directories based on their purpose.';
+                    break;
                         
-                    case 'implementation_question':
-                        analysis.type = 'implementation';
-                        analysis.answer = 'Implement the feature following best practices and the requirements provided.';
-                        analysis.additionalGuidance = 'Start simple and iterate. Test as you build.';
-                        break;
+                case 'implementation_question':
+                    analysis.type = 'implementation';
+                    analysis.answer = 'Implement the feature following best practices and the requirements provided.';
+                    analysis.additionalGuidance = 'Start simple and iterate. Test as you build.';
+                    break;
                         
-                    case 'next_step_question':
-                        analysis.type = 'next_step';
-                        analysis.answer = 'Continue with the next requirement in the list, or complete the current feature first.';
-                        break;
+                case 'next_step_question':
+                    analysis.type = 'next_step';
+                    analysis.answer = 'Continue with the next requirement in the list, or complete the current feature first.';
+                    break;
                         
-                    default:
-                        analysis.answer = 'Proceed with the implementation based on the requirements and best practices.';
+                default:
+                    analysis.answer = 'Proceed with the implementation based on the requirements and best practices.';
                 }
             }
         }

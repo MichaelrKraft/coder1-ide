@@ -28,28 +28,28 @@ class PTYSupervisionAdapter extends EventEmitter {
             // Claude Code CLI specific questions with 1/2/3 option system
             questions: [
                 // Direct Claude Code CLI patterns
-                { pattern: /shall i proceed/i, response: "1", confidence: 0.95, type: 'claude_cli_proceed' },
-                { pattern: /should i continue/i, response: "1", confidence: 0.95, type: 'claude_cli_proceed' },
-                { pattern: /would you like me to/i, response: "1", confidence: 0.9, type: 'claude_cli_proceed' },
-                { pattern: /may i (create|implement|add|modify|update)/i, response: "1", confidence: 0.9, type: 'claude_cli_proceed' },
+                { pattern: /shall i proceed/i, response: '1', confidence: 0.95, type: 'claude_cli_proceed' },
+                { pattern: /should i continue/i, response: '1', confidence: 0.95, type: 'claude_cli_proceed' },
+                { pattern: /would you like me to/i, response: '1', confidence: 0.9, type: 'claude_cli_proceed' },
+                { pattern: /may i (create|implement|add|modify|update)/i, response: '1', confidence: 0.9, type: 'claude_cli_proceed' },
                 
                 // Claude Code CLI option detection (multiline support)
-                { pattern: /1\.\s*(means?\s*)?proceed(?:\s|$)/i, response: "1", confidence: 0.98, type: 'claude_cli_options' },
-                { pattern: /2\.\s*(means?\s*)?proceed.*don'?t ask/is, response: "1", confidence: 0.95, type: 'claude_cli_options' },
-                { pattern: /3\.\s*(means?\s*)?don'?t proceed/i, response: "1", confidence: 0.95, type: 'claude_cli_options' },
+                { pattern: /1\.\s*(means?\s*)?proceed(?:\s|$)/i, response: '1', confidence: 0.98, type: 'claude_cli_options' },
+                { pattern: /2\.\s*(means?\s*)?proceed.*don'?t ask/is, response: '1', confidence: 0.95, type: 'claude_cli_options' },
+                { pattern: /3\.\s*(means?\s*)?don'?t proceed/i, response: '1', confidence: 0.95, type: 'claude_cli_options' },
                 
                 // Detect when all three options are presented together
-                { pattern: /1\.\s*means.*2\.\s*means.*3\.\s*means/is, response: "1", confidence: 0.99, type: 'claude_cli_full_options' },
+                { pattern: /1\.\s*means.*2\.\s*means.*3\.\s*means/is, response: '1', confidence: 0.99, type: 'claude_cli_full_options' },
                 
                 // Generic approval patterns (lower confidence)
-                { pattern: /is this correct/i, response: "1", confidence: 0.8, type: 'generic_approval' },
-                { pattern: /can i (create|modify|update)/i, response: "1", confidence: 0.8, type: 'generic_approval' },
+                { pattern: /is this correct/i, response: '1', confidence: 0.8, type: 'generic_approval' },
+                { pattern: /can i (create|modify|update)/i, response: '1', confidence: 0.8, type: 'generic_approval' },
                 
                 // Auto-approve patterns (use option 2 - proceed and don't ask again)
-                { pattern: /shall i create.*tests?/i, response: "2", confidence: 0.85, type: 'auto_approve' },
-                { pattern: /should i add.*comment/i, response: "2", confidence: 0.85, type: 'auto_approve' },
-                { pattern: /may i format.*code/i, response: "2", confidence: 0.85, type: 'auto_approve' },
-                { pattern: /shall i create.*documentation/i, response: "2", confidence: 0.85, type: 'auto_approve' }
+                { pattern: /shall i create.*tests?/i, response: '2', confidence: 0.85, type: 'auto_approve' },
+                { pattern: /should i add.*comment/i, response: '2', confidence: 0.85, type: 'auto_approve' },
+                { pattern: /may i format.*code/i, response: '2', confidence: 0.85, type: 'auto_approve' },
+                { pattern: /shall i create.*documentation/i, response: '2', confidence: 0.85, type: 'auto_approve' }
             ],
             
             // Confusion patterns that need help
@@ -314,7 +314,7 @@ class PTYSupervisionAdapter extends EventEmitter {
             
             // Debug: Test specific patterns for troubleshooting
             if (text.toLowerCase().includes('shall i create')) {
-                this.logger.log(`🐛 Debug: "shall i create" detected - checking auto-approve patterns...`);
+                this.logger.log('🐛 Debug: "shall i create" detected - checking auto-approve patterns...');
                 for (const pattern of this.patterns.questions) {
                     if (pattern.type === 'auto_approve') {
                         const match = text.match(pattern.pattern);
@@ -324,7 +324,7 @@ class PTYSupervisionAdapter extends EventEmitter {
             }
             
             if (text.toLowerCase().includes('1. means') || text.toLowerCase().includes('2. means')) {
-                this.logger.log(`🐛 Debug: Option format detected - checking option patterns...`);
+                this.logger.log('🐛 Debug: Option format detected - checking option patterns...');
                 for (const pattern of this.patterns.questions) {
                     if (pattern.type.includes('options')) {
                         const match = text.match(pattern.pattern);
@@ -462,10 +462,10 @@ class PTYSupervisionAdapter extends EventEmitter {
      */
     getOptionDescription(option) {
         switch (option) {
-            case '1': return 'Proceed';
-            case '2': return 'Proceed and don\'t ask again';
-            case '3': return 'Don\'t proceed, let me tell you';
-            default: return `Option ${option}`;
+        case '1': return 'Proceed';
+        case '2': return 'Proceed and don\'t ask again';
+        case '3': return 'Don\'t proceed, let me tell you';
+        default: return `Option ${option}`;
         }
     }
 
@@ -490,7 +490,7 @@ class PTYSupervisionAdapter extends EventEmitter {
             this.requestSupervisionGuidance(confusionMatch);
         } else {
             // No supervision system - just log and alert
-            this.logger.log(`⚠️ Confusion detected but no supervision system available for guidance`);
+            this.logger.log('⚠️ Confusion detected but no supervision system available for guidance');
         }
     }
 
@@ -571,7 +571,7 @@ class PTYSupervisionAdapter extends EventEmitter {
                     this.logger.log(`💬 Injected response via ClaudeInputHandler: ${response}`);
                 } else {
                     // Fallback: Simulate typing character by character
-                    this.logger.log(`💬 Using character-by-character typing simulation`);
+                    this.logger.log('💬 Using character-by-character typing simulation');
                     for (const char of response) {
                         this.pty.write(char);
                         await new Promise(resolve => setTimeout(resolve, 10)); // Small delay
@@ -581,7 +581,7 @@ class PTYSupervisionAdapter extends EventEmitter {
                 }
             } else {
                 // No ClaudeInputHandler - simulate typing
-                this.logger.log(`💬 No ClaudeInputHandler - simulating typing`);
+                this.logger.log('💬 No ClaudeInputHandler - simulating typing');
                 for (const char of response) {
                     this.pty.write(char);
                     await new Promise(resolve => setTimeout(resolve, 10)); // Small delay
@@ -608,7 +608,7 @@ class PTYSupervisionAdapter extends EventEmitter {
             // Clear waiting flag after reasonable time (extended for safer loop prevention)
             setTimeout(() => {
                 this.waitingForResponse = false;
-                this.logger.log(`⏰ Response timeout cleared - ready for new interventions`);
+                this.logger.log('⏰ Response timeout cleared - ready for new interventions');
             }, 8000); // Extended from 3 seconds to 8 seconds
             
             return true;

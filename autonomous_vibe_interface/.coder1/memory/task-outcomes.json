@@ -366,5 +366,3467 @@
       "sessionId": "supervision-1754599409415",
       "startTime": 1754599409435
     }
+  },
+  {
+    "id": "1754605008547-b6ob7qcfg",
+    "taskDescription": "Help me build a modern web application with best practices",
+    "agentType": "supervisor",
+    "outcome": "task_started",
+    "successRating": null,
+    "timeTaken": null,
+    "approachUsed": "supervision_mode",
+    "filesModified": [],
+    "createdAt": 1754605008547,
+    "metadata": {
+      "sessionId": "supervision-1754605008540",
+      "startTime": 1754605008547
+    }
+  },
+  {
+    "id": "1754620131911-an9ddmzy1",
+    "taskDescription": "claude",
+    "agentType": "integrated-supervisor",
+    "outcome": "comprehensive_supervision_started",
+    "successRating": null,
+    "timeTaken": null,
+    "approachUsed": "ai_supervising_ai",
+    "filesModified": [],
+    "createdAt": 1754620131911,
+    "metadata": {
+      "sessionId": "supervision-1754620131854",
+      "startTime": 1754620131910,
+      "mode": "comprehensive",
+      "features": [
+        "real-time monitoring",
+        "intelligent intervention",
+        "context injection",
+        "permission handling",
+        "workflow tracking"
+      ]
+    }
+  },
+  {
+    "id": "1754623669632-z2hvf7xsf",
+    "taskDescription": "claude",
+    "agentType": "integrated-supervisor",
+    "outcome": "comprehensive_supervision_started",
+    "successRating": null,
+    "timeTaken": null,
+    "approachUsed": "ai_supervising_ai",
+    "filesModified": [],
+    "createdAt": 1754623669632,
+    "metadata": {
+      "sessionId": "supervision-1754623669561",
+      "startTime": 1754623669632,
+      "mode": "comprehensive",
+      "features": [
+        "real-time monitoring",
+        "intelligent intervention",
+        "context injection",
+        "permission handling",
+        "workflow tracking"
+      ]
+    }
+  },
+  {
+    "id": "1754624581461-ktq65koay",
+    "taskDescription": "claude",
+    "agentType": "integrated-supervisor",
+    "outcome": "comprehensive_supervision_started",
+    "successRating": null,
+    "timeTaken": null,
+    "approachUsed": "ai_supervising_ai",
+    "filesModified": [],
+    "createdAt": 1754624581461,
+    "metadata": {
+      "sessionId": "supervision-1754624581412",
+      "startTime": 1754624581461,
+      "mode": "comprehensive",
+      "features": [
+        "real-time monitoring",
+        "intelligent intervention",
+        "context injection",
+        "permission handling",
+        "workflow tracking"
+      ]
+    }
+  },
+  {
+    "id": "1754625204716-wan8beuyn",
+    "taskDescription": "Help me build a modern web application with best practices",
+    "agentType": "integrated-supervisor",
+    "outcome": "comprehensive_supervision_started",
+    "successRating": null,
+    "timeTaken": null,
+    "approachUsed": "ai_supervising_ai",
+    "filesModified": [],
+    "createdAt": 1754625204716,
+    "metadata": {
+      "sessionId": "supervision-1754625204658",
+      "startTime": 1754625204716,
+      "mode": "comprehensive",
+      "features": [
+        "real-time monitoring",
+        "intelligent intervention",
+        "context injection",
+        "permission handling",
+        "workflow tracking"
+      ]
+    }
+  },
+  {
+    "id": "1754625220272-9o1xg9w5m",
+    "taskDescription": "Help me build a modern web application with best practices",
+    "agentType": "integrated-supervisor",
+    "outcome": "comprehensive_supervision_started",
+    "successRating": null,
+    "timeTaken": null,
+    "approachUsed": "ai_supervising_ai",
+    "filesModified": [],
+    "createdAt": 1754625220272,
+    "metadata": {
+      "sessionId": "supervision-1754625220225",
+      "startTime": 1754625220272,
+      "mode": "comprehensive",
+      "features": [
+        "real-time monitoring",
+        "intelligent intervention",
+        "context injection",
+        "permission handling",
+        "workflow tracking"
+      ]
+    }
+  },
+  {
+    "id": "1754626506139-8epsugs95",
+    "taskDescription": "claude",
+    "agentType": "integrated-supervisor",
+    "outcome": "comprehensive_supervision_started",
+    "successRating": null,
+    "timeTaken": null,
+    "approachUsed": "ai_supervising_ai",
+    "filesModified": [],
+    "createdAt": 1754626506139,
+    "metadata": {
+      "sessionId": "supervision-1754626506082",
+      "startTime": 1754626506138,
+      "mode": "comprehensive",
+      "features": [
+        "real-time monitoring",
+        "intelligent intervention",
+        "context injection",
+        "permission handling",
+        "workflow tracking"
+      ]
+    }
+  },
+  {
+    "id": "1754627461807-edor9s1e5",
+    "taskDescription": "claude",
+    "agentType": "integrated-supervisor",
+    "outcome": "comprehensive_supervision_started",
+    "successRating": null,
+    "timeTaken": null,
+    "approachUsed": "ai_supervising_ai",
+    "filesModified": [],
+    "createdAt": 1754627461807,
+    "metadata": {
+      "sessionId": "supervision-1754627461717",
+      "startTime": 1754627461807,
+      "mode": "comprehensive",
+      "features": [
+        "real-time monitoring",
+        "intelligent intervention",
+        "context injection",
+        "permission handling",
+        "workflow tracking"
+      ]
+    }
+  },
+  {
+    "id": "1754628114398-8i1nifjzj",
+    "taskDescription": "claude",
+    "agentType": "integrated-supervisor",
+    "outcome": "comprehensive_supervision_started",
+    "successRating": null,
+    "timeTaken": null,
+    "approachUsed": "ai_supervising_ai",
+    "filesModified": [],
+    "createdAt": 1754628114398,
+    "metadata": {
+      "sessionId": "supervision-1754628114358",
+      "startTime": 1754628114398,
+      "mode": "comprehensive",
+      "features": [
+        "real-time monitoring",
+        "intelligent intervention",
+        "context injection",
+        "permission handling",
+        "workflow tracking"
+      ]
+    }
+  },
+  {
+    "id": "1754629170401-khz3th6b1",
+    "taskDescription": "claude",
+    "agentType": "integrated-supervisor",
+    "outcome": "comprehensive_supervision_started",
+    "successRating": null,
+    "timeTaken": null,
+    "approachUsed": "ai_supervising_ai",
+    "filesModified": [],
+    "createdAt": 1754629170401,
+    "metadata": {
+      "sessionId": "supervision-1754629170356",
+      "startTime": 1754629170401,
+      "mode": "comprehensive",
+      "features": [
+        "real-time monitoring",
+        "intelligent intervention",
+        "context injection",
+        "permission handling",
+        "workflow tracking"
+      ]
+    }
+  },
+  {
+    "id": "1754629313321-hj2rw1ocs",
+    "taskDescription": "claude",
+    "agentType": "integrated-supervisor",
+    "outcome": "comprehensive_supervision_started",
+    "successRating": null,
+    "timeTaken": null,
+    "approachUsed": "ai_supervising_ai",
+    "filesModified": [],
+    "createdAt": 1754629313321,
+    "metadata": {
+      "sessionId": "supervision-1754629313288",
+      "startTime": 1754629313321,
+      "mode": "comprehensive",
+      "features": [
+        "real-time monitoring",
+        "intelligent intervention",
+        "context injection",
+        "permission handling",
+        "workflow tracking"
+      ]
+    }
+  },
+  {
+    "id": "1754629621071-ipzvqbht9",
+    "taskDescription": "claude",
+    "agentType": "integrated-supervisor",
+    "outcome": "comprehensive_supervision_started",
+    "successRating": null,
+    "timeTaken": null,
+    "approachUsed": "ai_supervising_ai",
+    "filesModified": [],
+    "createdAt": 1754629621071,
+    "metadata": {
+      "sessionId": "supervision-1754629621035",
+      "startTime": 1754629621071,
+      "mode": "comprehensive",
+      "features": [
+        "real-time monitoring",
+        "intelligent intervention",
+        "context injection",
+        "permission handling",
+        "workflow tracking"
+      ]
+    }
+  },
+  {
+    "id": "1754630362393-u5wjxbbp7",
+    "taskDescription": "claude",
+    "agentType": "integrated-supervisor",
+    "outcome": "comprehensive_supervision_started",
+    "successRating": null,
+    "timeTaken": null,
+    "approachUsed": "ai_supervising_ai",
+    "filesModified": [],
+    "createdAt": 1754630362393,
+    "metadata": {
+      "sessionId": "supervision-1754630362317",
+      "startTime": 1754630362393,
+      "mode": "comprehensive",
+      "features": [
+        "real-time monitoring",
+        "intelligent intervention",
+        "context injection",
+        "permission handling",
+        "workflow tracking"
+      ]
+    }
+  },
+  {
+    "id": "1754631004265-1ti83mf82",
+    "taskDescription": "claude",
+    "agentType": "integrated-supervisor",
+    "outcome": "comprehensive_supervision_started",
+    "successRating": null,
+    "timeTaken": null,
+    "approachUsed": "ai_supervising_ai",
+    "filesModified": [],
+    "createdAt": 1754631004265,
+    "metadata": {
+      "sessionId": "supervision-1754631004229",
+      "startTime": 1754631004265,
+      "mode": "comprehensive",
+      "features": [
+        "real-time monitoring",
+        "intelligent intervention",
+        "context injection",
+        "permission handling",
+        "workflow tracking"
+      ]
+    }
+  },
+  {
+    "id": "1754669482120-qfy2c46f5",
+    "taskDescription": "claude",
+    "agentType": "integrated-supervisor",
+    "outcome": "comprehensive_supervision_started",
+    "successRating": null,
+    "timeTaken": null,
+    "approachUsed": "ai_supervising_ai",
+    "filesModified": [],
+    "createdAt": 1754669482120,
+    "metadata": {
+      "sessionId": "supervision-1754669482076",
+      "startTime": 1754669482119,
+      "mode": "comprehensive",
+      "features": [
+        "real-time monitoring",
+        "intelligent intervention",
+        "context injection",
+        "permission handling",
+        "workflow tracking"
+      ]
+    }
+  },
+  {
+    "id": "1754669521456-q9lwgxcxg",
+    "taskDescription": "claude",
+    "agentType": "integrated-supervisor",
+    "outcome": "comprehensive_supervision_started",
+    "successRating": null,
+    "timeTaken": null,
+    "approachUsed": "ai_supervising_ai",
+    "filesModified": [],
+    "createdAt": 1754669521456,
+    "metadata": {
+      "sessionId": "supervision-1754669521424",
+      "startTime": 1754669521456,
+      "mode": "comprehensive",
+      "features": [
+        "real-time monitoring",
+        "intelligent intervention",
+        "context injection",
+        "permission handling",
+        "workflow tracking"
+      ]
+    }
+  },
+  {
+    "id": "1754669769141-hewsqvrit",
+    "taskDescription": "claude",
+    "agentType": "integrated-supervisor",
+    "outcome": "comprehensive_supervision_started",
+    "successRating": null,
+    "timeTaken": null,
+    "approachUsed": "ai_supervising_ai",
+    "filesModified": [],
+    "createdAt": 1754669769141,
+    "metadata": {
+      "sessionId": "supervision-1754669769081",
+      "startTime": 1754669769141,
+      "mode": "comprehensive",
+      "features": [
+        "real-time monitoring",
+        "intelligent intervention",
+        "context injection",
+        "permission handling",
+        "workflow tracking"
+      ]
+    }
+  },
+  {
+    "id": "1754675799303-zn2sq24s8",
+    "taskDescription": "claude",
+    "agentType": "integrated-supervisor",
+    "outcome": "comprehensive_supervision_started",
+    "successRating": null,
+    "timeTaken": null,
+    "approachUsed": "ai_supervising_ai",
+    "filesModified": [],
+    "createdAt": 1754675799303,
+    "metadata": {
+      "sessionId": "supervision-1754675799237",
+      "startTime": 1754675799303,
+      "mode": "comprehensive",
+      "features": [
+        "real-time monitoring",
+        "intelligent intervention",
+        "context injection",
+        "permission handling",
+        "workflow tracking"
+      ]
+    }
+  },
+  {
+    "id": "1754676658534-f8ixia7ze",
+    "taskDescription": "claude",
+    "agentType": "integrated-supervisor",
+    "outcome": "comprehensive_supervision_started",
+    "successRating": null,
+    "timeTaken": null,
+    "approachUsed": "ai_supervising_ai",
+    "filesModified": [],
+    "createdAt": 1754676658534,
+    "metadata": {
+      "sessionId": "supervision-1754676658479",
+      "startTime": 1754676658534,
+      "mode": "comprehensive",
+      "features": [
+        "real-time monitoring",
+        "intelligent intervention",
+        "context injection",
+        "permission handling",
+        "workflow tracking"
+      ]
+    }
+  },
+  {
+    "id": "1754677317326-qet8sxgim",
+    "taskDescription": "test supervision",
+    "agentType": "integrated-supervisor",
+    "outcome": "comprehensive_supervision_started",
+    "successRating": null,
+    "timeTaken": null,
+    "approachUsed": "ai_supervising_ai",
+    "filesModified": [],
+    "createdAt": 1754677317326,
+    "metadata": {
+      "sessionId": "test-123",
+      "startTime": 1754677317326,
+      "mode": "comprehensive",
+      "features": [
+        "real-time monitoring",
+        "intelligent intervention",
+        "context injection",
+        "permission handling",
+        "workflow tracking"
+      ]
+    }
+  },
+  {
+    "id": "1754681060112-5gjgryxlq",
+    "taskDescription": "claude",
+    "agentType": "integrated-supervisor",
+    "outcome": "comprehensive_supervision_started",
+    "successRating": null,
+    "timeTaken": null,
+    "approachUsed": "ai_supervising_ai",
+    "filesModified": [],
+    "createdAt": 1754681060112,
+    "metadata": {
+      "sessionId": "supervision-1754681060000",
+      "startTime": 1754681060112,
+      "mode": "comprehensive",
+      "features": [
+        "real-time monitoring",
+        "intelligent intervention",
+        "context injection",
+        "permission handling",
+        "workflow tracking"
+      ]
+    }
+  },
+  {
+    "id": "1754700810363-9519bhg2q",
+    "taskDescription": "Help me build a modern web application with best practices",
+    "agentType": "integrated-supervisor",
+    "outcome": "comprehensive_supervision_started",
+    "successRating": null,
+    "timeTaken": null,
+    "approachUsed": "ai_supervising_ai",
+    "filesModified": [],
+    "createdAt": 1754700810363,
+    "metadata": {
+      "sessionId": "supervision-1754700810203",
+      "startTime": 1754700810362,
+      "mode": "comprehensive",
+      "features": [
+        "real-time monitoring",
+        "intelligent intervention",
+        "context injection",
+        "permission handling",
+        "workflow tracking"
+      ]
+    }
+  },
+  {
+    "id": "1754700893390-wfriapbb4",
+    "taskDescription": "claude",
+    "agentType": "integrated-supervisor",
+    "outcome": "comprehensive_supervision_started",
+    "successRating": null,
+    "timeTaken": null,
+    "approachUsed": "ai_supervising_ai",
+    "filesModified": [],
+    "createdAt": 1754700893390,
+    "metadata": {
+      "sessionId": "supervision-1754700893322",
+      "startTime": 1754700893390,
+      "mode": "comprehensive",
+      "features": [
+        "real-time monitoring",
+        "intelligent intervention",
+        "context injection",
+        "permission handling",
+        "workflow tracking"
+      ]
+    }
+  },
+  {
+    "id": "1754700974351-js2nmath2",
+    "taskDescription": "claude",
+    "agentType": "integrated-supervisor",
+    "outcome": "comprehensive_supervision_started",
+    "successRating": null,
+    "timeTaken": null,
+    "approachUsed": "ai_supervising_ai",
+    "filesModified": [],
+    "createdAt": 1754700974351,
+    "metadata": {
+      "sessionId": "supervision-1754700974157",
+      "startTime": 1754700974351,
+      "mode": "comprehensive",
+      "features": [
+        "real-time monitoring",
+        "intelligent intervention",
+        "context injection",
+        "permission handling",
+        "workflow tracking"
+      ]
+    }
+  },
+  {
+    "id": "1754701297569-rcn9r6gtu",
+    "taskDescription": "claude",
+    "agentType": "integrated-supervisor",
+    "outcome": "comprehensive_supervision_started",
+    "successRating": null,
+    "timeTaken": null,
+    "approachUsed": "ai_supervising_ai",
+    "filesModified": [],
+    "createdAt": 1754701297569,
+    "metadata": {
+      "sessionId": "supervision-1754701297491",
+      "startTime": 1754701297569,
+      "mode": "comprehensive",
+      "features": [
+        "real-time monitoring",
+        "intelligent intervention",
+        "context injection",
+        "permission handling",
+        "workflow tracking"
+      ]
+    }
+  },
+  {
+    "id": "1754701509586-vw873xire",
+    "taskDescription": "Help me build a modern web application with best practices",
+    "agentType": "integrated-supervisor",
+    "outcome": "comprehensive_supervision_started",
+    "successRating": null,
+    "timeTaken": null,
+    "approachUsed": "ai_supervising_ai",
+    "filesModified": [],
+    "createdAt": 1754701509586,
+    "metadata": {
+      "sessionId": "supervision-1754701509500",
+      "startTime": 1754701509586,
+      "mode": "comprehensive",
+      "features": [
+        "real-time monitoring",
+        "intelligent intervention",
+        "context injection",
+        "permission handling",
+        "workflow tracking"
+      ]
+    }
+  },
+  {
+    "id": "1754702482985-1bv2f5t1j",
+    "taskDescription": "Help me build a modern web application with best practices",
+    "agentType": "integrated-supervisor",
+    "outcome": "comprehensive_supervision_started",
+    "successRating": null,
+    "timeTaken": null,
+    "approachUsed": "ai_supervising_ai",
+    "filesModified": [],
+    "createdAt": 1754702482985,
+    "metadata": {
+      "sessionId": "supervision-1754702482913",
+      "startTime": 1754702482985,
+      "mode": "comprehensive",
+      "features": [
+        "real-time monitoring",
+        "intelligent intervention",
+        "context injection",
+        "permission handling",
+        "workflow tracking"
+      ]
+    }
+  },
+  {
+    "id": "1754702533520-gwpu7lc48",
+    "taskDescription": "Help me build a modern web application with best practices",
+    "agentType": "integrated-supervisor",
+    "outcome": "comprehensive_supervision_started",
+    "successRating": null,
+    "timeTaken": null,
+    "approachUsed": "ai_supervising_ai",
+    "filesModified": [],
+    "createdAt": 1754702533520,
+    "metadata": {
+      "sessionId": "supervision-1754702533469",
+      "startTime": 1754702533520,
+      "mode": "comprehensive",
+      "features": [
+        "real-time monitoring",
+        "intelligent intervention",
+        "context injection",
+        "permission handling",
+        "workflow tracking"
+      ]
+    }
+  },
+  {
+    "id": "1754702831857-xl7mei61p",
+    "taskDescription": "Help me build a modern web application with best practices",
+    "agentType": "integrated-supervisor",
+    "outcome": "comprehensive_supervision_started",
+    "successRating": null,
+    "timeTaken": null,
+    "approachUsed": "ai_supervising_ai",
+    "filesModified": [],
+    "createdAt": 1754702831857,
+    "metadata": {
+      "sessionId": "supervision-1754702831796",
+      "startTime": 1754702831857,
+      "mode": "comprehensive",
+      "features": [
+        "real-time monitoring",
+        "intelligent intervention",
+        "context injection",
+        "permission handling",
+        "workflow tracking"
+      ]
+    }
+  },
+  {
+    "id": "1754705410035-zg20bozul",
+    "taskDescription": "Help me build a modern web application with best practices",
+    "agentType": "integrated-supervisor",
+    "outcome": "comprehensive_supervision_started",
+    "successRating": null,
+    "timeTaken": null,
+    "approachUsed": "ai_supervising_ai",
+    "filesModified": [],
+    "createdAt": 1754705410035,
+    "metadata": {
+      "sessionId": "supervision-1754705409954",
+      "startTime": 1754705410035,
+      "mode": "comprehensive",
+      "features": [
+        "real-time monitoring",
+        "intelligent intervention",
+        "context injection",
+        "permission handling",
+        "workflow tracking"
+      ]
+    }
+  },
+  {
+    "id": "1754713784005-t58odspfo",
+    "taskDescription": "Help me build a modern web application with best practices",
+    "agentType": "coordinator",
+    "outcome": "parallel_coordination_started",
+    "successRating": null,
+    "timeTaken": null,
+    "approachUsed": "intelligent_agent_selection",
+    "filesModified": [],
+    "createdAt": 1754713784005,
+    "metadata": {
+      "sessionId": "parallel-1754713783893",
+      "agentCount": 1,
+      "agentTypes": [
+        "frontend"
+      ]
+    }
+  },
+  {
+    "id": "1754713784007-kb9qcwos4",
+    "taskDescription": "Parallel agents execution: 1 agents",
+    "agentType": "coordinator",
+    "outcome": {
+      "agentCount": 1,
+      "consensusReached": false,
+      "executionTime": 2
+    },
+    "successRating": 6,
+    "timeTaken": 2,
+    "approachUsed": "parallel-coordination",
+    "filesModified": [],
+    "createdAt": 1754713784007,
+    "metadata": {
+      "sessionId": "parallel-1754713783893",
+      "agentTypes": [
+        "frontend"
+      ]
+    }
+  },
+  {
+    "id": "1754752682800-sqybqeijy",
+    "taskDescription": "Help me build a modern web application with best practices",
+    "agentType": "coordinator",
+    "outcome": "parallel_coordination_started",
+    "successRating": null,
+    "timeTaken": null,
+    "approachUsed": "intelligent_agent_selection",
+    "filesModified": [],
+    "createdAt": 1754752682800,
+    "metadata": {
+      "sessionId": "parallel-1754752682682",
+      "agentCount": 1,
+      "agentTypes": [
+        "frontend"
+      ]
+    }
+  },
+  {
+    "id": "1754752682801-9kdjttum3",
+    "taskDescription": "Parallel agents execution: 1 agents",
+    "agentType": "coordinator",
+    "outcome": {
+      "agentCount": 1,
+      "consensusReached": false,
+      "executionTime": 1
+    },
+    "successRating": 6,
+    "timeTaken": 1,
+    "approachUsed": "parallel-coordination",
+    "filesModified": [],
+    "createdAt": 1754752682801,
+    "metadata": {
+      "sessionId": "parallel-1754752682682",
+      "agentTypes": [
+        "frontend"
+      ]
+    }
+  },
+  {
+    "id": "1754756478408-skn5mbl9c",
+    "taskDescription": "Help me build a modern web application with best practices",
+    "agentType": "coordinator",
+    "outcome": "parallel_coordination_started",
+    "successRating": null,
+    "timeTaken": null,
+    "approachUsed": "intelligent_agent_selection",
+    "filesModified": [],
+    "createdAt": 1754756478408,
+    "metadata": {
+      "sessionId": "parallel-1754756478283",
+      "agentCount": 1,
+      "agentTypes": [
+        "frontend"
+      ]
+    }
+  },
+  {
+    "id": "1754756478408-rpknz5j28",
+    "taskDescription": "Parallel agents execution: 1 agents",
+    "agentType": "coordinator",
+    "outcome": {
+      "agentCount": 1,
+      "consensusReached": false,
+      "executionTime": 0
+    },
+    "successRating": 6,
+    "timeTaken": 0,
+    "approachUsed": "parallel-coordination",
+    "filesModified": [],
+    "createdAt": 1754756478408,
+    "metadata": {
+      "sessionId": "parallel-1754756478283",
+      "agentTypes": [
+        "frontend"
+      ]
+    }
+  },
+  {
+    "id": "1754841908036-15gyzzgxc",
+    "taskDescription": "Create a simple todo list component",
+    "agentType": "coordinator",
+    "outcome": "parallel_coordination_started",
+    "successRating": null,
+    "timeTaken": null,
+    "approachUsed": "intelligent_agent_selection",
+    "filesModified": [],
+    "createdAt": 1754841908036,
+    "metadata": {
+      "sessionId": "test-parallel-123",
+      "agentCount": 1,
+      "agentTypes": [
+        "frontend"
+      ]
+    }
+  },
+  {
+    "id": "1754841908159-kmua3cpkk",
+    "taskDescription": "Parallel agents execution: 1 agents",
+    "agentType": "coordinator",
+    "outcome": {
+      "agentCount": 1,
+      "consensusReached": false,
+      "executionTime": 123
+    },
+    "successRating": 6,
+    "timeTaken": 123,
+    "approachUsed": "parallel-coordination",
+    "filesModified": [],
+    "createdAt": 1754841908159,
+    "metadata": {
+      "sessionId": "test-parallel-123",
+      "agentTypes": [
+        "frontend"
+      ]
+    }
+  },
+  {
+    "id": "1754841917449-8csou5smn",
+    "taskDescription": "Build a REST API with authentication and user management",
+    "agentType": "coordinator",
+    "outcome": "parallel_coordination_started",
+    "successRating": null,
+    "timeTaken": null,
+    "approachUsed": "intelligent_agent_selection",
+    "filesModified": [],
+    "createdAt": 1754841917449,
+    "metadata": {
+      "sessionId": "parallel-test-456",
+      "agentCount": 2,
+      "agentTypes": [
+        "frontend",
+        "backend"
+      ]
+    }
+  },
+  {
+    "id": "1754841917555-n1djrfhtm",
+    "taskDescription": "Parallel agents execution: 2 agents",
+    "agentType": "coordinator",
+    "outcome": {
+      "agentCount": 2,
+      "consensusReached": false,
+      "executionTime": 106
+    },
+    "successRating": 6,
+    "timeTaken": 106,
+    "approachUsed": "parallel-coordination",
+    "filesModified": [],
+    "createdAt": 1754841917555,
+    "metadata": {
+      "sessionId": "parallel-test-456",
+      "agentTypes": [
+        "frontend",
+        "backend"
+      ]
+    }
+  },
+  {
+    "id": "1754966688226-c7c1vcnka",
+    "taskDescription": "Help me build a modern web application with best practices",
+    "agentType": "coordinator",
+    "outcome": "parallel_coordination_started",
+    "successRating": null,
+    "timeTaken": null,
+    "approachUsed": "intelligent_agent_selection",
+    "filesModified": [],
+    "createdAt": 1754966688226,
+    "metadata": {
+      "sessionId": "parallel-1754966688107",
+      "agentCount": 1,
+      "agentTypes": [
+        "frontend"
+      ]
+    }
+  },
+  {
+    "id": "1754966688776-a18d1e2ty",
+    "taskDescription": "Parallel agents execution: 1 agents",
+    "agentType": "coordinator",
+    "outcome": {
+      "agentCount": 1,
+      "consensusReached": false,
+      "executionTime": 550
+    },
+    "successRating": 6,
+    "timeTaken": 550,
+    "approachUsed": "parallel-coordination",
+    "filesModified": [],
+    "createdAt": 1754966688776,
+    "metadata": {
+      "sessionId": "parallel-1754966688107",
+      "agentTypes": [
+        "frontend"
+      ]
+    }
+  },
+  {
+    "id": "1754966964270-1an1e4qzv",
+    "taskDescription": "claude",
+    "agentType": "coordinator",
+    "outcome": "parallel_coordination_started",
+    "successRating": null,
+    "timeTaken": null,
+    "approachUsed": "intelligent_agent_selection",
+    "filesModified": [],
+    "createdAt": 1754966964270,
+    "metadata": {
+      "sessionId": "parallel-1754966964161",
+      "agentCount": 3,
+      "agentTypes": [
+        "architect",
+        "implementer",
+        "optimizer"
+      ]
+    }
+  },
+  {
+    "id": "1754966964439-h1tixzbz8",
+    "taskDescription": "Parallel agents execution: 3 agents",
+    "agentType": "coordinator",
+    "outcome": {
+      "agentCount": 3,
+      "consensusReached": false,
+      "executionTime": 169
+    },
+    "successRating": 6,
+    "timeTaken": 169,
+    "approachUsed": "parallel-coordination",
+    "filesModified": [],
+    "createdAt": 1754966964439,
+    "metadata": {
+      "sessionId": "parallel-1754966964161",
+      "agentTypes": [
+        "architect",
+        "implementer",
+        "optimizer"
+      ]
+    }
+  },
+  {
+    "id": "1754967054327-drtt13pjj",
+    "taskDescription": "claude",
+    "agentType": "coordinator",
+    "outcome": "parallel_coordination_started",
+    "successRating": null,
+    "timeTaken": null,
+    "approachUsed": "intelligent_agent_selection",
+    "filesModified": [],
+    "createdAt": 1754967054327,
+    "metadata": {
+      "sessionId": "parallel-1754967054216",
+      "agentCount": 3,
+      "agentTypes": [
+        "architect",
+        "implementer",
+        "optimizer"
+      ]
+    }
+  },
+  {
+    "id": "1754967054518-zi7e1q9hu",
+    "taskDescription": "Parallel agents execution: 3 agents",
+    "agentType": "coordinator",
+    "outcome": {
+      "agentCount": 3,
+      "consensusReached": false,
+      "executionTime": 191
+    },
+    "successRating": 6,
+    "timeTaken": 191,
+    "approachUsed": "parallel-coordination",
+    "filesModified": [],
+    "createdAt": 1754967054518,
+    "metadata": {
+      "sessionId": "parallel-1754967054216",
+      "agentTypes": [
+        "architect",
+        "implementer",
+        "optimizer"
+      ]
+    }
+  },
+  {
+    "id": "1754967494106-dtfneaum0",
+    "taskDescription": "Help me build a modern web application with best practices",
+    "agentType": "coordinator",
+    "outcome": "parallel_coordination_started",
+    "successRating": null,
+    "timeTaken": null,
+    "approachUsed": "intelligent_agent_selection",
+    "filesModified": [],
+    "createdAt": 1754967494106,
+    "metadata": {
+      "sessionId": "parallel-1754967493982",
+      "agentCount": 1,
+      "agentTypes": [
+        "frontend"
+      ]
+    }
+  },
+  {
+    "id": "1754967494247-fd0taefjm",
+    "taskDescription": "Parallel agents execution: 1 agents",
+    "agentType": "coordinator",
+    "outcome": {
+      "agentCount": 1,
+      "consensusReached": false,
+      "executionTime": 141
+    },
+    "successRating": 6,
+    "timeTaken": 141,
+    "approachUsed": "parallel-coordination",
+    "filesModified": [],
+    "createdAt": 1754967494247,
+    "metadata": {
+      "sessionId": "parallel-1754967493982",
+      "agentTypes": [
+        "frontend"
+      ]
+    }
+  },
+  {
+    "id": "1754967903431-y11bpghh6",
+    "taskDescription": "Help me build a modern web application with best practices",
+    "agentType": "coordinator",
+    "outcome": "parallel_coordination_started",
+    "successRating": null,
+    "timeTaken": null,
+    "approachUsed": "intelligent_agent_selection",
+    "filesModified": [],
+    "createdAt": 1754967903431,
+    "metadata": {
+      "sessionId": "parallel-1754967903274",
+      "agentCount": 1,
+      "agentTypes": [
+        "frontend"
+      ]
+    }
+  },
+  {
+    "id": "1754967903607-nh0eh5pm5",
+    "taskDescription": "Parallel agents execution: 1 agents",
+    "agentType": "coordinator",
+    "outcome": {
+      "agentCount": 1,
+      "consensusReached": false,
+      "executionTime": 175
+    },
+    "successRating": 6,
+    "timeTaken": 176,
+    "approachUsed": "parallel-coordination",
+    "filesModified": [],
+    "createdAt": 1754967903607,
+    "metadata": {
+      "sessionId": "parallel-1754967903274",
+      "agentTypes": [
+        "frontend"
+      ]
+    }
+  },
+  {
+    "id": "1754968997036-tsvjw3qli",
+    "taskDescription": "Help me build a modern web application with best practices",
+    "agentType": "coordinator",
+    "outcome": "parallel_coordination_started",
+    "successRating": null,
+    "timeTaken": null,
+    "approachUsed": "intelligent_agent_selection",
+    "filesModified": [],
+    "createdAt": 1754968997036,
+    "metadata": {
+      "sessionId": "parallel-1754968996882",
+      "agentCount": 1,
+      "agentTypes": [
+        "frontend"
+      ]
+    }
+  },
+  {
+    "id": "1754968997191-d13r3crzm",
+    "taskDescription": "Parallel agents execution: 1 agents",
+    "agentType": "coordinator",
+    "outcome": {
+      "agentCount": 1,
+      "consensusReached": false,
+      "executionTime": 155
+    },
+    "successRating": 6,
+    "timeTaken": 155,
+    "approachUsed": "parallel-coordination",
+    "filesModified": [],
+    "createdAt": 1754968997191,
+    "metadata": {
+      "sessionId": "parallel-1754968996882",
+      "agentTypes": [
+        "frontend"
+      ]
+    }
+  },
+  {
+    "id": "1754969393662-imbbpq71v",
+    "taskDescription": "claude",
+    "agentType": "coordinator",
+    "outcome": "parallel_coordination_started",
+    "successRating": null,
+    "timeTaken": null,
+    "approachUsed": "intelligent_agent_selection",
+    "filesModified": [],
+    "createdAt": 1754969393662,
+    "metadata": {
+      "sessionId": "parallel-1754969393539",
+      "agentCount": 3,
+      "agentTypes": [
+        "architect",
+        "implementer",
+        "optimizer"
+      ]
+    }
+  },
+  {
+    "id": "1754969397268-8o6u27mpd",
+    "taskDescription": "Parallel agents execution: 3 agents",
+    "agentType": "coordinator",
+    "outcome": {
+      "agentCount": 3,
+      "consensusReached": false,
+      "executionTime": 3606
+    },
+    "successRating": 6,
+    "timeTaken": 3606,
+    "approachUsed": "parallel-coordination",
+    "filesModified": [],
+    "createdAt": 1754969397268,
+    "metadata": {
+      "sessionId": "parallel-1754969393539",
+      "agentTypes": [
+        "architect",
+        "implementer",
+        "optimizer"
+      ]
+    }
+  },
+  {
+    "id": "1754970067673-ycv4v4mao",
+    "taskDescription": "Help me build a modern web application with best practices",
+    "agentType": "coordinator",
+    "outcome": "parallel_coordination_started",
+    "successRating": null,
+    "timeTaken": null,
+    "approachUsed": "intelligent_agent_selection",
+    "filesModified": [],
+    "createdAt": 1754970067673,
+    "metadata": {
+      "sessionId": "parallel-1754970067532",
+      "agentCount": 1,
+      "agentTypes": [
+        "frontend"
+      ]
+    }
+  },
+  {
+    "id": "1754970070769-zcg7t6ltb",
+    "taskDescription": "Parallel agents execution: 1 agents",
+    "agentType": "coordinator",
+    "outcome": {
+      "agentCount": 1,
+      "consensusReached": false,
+      "executionTime": 3096
+    },
+    "successRating": 6,
+    "timeTaken": 3096,
+    "approachUsed": "parallel-coordination",
+    "filesModified": [],
+    "createdAt": 1754970070769,
+    "metadata": {
+      "sessionId": "parallel-1754970067532",
+      "agentTypes": [
+        "frontend"
+      ]
+    }
+  },
+  {
+    "id": "1754970373491-7pm7a9bk8",
+    "taskDescription": "Create a simple calculator with add, subtract, multiply functions",
+    "agentType": "coordinator",
+    "outcome": "parallel_coordination_started",
+    "successRating": null,
+    "timeTaken": null,
+    "approachUsed": "intelligent_agent_selection",
+    "filesModified": [],
+    "createdAt": 1754970373491,
+    "metadata": {
+      "sessionId": "test-parallel-debug",
+      "agentCount": 3,
+      "agentTypes": [
+        "architect",
+        "implementer",
+        "optimizer"
+      ]
+    }
+  },
+  {
+    "id": "1754970379175-uvawt9m04",
+    "taskDescription": "Parallel agents execution: 3 agents",
+    "agentType": "coordinator",
+    "outcome": {
+      "agentCount": 3,
+      "consensusReached": false,
+      "executionTime": 5684
+    },
+    "successRating": 6,
+    "timeTaken": 5684,
+    "approachUsed": "parallel-coordination",
+    "filesModified": [],
+    "createdAt": 1754970379175,
+    "metadata": {
+      "sessionId": "test-parallel-debug",
+      "agentTypes": [
+        "architect",
+        "implementer",
+        "optimizer"
+      ]
+    }
+  },
+  {
+    "id": "1754971247148-zu9dteusk",
+    "taskDescription": "What is 5 plus 3?",
+    "agentType": "coordinator",
+    "outcome": "parallel_coordination_started",
+    "successRating": null,
+    "timeTaken": null,
+    "approachUsed": "intelligent_agent_selection",
+    "filesModified": [],
+    "createdAt": 1754971247148,
+    "metadata": {
+      "sessionId": "simple-test-1754971247",
+      "agentCount": 3,
+      "agentTypes": [
+        "architect",
+        "implementer",
+        "optimizer"
+      ]
+    }
+  },
+  {
+    "id": "1754971250696-0so6jmwwy",
+    "taskDescription": "Parallel agents execution: 3 agents",
+    "agentType": "coordinator",
+    "outcome": {
+      "agentCount": 3,
+      "consensusReached": false,
+      "executionTime": 3548
+    },
+    "successRating": 6,
+    "timeTaken": 3548,
+    "approachUsed": "parallel-coordination",
+    "filesModified": [],
+    "createdAt": 1754971250696,
+    "metadata": {
+      "sessionId": "simple-test-1754971247",
+      "agentTypes": [
+        "architect",
+        "implementer",
+        "optimizer"
+      ]
+    }
+  },
+  {
+    "id": "1755030080753-ev6sjw6bx",
+    "taskDescription": "Build a React counter component with increment and decrement buttons",
+    "agentType": "coordinator",
+    "outcome": "parallel_coordination_started",
+    "successRating": null,
+    "timeTaken": null,
+    "approachUsed": "intelligent_agent_selection",
+    "filesModified": [],
+    "createdAt": 1755030080753,
+    "metadata": {
+      "sessionId": "real-cli-test-1755030080",
+      "agentCount": 1,
+      "agentTypes": [
+        "frontend"
+      ]
+    }
+  },
+  {
+    "id": "1755030083579-csqjvzxgz",
+    "taskDescription": "Parallel agents execution: 1 agents",
+    "agentType": "coordinator",
+    "outcome": {
+      "agentCount": 1,
+      "consensusReached": false,
+      "executionTime": 2825
+    },
+    "successRating": 6,
+    "timeTaken": 2825,
+    "approachUsed": "parallel-coordination",
+    "filesModified": [],
+    "createdAt": 1755030083579,
+    "metadata": {
+      "sessionId": "real-cli-test-1755030080",
+      "agentTypes": [
+        "frontend"
+      ]
+    }
+  },
+  {
+    "id": "1755030145378-ojrjv3vd9",
+    "taskDescription": "Create a simple calculator with add, subtract, and multiply functions",
+    "agentType": "coordinator",
+    "outcome": "parallel_coordination_started",
+    "successRating": null,
+    "timeTaken": null,
+    "approachUsed": "intelligent_agent_selection",
+    "filesModified": [],
+    "createdAt": 1755030145378,
+    "metadata": {
+      "sessionId": "final-test-1755030145",
+      "agentCount": 3,
+      "agentTypes": [
+        "architect",
+        "implementer",
+        "optimizer"
+      ]
+    }
+  },
+  {
+    "id": "1755030175564-zh7doqfum",
+    "taskDescription": "Parallel agents execution: 3 agents",
+    "agentType": "coordinator",
+    "outcome": {
+      "agentCount": 3,
+      "consensusReached": false,
+      "executionTime": 30186
+    },
+    "successRating": 6,
+    "timeTaken": 30186,
+    "approachUsed": "parallel-coordination",
+    "filesModified": [],
+    "createdAt": 1755030175564,
+    "metadata": {
+      "sessionId": "final-test-1755030145",
+      "agentTypes": [
+        "architect",
+        "implementer",
+        "optimizer"
+      ]
+    }
+  },
+  {
+    "id": "1755030185511-blgifivhl",
+    "taskDescription": "Create a simple calculator with add, subtract, and multiply functions",
+    "agentType": "coordinator",
+    "outcome": "parallel_coordination_started",
+    "successRating": null,
+    "timeTaken": null,
+    "approachUsed": "intelligent_agent_selection",
+    "filesModified": [],
+    "createdAt": 1755030185511,
+    "metadata": {
+      "sessionId": "all-agents-test",
+      "agentCount": 3,
+      "agentTypes": [
+        "architect",
+        "implementer",
+        "optimizer"
+      ]
+    }
+  },
+  {
+    "id": "1755030215675-hiffalqsv",
+    "taskDescription": "Parallel agents execution: 3 agents",
+    "agentType": "coordinator",
+    "outcome": {
+      "agentCount": 3,
+      "consensusReached": false,
+      "executionTime": 30164
+    },
+    "successRating": 6,
+    "timeTaken": 30164,
+    "approachUsed": "parallel-coordination",
+    "filesModified": [],
+    "createdAt": 1755030215675,
+    "metadata": {
+      "sessionId": "all-agents-test",
+      "agentTypes": [
+        "architect",
+        "implementer",
+        "optimizer"
+      ]
+    }
+  },
+  {
+    "id": "1755030256126-gv53dhsd8",
+    "taskDescription": "Write a hello world function",
+    "agentType": "coordinator",
+    "outcome": "parallel_coordination_started",
+    "successRating": null,
+    "timeTaken": null,
+    "approachUsed": "intelligent_agent_selection",
+    "filesModified": [],
+    "createdAt": 1755030256126,
+    "metadata": {
+      "sessionId": "timeout-test",
+      "agentCount": 3,
+      "agentTypes": [
+        "architect",
+        "implementer",
+        "optimizer"
+      ]
+    }
+  },
+  {
+    "id": "1755030286326-yhbqiltf7",
+    "taskDescription": "Parallel agents execution: 3 agents",
+    "agentType": "coordinator",
+    "outcome": {
+      "agentCount": 3,
+      "consensusReached": false,
+      "executionTime": 30200
+    },
+    "successRating": 6,
+    "timeTaken": 30200,
+    "approachUsed": "parallel-coordination",
+    "filesModified": [],
+    "createdAt": 1755030286326,
+    "metadata": {
+      "sessionId": "timeout-test",
+      "agentTypes": [
+        "architect",
+        "implementer",
+        "optimizer"
+      ]
+    }
+  },
+  {
+    "id": "1755036759952-vc7gr9jf8",
+    "taskDescription": "Help me build a modern web application with best practices",
+    "agentType": "coordinator",
+    "outcome": "parallel_coordination_started",
+    "successRating": null,
+    "timeTaken": null,
+    "approachUsed": "intelligent_agent_selection",
+    "filesModified": [],
+    "createdAt": 1755036759952,
+    "metadata": {
+      "sessionId": "parallel-1755036759801",
+      "agentCount": 1,
+      "agentTypes": [
+        "frontend"
+      ]
+    }
+  },
+  {
+    "id": "1755036790090-zm9yj2c8x",
+    "taskDescription": "Parallel agents execution: 1 agents",
+    "agentType": "coordinator",
+    "outcome": {
+      "agentCount": 1,
+      "consensusReached": false,
+      "executionTime": 30138
+    },
+    "successRating": 6,
+    "timeTaken": 30138,
+    "approachUsed": "parallel-coordination",
+    "filesModified": [],
+    "createdAt": 1755036790090,
+    "metadata": {
+      "sessionId": "parallel-1755036759801",
+      "agentTypes": [
+        "frontend"
+      ]
+    }
+  },
+  {
+    "id": "1755037364394-y6yay5uix",
+    "taskDescription": "Help me build a modern web application with best practices",
+    "agentType": "coordinator",
+    "outcome": "parallel_coordination_started",
+    "successRating": null,
+    "timeTaken": null,
+    "approachUsed": "intelligent_agent_selection",
+    "filesModified": [],
+    "createdAt": 1755037364394,
+    "metadata": {
+      "sessionId": "parallel-1755037364285",
+      "agentCount": 1,
+      "agentTypes": [
+        "frontend"
+      ]
+    }
+  },
+  {
+    "id": "1755037388114-50s8iguz2",
+    "taskDescription": "claude",
+    "agentType": "coordinator",
+    "outcome": "parallel_coordination_started",
+    "successRating": null,
+    "timeTaken": null,
+    "approachUsed": "intelligent_agent_selection",
+    "filesModified": [],
+    "createdAt": 1755037388114,
+    "metadata": {
+      "sessionId": "parallel-1755037388007",
+      "agentCount": 3,
+      "agentTypes": [
+        "architect",
+        "implementer",
+        "optimizer"
+      ]
+    }
+  },
+  {
+    "id": "1755037394680-jb2modqaa",
+    "taskDescription": "Parallel agents execution: 1 agents",
+    "agentType": "coordinator",
+    "outcome": {
+      "agentCount": 1,
+      "consensusReached": false,
+      "executionTime": 30286
+    },
+    "successRating": 6,
+    "timeTaken": 30286,
+    "approachUsed": "parallel-coordination",
+    "filesModified": [],
+    "createdAt": 1755037394680,
+    "metadata": {
+      "sessionId": "parallel-1755037364285",
+      "agentTypes": [
+        "frontend"
+      ]
+    }
+  },
+  {
+    "id": "1755037418276-hrifcwz64",
+    "taskDescription": "Parallel agents execution: 3 agents",
+    "agentType": "coordinator",
+    "outcome": {
+      "agentCount": 3,
+      "consensusReached": false,
+      "executionTime": 30162
+    },
+    "successRating": 6,
+    "timeTaken": 30162,
+    "approachUsed": "parallel-coordination",
+    "filesModified": [],
+    "createdAt": 1755037418276,
+    "metadata": {
+      "sessionId": "parallel-1755037388007",
+      "agentTypes": [
+        "architect",
+        "implementer",
+        "optimizer"
+      ]
+    }
+  },
+  {
+    "id": "1755037428591-7rf19la89",
+    "taskDescription": "claude",
+    "agentType": "coordinator",
+    "outcome": "parallel_coordination_started",
+    "successRating": null,
+    "timeTaken": null,
+    "approachUsed": "intelligent_agent_selection",
+    "filesModified": [],
+    "createdAt": 1755037428591,
+    "metadata": {
+      "sessionId": "parallel-1755037428487",
+      "agentCount": 3,
+      "agentTypes": [
+        "architect",
+        "implementer",
+        "optimizer"
+      ]
+    }
+  },
+  {
+    "id": "1755037440552-5zfpp8vn2",
+    "taskDescription": "claude",
+    "agentType": "coordinator",
+    "outcome": "parallel_coordination_started",
+    "successRating": null,
+    "timeTaken": null,
+    "approachUsed": "intelligent_agent_selection",
+    "filesModified": [],
+    "createdAt": 1755037440552,
+    "metadata": {
+      "sessionId": "parallel-1755037440446",
+      "agentCount": 3,
+      "agentTypes": [
+        "architect",
+        "implementer",
+        "optimizer"
+      ]
+    }
+  },
+  {
+    "id": "1755037453597-zxzm4mn7i",
+    "taskDescription": "claude",
+    "agentType": "coordinator",
+    "outcome": "parallel_coordination_started",
+    "successRating": null,
+    "timeTaken": null,
+    "approachUsed": "intelligent_agent_selection",
+    "filesModified": [],
+    "createdAt": 1755037453597,
+    "metadata": {
+      "sessionId": "parallel-1755037453491",
+      "agentCount": 3,
+      "agentTypes": [
+        "architect",
+        "implementer",
+        "optimizer"
+      ]
+    }
+  },
+  {
+    "id": "1755037458746-w34y9qtbi",
+    "taskDescription": "Parallel agents execution: 3 agents",
+    "agentType": "coordinator",
+    "outcome": {
+      "agentCount": 3,
+      "consensusReached": false,
+      "executionTime": 30155
+    },
+    "successRating": 6,
+    "timeTaken": 30155,
+    "approachUsed": "parallel-coordination",
+    "filesModified": [],
+    "createdAt": 1755037458746,
+    "metadata": {
+      "sessionId": "parallel-1755037428487",
+      "agentTypes": [
+        "architect",
+        "implementer",
+        "optimizer"
+      ]
+    }
+  },
+  {
+    "id": "1755037470974-3qbd4tpbe",
+    "taskDescription": "Parallel agents execution: 3 agents",
+    "agentType": "coordinator",
+    "outcome": {
+      "agentCount": 3,
+      "consensusReached": false,
+      "executionTime": 30421
+    },
+    "successRating": 6,
+    "timeTaken": 30421,
+    "approachUsed": "parallel-coordination",
+    "filesModified": [],
+    "createdAt": 1755037470974,
+    "metadata": {
+      "sessionId": "parallel-1755037440446",
+      "agentTypes": [
+        "architect",
+        "implementer",
+        "optimizer"
+      ]
+    }
+  },
+  {
+    "id": "1755037483779-8i5p2luz2",
+    "taskDescription": "Parallel agents execution: 3 agents",
+    "agentType": "coordinator",
+    "outcome": {
+      "agentCount": 3,
+      "consensusReached": false,
+      "executionTime": 30182
+    },
+    "successRating": 6,
+    "timeTaken": 30182,
+    "approachUsed": "parallel-coordination",
+    "filesModified": [],
+    "createdAt": 1755037483779,
+    "metadata": {
+      "sessionId": "parallel-1755037453491",
+      "agentTypes": [
+        "architect",
+        "implementer",
+        "optimizer"
+      ]
+    }
+  },
+  {
+    "id": "1755037661970-oa7hkr9rv",
+    "taskDescription": "Help me build a modern web application with best practices",
+    "agentType": "coordinator",
+    "outcome": "parallel_coordination_started",
+    "successRating": null,
+    "timeTaken": null,
+    "approachUsed": "intelligent_agent_selection",
+    "filesModified": [],
+    "createdAt": 1755037661970,
+    "metadata": {
+      "sessionId": "parallel-1755037661865",
+      "agentCount": 1,
+      "agentTypes": [
+        "frontend"
+      ]
+    }
+  },
+  {
+    "id": "1755037692109-opnmt4hvq",
+    "taskDescription": "Parallel agents execution: 1 agents",
+    "agentType": "coordinator",
+    "outcome": {
+      "agentCount": 1,
+      "consensusReached": false,
+      "executionTime": 30139
+    },
+    "successRating": 6,
+    "timeTaken": 30139,
+    "approachUsed": "parallel-coordination",
+    "filesModified": [],
+    "createdAt": 1755037692109,
+    "metadata": {
+      "sessionId": "parallel-1755037661865",
+      "agentTypes": [
+        "frontend"
+      ]
+    }
+  },
+  {
+    "id": "1755041042177-5i05bl8wj",
+    "taskDescription": "claude",
+    "agentType": "coordinator",
+    "outcome": "parallel_coordination_started",
+    "successRating": null,
+    "timeTaken": null,
+    "approachUsed": "intelligent_agent_selection",
+    "filesModified": [],
+    "createdAt": 1755041042177,
+    "metadata": {
+      "sessionId": "parallel-1755041042060",
+      "agentCount": 3,
+      "agentTypes": [
+        "architect",
+        "implementer",
+        "optimizer"
+      ]
+    }
+  },
+  {
+    "id": "1755041068546-dhjqp3g4s",
+    "taskDescription": "claude",
+    "agentType": "coordinator",
+    "outcome": "parallel_coordination_started",
+    "successRating": null,
+    "timeTaken": null,
+    "approachUsed": "intelligent_agent_selection",
+    "filesModified": [],
+    "createdAt": 1755041068546,
+    "metadata": {
+      "sessionId": "parallel-1755041068432",
+      "agentCount": 3,
+      "agentTypes": [
+        "architect",
+        "implementer",
+        "optimizer"
+      ]
+    }
+  },
+  {
+    "id": "1755041072367-1t4qlbcau",
+    "taskDescription": "Parallel agents execution: 3 agents",
+    "agentType": "coordinator",
+    "outcome": {
+      "agentCount": 3,
+      "consensusReached": false,
+      "executionTime": 30190
+    },
+    "successRating": 6,
+    "timeTaken": 30190,
+    "approachUsed": "parallel-coordination",
+    "filesModified": [],
+    "createdAt": 1755041072367,
+    "metadata": {
+      "sessionId": "parallel-1755041042060",
+      "agentTypes": [
+        "architect",
+        "implementer",
+        "optimizer"
+      ]
+    }
+  },
+  {
+    "id": "1755041842152-qkkulwy02",
+    "taskDescription": "claude",
+    "agentType": "coordinator",
+    "outcome": "parallel_coordination_started",
+    "successRating": null,
+    "timeTaken": null,
+    "approachUsed": "intelligent_agent_selection",
+    "filesModified": [],
+    "createdAt": 1755041842152,
+    "metadata": {
+      "sessionId": "parallel-1755041842025",
+      "agentCount": 3,
+      "agentTypes": [
+        "architect",
+        "implementer",
+        "optimizer"
+      ]
+    }
+  },
+  {
+    "id": "1755041864955-7mdjsrw5p",
+    "taskDescription": "claude",
+    "agentType": "coordinator",
+    "outcome": "parallel_coordination_started",
+    "successRating": null,
+    "timeTaken": null,
+    "approachUsed": "intelligent_agent_selection",
+    "filesModified": [],
+    "createdAt": 1755041864955,
+    "metadata": {
+      "sessionId": "parallel-1755041864845",
+      "agentCount": 3,
+      "agentTypes": [
+        "architect",
+        "implementer",
+        "optimizer"
+      ]
+    }
+  },
+  {
+    "id": "1755041872327-umrznpn4l",
+    "taskDescription": "Parallel agents execution: 3 agents",
+    "agentType": "coordinator",
+    "outcome": {
+      "agentCount": 3,
+      "consensusReached": false,
+      "executionTime": 30174
+    },
+    "successRating": 6,
+    "timeTaken": 30174,
+    "approachUsed": "parallel-coordination",
+    "filesModified": [],
+    "createdAt": 1755041872327,
+    "metadata": {
+      "sessionId": "parallel-1755041842025",
+      "agentTypes": [
+        "architect",
+        "implementer",
+        "optimizer"
+      ]
+    }
+  },
+  {
+    "id": "1755041895142-cek0abs87",
+    "taskDescription": "Parallel agents execution: 3 agents",
+    "agentType": "coordinator",
+    "outcome": {
+      "agentCount": 3,
+      "consensusReached": false,
+      "executionTime": 30187
+    },
+    "successRating": 6,
+    "timeTaken": 30187,
+    "approachUsed": "parallel-coordination",
+    "filesModified": [],
+    "createdAt": 1755041895142,
+    "metadata": {
+      "sessionId": "parallel-1755041864845",
+      "agentTypes": [
+        "architect",
+        "implementer",
+        "optimizer"
+      ]
+    }
+  },
+  {
+    "id": "1755042753502-ccfqe8x82",
+    "taskDescription": "cclaude",
+    "agentType": "coordinator",
+    "outcome": "parallel_coordination_started",
+    "successRating": null,
+    "timeTaken": null,
+    "approachUsed": "intelligent_agent_selection",
+    "filesModified": [],
+    "createdAt": 1755042753502,
+    "metadata": {
+      "sessionId": "parallel-1755042753394",
+      "agentCount": 3,
+      "agentTypes": [
+        "architect",
+        "implementer",
+        "optimizer"
+      ]
+    }
+  },
+  {
+    "id": "1755042783670-u3l31uuo0",
+    "taskDescription": "Parallel agents execution: 3 agents",
+    "agentType": "coordinator",
+    "outcome": {
+      "agentCount": 3,
+      "consensusReached": false,
+      "executionTime": 30168
+    },
+    "successRating": 6,
+    "timeTaken": 30168,
+    "approachUsed": "parallel-coordination",
+    "filesModified": [],
+    "createdAt": 1755042783670,
+    "metadata": {
+      "sessionId": "parallel-1755042753394",
+      "agentTypes": [
+        "architect",
+        "implementer",
+        "optimizer"
+      ]
+    }
+  },
+  {
+    "id": "1755043332963-yecameeks",
+    "taskDescription": "claude",
+    "agentType": "coordinator",
+    "outcome": "parallel_coordination_started",
+    "successRating": null,
+    "timeTaken": null,
+    "approachUsed": "intelligent_agent_selection",
+    "filesModified": [],
+    "createdAt": 1755043332963,
+    "metadata": {
+      "sessionId": "parallel-1755043332849",
+      "agentCount": 3,
+      "agentTypes": [
+        "architect",
+        "implementer",
+        "optimizer"
+      ]
+    }
+  },
+  {
+    "id": "1755043363164-46tkqggey",
+    "taskDescription": "Parallel agents execution: 3 agents",
+    "agentType": "coordinator",
+    "outcome": {
+      "agentCount": 3,
+      "consensusReached": false,
+      "executionTime": 30200
+    },
+    "successRating": 6,
+    "timeTaken": 30200,
+    "approachUsed": "parallel-coordination",
+    "filesModified": [],
+    "createdAt": 1755043363164,
+    "metadata": {
+      "sessionId": "parallel-1755043332849",
+      "agentTypes": [
+        "architect",
+        "implementer",
+        "optimizer"
+      ]
+    }
+  },
+  {
+    "id": "1755045014422-0l7708syr",
+    "taskDescription": "claude",
+    "agentType": "coordinator",
+    "outcome": "parallel_coordination_started",
+    "successRating": null,
+    "timeTaken": null,
+    "approachUsed": "intelligent_agent_selection",
+    "filesModified": [],
+    "createdAt": 1755045014422,
+    "metadata": {
+      "sessionId": "parallel-1755045014287",
+      "agentCount": 3,
+      "agentTypes": [
+        "architect",
+        "implementer",
+        "optimizer"
+      ]
+    }
+  },
+  {
+    "id": "1755045041299-qg45j4u9n",
+    "taskDescription": "Parallel agents execution: 3 agents",
+    "agentType": "coordinator",
+    "outcome": {
+      "agentCount": 3,
+      "consensusReached": false,
+      "executionTime": 26877
+    },
+    "successRating": 6,
+    "timeTaken": 26877,
+    "approachUsed": "parallel-coordination",
+    "filesModified": [],
+    "createdAt": 1755045041299,
+    "metadata": {
+      "sessionId": "parallel-1755045014287",
+      "agentTypes": [
+        "architect",
+        "implementer",
+        "optimizer"
+      ]
+    }
+  },
+  {
+    "id": "1755045382099-r71rlazff",
+    "taskDescription": "claude",
+    "agentType": "coordinator",
+    "outcome": "parallel_coordination_started",
+    "successRating": null,
+    "timeTaken": null,
+    "approachUsed": "intelligent_agent_selection",
+    "filesModified": [],
+    "createdAt": 1755045382099,
+    "metadata": {
+      "sessionId": "parallel-1755045381967",
+      "agentCount": 3,
+      "agentTypes": [
+        "architect",
+        "implementer",
+        "optimizer"
+      ]
+    }
+  },
+  {
+    "id": "1755045412860-hajuzmfvf",
+    "taskDescription": "Parallel agents execution: 3 agents",
+    "agentType": "coordinator",
+    "outcome": {
+      "agentCount": 3,
+      "consensusReached": false,
+      "executionTime": 30760
+    },
+    "successRating": 6,
+    "timeTaken": 30760,
+    "approachUsed": "parallel-coordination",
+    "filesModified": [],
+    "createdAt": 1755045412860,
+    "metadata": {
+      "sessionId": "parallel-1755045381967",
+      "agentTypes": [
+        "architect",
+        "implementer",
+        "optimizer"
+      ]
+    }
+  },
+  {
+    "id": "1755047169371-fgfwd55e9",
+    "taskDescription": "claudeecho test",
+    "agentType": "coordinator",
+    "outcome": "parallel_coordination_started",
+    "successRating": null,
+    "timeTaken": null,
+    "approachUsed": "intelligent_agent_selection",
+    "filesModified": [],
+    "createdAt": 1755047169371,
+    "metadata": {
+      "sessionId": "parallel-1755047169267",
+      "agentCount": 3,
+      "agentTypes": [
+        "architect",
+        "implementer",
+        "optimizer"
+      ]
+    }
+  },
+  {
+    "id": "1755047205560-2d5k3781g",
+    "taskDescription": "Parallel agents execution: 3 agents",
+    "agentType": "coordinator",
+    "outcome": {
+      "agentCount": 3,
+      "consensusReached": false,
+      "executionTime": 36188
+    },
+    "successRating": 6,
+    "timeTaken": 36188,
+    "approachUsed": "parallel-coordination",
+    "filesModified": [],
+    "createdAt": 1755047205560,
+    "metadata": {
+      "sessionId": "parallel-1755047169267",
+      "agentTypes": [
+        "architect",
+        "implementer",
+        "optimizer"
+      ]
+    }
+  },
+  {
+    "id": "1755047383945-f7ywezeoe",
+    "taskDescription": "claude",
+    "agentType": "coordinator",
+    "outcome": "parallel_coordination_started",
+    "successRating": null,
+    "timeTaken": null,
+    "approachUsed": "intelligent_agent_selection",
+    "filesModified": [],
+    "createdAt": 1755047383945,
+    "metadata": {
+      "sessionId": "parallel-1755047383835",
+      "agentCount": 3,
+      "agentTypes": [
+        "architect",
+        "implementer",
+        "optimizer"
+      ]
+    }
+  },
+  {
+    "id": "1755047422177-wkentbezy",
+    "taskDescription": "Parallel agents execution: 3 agents",
+    "agentType": "coordinator",
+    "outcome": {
+      "agentCount": 3,
+      "consensusReached": false,
+      "executionTime": 38232
+    },
+    "successRating": 6,
+    "timeTaken": 38232,
+    "approachUsed": "parallel-coordination",
+    "filesModified": [],
+    "createdAt": 1755047422177,
+    "metadata": {
+      "sessionId": "parallel-1755047383835",
+      "agentTypes": [
+        "architect",
+        "implementer",
+        "optimizer"
+      ]
+    }
+  },
+  {
+    "id": "1755047491065-qyeqv2ebd",
+    "taskDescription": "claude",
+    "agentType": "coordinator",
+    "outcome": "parallel_coordination_started",
+    "successRating": null,
+    "timeTaken": null,
+    "approachUsed": "intelligent_agent_selection",
+    "filesModified": [],
+    "createdAt": 1755047491065,
+    "metadata": {
+      "sessionId": "parallel-1755047490953",
+      "agentCount": 3,
+      "agentTypes": [
+        "architect",
+        "implementer",
+        "optimizer"
+      ]
+    }
+  },
+  {
+    "id": "1755047529510-b7tn7xs62",
+    "taskDescription": "Parallel agents execution: 3 agents",
+    "agentType": "coordinator",
+    "outcome": {
+      "agentCount": 3,
+      "consensusReached": false,
+      "executionTime": 38445
+    },
+    "successRating": 6,
+    "timeTaken": 38445,
+    "approachUsed": "parallel-coordination",
+    "filesModified": [],
+    "createdAt": 1755047529510,
+    "metadata": {
+      "sessionId": "parallel-1755047490953",
+      "agentTypes": [
+        "architect",
+        "implementer",
+        "optimizer"
+      ]
+    }
+  },
+  {
+    "id": "1755047530079-q7ntwrt37",
+    "taskDescription": "claude",
+    "agentType": "coordinator",
+    "outcome": "parallel_coordination_started",
+    "successRating": null,
+    "timeTaken": null,
+    "approachUsed": "intelligent_agent_selection",
+    "filesModified": [],
+    "createdAt": 1755047530079,
+    "metadata": {
+      "sessionId": "parallel-1755047529972",
+      "agentCount": 3,
+      "agentTypes": [
+        "architect",
+        "implementer",
+        "optimizer"
+      ]
+    }
+  },
+  {
+    "id": "1755047571612-j24hls0xl",
+    "taskDescription": "Parallel agents execution: 3 agents",
+    "agentType": "coordinator",
+    "outcome": {
+      "agentCount": 3,
+      "consensusReached": false,
+      "executionTime": 41533
+    },
+    "successRating": 6,
+    "timeTaken": 41533,
+    "approachUsed": "parallel-coordination",
+    "filesModified": [],
+    "createdAt": 1755047571612,
+    "metadata": {
+      "sessionId": "parallel-1755047529972",
+      "agentTypes": [
+        "architect",
+        "implementer",
+        "optimizer"
+      ]
+    }
+  },
+  {
+    "id": "1755048562828-hznci52nk",
+    "taskDescription": "test",
+    "agentType": "coordinator",
+    "outcome": "parallel_coordination_started",
+    "successRating": null,
+    "timeTaken": null,
+    "approachUsed": "intelligent_agent_selection",
+    "filesModified": [],
+    "createdAt": 1755048562828,
+    "metadata": {
+      "sessionId": "parallel-1755048562715",
+      "agentCount": 3,
+      "agentTypes": [
+        "architect",
+        "implementer",
+        "optimizer"
+      ]
+    }
+  },
+  {
+    "id": "1755048606609-325hmdvqc",
+    "taskDescription": "Parallel agents execution: 3 agents",
+    "agentType": "coordinator",
+    "outcome": {
+      "agentCount": 3,
+      "consensusReached": false,
+      "executionTime": 43780
+    },
+    "successRating": 6,
+    "timeTaken": 43780,
+    "approachUsed": "parallel-coordination",
+    "filesModified": [],
+    "createdAt": 1755048606609,
+    "metadata": {
+      "sessionId": "parallel-1755048562715",
+      "agentTypes": [
+        "architect",
+        "implementer",
+        "optimizer"
+      ]
+    }
+  },
+  {
+    "id": "1755050585778-pqdvxrov3",
+    "taskDescription": "claude",
+    "agentType": "coordinator",
+    "outcome": "parallel_coordination_started",
+    "successRating": null,
+    "timeTaken": null,
+    "approachUsed": "intelligent_agent_selection",
+    "filesModified": [],
+    "createdAt": 1755050585778,
+    "metadata": {
+      "sessionId": "parallel-1755050585659",
+      "agentCount": 3,
+      "agentTypes": [
+        "architect",
+        "implementer",
+        "optimizer"
+      ]
+    }
+  },
+  {
+    "id": "1755050629645-exl76x6sv",
+    "taskDescription": "Parallel agents execution: 3 agents",
+    "agentType": "coordinator",
+    "outcome": {
+      "agentCount": 3,
+      "consensusReached": false,
+      "executionTime": 43867
+    },
+    "successRating": 6,
+    "timeTaken": 43867,
+    "approachUsed": "parallel-coordination",
+    "filesModified": [],
+    "createdAt": 1755050629645,
+    "metadata": {
+      "sessionId": "parallel-1755050585659",
+      "agentTypes": [
+        "architect",
+        "implementer",
+        "optimizer"
+      ]
+    }
+  },
+  {
+    "id": "1755051048767-0w4coog70",
+    "taskDescription": "claude",
+    "agentType": "coordinator",
+    "outcome": "parallel_coordination_started",
+    "successRating": null,
+    "timeTaken": null,
+    "approachUsed": "intelligent_agent_selection",
+    "filesModified": [],
+    "createdAt": 1755051048767,
+    "metadata": {
+      "sessionId": "parallel-1755051048658",
+      "agentCount": 3,
+      "agentTypes": [
+        "architect",
+        "implementer",
+        "optimizer"
+      ]
+    }
+  },
+  {
+    "id": "1755051089688-w6km5p0p5",
+    "taskDescription": "Parallel agents execution: 3 agents",
+    "agentType": "coordinator",
+    "outcome": {
+      "agentCount": 3,
+      "consensusReached": false,
+      "executionTime": 40921
+    },
+    "successRating": 6,
+    "timeTaken": 40921,
+    "approachUsed": "parallel-coordination",
+    "filesModified": [],
+    "createdAt": 1755051089688,
+    "metadata": {
+      "sessionId": "parallel-1755051048658",
+      "agentTypes": [
+        "architect",
+        "implementer",
+        "optimizer"
+      ]
+    }
+  },
+  {
+    "id": "1755051510872-zour8p1xu",
+    "taskDescription": "claude",
+    "agentType": "coordinator",
+    "outcome": "parallel_coordination_started",
+    "successRating": null,
+    "timeTaken": null,
+    "approachUsed": "intelligent_agent_selection",
+    "filesModified": [],
+    "createdAt": 1755051510872,
+    "metadata": {
+      "sessionId": "parallel-1755051510754",
+      "agentCount": 3,
+      "agentTypes": [
+        "architect",
+        "implementer",
+        "optimizer"
+      ]
+    }
+  },
+  {
+    "id": "1755051554733-ahnmwqyf2",
+    "taskDescription": "Parallel agents execution: 3 agents",
+    "agentType": "coordinator",
+    "outcome": {
+      "agentCount": 3,
+      "consensusReached": false,
+      "executionTime": 43861
+    },
+    "successRating": 6,
+    "timeTaken": 43861,
+    "approachUsed": "parallel-coordination",
+    "filesModified": [],
+    "createdAt": 1755051554733,
+    "metadata": {
+      "sessionId": "parallel-1755051510754",
+      "agentTypes": [
+        "architect",
+        "implementer",
+        "optimizer"
+      ]
+    }
+  },
+  {
+    "id": "1755053202617-kd9mzeima",
+    "taskDescription": "claude",
+    "agentType": "coordinator",
+    "outcome": "parallel_coordination_started",
+    "successRating": null,
+    "timeTaken": null,
+    "approachUsed": "intelligent_agent_selection",
+    "filesModified": [],
+    "createdAt": 1755053202617,
+    "metadata": {
+      "sessionId": "parallel-1755053202499",
+      "agentCount": 3,
+      "agentTypes": [
+        "architect",
+        "implementer",
+        "optimizer"
+      ]
+    }
+  },
+  {
+    "id": "1755053236067-3o7suvmr9",
+    "taskDescription": "Parallel agents execution: 3 agents",
+    "agentType": "coordinator",
+    "outcome": {
+      "agentCount": 3,
+      "consensusReached": false,
+      "executionTime": 33450
+    },
+    "successRating": 6,
+    "timeTaken": 33450,
+    "approachUsed": "parallel-coordination",
+    "filesModified": [],
+    "createdAt": 1755053236067,
+    "metadata": {
+      "sessionId": "parallel-1755053202499",
+      "agentTypes": [
+        "architect",
+        "implementer",
+        "optimizer"
+      ]
+    }
+  },
+  {
+    "id": "1755053274252-ma9gm1onv",
+    "taskDescription": "claude",
+    "agentType": "coordinator",
+    "outcome": "parallel_coordination_started",
+    "successRating": null,
+    "timeTaken": null,
+    "approachUsed": "intelligent_agent_selection",
+    "filesModified": [],
+    "createdAt": 1755053274252,
+    "metadata": {
+      "sessionId": "parallel-1755053274140",
+      "agentCount": 3,
+      "agentTypes": [
+        "architect",
+        "implementer",
+        "optimizer"
+      ]
+    }
+  },
+  {
+    "id": "1755053305462-qgbmsllv7",
+    "taskDescription": "Parallel agents execution: 3 agents",
+    "agentType": "coordinator",
+    "outcome": {
+      "agentCount": 3,
+      "consensusReached": false,
+      "executionTime": 31210
+    },
+    "successRating": 6,
+    "timeTaken": 31210,
+    "approachUsed": "parallel-coordination",
+    "filesModified": [],
+    "createdAt": 1755053305462,
+    "metadata": {
+      "sessionId": "parallel-1755053274140",
+      "agentTypes": [
+        "architect",
+        "implementer",
+        "optimizer"
+      ]
+    }
+  },
+  {
+    "id": "1755053449576-ss7ay7pou",
+    "taskDescription": "Infinite loop: Help me build a modern web application with best practices\n\n## Iterative Enhancement Context\nThis ta...",
+    "agentType": "iterative",
+    "outcome": {
+      "finalQuality": 8.700923887328049,
+      "iterationsCompleted": 6,
+      "targetReached": true
+    },
+    "successRating": 9,
+    "timeTaken": 0,
+    "approachUsed": "iterative-improvement",
+    "filesModified": [],
+    "createdAt": 1755053449576,
+    "metadata": {
+      "sessionId": "infinite-1755053449567",
+      "strategy": "adaptive-learning"
+    }
+  },
+  {
+    "id": "1755053466375-ietonxnc6",
+    "taskDescription": "Infinite loop: claude\n\n## Iterative Enhancement Context\nThis task will be approached iteratively with continuous im...",
+    "agentType": "iterative",
+    "outcome": {
+      "finalQuality": 8.573175883009162,
+      "iterationsCompleted": 6,
+      "targetReached": true
+    },
+    "successRating": 9,
+    "timeTaken": 0,
+    "approachUsed": "iterative-improvement",
+    "filesModified": [],
+    "createdAt": 1755053466375,
+    "metadata": {
+      "sessionId": "infinite-1755053466363",
+      "strategy": "adaptive-learning"
+    }
+  },
+  {
+    "id": "1755055114292-ifzn0orpo",
+    "taskDescription": "Create a simple React todo app",
+    "agentType": "coordinator",
+    "outcome": "parallel_coordination_started",
+    "successRating": null,
+    "timeTaken": null,
+    "approachUsed": "intelligent_agent_selection",
+    "filesModified": [],
+    "createdAt": 1755055114292,
+    "metadata": {
+      "sessionId": "test-delegation",
+      "agentCount": 2,
+      "agentTypes": [
+        "implementer",
+        "frontend"
+      ]
+    }
+  },
+  {
+    "id": "1755055174904-y2qz5iq0e",
+    "taskDescription": "Native sub-agent delegation: 2 agents",
+    "agentType": "coordinator",
+    "outcome": {
+      "agentCount": 2,
+      "consensusReached": false,
+      "executionTime": 60612,
+      "nativeDelegation": true
+    },
+    "successRating": 7,
+    "timeTaken": 60612,
+    "approachUsed": "native-sub-agents",
+    "filesModified": [],
+    "createdAt": 1755055174904,
+    "metadata": {
+      "sessionId": "test-delegation",
+      "agentTypes": [
+        "implementer",
+        "frontend"
+      ]
+    }
+  },
+  {
+    "id": "1755055248138-z1lh7iu0n",
+    "taskDescription": "Create a simple React todo app",
+    "agentType": "coordinator",
+    "outcome": "parallel_coordination_started",
+    "successRating": null,
+    "timeTaken": null,
+    "approachUsed": "intelligent_agent_selection",
+    "filesModified": [],
+    "createdAt": 1755055248138,
+    "metadata": {
+      "sessionId": "test-new-delegation",
+      "agentCount": 2,
+      "agentTypes": [
+        "implementer",
+        "frontend"
+      ]
+    }
+  },
+  {
+    "id": "1755055308727-4ma6bbxv4",
+    "taskDescription": "Native sub-agent delegation: 2 agents",
+    "agentType": "coordinator",
+    "outcome": {
+      "agentCount": 2,
+      "consensusReached": false,
+      "executionTime": 60589,
+      "nativeDelegation": true
+    },
+    "successRating": 7,
+    "timeTaken": 60589,
+    "approachUsed": "native-sub-agents",
+    "filesModified": [],
+    "createdAt": 1755055308727,
+    "metadata": {
+      "sessionId": "test-new-delegation",
+      "agentTypes": [
+        "implementer",
+        "frontend"
+      ]
+    }
+  },
+  {
+    "id": "1755055378290-90jvm8qlj",
+    "taskDescription": "Create a simple React todo app",
+    "agentType": "coordinator",
+    "outcome": "parallel_coordination_started",
+    "successRating": null,
+    "timeTaken": null,
+    "approachUsed": "intelligent_agent_selection",
+    "filesModified": [],
+    "createdAt": 1755055378290,
+    "metadata": {
+      "sessionId": "test-fresh-restart",
+      "agentCount": 2,
+      "agentTypes": [
+        "implementer",
+        "frontend"
+      ]
+    }
+  },
+  {
+    "id": "1755055438874-x4r82cir5",
+    "taskDescription": "Native sub-agent delegation: 2 agents",
+    "agentType": "coordinator",
+    "outcome": {
+      "agentCount": 2,
+      "consensusReached": false,
+      "executionTime": 60583,
+      "nativeDelegation": true
+    },
+    "successRating": 7,
+    "timeTaken": 60583,
+    "approachUsed": "native-sub-agents",
+    "filesModified": [],
+    "createdAt": 1755055438874,
+    "metadata": {
+      "sessionId": "test-fresh-restart",
+      "agentTypes": [
+        "implementer",
+        "frontend"
+      ]
+    }
+  },
+  {
+    "id": "1755055760050-5u9o0o834",
+    "taskDescription": "Simple test",
+    "agentType": "coordinator",
+    "outcome": "parallel_coordination_started",
+    "successRating": null,
+    "timeTaken": null,
+    "approachUsed": "intelligent_agent_selection",
+    "filesModified": [],
+    "createdAt": 1755055760050,
+    "metadata": {
+      "sessionId": "debug-test",
+      "agentCount": 3,
+      "agentTypes": [
+        "architect",
+        "implementer",
+        "optimizer"
+      ]
+    }
+  },
+  {
+    "id": "1755055820602-pkh6zmrx3",
+    "taskDescription": "Native sub-agent delegation: 3 agents",
+    "agentType": "coordinator",
+    "outcome": {
+      "agentCount": 3,
+      "consensusReached": false,
+      "executionTime": 60552,
+      "nativeDelegation": true
+    },
+    "successRating": 7,
+    "timeTaken": 60552,
+    "approachUsed": "native-sub-agents",
+    "filesModified": [],
+    "createdAt": 1755055820602,
+    "metadata": {
+      "sessionId": "debug-test",
+      "agentTypes": [
+        "architect",
+        "implementer",
+        "optimizer"
+      ]
+    }
+  },
+  {
+    "id": "1755055888553-wbcldnir1",
+    "taskDescription": "Simple test",
+    "agentType": "coordinator",
+    "outcome": "parallel_coordination_started",
+    "successRating": null,
+    "timeTaken": null,
+    "approachUsed": "intelligent_agent_selection",
+    "filesModified": [],
+    "createdAt": 1755055888553,
+    "metadata": {
+      "sessionId": "simple-test",
+      "agentCount": 3,
+      "agentTypes": [
+        "architect",
+        "implementer",
+        "optimizer"
+      ]
+    }
+  },
+  {
+    "id": "1755055949140-8c1tbie74",
+    "taskDescription": "Native sub-agent delegation: 3 agents",
+    "agentType": "coordinator",
+    "outcome": {
+      "agentCount": 3,
+      "consensusReached": false,
+      "executionTime": 60587,
+      "nativeDelegation": true
+    },
+    "successRating": 7,
+    "timeTaken": 60587,
+    "approachUsed": "native-sub-agents",
+    "filesModified": [],
+    "createdAt": 1755055949140,
+    "metadata": {
+      "sessionId": "simple-test",
+      "agentTypes": [
+        "architect",
+        "implementer",
+        "optimizer"
+      ]
+    }
+  },
+  {
+    "id": "1755056759727-f1xd9ujrg",
+    "taskDescription": "Create a simple React todo app",
+    "agentType": "coordinator",
+    "outcome": "parallel_coordination_started",
+    "successRating": null,
+    "timeTaken": null,
+    "approachUsed": "intelligent_agent_selection",
+    "filesModified": [],
+    "createdAt": 1755056759727,
+    "metadata": {
+      "sessionId": "test-stable-system",
+      "agentCount": 2,
+      "agentTypes": [
+        "implementer",
+        "frontend"
+      ]
+    }
+  },
+  {
+    "id": "1755056880328-azac9d5m6",
+    "taskDescription": "Native sub-agent delegation: 2 agents",
+    "agentType": "coordinator",
+    "outcome": {
+      "agentCount": 2,
+      "consensusReached": false,
+      "executionTime": 120601,
+      "nativeDelegation": true
+    },
+    "successRating": 7,
+    "timeTaken": 120601,
+    "approachUsed": "native-sub-agents",
+    "filesModified": [],
+    "createdAt": 1755056880328,
+    "metadata": {
+      "sessionId": "test-stable-system",
+      "agentTypes": [
+        "implementer",
+        "frontend"
+      ]
+    }
+  },
+  {
+    "id": "1755056924247-mmplqq1au",
+    "taskDescription": "Create a simple React button component",
+    "agentType": "coordinator",
+    "outcome": "parallel_coordination_started",
+    "successRating": null,
+    "timeTaken": null,
+    "approachUsed": "intelligent_agent_selection",
+    "filesModified": [],
+    "createdAt": 1755056924247,
+    "metadata": {
+      "sessionId": "test-optimized",
+      "agentCount": 2,
+      "agentTypes": [
+        "implementer",
+        "frontend"
+      ]
+    }
+  },
+  {
+    "id": "1755057044852-vm9fxz3fx",
+    "taskDescription": "Native sub-agent delegation: 2 agents",
+    "agentType": "coordinator",
+    "outcome": {
+      "agentCount": 2,
+      "consensusReached": false,
+      "executionTime": 120605,
+      "nativeDelegation": true
+    },
+    "successRating": 7,
+    "timeTaken": 120605,
+    "approachUsed": "native-sub-agents",
+    "filesModified": [],
+    "createdAt": 1755057044852,
+    "metadata": {
+      "sessionId": "test-optimized",
+      "agentTypes": [
+        "implementer",
+        "frontend"
+      ]
+    }
+  },
+  {
+    "id": "1755057232803-kc19fgo5k",
+    "taskDescription": "Create a simple React button component",
+    "agentType": "coordinator",
+    "outcome": "parallel_coordination_started",
+    "successRating": null,
+    "timeTaken": null,
+    "approachUsed": "intelligent_agent_selection",
+    "filesModified": [],
+    "createdAt": 1755057232803,
+    "metadata": {
+      "sessionId": "test-final",
+      "agentCount": 2,
+      "agentTypes": [
+        "implementer",
+        "frontend"
+      ]
+    }
+  },
+  {
+    "id": "1755057533427-8g68ycbo4",
+    "taskDescription": "Native sub-agent delegation: 2 agents",
+    "agentType": "coordinator",
+    "outcome": {
+      "agentCount": 2,
+      "consensusReached": false,
+      "executionTime": 300624,
+      "nativeDelegation": true
+    },
+    "successRating": 7,
+    "timeTaken": 300624,
+    "approachUsed": "native-sub-agents",
+    "filesModified": [],
+    "createdAt": 1755057533427,
+    "metadata": {
+      "sessionId": "test-final",
+      "agentTypes": [
+        "implementer",
+        "frontend"
+      ]
+    }
+  },
+  {
+    "id": "1755057805744-omyyeqf4b",
+    "taskDescription": "claude",
+    "agentType": "coordinator",
+    "outcome": "parallel_coordination_started",
+    "successRating": null,
+    "timeTaken": null,
+    "approachUsed": "intelligent_agent_selection",
+    "filesModified": [],
+    "createdAt": 1755057805744,
+    "metadata": {
+      "sessionId": "parallel-1755057805633",
+      "agentCount": 3,
+      "agentTypes": [
+        "architect",
+        "implementer",
+        "optimizer"
+      ]
+    }
+  },
+  {
+    "id": "1755057904301-011074wii",
+    "taskDescription": "Native sub-agent delegation: 3 agents",
+    "agentType": "coordinator",
+    "outcome": {
+      "agentCount": 3,
+      "consensusReached": true,
+      "executionTime": 98557,
+      "nativeDelegation": true
+    },
+    "successRating": 9,
+    "timeTaken": 98557,
+    "approachUsed": "native-sub-agents",
+    "filesModified": [],
+    "createdAt": 1755057904301,
+    "metadata": {
+      "sessionId": "parallel-1755057805633",
+      "agentTypes": [
+        "architect",
+        "implementer",
+        "optimizer"
+      ]
+    }
+  },
+  {
+    "id": "1755059966815-pe48vf9mr",
+    "taskDescription": "build me a landing page for my coder1 ide but first ask me two questions.",
+    "agentType": "integrated-supervisor",
+    "outcome": "comprehensive_supervision_started",
+    "successRating": null,
+    "timeTaken": null,
+    "approachUsed": "ai_supervising_ai",
+    "filesModified": [],
+    "createdAt": 1755059966815,
+    "metadata": {
+      "sessionId": "supervision-1755059966726",
+      "startTime": 1755059966815,
+      "mode": "comprehensive",
+      "features": [
+        "real-time monitoring",
+        "intelligent intervention",
+        "context injection",
+        "permission handling",
+        "workflow tracking"
+      ]
+    }
+  },
+  {
+    "id": "1755114742795-zzm42ywxx",
+    "taskDescription": "claude",
+    "agentType": "integrated-supervisor",
+    "outcome": "comprehensive_supervision_started",
+    "successRating": null,
+    "timeTaken": null,
+    "approachUsed": "ai_supervising_ai",
+    "filesModified": [],
+    "createdAt": 1755114742795,
+    "metadata": {
+      "sessionId": "supervision-1755114742714",
+      "startTime": 1755114742795,
+      "mode": "comprehensive",
+      "features": [
+        "real-time monitoring",
+        "intelligent intervention",
+        "context injection",
+        "permission handling",
+        "workflow tracking"
+      ]
+    }
+  },
+  {
+    "id": "1755117766396-u6jcrr87d",
+    "taskDescription": "claude",
+    "agentType": "coordinator",
+    "outcome": "parallel_coordination_started",
+    "successRating": null,
+    "timeTaken": null,
+    "approachUsed": "intelligent_agent_selection",
+    "filesModified": [],
+    "createdAt": 1755117766396,
+    "metadata": {
+      "sessionId": "parallel-1755117766273",
+      "agentCount": 3,
+      "agentTypes": [
+        "architect",
+        "implementer",
+        "optimizer"
+      ]
+    }
+  },
+  {
+    "id": "1755117981210-h5wufpv0x",
+    "taskDescription": "test",
+    "agentType": "coordinator",
+    "outcome": "parallel_coordination_started",
+    "successRating": null,
+    "timeTaken": null,
+    "approachUsed": "intelligent_agent_selection",
+    "filesModified": [],
+    "createdAt": 1755117981210,
+    "metadata": {
+      "sessionId": "test-123",
+      "agentCount": 3,
+      "agentTypes": [
+        "architect",
+        "implementer",
+        "optimizer"
+      ]
+    }
+  },
+  {
+    "id": "1755118067064-hzmhaz1gw",
+    "taskDescription": "Native sub-agent delegation: 3 agents",
+    "agentType": "coordinator",
+    "outcome": {
+      "agentCount": 3,
+      "consensusReached": false,
+      "executionTime": 300667,
+      "nativeDelegation": true
+    },
+    "successRating": 7,
+    "timeTaken": 300667,
+    "approachUsed": "native-sub-agents",
+    "filesModified": [],
+    "createdAt": 1755118067064,
+    "metadata": {
+      "sessionId": "parallel-1755117766273",
+      "agentTypes": [
+        "architect",
+        "implementer",
+        "optimizer"
+      ]
+    }
+  },
+  {
+    "id": "1755118281947-std63qyt9",
+    "taskDescription": "Native sub-agent delegation: 3 agents",
+    "agentType": "coordinator",
+    "outcome": {
+      "agentCount": 3,
+      "consensusReached": false,
+      "executionTime": 300737,
+      "nativeDelegation": true
+    },
+    "successRating": 7,
+    "timeTaken": 300737,
+    "approachUsed": "native-sub-agents",
+    "filesModified": [],
+    "createdAt": 1755118281947,
+    "metadata": {
+      "sessionId": "test-123",
+      "agentTypes": [
+        "architect",
+        "implementer",
+        "optimizer"
+      ]
+    }
+  },
+  {
+    "id": "1755118425513-kwr5xy0et",
+    "taskDescription": "Create a simple counter",
+    "agentType": "coordinator",
+    "outcome": "parallel_coordination_started",
+    "successRating": null,
+    "timeTaken": null,
+    "approachUsed": "intelligent_agent_selection",
+    "filesModified": [],
+    "createdAt": 1755118425513,
+    "metadata": {
+      "sessionId": "test-1755118425",
+      "agentCount": 1,
+      "agentTypes": [
+        "implementer"
+      ]
+    }
+  },
+  {
+    "id": "1755118479282-66dt4wth6",
+    "taskDescription": "Native sub-agent delegation: 1 agents",
+    "agentType": "coordinator",
+    "outcome": {
+      "agentCount": 1,
+      "consensusReached": false,
+      "executionTime": 53769,
+      "nativeDelegation": true
+    },
+    "successRating": 7,
+    "timeTaken": 53769,
+    "approachUsed": "native-sub-agents",
+    "filesModified": [],
+    "createdAt": 1755118479282,
+    "metadata": {
+      "sessionId": "test-1755118425",
+      "agentTypes": [
+        "implementer"
+      ]
+    }
+  },
+  {
+    "id": "1755119733994-rtij5rgvt",
+    "taskDescription": "Infinite loop: Help me build a modern web application with best practices\n\n## Iterative Enhancement Context\nThis ta...",
+    "agentType": "iterative",
+    "outcome": {
+      "finalQuality": 7.350473503903748,
+      "iterationsCompleted": 4,
+      "targetReached": false
+    },
+    "successRating": 7,
+    "timeTaken": 0,
+    "approachUsed": "iterative-improvement",
+    "filesModified": [],
+    "createdAt": 1755119733994,
+    "metadata": {
+      "sessionId": "infinite-1755119733959",
+      "strategy": "adaptive-learning"
+    }
+  },
+  {
+    "id": "1755120038230-frwkshukd",
+    "taskDescription": "Infinite loop: Help me build a modern web application with best practices\n\n## Iterative Enhancement Context\nThis ta...",
+    "agentType": "iterative",
+    "outcome": {
+      "finalQuality": 8.337303552504853,
+      "iterationsCompleted": 4,
+      "targetReached": true
+    },
+    "successRating": 8,
+    "timeTaken": 1,
+    "approachUsed": "iterative-improvement",
+    "filesModified": [],
+    "createdAt": 1755120038230,
+    "metadata": {
+      "sessionId": "infinite-1755120038200",
+      "strategy": "adaptive-learning"
+    }
+  },
+  {
+    "id": "1755120291761-bfmk4h737",
+    "taskDescription": "Infinite loop: Help me build a modern web application with best practices\n\n## Iterative Enhancement Context\nThis ta...",
+    "agentType": "iterative",
+    "outcome": {
+      "finalQuality": 6.570015990329877,
+      "iterationsCompleted": 4,
+      "targetReached": false
+    },
+    "successRating": 7,
+    "timeTaken": 1,
+    "approachUsed": "iterative-improvement",
+    "filesModified": [],
+    "createdAt": 1755120291761,
+    "metadata": {
+      "sessionId": "infinite-1755120291746",
+      "strategy": "adaptive-learning"
+    }
+  },
+  {
+    "id": "1755120400952-075co111i",
+    "taskDescription": "Infinite loop: Help me build a modern web application with best practices\n\n## Iterative Enhancement Context\nThis ta...",
+    "agentType": "iterative",
+    "outcome": {
+      "finalQuality": 8.081033454630434,
+      "iterationsCompleted": 6,
+      "targetReached": true
+    },
+    "successRating": 8,
+    "timeTaken": 1,
+    "approachUsed": "iterative-improvement",
+    "filesModified": [],
+    "createdAt": 1755120400952,
+    "metadata": {
+      "sessionId": "infinite-1755120400937",
+      "strategy": "adaptive-learning"
+    }
+  },
+  {
+    "id": "1755120501019-fi87ftydp",
+    "taskDescription": "Infinite loop: Help me build a modern web application with best practices\n\n## Iterative Enhancement Context\nThis ta...",
+    "agentType": "iterative",
+    "outcome": {
+      "finalQuality": 6.622063945149031,
+      "iterationsCompleted": 4,
+      "targetReached": false
+    },
+    "successRating": 7,
+    "timeTaken": 505,
+    "approachUsed": "iterative-improvement",
+    "filesModified": [],
+    "createdAt": 1755120501019,
+    "metadata": {
+      "sessionId": "infinite-1755120500503",
+      "strategy": "adaptive-learning"
+    }
+  },
+  {
+    "id": "1755144212568-aqo4ytcze",
+    "taskDescription": "Hivemind session: Help me build a modern web application with best practices",
+    "agentType": "hivemind",
+    "outcome": {
+      "strategy": "sequential",
+      "agentCount": 3,
+      "sessionId": "hivemind-1755144212533"
+    },
+    "successRating": null,
+    "timeTaken": null,
+    "approachUsed": "enhanced-coordination",
+    "filesModified": [],
+    "createdAt": 1755144212568,
+    "metadata": {
+      "sessionId": "hivemind-1755144212533",
+      "strategy": "sequential"
+    }
+  },
+  {
+    "id": "1755144212568-3oabtmsuu",
+    "taskDescription": "Hivemind completion: Help me build a modern web application with best practices",
+    "agentType": "hivemind",
+    "outcome": {
+      "iterations": 1,
+      "agentsUsed": 3,
+      "consensusReached": true
+    },
+    "successRating": 9,
+    "timeTaken": 0,
+    "approachUsed": "enhanced-coordination",
+    "filesModified": [],
+    "createdAt": 1755144212568,
+    "metadata": {
+      "sessionId": "hivemind-1755144212533",
+      "strategy": "sequential"
+    }
+  },
+  {
+    "id": "1755149491001-2w1d6w7qr",
+    "taskDescription": "Infinite loop: Help me build a modern web application with best practices\n\n## Iterative Enhancement Context\nThis ta...",
+    "agentType": "iterative",
+    "outcome": {
+      "finalQuality": 7.030682810276512,
+      "iterationsCompleted": 4,
+      "targetReached": false
+    },
+    "successRating": 7,
+    "timeTaken": 509,
+    "approachUsed": "iterative-improvement",
+    "filesModified": [],
+    "createdAt": 1755149491001,
+    "metadata": {
+      "sessionId": "infinite-1755149490476",
+      "strategy": "adaptive-learning"
+    }
+  },
+  {
+    "id": "1755211590347-c644uaxca",
+    "taskDescription": "Hivemind session: Help me build a modern web application with best practices",
+    "agentType": "hivemind",
+    "outcome": {
+      "strategy": "sequential",
+      "agentCount": 3,
+      "sessionId": "hivemind-1755211590306"
+    },
+    "successRating": null,
+    "timeTaken": null,
+    "approachUsed": "enhanced-coordination",
+    "filesModified": [],
+    "createdAt": 1755211590347,
+    "metadata": {
+      "sessionId": "hivemind-1755211590306",
+      "strategy": "sequential"
+    }
+  },
+  {
+    "id": "1755211590347-cgs9z0wcj",
+    "taskDescription": "Hivemind completion: Help me build a modern web application with best practices",
+    "agentType": "hivemind",
+    "outcome": {
+      "iterations": 1,
+      "agentsUsed": 3,
+      "consensusReached": true
+    },
+    "successRating": 9,
+    "timeTaken": 1,
+    "approachUsed": "enhanced-coordination",
+    "filesModified": [],
+    "createdAt": 1755211590347,
+    "metadata": {
+      "sessionId": "hivemind-1755211590306",
+      "strategy": "sequential"
+    }
+  },
+  {
+    "id": "1755211616005-tqzycm8yv",
+    "taskDescription": "Hivemind session: claude",
+    "agentType": "hivemind",
+    "outcome": {
+      "strategy": "sequential",
+      "agentCount": 3,
+      "sessionId": "hivemind-1755211615958"
+    },
+    "successRating": null,
+    "timeTaken": null,
+    "approachUsed": "enhanced-coordination",
+    "filesModified": [],
+    "createdAt": 1755211616005,
+    "metadata": {
+      "sessionId": "hivemind-1755211615958",
+      "strategy": "sequential"
+    }
+  },
+  {
+    "id": "1755211616005-q65zpbrvo",
+    "taskDescription": "Hivemind completion: claude",
+    "agentType": "hivemind",
+    "outcome": {
+      "iterations": 1,
+      "agentsUsed": 3,
+      "consensusReached": true
+    },
+    "successRating": 9,
+    "timeTaken": 0,
+    "approachUsed": "enhanced-coordination",
+    "filesModified": [],
+    "createdAt": 1755211616005,
+    "metadata": {
+      "sessionId": "hivemind-1755211615958",
+      "strategy": "sequential"
+    }
+  },
+  {
+    "id": "1755211994157-vky2j506k",
+    "taskDescription": "Hivemind session: Help me build a modern web application with best practices",
+    "agentType": "hivemind",
+    "outcome": {
+      "strategy": "sequential",
+      "agentCount": 3,
+      "sessionId": "hivemind-1755211994130"
+    },
+    "successRating": null,
+    "timeTaken": null,
+    "approachUsed": "enhanced-coordination",
+    "filesModified": [],
+    "createdAt": 1755211994157,
+    "metadata": {
+      "sessionId": "hivemind-1755211994130",
+      "strategy": "sequential"
+    }
+  },
+  {
+    "id": "1755211994158-mo5ebcv8b",
+    "taskDescription": "Hivemind completion: Help me build a modern web application with best practices",
+    "agentType": "hivemind",
+    "outcome": {
+      "iterations": 1,
+      "agentsUsed": 3,
+      "consensusReached": true
+    },
+    "successRating": 9,
+    "timeTaken": 1,
+    "approachUsed": "enhanced-coordination",
+    "filesModified": [],
+    "createdAt": 1755211994158,
+    "metadata": {
+      "sessionId": "hivemind-1755211994130",
+      "strategy": "sequential"
+    }
+  },
+  {
+    "id": "1755212389034-838wal58k",
+    "taskDescription": "Hivemind session: Help me build a modern web application with best practices",
+    "agentType": "hivemind",
+    "outcome": {
+      "strategy": "sequential",
+      "agentCount": 3,
+      "sessionId": "hivemind-1755212389019"
+    },
+    "successRating": null,
+    "timeTaken": null,
+    "approachUsed": "enhanced-coordination",
+    "filesModified": [],
+    "createdAt": 1755212389034,
+    "metadata": {
+      "sessionId": "hivemind-1755212389019",
+      "strategy": "sequential"
+    }
+  },
+  {
+    "id": "1755212389034-rpbossnxz",
+    "taskDescription": "Hivemind completion: Help me build a modern web application with best practices",
+    "agentType": "hivemind",
+    "outcome": {
+      "iterations": 1,
+      "agentsUsed": 3,
+      "consensusReached": true
+    },
+    "successRating": 9,
+    "timeTaken": 0,
+    "approachUsed": "enhanced-coordination",
+    "filesModified": [],
+    "createdAt": 1755212389034,
+    "metadata": {
+      "sessionId": "hivemind-1755212389019",
+      "strategy": "sequential"
+    }
+  },
+  {
+    "id": "1755377532609-hz05r7xss",
+    "taskDescription": "Help me build a modern web application with best practices",
+    "agentType": "integrated-supervisor",
+    "outcome": "comprehensive_supervision_started",
+    "successRating": null,
+    "timeTaken": null,
+    "approachUsed": "ai_supervising_ai",
+    "filesModified": [],
+    "createdAt": 1755377532609,
+    "metadata": {
+      "sessionId": "supervision-1755377532526",
+      "startTime": 1755377532609,
+      "mode": "comprehensive",
+      "features": [
+        "real-time monitoring",
+        "intelligent intervention",
+        "context injection",
+        "permission handling",
+        "workflow tracking"
+      ]
+    }
+  },
+  {
+    "id": "1755377535865-426r421py",
+    "taskDescription": "Infinite loop: Help me build a modern web application with best practices\n\n## Iterative Enhancement Context\nThis ta...",
+    "agentType": "iterative",
+    "outcome": {
+      "finalQuality": 6.475824360903875,
+      "iterationsCompleted": 5,
+      "targetReached": false
+    },
+    "successRating": 6,
+    "timeTaken": 505,
+    "approachUsed": "iterative-improvement",
+    "filesModified": [],
+    "createdAt": 1755377535865,
+    "metadata": {
+      "sessionId": "infinite-1755377535344",
+      "strategy": "adaptive-learning"
+    }
+  },
+  {
+    "id": "1756310088505-zqpclds4y",
+    "taskDescription": "Help me build a modern web application with best practices",
+    "agentType": "integrated-supervisor",
+    "outcome": "comprehensive_supervision_started",
+    "successRating": null,
+    "timeTaken": null,
+    "approachUsed": "ai_supervising_ai",
+    "filesModified": [],
+    "createdAt": 1756310088505,
+    "metadata": {
+      "sessionId": "supervision-1756310088356",
+      "startTime": 1756310088505,
+      "mode": "comprehensive",
+      "features": [
+        "real-time monitoring",
+        "intelligent intervention",
+        "context injection",
+        "permission handling",
+        "workflow tracking"
+      ]
+    }
   }
 ]

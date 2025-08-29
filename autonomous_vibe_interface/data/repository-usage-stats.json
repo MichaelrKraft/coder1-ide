@@ -1,0 +1,344 @@
+{
+  "version": "1.0",
+  "lastUpdated": "2025-08-29T04:33:29.918Z",
+  "repositories": [
+    {
+      "url": "https://github.com/coleam00/Archon",
+      "firstSeen": 1756441289931,
+      "lastUsed": 1756441974665,
+      "analysisCount": 1,
+      "queryCount": 3,
+      "totalInteractions": 4,
+      "score": 33,
+      "metadata": {
+        "timestamp": 1756441289930,
+        "source": "manual"
+      }
+    },
+    {
+      "url": "https://github.com/openai/agents.md",
+      "firstSeen": 1756330694857,
+      "lastUsed": 1756330760951,
+      "analysisCount": 1,
+      "queryCount": 1,
+      "totalInteractions": 2,
+      "score": 18,
+      "metadata": {
+        "timestamp": 1756330694857,
+        "source": "manual"
+      }
+    },
+    {
+      "url": "https://github.com/disler/claude-code-hooks-multi-agent-observability",
+      "firstSeen": 1756325009998,
+      "lastUsed": 1756330760951,
+      "analysisCount": 1,
+      "queryCount": 3,
+      "totalInteractions": 4,
+      "score": 31,
+      "metadata": {
+        "timestamp": 1756325009997,
+        "source": "manual"
+      }
+    },
+    {
+      "url": "https://github.com/facebook/react",
+      "firstSeen": 1756236814249,
+      "lastUsed": 1756325357934,
+      "analysisCount": 1,
+      "queryCount": 2,
+      "totalInteractions": 3,
+      "score": 24,
+      "metadata": {
+        "timestamp": 1756236814249,
+        "source": "manual"
+      }
+    },
+    {
+      "url": "https://github.com/vercel/next.js",
+      "firstSeen": 1756236814250,
+      "lastUsed": 1756325357934,
+      "analysisCount": 1,
+      "queryCount": 2,
+      "totalInteractions": 3,
+      "score": 24,
+      "metadata": {
+        "timestamp": 1756236814250,
+        "source": "manual"
+      }
+    },
+    {
+      "url": "https://github.com/expressjs/express",
+      "firstSeen": 1756236814250,
+      "lastUsed": 1756325357934,
+      "analysisCount": 1,
+      "queryCount": 2,
+      "totalInteractions": 3,
+      "score": 24,
+      "metadata": {
+        "timestamp": 1756236814250,
+        "source": "manual"
+      }
+    },
+    {
+      "url": "https://github.com/vuejs/vue",
+      "firstSeen": 1756236829256,
+      "lastUsed": 1756325357934,
+      "analysisCount": 7,
+      "queryCount": 2,
+      "totalInteractions": 9,
+      "score": 91,
+      "metadata": {
+        "timestamp": 1756240691700,
+        "source": "manual"
+      }
+    },
+    {
+      "url": "https://github.com/tailwindlabs/tailwindcss",
+      "firstSeen": 1756236829257,
+      "lastUsed": 1756325357934,
+      "analysisCount": 7,
+      "queryCount": 2,
+      "totalInteractions": 9,
+      "score": 91,
+      "metadata": {
+        "timestamp": 1756240691700,
+        "source": "manual"
+      }
+    },
+    {
+      "url": "https://github.com/nodejs/node",
+      "firstSeen": 1756236829257,
+      "lastUsed": 1756325357934,
+      "analysisCount": 7,
+      "queryCount": 2,
+      "totalInteractions": 9,
+      "score": 91,
+      "metadata": {
+        "timestamp": 1756240691700,
+        "source": "manual"
+      }
+    },
+    {
+      "url": "https://github.com/microsoft/TypeScript",
+      "firstSeen": 1756236844264,
+      "lastUsed": 1756325357934,
+      "analysisCount": 7,
+      "queryCount": 2,
+      "totalInteractions": 9,
+      "score": 91,
+      "metadata": {
+        "timestamp": 1756240706706,
+        "source": "manual"
+      }
+    },
+    {
+      "url": "https://github.com/angular/angular",
+      "firstSeen": 1756236844265,
+      "lastUsed": 1756325357934,
+      "analysisCount": 7,
+      "queryCount": 2,
+      "totalInteractions": 9,
+      "score": 91,
+      "metadata": {
+        "timestamp": 1756240706707,
+        "source": "manual"
+      }
+    },
+    {
+      "url": "https://github.com/sveltejs/svelte",
+      "firstSeen": 1756236844265,
+      "lastUsed": 1756325357934,
+      "analysisCount": 7,
+      "queryCount": 2,
+      "totalInteractions": 9,
+      "score": 91,
+      "metadata": {
+        "timestamp": 1756240706707,
+        "source": "manual"
+      }
+    },
+    {
+      "url": "https://github.com/remix-run/remix",
+      "firstSeen": 1756236859280,
+      "lastUsed": 1756325357934,
+      "analysisCount": 7,
+      "queryCount": 2,
+      "totalInteractions": 9,
+      "score": 91,
+      "metadata": {
+        "timestamp": 1756240721712,
+        "source": "manual"
+      }
+    },
+    {
+      "url": "https://github.com/nestjs/nest",
+      "firstSeen": 1756236859282,
+      "lastUsed": 1756325357934,
+      "analysisCount": 7,
+      "queryCount": 2,
+      "totalInteractions": 9,
+      "score": 91,
+      "metadata": {
+        "timestamp": 1756240721713,
+        "source": "manual"
+      }
+    },
+    {
+      "url": "https://github.com/strapi/strapi",
+      "firstSeen": 1756236859282,
+      "lastUsed": 1756325357934,
+      "analysisCount": 7,
+      "queryCount": 2,
+      "totalInteractions": 9,
+      "score": 91,
+      "metadata": {
+        "timestamp": 1756240721713,
+        "source": "manual"
+      }
+    },
+    {
+      "url": "https://github.com/fastify/fastify",
+      "firstSeen": 1756236874291,
+      "lastUsed": 1756325357934,
+      "analysisCount": 6,
+      "queryCount": 2,
+      "totalInteractions": 8,
+      "score": 80,
+      "metadata": {
+        "timestamp": 1756240453726,
+        "source": "manual"
+      }
+    },
+    {
+      "url": "https://github.com/t3-oss/create-t3-app",
+      "firstSeen": 1756236874291,
+      "lastUsed": 1756325357934,
+      "analysisCount": 6,
+      "queryCount": 2,
+      "totalInteractions": 8,
+      "score": 80,
+      "metadata": {
+        "timestamp": 1756240453728,
+        "source": "manual"
+      }
+    },
+    {
+      "url": "https://github.com/vercel/commerce",
+      "firstSeen": 1756236874291,
+      "lastUsed": 1756325357934,
+      "analysisCount": 6,
+      "queryCount": 2,
+      "totalInteractions": 8,
+      "score": 80,
+      "metadata": {
+        "timestamp": 1756240453728,
+        "source": "manual"
+      }
+    },
+    {
+      "url": "https://github.com/shadcn-ui/ui",
+      "firstSeen": 1756236919310,
+      "lastUsed": 1756240468732,
+      "analysisCount": 6,
+      "queryCount": 0,
+      "totalInteractions": 6,
+      "score": 64,
+      "metadata": {
+        "timestamp": 1756240468732,
+        "source": "manual"
+      }
+    },
+    {
+      "url": "https://github.com/prisma/prisma",
+      "firstSeen": 1756236919311,
+      "lastUsed": 1756325357934,
+      "analysisCount": 6,
+      "queryCount": 2,
+      "totalInteractions": 8,
+      "score": 80,
+      "metadata": {
+        "timestamp": 1756240468732,
+        "source": "manual"
+      }
+    },
+    {
+      "url": "https://github.com/supabase/supabase",
+      "firstSeen": 1756236919311,
+      "lastUsed": 1756240468732,
+      "analysisCount": 6,
+      "queryCount": 0,
+      "totalInteractions": 6,
+      "score": 64,
+      "metadata": {
+        "timestamp": 1756240468732,
+        "source": "manual"
+      }
+    },
+    {
+      "url": "https://github.com/clerk/javascript",
+      "firstSeen": 1756236934327,
+      "lastUsed": 1756325357934,
+      "analysisCount": 5,
+      "queryCount": 2,
+      "totalInteractions": 7,
+      "score": 69,
+      "metadata": {
+        "timestamp": 1756240483737,
+        "source": "manual"
+      }
+    },
+    {
+      "url": "https://github.com/trpc/trpc",
+      "firstSeen": 1756236934327,
+      "lastUsed": 1756325357934,
+      "analysisCount": 5,
+      "queryCount": 2,
+      "totalInteractions": 7,
+      "score": 69,
+      "metadata": {
+        "timestamp": 1756240483737,
+        "source": "manual"
+      }
+    },
+    {
+      "url": "https://github.com/n8n-io/n8n",
+      "firstSeen": 1756236934327,
+      "lastUsed": 1756240483738,
+      "analysisCount": 5,
+      "queryCount": 0,
+      "totalInteractions": 5,
+      "score": 53,
+      "metadata": {
+        "timestamp": 1756240483738,
+        "source": "manual"
+      }
+    },
+    {
+      "url": "https://github.com/davila7/claude-code-templates",
+      "firstSeen": 1756236949339,
+      "lastUsed": 1756325357934,
+      "analysisCount": 5,
+      "queryCount": 2,
+      "totalInteractions": 7,
+      "score": 69,
+      "metadata": {
+        "timestamp": 1756240498747,
+        "source": "manual"
+      }
+    },
+    {
+      "url": "https://github.com/bmad-code-org/BMAD-METHOD",
+      "firstSeen": 1756236949340,
+      "lastUsed": 1756240498749,
+      "analysisCount": 5,
+      "queryCount": 0,
+      "totalInteractions": 5,
+      "score": 53,
+      "metadata": {
+        "timestamp": 1756240498749,
+        "source": "manual"
+      }
+    }
+  ]
+}

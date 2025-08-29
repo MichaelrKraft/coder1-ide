@@ -187,13 +187,13 @@ class HookConfigGenerator {
      */
     getSettingsPath(scope) {
         switch (scope) {
-            case 'user':
-                return this.userSettingsPath;
-            case 'project-local':
-                return this.projectLocalSettingsPath;
-            case 'project':
-            default:
-                return this.projectSettingsPath;
+        case 'user':
+            return this.userSettingsPath;
+        case 'project-local':
+            return this.projectLocalSettingsPath;
+        case 'project':
+        default:
+            return this.projectSettingsPath;
         }
     }
 
@@ -264,18 +264,18 @@ class HookConfigGenerator {
 
         // Scope-specific instructions
         switch (scope) {
-            case 'user':
-                instructions.tips.push('User settings apply to all projects');
-                instructions.tips.push('Use user settings for personal preferences');
-                break;
-            case 'project':
-                instructions.tips.push('Project settings are shared with team members');
-                instructions.tips.push('Commit .claude/settings.json to version control');
-                break;
-            case 'project-local':
-                instructions.tips.push('Local settings are personal and not shared');
-                instructions.tips.push('Add .claude/settings.local.json to .gitignore');
-                break;
+        case 'user':
+            instructions.tips.push('User settings apply to all projects');
+            instructions.tips.push('Use user settings for personal preferences');
+            break;
+        case 'project':
+            instructions.tips.push('Project settings are shared with team members');
+            instructions.tips.push('Commit .claude/settings.json to version control');
+            break;
+        case 'project-local':
+            instructions.tips.push('Local settings are personal and not shared');
+            instructions.tips.push('Add .claude/settings.local.json to .gitignore');
+            break;
         }
 
         instructions.tips.push('You can disable individual hooks by editing the configuration');

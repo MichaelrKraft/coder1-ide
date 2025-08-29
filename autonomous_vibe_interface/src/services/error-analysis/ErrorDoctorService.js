@@ -13,20 +13,15 @@ class ErrorDoctorService {
             apiKey: process.env.OPENAI_API_KEY
         }) : null;
         
+        // DISABLED: Direct Anthropic SDK usage to prevent API charges
+        // Use Claude Code CLI only to utilize Claude Code Max account
         this.anthropic = null;
-        if (process.env.ANTHROPIC_API_KEY) {
-            try {
-                const Anthropic = require('@anthropic-ai/sdk');
-                this.anthropic = new Anthropic({
-                    apiKey: process.env.ANTHROPIC_API_KEY
-                });
-            } catch (error) {
-                console.log('Anthropic SDK not available, using OpenAI only');
-            }
-        }
         
         this.logger = options.logger || console;
         this.isEnabled = process.env.ENABLE_ERROR_DOCTOR !== 'false';
+        
+        // Dynamic state management - can be overridden by API toggle
+        this.dynamicEnabled = true; // Default to enabled, can be toggled by user
         
         // Common error patterns and their fixes
         this.commonErrors = new Map([
@@ -47,8 +42,9 @@ class ErrorDoctorService {
      * Analyze an error and provide fix suggestions
      */
     async analyzeError(errorData) {
-        if (!this.isEnabled) {
-            return { success: false, error: 'Error Doctor is disabled' };
+        if (!this.isEnabled || !this.dynamicEnabled) {
+            const reason = !this.isEnabled ? 'Error Doctor is disabled by environment' : 'Error Doctor is disabled by user toggle';
+            return { success: false, error: reason };
         }
 
         try {
@@ -95,6 +91,15 @@ class ErrorDoctorService {
      * Try to find quick fixes for common errors
      */
     tryQuickFix(errorText, context) {
+        // Skip processing if this looks like Claude's normal output
+        if (errorText.includes('Saving session') || 
+            errorText.includes('Claude Code CLI') || 
+            errorText.includes('interrupt)') ||
+            errorText.includes('Germinating') ||
+            errorText.includes('Smooshing')) {
+            return { success: false };
+        }
+        
         const lowerError = errorText.toLowerCase();
         
         for (const [pattern, handler] of this.commonErrors) {
@@ -367,15 +372,33 @@ Please respond in this JSON format:
     }
 
     handleCommandNotFound(errorText, context) {
-        const cmdMatch = errorText.match(/command not found: (\w+)/i);
+        // Be more specific about what constitutes a "command not found" error
+        // Exclude Claude's normal output and partial words
+        if (errorText.includes('Saving session') || 
+            errorText.includes('Claude Code CLI') || 
+            errorText.includes('interrupt)')) {
+            return null; // Not a real command error
+        }
+        
+        const cmdMatch = errorText.match(/(?:bash:|sh:)\s*(\w+):\s*command not found/i) ||
+                         errorText.match(/(\w+):\s*command not found/i);
+        
         if (cmdMatch) {
             const command = cmdMatch[1];
+            
+            // Filter out obviously invalid commands or partial text
+            if (command.length < 2 || 
+                ['Saving', 'session', 'Germinating', 'Smooshing'].includes(command)) {
+                return null; // Not a real command
+            }
+            
             const suggestions = {
                 'node': 'Install Node.js from nodejs.org',
                 'npm': 'Install Node.js (includes npm)',
                 'git': 'Install Git',
                 'python': 'Install Python',
-                'pip': 'Install Python (includes pip)'
+                'pip': 'Install Python (includes pip)',
+                'claude': 'Install Claude Code CLI from https://claude.ai/code'
             };
             
             return {
@@ -468,6 +491,32 @@ Please respond in this JSON format:
                 timestamp: new Date().toISOString()
             };
         }
+    }
+    
+    /**
+     * Set dynamic enabled state (for user toggle)
+     */
+    setDynamicEnabled(enabled) {
+        this.dynamicEnabled = enabled;
+        this.logger.log(`🔧 ErrorDoctorService: Dynamic state set to ${enabled ? 'enabled' : 'disabled'}`);
+    }
+    
+    /**
+     * Get current enabled state (combines environment and dynamic)
+     */
+    getCurrentEnabledState() {
+        return {
+            environmentEnabled: this.isEnabled,
+            dynamicEnabled: this.dynamicEnabled,
+            fullyEnabled: this.isEnabled && this.dynamicEnabled
+        };
+    }
+    
+    /**
+     * Check if Error Doctor is currently enabled
+     */
+    isCurrentlyEnabled() {
+        return this.isEnabled && this.dynamicEnabled;
     }
 }
 

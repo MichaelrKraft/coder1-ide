@@ -231,7 +231,7 @@ class WorkflowEngine extends EventEmitter {
                 
                 // Check for conditional branching
                 if (step.condition && !this.evaluateCondition(step.condition, workflow.results)) {
-                    console.log(`⏭️ Skipping remaining steps due to condition`);
+                    console.log('⏭️ Skipping remaining steps due to condition');
                     break;
                 }
                 
@@ -409,27 +409,27 @@ class WorkflowEngine extends EventEmitter {
         
         // Built-in step types
         switch (type) {
-            case 'shell':
-                return await this.executeShellStep(params, context);
-            case 'file':
-                return await this.executeFileStep(params, context);
-            case 'ai':
-                return await this.executeAIStep(params, context);
-            case 'http':
-                return await this.executeHttpStep(params, context);
-            case 'condition':
-                return await this.executeConditionStep(params, context);
-            case 'parallel':
-                return await this.executeParallelSteps(params, context);
-            case 'wait':
-                return await this.executeWaitStep(params, context);
-            default:
-                // Check for custom executor
-                if (this.executors.has(type)) {
-                    const executor = this.executors.get(type);
-                    return await executor(params, context);
-                }
-                throw new Error(`Unknown step type: ${type}`);
+        case 'shell':
+            return await this.executeShellStep(params, context);
+        case 'file':
+            return await this.executeFileStep(params, context);
+        case 'ai':
+            return await this.executeAIStep(params, context);
+        case 'http':
+            return await this.executeHttpStep(params, context);
+        case 'condition':
+            return await this.executeConditionStep(params, context);
+        case 'parallel':
+            return await this.executeParallelSteps(params, context);
+        case 'wait':
+            return await this.executeWaitStep(params, context);
+        default:
+            // Check for custom executor
+            if (this.executors.has(type)) {
+                const executor = this.executors.get(type);
+                return await executor(params, context);
+            }
+            throw new Error(`Unknown step type: ${type}`);
         }
     }
     
@@ -459,20 +459,20 @@ class WorkflowEngine extends EventEmitter {
         const { operation, path: filePath, content } = params;
         
         switch (operation) {
-            case 'read':
-                return await fs.readFile(filePath, 'utf8');
-            case 'write':
-                await fs.writeFile(filePath, content);
-                return { success: true, path: filePath };
-            case 'exists':
-                try {
-                    await fs.access(filePath);
-                    return true;
-                } catch {
-                    return false;
-                }
-            default:
-                throw new Error(`Unknown file operation: ${operation}`);
+        case 'read':
+            return await fs.readFile(filePath, 'utf8');
+        case 'write':
+            await fs.writeFile(filePath, content);
+            return { success: true, path: filePath };
+        case 'exists':
+            try {
+                await fs.access(filePath);
+                return true;
+            } catch {
+                return false;
+            }
+        default:
+            throw new Error(`Unknown file operation: ${operation}`);
         }
     }
     
@@ -582,15 +582,15 @@ class WorkflowEngine extends EventEmitter {
             const fieldValue = results[field];
             
             switch (operator) {
-                case '==': return fieldValue == value;
-                case '!=': return fieldValue != value;
-                case '>': return fieldValue > value;
-                case '<': return fieldValue < value;
-                case '>=': return fieldValue >= value;
-                case '<=': return fieldValue <= value;
-                case 'contains': return fieldValue?.includes?.(value);
-                case 'exists': return fieldValue !== undefined;
-                default: return false;
+            case '==': return fieldValue == value;
+            case '!=': return fieldValue != value;
+            case '>': return fieldValue > value;
+            case '<': return fieldValue < value;
+            case '>=': return fieldValue >= value;
+            case '<=': return fieldValue <= value;
+            case 'contains': return fieldValue?.includes?.(value);
+            case 'exists': return fieldValue !== undefined;
+            default: return false;
             }
         }
         
@@ -679,7 +679,7 @@ class WorkflowEngine extends EventEmitter {
                 }
                 
             } catch (healError) {
-                console.log(`❌ Auto-Healer: Could not fix issue:`, healError.message);
+                console.log('❌ Auto-Healer: Could not fix issue:', healError.message);
             }
         }
     }
@@ -714,26 +714,26 @@ class WorkflowEngine extends EventEmitter {
      */
     async applyHealingStrategy(strategy, workflow) {
         switch (strategy.action) {
-            case 'fix-permissions':
-                // Attempt to fix file permissions
-                console.log('🔧 Fixing file permissions...');
-                break;
+        case 'fix-permissions':
+            // Attempt to fix file permissions
+            console.log('🔧 Fixing file permissions...');
+            break;
             
-            case 'create-missing':
-                // Create missing files/directories
-                console.log('📁 Creating missing resources...');
-                break;
+        case 'create-missing':
+            // Create missing files/directories
+            console.log('📁 Creating missing resources...');
+            break;
             
-            case 'fix-syntax':
-                // Use AI to fix syntax errors
-                console.log('🤖 Using AI to fix syntax errors...');
-                break;
+        case 'fix-syntax':
+            // Use AI to fix syntax errors
+            console.log('🤖 Using AI to fix syntax errors...');
+            break;
             
-            case 'increase-timeout':
-                // Increase timeout for next attempt
-                this.config.defaultTimeout *= 2;
-                console.log(`⏱️ Increased timeout to ${this.config.defaultTimeout}ms`);
-                break;
+        case 'increase-timeout':
+            // Increase timeout for next attempt
+            this.config.defaultTimeout *= 2;
+            console.log(`⏱️ Increased timeout to ${this.config.defaultTimeout}ms`);
+            break;
         }
         
         return { strategy: strategy.type, applied: true };
@@ -780,12 +780,12 @@ class WorkflowEngine extends EventEmitter {
     setupEventHandlers() {
         // Listen to workflow tracker events
         this.workflowTracker.on('workflowStuck', (data) => {
-            console.log(`⚠️ Workflow stuck detected:`, data);
+            console.log('⚠️ Workflow stuck detected:', data);
             this.emit('workflow:stuck', data);
         });
         
         this.workflowTracker.on('interventionNeeded', (data) => {
-            console.log(`🚨 Intervention needed:`, data);
+            console.log('🚨 Intervention needed:', data);
             this.emit('workflow:intervention', data);
         });
     }

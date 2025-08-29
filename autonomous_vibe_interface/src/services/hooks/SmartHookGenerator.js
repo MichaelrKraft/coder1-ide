@@ -383,22 +383,22 @@ class SmartHookGenerator {
 
         for (const opt of smartHooks.optimizations) {
             switch (opt.impact) {
-                case 'very-high':
-                    benefits.timeSavings += 60; // minutes per week
-                    benefits.qualityImprovement += 30;
-                    break;
-                case 'high':
-                    benefits.timeSavings += 30;
-                    benefits.qualityImprovement += 20;
-                    break;
-                case 'medium':
-                    benefits.timeSavings += 15;
-                    benefits.qualityImprovement += 10;
-                    break;
-                case 'low':
-                    benefits.timeSavings += 5;
-                    benefits.qualityImprovement += 5;
-                    break;
+            case 'very-high':
+                benefits.timeSavings += 60; // minutes per week
+                benefits.qualityImprovement += 30;
+                break;
+            case 'high':
+                benefits.timeSavings += 30;
+                benefits.qualityImprovement += 20;
+                break;
+            case 'medium':
+                benefits.timeSavings += 15;
+                benefits.qualityImprovement += 10;
+                break;
+            case 'low':
+                benefits.timeSavings += 5;
+                benefits.qualityImprovement += 5;
+                break;
             }
         }
 

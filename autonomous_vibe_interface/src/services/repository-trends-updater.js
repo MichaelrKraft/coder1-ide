@@ -61,7 +61,7 @@ class RepositoryTrendsUpdater extends EventEmitter {
             }, this.config.checkInterval);
             
             console.log('✅ [TRENDS] Repository trends updater initialized');
-            console.log(`   Update frequency: Weekly`);
+            console.log('   Update frequency: Weekly');
             console.log(`   Last update: ${this.lastUpdate ? new Date(this.lastUpdate).toISOString() : 'Never'}`);
             
             return true;

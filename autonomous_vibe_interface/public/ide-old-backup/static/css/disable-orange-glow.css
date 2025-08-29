@@ -1,0 +1,21 @@
+/* CRITICAL FIX: Disable orange-glow class that exists in main CSS files */
+/* Both main.954ba485.css and main.43790536.css have this problematic class */
+
+/* Completely override and disable orange-glow */
+.orange-glow,
+.orange-glow:hover,
+.orange-glow:focus,
+.orange-glow:active {
+    box-shadow: none !important;
+    text-shadow: none !important;
+    border: none !important;
+    outline: none !important;
+    background: transparent !important;
+}
+
+/* Ensure nothing can have orange glow effects */
+*[class*="orange-glow"],
+*[class*="orange-glow"]:hover {
+    box-shadow: none !important;
+    text-shadow: none !important;
+}

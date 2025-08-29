@@ -443,10 +443,10 @@ class AIHookAnalyzer {
         // Deduct points for issues
         for (const issue of issues) {
             switch (issue.severity) {
-                case 'critical': score -= 30; break;
-                case 'high': score -= 20; break;
-                case 'medium': score -= 10; break;
-                case 'low': score -= 5; break;
+            case 'critical': score -= 30; break;
+            case 'high': score -= 20; break;
+            case 'medium': score -= 10; break;
+            case 'low': score -= 5; break;
             }
         }
 

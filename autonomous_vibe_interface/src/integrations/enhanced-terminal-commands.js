@@ -133,7 +133,7 @@ class EnhancedTerminalCommands {
      * Handle MCP status command
      */
     async handleMcpStatus(ptyProcess) {
-        ptyProcess.write(`\\r\\n\\x1b[36m🔗 MCP Server Status\\x1b[0m\\r\\n`);
+        ptyProcess.write('\\r\\n\\x1b[36m🔗 MCP Server Status\\x1b[0m\\r\\n');
         ptyProcess.write(`\\x1b[90m${'='.repeat(50)}\\x1b[0m\\r\\n`);
 
         for (const [name, config] of Object.entries(this.mcpServerConfigs)) {
@@ -141,7 +141,7 @@ class EnhancedTerminalCommands {
             ptyProcess.write(`\\x1b[37m${name.padEnd(15)}\\x1b[0m ${status}\\r\\n`);
         }
 
-        ptyProcess.write(`\\r\\n\\x1b[32m✅ Status check complete\\x1b[0m\\r\\n`);
+        ptyProcess.write('\\r\\n\\x1b[32m✅ Status check complete\\x1b[0m\\r\\n');
         return true;
     }
 
@@ -152,7 +152,7 @@ class EnhancedTerminalCommands {
         const args = command.split(' ').slice(1);
         const serverName = args[0] || 'all';
 
-        ptyProcess.write(`\\r\\n\\x1b[36m🔗 Connecting to MCP servers...\\x1b[0m\\r\\n`);
+        ptyProcess.write('\\r\\n\\x1b[36m🔗 Connecting to MCP servers...\\x1b[0m\\r\\n');
 
         if (serverName === 'all') {
             // Connect to all servers
@@ -207,7 +207,7 @@ class EnhancedTerminalCommands {
      * Handle MCP tools command
      */
     async handleMcpTools(ptyProcess) {
-        ptyProcess.write(`\\r\\n\\x1b[36m🔧 Available MCP Tools\\x1b[0m\\r\\n`);
+        ptyProcess.write('\\r\\n\\x1b[36m🔧 Available MCP Tools\\x1b[0m\\r\\n');
         ptyProcess.write(`\\x1b[90m${'='.repeat(50)}\\x1b[0m\\r\\n`);
 
         for (const [name, server] of this.mcpServers) {
@@ -218,7 +218,7 @@ class EnhancedTerminalCommands {
         }
 
         if (this.mcpServers.size === 0) {
-            ptyProcess.write(`\\x1b[33m⚠️ No MCP servers connected. Run 'mcp-connect all' to connect.\\x1b[0m\\r\\n`);
+            ptyProcess.write('\\x1b[33m⚠️ No MCP servers connected. Run \'mcp-connect all\' to connect.\\x1b[0m\\r\\n');
         }
 
         return true;
@@ -228,7 +228,7 @@ class EnhancedTerminalCommands {
      * Handle SuperClaude command
      */
     async handleSuperClaudeCommand(command, ptyProcess) {
-        ptyProcess.write(`\\r\\n\\x1b[36m🧠 SuperClaude AI Assistant\\x1b[0m\\r\\n`);
+        ptyProcess.write('\\r\\n\\x1b[36m🧠 SuperClaude AI Assistant\\x1b[0m\\r\\n');
         ptyProcess.write(`\\x1b[90m${'='.repeat(50)}\\x1b[0m\\r\\n`);
 
         // Parse command
@@ -255,9 +255,9 @@ class EnhancedTerminalCommands {
 
         // Mock results
         ptyProcess.write(`\\x1b[32m✅ ${mainCommand} completed successfully\\x1b[0m\\r\\n`);
-        ptyProcess.write(`\\x1b[37m📊 Analysis: Codebase structure analyzed\\x1b[0m\\r\\n`);
-        ptyProcess.write(`\\x1b[37m💡 Recommendations: 3 improvements identified\\x1b[0m\\r\\n`);
-        ptyProcess.write(`\\x1b[37m📋 Evidence-based: All findings documented\\x1b[0m\\r\\n`);
+        ptyProcess.write('\\x1b[37m📊 Analysis: Codebase structure analyzed\\x1b[0m\\r\\n');
+        ptyProcess.write('\\x1b[37m💡 Recommendations: 3 improvements identified\\x1b[0m\\r\\n');
+        ptyProcess.write('\\x1b[37m📋 Evidence-based: All findings documented\\x1b[0m\\r\\n');
 
         return true;
     }
@@ -270,22 +270,22 @@ class EnhancedTerminalCommands {
         const action = args[0];
 
         if (!this.mcpServers.has('browser-use')) {
-            ptyProcess.write(`\\x1b[31m❌ Browser-use MCP server not connected. Run 'mcp-connect browser-use'\\x1b[0m\\r\\n`);
+            ptyProcess.write('\\x1b[31m❌ Browser-use MCP server not connected. Run \'mcp-connect browser-use\'\\x1b[0m\\r\\n');
             return true;
         }
 
-        ptyProcess.write(`\\r\\n\\x1b[36m🌐 Browser Automation\\x1b[0m\\r\\n`);
+        ptyProcess.write('\\r\\n\\x1b[36m🌐 Browser Automation\\x1b[0m\\r\\n');
         
         switch (action) {
-            case 'screenshot':
-                ptyProcess.write(`\\x1b[33m📸 Taking screenshot...\\x1b[0m\\r\\n`);
-                break;
-            case 'navigate':
-                const url = args[1];
-                ptyProcess.write(`\\x1b[33m🔗 Navigating to ${url}...\\x1b[0m\\r\\n`);
-                break;
-            default:
-                ptyProcess.write(`\\x1b[33m💡 Available actions: screenshot, navigate, click, type\\x1b[0m\\r\\n`);
+        case 'screenshot':
+            ptyProcess.write('\\x1b[33m📸 Taking screenshot...\\x1b[0m\\r\\n');
+            break;
+        case 'navigate':
+            const url = args[1];
+            ptyProcess.write(`\\x1b[33m🔗 Navigating to ${url}...\\x1b[0m\\r\\n`);
+            break;
+        default:
+            ptyProcess.write('\\x1b[33m💡 Available actions: screenshot, navigate, click, type\\x1b[0m\\r\\n');
         }
 
         return true;
@@ -299,22 +299,22 @@ class EnhancedTerminalCommands {
         const action = args[0];
 
         if (!this.mcpServers.has('filesystem')) {
-            ptyProcess.write(`\\x1b[31m❌ Filesystem MCP server not connected. Run 'mcp-connect filesystem'\\x1b[0m\\r\\n`);
+            ptyProcess.write('\\x1b[31m❌ Filesystem MCP server not connected. Run \'mcp-connect filesystem\'\\x1b[0m\\r\\n');
             return true;
         }
 
-        ptyProcess.write(`\\r\\n\\x1b[36m📁 Advanced Filesystem Operations\\x1b[0m\\r\\n`);
+        ptyProcess.write('\\r\\n\\x1b[36m📁 Advanced Filesystem Operations\\x1b[0m\\r\\n');
         
         switch (action) {
-            case 'search':
-                const pattern = args[1];
-                ptyProcess.write(`\\x1b[33m🔍 Searching for pattern: ${pattern}...\\x1b[0m\\r\\n`);
-                break;
-            case 'analyze':
-                ptyProcess.write(`\\x1b[33m📊 Analyzing project structure...\\x1b[0m\\r\\n`);
-                break;
-            default:
-                ptyProcess.write(`\\x1b[33m💡 Available actions: search, analyze, tree, stats\\x1b[0m\\r\\n`);
+        case 'search':
+            const pattern = args[1];
+            ptyProcess.write(`\\x1b[33m🔍 Searching for pattern: ${pattern}...\\x1b[0m\\r\\n`);
+            break;
+        case 'analyze':
+            ptyProcess.write('\\x1b[33m📊 Analyzing project structure...\\x1b[0m\\r\\n');
+            break;
+        default:
+            ptyProcess.write('\\x1b[33m💡 Available actions: search, analyze, tree, stats\\x1b[0m\\r\\n');
         }
 
         return true;
@@ -328,21 +328,21 @@ class EnhancedTerminalCommands {
         const action = args[0];
 
         if (!this.mcpServers.has('git')) {
-            ptyProcess.write(`\\x1b[31m❌ Git MCP server not connected. Run 'mcp-connect git'\\x1b[0m\\r\\n`);
+            ptyProcess.write('\\x1b[31m❌ Git MCP server not connected. Run \'mcp-connect git\'\\x1b[0m\\r\\n');
             return true;
         }
 
-        ptyProcess.write(`\\r\\n\\x1b[36m🔀 Advanced Git Operations\\x1b[0m\\r\\n`);
+        ptyProcess.write('\\r\\n\\x1b[36m🔀 Advanced Git Operations\\x1b[0m\\r\\n');
         
         switch (action) {
-            case 'smart-commit':
-                ptyProcess.write(`\\x1b[33m🤖 Generating intelligent commit message...\\x1b[0m\\r\\n`);
-                break;
-            case 'analyze':
-                ptyProcess.write(`\\x1b[33m📊 Analyzing repository history...\\x1b[0m\\r\\n`);
-                break;
-            default:
-                ptyProcess.write(`\\x1b[33m💡 Available actions: smart-commit, analyze, history, conflicts\\x1b[0m\\r\\n`);
+        case 'smart-commit':
+            ptyProcess.write('\\x1b[33m🤖 Generating intelligent commit message...\\x1b[0m\\r\\n');
+            break;
+        case 'analyze':
+            ptyProcess.write('\\x1b[33m📊 Analyzing repository history...\\x1b[0m\\r\\n');
+            break;
+        default:
+            ptyProcess.write('\\x1b[33m💡 Available actions: smart-commit, analyze, history, conflicts\\x1b[0m\\r\\n');
         }
 
         return true;
@@ -352,15 +352,15 @@ class EnhancedTerminalCommands {
      * Handle enhanced Claude command
      */
     async handleEnhancedClaude(command, ptyProcess) {
-        ptyProcess.write(`\\r\\n\\x1b[36m🤖 Enhanced Claude Code CLI\\x1b[0m\\r\\n`);
+        ptyProcess.write('\\r\\n\\x1b[36m🤖 Enhanced Claude Code CLI\\x1b[0m\\r\\n');
         ptyProcess.write(`\\x1b[90m${'='.repeat(50)}\\x1b[0m\\r\\n`);
-        ptyProcess.write(`\\x1b[32m✨ Combining Claude Code + MCP + SuperClaude\\x1b[0m\\r\\n`);
+        ptyProcess.write('\\x1b[32m✨ Combining Claude Code + MCP + SuperClaude\\x1b[0m\\r\\n');
         ptyProcess.write(`\\r\\n\\x1b[37m🔗 MCP Servers: ${this.mcpServers.size} connected\\x1b[0m\\r\\n`);
         ptyProcess.write(`\\x1b[37m🧠 SuperClaude: ${this.superClaudePersonas.length} personas available\\x1b[0m\\r\\n`);
-        ptyProcess.write(`\\x1b[37m🚀 Enhanced capabilities ready\\x1b[0m\\r\\n`);
+        ptyProcess.write('\\x1b[37m🚀 Enhanced capabilities ready\\x1b[0m\\r\\n');
         
         // This would launch regular Claude Code but with enhanced context
-        ptyProcess.write(`\\r\\n\\x1b[33m⏳ Launching enhanced Claude Code session...\\x1b[0m\\r\\n`);
+        ptyProcess.write('\\r\\n\\x1b[33m⏳ Launching enhanced Claude Code session...\\x1b[0m\\r\\n');
         
         return true;
     }
@@ -369,7 +369,7 @@ class EnhancedTerminalCommands {
      * Show help for enhanced commands
      */
     showHelp(ptyProcess) {
-        ptyProcess.write(`\\r\\n\\x1b[36m🔧 Enhanced Terminal Commands\\x1b[0m\\r\\n`);
+        ptyProcess.write('\\r\\n\\x1b[36m🔧 Enhanced Terminal Commands\\x1b[0m\\r\\n');
         ptyProcess.write(`\\x1b[90m${'='.repeat(50)}\\x1b[0m\\r\\n`);
         
         const commands = [
@@ -389,7 +389,7 @@ class EnhancedTerminalCommands {
             ptyProcess.write(`\\x1b[32m${cmd.padEnd(25)}\\x1b[0m ${desc}\\r\\n`);
         }
 
-        ptyProcess.write(`\\r\\n\\x1b[33m💡 Use --persona-<name> and --fs/--git/--bu for enhanced functionality\\x1b[0m\\r\\n`);
+        ptyProcess.write('\\r\\n\\x1b[33m💡 Use --persona-<name> and --fs/--git/--bu for enhanced functionality\\x1b[0m\\r\\n');
     }
 }
 

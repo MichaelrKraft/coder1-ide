@@ -116,57 +116,57 @@ class ProjectGenerator {
 
         // Define structure based on project type and framework
         switch (requirements.framework) {
-            case 'react':
-                structure.directories = ['src', 'public', 'src/components', 'src/hooks', 'src/utils'];
-                structure.files = [
-                    'src/App.js',
-                    'src/index.js',
-                    'src/App.css',
-                    'src/index.css',
-                    'public/index.html'
-                ];
-                structure.packageJson = this._getReactPackageJson(requirements);
-                break;
+        case 'react':
+            structure.directories = ['src', 'public', 'src/components', 'src/hooks', 'src/utils'];
+            structure.files = [
+                'src/App.js',
+                'src/index.js',
+                'src/App.css',
+                'src/index.css',
+                'public/index.html'
+            ];
+            structure.packageJson = this._getReactPackageJson(requirements);
+            break;
                 
-            case 'nextjs':
-                structure.directories = ['pages', 'components', 'styles', 'public', 'lib'];
-                structure.files = [
-                    'pages/index.js',
-                    'pages/_app.js',
-                    'components/Layout.js',
-                    'styles/globals.css',
-                    'package.json'
-                ];
-                structure.packageJson = this._getNextJSPackageJson(requirements);
-                break;
+        case 'nextjs':
+            structure.directories = ['pages', 'components', 'styles', 'public', 'lib'];
+            structure.files = [
+                'pages/index.js',
+                'pages/_app.js',
+                'components/Layout.js',
+                'styles/globals.css',
+                'package.json'
+            ];
+            structure.packageJson = this._getNextJSPackageJson(requirements);
+            break;
                 
-            case 'vanilla':
-                structure.directories = ['css', 'js', 'images'];
-                structure.files = [
-                    'index.html',
-                    'css/styles.css',
-                    'js/script.js'
-                ];
-                break;
+        case 'vanilla':
+            structure.directories = ['css', 'js', 'images'];
+            structure.files = [
+                'index.html',
+                'css/styles.css',
+                'js/script.js'
+            ];
+            break;
                 
-            case 'vue':
-                structure.directories = ['src', 'public', 'src/components'];
-                structure.files = [
-                    'src/main.js',
-                    'src/App.vue',
-                    'public/index.html'
-                ];
-                structure.packageJson = this._getVuePackageJson(requirements);
-                break;
+        case 'vue':
+            structure.directories = ['src', 'public', 'src/components'];
+            structure.files = [
+                'src/main.js',
+                'src/App.vue',
+                'public/index.html'
+            ];
+            structure.packageJson = this._getVuePackageJson(requirements);
+            break;
                 
-            default:
-                // Default to vanilla HTML/CSS/JS
-                structure.directories = ['assets', 'css', 'js'];
-                structure.files = [
-                    'index.html',
-                    'css/styles.css',
-                    'js/script.js'
-                ];
+        default:
+            // Default to vanilla HTML/CSS/JS
+            structure.directories = ['assets', 'css', 'js'];
+            structure.files = [
+                'index.html',
+                'css/styles.css',
+                'js/script.js'
+            ];
         }
 
         return structure;
@@ -208,29 +208,29 @@ class ProjectGenerator {
         const fileExt = path.extname(filePath);
         
         switch (fileName) {
-            case 'index.html':
-                return this._generateHTML(requirements, structure);
-            case 'styles.css':
-            case 'globals.css':
+        case 'index.html':
+            return this._generateHTML(requirements, structure);
+        case 'styles.css':
+        case 'globals.css':
+            return this._generateCSS(requirements);
+        case 'script.js':
+            return this._generateJavaScript(requirements);
+        case 'App.js':
+            return this._generateReactApp(requirements);
+        case 'index.js':
+            if (structure.framework === 'react') {
+                return this._generateReactIndex(requirements);
+            }
+            return this._generateJavaScript(requirements);
+        default:
+            if (fileExt === '.js') {
+                return this._generateJavaScript(requirements);
+            } else if (fileExt === '.css') {
                 return this._generateCSS(requirements);
-            case 'script.js':
-                return this._generateJavaScript(requirements);
-            case 'App.js':
-                return this._generateReactApp(requirements);
-            case 'index.js':
-                if (structure.framework === 'react') {
-                    return this._generateReactIndex(requirements);
-                }
-                return this._generateJavaScript(requirements);
-            default:
-                if (fileExt === '.js') {
-                    return this._generateJavaScript(requirements);
-                } else if (fileExt === '.css') {
-                    return this._generateCSS(requirements);
-                } else if (fileExt === '.html') {
-                    return this._generateHTML(requirements, structure);
-                }
-                return '// Generated file\n';
+            } else if (fileExt === '.html') {
+                return this._generateHTML(requirements, structure);
+            }
+            return '// Generated file\n';
         }
     }
 

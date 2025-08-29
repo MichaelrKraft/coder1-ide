@@ -157,16 +157,16 @@ class ClaudeInputHandler extends EventEmitter {
      */
     async tryInputStrategy(strategy, claudePid, input, ptyProcess) {
         switch (strategy) {
-            case 'direct':
-                return await this.sendViaDirectInput(claudePid, input);
-            case 'expect':
-                return await this.sendViaExpect(ptyProcess, input);
-            case 'fifo':
-                return await this.sendViaFIFO(claudePid, input);
-            case 'clipboard':
-                return await this.sendViaClipboardPaste(ptyProcess, input);
-            default:
-                return false;
+        case 'direct':
+            return await this.sendViaDirectInput(claudePid, input);
+        case 'expect':
+            return await this.sendViaExpect(ptyProcess, input);
+        case 'fifo':
+            return await this.sendViaFIFO(claudePid, input);
+        case 'clipboard':
+            return await this.sendViaClipboardPaste(ptyProcess, input);
+        default:
+            return false;
         }
     }
 

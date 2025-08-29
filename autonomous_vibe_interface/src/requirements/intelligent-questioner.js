@@ -30,42 +30,42 @@ class IntelligentQuestioner {
         this.questionTemplates = {
             website: {
                 essential: [
-                    "Tell me all the relevant things you think I need to know to make a website you would like. Include details about your business, goals, and any specific features you want.",
-                    "Who is your target audience and what are the main actions you want visitors to take on your site?",
-                    "Describe your preferred style, branding, and visual design. Include colors, fonts, layout preferences, or any inspiration you have.",
-                    "What content do you have ready (text, images, videos) and what content do you need help creating?",
-                    "Do you need any specific functionality like contact forms, payments, user accounts, integrations, or other features?"
+                    'Tell me all the relevant things you think I need to know to make a website you would like. Include details about your business, goals, and any specific features you want.',
+                    'Who is your target audience and what are the main actions you want visitors to take on your site?',
+                    'Describe your preferred style, branding, and visual design. Include colors, fonts, layout preferences, or any inspiration you have.',
+                    'What content do you have ready (text, images, videos) and what content do you need help creating?',
+                    'Do you need any specific functionality like contact forms, payments, user accounts, integrations, or other features?'
                 ],
                 technical: [],
                 business: []
             },
             ecommerce: {
                 essential: [
-                    "Tell me about your business and the products/services you're selling. Include your target market and business goals.",
-                    "Describe your product catalog - how many items, categories, pricing structure, and any special product features you need.",
-                    "What's your preferred design style and branding? Include colors, layout preferences, and any inspiration sites you like.",
-                    "What payment methods, shipping options, and order fulfillment processes do you need?",
-                    "Do you need special features like user accounts, reviews, inventory management, promotions, or integrations?"
+                    'Tell me about your business and the products/services you\'re selling. Include your target market and business goals.',
+                    'Describe your product catalog - how many items, categories, pricing structure, and any special product features you need.',
+                    'What\'s your preferred design style and branding? Include colors, layout preferences, and any inspiration sites you like.',
+                    'What payment methods, shipping options, and order fulfillment processes do you need?',
+                    'Do you need special features like user accounts, reviews, inventory management, promotions, or integrations?'
                 ],
                 technical: []
             },
             portfolio: {
                 essential: [
-                    "Tell me about your professional background and the type of work you want to showcase. Include your goals for the portfolio.",
-                    "Describe your projects and how you'd like them presented. Include any specific details about categorization or filtering.",
-                    "What's your preferred design style and personal branding? Include colors, fonts, layout preferences, and inspiration.",
-                    "What content do you have ready (project descriptions, images, resume) and what do you need help creating?",
-                    "Do you need specific features like contact forms, blog, testimonials, social media links, or download capabilities?"
+                    'Tell me about your professional background and the type of work you want to showcase. Include your goals for the portfolio.',
+                    'Describe your projects and how you\'d like them presented. Include any specific details about categorization or filtering.',
+                    'What\'s your preferred design style and personal branding? Include colors, fonts, layout preferences, and inspiration.',
+                    'What content do you have ready (project descriptions, images, resume) and what do you need help creating?',
+                    'Do you need specific features like contact forms, blog, testimonials, social media links, or download capabilities?'
                 ],
                 technical: []
             },
             blog: {
                 essential: [
-                    "Tell me about your blog's purpose, topics, and target audience. Include your goals and posting frequency.",
-                    "Describe your preferred design style and branding. Include colors, fonts, layout preferences, and any inspiration.",
-                    "What content do you have ready and what type of content creation help do you need?",
-                    "Do you want reader engagement features like comments, subscriptions, social sharing, or newsletter integration?",
-                    "What organizational features do you need like categories, tags, search, related posts, or author profiles?"
+                    'Tell me about your blog\'s purpose, topics, and target audience. Include your goals and posting frequency.',
+                    'Describe your preferred design style and branding. Include colors, fonts, layout preferences, and any inspiration.',
+                    'What content do you have ready and what type of content creation help do you need?',
+                    'Do you want reader engagement features like comments, subscriptions, social sharing, or newsletter integration?',
+                    'What organizational features do you need like categories, tags, search, related posts, or author profiles?'
                 ],
                 technical: []
             }
@@ -73,21 +73,21 @@ class IntelligentQuestioner {
 
         // Smart follow-up questions based on responses
         this.followUpLogic = {
-            "ecommerce": {
+            'ecommerce': {
                 trigger: /shop|store|sell|buy|product|ecommerce|e-commerce/i,
-                questions: "ecommerce"
+                questions: 'ecommerce'
             },
-            "portfolio": {
+            'portfolio': {
                 trigger: /portfolio|showcase|work|freelanc|designer|developer|artist/i,
-                questions: "portfolio"
+                questions: 'portfolio'
             },
-            "blog": {
+            'blog': {
                 trigger: /blog|article|post|content|news|journal/i,
-                questions: "blog"
+                questions: 'blog'
             },
-            "business": {
+            'business': {
                 trigger: /business|company|corporate|service|professional/i,
-                questions: "website"
+                questions: 'website'
             }
         };
     }
@@ -107,12 +107,12 @@ class IntelligentQuestioner {
             // Step 2: Create basic analysis without Claude
             const analysis = {
                 projectType: projectType,
-                complexity: "moderate",
+                complexity: 'moderate',
                 keyFeatures: [],
                 missingInfo: [],
                 technicalRequirements: [],
                 businessGoals: [],
-                targetAudience: "General users"
+                targetAudience: 'General users'
             };
             
             // Step 3: Generate the 5 template questions
@@ -181,10 +181,10 @@ class IntelligentQuestioner {
             projectType,
             complexity,
             keyFeatures,
-            missingInfo: ["More details needed about specific requirements"],
+            missingInfo: ['More details needed about specific requirements'],
             technicalRequirements: this.inferTechnicalRequirements(projectType, keyFeatures),
             businessGoals: this.inferBusinessGoals(projectType),
-            targetAudience: "General users",
+            targetAudience: 'General users',
             suggestedQuestions: []
         };
     }
@@ -435,32 +435,12 @@ Generate 2-3 specific follow-up questions that would help create a better websit
 
 Return just the questions, one per line.`;
 
-            const anthropic = new (require('@anthropic-ai/sdk'))({
-                apiKey: this.anthropicApiKey,
-            });
-
-            const response = await anthropic.messages.create({
-                model: "claude-3-haiku-20240307",
-                max_tokens: 500,
-                temperature: 0.4,
-                messages: [{
-                    role: "user",
-                    content: followUpPrompt
-                }]
-            });
-
-            const followUpText = response.content[0].text;
-            const followUpQuestions = followUpText
-                .split('\n')
-                .filter(line => line.trim() && !line.startsWith('Q') && !line.startsWith('A'))
-                .map(q => q.replace(/^\d+\.\s*/, '').trim())
-                .filter(q => q.length > 10)
-                .map(q => ({
-                    question: q,
-                    category: 'follow_up',
-                    priority: 'medium',
-                    type: 'open'
-                }));
+            // DISABLED: Direct Anthropic SDK usage to prevent API charges
+            // Use Claude Code CLI only to utilize Claude Code Max account
+            console.log('Follow-up questions disabled - using Claude Code CLI only');
+            
+            // Return empty follow-up questions instead of using API
+            const followUpQuestions = [];
 
             return followUpQuestions;
 
@@ -702,7 +682,7 @@ ${req.answer}
             analysis.keyFeatures.forEach((feature, index) => {
                 content += `${index + 1}. ${feature}\n`;
             });
-            content += `\n`;
+            content += '\n';
         }
         
         content += `### Feature Prioritization
@@ -750,7 +730,7 @@ ${req.answer}
             analysis.technicalRequirements.forEach((req, index) => {
                 content += `${index + 1}. ${req}\n`;
             });
-            content += `\n`;
+            content += '\n';
         }
         
         content += `---
@@ -971,48 +951,48 @@ ${phase.deliverables.map(d => `- ${d}`).join('\n')}
      * Build enhanced prompt with gathered requirements
      */
     buildEnhancedPrompt(originalRequest, requirements, analysis) {
-        let enhanced = `Enhanced Website Build Request:\n\n`;
+        let enhanced = 'Enhanced Website Build Request:\n\n';
         enhanced += `Original Request: ${originalRequest}\n\n`;
 
         // Add requirements sections
         if (requirements.essential) {
-            enhanced += `ESSENTIAL REQUIREMENTS:\n`;
+            enhanced += 'ESSENTIAL REQUIREMENTS:\n';
             requirements.essential.forEach(req => {
                 enhanced += `• ${req.question} → ${req.answer}\n`;
             });
-            enhanced += `\n`;
+            enhanced += '\n';
         }
 
         if (requirements.technical) {
-            enhanced += `TECHNICAL REQUIREMENTS:\n`;
+            enhanced += 'TECHNICAL REQUIREMENTS:\n';
             requirements.technical.forEach(req => {
                 enhanced += `• ${req.question} → ${req.answer}\n`;
             });
-            enhanced += `\n`;
+            enhanced += '\n';
         }
 
         if (requirements.ai_suggested) {
-            enhanced += `SPECIFIC DETAILS:\n`;
+            enhanced += 'SPECIFIC DETAILS:\n';
             requirements.ai_suggested.forEach(req => {
                 enhanced += `• ${req.question} → ${req.answer}\n`;
             });
-            enhanced += `\n`;
+            enhanced += '\n';
         }
 
         // Add analysis insights
         if (analysis.keyFeatures && analysis.keyFeatures.length > 0) {
-            enhanced += `KEY FEATURES TO IMPLEMENT:\n`;
+            enhanced += 'KEY FEATURES TO IMPLEMENT:\n';
             analysis.keyFeatures.forEach(feature => {
                 enhanced += `• ${feature}\n`;
             });
-            enhanced += `\n`;
+            enhanced += '\n';
         }
 
         enhanced += `PROJECT TYPE: ${analysis.projectType}\n`;
         enhanced += `COMPLEXITY: ${analysis.complexity}\n`;
         enhanced += `TARGET AUDIENCE: ${analysis.targetAudience}\n\n`;
 
-        enhanced += `Please build a comprehensive, functional website that addresses all the above requirements and delivers a professional result that meets the user's specific needs.`;
+        enhanced += 'Please build a comprehensive, functional website that addresses all the above requirements and delivers a professional result that meets the user\'s specific needs.';
 
         return enhanced;
     }

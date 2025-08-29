@@ -58,7 +58,7 @@ class ClaudeCodeSDK {
                     timeout: this.timeout,
                     nonInteractive: true,
                     // Enable code generation mode
-                    systemPrompt: `You are an expert React developer. Generate clean, modern React components with TypeScript support when requested. Always include proper error handling and follow React best practices.`
+                    systemPrompt: 'You are an expert React developer. Generate clean, modern React components with TypeScript support when requested. Always include proper error handling and follow React best practices.'
                 }
             })) {
                 messages.push(message);

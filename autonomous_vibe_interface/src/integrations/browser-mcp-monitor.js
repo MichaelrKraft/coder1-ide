@@ -138,18 +138,18 @@ class BrowserMCPMonitor extends EventEmitter {
         const { name, arguments: args } = params;
         
         switch (name) {
-            case 'playwright_navigate':
-                return { url: args.url, status: 'navigated' };
-            case 'playwright_screenshot':
-                return { screenshot: `screenshot_${Date.now()}.png`, status: 'captured' };
-            case 'playwright_click':
-                return { selector: args.selector, status: 'clicked' };
-            case 'playwright_fill':
-                return { selector: args.selector, value: args.value, status: 'filled' };
-            case 'playwright_evaluate':
-                return { script: args.script, status: 'evaluated' };
-            default:
-                throw new Error(`Unknown MCP tool: ${name}`);
+        case 'playwright_navigate':
+            return { url: args.url, status: 'navigated' };
+        case 'playwright_screenshot':
+            return { screenshot: `screenshot_${Date.now()}.png`, status: 'captured' };
+        case 'playwright_click':
+            return { selector: args.selector, status: 'clicked' };
+        case 'playwright_fill':
+            return { selector: args.selector, value: args.value, status: 'filled' };
+        case 'playwright_evaluate':
+            return { script: args.script, status: 'evaluated' };
+        default:
+            throw new Error(`Unknown MCP tool: ${name}`);
         }
     }
     

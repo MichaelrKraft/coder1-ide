@@ -82,7 +82,7 @@ class EnhancedClaudeCodeButtonBridge extends ClaudeCodeButtonBridge {
         });
         
         this.conversationManager = new ConversationThreadManager();
-        this.memorySystem = new MemorySystem();
+        this.memorySystem = MemorySystem.getInstance();
         
         // Initialize proactive intelligence
         this.proactiveIntelligence = new ProactiveIntelligence({
@@ -969,7 +969,7 @@ class EnhancedClaudeCodeButtonBridge extends ClaudeCodeButtonBridge {
                 metadata: {
                     duration: Date.now() - adaptiveSession.startTime,
                     convergenceReason: currentQuality >= targetQuality ? 'target-reached' : 
-                                     iterationCount >= maxIterations ? 'max-iterations' : 'convergence',
+                        iterationCount >= maxIterations ? 'max-iterations' : 'convergence',
                     avgIterationTime: results.reduce((sum, r) => sum + r.duration, 0) / results.length
                 }
             };
@@ -1424,19 +1424,19 @@ class EnhancedClaudeCodeButtonBridge extends ClaudeCodeButtonBridge {
         
         // Add project context awareness
         if (this.projectContext && this.projectContext.summary) {
-            enhancedPrompt += `## Project Context\n`;
+            enhancedPrompt += '## Project Context\n';
             enhancedPrompt += `Architecture: ${this.projectContext.summary.architecture}\n`;
             enhancedPrompt += `Framework: ${this.projectContext.summary.framework}\n`;
             enhancedPrompt += `Total Files: ${this.projectContext.summary.totalFiles}\n`;
             
             if (this.projectContext.recentChanges && this.projectContext.recentChanges.length > 0) {
-                enhancedPrompt += `\nRecent Changes:\n`;
+                enhancedPrompt += '\nRecent Changes:\n';
                 this.projectContext.recentChanges.slice(0, 3).forEach(change => {
                     enhancedPrompt += `- ${change.action}: ${change.path}\n`;
                 });
             }
             
-            enhancedPrompt += `\n`;
+            enhancedPrompt += '\n';
         }
         
         // Add conversation context
@@ -1444,23 +1444,23 @@ class EnhancedClaudeCodeButtonBridge extends ClaudeCodeButtonBridge {
         const conversationContext = thread.getContinuationContext();
         
         if (conversationContext && conversationContext.conversationFlow) {
-            enhancedPrompt += `## Previous Discussion\n`;
+            enhancedPrompt += '## Previous Discussion\n';
             enhancedPrompt += conversationContext.conversationFlow;
-            enhancedPrompt += `\n\n`;
+            enhancedPrompt += '\n\n';
         }
         
         // Add relevant insights from memory
         const relevantInsights = this.memorySystem.getAgentInsights(mode, null, 3);
         if (relevantInsights.length > 0) {
-            enhancedPrompt += `## Relevant Past Insights\n`;
+            enhancedPrompt += '## Relevant Past Insights\n';
             relevantInsights.forEach(insight => {
                 enhancedPrompt += `- ${insight.content}\n`;
             });
-            enhancedPrompt += `\n`;
+            enhancedPrompt += '\n';
         }
         
         // Add original prompt
-        enhancedPrompt += `## Current Task\n`;
+        enhancedPrompt += '## Current Task\n';
         enhancedPrompt += originalPrompt;
         
         return enhancedPrompt;
@@ -1540,23 +1540,23 @@ class EnhancedClaudeCodeButtonBridge extends ClaudeCodeButtonBridge {
         
         // Add agent-specific insights
         if (agent.insights && agent.insights.length > 0) {
-            agentPrompt += `## Your Previous Insights\n`;
+            agentPrompt += '## Your Previous Insights\n';
             agent.insights.forEach(insight => {
                 agentPrompt += `- ${insight.content}\n`;
             });
-            agentPrompt += `\n`;
+            agentPrompt += '\n';
         }
         
         // Add project context relevant to this agent
         const relevantContext = this.getAgentRelevantContext(agent.type);
         if (relevantContext) {
-            agentPrompt += `## Project Context Relevant to Your Role\n`;
+            agentPrompt += '## Project Context Relevant to Your Role\n';
             agentPrompt += relevantContext;
-            agentPrompt += `\n`;
+            agentPrompt += '\n';
         }
         
         // Add task with agent focus
-        agentPrompt += `## Your Task\n`;
+        agentPrompt += '## Your Task\n';
         agentPrompt += `${originalPrompt}\n\n`;
         agentPrompt += `Focus specifically on: ${agent.focus}`;
         
@@ -1571,19 +1571,19 @@ class EnhancedClaudeCodeButtonBridge extends ClaudeCodeButtonBridge {
         
         const relevantFiles = this.projectContext.keyFiles.filter(file => {
             switch (agentType) {
-                case 'frontend':
-                case 'react':
-                    return file.type === 'react' || file.type === 'react-typescript' || file.path.includes('component');
-                case 'backend':
-                    return file.path.includes('routes') || file.path.includes('api') || file.path.includes('server');
-                case 'database':
-                    return file.path.includes('model') || file.path.includes('schema') || file.path.includes('migration');
-                case 'testing':
-                    return file.path.includes('test') || file.path.includes('spec');
-                case 'security':
-                    return file.path.includes('auth') || file.path.includes('security') || file.path.includes('permission');
-                default:
-                    return true;
+            case 'frontend':
+            case 'react':
+                return file.type === 'react' || file.type === 'react-typescript' || file.path.includes('component');
+            case 'backend':
+                return file.path.includes('routes') || file.path.includes('api') || file.path.includes('server');
+            case 'database':
+                return file.path.includes('model') || file.path.includes('schema') || file.path.includes('migration');
+            case 'testing':
+                return file.path.includes('test') || file.path.includes('spec');
+            case 'security':
+                return file.path.includes('auth') || file.path.includes('security') || file.path.includes('permission');
+            default:
+                return true;
             }
         });
         
@@ -1891,17 +1891,17 @@ class EnhancedClaudeCodeButtonBridge extends ClaudeCodeButtonBridge {
         
         let result;
         switch (agentType) {
-            case 'parallel':
-                result = await this.startParallelAgents(suggestion.action, sessionId);
-                break;
-            case 'hivemind':
-                result = await this.startHivemind(suggestion.action, sessionId);
-                break;
-            case 'supervision':
-                result = await this.startSupervision(suggestion.action, sessionId);
-                break;
-            default:
-                result = await this.startParallelAgents(suggestion.action, sessionId);
+        case 'parallel':
+            result = await this.startParallelAgents(suggestion.action, sessionId);
+            break;
+        case 'hivemind':
+            result = await this.startHivemind(suggestion.action, sessionId);
+            break;
+        case 'supervision':
+            result = await this.startSupervision(suggestion.action, sessionId);
+            break;
+        default:
+            result = await this.startParallelAgents(suggestion.action, sessionId);
         }
         
         return {
@@ -2098,7 +2098,7 @@ class EnhancedClaudeCodeButtonBridge extends ClaudeCodeButtonBridge {
                 configured: !!this.apiKeys.claudeCode,
                 key: this.apiKeys.claudeCode ? `${this.apiKeys.claudeCode.substring(0, 8)}...` : 'not configured',
                 source: process.env.CLAUDE_CODE_API_KEY ? 'CLAUDE_CODE_API_KEY' : 
-                       process.env.ANTHROPIC_API_KEY ? 'ANTHROPIC_API_KEY (fallback)' : 'not set'
+                    process.env.ANTHROPIC_API_KEY ? 'ANTHROPIC_API_KEY (fallback)' : 'not set'
             },
             airtop: {
                 configured: !!this.apiKeys.airtop,
@@ -2944,7 +2944,7 @@ Generate a comprehensive, actionable summary that preserves development context 
                         model: 'claude-3-haiku-20240307',
                         maxTokens: 2000,
                         temperature: 0.3,
-                        systemPrompt: `You are an expert development session analyst. Create comprehensive, actionable session summaries that help maintain project momentum and context for agent handoffs. Focus on practical insights and clear next steps.`
+                        systemPrompt: 'You are an expert development session analyst. Create comprehensive, actionable session summaries that help maintain project momentum and context for agent handoffs. Focus on practical insights and clear next steps.'
                     });
 
                     // Store the interaction for learning
@@ -3109,33 +3109,33 @@ ${hasClaudeActivity ? '- **AI Collaboration**: Claude Code was effectively utili
 
 ### Session Effectiveness Rating
 ${(() => {
-    let score = 50; // Base score
-    if (dirtyFiles.length > 0) score += 20;
-    if (hasSuccess) score += 15;
-    if (hasClaudeActivity) score += 10;
-    if (!hasErrors) score += 10;
-    if (terminalCommands.length > 5) score += 10;
-    if (sessionDuration > 30) score += 10;
+        let score = 50; // Base score
+        if (dirtyFiles.length > 0) score += 20;
+        if (hasSuccess) score += 15;
+        if (hasClaudeActivity) score += 10;
+        if (!hasErrors) score += 10;
+        if (terminalCommands.length > 5) score += 10;
+        if (sessionDuration > 30) score += 10;
     
-    if (score >= 90) return '⭐⭐⭐⭐⭐ Exceptional - Highly productive session with significant progress';
-    if (score >= 75) return '⭐⭐⭐⭐ Excellent - Strong progress with good momentum';
-    if (score >= 60) return '⭐⭐⭐ Good - Solid development session with clear focus';
-    if (score >= 45) return '⭐⭐ Fair - Exploratory session with some progress';
-    return '⭐ Starting - Initial setup or planning phase';
-})()}
+        if (score >= 90) return '⭐⭐⭐⭐⭐ Exceptional - Highly productive session with significant progress';
+        if (score >= 75) return '⭐⭐⭐⭐ Excellent - Strong progress with good momentum';
+        if (score >= 60) return '⭐⭐⭐ Good - Solid development session with clear focus';
+        if (score >= 45) return '⭐⭐ Fair - Exploratory session with some progress';
+        return '⭐ Starting - Initial setup or planning phase';
+    })()}
 
 ### Development Patterns Detected
 ${(() => {
-    const patterns = [];
-    if (isReactProject) patterns.push('- React component development patterns observed');
-    if (isWebDev) patterns.push('- Web development stack (HTML/CSS/JS) actively used');
-    if (hasClaudeActivity) patterns.push('- AI-assisted development workflow implemented');
-    if (terminalCommands.some(cmd => cmd.includes('git'))) patterns.push('- Version control operations performed');
-    if (terminalCommands.some(cmd => cmd.includes('npm') || cmd.includes('yarn'))) patterns.push('- Package management activities detected');
-    if (terminalCommands.some(cmd => cmd.includes('test'))) patterns.push('- Testing operations executed');
+        const patterns = [];
+        if (isReactProject) patterns.push('- React component development patterns observed');
+        if (isWebDev) patterns.push('- Web development stack (HTML/CSS/JS) actively used');
+        if (hasClaudeActivity) patterns.push('- AI-assisted development workflow implemented');
+        if (terminalCommands.some(cmd => cmd.includes('git'))) patterns.push('- Version control operations performed');
+        if (terminalCommands.some(cmd => cmd.includes('npm') || cmd.includes('yarn'))) patterns.push('- Package management activities detected');
+        if (terminalCommands.some(cmd => cmd.includes('test'))) patterns.push('- Testing operations executed');
     
-    return patterns.length > 0 ? patterns.join('\n') : '- Standard development workflow observed';
-})()}
+        return patterns.length > 0 ? patterns.join('\n') : '- Standard development workflow observed';
+    })()}
 
 ### Technical Environment Analysis
 - **Primary Technology**: ${isReactProject ? 'React/TypeScript' : isWebDev ? 'Web Technologies' : 'General Development'}

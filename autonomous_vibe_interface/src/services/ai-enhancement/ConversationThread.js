@@ -110,7 +110,7 @@ class ConversationThread extends EventEmitter {
         
         // Add confidence indicators if available
         if (message.metadata.confidence && message.metadata.confidence < 0.8) {
-            content += ` (Note: This response has moderate confidence)`;
+            content += ' (Note: This response has moderate confidence)';
         }
         
         return content;
@@ -231,7 +231,7 @@ class ConversationThread extends EventEmitter {
         
         // Add conversation context if there's history
         if (this.messages.length > 0) {
-            contextualPrompt += `## Conversation Context\n`;
+            contextualPrompt += '## Conversation Context\n';
             contextualPrompt += `Previous discussion involved: ${summary.participants.join(', ')}\n`;
             
             if (summary.recentTopics.length > 0) {
@@ -239,15 +239,15 @@ class ConversationThread extends EventEmitter {
             }
             
             if (summary.keyDecisions.length > 0) {
-                contextualPrompt += `\nKey decisions made:\n`;
+                contextualPrompt += '\nKey decisions made:\n';
                 summary.keyDecisions.forEach(decision => {
                     contextualPrompt += `- ${decision.decision.substring(0, 100)}...\n`;
                 });
             }
             
-            contextualPrompt += `\n## Recent Messages\n`;
+            contextualPrompt += '\n## Recent Messages\n';
             contextualPrompt += summary.preview;
-            contextualPrompt += `\n\n## Current Request\n`;
+            contextualPrompt += '\n\n## Current Request\n';
         }
         
         contextualPrompt += newPrompt;

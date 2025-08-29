@@ -14,13 +14,18 @@ const errorDoctor = new ErrorDoctorService({
     logger: console
 });
 
+// Dynamic toggle state (runtime controllable)
+let dynamicToggleState = {
+    enabled: process.env.ENABLE_ERROR_DOCTOR !== 'false'
+};
+
 // Feature flag check middleware
 const checkFeatureFlag = (req, res, next) => {
-    if (process.env.ENABLE_ERROR_DOCTOR === 'false') {
+    if (process.env.ENABLE_ERROR_DOCTOR === 'false' || !dynamicToggleState.enabled) {
         return res.status(503).json({
             success: false,
             error: 'Error Doctor is currently disabled',
-            message: 'This feature can be enabled by setting ENABLE_ERROR_DOCTOR=true'
+            message: 'This feature can be enabled via the toggle switch or by setting ENABLE_ERROR_DOCTOR=true'
         });
     }
     next();
@@ -192,7 +197,9 @@ router.post('/apply-fix', checkFeatureFlag, async (req, res) => {
 router.get('/status', (req, res) => {
     try {
         const status = {
-            enabled: process.env.ENABLE_ERROR_DOCTOR !== 'false',
+            enabled: (process.env.ENABLE_ERROR_DOCTOR !== 'false') && dynamicToggleState.enabled,
+            environmentEnabled: process.env.ENABLE_ERROR_DOCTOR !== 'false',
+            userToggleEnabled: dynamicToggleState.enabled,
             aiServices: {
                 openai: !!process.env.OPENAI_API_KEY,
                 anthropic: !!process.env.ANTHROPIC_API_KEY
@@ -208,6 +215,7 @@ router.get('/status', (req, res) => {
 
         console.log('📊 Error Doctor status requested:', {
             enabled: status.enabled,
+            userToggle: status.userToggleEnabled,
             aiServices: status.aiServices
         });
 
@@ -255,6 +263,51 @@ router.post('/context', checkFeatureFlag, async (req, res) => {
             success: false,
             error: 'Failed to get context',
             details: process.env.NODE_ENV === 'development' ? error.message : undefined
+        });
+    }
+});
+
+/**
+ * PUT /api/error-doctor/toggle
+ * Toggle Error Doctor on/off dynamically
+ */
+router.put('/toggle', (req, res) => {
+    try {
+        const { enabled } = req.body;
+
+        // Validate input
+        if (typeof enabled !== 'boolean') {
+            return res.status(400).json({
+                success: false,
+                error: 'Invalid request',
+                message: 'enabled field must be a boolean value'
+            });
+        }
+
+        // Update dynamic toggle state
+        dynamicToggleState.enabled = enabled;
+
+        console.log(`🔧 Error Doctor: User ${enabled ? 'enabled' : 'disabled'} Error Doctor`);
+
+        const newStatus = {
+            enabled: (process.env.ENABLE_ERROR_DOCTOR !== 'false') && dynamicToggleState.enabled,
+            environmentEnabled: process.env.ENABLE_ERROR_DOCTOR !== 'false',
+            userToggleEnabled: dynamicToggleState.enabled,
+            timestamp: new Date().toISOString()
+        };
+
+        res.json({
+            success: true,
+            message: `Error Doctor ${enabled ? 'enabled' : 'disabled'}`,
+            status: newStatus
+        });
+
+    } catch (error) {
+        console.error('❌ Error Doctor toggle error:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to toggle Error Doctor',
+            details: error.message
         });
     }
 });
@@ -316,5 +369,19 @@ router.post('/test', checkFeatureFlag, async (req, res) => {
         });
     }
 });
+
+// Export function to check if Error Doctor is enabled (for use by other modules)
+router.isErrorDoctorEnabled = () => {
+    return (process.env.ENABLE_ERROR_DOCTOR !== 'false') && dynamicToggleState.enabled;
+};
+
+// Export the dynamic toggle state getter
+router.getDynamicToggleState = () => {
+    return {
+        enabled: dynamicToggleState.enabled,
+        environmentEnabled: process.env.ENABLE_ERROR_DOCTOR !== 'false',
+        combinedEnabled: (process.env.ENABLE_ERROR_DOCTOR !== 'false') && dynamicToggleState.enabled
+    };
+};
 
 module.exports = router;

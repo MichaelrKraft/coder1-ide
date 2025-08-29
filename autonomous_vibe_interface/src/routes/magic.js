@@ -8,73 +8,73 @@ const router = express.Router();
 
 // Enhanced Magic Feature Flags - Safe rollback system
 const MAGIC_ENHANCEMENTS = {
-  useEnhancedOpenAI: process.env.ENABLE_ENHANCED_OPENAI !== 'false', // Default ON for better results
-  useEnhancedClaude: process.env.ENABLE_ENHANCED_CLAUDE !== 'false',  // Default ON for better results
-  useMultipleVariations: process.env.ENABLE_VARIATIONS !== 'false',   // Default ON for user choice
-  useStructuredOutputs: process.env.ENABLE_STRUCTURED_OUTPUTS !== 'false', // Default ON for quality
-  useComponentTemplates: process.env.ENABLE_COMPONENT_TEMPLATES !== 'false', // Default ON for variety
-  usePureCodeBackup: process.env.ENABLE_PURECODE !== 'false' // Default ON for advanced fallback
+    useEnhancedOpenAI: process.env.ENABLE_ENHANCED_OPENAI !== 'false', // Default ON for better results
+    useEnhancedClaude: process.env.ENABLE_ENHANCED_CLAUDE !== 'false',  // Default ON for better results
+    useMultipleVariations: process.env.ENABLE_VARIATIONS !== 'false',   // Default ON for user choice
+    useStructuredOutputs: process.env.ENABLE_STRUCTURED_OUTPUTS !== 'false', // Default ON for quality
+    useComponentTemplates: process.env.ENABLE_COMPONENT_TEMPLATES !== 'false', // Default ON for variety
+    usePureCodeBackup: process.env.ENABLE_PURECODE !== 'false' // Default ON for advanced fallback
 };
 
 console.log('🎯 Magic API: Enhanced features enabled:', {
-  enhancedOpenAI: MAGIC_ENHANCEMENTS.useEnhancedOpenAI,
-  enhancedClaude: MAGIC_ENHANCEMENTS.useEnhancedClaude,
-  multipleVariations: MAGIC_ENHANCEMENTS.useMultipleVariations,
-  structuredOutputs: MAGIC_ENHANCEMENTS.useStructuredOutputs,
-  componentTemplates: MAGIC_ENHANCEMENTS.useComponentTemplates,
-  pureCodeBackup: MAGIC_ENHANCEMENTS.usePureCodeBackup
+    enhancedOpenAI: MAGIC_ENHANCEMENTS.useEnhancedOpenAI,
+    enhancedClaude: MAGIC_ENHANCEMENTS.useEnhancedClaude,
+    multipleVariations: MAGIC_ENHANCEMENTS.useMultipleVariations,
+    structuredOutputs: MAGIC_ENHANCEMENTS.useStructuredOutputs,
+    componentTemplates: MAGIC_ENHANCEMENTS.useComponentTemplates,
+    pureCodeBackup: MAGIC_ENHANCEMENTS.usePureCodeBackup
 });
 
 // Import clients with safe fallbacks
 let ReactBitsClient, getMagicClient, getPureCodeClient;
 
 try {
-  const { ReactBitsClient: RBClient } = require('../integrations/react-bits-client');
-  ReactBitsClient = RBClient;
+    const { ReactBitsClient: RBClient } = require('../integrations/react-bits-client');
+    ReactBitsClient = RBClient;
 } catch (error) {
-  console.log('🔧 Magic API: React Bits client not available, continuing without it');
+    console.log('🔧 Magic API: React Bits client not available, continuing without it');
 }
 
 try {
-  const magic21st = require('../integrations/21st-magic-client');
-  getMagicClient = magic21st.getMagicClient;
+    const magic21st = require('../integrations/21st-magic-client');
+    getMagicClient = magic21st.getMagicClient;
 } catch (error) {
-  console.log('🔧 Magic API: 21st Magic client not available, continuing without it');
+    console.log('🔧 Magic API: 21st Magic client not available, continuing without it');
 }
 
 try {
-  const purecode = require('../integrations/purecode-client');
-  getPureCodeClient = purecode.getPureCodeClient;
+    const purecode = require('../integrations/purecode-client');
+    getPureCodeClient = purecode.getPureCodeClient;
 } catch (error) {
-  console.log('🔧 Magic API: PureCode client not available, continuing without it');
+    console.log('🔧 Magic API: PureCode client not available, continuing without it');
 }
 
 // Initialize React Bits client
 let reactBitsClient;
 if (ReactBitsClient) {
-  try {
-    reactBitsClient = new ReactBitsClient();
-    console.log('✅ Magic API: React Bits client initialized');
-  } catch (error) {
-    console.error('❌ Magic API: Failed to initialize React Bits client:', error);
-  }
+    try {
+        reactBitsClient = new ReactBitsClient();
+        console.log('✅ Magic API: React Bits client initialized');
+    } catch (error) {
+        console.error('❌ Magic API: Failed to initialize React Bits client:', error);
+    }
 }
 
 // Initialize 21st.dev Magic client if API key is available
 let magic21stClient = null;
 const initMagic21st = async () => {
-  if (process.env.MAGIC_21ST_API_KEY && getMagicClient) {
-    try {
-      magic21stClient = getMagicClient();
-      await magic21stClient.initialize();
-      console.log('✅ Magic API: 21st.dev Magic client initialized');
-    } catch (error) {
-      console.error('❌ Magic API: Failed to initialize 21st.dev Magic client:', error);
-      magic21stClient = null;
+    if (process.env.MAGIC_21ST_API_KEY && getMagicClient) {
+        try {
+            magic21stClient = getMagicClient();
+            await magic21stClient.initialize();
+            console.log('✅ Magic API: 21st.dev Magic client initialized');
+        } catch (error) {
+            console.error('❌ Magic API: Failed to initialize 21st.dev Magic client:', error);
+            magic21stClient = null;
+        }
+    } else {
+        console.log('ℹ️ Magic API: 21st.dev API key not configured, using local components only');
     }
-  } else {
-    console.log('ℹ️ Magic API: 21st.dev API key not configured, using local components only');
-  }
 };
 
 // Initialize on startup
@@ -85,143 +85,143 @@ initMagic21st();
  * POST /api/magic/generate
  */
 router.post('/generate', async (req, res) => {
-  try {
-    const { prompt, searchQuery, currentFile } = req.body;
+    try {
+        const { prompt, searchQuery, currentFile } = req.body;
     
-    if (!prompt) {
-      return res.status(400).json({
-        success: false,
-        error: 'Prompt is required'
-      });
-    }
-
-    console.log('🪄 Magic API: Generating component for prompt:', prompt);
-
-    // Determine component source strategy
-    const componentSource = process.env.REACT_APP_COMPONENT_SOURCE || 'local';
-    
-    // Try PureCode.ai FIRST for better component generation
-    if (MAGIC_ENHANCEMENTS.usePureCodeBackup && (componentSource === 'local' || componentSource === 'hybrid')) {
-      try {
-        console.log('🎨 Trying PureCode.ai advanced generation FIRST...');
-        if (getPureCodeClient) {
-          const pureCodeClient = getPureCodeClient();
-          const pureCodeComponent = await pureCodeClient.generateComponent(prompt, {
-            searchQuery,
-            currentFile
-          });
-        
-          if (pureCodeComponent.success) {
-            console.log('✨ Successfully generated with PureCode.ai');
-            console.log('   Component type:', pureCodeComponent.metadata?.componentType);
-            console.log('   Styling:', pureCodeComponent.metadata?.styling);
-            return res.json({
-              success: true,
-              code: pureCodeComponent.code,
-              name: pureCodeComponent.name,
-              explanation: pureCodeComponent.explanation,
-              source: 'PureCode.ai',
-              metadata: pureCodeComponent.metadata
+        if (!prompt) {
+            return res.status(400).json({
+                success: false,
+                error: 'Prompt is required'
             });
-          }
         }
-      } catch (pureCodeError) {
-        console.error('❌ PureCode.ai generation failed:', pureCodeError);
-      }
-    }
-    
-    // Try 21st.dev Magic second (disabled by default due to browser redirect issues)
-    if (false && (componentSource === '21st' || componentSource === 'hybrid') && magic21stClient && magic21stClient.isReady()) {
-      try {
-        console.log('🎯 Trying 21st.dev Magic for component generation...');
-        console.log('   Component source:', componentSource);
-        console.log('   Magic client ready:', magic21stClient.isReady());
-        console.log('   Prompt:', prompt);
-        
-        const magic21stComponent = await magic21stClient.createUiComponent({
-          message: prompt,
-          searchQuery: searchQuery || prompt,
-          currentFilePath: currentFile || '/src/components/NewComponent.tsx',
-          projectDirectory: process.cwd()
-        });
-        
-        if (magic21stComponent.success) {
-          console.log('✨ Successfully generated with 21st.dev Magic');
-          console.log('   Component name:', magic21stComponent.name);
-          console.log('   Source:', magic21stComponent.metadata?.source);
-          return res.json({
-            success: true,
-            code: magic21stComponent.componentCode,
-            name: magic21stComponent.name,
-            explanation: magic21stComponent.explanation,
-            source: '21st.dev Magic',
-            metadata: magic21stComponent.metadata
-          });
-        }
-      } catch (magic21stError) {
-        console.error('❌ 21st.dev Magic generation failed:', magic21stError);
-        console.error('   Error stack:', magic21stError.stack);
-      }
-    } else {
-      console.log('⚠️ Skipping 21st.dev Magic:');
-      console.log('   Component source:', componentSource);
-      console.log('   Magic client exists:', !!magic21stClient);
-      console.log('   Magic client ready:', magic21stClient?.isReady() || false);
-    }
 
-    // If not using 21st or it failed, try local methods
-    if (componentSource === 'local' || componentSource === 'hybrid') {
-      // Try to find a matching React Bits component
-      if (reactBitsClient) {
-        const matchedComponent = findBestReactBitsComponent(prompt);
+        console.log('🪄 Magic API: Generating component for prompt:', prompt);
+
+        // Determine component source strategy
+        const componentSource = process.env.REACT_APP_COMPONENT_SOURCE || 'local';
+    
+        // Try PureCode.ai FIRST for better component generation
+        if (MAGIC_ENHANCEMENTS.usePureCodeBackup && (componentSource === 'local' || componentSource === 'hybrid')) {
+            try {
+                console.log('🎨 Trying PureCode.ai advanced generation FIRST...');
+                if (getPureCodeClient) {
+                    const pureCodeClient = getPureCodeClient();
+                    const pureCodeComponent = await pureCodeClient.generateComponent(prompt, {
+                        searchQuery,
+                        currentFile
+                    });
         
-        if (matchedComponent) {
-          console.log('✨ Found React Bits component:', matchedComponent.name);
+                    if (pureCodeComponent.success) {
+                        console.log('✨ Successfully generated with PureCode.ai');
+                        console.log('   Component type:', pureCodeComponent.metadata?.componentType);
+                        console.log('   Styling:', pureCodeComponent.metadata?.styling);
+                        return res.json({
+                            success: true,
+                            code: pureCodeComponent.code,
+                            name: pureCodeComponent.name,
+                            explanation: pureCodeComponent.explanation,
+                            source: 'PureCode.ai',
+                            metadata: pureCodeComponent.metadata
+                        });
+                    }
+                }
+            } catch (pureCodeError) {
+                console.error('❌ PureCode.ai generation failed:', pureCodeError);
+            }
+        }
+    
+        // Try 21st.dev Magic second (disabled by default due to browser redirect issues)
+        if (false && (componentSource === '21st' || componentSource === 'hybrid') && magic21stClient && magic21stClient.isReady()) {
+            try {
+                console.log('🎯 Trying 21st.dev Magic for component generation...');
+                console.log('   Component source:', componentSource);
+                console.log('   Magic client ready:', magic21stClient.isReady());
+                console.log('   Prompt:', prompt);
+        
+                const magic21stComponent = await magic21stClient.createUiComponent({
+                    message: prompt,
+                    searchQuery: searchQuery || prompt,
+                    currentFilePath: currentFile || '/src/components/NewComponent.tsx',
+                    projectDirectory: process.cwd()
+                });
+        
+                if (magic21stComponent.success) {
+                    console.log('✨ Successfully generated with 21st.dev Magic');
+                    console.log('   Component name:', magic21stComponent.name);
+                    console.log('   Source:', magic21stComponent.metadata?.source);
+                    return res.json({
+                        success: true,
+                        code: magic21stComponent.componentCode,
+                        name: magic21stComponent.name,
+                        explanation: magic21stComponent.explanation,
+                        source: '21st.dev Magic',
+                        metadata: magic21stComponent.metadata
+                    });
+                }
+            } catch (magic21stError) {
+                console.error('❌ 21st.dev Magic generation failed:', magic21stError);
+                console.error('   Error stack:', magic21stError.stack);
+            }
+        } else {
+            console.log('⚠️ Skipping 21st.dev Magic:');
+            console.log('   Component source:', componentSource);
+            console.log('   Magic client exists:', !!magic21stClient);
+            console.log('   Magic client ready:', magic21stClient?.isReady() || false);
+        }
+
+        // If not using 21st or it failed, try local methods
+        if (componentSource === 'local' || componentSource === 'hybrid') {
+            // Try to find a matching React Bits component
+            if (reactBitsClient) {
+                const matchedComponent = findBestReactBitsComponent(prompt);
+        
+                if (matchedComponent) {
+                    console.log('✨ Found React Bits component:', matchedComponent.name);
           
-          return res.json({
-            success: true,
-            code: matchedComponent.code,
-            name: matchedComponent.name,
-            explanation: `Generated from React Bits library: ${matchedComponent.description}`,
-            source: 'React Bits Library'
-          });
-        }
-      }
+                    return res.json({
+                        success: true,
+                        code: matchedComponent.code,
+                        name: matchedComponent.name,
+                        explanation: `Generated from React Bits library: ${matchedComponent.description}`,
+                        source: 'React Bits Library'
+                    });
+                }
+            }
 
-      // Try AI generation with Claude/OpenAI
-      const aiComponent = await generateWithAI(prompt);
+            // Try AI generation with Claude/OpenAI
+            const aiComponent = await generateWithAI(prompt);
       
-      if (aiComponent) {
-        return res.json({
-          success: true,
-          code: aiComponent.code,
-          name: aiComponent.name,
-          explanation: aiComponent.explanation,
-          source: 'AI Generation'
-        });
-      }
+            if (aiComponent) {
+                return res.json({
+                    success: true,
+                    code: aiComponent.code,
+                    name: aiComponent.name,
+                    explanation: aiComponent.explanation,
+                    source: 'AI Generation'
+                });
+            }
 
-      // PureCode.ai already tried as primary, skip here
-    }
+            // PureCode.ai already tried as primary, skip here
+        }
 
-    // Fallback to template-based generation
-    const fallbackComponent = generateFallbackComponent(prompt);
+        // Fallback to template-based generation
+        const fallbackComponent = generateFallbackComponent(prompt);
     
-    res.json({
-      success: true,
-      code: fallbackComponent.code,
-      name: fallbackComponent.name,
-      explanation: 'Generated from template',
-      source: 'Template Engine'
-    });
+        res.json({
+            success: true,
+            code: fallbackComponent.code,
+            name: fallbackComponent.name,
+            explanation: 'Generated from template',
+            source: 'Template Engine'
+        });
 
-  } catch (error) {
-    console.error('Magic API error:', error);
-    res.status(500).json({
-      success: false,
-      error: error.message || 'Failed to generate component'
-    });
-  }
+    } catch (error) {
+        console.error('Magic API error:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message || 'Failed to generate component'
+        });
+    }
 });
 
 /**
@@ -229,97 +229,89 @@ router.post('/generate', async (req, res) => {
  * POST /api/magic/generate-variations
  */
 router.post('/generate-variations', async (req, res) => {
-  try {
-    const { prompt, searchQuery, currentFile, count = 3 } = req.body;
+    try {
+        const { prompt, searchQuery, currentFile, count = 3 } = req.body;
     
-    if (!prompt) {
-      return res.status(400).json({
-        success: false,
-        error: 'Prompt is required'
-      });
-    }
-
-    if (!MAGIC_ENHANCEMENTS.useMultipleVariations) {
-      // Fall back to single generation if feature disabled
-      return router.post('/generate')(req, res);
-    }
-
-    console.log(`🎨 Magic API: Generating ${count} variations for prompt:`, prompt);
-
-    const variations = [];
-    const maxVariations = Math.min(count, 5); // Limit to 5 variations max
-
-    // Generate multiple variations using different approaches
-    for (let i = 0; i < maxVariations; i++) {
-      try {
-        console.log(`🎭 Magic API: Generating variation ${i + 1}/${maxVariations}...`);
-        
-        let variation = null;
-        
-        // Try different AI services for variety
-        if (i === 0 && process.env.ANTHROPIC_API_KEY && MAGIC_ENHANCEMENTS.useEnhancedClaude) {
-          // First variation: Enhanced Claude
-          variation = await generateWithEnhancedClaude(prompt, process.env.ANTHROPIC_API_KEY);
-        } else if (i === 1 && process.env.OPENAI_API_KEY && MAGIC_ENHANCEMENTS.useEnhancedOpenAI) {
-          // Second variation: Enhanced OpenAI
-          variation = await generateWithEnhancedOpenAI(prompt, process.env.OPENAI_API_KEY);
-        } else {
-          // Remaining variations: Mix of standard AI and enhanced templates
-          if (Math.random() > 0.5 && process.env.ANTHROPIC_API_KEY) {
-            variation = await generateWithClaude(prompt, process.env.ANTHROPIC_API_KEY);
-          } else if (process.env.OPENAI_API_KEY) {
-            variation = await generateWithOpenAI(prompt, process.env.OPENAI_API_KEY);
-          } else {
-            // Fallback to enhanced template with variation
-            variation = generateFallbackComponentWithVariation(prompt, i);
-          }
+        if (!prompt) {
+            return res.status(400).json({
+                success: false,
+                error: 'Prompt is required'
+            });
         }
 
-        if (variation) {
-          variations.push({
-            id: i + 1,
-            ...variation,
-            variationIndex: i,
+        if (!MAGIC_ENHANCEMENTS.useMultipleVariations) {
+            // Fall back to single generation if feature disabled
+            return router.post('/generate')(req, res);
+        }
+
+        console.log(`🎨 Magic API: Generating ${count} variations for prompt:`, prompt);
+
+        const variations = [];
+        const maxVariations = Math.min(count, 5); // Limit to 5 variations max
+
+        // Generate multiple variations using different approaches
+        for (let i = 0; i < maxVariations; i++) {
+            try {
+                console.log(`🎭 Magic API: Generating variation ${i + 1}/${maxVariations}...`);
+        
+                let variation = null;
+        
+                // Try different AI services for variety
+                // DISABLED: Direct Anthropic SDK usage to prevent API charges
+                // Use Claude Code CLI only to utilize Claude Code Max account
+                if (process.env.OPENAI_API_KEY && MAGIC_ENHANCEMENTS.useEnhancedOpenAI) {
+                    // Use OpenAI for variations since Claude is disabled
+                    variation = await generateWithEnhancedOpenAI(prompt, process.env.OPENAI_API_KEY);
+                } else {
+                    // Fallback to enhanced template with variation
+                    variation = generateFallbackComponentWithVariation(prompt, i);
+                }
+
+                if (variation) {
+                    variations.push({
+                        id: i + 1,
+                        ...variation,
+                        variationIndex: i,
+                        generatedAt: new Date().toISOString()
+                    });
+                }
+            } catch (error) {
+                console.warn(`⚠️ Magic API: Variation ${i + 1} failed:`, error.message);
+        
+                // Add fallback variation
+                const fallback = generateFallbackComponentWithVariation(prompt, i);
+                variations.push({
+                    id: i + 1,
+                    ...fallback,
+                    variationIndex: i,
+                    generatedAt: new Date().toISOString(),
+                    note: 'Fallback variation due to AI service error'
+                });
+            }
+        }
+
+        if (variations.length === 0) {
+            return res.status(500).json({
+                success: false,
+                error: 'Failed to generate any variations'
+            });
+        }
+
+        res.json({
+            success: true,
+            variations,
+            total: variations.length,
+            prompt: prompt,
             generatedAt: new Date().toISOString()
-          });
-        }
-      } catch (error) {
-        console.warn(`⚠️ Magic API: Variation ${i + 1} failed:`, error.message);
-        
-        // Add fallback variation
-        const fallback = generateFallbackComponentWithVariation(prompt, i);
-        variations.push({
-          id: i + 1,
-          ...fallback,
-          variationIndex: i,
-          generatedAt: new Date().toISOString(),
-          note: 'Fallback variation due to AI service error'
         });
-      }
+
+    } catch (error) {
+        console.error('Magic API variations error:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message || 'Failed to generate component variations'
+        });
     }
-
-    if (variations.length === 0) {
-      return res.status(500).json({
-        success: false,
-        error: 'Failed to generate any variations'
-      });
-    }
-
-    res.json({
-      success: true,
-      variations,
-      total: variations.length,
-      prompt: prompt,
-      generatedAt: new Date().toISOString()
-    });
-
-  } catch (error) {
-    console.error('Magic API variations error:', error);
-    res.status(500).json({
-      success: false,
-      error: error.message || 'Failed to generate component variations'
-    });
-  }
 });
 
 /**
@@ -327,39 +319,39 @@ router.post('/generate-variations', async (req, res) => {
  * GET /api/magic/components
  */
 router.get('/components', (req, res) => {
-  try {
-    if (!reactBitsClient) {
-      return res.json({
-        success: true,
-        components: [],
-        categories: {}
-      });
+    try {
+        if (!reactBitsClient) {
+            return res.json({
+                success: true,
+                components: [],
+                categories: {}
+            });
+        }
+
+        const components = Object.entries(reactBitsClient.components || {}).map(([key, comp]) => ({
+            id: key,
+            name: comp.name,
+            category: comp.category,
+            description: comp.description,
+            tags: comp.tags || []
+        }));
+
+        const categories = reactBitsClient.categories || {};
+
+        res.json({
+            success: true,
+            components,
+            categories,
+            total: components.length
+        });
+
+    } catch (error) {
+        console.error('Magic API error:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
     }
-
-    const components = Object.entries(reactBitsClient.components || {}).map(([key, comp]) => ({
-      id: key,
-      name: comp.name,
-      category: comp.category,
-      description: comp.description,
-      tags: comp.tags || []
-    }));
-
-    const categories = reactBitsClient.categories || {};
-
-    res.json({
-      success: true,
-      components,
-      categories,
-      total: components.length
-    });
-
-  } catch (error) {
-    console.error('Magic API error:', error);
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
-  }
 });
 
 /**
@@ -367,239 +359,196 @@ router.get('/components', (req, res) => {
  * POST /api/magic/search-logos
  */
 router.post('/search-logos', async (req, res) => {
-  try {
-    const { query } = req.body;
+    try {
+        const { query } = req.body;
     
-    if (!query) {
-      return res.status(400).json({
-        success: false,
-        error: 'Search query is required'
-      });
-    }
+        if (!query) {
+            return res.status(400).json({
+                success: false,
+                error: 'Search query is required'
+            });
+        }
 
-    // Mock logo search results
-    const logos = [
-      { name: 'React Logo', url: '/logos/react.svg', category: 'framework' },
-      { name: 'Node.js Logo', url: '/logos/nodejs.svg', category: 'backend' },
-      { name: 'TypeScript Logo', url: '/logos/typescript.svg', category: 'language' }
-    ].filter(logo => 
-      logo.name.toLowerCase().includes(query.toLowerCase()) ||
+        // Mock logo search results
+        const logos = [
+            { name: 'React Logo', url: '/logos/react.svg', category: 'framework' },
+            { name: 'Node.js Logo', url: '/logos/nodejs.svg', category: 'backend' },
+            { name: 'TypeScript Logo', url: '/logos/typescript.svg', category: 'language' }
+        ].filter(logo => 
+            logo.name.toLowerCase().includes(query.toLowerCase()) ||
       logo.category.toLowerCase().includes(query.toLowerCase())
-    );
+        );
 
-    res.json({
-      success: true,
-      logos,
-      total: logos.length
-    });
+        res.json({
+            success: true,
+            logos,
+            total: logos.length
+        });
 
-  } catch (error) {
-    console.error('Magic API error:', error);
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
-  }
+    } catch (error) {
+        console.error('Magic API error:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
 });
 
 /**
  * Find best matching React Bits component
  */
 function findBestReactBitsComponent(prompt) {
-  if (!reactBitsClient || !reactBitsClient.components) {
-    return null;
-  }
+    if (!reactBitsClient || !reactBitsClient.components) {
+        return null;
+    }
 
-  const keywords = prompt.toLowerCase().split(/\s+/);
-  let bestMatch = null;
-  let bestScore = 0;
+    const keywords = prompt.toLowerCase().split(/\s+/);
+    let bestMatch = null;
+    let bestScore = 0;
 
-  Object.entries(reactBitsClient.components).forEach(([key, component]) => {
-    let score = 0;
+    Object.entries(reactBitsClient.components).forEach(([key, component]) => {
+        let score = 0;
     
-    // Check component name
-    if (component.name && component.name.toLowerCase().includes(prompt.toLowerCase())) {
-      score += 5;
-    }
+        // Check component name
+        if (component.name && component.name.toLowerCase().includes(prompt.toLowerCase())) {
+            score += 5;
+        }
     
-    // Check tags
-    if (component.tags) {
-      component.tags.forEach(tag => {
-        if (keywords.includes(tag.toLowerCase())) score += 2;
-        if (prompt.toLowerCase().includes(tag.toLowerCase())) score += 1;
-      });
-    }
+        // Check tags
+        if (component.tags) {
+            component.tags.forEach(tag => {
+                if (keywords.includes(tag.toLowerCase())) score += 2;
+                if (prompt.toLowerCase().includes(tag.toLowerCase())) score += 1;
+            });
+        }
     
-    // Check description
-    if (component.description && component.description.toLowerCase().includes(prompt.toLowerCase())) {
-      score += 1;
-    }
+        // Check description
+        if (component.description && component.description.toLowerCase().includes(prompt.toLowerCase())) {
+            score += 1;
+        }
     
-    if (score > bestScore) {
-      bestScore = score;
-      bestMatch = component;
-    }
-  });
+        if (score > bestScore) {
+            bestScore = score;
+            bestMatch = component;
+        }
+    });
 
-  return bestMatch;
+    return bestMatch;
 }
 
 /**
  * Generate component using AI (Claude/OpenAI) - Enhanced Version
  */
 async function generateWithAI(prompt) {
-  try {
-    // Check if we have Claude integration available
-    const claudeAPIKey = process.env.ANTHROPIC_API_KEY;
-    
-    if (claudeAPIKey) {
-      // Try enhanced Claude first if feature flag is enabled
-      if (MAGIC_ENHANCEMENTS.useEnhancedClaude) {
-        try {
-          console.log('🚀 Magic: Trying enhanced Claude generation...');
-          const response = await generateWithEnhancedClaude(prompt, claudeAPIKey);
-          if (response) {
-            console.log('✅ Magic: Enhanced Claude generation successful');
-            return response;
-          }
-        } catch (error) {
-          console.warn('⚠️ Magic: Enhanced Claude failed, falling back to standard:', error.message);
-        }
-      }
-      
-      // Fallback to original Claude
-      const response = await generateWithClaude(prompt, claudeAPIKey);
-      if (response) return response;
-    }
+    try {
+        // DISABLED: Direct Anthropic SDK usage to prevent API charges
+        // Use Claude Code CLI only to utilize Claude Code Max account
+        console.log('🚀 Magic: Claude generation disabled - using Claude Code CLI only');
 
-    // Check if we have OpenAI integration available
-    const openAIKey = process.env.OPENAI_API_KEY;
+        // Check if we have OpenAI integration available
+        const openAIKey = process.env.OPENAI_API_KEY;
     
-    if (openAIKey) {
-      // Try enhanced OpenAI first if feature flag is enabled
-      if (MAGIC_ENHANCEMENTS.useEnhancedOpenAI) {
-        try {
-          console.log('🚀 Magic: Trying enhanced OpenAI generation...');
-          const response = await generateWithEnhancedOpenAI(prompt, openAIKey);
-          if (response) {
-            console.log('✅ Magic: Enhanced OpenAI generation successful');
-            return response;
-          }
-        } catch (error) {
-          console.warn('⚠️ Magic: Enhanced OpenAI failed, falling back to standard:', error.message);
-        }
-      }
+        if (openAIKey) {
+            // Try enhanced OpenAI first if feature flag is enabled
+            if (MAGIC_ENHANCEMENTS.useEnhancedOpenAI) {
+                try {
+                    console.log('🚀 Magic: Trying enhanced OpenAI generation...');
+                    const response = await generateWithEnhancedOpenAI(prompt, openAIKey);
+                    if (response) {
+                        console.log('✅ Magic: Enhanced OpenAI generation successful');
+                        return response;
+                    }
+                } catch (error) {
+                    console.warn('⚠️ Magic: Enhanced OpenAI failed, falling back to standard:', error.message);
+                }
+            }
       
-      // Fallback to original OpenAI
-      const response = await generateWithOpenAI(prompt, openAIKey);
-      if (response) return response;
-    }
+            // Fallback to original OpenAI
+            const response = await generateWithOpenAI(prompt, openAIKey);
+            if (response) return response;
+        }
 
-    return null;
-  } catch (error) {
-    console.error('AI generation failed:', error);
-    return null;
-  }
+        return null;
+    } catch (error) {
+        console.error('AI generation failed:', error);
+        return null;
+    }
 }
 
 /**
  * Generate component using Claude API
  */
 async function generateWithClaude(prompt, apiKey) {
-  try {
-    const Anthropic = require('@anthropic-ai/sdk');
-    const anthropic = new Anthropic({ apiKey });
-
-    const message = await anthropic.messages.create({
-      model: 'claude-3-sonnet-20240229',
-      max_tokens: 2048,
-      messages: [{
-        role: 'user',
-        content: `Generate a React component based on this description: "${prompt}". 
-          Return only the component code without markdown backticks or explanations.
-          Use TypeScript, modern React hooks, and Tailwind CSS for styling.
-          Make it production-ready with proper types and props.`
-      }]
-    });
-
-    const code = message.content[0].text;
-    const componentName = extractComponentName(code) || 'GeneratedComponent';
-
-    return {
-      code,
-      name: componentName,
-      explanation: `AI-generated React component based on: ${prompt}`
-    };
-  } catch (error) {
-    console.error('Claude generation failed:', error);
+    // DISABLED: Direct Anthropic SDK usage to prevent API charges
+    // Use Claude Code CLI only to utilize Claude Code Max account
+    console.log('Claude generation disabled - using Claude Code CLI only');
     return null;
-  }
 }
 
 /**
  * Generate component using OpenAI API
  */
 async function generateWithOpenAI(prompt, apiKey) {
-  try {
-    const { Configuration, OpenAIApi } = require('openai');
-    const configuration = new Configuration({ apiKey });
-    const openai = new OpenAIApi(configuration);
+    try {
+        const { Configuration, OpenAIApi } = require('openai');
+        const configuration = new Configuration({ apiKey });
+        const openai = new OpenAIApi(configuration);
 
-    const response = await openai.createChatCompletion({
-      model: 'gpt-4',
-      messages: [{
-        role: 'system',
-        content: 'You are a React component generator. Generate clean, modern React components using TypeScript and Tailwind CSS.'
-      }, {
-        role: 'user',
-        content: `Generate a React component based on this description: "${prompt}". Return only the component code.`
-      }],
-      max_tokens: 2048,
-      temperature: 0.7
-    });
+        const response = await openai.createChatCompletion({
+            model: 'gpt-4',
+            messages: [{
+                role: 'system',
+                content: 'You are a React component generator. Generate clean, modern React components using TypeScript and Tailwind CSS.'
+            }, {
+                role: 'user',
+                content: `Generate a React component based on this description: "${prompt}". Return only the component code.`
+            }],
+            max_tokens: 2048,
+            temperature: 0.7
+        });
 
-    const code = response.data.choices[0].message.content;
-    const componentName = extractComponentName(code) || 'GeneratedComponent';
+        const code = response.data.choices[0].message.content;
+        const componentName = extractComponentName(code) || 'GeneratedComponent';
 
-    return {
-      code,
-      name: componentName,
-      explanation: `AI-generated React component based on: ${prompt}`
-    };
-  } catch (error) {
-    console.error('OpenAI generation failed:', error);
-    return null;
-  }
+        return {
+            code,
+            name: componentName,
+            explanation: `AI-generated React component based on: ${prompt}`
+        };
+    } catch (error) {
+        console.error('OpenAI generation failed:', error);
+        return null;
+    }
 }
 
 /**
  * Extract component name from code
  */
 function extractComponentName(code) {
-  const match = code.match(/(?:const|function|class)\s+(\w+)/);
-  return match ? match[1] : null;
+    const match = code.match(/(?:const|function|class)\s+(\w+)/);
+    return match ? match[1] : null;
 }
 
 /**
  * Enhanced OpenAI generation with structured outputs and better prompts
  */
 async function generateWithEnhancedOpenAI(prompt, apiKey) {
-  try {
-    const OpenAI = require('openai');
-    const openai = new OpenAI({ apiKey });
+    try {
+        const OpenAI = require('openai');
+        const openai = new OpenAI({ apiKey });
 
-    // Analyze prompt to determine component type
-    const componentType = analyzeComponentType(prompt);
-    const enhancedPrompt = buildEnhancedPrompt(prompt, componentType);
+        // Analyze prompt to determine component type
+        const componentType = analyzeComponentType(prompt);
+        const enhancedPrompt = buildEnhancedPrompt(prompt, componentType);
 
-    console.log('🧠 Enhanced OpenAI: Component type detected:', componentType);
+        console.log('🧠 Enhanced OpenAI: Component type detected:', componentType);
 
-    const response = await openai.chat.completions.create({
-      model: 'gpt-4',
-      messages: [
-        {
-          role: 'system',
-          content: `You are an expert React TypeScript component architect. Generate production-ready components with:
+        const response = await openai.chat.completions.create({
+            model: 'gpt-4',
+            messages: [
+                {
+                    role: 'system',
+                    content: `You are an expert React TypeScript component architect. Generate production-ready components with:
 - Modern TypeScript interfaces and types
 - Tailwind CSS for styling with professional design patterns
 - Responsive design considerations
@@ -610,120 +559,73 @@ async function generateWithEnhancedOpenAI(prompt, apiKey) {
 
 Component Type: ${componentType}
 Focus on creating visually appealing, professional components that follow modern UI/UX principles.`
-        },
-        {
-          role: 'user',
-          content: enhancedPrompt
-        }
-      ],
-      max_tokens: 3000,
-      temperature: 0.3, // Lower temperature for more consistent, professional output
-    });
+                },
+                {
+                    role: 'user',
+                    content: enhancedPrompt
+                }
+            ],
+            max_tokens: 3000,
+            temperature: 0.3, // Lower temperature for more consistent, professional output
+        });
 
-    const code = response.choices[0].message.content;
-    const componentName = extractComponentName(code) || generateComponentName(prompt);
+        const code = response.choices[0].message.content;
+        const componentName = extractComponentName(code) || generateComponentName(prompt);
 
-    return {
-      code,
-      name: componentName,
-      explanation: `Enhanced AI-generated ${componentType} component: ${componentName}`,
-      metadata: {
-        source: 'Enhanced OpenAI GPT-4',
-        componentType,
-        quality: 'professional'
-      }
-    };
-  } catch (error) {
-    console.error('Enhanced OpenAI generation failed:', error);
-    throw error;
-  }
+        return {
+            code,
+            name: componentName,
+            explanation: `Enhanced AI-generated ${componentType} component: ${componentName}`,
+            metadata: {
+                source: 'Enhanced OpenAI GPT-4',
+                componentType,
+                quality: 'professional'
+            }
+        };
+    } catch (error) {
+        console.error('Enhanced OpenAI generation failed:', error);
+        throw error;
+    }
 }
 
 /**
  * Enhanced Claude generation with component-specific prompts
  */
 async function generateWithEnhancedClaude(prompt, apiKey) {
-  try {
-    const Anthropic = require('@anthropic-ai/sdk');
-    const anthropic = new Anthropic({ apiKey });
-
-    const componentType = analyzeComponentType(prompt);
-    const enhancedPrompt = buildEnhancedPrompt(prompt, componentType);
-
-    console.log('🧠 Enhanced Claude: Component type detected:', componentType);
-
-    const message = await anthropic.messages.create({
-      model: 'claude-3-5-sonnet-20241022',
-      max_tokens: 3000,
-      temperature: 0.2,
-      messages: [{
-        role: 'user',
-        content: `You are a senior React architect specializing in creating beautiful, production-ready components.
-
-Component Type: ${componentType}
-
-Requirements:
-- Generate a professional TypeScript React component
-- Use modern Tailwind CSS with sophisticated design patterns
-- Include proper TypeScript interfaces and prop types
-- Implement responsive design and accessibility features
-- Follow modern React best practices (hooks, functional components)
-- Create visually striking, professional UI elements
-- Include hover effects, transitions, and micro-interactions where appropriate
-
-${enhancedPrompt}
-
-Return only the complete, ready-to-use component code with proper imports and exports.`
-      }]
-    });
-
-    const code = message.content[0].text;
-    const componentName = extractComponentName(code) || generateComponentName(prompt);
-
-    return {
-      code,
-      name: componentName,
-      explanation: `Enhanced AI-generated ${componentType} component with professional design patterns`,
-      metadata: {
-        source: 'Enhanced Claude 3.5 Sonnet',
-        componentType,
-        quality: 'professional'
-      }
-    };
-  } catch (error) {
-    console.error('Enhanced Claude generation failed:', error);
-    throw error;
-  }
+    // DISABLED: Direct Anthropic SDK usage to prevent API charges
+    // Use Claude Code CLI only to utilize Claude Code Max account
+    console.log('Enhanced Claude generation disabled - using Claude Code CLI only');
+    throw new Error('Claude generation disabled to prevent API charges');
 }
 
 /**
  * Analyze prompt to determine component type and requirements
  */
 function analyzeComponentType(prompt) {
-  const lowerPrompt = prompt.toLowerCase();
+    const lowerPrompt = prompt.toLowerCase();
   
-  if (/pricing|price|plan|tier|subscription|billing/i.test(prompt)) return 'pricing-table';
-  if (/button|btn|cta|call.to.action/i.test(prompt)) return 'button';
-  if (/card|panel|container/i.test(prompt)) return 'card';
-  if (/form|input|login|signup|register|contact/i.test(prompt)) return 'form';
-  if (/hero|landing|banner|header|jumbotron/i.test(prompt)) return 'hero-section';
-  if (/nav|navigation|navbar|menu/i.test(prompt)) return 'navigation';
-  if (/table|list|data|grid/i.test(prompt)) return 'data-display';
-  if (/modal|popup|dialog|overlay/i.test(prompt)) return 'modal';
-  if (/sidebar|drawer|panel/i.test(prompt)) return 'sidebar';
-  if (/footer|bottom/i.test(prompt)) return 'footer';
-  if (/carousel|slider|gallery/i.test(prompt)) return 'carousel';
-  if (/chart|graph|visualization/i.test(prompt)) return 'data-visualization';
+    if (/pricing|price|plan|tier|subscription|billing/i.test(prompt)) return 'pricing-table';
+    if (/button|btn|cta|call.to.action/i.test(prompt)) return 'button';
+    if (/card|panel|container/i.test(prompt)) return 'card';
+    if (/form|input|login|signup|register|contact/i.test(prompt)) return 'form';
+    if (/hero|landing|banner|header|jumbotron/i.test(prompt)) return 'hero-section';
+    if (/nav|navigation|navbar|menu/i.test(prompt)) return 'navigation';
+    if (/table|list|data|grid/i.test(prompt)) return 'data-display';
+    if (/modal|popup|dialog|overlay/i.test(prompt)) return 'modal';
+    if (/sidebar|drawer|panel/i.test(prompt)) return 'sidebar';
+    if (/footer|bottom/i.test(prompt)) return 'footer';
+    if (/carousel|slider|gallery/i.test(prompt)) return 'carousel';
+    if (/chart|graph|visualization/i.test(prompt)) return 'data-visualization';
   
-  return 'custom-component';
+    return 'custom-component';
 }
 
 /**
  * Build enhanced prompt based on component type and user requirements
  */
 function buildEnhancedPrompt(originalPrompt, componentType) {
-  const templates = {
-    'pricing-table': `Create a modern pricing table component based on: "${originalPrompt}"
+    const templates = {
+        'pricing-table': `Create a modern pricing table component based on: "${originalPrompt}"
     
 Include:
 - Multiple pricing tiers (Starter, Professional, Enterprise typical)
@@ -735,7 +637,7 @@ Include:
 - Call-to-action buttons for each tier
 - Badge for popular/recommended plans`,
 
-    'button': `Create a sophisticated button component based on: "${originalPrompt}"
+        'button': `Create a sophisticated button component based on: "${originalPrompt}"
     
 Include:
 - Multiple variants (primary, secondary, outline, ghost)
@@ -746,7 +648,7 @@ Include:
 - Gradient backgrounds and shadow effects
 - Professional color schemes`,
 
-    'card': `Create an elegant card component based on: "${originalPrompt}"
+        'card': `Create an elegant card component based on: "${originalPrompt}"
     
 Include:
 - Header with title and optional subtitle
@@ -757,7 +659,7 @@ Include:
 - Optional image/media support
 - Responsive design patterns`,
 
-    'form': `Create a professional form component based on: "${originalPrompt}"
+        'form': `Create a professional form component based on: "${originalPrompt}"
     
 Include:
 - Proper form validation and error states
@@ -768,7 +670,7 @@ Include:
 - Responsive layout
 - Accessibility features (ARIA labels)`,
 
-    'hero-section': `Create a stunning hero section based on: "${originalPrompt}"
+        'hero-section': `Create a stunning hero section based on: "${originalPrompt}"
     
 Include:
 - Compelling headline and subheading
@@ -779,7 +681,7 @@ Include:
 - Professional spacing and layout
 - Mobile-optimized design`,
 
-    'navigation': `Create a modern navigation component based on: "${originalPrompt}"
+        'navigation': `Create a modern navigation component based on: "${originalPrompt}"
     
 Include:
 - Mobile hamburger menu
@@ -790,7 +692,7 @@ Include:
 - Responsive design
 - Accessibility navigation`,
 
-    'custom-component': `Create a custom component based on: "${originalPrompt}"
+        'custom-component': `Create a custom component based on: "${originalPrompt}"
     
 Include:
 - Professional design patterns
@@ -799,67 +701,67 @@ Include:
 - Modern styling with Tailwind CSS
 - TypeScript interfaces
 - Accessibility considerations`
-  };
+    };
 
-  return templates[componentType] || templates['custom-component'];
+    return templates[componentType] || templates['custom-component'];
 }
 
 /**
  * Generate fallback component from template
  */
 function generateFallbackComponent(prompt) {
-  const componentName = generateComponentName(prompt);
+    const componentName = generateComponentName(prompt);
   
-  // Determine component type based on keywords
-  const isButton = /button|btn|click/i.test(prompt);
-  const isCard = /card|panel|container/i.test(prompt);
-  const isForm = /form|input|login|signup/i.test(prompt);
-  const isHero = /hero|landing|header|banner/i.test(prompt);
-  const isNav = /nav|menu|navigation|navbar/i.test(prompt);
-  const isPricing = /pricing|price|plan|tier|subscription|billing|cost/i.test(prompt);
+    // Determine component type based on keywords
+    const isButton = /button|btn|click/i.test(prompt);
+    const isCard = /card|panel|container/i.test(prompt);
+    const isForm = /form|input|login|signup/i.test(prompt);
+    const isHero = /hero|landing|header|banner/i.test(prompt);
+    const isNav = /nav|menu|navigation|navbar/i.test(prompt);
+    const isPricing = /pricing|price|plan|tier|subscription|billing|cost/i.test(prompt);
   
-  let code = '';
+    let code = '';
   
-  if (isPricing) {
-    code = generatePricingTemplate(componentName, prompt);
-  } else if (isButton) {
-    code = generateButtonTemplate(componentName, prompt);
-  } else if (isCard) {
-    code = generateCardTemplate(componentName, prompt);
-  } else if (isForm) {
-    code = generateFormTemplate(componentName, prompt);
-  } else if (isHero) {
-    code = generateHeroTemplate(componentName, prompt);
-  } else if (isNav) {
-    code = generateNavTemplate(componentName, prompt);
-  } else {
-    code = generateDefaultTemplate(componentName, prompt);
-  }
+    if (isPricing) {
+        code = generatePricingTemplate(componentName, prompt);
+    } else if (isButton) {
+        code = generateButtonTemplate(componentName, prompt);
+    } else if (isCard) {
+        code = generateCardTemplate(componentName, prompt);
+    } else if (isForm) {
+        code = generateFormTemplate(componentName, prompt);
+    } else if (isHero) {
+        code = generateHeroTemplate(componentName, prompt);
+    } else if (isNav) {
+        code = generateNavTemplate(componentName, prompt);
+    } else {
+        code = generateDefaultTemplate(componentName, prompt);
+    }
   
-  return {
-    code,
-    name: componentName,
-    explanation: `Template-based component for: ${prompt}`
-  };
+    return {
+        code,
+        name: componentName,
+        explanation: `Template-based component for: ${prompt}`
+    };
 }
 
 /**
  * Generate component name from prompt
  */
 function generateComponentName(prompt) {
-  return prompt
-    .replace(/[^a-zA-Z0-9\s]/g, '')
-    .split(/\s+/)
-    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-    .join('')
-    .replace(/^./, match => match.toUpperCase()) || 'CustomComponent';
+    return prompt
+        .replace(/[^a-zA-Z0-9\s]/g, '')
+        .split(/\s+/)
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+        .join('')
+        .replace(/^./, match => match.toUpperCase()) || 'CustomComponent';
 }
 
 /**
  * Template generators
  */
 function generateButtonTemplate(name, description) {
-  return `import React from 'react';
+    return `import React from 'react';
 
 interface ${name}Props {
   children?: React.ReactNode;
@@ -902,7 +804,7 @@ export default ${name};`;
 }
 
 function generateCardTemplate(name, description) {
-  return `import React from 'react';
+    return `import React from 'react';
 
 interface ${name}Props {
   title?: string;
@@ -943,7 +845,7 @@ export default ${name};`;
 }
 
 function generateFormTemplate(name, description) {
-  return `import React, { useState } from 'react';
+    return `import React, { useState } from 'react';
 
 interface ${name}Props {
   onSubmit?: (data: any) => void;
@@ -1008,7 +910,7 @@ export default ${name};`;
 }
 
 function generatePricingTemplate(name, description) {
-  return `import React from 'react';
+    return `import React from 'react';
 
 interface PricingTier {
   name: string;
@@ -1145,7 +1047,7 @@ export default ${name};`;
 }
 
 function generateHeroTemplate(name, description) {
-  return `import React from 'react';
+    return `import React from 'react';
 
 interface ${name}Props {
   title?: string;
@@ -1189,7 +1091,7 @@ export default ${name};`;
 }
 
 function generateNavTemplate(name, description) {
-  return `import React, { useState } from 'react';
+    return `import React, { useState } from 'react';
 
 interface NavLink {
   label: string;
@@ -1258,7 +1160,7 @@ export default ${name};`;
 }
 
 function generateDefaultTemplate(name, description) {
-  return `import React from 'react';
+    return `import React from 'react';
 
 interface ${name}Props {
   className?: string;
@@ -1292,83 +1194,83 @@ export default ${name};`;
  * Generate fallback component variation with different styling approaches
  */
 function generateFallbackComponentWithVariation(prompt, variationIndex) {
-  const componentName = generateComponentName(prompt);
-  const componentType = analyzeComponentType(prompt);
+    const componentName = generateComponentName(prompt);
+    const componentType = analyzeComponentType(prompt);
   
-  // Different styling variations
-  const variations = {
-    0: { theme: 'gradient', description: 'Modern gradient design' },
-    1: { theme: 'minimal', description: 'Clean minimal design' },
-    2: { theme: 'glassmorphism', description: 'Glass morphism effect' },
-    3: { theme: 'neumorphism', description: 'Soft neumorphic design' },
-    4: { theme: 'bold', description: 'Bold and vibrant design' }
-  };
+    // Different styling variations
+    const variations = {
+        0: { theme: 'gradient', description: 'Modern gradient design' },
+        1: { theme: 'minimal', description: 'Clean minimal design' },
+        2: { theme: 'glassmorphism', description: 'Glass morphism effect' },
+        3: { theme: 'neumorphism', description: 'Soft neumorphic design' },
+        4: { theme: 'bold', description: 'Bold and vibrant design' }
+    };
   
-  const variation = variations[variationIndex] || variations[0];
-  let code = '';
+    const variation = variations[variationIndex] || variations[0];
+    let code = '';
   
-  if (componentType === 'pricing-table') {
-    code = generatePricingVariation(componentName, prompt, variation.theme);
-  } else if (componentType === 'button') {
-    code = generateButtonVariation(componentName, prompt, variation.theme);
-  } else if (componentType === 'card') {
-    code = generateCardVariation(componentName, prompt, variation.theme);
-  } else {
-    code = generateDefaultVariation(componentName, prompt, variation.theme);
-  }
-  
-  return {
-    code,
-    name: componentName,
-    explanation: `${variation.description} template variation for: ${prompt}`,
-    metadata: {
-      source: 'Enhanced Template Generator',
-      theme: variation.theme,
-      variationType: 'styled-template'
+    if (componentType === 'pricing-table') {
+        code = generatePricingVariation(componentName, prompt, variation.theme);
+    } else if (componentType === 'button') {
+        code = generateButtonVariation(componentName, prompt, variation.theme);
+    } else if (componentType === 'card') {
+        code = generateCardVariation(componentName, prompt, variation.theme);
+    } else {
+        code = generateDefaultVariation(componentName, prompt, variation.theme);
     }
-  };
+  
+    return {
+        code,
+        name: componentName,
+        explanation: `${variation.description} template variation for: ${prompt}`,
+        metadata: {
+            source: 'Enhanced Template Generator',
+            theme: variation.theme,
+            variationType: 'styled-template'
+        }
+    };
 }
 
 /**
  * Generate pricing table with different theme variations
  */
 function generatePricingVariation(name, description, theme) {
-  const themes = {
-    gradient: {
-      background: 'bg-gradient-to-br from-purple-600 via-pink-500 to-orange-400',
-      cardBg: 'bg-white/10 backdrop-blur-lg border border-white/20',
-      textColor: 'text-white',
-      accentColor: 'from-yellow-400 to-orange-500'
-    },
-    minimal: {
-      background: 'bg-gray-50',
-      cardBg: 'bg-white border border-gray-100 shadow-sm',
-      textColor: 'text-gray-900',
-      accentColor: 'from-gray-800 to-gray-900'
-    },
-    glassmorphism: {
-      background: 'bg-gradient-to-br from-blue-400 to-purple-600',
-      cardBg: 'bg-white/20 backdrop-blur-lg border border-white/30',
-      textColor: 'text-white',
-      accentColor: 'from-white to-blue-100'
-    },
-    neumorphism: {
-      background: 'bg-gray-200',
-      cardBg: 'bg-gray-200 shadow-[8px_8px_16px_#bebebe,-8px_-8px_16px_#ffffff]',
-      textColor: 'text-gray-800',
-      accentColor: 'from-blue-500 to-blue-600'
-    },
-    bold: {
-      background: 'bg-black',
-      cardBg: 'bg-gradient-to-br from-red-500 to-pink-600',
-      textColor: 'text-white',
-      accentColor: 'from-yellow-400 to-red-500'
-    }
-  };
+    const themes = {
+        gradient: {
+            background: 'bg-gradient-to-br from-purple-600 via-pink-500 to-orange-400',
+            cardBg: 'bg-white/10 backdrop-blur-lg border border-white/20',
+            textColor: 'text-white',
+            accentColor: 'from-yellow-400 to-orange-500'
+        },
+        minimal: {
+            background: 'bg-gray-50',
+            cardBg: 'bg-white border border-gray-100 shadow-sm',
+            textColor: 'text-gray-900',
+            accentColor: 'from-gray-800 to-gray-900'
+        },
+        glassmorphism: {
+            background: 'bg-gradient-to-br from-blue-400 to-purple-600',
+            cardBg: 'bg-white/20 backdrop-blur-lg border border-white/30',
+            textColor: 'text-white',
+            accentColor: 'from-white to-blue-100'
+        },
+        neumorphism: {
+            background: 'bg-gray-200',
+            cardBg: 'bg-gray-200 shadow-[8px_8px_16px_#bebebe,-8px_-8px_16px_#ffffff]',
+            textColor: 'text-gray-800',
+            accentColor: 'from-blue-500 to-blue-600'
+        },
+        bold: {
+            background: 'bg-black',
+            cardBg: 'bg-gradient-to-br from-red-500 to-pink-600',
+            textColor: 'text-white',
+            accentColor: 'from-yellow-400 to-red-500'
+        }
+    };
   
-  const themeStyles = themes[theme] || themes.gradient;
+    const themeStyles = themes[theme] || themes.gradient;
   
-  return `import React from 'react';
+    return `import React from 'react';
 
 interface PricingTier {
   name: string;
@@ -1476,15 +1378,15 @@ export default ${name};`;
  * Generate button with different theme variations
  */
 function generateButtonVariation(name, description, theme) {
-  const themes = {
-    gradient: 'bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600',
-    minimal: 'bg-gray-100 hover:bg-gray-200 text-gray-800 border border-gray-300',
-    glassmorphism: 'bg-white/20 backdrop-blur-lg border border-white/30 text-white hover:bg-white/30',
-    neumorphism: 'bg-gray-200 shadow-[4px_4px_8px_#bebebe,-4px_-4px_8px_#ffffff] hover:shadow-[2px_2px_4px_#bebebe,-2px_-2px_4px_#ffffff] text-gray-800',
-    bold: 'bg-gradient-to-r from-red-500 to-pink-600 hover:from-red-600 hover:to-pink-700'
-  };
+    const themes = {
+        gradient: 'bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600',
+        minimal: 'bg-gray-100 hover:bg-gray-200 text-gray-800 border border-gray-300',
+        glassmorphism: 'bg-white/20 backdrop-blur-lg border border-white/30 text-white hover:bg-white/30',
+        neumorphism: 'bg-gray-200 shadow-[4px_4px_8px_#bebebe,-4px_-4px_8px_#ffffff] hover:shadow-[2px_2px_4px_#bebebe,-2px_-2px_4px_#ffffff] text-gray-800',
+        bold: 'bg-gradient-to-r from-red-500 to-pink-600 hover:from-red-600 hover:to-pink-700'
+    };
   
-  return `import React from 'react';
+    return `import React from 'react';
 
 interface ${name}Props {
   children?: React.ReactNode;
@@ -1517,15 +1419,15 @@ export default ${name};`;
  * Generate card with different theme variations
  */
 function generateCardVariation(name, description, theme) {
-  const themes = {
-    gradient: 'bg-gradient-to-br from-purple-600 to-pink-600 text-white',
-    minimal: 'bg-white border border-gray-200 text-gray-900',
-    glassmorphism: 'bg-white/10 backdrop-blur-lg border border-white/20 text-white',
-    neumorphism: 'bg-gray-200 shadow-[8px_8px_16px_#bebebe,-8px_-8px_16px_#ffffff] text-gray-800',
-    bold: 'bg-black text-white border-2 border-red-500'
-  };
+    const themes = {
+        gradient: 'bg-gradient-to-br from-purple-600 to-pink-600 text-white',
+        minimal: 'bg-white border border-gray-200 text-gray-900',
+        glassmorphism: 'bg-white/10 backdrop-blur-lg border border-white/20 text-white',
+        neumorphism: 'bg-gray-200 shadow-[8px_8px_16px_#bebebe,-8px_-8px_16px_#ffffff] text-gray-800',
+        bold: 'bg-black text-white border-2 border-red-500'
+    };
   
-  return `import React from 'react';
+    return `import React from 'react';
 
 interface ${name}Props {
   title?: string;
@@ -1559,15 +1461,15 @@ export default ${name};`;
  * Generate default component with theme variation
  */
 function generateDefaultVariation(name, description, theme) {
-  const themes = {
-    gradient: 'bg-gradient-to-br from-blue-500 to-purple-600 text-white',
-    minimal: 'bg-white border border-gray-200 text-gray-900',
-    glassmorphism: 'bg-white/20 backdrop-blur-lg border border-white/30 text-white',
-    neumorphism: 'bg-gray-200 shadow-[4px_4px_8px_#bebebe,-4px_-4px_8px_#ffffff] text-gray-800',
-    bold: 'bg-black text-white border-2 border-yellow-400'
-  };
+    const themes = {
+        gradient: 'bg-gradient-to-br from-blue-500 to-purple-600 text-white',
+        minimal: 'bg-white border border-gray-200 text-gray-900',
+        glassmorphism: 'bg-white/20 backdrop-blur-lg border border-white/30 text-white',
+        neumorphism: 'bg-gray-200 shadow-[4px_4px_8px_#bebebe,-4px_-4px_8px_#ffffff] text-gray-800',
+        bold: 'bg-black text-white border-2 border-yellow-400'
+    };
   
-  return `import React from 'react';
+    return `import React from 'react';
 
 interface ${name}Props {
   className?: string;

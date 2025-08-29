@@ -165,8 +165,8 @@ function setupFileActivityWebSocket(io) {
     
     // Listen for file activity events and broadcast to clients
     claudeFileTracker.on('fileActivity', (activity) => {
-        console.log(`🎯 File activity event received:`, activity);
-        console.log(`🎯 Connected clients:`, fileActivityClients.size);
+        console.log('🎯 File activity event received:', activity);
+        console.log('🎯 Connected clients:', fileActivityClients.size);
         
         if (fileActivityClients.size > 0) {
             console.log(`🎯 Broadcasting file activity to ${fileActivityClients.size} clients:`, activity.operation, activity.fileName);
@@ -189,7 +189,7 @@ function setupFileActivityWebSocket(io) {
     
     // Listen for activity change events
     claudeFileTracker.on('activityChange', (change) => {
-        console.log(`🎯 Activity change event:`, change.type);
+        console.log('🎯 Activity change event:', change.type);
         if (fileActivityClients.size > 0) {
             console.log(`🎯 Broadcasting activity change to ${fileActivityClients.size} clients:`, change.type);
             

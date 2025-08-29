@@ -1,0 +1,1255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Consultation - Expert Development Planning | CoderOne</title>
+    <meta name="description" content="Transform your ideas into expert development plans through AI-powered consultation with multiple specialized agents">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #0a0a0a;
+            --bg-secondary: #1a1a1a;
+            --glass-bg: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --text-primary: #ffffff;
+            --text-secondary: #a0a0a0;
+            --accent-primary: #8b5cf6;
+            --accent-secondary: #06b6d4;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+
+        /* Animated Gradient Mesh Background */
+        .background-mesh {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(circle at 20% 50%, rgba(139, 92, 246, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(6, 182, 212, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 40% 20%, rgba(168, 85, 247, 0.05) 0%, transparent 50%);
+            animation: meshFloat 20s ease-in-out infinite;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        @keyframes meshFloat {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            33% { transform: translate(-20px, -20px) scale(1.05); }
+            66% { transform: translate(20px, -10px) scale(0.95); }
+        }
+
+        /* Navigation */
+        .nav-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: rgba(5, 5, 5, 0.95);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(6, 182, 212, 0.2);
+            z-index: 1000;
+            padding: 1rem 2rem;
+        }
+
+        .nav-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .nav-left {
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+        }
+
+        .logo-link {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            text-decoration: none;
+            color: var(--text-primary);
+        }
+
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--accent-secondary), var(--accent-primary));
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            color: white;
+            box-shadow: 0 0 20px rgba(6, 182, 212, 0.3);
+        }
+
+        .logo-text {
+            font-size: 1.2rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--accent-secondary), var(--accent-primary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 1.5rem;
+        }
+
+        .nav-link {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.95rem;
+            transition: color 0.3s ease;
+        }
+
+        .nav-link:hover {
+            color: var(--accent-secondary);
+        }
+
+        .nav-right {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .nav-btn {
+            padding: 0.5rem 1.25rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            border: none;
+        }
+
+        .nav-btn.secondary {
+            background: var(--glass-bg);
+            color: var(--text-primary);
+            border: 1px solid var(--glass-border);
+        }
+
+        .nav-btn.secondary:hover {
+            background: rgba(6, 182, 212, 0.1);
+            border-color: var(--accent-secondary);
+            box-shadow: 0 0 20px rgba(6, 182, 212, 0.2);
+        }
+
+        .nav-btn.primary {
+            background: linear-gradient(135deg, var(--accent-secondary), var(--accent-primary));
+            color: white;
+            border: none;
+        }
+
+        .nav-btn.primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(6, 182, 212, 0.3);
+        }
+
+        /* Main Container */
+        .main-container {
+            margin-top: 80px;
+            padding: 2rem;
+            max-width: 1200px;
+            margin-left: auto;
+            margin-right: auto;
+            min-height: calc(100vh - 80px);
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Hero Section */
+        .hero-section {
+            text-align: center;
+            padding: 3rem 0;
+            margin-bottom: 3rem;
+        }
+
+        .hero-icon {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 2rem;
+            background: linear-gradient(135deg, var(--accent-secondary), var(--accent-primary));
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            color: white;
+            box-shadow: 0 0 40px rgba(6, 182, 212, 0.4);
+            animation: iconFloat 3s ease-in-out infinite;
+        }
+
+        @keyframes iconFloat {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-10px) rotate(5deg); }
+        }
+
+        .hero-title {
+            font-size: 3.5rem;
+            font-weight: 800;
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, var(--accent-secondary) 0%, var(--accent-primary) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero-subtitle {
+            font-size: 1.3rem;
+            color: var(--text-secondary);
+            max-width: 700px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+
+        /* Consultation Interface */
+        .consultation-interface {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 2rem;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 0 40px rgba(0, 0, 0, 0.3);
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Setup View */
+        .setup-view {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 3rem 2rem;
+            text-align: center;
+        }
+
+        .setup-title {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            color: var(--text-primary);
+        }
+
+        .setup-description {
+            color: var(--text-secondary);
+            margin-bottom: 3rem;
+            max-width: 600px;
+            line-height: 1.6;
+        }
+
+        .input-group {
+            width: 100%;
+            max-width: 700px;
+            margin-bottom: 3rem;
+        }
+
+        .input-label {
+            display: block;
+            text-align: left;
+            margin-bottom: 1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .project-input {
+            width: 100%;
+            padding: 1.5rem;
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            background: var(--glass-bg);
+            color: var(--text-primary);
+            font-size: 1rem;
+            font-family: inherit;
+            resize: vertical;
+            min-height: 120px;
+            transition: all 0.3s ease;
+        }
+
+        .project-input::placeholder {
+            color: var(--text-secondary);
+        }
+
+        .project-input:focus {
+            outline: none;
+            border-color: var(--accent-secondary);
+            background: rgba(6, 182, 212, 0.05);
+            box-shadow: 0 0 30px rgba(6, 182, 212, 0.2);
+        }
+
+        /* Process Steps */
+        .process-preview {
+            width: 100%;
+            max-width: 900px;
+            margin-bottom: 3rem;
+        }
+
+        .process-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 2rem;
+            color: var(--text-primary);
+        }
+
+        .process-steps {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+        }
+
+        .process-step {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 1.25rem;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .process-step::before {
+            content: '';
+            position: absolute;
+            inset: -2px;
+            padding: 2px;
+            border-radius: 14px;
+            background: linear-gradient(45deg, transparent, var(--accent-secondary), transparent);
+            background-size: 400% 100%;
+            animation: stepGlow 3s linear infinite;
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: exclude;
+            mask-composite: exclude;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            z-index: -1;
+        }
+
+        .process-step:hover {
+            transform: translateY(-2px);
+            border-color: var(--accent-secondary);
+            background: rgba(6, 182, 212, 0.05);
+            box-shadow: 0 6px 25px rgba(6, 182, 212, 0.2);
+        }
+
+        .process-step:hover::before {
+            opacity: 1;
+        }
+
+        @keyframes stepGlow {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .step-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .step-icon {
+            font-size: 1.5rem;
+        }
+
+        .step-title {
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .step-description {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+
+        /* Start Button */
+        .start-btn {
+            background: linear-gradient(135deg, var(--accent-secondary), var(--accent-primary));
+            color: white;
+            border: none;
+            padding: 1rem 2.5rem;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.75rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .start-btn::before {
+            content: '';
+            position: absolute;
+            inset: -2px;
+            padding: 2px;
+            border-radius: 14px;
+            background: linear-gradient(45deg, var(--accent-secondary), var(--accent-primary), var(--accent-secondary));
+            background-size: 400% 100%;
+            animation: buttonGlow 3s linear infinite;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            z-index: -1;
+        }
+
+        .start-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 30px rgba(6, 182, 212, 0.4);
+        }
+
+        .start-btn:hover::before {
+            opacity: 1;
+        }
+
+        .start-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        @keyframes buttonGlow {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* Conversation View */
+        .conversation-view {
+            display: none;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        .conversation-view.active {
+            display: flex;
+        }
+
+        /* Progress Bar */
+        .progress-section {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .progress-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .progress-title {
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .phase-indicator {
+            background: linear-gradient(135deg, var(--accent-secondary), var(--accent-primary));
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .progress-bar {
+            height: 8px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 1rem;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(135deg, var(--accent-secondary), var(--accent-primary));
+            width: 0%;
+            transition: width 0.5s ease;
+            border-radius: 4px;
+            box-shadow: 0 0 10px rgba(6, 182, 212, 0.4);
+        }
+
+        .phase-steps {
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+
+        .phase-step {
+            padding: 0.5rem 1rem;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 8px;
+            font-size: 0.85rem;
+            transition: all 0.3s ease;
+        }
+
+        .phase-step.active {
+            background: linear-gradient(135deg, var(--accent-secondary), var(--accent-primary));
+            color: white;
+            border-color: transparent;
+            box-shadow: 0 0 20px rgba(6, 182, 212, 0.3);
+        }
+
+        .phase-step.completed {
+            background: rgba(6, 182, 212, 0.1);
+            border-color: var(--accent-secondary);
+            color: var(--accent-secondary);
+        }
+
+        /* Messages Area */
+        .messages-container {
+            flex: 1;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            overflow-y: auto;
+            margin-bottom: 1.5rem;
+        }
+
+        .message {
+            margin-bottom: 1.25rem;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--glass-border);
+            border-radius: 10px;
+            transition: all 0.3s ease;
+            animation: messageSlide 0.3s ease;
+        }
+
+        @keyframes messageSlide {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message:hover {
+            border-color: rgba(6, 182, 212, 0.3);
+            background: rgba(6, 182, 212, 0.03);
+            transform: translateX(5px);
+        }
+
+        .message-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.75rem;
+        }
+
+        .message-meta {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .agent-name {
+            font-weight: 600;
+            color: var(--accent-secondary);
+        }
+
+        .message-time {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        .message-phase {
+            background: rgba(6, 182, 212, 0.1);
+            color: var(--accent-secondary);
+            padding: 0.25rem 0.5rem;
+            border-radius: 6px;
+            font-size: 0.75rem;
+        }
+
+        .message-content {
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+
+        .message.user {
+            background: rgba(139, 92, 246, 0.05);
+            border-color: rgba(139, 92, 246, 0.2);
+            margin-left: 2rem;
+        }
+
+        .message.system {
+            background: rgba(6, 182, 212, 0.05);
+            border-color: rgba(6, 182, 212, 0.2);
+            text-align: center;
+            font-style: italic;
+        }
+
+        /* User Input */
+        .user-input-section {
+            display: flex;
+            gap: 1rem;
+            padding: 1rem;
+            background: rgba(139, 92, 246, 0.05);
+            border: 1px solid rgba(139, 92, 246, 0.2);
+            border-radius: 12px;
+        }
+
+        .user-input {
+            flex: 1;
+            padding: 0.75rem 1rem;
+            background: var(--glass-bg);
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 0.95rem;
+            resize: none;
+            min-height: 50px;
+        }
+
+        .user-input:focus {
+            outline: none;
+            border-color: var(--accent-primary);
+            background: rgba(139, 92, 246, 0.05);
+        }
+
+        .send-btn {
+            padding: 0.75rem 1.5rem;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+        }
+
+        .send-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3);
+        }
+
+        .send-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Completion Actions */
+        .completion-section {
+            display: none;
+            padding: 2rem;
+            background: var(--glass-bg);
+            border: 2px solid var(--accent-secondary);
+            border-radius: 16px;
+            text-align: center;
+            margin-top: 1.5rem;
+        }
+
+        .completion-section.active {
+            display: block;
+        }
+
+        .completion-icon {
+            font-size: 3rem;
+            color: #10b981;
+            margin-bottom: 1rem;
+        }
+
+        .completion-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            color: var(--text-primary);
+        }
+
+        .completion-subtitle {
+            color: var(--text-secondary);
+            margin-bottom: 2rem;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .action-btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .action-btn.primary {
+            background: linear-gradient(135deg, var(--accent-secondary), var(--accent-primary));
+            color: white;
+        }
+
+        .action-btn.primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(6, 182, 212, 0.4);
+        }
+
+        .action-btn.secondary {
+            background: var(--glass-bg);
+            color: var(--accent-secondary);
+            border: 1px solid var(--glass-border);
+        }
+
+        .action-btn.secondary:hover {
+            background: rgba(6, 182, 212, 0.1);
+            border-color: var(--accent-secondary);
+        }
+
+        /* Loading Spinner */
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .hero-title {
+                font-size: 2.5rem;
+            }
+
+            .nav-links {
+                display: none;
+            }
+
+            .process-steps {
+                grid-template-columns: 1fr;
+            }
+
+            .message.user {
+                margin-left: 0;
+            }
+
+            .action-buttons {
+                flex-direction: column;
+            }
+
+            .action-btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="background-mesh"></div>
+
+    <!-- Navigation -->
+    <nav class="nav-container">
+        <div class="nav-content">
+            <div class="nav-left">
+                <a href="/" class="logo-link">
+                    <div class="logo-icon">
+                        <i class="fas fa-code"></i>
+                    </div>
+                    <span class="logo-text">CoderOne</span>
+                </a>
+                <div class="nav-links">
+                    <a href="/ide" class="nav-link">IDE</a>
+                    <a href="/templates-hub" class="nav-link">Templates</a>
+                    <a href="/prd-generator-v2-test" class="nav-link">PRD Generator</a>
+                    <a href="/hooks" class="nav-link">Hooks</a>
+                </div>
+            </div>
+            <div class="nav-right">
+                <a href="/ide" class="nav-btn secondary">
+                    <i class="fas fa-terminal"></i>
+                    Open IDE
+                </a>
+                <button class="nav-btn primary" onclick="window.open('https://claude.ai/code', '_blank')">
+                    Get Claude Code
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="main-container">
+        <!-- Hero Section -->
+        <div class="hero-section">
+            <div class="hero-icon">
+                <i class="fas fa-users-cog"></i>
+            </div>
+            <h1 class="hero-title">AI Consultation</h1>
+            <p class="hero-subtitle">
+                Transform your ideas into expert development plans through collaborative AI consultation.
+                Multiple specialized agents work together to create the perfect Claude Code prompt.
+            </p>
+        </div>
+
+        <!-- Consultation Interface -->
+        <div class="consultation-interface">
+            <!-- Setup View -->
+            <div id="setupView" class="setup-view">
+                <h2 class="setup-title">Start Your Expert Consultation</h2>
+                <p class="setup-description">
+                    Describe your project idea, and our AI orchestrator will assemble a team of specialized experts
+                    to help you create a comprehensive development plan.
+                </p>
+
+                <div class="input-group">
+                    <label for="projectInput" class="input-label">What would you like to build?</label>
+                    <textarea 
+                        id="projectInput"
+                        class="project-input"
+                        placeholder="Describe your project idea, challenge, or goal. The more detail you provide, the better our experts can help..."
+                        rows="5"
+                    ></textarea>
+                </div>
+
+                <div class="process-preview">
+                    <h3 class="process-title">How Expert Consultation Works</h3>
+                    <div class="process-steps">
+                        <div class="process-step">
+                            <div class="step-header">
+                                <span class="step-icon">🔍</span>
+                                <span class="step-title">Discovery</span>
+                            </div>
+                            <div class="step-description">
+                                Orchestrator analyzes your requirements and identifies key challenges
+                            </div>
+                        </div>
+                        <div class="process-step">
+                            <div class="step-header">
+                                <span class="step-icon">👥</span>
+                                <span class="step-title">Team Assembly</span>
+                            </div>
+                            <div class="step-description">
+                                3+ specialized AI experts are selected based on your project needs
+                            </div>
+                        </div>
+                        <div class="process-step">
+                            <div class="step-header">
+                                <span class="step-icon">💬</span>
+                                <span class="step-title">Collaboration</span>
+                            </div>
+                            <div class="step-description">
+                                Experts discuss, ask questions, and explore solutions together
+                            </div>
+                        </div>
+                        <div class="process-step">
+                            <div class="step-header">
+                                <span class="step-icon">📋</span>
+                                <span class="step-title">Planning</span>
+                            </div>
+                            <div class="step-description">
+                                Each expert creates their own comprehensive development plan
+                            </div>
+                        </div>
+                        <div class="process-step">
+                            <div class="step-header">
+                                <span class="step-icon">⚗️</span>
+                                <span class="step-title">Synthesis</span>
+                            </div>
+                            <div class="step-description">
+                                Orchestrator combines the best ideas into a final unified plan
+                            </div>
+                        </div>
+                        <div class="process-step">
+                            <div class="step-header">
+                                <span class="step-icon">🚀</span>
+                                <span class="step-title">Claude Code</span>
+                            </div>
+                            <div class="step-description">
+                                Get a perfect prompt ready to paste into Claude Code
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <button id="startBtn" class="start-btn">
+                    <i class="fas fa-rocket"></i>
+                    Start Expert Consultation
+                </button>
+            </div>
+
+            <!-- Conversation View -->
+            <div id="conversationView" class="conversation-view">
+                <div class="progress-section">
+                    <div class="progress-header">
+                        <span class="progress-title">Consultation Progress</span>
+                        <span id="phaseIndicator" class="phase-indicator">Phase 1 of 5</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div id="progressFill" class="progress-fill"></div>
+                    </div>
+                    <div class="phase-steps">
+                        <div class="phase-step" data-phase="discovery">🔍 Discovery</div>
+                        <div class="phase-step" data-phase="team">👥 Team</div>
+                        <div class="phase-step" data-phase="collaboration">💬 Collaboration</div>
+                        <div class="phase-step" data-phase="planning">📋 Planning</div>
+                        <div class="phase-step" data-phase="synthesis">⚗️ Synthesis</div>
+                    </div>
+                </div>
+
+                <div id="messagesContainer" class="messages-container"></div>
+
+                <div class="user-input-section">
+                    <textarea 
+                        id="userInput"
+                        class="user-input"
+                        placeholder="Join the conversation... Ask questions or provide additional context"
+                        rows="2"
+                    ></textarea>
+                    <button id="sendBtn" class="send-btn">
+                        <i class="fas fa-paper-plane"></i>
+                        Send
+                    </button>
+                </div>
+
+                <div id="completionSection" class="completion-section">
+                    <div class="completion-icon">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <h3 class="completion-title">Expert Consultation Complete!</h3>
+                    <p class="completion-subtitle">Your comprehensive development plan is ready</p>
+                    <div class="action-buttons">
+                        <button id="claudeCodeBtn" class="action-btn primary">
+                            <i class="fas fa-terminal"></i>
+                            Copy Claude Code Prompt
+                        </button>
+                        <button id="exportBtn" class="action-btn secondary">
+                            <i class="fas fa-download"></i>
+                            Download Plan
+                        </button>
+                        <button id="newConsultationBtn" class="action-btn secondary">
+                            <i class="fas fa-plus"></i>
+                            New Consultation
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        // State management
+        let socket = null;
+        let currentSession = null;
+        let currentPhase = 'discovery';
+        let finalPlan = null;
+
+        // DOM elements
+        const setupView = document.getElementById('setupView');
+        const conversationView = document.getElementById('conversationView');
+        const projectInput = document.getElementById('projectInput');
+        const startBtn = document.getElementById('startBtn');
+        const messagesContainer = document.getElementById('messagesContainer');
+        const userInput = document.getElementById('userInput');
+        const sendBtn = document.getElementById('sendBtn');
+        const progressFill = document.getElementById('progressFill');
+        const phaseIndicator = document.getElementById('phaseIndicator');
+        const completionSection = document.getElementById('completionSection');
+        const claudeCodeBtn = document.getElementById('claudeCodeBtn');
+        const exportBtn = document.getElementById('exportBtn');
+        const newConsultationBtn = document.getElementById('newConsultationBtn');
+
+        // Phase configuration
+        const phases = ['discovery', 'team', 'collaboration', 'planning', 'synthesis'];
+
+        // Initialize
+        function init() {
+            setupEventListeners();
+            connectSocket();
+        }
+
+        // Event listeners
+        function setupEventListeners() {
+            startBtn.addEventListener('click', startConsultation);
+            sendBtn.addEventListener('click', sendMessage);
+            userInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendMessage();
+                }
+            });
+            projectInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    startConsultation();
+                }
+            });
+            claudeCodeBtn.addEventListener('click', copyClaudeCodePrompt);
+            exportBtn.addEventListener('click', exportPlan);
+            newConsultationBtn.addEventListener('click', resetConsultation);
+        }
+
+        // Socket connection
+        function connectSocket() {
+            socket = io('/', {
+                transports: ['websocket', 'polling'],
+                reconnection: true
+            });
+
+            socket.on('connect', () => {
+                console.log('Connected to server');
+            });
+
+            socket.on('conversation:started', (data) => {
+                currentSession = data.sessionId;
+                showConversationView();
+                addSystemMessage('🚀 Expert consultation started. Assembling your team of specialists...');
+            });
+
+            socket.on('conversation:phase-changed', (data) => {
+                updatePhase(data.phase);
+            });
+
+            socket.on('conversation:message', (data) => {
+                addMessage(data.agent, data.message, data.type);
+            });
+
+            socket.on('conversation:synthesis-complete', (data) => {
+                finalPlan = data.finalPlan;
+                showCompletion();
+            });
+
+            socket.on('conversation:error', (data) => {
+                addSystemMessage(`❌ Error: ${data.error}`);
+                startBtn.disabled = false;
+            });
+        }
+
+        // Start consultation
+        function startConsultation() {
+            const query = projectInput.value.trim();
+            if (!query) {
+                alert('Please describe your project idea');
+                return;
+            }
+
+            startBtn.disabled = true;
+            startBtn.innerHTML = '<span class="loading-spinner"></span> Initializing...';
+
+            socket.emit('conversation:start', {
+                query: query,
+                options: {
+                    minAgents: 3,
+                    includeQuestions: true,
+                    maxDiscussionRounds: 3
+                }
+            });
+        }
+
+        // Show conversation view
+        function showConversationView() {
+            setupView.style.display = 'none';
+            conversationView.classList.add('active');
+        }
+
+        // Update phase
+        function updatePhase(phase) {
+            currentPhase = phase;
+            const phaseIndex = phases.indexOf(phase);
+            
+            // Update progress bar
+            const progress = ((phaseIndex + 1) / phases.length) * 100;
+            progressFill.style.width = `${progress}%`;
+            
+            // Update phase indicator
+            phaseIndicator.textContent = `Phase ${phaseIndex + 1} of ${phases.length}`;
+            
+            // Update phase steps
+            document.querySelectorAll('.phase-step').forEach((step) => {
+                const stepPhase = step.dataset.phase;
+                const stepIndex = phases.indexOf(stepPhase);
+                
+                step.classList.remove('active', 'completed');
+                
+                if (stepIndex < phaseIndex) {
+                    step.classList.add('completed');
+                } else if (stepIndex === phaseIndex) {
+                    step.classList.add('active');
+                }
+            });
+            
+            // Add phase transition message
+            const phaseMessages = {
+                discovery: '🔍 Analyzing your requirements...',
+                team: '👥 Assembling expert team...',
+                collaboration: '💬 Experts are discussing your project...',
+                planning: '📋 Each expert is creating their plan...',
+                synthesis: '⚗️ Synthesizing the best ideas...'
+            };
+            
+            if (phaseMessages[phase]) {
+                addSystemMessage(phaseMessages[phase]);
+            }
+        }
+
+        // Add message
+        function addMessage(agent, content, type = 'agent') {
+            const message = document.createElement('div');
+            message.className = `message ${type}`;
+            
+            const time = new Date().toLocaleTimeString([], { 
+                hour: '2-digit', 
+                minute: '2-digit' 
+            });
+            
+            message.innerHTML = `
+                <div class="message-header">
+                    <div class="message-meta">
+                        <span class="agent-name">${agent}</span>
+                        <span class="message-time">${time}</span>
+                    </div>
+                    ${currentPhase ? `<span class="message-phase">${currentPhase}</span>` : ''}
+                </div>
+                <div class="message-content">${content}</div>
+            `;
+            
+            messagesContainer.appendChild(message);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        // Add system message
+        function addSystemMessage(content) {
+            const message = document.createElement('div');
+            message.className = 'message system';
+            message.innerHTML = `<div class="message-content">${content}</div>`;
+            messagesContainer.appendChild(message);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        // Send user message
+        function sendMessage() {
+            const content = userInput.value.trim();
+            if (!content || !currentSession) return;
+            
+            addMessage('You', content, 'user');
+            
+            socket.emit('conversation:message', {
+                sessionId: currentSession,
+                message: content,
+                sender: 'user'
+            });
+            
+            userInput.value = '';
+        }
+
+        // Show completion
+        function showCompletion() {
+            completionSection.classList.add('active');
+            addSystemMessage('✅ Expert consultation complete! Your comprehensive development plan is ready.');
+        }
+
+        // Copy Claude Code prompt
+        function copyClaudeCodePrompt() {
+            if (!finalPlan) return;
+            
+            const prompt = `# Project Development Plan
+
+${finalPlan.description || 'Development plan generated through AI consultation'}
+
+## Requirements
+${finalPlan.requirements ? finalPlan.requirements.join('\n') : ''}
+
+## Technical Implementation
+${finalPlan.implementation || ''}
+
+## Next Steps
+${finalPlan.nextSteps ? finalPlan.nextSteps.join('\n') : ''}
+
+---
+Generated through AI Expert Consultation
+            `;
+            
+            navigator.clipboard.writeText(prompt).then(() => {
+                claudeCodeBtn.innerHTML = '<i class="fas fa-check"></i> Copied!';
+                setTimeout(() => {
+                    claudeCodeBtn.innerHTML = '<i class="fas fa-terminal"></i> Copy Claude Code Prompt';
+                }, 2000);
+            });
+        }
+
+        // Export plan
+        function exportPlan() {
+            if (!finalPlan) return;
+            
+            const content = JSON.stringify(finalPlan, null, 2);
+            const blob = new Blob([content], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `consultation-plan-${Date.now()}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        // Reset consultation
+        function resetConsultation() {
+            currentSession = null;
+            currentPhase = 'discovery';
+            finalPlan = null;
+            
+            setupView.style.display = 'flex';
+            conversationView.classList.remove('active');
+            completionSection.classList.remove('active');
+            
+            projectInput.value = '';
+            messagesContainer.innerHTML = '';
+            progressFill.style.width = '0%';
+            
+            startBtn.disabled = false;
+            startBtn.innerHTML = '<i class="fas fa-rocket"></i> Start Expert Consultation';
+            
+            document.querySelectorAll('.phase-step').forEach(step => {
+                step.classList.remove('active', 'completed');
+            });
+        }
+
+        // Initialize on load
+        init();
+    </script>
+</body>
+</html>

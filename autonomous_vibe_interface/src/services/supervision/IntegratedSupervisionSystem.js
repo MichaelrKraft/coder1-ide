@@ -293,20 +293,20 @@ class IntegratedSupervisionSystem extends EventEmitter {
         if (recommendedAction.automated) {
             // Execute automated intervention
             switch (recommendedAction.type) {
-                case 'inject_requirements':
-                    await this.injectRequirements();
-                    break;
+            case 'inject_requirements':
+                await this.injectRequirements();
+                break;
                     
-                case 'provide_context':
-                    await this.provideComprehensiveContext();
-                    break;
+            case 'provide_context':
+                await this.provideComprehensiveContext();
+                break;
                     
-                case 'fix_permissions':
-                    await this.handlePermissionIssue(data);
-                    break;
+            case 'fix_permissions':
+                await this.handlePermissionIssue(data);
+                break;
                     
-                default:
-                    await this.provideGeneralAssistance(data);
+            default:
+                await this.provideGeneralAssistance(data);
             }
         } else {
             // Queue for manual intervention

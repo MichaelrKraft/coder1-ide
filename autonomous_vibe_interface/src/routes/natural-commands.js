@@ -160,39 +160,39 @@ async function executeCommand(parsedCommand, req) {
     const bridge = initializeBridge();
     
     switch (parsedCommand.category) {
-        case 'agents':
-            return executeAgentCommand(parsedCommand, bridge);
+    case 'agents':
+        return executeAgentCommand(parsedCommand, bridge);
             
-        case 'files':
-            return executeFileCommand(parsedCommand, req);
+    case 'files':
+        return executeFileCommand(parsedCommand, req);
             
-        case 'testing':
-            return executeTestCommand(parsedCommand, req);
+    case 'testing':
+        return executeTestCommand(parsedCommand, req);
             
-        case 'deployment':
-            return executeDeploymentCommand(parsedCommand, req);
+    case 'deployment':
+        return executeDeploymentCommand(parsedCommand, req);
             
-        case 'help':
-            return executeHelpCommand(parsedCommand);
+    case 'help':
+        return executeHelpCommand(parsedCommand);
             
-        case 'config':
-            return executeConfigCommand(parsedCommand);
+    case 'config':
+        return executeConfigCommand(parsedCommand);
             
-        case 'automation':
-        case 'documentation':
-        case 'security':
-        case 'performance':
-        case 'database':
-        case 'api':
-        case 'ui':
-            return executeAdvancedCommand(parsedCommand, req);
+    case 'automation':
+    case 'documentation':
+    case 'security':
+    case 'performance':
+    case 'database':
+    case 'api':
+    case 'ui':
+        return executeAdvancedCommand(parsedCommand, req);
             
-        case 'general':
-        case 'fallback_command':
-            return executeGeneralCommand(parsedCommand, req);
+    case 'general':
+    case 'fallback_command':
+        return executeGeneralCommand(parsedCommand, req);
             
-        default:
-            throw new Error(`Unknown command category: ${parsedCommand.category}`);
+    default:
+        throw new Error(`Unknown command category: ${parsedCommand.category}`);
     }
 }
 
@@ -203,44 +203,44 @@ async function executeAgentCommand(parsedCommand, bridge) {
     const { action, parameters } = parsedCommand;
     
     switch (action) {
-        case 'parallel':
-            const parallelId = await bridge.startParallelAgents(parameters.prompt, parameters.sessionId);
-            return {
-                type: 'agent_started',
-                mode: 'parallel',
-                sessionId: parallelId,
-                message: `Started parallel agents for: ${parameters.prompt}`
-            };
+    case 'parallel':
+        const parallelId = await bridge.startParallelAgents(parameters.prompt, parameters.sessionId);
+        return {
+            type: 'agent_started',
+            mode: 'parallel',
+            sessionId: parallelId,
+            message: `Started parallel agents for: ${parameters.prompt}`
+        };
             
-        case 'hivemind':
-            const hivemindId = await bridge.startHivemind(parameters.prompt, parameters.sessionId);
-            return {
-                type: 'agent_started',
-                mode: 'hivemind',
-                sessionId: hivemindId,
-                message: `Started hivemind coordination for: ${parameters.prompt}`
-            };
+    case 'hivemind':
+        const hivemindId = await bridge.startHivemind(parameters.prompt, parameters.sessionId);
+        return {
+            type: 'agent_started',
+            mode: 'hivemind',
+            sessionId: hivemindId,
+            message: `Started hivemind coordination for: ${parameters.prompt}`
+        };
             
-        case 'infinite':
-            const infiniteId = await bridge.startInfiniteLoop(parameters.prompt, parameters.sessionId);
-            return {
-                type: 'agent_started',
-                mode: 'infinite',
-                sessionId: infiniteId,
-                message: `Started infinite loop for: ${parameters.prompt}`
-            };
+    case 'infinite':
+        const infiniteId = await bridge.startInfiniteLoop(parameters.prompt, parameters.sessionId);
+        return {
+            type: 'agent_started',
+            mode: 'infinite',
+            sessionId: infiniteId,
+            message: `Started infinite loop for: ${parameters.prompt}`
+        };
             
-        case 'supervision':
-            const supervisionId = await bridge.startSupervision(parameters.prompt, parameters.sessionId);
-            return {
-                type: 'agent_started',
-                mode: 'supervision',
-                sessionId: supervisionId,
-                message: `Started supervision for: ${parameters.prompt}`
-            };
+    case 'supervision':
+        const supervisionId = await bridge.startSupervision(parameters.prompt, parameters.sessionId);
+        return {
+            type: 'agent_started',
+            mode: 'supervision',
+            sessionId: supervisionId,
+            message: `Started supervision for: ${parameters.prompt}`
+        };
             
-        default:
-            throw new Error(`Unknown agent action: ${action}`);
+    default:
+        throw new Error(`Unknown agent action: ${action}`);
     }
 }
 
@@ -249,7 +249,7 @@ async function executeAgentCommand(parsedCommand, bridge) {
  */
 async function executeFileCommand(parsedCommand, req) {
     // For file operations, we'll use the existing agent API
-    const response = await fetch(`http://localhost:3000/api/agent/analyze-requirements`, {
+    const response = await fetch('http://localhost:3000/api/agent/analyze-requirements', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
@@ -359,7 +359,7 @@ async function executeConfigCommand(parsedCommand) {
  */
 async function executeGeneralCommand(parsedCommand, req) {
     // Use the existing agent analysis API for general commands
-    const response = await fetch(`http://localhost:3000/api/agent/analyze-requirements`, {
+    const response = await fetch('http://localhost:3000/api/agent/analyze-requirements', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
@@ -389,37 +389,37 @@ async function executeAdvancedCommand(parsedCommand, req) {
     
     // Add category-specific context
     switch (category) {
-        case 'automation':
-            enhancedPrompt = `As an automation specialist, ${enhancedPrompt}. Focus on scaffolding, refactoring, or optimization as requested.`;
-            break;
+    case 'automation':
+        enhancedPrompt = `As an automation specialist, ${enhancedPrompt}. Focus on scaffolding, refactoring, or optimization as requested.`;
+        break;
             
-        case 'documentation':
-            enhancedPrompt = `As a documentation expert, ${enhancedPrompt}. Provide clear, comprehensive documentation.`;
-            break;
+    case 'documentation':
+        enhancedPrompt = `As a documentation expert, ${enhancedPrompt}. Provide clear, comprehensive documentation.`;
+        break;
             
-        case 'security':
-            enhancedPrompt = `As a security specialist, ${enhancedPrompt}. Focus on security best practices and vulnerability assessment.`;
-            break;
+    case 'security':
+        enhancedPrompt = `As a security specialist, ${enhancedPrompt}. Focus on security best practices and vulnerability assessment.`;
+        break;
             
-        case 'performance':
-            enhancedPrompt = `As a performance optimization expert, ${enhancedPrompt}. Focus on efficiency and speed improvements.`;
-            break;
+    case 'performance':
+        enhancedPrompt = `As a performance optimization expert, ${enhancedPrompt}. Focus on efficiency and speed improvements.`;
+        break;
             
-        case 'database':
-            enhancedPrompt = `As a database architect, ${enhancedPrompt}. Focus on data modeling and query optimization.`;
-            break;
+    case 'database':
+        enhancedPrompt = `As a database architect, ${enhancedPrompt}. Focus on data modeling and query optimization.`;
+        break;
             
-        case 'api':
-            enhancedPrompt = `As an API developer, ${enhancedPrompt}. Focus on REST/GraphQL design and integration.`;
-            break;
+    case 'api':
+        enhancedPrompt = `As an API developer, ${enhancedPrompt}. Focus on REST/GraphQL design and integration.`;
+        break;
             
-        case 'ui':
-            enhancedPrompt = `As a UI/UX designer, ${enhancedPrompt}. Focus on user experience and responsive design.`;
-            break;
+    case 'ui':
+        enhancedPrompt = `As a UI/UX designer, ${enhancedPrompt}. Focus on user experience and responsive design.`;
+        break;
     }
     
     // Route to appropriate analysis API
-    const response = await fetch(`http://localhost:3000/api/agent/analyze-requirements`, {
+    const response = await fetch('http://localhost:3000/api/agent/analyze-requirements', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'

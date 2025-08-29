@@ -62,7 +62,7 @@ router.post('/supervision/start', async (req, res) => {
         
         // Block automatic supervision triggers - require explicit user action
         if (!explicit) {
-            console.log(`[SUPERVISION] Blocked auto-trigger - supervision must be explicitly started via button`);
+            console.log('[SUPERVISION] Blocked auto-trigger - supervision must be explicitly started via button');
             return res.status(400).json({ 
                 error: 'Supervision must be explicitly started',
                 message: 'Use the supervision button in the terminal interface'
@@ -70,7 +70,7 @@ router.post('/supervision/start', async (req, res) => {
         }
         
         // Start the existing supervision system
-        console.log(`[SUPERVISION] Starting claude bridge supervision...`);
+        console.log('[SUPERVISION] Starting claude bridge supervision...');
         const id = await claudeBridge.startSupervision(prompt, sessionId);
         console.log(`[SUPERVISION] Claude bridge returned session ID: ${id}`);
         

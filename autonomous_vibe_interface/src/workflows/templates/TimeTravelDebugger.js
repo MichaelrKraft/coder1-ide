@@ -325,26 +325,26 @@ if (typeof module !== 'undefined') {
         
         for (const event of this.timeline) {
             switch (event.type) {
-                case 'function_enter':
-                    currentFrame = {
-                        name: event.name,
-                        lineNum: event.lineNum,
-                        timestamp: event.timestamp,
-                        variables: {},
-                        children: []
-                    };
-                    this.executionFrames.push(currentFrame);
-                    break;
+            case 'function_enter':
+                currentFrame = {
+                    name: event.name,
+                    lineNum: event.lineNum,
+                    timestamp: event.timestamp,
+                    variables: {},
+                    children: []
+                };
+                this.executionFrames.push(currentFrame);
+                break;
                     
-                case 'variable':
-                    if (currentFrame) {
-                        currentFrame.variables[event.name] = event.value;
-                    }
-                    break;
+            case 'variable':
+                if (currentFrame) {
+                    currentFrame.variables[event.name] = event.value;
+                }
+                break;
                     
-                case 'function_exit':
-                    currentFrame = null;
-                    break;
+            case 'function_exit':
+                currentFrame = null;
+                break;
             }
         }
     }

@@ -415,58 +415,58 @@ class GitHubRulesManager {
      * @returns {string} - Formatted context for Claude Code
      */
     generateClaudeCodeContext(rules) {
-        let context = `# Development Rules and Guidelines\\n`;
+        let context = '# Development Rules and Guidelines\\n';
         context += `Repository: ${rules.repository}\\n`;
         context += `Last Updated: ${rules.fetchedAt}\\n\\n`;
         
         // Add coding standards
         if (rules.processedRules.codingStandards.length > 0) {
-            context += `## Coding Standards\\n`;
+            context += '## Coding Standards\\n';
             rules.processedRules.codingStandards.forEach(rule => {
                 context += `- ${rule.content}\\n`;
             });
-            context += `\\n`;
+            context += '\\n';
         }
         
         // Add architecture patterns
         if (rules.processedRules.architecturePatterns.length > 0) {
-            context += `## Architecture Patterns\\n`;
+            context += '## Architecture Patterns\\n';
             rules.processedRules.architecturePatterns.forEach(rule => {
                 context += `- ${rule.content}\\n`;
             });
-            context += `\\n`;
+            context += '\\n';
         }
         
         // Add security guidelines
         if (rules.processedRules.securityGuidelines.length > 0) {
-            context += `## Security Guidelines\\n`;
+            context += '## Security Guidelines\\n';
             rules.processedRules.securityGuidelines.forEach(rule => {
                 context += `- ${rule.content}\\n`;
             });
-            context += `\\n`;
+            context += '\\n';
         }
         
         // Add project structure rules
         if (rules.processedRules.projectStructure.length > 0) {
-            context += `## Project Structure\\n`;
+            context += '## Project Structure\\n';
             rules.processedRules.projectStructure.forEach(rule => {
                 context += `- ${rule.content}\\n`;
             });
-            context += `\\n`;
+            context += '\\n';
         }
         
         // Add general guidelines
         if (rules.processedRules.general.length > 0) {
-            context += `## General Guidelines\\n`;
+            context += '## General Guidelines\\n';
             rules.processedRules.general.forEach(rule => {
                 context += `- ${rule.content}\\n`;
             });
-            context += `\\n`;
+            context += '\\n';
         }
         
-        context += `\\n---\\n`;
-        context += `These guidelines should be followed throughout the development process.\\n`;
-        context += `Always prioritize code quality, security, and maintainability.\\n`;
+        context += '\\n---\\n';
+        context += 'These guidelines should be followed throughout the development process.\\n';
+        context += 'Always prioritize code quality, security, and maintainability.\\n';
         
         return context;
     }
@@ -537,15 +537,15 @@ class GitHubRulesManager {
             let context = rules.claudeCodeContext;
             
             if (projectType === 'web') {
-                context += `\\n## Web Development Specific Guidelines\\n`;
-                context += `- Follow responsive design principles\\n`;
-                context += `- Ensure accessibility compliance\\n`;
-                context += `- Optimize for performance\\n`;
+                context += '\\n## Web Development Specific Guidelines\\n';
+                context += '- Follow responsive design principles\\n';
+                context += '- Ensure accessibility compliance\\n';
+                context += '- Optimize for performance\\n';
             } else if (projectType === 'api') {
-                context += `\\n## API Development Specific Guidelines\\n`;
-                context += `- Follow RESTful principles\\n`;
-                context += `- Implement proper error handling\\n`;
-                context += `- Add comprehensive validation\\n`;
+                context += '\\n## API Development Specific Guidelines\\n';
+                context += '- Follow RESTful principles\\n';
+                context += '- Implement proper error handling\\n';
+                context += '- Add comprehensive validation\\n';
             }
             
             console.log(`[GitHubRules] Rules provided for session ${sessionId} (${projectType})`);
@@ -573,11 +573,11 @@ class GitHubRulesManager {
                 existingContent = await fs.readFile(claudeMdPath, 'utf-8');
             } catch (error) {
                 // File doesn't exist, create new one
-                existingContent = `# CLAUDE.md\\n\\nThis file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.\\n\\n`;
+                existingContent = '# CLAUDE.md\\n\\nThis file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.\\n\\n';
             }
             
             // Add GitHub rules section
-            const rulesSection = `\\n## GitHub Repository Rules Integration\\n\\n`;
+            const rulesSection = '\\n## GitHub Repository Rules Integration\\n\\n';
             const rulesContent = rules.claudeCodeContext;
             
             // Remove existing rules section if present

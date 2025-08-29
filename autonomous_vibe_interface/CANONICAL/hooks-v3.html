@@ -465,9 +465,15 @@ Claude Agents: This is the OFFICIAL version - do not modify copies elsewhere
             font-size: 56px;
             font-weight: 800;
             margin-bottom: 16px;
+            /* Enhanced cross-browser teal gradient text */
             background: linear-gradient(135deg, #8b5cf6 0%, #06b6d4 50%, #ec4899 100%);
+            background-clip: text;
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
+            color: transparent;
+            /* Fallback for browsers that don't support gradient text */
+            color: #06b6d4;
+            text-shadow: 0 0 20px rgba(6, 182, 212, 0.5);
             line-height: 1.2;
             letter-spacing: -1px;
         }

@@ -135,16 +135,16 @@ class RulesIntegration {
         let formatted = '';
         
         if (template === 'detailed') {
-            formatted = `# Project Development Guidelines\\n\\n`;
+            formatted = '# Project Development Guidelines\\n\\n';
             formatted += `**Project**: ${projectName}\\n`;
             formatted += `**Generated**: ${new Date().toISOString()}\\n\\n`;
-            formatted += `## Important: Follow These Rules During Development\\n\\n`;
+            formatted += '## Important: Follow These Rules During Development\\n\\n';
             formatted += `${rulesContext}\\n\\n`;
-            formatted += `## Autonomous Development Instructions\\n\\n`;
-            formatted += `- Apply these guidelines to all code changes\\n`;
-            formatted += `- Prioritize code quality and maintainability\\n`;
-            formatted += `- Ask for clarification if rules conflict\\n`;
-            formatted += `- Document any deviations with reasoning\\n\\n`;
+            formatted += '## Autonomous Development Instructions\\n\\n';
+            formatted += '- Apply these guidelines to all code changes\\n';
+            formatted += '- Prioritize code quality and maintainability\\n';
+            formatted += '- Ask for clarification if rules conflict\\n';
+            formatted += '- Document any deviations with reasoning\\n\\n';
         } else {
             // Summary template
             formatted = `# Development Guidelines for ${projectName}\\n\\n`;
@@ -183,20 +183,20 @@ class RulesIntegration {
      * @returns {string} - Default rules
      */
     getDefaultRules() {
-        return `# Default Development Guidelines\\n\\n` +
-               `## Code Quality\\n` +
-               `- Write clean, readable, and maintainable code\\n` +
-               `- Follow consistent naming conventions\\n` +
-               `- Add comments for complex logic\\n` +
-               `- Handle errors gracefully\\n\\n` +
-               `## Security\\n` +
-               `- Never commit secrets or API keys\\n` +
-               `- Validate all user inputs\\n` +
-               `- Use HTTPS for all communications\\n\\n` +
-               `## Testing\\n` +
-               `- Write unit tests for new functionality\\n` +
-               `- Test edge cases and error conditions\\n` +
-               `- Maintain good test coverage\\n\\n`;
+        return '# Default Development Guidelines\\n\\n' +
+               '## Code Quality\\n' +
+               '- Write clean, readable, and maintainable code\\n' +
+               '- Follow consistent naming conventions\\n' +
+               '- Add comments for complex logic\\n' +
+               '- Handle errors gracefully\\n\\n' +
+               '## Security\\n' +
+               '- Never commit secrets or API keys\\n' +
+               '- Validate all user inputs\\n' +
+               '- Use HTTPS for all communications\\n\\n' +
+               '## Testing\\n' +
+               '- Write unit tests for new functionality\\n' +
+               '- Test edge cases and error conditions\\n' +
+               '- Maintain good test coverage\\n\\n';
     }
     
     /**

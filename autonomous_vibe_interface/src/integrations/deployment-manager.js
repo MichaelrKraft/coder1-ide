@@ -67,17 +67,17 @@ class DeploymentManager extends EventEmitter {
             // Platform-specific deployment
             let result;
             switch (platform.toLowerCase()) {
-                case 'vercel':
-                    result = await this._deployToVercel(projectPath, projectName, deployment);
-                    break;
-                case 'netlify':
-                    result = await this._deployToNetlify(projectPath, projectName, deployment);
-                    break;
-                case 'github-pages':
-                    result = await this._deployToGitHubPages(projectPath, projectName, deployment);
-                    break;
-                default:
-                    throw new Error(`Unsupported deployment platform: ${platform}`);
+            case 'vercel':
+                result = await this._deployToVercel(projectPath, projectName, deployment);
+                break;
+            case 'netlify':
+                result = await this._deployToNetlify(projectPath, projectName, deployment);
+                break;
+            case 'github-pages':
+                result = await this._deployToGitHubPages(projectPath, projectName, deployment);
+                break;
+            default:
+                throw new Error(`Unsupported deployment platform: ${platform}`);
             }
             
             // Update deployment status
@@ -143,7 +143,7 @@ class DeploymentManager extends EventEmitter {
         }
 
         deployment.status = 'building';
-        this.logger.log(`📦 Building project for Vercel deployment`);
+        this.logger.log('📦 Building project for Vercel deployment');
 
         // Install Vercel CLI if not available
         await this._ensureVercelCLI();
@@ -172,7 +172,7 @@ class DeploymentManager extends EventEmitter {
         }
 
         deployment.status = 'building';
-        this.logger.log(`📦 Building project for Netlify deployment`);
+        this.logger.log('📦 Building project for Netlify deployment');
 
         // Build the project
         await this._buildProject(projectPath, deployment);
@@ -197,7 +197,7 @@ class DeploymentManager extends EventEmitter {
         }
 
         deployment.status = 'creating-repository';
-        this.logger.log(`📦 Creating GitHub repository and deploying to Pages`);
+        this.logger.log('📦 Creating GitHub repository and deploying to Pages');
 
         // Create GitHub repository
         const repo = await this._createGitHubRepository(projectName);
@@ -258,7 +258,7 @@ class DeploymentManager extends EventEmitter {
             const packageJson = JSON.parse(await fs.readFile(packageJsonPath, 'utf8'));
             
             if (packageJson.scripts && packageJson.scripts.build) {
-                this.logger.log(`🔨 Running build script`);
+                this.logger.log('🔨 Running build script');
                 
                 // Install dependencies first
                 await this._executeCommand('npm', ['install'], projectPath, deployment);
@@ -266,7 +266,7 @@ class DeploymentManager extends EventEmitter {
                 // Run build
                 await this._executeCommand('npm', ['run', 'build'], projectPath, deployment);
                 
-                this.logger.log(`✅ Build completed successfully`);
+                this.logger.log('✅ Build completed successfully');
             }
         } catch (error) {
             this.logger.log('ℹ️ No package.json or build script found, skipping build step');

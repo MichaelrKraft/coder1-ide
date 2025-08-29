@@ -12,7 +12,7 @@ const crypto = require('crypto');
 
 class ProjectPipelineManager {
     constructor() {
-        this.memorySystem = new MemorySystem();
+        this.memorySystem = MemorySystem.getInstance();
         this.dataFile = path.join(__dirname, '../../../data/project-pipelines.json');
         
         // Project stages with metadata

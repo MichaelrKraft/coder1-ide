@@ -339,23 +339,23 @@ class ContextProvider extends EventEmitter {
      */
     formatContext(context, format) {
         switch (format) {
-            case 'structured':
-                return this.formatStructuredContext(context);
+        case 'structured':
+            return this.formatStructuredContext(context);
                 
-            case 'detailed':
-                return this.formatDetailedContext(context);
+        case 'detailed':
+            return this.formatDetailedContext(context);
                 
-            case 'tree':
-                return this.formatTreeContext(context);
+        case 'tree':
+            return this.formatTreeContext(context);
                 
-            case 'progressive':
-                return this.formatProgressiveContext(context);
+        case 'progressive':
+            return this.formatProgressiveContext(context);
                 
-            case 'comprehensive':
-                return this.formatComprehensiveContext(context);
+        case 'comprehensive':
+            return this.formatComprehensiveContext(context);
                 
-            default:
-                return context;
+        default:
+            return context;
         }
     }
 
@@ -448,31 +448,31 @@ class ContextProvider extends EventEmitter {
         let message = `\n## Context Update: ${scenario}\n\n`;
         
         if (scenario === 'requirements_missing') {
-            message += "I'm providing the missing requirements:\n\n";
+            message += 'I\'m providing the missing requirements:\n\n';
             
             if (context.requirements && context.requirements.main) {
-                message += "### Project Requirements:\n";
+                message += '### Project Requirements:\n';
                 context.requirements.main.forEach((req, index) => {
                     message += `${index + 1}. ${req}\n`;
                 });
-                message += "\n";
+                message += '\n';
             }
             
-            message += "Please proceed with implementing these requirements.\n";
+            message += 'Please proceed with implementing these requirements.\n';
             
         } else if (scenario === 'file_confusion') {
-            message += "Here's the project structure to help you:\n\n";
+            message += 'Here\'s the project structure to help you:\n\n';
             
             if (context.structure) {
-                message += "```\n";
+                message += '```\n';
                 message += this.formatFileTreeString(context.structure);
-                message += "```\n\n";
+                message += '```\n\n';
             }
             
-            message += "Create new files in the appropriate directories based on their purpose.\n";
+            message += 'Create new files in the appropriate directories based on their purpose.\n';
             
         } else {
-            message += "Here's the context you need:\n\n";
+            message += 'Here\'s the context you need:\n\n';
             message += JSON.stringify(context, null, 2);
         }
         

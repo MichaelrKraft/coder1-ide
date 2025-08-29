@@ -589,15 +589,15 @@ class SmartResponseEngine extends EventEmitter {
         this.interventionStats.totalDecisions++;
         
         switch(response) {
-            case '1':
-                this.interventionStats.autoApproved++;
-                break;
-            case '2':
-                this.interventionStats.autoApproved++;
-                break;
-            case '3':
-                this.interventionStats.manualReview++;
-                break;
+        case '1':
+            this.interventionStats.autoApproved++;
+            break;
+        case '2':
+            this.interventionStats.autoApproved++;
+            break;
+        case '3':
+            this.interventionStats.manualReview++;
+            break;
         }
     }
     

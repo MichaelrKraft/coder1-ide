@@ -131,15 +131,15 @@ class VibeCoachService extends EventEmitter {
             // Track different types of learning activity
             if (insight.metadata) {
                 switch (insight.metadata.category) {
-                    case 'codeQuality':
-                        this.sessionData.skillDevelopment.problemsSolved++;
-                        break;
-                    case 'testing':
-                        this.sessionData.skillDevelopment.jsConcepts.add('testing');
-                        break;
-                    case 'documentation':
-                        this.sessionData.skillDevelopment.htmlConcepts.add('documentation');
-                        break;
+                case 'codeQuality':
+                    this.sessionData.skillDevelopment.problemsSolved++;
+                    break;
+                case 'testing':
+                    this.sessionData.skillDevelopment.jsConcepts.add('testing');
+                    break;
+                case 'documentation':
+                    this.sessionData.skillDevelopment.htmlConcepts.add('documentation');
+                    break;
                 }
             }
             
@@ -171,24 +171,24 @@ class VibeCoachService extends EventEmitter {
         const { projectProgress } = this.sessionData;
         
         switch (eventType) {
-            case 'created':
-                projectProgress.filesCreated++;
-                this.addAchievement(`Created ${path.basename(filePath)}! 📄`, 'file_creation');
-                break;
+        case 'created':
+            projectProgress.filesCreated++;
+            this.addAchievement(`Created ${path.basename(filePath)}! 📄`, 'file_creation');
+            break;
                 
-            case 'modified':
-                projectProgress.filesModified++;
+        case 'modified':
+            projectProgress.filesModified++;
                 
-                // Detect file types for skill tracking
-                const ext = path.extname(filePath).toLowerCase();
-                if (ext === '.html') {
-                    this.sessionData.skillDevelopment.htmlConcepts.add('file_editing');
-                } else if (ext === '.css') {
-                    this.sessionData.skillDevelopment.cssConcepts.add('styling');
-                } else if (ext === '.js') {
-                    this.sessionData.skillDevelopment.jsConcepts.add('scripting');
-                }
-                break;
+            // Detect file types for skill tracking
+            const ext = path.extname(filePath).toLowerCase();
+            if (ext === '.html') {
+                this.sessionData.skillDevelopment.htmlConcepts.add('file_editing');
+            } else if (ext === '.css') {
+                this.sessionData.skillDevelopment.cssConcepts.add('styling');
+            } else if (ext === '.js') {
+                this.sessionData.skillDevelopment.jsConcepts.add('scripting');
+            }
+            break;
         }
         
         // Update project phase based on activity

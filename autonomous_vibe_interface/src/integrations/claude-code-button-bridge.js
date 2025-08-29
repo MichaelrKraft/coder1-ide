@@ -209,10 +209,10 @@ class ClaudeCodeButtonBridge extends EventEmitter {
         const delegationPrompt = this.createDelegationPrompt(agents, prompt);
         
         console.log(`[Claude Bridge] Using delegation for ${agents.length} agents`);
-        console.log(`[Claude Bridge] Agents:`, agents.map(a => a.name).join(', '));
+        console.log('[Claude Bridge] Agents:', agents.map(a => a.name).join(', '));
         
         // Single Claude process with delegation - pipe prompt to stdin
-        console.log(`[Claude Bridge] Delegation prompt preview:`, delegationPrompt.substring(0, 200) + '...');
+        console.log('[Claude Bridge] Delegation prompt preview:', delegationPrompt.substring(0, 200) + '...');
         const claude = spawn('claude', [], { stdio: ['pipe', 'pipe', 'pipe'] });
         session.processes.push(claude);
         this.processMap.set(claude.pid, { sessionId: id, type: 'delegation' });
@@ -228,7 +228,7 @@ class ClaudeCodeButtonBridge extends EventEmitter {
         // Handle stdout
         claude.stdout.on('data', (data) => {
             const output = data.toString();
-            console.log(`[Claude Delegation] Raw output:`, output.substring(0, 200));
+            console.log('[Claude Delegation] Raw output:', output.substring(0, 200));
             
             // Parse output to identify which agent is responding
             const lines = output.split('\n');
@@ -282,7 +282,7 @@ class ClaudeCodeButtonBridge extends EventEmitter {
         // Handle stderr
         claude.stderr.on('data', (data) => {
             const error = data.toString();
-            console.error(`[Claude Delegation] Stderr:`, error);
+            console.error('[Claude Delegation] Stderr:', error);
             this.emit('output', {
                 sessionId: id,
                 data: `${this.colors.red}[Claude Stderr]${this.colors.reset} ${error}`
@@ -291,7 +291,7 @@ class ClaudeCodeButtonBridge extends EventEmitter {
         
         // Handle process errors
         claude.on('error', (error) => {
-            console.error(`[Claude Delegation] Process error:`, error);
+            console.error('[Claude Delegation] Process error:', error);
             this.emit('output', {
                 sessionId: id,
                 data: `${this.colors.red}[Process Error]${this.colors.reset} ${error.message}\n`
@@ -300,7 +300,7 @@ class ClaudeCodeButtonBridge extends EventEmitter {
         
         // Handle completion
         claude.on('close', (code) => {
-            console.log(`[Claude Delegation] Closed with code:`, code);
+            console.log('[Claude Delegation] Closed with code:', code);
             
             // Show summary of agent contributions
             this.emit('output', {
@@ -574,30 +574,30 @@ Begin your multi-agent response now:`;
         for (const [agentType, keywords] of Object.entries(contextKeywords)) {
             if (keywords.some(keyword => promptLower.includes(keyword))) {
                 switch (agentType) {
-                    case 'architecture':
-                        if (!agents.find(a => a.type === 'architect')) {
-                            agents.push({ type: 'architect', name: 'Architect', focus: 'System design and architecture' });
-                        }
-                        break;
-                    case 'implementation':
-                        if (!agents.find(a => a.type === 'implementer')) {
-                            agents.push({ type: 'implementer', name: 'Implementer', focus: 'Code implementation and development' });
-                        }
-                        break;
-                    case 'optimization':
-                        if (!agents.find(a => a.type === 'optimizer')) {
-                            agents.push({ type: 'optimizer', name: 'Optimizer', focus: 'Performance and quality optimization' });
-                        }
-                        break;
-                    case 'frontend':
-                        agents.push({ type: 'frontend', name: 'Frontend Specialist', focus: 'UI components and styling' });
-                        break;
-                    case 'backend':
-                        agents.push({ type: 'backend', name: 'Backend Specialist', focus: 'API and server logic' });
-                        break;
-                    case 'debugging':
-                        agents.push({ type: 'debugger', name: 'Debugger', focus: 'Issue analysis and troubleshooting' });
-                        break;
+                case 'architecture':
+                    if (!agents.find(a => a.type === 'architect')) {
+                        agents.push({ type: 'architect', name: 'Architect', focus: 'System design and architecture' });
+                    }
+                    break;
+                case 'implementation':
+                    if (!agents.find(a => a.type === 'implementer')) {
+                        agents.push({ type: 'implementer', name: 'Implementer', focus: 'Code implementation and development' });
+                    }
+                    break;
+                case 'optimization':
+                    if (!agents.find(a => a.type === 'optimizer')) {
+                        agents.push({ type: 'optimizer', name: 'Optimizer', focus: 'Performance and quality optimization' });
+                    }
+                    break;
+                case 'frontend':
+                    agents.push({ type: 'frontend', name: 'Frontend Specialist', focus: 'UI components and styling' });
+                    break;
+                case 'backend':
+                    agents.push({ type: 'backend', name: 'Backend Specialist', focus: 'API and server logic' });
+                    break;
+                case 'debugging':
+                    agents.push({ type: 'debugger', name: 'Debugger', focus: 'Issue analysis and troubleshooting' });
+                    break;
                 }
             }
         }
@@ -606,7 +606,7 @@ Begin your multi-agent response now:`;
         
         // Default to core trio if no specific context detected
         if (agents.length === 0) {
-            console.log(`[analyzePromptForAgents] No specific context detected, using core trio`);
+            console.log('[analyzePromptForAgents] No specific context detected, using core trio');
             agents.push(
                 { type: 'architect', name: 'Architect', focus: 'System design and structure' },
                 { type: 'implementer', name: 'Implementer', focus: 'Core implementation' },

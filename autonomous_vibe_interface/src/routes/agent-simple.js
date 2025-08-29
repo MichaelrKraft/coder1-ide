@@ -16,7 +16,7 @@ const requirementsRoutes = require('./modules/requirements');
 const healthRoutes = require('./modules/health');
 
 // Chat endpoint (simplified version)
-router.post("/chat", async (req, res) => {
+router.post('/chat', async (req, res) => {
     try {
         const { message } = req.body;
         
@@ -55,7 +55,7 @@ router.post("/chat", async (req, res) => {
 });
 
 // Specialized Agent Execution endpoint
-router.post("/execute", async (req, res) => {
+router.post('/execute', async (req, res) => {
     try {
         const { agent, prompt, context } = req.body;
         
@@ -105,7 +105,7 @@ router.post("/execute", async (req, res) => {
 });
 
 // Agent list endpoint
-router.get("/agents", async (req, res) => {
+router.get('/agents', async (req, res) => {
     try {
         const agentsDir = path.join(__dirname, '../../.coder1/agents');
         const agentFiles = await fs.readdir(agentsDir);
@@ -170,19 +170,19 @@ async function executeSpecializedAgent(agentConfig, prompt, context = {}) {
         role: agentConfig.description,
         analysis: `As a ${agentConfig.name}, I would analyze this request: "${prompt.substring(0, 100)}..."`,
         recommendations: [
-            "This is a placeholder response demonstrating the specialized agent framework",
-            "In production, this would use the agent's specific instructions and model",
-            "The response would follow the structured format defined in the agent template"
+            'This is a placeholder response demonstrating the specialized agent framework',
+            'In production, this would use the agent\'s specific instructions and model',
+            'The response would follow the structured format defined in the agent template'
         ],
         nextSteps: [
-            "Implement AI service integration (Claude, OpenAI, etc.)",
-            "Process the agent's specialized instructions",
-            "Return structured output based on agent template"
+            'Implement AI service integration (Claude, OpenAI, etc.)',
+            'Process the agent\'s specialized instructions',
+            'Return structured output based on agent template'
         ],
         metadata: {
             model: agentConfig.model,
             tools: agentConfig.tools,
-            processingTime: "0.5s (placeholder)"
+            processingTime: '0.5s (placeholder)'
         }
     };
     
@@ -196,18 +196,18 @@ function generateChatResponse(message) {
     const lowerMessage = message.toLowerCase();
     
     if (lowerMessage.includes('build') || lowerMessage.includes('create')) {
-        return "I can help you build that! Let me gather some requirements first. What type of project are you looking to create?";
+        return 'I can help you build that! Let me gather some requirements first. What type of project are you looking to create?';
     }
     
     if (lowerMessage.includes('help')) {
-        return "I'm here to help! I can assist with building websites, writing code, debugging issues, and deploying applications. What would you like to work on?";
+        return 'I\'m here to help! I can assist with building websites, writing code, debugging issues, and deploying applications. What would you like to work on?';
     }
     
     if (lowerMessage.includes('status') || lowerMessage.includes('health')) {
-        return "System is running smoothly! All services are operational. You can check detailed status at /api/agent/health";
+        return 'System is running smoothly! All services are operational. You can check detailed status at /api/agent/health';
     }
     
-    return "I understand you want to work on something. Could you provide more details about what you'd like to build or accomplish?";
+    return 'I understand you want to work on something. Could you provide more details about what you\'d like to build or accomplish?';
 }
 
 // Delegate to specialized modules

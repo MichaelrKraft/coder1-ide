@@ -142,7 +142,7 @@ class GitHubManager {
      */
     async _initializeAndPushProject(projectPath, repository) {
         try {
-            this.logger.log(`📦 Initializing git repository and pushing content`);
+            this.logger.log('📦 Initializing git repository and pushing content');
             
             // Initialize git repository
             await this._executeGitCommand(['init'], projectPath);
@@ -187,10 +187,10 @@ Built with ❤️ by Coder1ide`;
             this.metrics.totalCommits++;
             this.metrics.totalPushes++;
             
-            this.logger.log(`✅ Project pushed to GitHub successfully`);
+            this.logger.log('✅ Project pushed to GitHub successfully');
             
         } catch (error) {
-            this.logger.error(`❌ Failed to push project to GitHub:`, error);
+            this.logger.error('❌ Failed to push project to GitHub:', error);
             throw error;
         }
     }
@@ -216,7 +216,7 @@ Built with ❤️ by Coder1ide`;
             }
             
         } catch (error) {
-            this.logger.warn(`⚠️ Some repository configuration failed:`, error.message);
+            this.logger.warn('⚠️ Some repository configuration failed:', error.message);
         }
     }
 
@@ -265,10 +265,10 @@ Built with ❤️ by Coder1ide`;
                 headers: this.headers
             });
             
-            this.logger.log(`🛡️ Main branch protection enabled`);
+            this.logger.log('🛡️ Main branch protection enabled');
             
         } catch (error) {
-            this.logger.warn(`⚠️ Could not enable branch protection:`, error.message);
+            this.logger.warn('⚠️ Could not enable branch protection:', error.message);
         }
     }
 
@@ -292,10 +292,10 @@ Built with ❤️ by Coder1ide`;
                 headers: this.headers
             });
             
-            this.logger.log(`🌿 Development branch created`);
+            this.logger.log('🌿 Development branch created');
             
         } catch (error) {
-            this.logger.warn(`⚠️ Could not create development branch:`, error.message);
+            this.logger.warn('⚠️ Could not create development branch:', error.message);
         }
     }
 
@@ -321,10 +321,10 @@ Built with ❤️ by Coder1ide`;
                 }
             });
             
-            this.logger.log(`🏷️ Topics added to repository`);
+            this.logger.log('🏷️ Topics added to repository');
             
         } catch (error) {
-            this.logger.warn(`⚠️ Could not add topics:`, error.message);
+            this.logger.warn('⚠️ Could not add topics:', error.message);
         }
     }
 
@@ -478,12 +478,12 @@ temp/
             this.metrics.totalCommits++;
             this.metrics.totalPushes++;
             
-            this.logger.log(`✅ Repository updated successfully`);
+            this.logger.log('✅ Repository updated successfully');
             
             return { success: true };
             
         } catch (error) {
-            this.logger.error(`❌ Failed to update repository:`, error);
+            this.logger.error('❌ Failed to update repository:', error);
             return { success: false, error: error.message };
         }
     }
@@ -559,7 +559,7 @@ temp/
             return { success: true };
             
         } catch (error) {
-            this.logger.error(`❌ Failed to delete repository:`, error);
+            this.logger.error('❌ Failed to delete repository:', error);
             return { success: false, error: error.message };
         }
     }

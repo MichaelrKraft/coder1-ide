@@ -1,3 +1,39 @@
+const memoize = (fn) => { const cache = {}; return (...args) => { const key = JSON.stringify(args); return cache[key] || (cache[key] = fn(...args)); }; };
+const debounce = (func, delay) => { let timeoutId; return (...args) => { clearTimeout(timeoutId); timeoutId = setTimeout(() => func(...args), delay); }; };
+const performanceMonitor = { start: (label) => console.time(label), end: (label) => console.timeEnd(label) };
+
+// Memory monitoring
+const memoryMonitor = {
+    lastCheck: Date.now(),
+    threshold: 500 * 1024 * 1024, // 500MB threshold
+    checkInterval: 30000, // Check every 30 seconds
+    
+    check: function() {
+        const usage = process.memoryUsage();
+        const heapUsed = usage.heapUsed / 1024 / 1024;
+        const heapTotal = usage.heapTotal / 1024 / 1024;
+        const rss = usage.rss / 1024 / 1024;
+        
+        console.log(`💾 Memory: RSS ${rss.toFixed(2)}MB, Heap ${heapUsed.toFixed(2)}/${heapTotal.toFixed(2)}MB`);
+        
+        if (usage.heapUsed > this.threshold) {
+            console.warn(`⚠️ High memory usage detected: ${heapUsed.toFixed(2)}MB`);
+            // Force garbage collection if available
+            if (global.gc) {
+                console.log('🧹 Running garbage collection...');
+                global.gc();
+            }
+        }
+        
+        return usage;
+    },
+    
+    startMonitoring: function() {
+        setInterval(() => this.check(), this.checkInterval);
+        console.log('📊 Memory monitoring started');
+    }
+};
+
 // Load environment variables - .env.local takes priority over .env
 require('dotenv').config({ path: '.env.local' });
 require('dotenv').config();
@@ -16,10 +52,10 @@ const server = http.createServer(app);
 const licenseManager = new LicenseManager();
 const io = socketIO(server, {
     cors: {
-        origin: ["http://localhost:3000", "http://localhost:3001", "http://127.0.0.1:3000", "http://127.0.0.1:3001", "*"],
-        methods: ["GET", "POST"],
+        origin: ['http://localhost:3000', 'http://localhost:3001', 'http://127.0.0.1:3000', 'http://127.0.0.1:3001', '*'],
+        methods: ['GET', 'POST'],
         credentials: true,
-        allowedHeaders: ["Content-Type", "Authorization"]
+        allowedHeaders: ['Content-Type', 'Authorization']
     },
     transports: ['websocket', 'polling']
 });
@@ -32,8 +68,15 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Session management for friend access control
+// Session management with file store to prevent memory leaks
+const FileStore = require('session-file-store')(session);
 app.use(session({
+    store: new FileStore({
+        path: './sessions',
+        ttl: 86400, // 24 hours
+        retries: 2,
+        logFn: function() {} // Suppress verbose logging
+    }),
     secret: process.env.SESSION_SECRET || 'dev-secret-change-in-production-' + Date.now(),
     resave: false,
     saveUninitialized: false,
@@ -124,6 +167,34 @@ app.post('/api/beta-access', (req, res) => {
     });
 });
 
+// Waitlist API endpoint for landing page
+app.post('/api/waitlist', (req, res) => {
+    const { email } = req.body;
+    
+    if (!email || !email.includes('@')) {
+        return res.status(400).json({
+            success: false,
+            error: 'Valid email address is required'
+        });
+    }
+    
+    // In a real application, you would save this to a database
+    // For now, we'll just log it and return success
+    console.log(`📧 Waitlist signup: ${email} at ${new Date().toISOString()}`);
+    
+    // You could integrate with services like:
+    // - Airtable
+    // - ConvertKit
+    // - Mailchimp
+    // - Your database
+    
+    res.json({
+        success: true,
+        message: 'Successfully joined the waitlist! We\'ll be in touch soon.',
+        email
+    });
+});
+
 // Friend access authentication gate (skip in Docker mode)
 app.use((req, res, next) => {
     // In Docker mode, skip friend auth and use license system instead
@@ -132,7 +203,7 @@ app.use((req, res, next) => {
     }
     
     // Bypass auth during development/testing or for public paths
-    const publicPaths = ['/', '/health', '/beta-access', '/api/beta-access', '/invite', '/api/market-insights', '/api/intelligence', '/api/analytics', '/ide', '/hooks', '/welcome', '/api/license', '/tmux-lab', '/api/experimental'];
+    const publicPaths = ['/', '/health', '/beta-access', '/api/beta-access', '/api/waitlist', '/invite', '/api/market-insights', '/api/intelligence', '/api/analytics', '/ide', '/hooks', '/welcome', '/api/license', '/tmux-lab', '/api/experimental', '/vibe-dashboard', '/workflow-dashboard', '/agent-dashboard'];
     const isPublicPath = publicPaths.some(path => req.path.startsWith(path)) || 
                         req.path.startsWith('/static/') || 
                         req.path.startsWith('/ide/static/') ||
@@ -174,17 +245,19 @@ app.use(rateLimit);
 
 // Add CSP middleware to allow scripts for IDE and development
 app.use((req, res, next) => {
-  if (req.path.startsWith('/ide') || req.path.startsWith('/test') || req.path.startsWith('/component-studio')) {
-    res.setHeader('Content-Security-Policy', 
-      "default-src 'self'; " +
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://unpkg.com https://cdn.tailwindcss.com https://cdn.jsdelivr.net; " +
-      "style-src 'self' 'unsafe-inline' https://unpkg.com https://cdn.tailwindcss.com https://cdn.jsdelivr.net; " +
-      "img-src 'self' data: https:; " +
-      "connect-src 'self' ws: wss: http: https: localhost:3000; " +
-      "frame-src 'self' data:;"
-    );
-  }
-  next();
+    if (req.path.startsWith('/ide') || req.path.startsWith('/test') || req.path.startsWith('/component-studio')) {
+        res.setHeader('Content-Security-Policy', 
+            'default-src \'self\'; ' +
+      'script-src \'self\' \'unsafe-inline\' \'unsafe-eval\' https://unpkg.com https://cdn.tailwindcss.com https://cdn.jsdelivr.net blob:; ' +
+      'worker-src \'self\' blob:; ' +
+      'style-src \'self\' \'unsafe-inline\' https://unpkg.com https://cdn.tailwindcss.com https://cdn.jsdelivr.net https://fonts.googleapis.com; ' +
+      'font-src \'self\' data: https://fonts.gstatic.com https://fonts.googleapis.com https://unpkg.com; ' +
+      'img-src \'self\' data: https:; ' +
+      'connect-src \'self\' ws: wss: http: https: localhost:3000; ' +
+      'frame-src \'self\' data:;'
+        );
+    }
+    next();
 });
 
 // ✅ Serving from /CANONICAL/ - contains the correct, updated PRD generator
@@ -231,8 +304,12 @@ app.use('/studio-assets', express.static(path.join(__dirname, '../public/studio-
     }
 }));
 
-// Serve public directory files (including logos and images)
+// Serve CANONICAL directory files (including correct logos and working files)
 app.use('/public', express.static(path.join(__dirname, '../public')));
+
+// Serve CSS and JS files directly from public directory for dashboard assets
+app.use('/css', express.static(path.join(__dirname, '../public/css')));
+app.use('/js', express.static(path.join(__dirname, '../public/js')));
 
 // Welcome page route (for licensing flow)
 app.get('/welcome', (req, res) => {
@@ -245,7 +322,7 @@ app.use('/api/license', require('./routes/licensing'));
 // API routes with specific rate limiting
 app.use('/api/anthropic', anthropicRateLimit, require('./routes/anthropic'));
 app.use('/api/openai', openaiRateLimit, require('./routes/openai'));
-app.use('/api/agent', require('./routes/agent-simple'));
+// app.use('/api/agent', require('./routes/agent-simple'));  // TEMPORARILY DISABLED - causes memory issues
 app.use('/api/voice', require('./routes/voice'));
 app.use('/api/infinite', require('./routes/infinite'));
 app.use('/api/hivemind', require('./routes/hivemind'));
@@ -263,7 +340,7 @@ app.use('/api/analytics', require('./routes/analytics'));
 app.use('/api/vibe-flow', require('./routes/vibe-flow'));  // Vibe Flow analytics and budget tracking
 app.use('/api/magic', require('./routes/magic'));  // AI Magic component generation
 app.use('/api/component-ai', require('./routes/component-ai'));  // Component Studio AI Integration
-app.use('/api/error-doctor', require('./routes/error-doctor'));  // AI Error Doctor
+app.use('/api/error-doctor', require('./routes/error-doctor'));  // AI Error Doctor - ENABLED
 app.use('/api/claude/coaching', require('./routes/vibe-coach'));  // VibeCoach AI Dashboard
 app.use('/api/hooks', require('./routes/hooks'));  // Claude Code Hooks Management
 app.use('/api/vibe-hooks', require('./routes/vibe-hooks'));  // Vibe Hooks Pattern-based Automation
@@ -273,11 +350,55 @@ app.use('/api/project-pipeline', require('./routes/project-pipeline'));  // Proj
 app.use('/api/repository', require('./routes/repository-intelligence'));  // Repository Intelligence for IDE
 app.use('/api/repository-admin', require('./routes/repository-admin'));  // Repository Admin endpoints
 app.use('/api/sessions', require('./routes/sessions'));  // Session and Checkpoint Management
+
+// Terminal session status API for debugging timeout issues
+app.get('/api/terminal/sessions/status', (req, res) => {
+    try {
+        const sessions = global.safePTYManager ? global.safePTYManager.sessions : new Map();
+        const now = Date.now();
+        const sessionData = [];
+        
+        for (const [sessionId, session] of sessions) {
+            const inactiveTime = now - (session.lastActivity || session.createdAt);
+            sessionData.push({
+                id: sessionId,
+                createdAt: new Date(session.createdAt).toISOString(),
+                lastActivity: session.lastActivity ? new Date(session.lastActivity).toISOString() : 'Never',
+                inactiveMinutes: Math.round(inactiveTime / 60000),
+                inactiveHours: Math.round(inactiveTime / 3600000 * 10) / 10,
+                claudeDetected: session.claudeDetected || false,
+                processAlive: session.process && !session.process.killed,
+                socketConnected: session.socketId ? true : false
+            });
+        }
+        
+        const config = {
+            sessionTimeout: process.env.TERMINAL_SESSION_TIMEOUT || 28800000,
+            cleanupInterval: process.env.TERMINAL_CLEANUP_INTERVAL || 1800000,
+            infiniteMode: process.env.TERMINAL_INFINITE_MODE === 'true',
+            cleanupLogging: process.env.TERMINAL_CLEANUP_LOGGING !== 'false'
+        };
+        
+        res.json({
+            totalSessions: sessions.size,
+            config: {
+                ...config,
+                sessionTimeoutHours: config.sessionTimeout / 3600000,
+                cleanupIntervalMinutes: config.cleanupInterval / 60000
+            },
+            sessions: sessionData.sort((a, b) => b.inactiveMinutes - a.inactiveMinutes)
+        });
+    } catch (error) {
+        console.error('Error getting session status:', error);
+        res.status(500).json({ error: 'Failed to get session status', details: error.message });
+    }
+});
 app.use('/api/templates', require('./routes/templates'));  // Templates Hub API
 app.use('/api/claude-file-activity', require('./routes/claude-file-activity'));  // Claude File Activity Tracking
 app.use('/api/docs', require('./routes/documentation'));  // Documentation Intelligence System
 app.use('/api/claude/session-doc', require('./routes/claude-session-doc'));  // Claude Session Documentation System
-app.use('/api/workflows', require('./routes/workflows'));  // Revolutionary Workflow Automation System
+app.use('/api/agents-context', require('./routes/agents-context'));  // AGENTS.md Context Integration for Claude Code
+// app.use('/api/workflows', require('./routes/workflows'));  // Revolutionary Workflow Automation System - TEMPORARILY DISABLED
 app.use('/api/mcp-prompts', require('./routes/mcp-prompts'));  // MCP Ambient Prompt Display System
 app.use('/api', require('./routes/prettier-config'));
 // Remove duplicate terminal-rest route - using terminal-rest-api.js instead
@@ -285,6 +406,7 @@ app.use('/api', require('./routes/prettier-config'));
 
 // EXPERIMENTAL: Tmux Orchestrator Lab (isolated test environment)
 app.use('/api/experimental', require('./routes/experimental/orchestrator'));
+app.use('/api/agents', require('./routes/agent-dashboard').router);  // Multi-Agent Observability Dashboard
 
 // Socket.IO connection handling with cleanup
 // NOTE: Moved to terminal-websocket-safepty.js to fix duplicate handler issue
@@ -347,17 +469,51 @@ app.get('/ai-monitor', (req, res) => {
     res.sendFile(path.join(__dirname, '../public/ai-monitor.html'));
 });
 
-// Vibe Dashboard route - NEW dashboard for vibe coders and newer developers
-app.get('/vibe-dashboard', (req, res) => {
-    // Add aggressive no-cache headers to prevent browser caching of old versions
-    res.set({
-        'Cache-Control': 'no-cache, no-store, must-revalidate, max-age=0',
-        'Pragma': 'no-cache',
-        'Expires': '0',
-        'Last-Modified': new Date().toUTCString(),
-        'ETag': 'W/"no-cache-' + Date.now() + '"'
+// AI Dashboard route - NEW dashboard for AI development (cache-bust fix)
+app.get('/ai-dashboard', (req, res) => {
+    // Force fresh content by reading and sending directly
+    const fs = require('fs');
+    const dashboardPath = path.join(__dirname, '../CANONICAL/vibe-dashboard.html');
+    
+    // Read the file fresh each time
+    fs.readFile(dashboardPath, 'utf8', (err, content) => {
+        if (err) {
+            console.error('Error reading vibe-dashboard.html:', err);
+            return res.status(500).send('Dashboard temporarily unavailable');
+        }
+        
+        // Add cache busting and aggressive headers
+        res.set({
+            'Content-Type': 'text/html; charset=utf-8',
+            'Cache-Control': 'no-cache, no-store, must-revalidate, private, max-age=0',
+            'Pragma': 'no-cache',
+            'Expires': '-1',
+            'X-Content-Type-Options': 'nosniff',
+            'Last-Modified': new Date().toUTCString(),
+            'ETag': '"' + Date.now() + '-' + Math.random().toString(36).substr(2, 9) + '"'
+        });
+        
+        // Inject cache-busting meta tag and add timestamp to assets
+        const cacheBuster = Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+        const timestamp = Date.now();
+        
+        // Add cache busters to CSS and JS files
+        content = content.replace(/href="\/css\/(.*?)"/g, `href="/css/$1?v=${timestamp}"`);
+        content = content.replace(/src="\/js\/(.*?)"/g, `src="/js/$1?v=${timestamp}"`);
+        
+        content = content.replace('</head>', `<meta name="cache-version" content="${cacheBuster}">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="-1">
+</head>`);
+        
+        res.send(content);
     });
-    res.sendFile(path.join(__dirname, '../CANONICAL/vibe-dashboard.html'));
+});
+
+// Keep the old route for backwards compatibility, but redirect to new route
+app.get('/vibe-dashboard', (req, res) => {
+    res.redirect(301, '/ai-dashboard');
 });
 
 // Natural Commands route - serve the natural commands page
@@ -370,8 +526,11 @@ app.get('/beta-access', (req, res) => {
     res.sendFile(path.join(__dirname, '../CANONICAL/beta-access.html'));
 });
 
-// Hooks Management route - serve the hooks manager page
-app.get('/hooks', (req, res) => {
+// Hooks Management route - serve the hooks manager page (v2 with 32 hooks and 3D effects)
+app.get(['/hooks', '/hooks.html'], (req, res) => {
+    // Serving hooks-v2-backup which has 32 hooks and the proper 3D effect
+    const filePath = path.join(__dirname, '../CANONICAL/hooks-v2-backup.html');
+    
     // Add aggressive no-cache headers to prevent browser caching
     res.set({
         'Cache-Control': 'no-cache, no-store, must-revalidate, max-age=0',
@@ -379,6 +538,30 @@ app.get('/hooks', (req, res) => {
         'Expires': '0',
         'Last-Modified': new Date().toUTCString(),
         'ETag': '"' + Date.now() + '"'
+    });
+    res.sendFile(filePath);
+});
+
+// Diagnostic route with enhanced logging
+app.get('/hooks-diagnostic', (req, res) => {
+    res.set({
+        'Cache-Control': 'no-cache, no-store, must-revalidate, max-age=0',
+        'Pragma': 'no-cache',
+        'Expires': '0',
+        'X-Diagnostic': 'true'
+    });
+    res.sendFile(path.join(__dirname, '../CANONICAL/hooks-diagnostic.html'));
+});
+
+// Test route for hooks with timestamp to bypass ALL caching
+app.get('/hooks-test', (req, res) => {
+    res.set({
+        'Cache-Control': 'no-cache, no-store, must-revalidate, max-age=0',
+        'Pragma': 'no-cache',
+        'Expires': '0',
+        'Last-Modified': new Date().toUTCString(),
+        'ETag': '"test-' + Date.now() + '"',
+        'X-Test-Time': new Date().toISOString()
     });
     res.sendFile(path.join(__dirname, '../CANONICAL/hooks-v3.html'));
 });
@@ -396,6 +579,32 @@ app.get('/component-studio', (req, res) => {
     res.sendFile(path.join(__dirname, '../CANONICAL/component-studio.html'));
 });
 
+// Serve static files for orchestrator site with proper MIME types
+app.use('/orchestrator', express.static(path.join(__dirname, '../orchestrator-standalone'), {
+    setHeaders: (res, filePath) => {
+        // Set proper MIME types based on file extension
+        if (filePath.endsWith('.js')) {
+            res.set('Content-Type', 'application/javascript; charset=UTF-8');
+        } else if (filePath.endsWith('.css')) {
+            res.set('Content-Type', 'text/css; charset=UTF-8');
+        } else if (filePath.endsWith('.html')) {
+            res.set('Content-Type', 'text/html; charset=UTF-8');
+        }
+    }
+}));
+
+// Standalone Orchestrator Site main page - AI Mastermind Expert Consultation
+app.get('/orchestrator', (req, res) => {
+    res.set({
+        'Cache-Control': 'no-cache, no-store, must-revalidate, max-age=0',
+        'Pragma': 'no-cache',
+        'Expires': '0',
+        'Last-Modified': new Date().toUTCString(),
+        'ETag': 'W/"orchestrator-' + Date.now() + '"'
+    });
+    res.sendFile(path.join(__dirname, '../orchestrator-standalone/index.html'));
+});
+
 // Templates Hub route - serve with no-cache headers
 app.get(['/templates-hub', '/templates-hub.html'], (req, res) => {
     // Add aggressive no-cache headers to prevent browser caching
@@ -406,7 +615,62 @@ app.get(['/templates-hub', '/templates-hub.html'], (req, res) => {
         'Last-Modified': new Date().toUTCString(),
         'ETag': 'W/"no-cache-' + Date.now() + '"'
     });
-    res.sendFile(path.join(__dirname, '../public/templates-hub.html'));
+    res.sendFile(path.join(__dirname, '../CANONICAL/templates-hub.html'));
+});
+
+// PRD Generator route - serve with no-cache headers  
+app.get(['/prd-generator-v2-test', '/prd-generator-v2-test.html'], (req, res) => {
+    // Add aggressive no-cache headers to prevent browser caching
+    res.set({
+        'Cache-Control': 'no-cache, no-store, must-revalidate, max-age=0',
+        'Pragma': 'no-cache',
+        'Expires': '0',
+        'Last-Modified': new Date().toUTCString(),
+        'ETag': 'W/"no-cache-' + Date.now() + '"'
+    });
+    res.sendFile(path.join(__dirname, '../CANONICAL/prd-generator-v2-test.html'));
+});
+
+// Workflow Dashboard route - serve with no-cache headers
+app.get(['/workflow-dashboard', '/workflow-dashboard.html'], (req, res) => {
+    // Add aggressive no-cache headers to prevent browser caching
+    res.set({
+        'Cache-Control': 'no-cache, no-store, must-revalidate, max-age=0',
+        'Pragma': 'no-cache',
+        'Expires': '0',
+        'Last-Modified': new Date().toUTCString(),
+        'ETag': 'W/"no-cache-' + Date.now() + '"'
+    });
+    res.sendFile(path.join(__dirname, '../CANONICAL/workflow-dashboard.html'));
+});
+
+// Agent Dashboard route - Multi-Agent Observability Dashboard
+app.get(['/agent-dashboard', '/agent-dashboard.html'], (req, res) => {
+    // Add no-cache headers for real-time dashboard updates
+    res.set({
+        'Cache-Control': 'no-cache, no-store, must-revalidate, max-age=0',
+        'Pragma': 'no-cache',
+        'Expires': '0',
+        'Last-Modified': new Date().toUTCString(),
+        'ETag': 'W/"agent-dashboard-' + Date.now() + '"'
+    });
+    
+    performanceMonitor.start('agent-dashboard-load');
+    res.sendFile(path.join(__dirname, '../CANONICAL/agent-dashboard.html'));
+    performanceMonitor.end('agent-dashboard-load');
+});
+
+// CoderOne Landing Page route - serve with no-cache headers
+app.get(['/landing', '/coderone-landing', '/coderone-landing.html'], (req, res) => {
+    // Add aggressive no-cache headers to prevent browser caching
+    res.set({
+        'Cache-Control': 'no-cache, no-store, must-revalidate, max-age=0',
+        'Pragma': 'no-cache',
+        'Expires': '0',
+        'Last-Modified': new Date().toUTCString(),
+        'ETag': 'W/"no-cache-' + Date.now() + '"'
+    });
+    res.sendFile(path.join(__dirname, '../public/coderone-landing.html'));
 });
 
 // Documentation route - serve with no-cache headers
@@ -434,97 +698,54 @@ app.get(['/features', '/docs', '/documentation'], (req, res) => {
     res.send(content);
 });
 
-// IDE route - serve from coder1-ide directory
+// AI Consultation route
+app.get('/ai-consultation', (req, res) => {
+    res.sendFile(path.join(__dirname, '../public/ai-consultation.html'));
+});
+
+// IDE route - serve from ide-old-backup with working Menu button
 app.get(['/ide', '/ide/'], (req, res) => {
     console.log('[IDE Route] Handling request for:', req.path);
-    if (process.env.VERCEL) {
-        // On Vercel, serve the rewritten HTML directly with correct file names
-        const cacheBuster = 'header-height-fix-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
-        /* ⚠️⚠️⚠️ CRITICAL FOR ALL AGENTS - MUST READ ⚠️⚠️⚠️
-         * 
-         * THIS HTML IS HARDCODED AND MUST BE UPDATED AFTER EVERY BUILD!
-         * 
-         * When you build the React IDE app:
-         * 1. Run: npm run build (in coder1-ide/coder1-ide-source)
-         * 2. Check the new hash: ls build/static/js/main.*.js
-         * 3. UPDATE THE HASH BELOW from main.893bdb43.js to main.NEWHASH.js
-         * 4. Also check CSS hash if changed: ls build/static/css/main.*.css
-         * 5. Copy build files: cp -r build/* ../../public/ide/
-         * 6. Restart the server for changes to take effect
-         * 
-         * WHY THIS EXISTS: The server serves hardcoded HTML instead of reading from
-         * the index.html file. This was done to fix path issues but means manual
-         * updates are required after each build.
-         * 
-         * SYMPTOMS IF NOT UPDATED: Your changes won't appear in the IDE even after
-         * building and copying files. The browser will load the old JavaScript.
-         * 
-         * CURRENT BUILD: main.d50cf9a1.js with main.f26c6e31.css (Updated: Aug 26 - FINAL FIX: Documentation Panel Tokyo Night Theme)
-         */
-        console.warn('⚠️ SERVING HARDCODED HTML: main.d50cf9a1.js with main.f26c6e31.css - FINAL FIX: Documentation Panel Tokyo Night Theme');
-        const htmlContent = `<!doctype html><html lang="en"><head><meta charset="utf-8"/><link rel="icon" href="/ide/favicon.ico"/><meta name="viewport" content="width=device-width,initial-scale=1"/><meta name="theme-color" content="#000000"/><meta name="description" content="Coder1 IDE - Development Environment"/><link rel="apple-touch-icon" href="/ide/logo192.png"/><link rel="manifest" href="/ide/manifest.json"/><title>Coder1 IDE</title><link rel="stylesheet" href="/ide/static/css/xterm.css"/><script src="/ide/static/lib/xterm.js"></script><script src="/ide/static/lib/addon-fit.js"></script><script src="/ide/static/lib/xterm-loader.js"></script><script defer="defer" src="/ide/static/js/main.d50cf9a1.js?cb=${cacheBuster}"></script><link href="/ide/static/css/main.f26c6e31.css?cb=${cacheBuster}" rel="stylesheet"></head><body><noscript>You need to enable JavaScript to run this app.</noscript><div id="root"></div></body></html>`;
+    console.warn('✅ SERVING IDE FROM BACKUP: Using public/ide-old-backup/index.html with Menu button and 7-option navigation');
+    
+    const fs = require('fs');
+    const ideHtmlPath = path.join(__dirname, '../public/ide-old-backup/index.html');
+    
+    try {
+        let htmlContent = fs.readFileSync(ideHtmlPath, 'utf8');
+        
+        // Rewrite paths to work under /ide route
+        const cacheBuster = Date.now();
+        htmlContent = htmlContent.replace(/href="\/static\//g, 'href="/ide/static/');
+        htmlContent = htmlContent.replace(/src="\/static\//g, 'src="/ide/static/');
+        htmlContent = htmlContent.replace(/href="\/favicon.ico"/g, 'href="/ide/favicon.ico"');
+        htmlContent = htmlContent.replace(/href="\/logo192.png"/g, 'href="/ide/logo192.png"');
+        htmlContent = htmlContent.replace(/href="\/manifest.json"/g, 'href="/ide/manifest.json"');
+        
+        // Add cache busting
+        htmlContent = htmlContent.replace(/\.js"/g, `.js?cb=${cacheBuster}"`);
+        htmlContent = htmlContent.replace(/\.css"/g, `.css?cb=${cacheBuster}"`);
         
         // Set aggressive no-cache headers
         res.set({
             'Cache-Control': 'no-cache, no-store, must-revalidate, max-age=0',
             'Pragma': 'no-cache',
             'Expires': '0',
-            'Last-Modified': new Date().toUTCString(),
-            'ETag': 'W/"tooltip-fix-' + cacheBuster + '"'
+            'Last-Modified': new Date().toUTCString()
         });
         
         res.send(htmlContent);
-    } else {
-        // Local development - serve with path rewriting and aggressive cache busting
-        const fs = require('fs');
-        const indexPath = path.join(__dirname, '../public/ide/index.html');
-        let html = fs.readFileSync(indexPath, 'utf8');
-        
-        // Add cache-busting timestamp to all assets
-        const timestamp = Date.now();
-        html = html.replace(/href="\/static\/css\/([^"]+)"/g, `href="/ide/static/css/$1?v=${timestamp}"`);
-        html = html.replace(/src="\/static\/js\/([^"]+)"/g, `src="/ide/static/js/$1?v=${timestamp}"`);
-        
-        // Rewrite remaining absolute paths to work under /ide (but not already processed ones)
-        html = html.replace(/href="\/(?!ide\/)/g, 'href="/ide/');
-        html = html.replace(/src="\/(?!ide\/)/g, 'src="/ide/');
-        
-        // Inject XTerm.js and related scripts BEFORE the main React script
-        const xtermScripts = `
-    <link rel="stylesheet" href="/ide/static/css/xterm.css"/>
-    <script src="/ide/static/lib/xterm.js"></script>
-    <script src="/ide/static/lib/addon-fit.js"></script>
-    <script src="/ide/static/lib/xterm-loader.js"></script>`;
-        html = html.replace('</head>', `${xtermScripts}\n</head>`);
-        
-        // Removed AI navigation script injection - React app now handles AI button
-        // html = html.replace('</body>', '<script src="/static/ai-navigation.js"></script></body>');
-        
-        // Add no-cache headers for development
-        res.set({
-            'Cache-Control': 'no-cache, no-store, must-revalidate',
-            'Pragma': 'no-cache',
-            'Expires': '0'
-        });
-        
-        res.send(html);
+    } catch (error) {
+        console.error('Error serving CANONICAL IDE build:', error);
+        res.status(500).send('Error loading IDE interface');
     }
 });
 
-// Serve IDE static files from multiple locations (order matters - more specific first)
+// Logo routes removed - no longer needed after cleanup
+
+// Serve IDE static files from ide-old-backup directory (working version with Menu button)
 // Add no-cache headers for CSS files to prevent stale styles
-app.use('/ide', express.static(path.join(__dirname, '../public/ide'), {
-    setHeaders: (res, path) => {
-        if (path.endsWith('.css')) {
-            res.set({
-                'Cache-Control': 'no-cache, no-store, must-revalidate',
-                'Pragma': 'no-cache',
-                'Expires': '0'
-            });
-        }
-    }
-}));
-app.use('/ide', express.static(path.join(__dirname, '../coder1-ide/ide-build'), {
+app.use('/ide', express.static(path.join(__dirname, '../public/ide-old-backup'), {
     setHeaders: (res, path) => {
         if (path.endsWith('.css')) {
             res.set({
@@ -554,9 +775,233 @@ setupTerminalWebSocket(io);
 const { setupFileActivityWebSocket } = require('./routes/claude-file-activity');
 setupFileActivityWebSocket(io);
 
+// Setup Agent Dashboard WebSocket handler for real-time agent observability
+const { agentObserver } = require('./routes/agent-dashboard');
+io.on('connection', (socket) => {
+    if (socket.handshake.url && socket.handshake.url.includes('agent-dashboard')) {
+        console.log('🤖 Agent Dashboard client connected');
+        agentObserver.addWebSocketClient(socket);
+        
+        socket.on('disconnect', () => {
+            console.log('🤖 Agent Dashboard client disconnected');
+        });
+    }
+    
+    // Orchestrator Socket.IO event handlers
+    setupOrchestratorSocketHandlers(socket);
+    
+    // Terminal WebSocket Proxy: Forward terminal connections from port 3000 to port 3005
+    if (PORT == 3000 && (socket.handshake.url?.includes('terminal') || socket.handshake.headers?.origin?.includes('ide'))) {
+        console.log('🔄 [TERMINAL-PROXY] Proxying terminal WebSocket connection to port 3005');
+        setupTerminalProxy(socket);
+    }
+});
+
+// Terminal WebSocket Proxy Function
+function setupTerminalProxy(clientSocket) {
+    const { io: ioClient } = require('socket.io-client');
+    
+    try {
+        // Create connection to terminal server on port 3005
+        const terminalServerSocket = ioClient('ws://127.0.0.1:3005/terminal', {
+            transports: ['websocket']
+        });
+        
+        // Proxy events from client to terminal server
+        const eventsToProxy = [
+            'terminal:create', 'terminal:input', 'terminal:resize', 
+            'terminal:join', 'terminal:leave', 'voice:join_session',
+            'conversation:start', 'conversation:user-message'
+        ];
+        
+        eventsToProxy.forEach(event => {
+            clientSocket.on(event, (data) => {
+                console.log(`🔄 [PROXY] ${event} -> port 3005`);
+                terminalServerSocket.emit(event, data);
+            });
+        });
+        
+        // Proxy events from terminal server back to client
+        const eventsFromServer = [
+            'terminal:created', 'terminal:output', 'terminal:error',
+            'terminal:resize', 'voice:session_joined', 'conversation:started'
+        ];
+        
+        eventsFromServer.forEach(event => {
+            terminalServerSocket.on(event, (data) => {
+                console.log(`🔄 [PROXY] ${event} <- port 3005`);
+                clientSocket.emit(event, data);
+            });
+        });
+        
+        // Handle disconnections
+        clientSocket.on('disconnect', () => {
+            console.log('🔄 [PROXY] Client disconnected, closing proxy connection');
+            terminalServerSocket.close();
+        });
+        
+        terminalServerSocket.on('disconnect', () => {
+            console.log('🔄 [PROXY] Terminal server disconnected');
+            clientSocket.disconnect();
+        });
+        
+        console.log('✅ [TERMINAL-PROXY] WebSocket proxy established between ports 3000 ↔ 3005');
+        
+    } catch (error) {
+        console.error('❌ [TERMINAL-PROXY] Failed to setup proxy:', error);
+        clientSocket.emit('error', { message: 'Terminal proxy connection failed' });
+    }
+}
+
+// Orchestrator Socket.IO Event Handlers
+function setupOrchestratorSocketHandlers(socket) {
+    console.log(`🎭 [ORCHESTRATOR] Client connected: ${socket.id}`);
+    
+    // Start conversation event
+    socket.on('conversation:start', async (data) => {
+        try {
+            console.log(`🎭 [ORCHESTRATOR] Starting conversation for ${socket.id}:`, data);
+            
+            const { query, uploadedFiles } = data;
+            if (!query || !query.trim()) {
+                socket.emit('conversation:error', { 
+                    message: 'Query is required to start consultation' 
+                });
+                return;
+            }
+            
+            // Start orchestrator session
+            const session = await conversationOrchestrator.startSession(
+                socket.id, // userId 
+                query.trim(), // initialQuery
+                { 
+                    maxExperts: data.options?.minAgents || 3,
+                    includeUserInCollaboration: true
+                }
+            );
+            
+            // Emit conversation started event
+            socket.emit('conversation:started', {
+                sessionId: session.sessionId,
+                query: query.trim(),
+                agents: session.selectedExperts || [],
+                phase: session.phase,
+                orchestratorMessage: session.orchestratorMessage
+            });
+            
+            console.log(`🎭 [ORCHESTRATOR] Conversation started: ${session.sessionId}`);
+            
+        } catch (error) {
+            console.error('🎭 [ORCHESTRATOR] Error starting conversation:', error);
+            socket.emit('conversation:error', { 
+                message: 'Failed to start consultation. Please try again.' 
+            });
+        }
+    });
+    
+    // Send user message during consultation
+    socket.on('conversation:user-message', async (data) => {
+        try {
+            const { sessionId, message } = data;
+            console.log(`🎭 [ORCHESTRATOR] User message for ${sessionId}:`, message);
+            
+            // Create emit callback function for real-time communication
+            const emitCallback = (eventName, eventData) => {
+                socket.emit(eventName, eventData);
+            };
+            
+            await conversationOrchestrator.handleUserMessage(sessionId, message, emitCallback);
+            
+        } catch (error) {
+            console.error('🎭 [ORCHESTRATOR] Error handling user message:', error);
+            socket.emit('conversation:error', { 
+                message: 'Failed to process your message. Please try again.' 
+            });
+        }
+    });
+    
+    // Generate Claude Code prompt
+    socket.on('conversation:generate-claude-code', async (data) => {
+        try {
+            const { sessionId } = data;
+            console.log(`🎭 [ORCHESTRATOR] Claude Code prompt request: ${sessionId}`);
+            
+            const session = conversationOrchestrator.getSession(sessionId);
+            if (!session || !session.synthesis) {
+                socket.emit('conversation:error', { 
+                    message: 'Session not found or synthesis not complete' 
+                });
+                return;
+            }
+            
+            socket.emit('conversation:claude-code-ready', {
+                sessionId,
+                claudeCodePrompt: session.claudeCodePrompt || session.synthesis.content,
+                timestamp: Date.now()
+            });
+            
+        } catch (error) {
+            console.error('🎭 [ORCHESTRATOR] Claude Code generation error:', error);
+            socket.emit('conversation:error', { 
+                message: 'Failed to generate Claude Code prompt' 
+            });
+        }
+    });
+    
+    // Export conversation results
+    socket.on('conversation:export', async (data) => {
+        try {
+            const { sessionId, exportType } = data;
+            console.log(`🎭 [ORCHESTRATOR] Export request: ${sessionId} (${exportType})`);
+            
+            const session = conversationOrchestrator.getSession(sessionId);
+            if (!session) {
+                socket.emit('conversation:error', { 
+                    message: 'Session not found' 
+                });
+                return;
+            }
+            
+            const exportData = {
+                sessionId: session.sessionId,
+                query: session.userContext.projectDescription,
+                phase: session.phase,
+                experts: session.selectedExperts,
+                messages: session.messages,
+                synthesis: session.synthesis,
+                claudeCodePrompt: session.claudeCodePrompt,
+                timestamp: Date.now()
+            };
+            
+            socket.emit('conversation:export-ready', {
+                sessionId,
+                exportType,
+                data: exportData,
+                timestamp: Date.now()
+            });
+            
+        } catch (error) {
+            console.error('🎭 [ORCHESTRATOR] Export error:', error);
+            socket.emit('conversation:error', { 
+                message: 'Failed to export conversation. Please try again.' 
+            });
+        }
+    });
+    
+    // Clean up on disconnect
+    socket.on('disconnect', () => {
+        console.log(`🎭 [ORCHESTRATOR] Client disconnected: ${socket.id}`);
+        // TODO: Implement proper session cleanup
+    });
+}
+
 // Add REST API for terminal session creation
 const { router: terminalRestRouter } = require('./routes/terminal-rest-api');
 app.use('/api/terminal-rest', terminalRestRouter);
+
+// Add REST API for orchestrator functionality (fallback when Socket.IO not available)
+const orchestratorRouter = require('./routes/orchestrator');
+app.use('/api/orchestrator', orchestratorRouter);
 
 // Initialize Supervision System globally
 const { IntegratedSupervisionSystem } = require('./services/supervision/IntegratedSupervisionSystem');
@@ -572,28 +1017,33 @@ console.log('🌍 [SUPERVISION] Global supervision engine initialized on startup
 const VibeCoachWebSocket = require('./services/vibe-coach/VibeCoachWebSocket');
 const VibeCoachService = require('./services/vibe-coach/VibeCoachService');
 
-// Repository Pre-loader for competitive advantage
-const { getInstance: getRepositoryPreloader } = require('./services/repository-preloader');
+// Initialize Conversation Orchestrator for AI expert consultation
+// Use shared singleton instance to maintain sessions across all handlers
+const conversationOrchestrator = require('./services/conversation-orchestrator-singleton');
 
-// Claude Code Usage Monitor integration for real usage tracking
-const claudeUsageBridge = require('./services/claude-usage-bridge');
+// Repository Pre-loader for competitive advantage - TEMPORARILY DISABLED FOR MEMORY
+// const { getInstance: getRepositoryPreloader } = require('./services/repository-preloader');
 
-let globalVibeCoachWebSocket;
-let globalVibeCoachService;
+// Claude Code Usage Monitor integration for real usage tracking - TEMPORARILY DISABLED FOR MEMORY  
+// const claudeUsageBridge = require('./services/claude-usage-bridge');
 
-try {
-    globalVibeCoachService = new VibeCoachService();
-    globalVibeCoachWebSocket = new VibeCoachWebSocket(io);
-    globalVibeCoachWebSocket.connectToVibeCoach(globalVibeCoachService);
+// TEMPORARILY DISABLED FOR MEMORY ISSUES
+// let globalVibeCoachWebSocket;
+// let globalVibeCoachService;
+
+// try {
+//     globalVibeCoachService = new VibeCoachService();
+//     globalVibeCoachWebSocket = new VibeCoachWebSocket(io);
+//     globalVibeCoachWebSocket.connectToVibeCoach(globalVibeCoachService);
     
-    // Make services globally available for route integration
-    global.vibeCoachService = globalVibeCoachService;
-    global.vibeCoachWebSocket = globalVibeCoachWebSocket;
+//     // Make services globally available for route integration
+//     global.vibeCoachService = globalVibeCoachService;
+//     global.vibeCoachWebSocket = globalVibeCoachWebSocket;
     
-    console.log('🎯 [VIBECOACH] WebSocket service initialized for real-time coaching updates');
-} catch (error) {
-    console.warn('⚠️ [VIBECOACH] Failed to initialize WebSocket service:', error.message);
-}
+//     console.log('🎯 [VIBECOACH] WebSocket service initialized for real-time coaching updates');
+// } catch (error) {
+//     console.warn('⚠️ [VIBECOACH] Failed to initialize WebSocket service:', error.message);
+// }
 
 /**
  * Initialize Repository Pre-loader
@@ -672,13 +1122,16 @@ const HOST = '0.0.0.0'; // Important for Render
 
 server.listen(PORT, HOST, async () => {
     console.log(`🚀 Autonomous Vibe Interface running on port ${PORT}`);
-    console.log(`📊 Health check: /health`);
-    console.log(`🎤 Voice API: /api/voice/*`);
-    console.log(`🖥️ Terminal API: /api/terminal/*`);
-    console.log(`🔊 Socket.IO: Voice & Terminal real-time communication enabled`);
-    console.log(`🛡️ Rate limiting enabled to prevent excessive API calls`);
+    console.log('📊 Health check: /health');
+    console.log('🎤 Voice API: /api/voice/*');
+    console.log('🖥️ Terminal API: /api/terminal/*');
+    console.log('🔊 Socket.IO: Voice & Terminal real-time communication enabled');
+    console.log('🛡️ Rate limiting enabled to prevent excessive API calls');
     console.log(`💡 Terminal WebSocket: ws://127.0.0.1:${PORT}/terminal`);
-    console.log(`🤖 Supervision System: Initialized and ready`);
+    console.log('🤖 Supervision System: Initialized and ready');
+    
+    // Start memory monitoring
+    memoryMonitor.startMonitoring();
     
     if (process.env.RENDER) {
         console.log(`🌐 Running on Render at https://${process.env.RENDER_EXTERNAL_HOSTNAME}`);
@@ -697,17 +1150,89 @@ server.listen(PORT, HOST, async () => {
         console.warn('⚠️ [USAGE-BRIDGE] Failed to initialize usage monitoring:', error.message);
     }
     
-    // Initialize Repository Pre-loader (non-blocking background process)
-    initializeRepositoryPreloader();
+    // Initialize Repository Pre-loader (non-blocking background process) - TEMPORARILY DISABLED
+    // initializeRepositoryPreloader();
 });
 
-// Graceful shutdown
-process.on('SIGTERM', () => {
-    console.log('SIGTERM received, shutting down gracefully...');
+// Track active resources for cleanup
+const activeResources = {
+    timers: new Set(),
+    connections: new Set(),
+    sessions: new Map()
+};
+
+// Graceful shutdown handler
+const gracefulShutdown = async (signal) => {
+    console.log(`\n${signal} received, shutting down gracefully...`);
+    
+    // Stop accepting new connections
     server.close(() => {
         console.log('Server closed');
-        process.exit(0);
     });
+    
+    // Clean up WebSocket connections
+    if (io) {
+        io.close(() => {
+            console.log('WebSocket server closed');
+        });
+    }
+    
+    // Clean up PTY sessions
+    if (global.safePTYManager) {
+        try {
+            // Check if this is a restart (SIGUSR2) vs shutdown
+            const isRestart = signal === 'SIGUSR2';
+            const forceAll = !isRestart;  // Only force cleanup on actual shutdown
+            
+            await global.safePTYManager.cleanupAll(forceAll);
+            
+            if (!forceAll && process.env.TERMINAL_SESSION_PROTECTION === 'true') {
+                console.log('PTY sessions cleaned up (protected sessions preserved for restart)');
+            } else {
+                console.log('PTY sessions cleaned up');
+            }
+        } catch (error) {
+            console.error('Error cleaning PTY sessions:', error);
+        }
+    }
+    
+    // Clean up MCP connections
+    if (global.mcpClient) {
+        try {
+            await global.mcpClient.disconnect();
+            console.log('MCP client disconnected');
+        } catch (error) {
+            console.error('Error disconnecting MCP:', error);
+        }
+    }
+    
+    // Clear all timers
+    activeResources.timers.forEach(timer => clearInterval(timer));
+    
+    // Force exit after 10 seconds
+    setTimeout(() => {
+        console.error('Forced shutdown after timeout');
+        process.exit(1);
+    }, 10000).unref();
+    
+    process.exit(0);
+};
+
+// Register shutdown handlers
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+process.on('SIGUSR2', () => gracefulShutdown('SIGUSR2'));  // PM2 reload signal
+
+// Handle uncaught exceptions
+process.on('uncaughtException', (error) => {
+    console.error('Uncaught Exception:', error);
+    gracefulShutdown('UNCAUGHT_EXCEPTION');
+});
+
+// Handle unhandled promise rejections
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+    // Don't exit on unhandled rejections, just log them
 });
 
 module.exports = { app, server, io };

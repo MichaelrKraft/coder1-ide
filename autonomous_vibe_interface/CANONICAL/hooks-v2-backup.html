@@ -1,0 +1,2387 @@
+<!-- 
+===============================================================================
+CANONICAL FILE - MODIFY THIS VERSION ONLY
+===============================================================================
+File: hooks.html
+Purpose: Claude Code Hooks Management Interface
+Status: PRODUCTION - Last updated: 2025-01-13
+Claude Agents: This is the OFFICIAL version - do not modify copies elsewhere
+===============================================================================
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>Claude Code Hooks Manager - v2</title>
+    <link rel="stylesheet" href="styles.css?v=<?php echo time(); ?>1754458000">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #0a0a0a;
+            --bg-secondary: #1a1a1a;
+            --glass-bg: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --text-primary: #ffffff;
+            --text-secondary: #a0a0a0;
+            --accent-primary: #8b5cf6;
+            --accent-secondary: #06b6d4;
+            --success: #8b5cf6;
+            --warning: #f59e0b;
+            --error: #a855f7;
+            --gold: #fbbf24;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+            position: relative;
+        }
+
+        .glassmorphism {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        /* Button Styles */
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 500;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(139, 92, 246, 0.4);
+        }
+
+        .btn-secondary {
+            background: var(--glass-bg);
+            color: var(--text-primary);
+            border: 1px solid var(--glass-border);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: var(--accent-primary);
+        }
+
+        /* Removed animated gradient background that was causing layout issues */
+
+        /* Header */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding: 0;
+            height: 92px;
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .back-to-ide {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: rgba(139, 92, 246, 0.1);
+            border: 1px solid var(--accent-primary);
+            border-radius: 8px;
+            color: var(--text-primary);
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .back-to-ide:hover {
+            background: rgba(139, 92, 246, 0.2);
+            transform: translateX(-2px);
+            box-shadow: 0 0 20px rgba(139, 92, 246, 0.3);
+        }
+
+        /* Title styling moved inline for consistency with dashboard */
+
+        .header-controls {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+            padding: 2rem;
+        }
+
+        /* Header Section */
+        .header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 1rem;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+            max-width: 600px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+
+        /* Status Cards */
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 3rem;
+        }
+
+        .status-card {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 24px;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .status-card:hover {
+            border-color: #f97316;
+            box-shadow: 0 0 20px rgba(249, 115, 22, 0.4), 
+                        0 0 40px rgba(249, 115, 22, 0.2),
+                        inset 0 0 20px rgba(249, 115, 22, 0.05);
+            transform: translateY(-2px);
+        }
+
+        .status-card h3 {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 16px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .status-card .value {
+            font-size: 48px;
+            font-weight: bold;
+            background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 16px;
+        }
+
+        .status-card .label {
+            color: var(--text-secondary);
+            font-size: 12px;
+        }
+
+        /* Action Buttons */
+        .actions {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 3rem;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+            background: var(--glass-bg);
+            color: var(--text-primary);
+            backdrop-filter: blur(10px);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
+            border: none;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            box-shadow: 0 0 20px rgba(139, 92, 246, 0.5);
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: var(--glass-bg);
+            border: 1px solid var(--accent-primary);
+            color: var(--accent-primary);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(139, 92, 246, 0.1);
+            border-color: var(--accent-secondary);
+            color: var(--accent-secondary);
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 2rem;
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        .tab {
+            padding: 1rem 2rem;
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .tab.active {
+            color: var(--accent-primary);
+            border-bottom-color: var(--accent-primary);
+        }
+
+        .tab:hover {
+            color: var(--text-primary);
+        }
+
+        /* Content Sections */
+        .content-section {
+            display: none;
+        }
+
+        .content-section.active {
+            display: block;
+        }
+
+        /* Recommendations */
+        .recommendations {
+            margin-bottom: 3rem;
+        }
+
+        .recommendation-card {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 20px;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .recommendation-card:hover {
+            border-color: #f97316;
+            box-shadow: 0 0 20px rgba(249, 115, 22, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .recommendation-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1rem;
+        }
+
+        .recommendation-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--accent-primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .recommendation-priority {
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        .priority-high {
+            background: rgba(255, 107, 53, 0.2);
+            color: var(--accent-primary);
+            border: 1px solid var(--accent-primary);
+        }
+
+        .priority-medium {
+            background: rgba(139, 92, 246, 0.2);
+            color: var(--accent-secondary);
+            border: 1px solid var(--accent-secondary);
+        }
+
+        .priority-low {
+            background: rgba(75, 85, 99, 0.2);
+            color: #9CA3AF;
+            border: 1px solid #4B5563;
+        }
+
+        .recommendation-description {
+            color: var(--text-secondary);
+            margin-bottom: 1rem;
+            line-height: 1.5;
+        }
+
+        .recommendation-reason {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            font-style: italic;
+            margin-bottom: 1rem;
+        }
+
+        .hook-tags {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            margin-bottom: 1rem;
+        }
+
+        .hook-tag {
+            background: rgba(139, 92, 246, 0.1);
+            color: var(--accent-secondary);
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            border: 1px solid var(--accent-secondary);
+        }
+
+        /* Templates Grid */
+        .templates-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .template-card {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 24px;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .template-card:hover {
+            border-color: #f97316;
+            box-shadow: 0 0 20px rgba(249, 115, 22, 0.4), 
+                        0 0 40px rgba(249, 115, 22, 0.2),
+                        inset 0 0 20px rgba(249, 115, 22, 0.05);
+            transform: translateY(-2px);
+        }
+
+        .template-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+
+        .template-icon {
+            font-size: 1.5rem;
+        }
+
+        .template-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--accent-primary);
+        }
+
+        .template-description {
+            color: var(--text-secondary);
+            margin-bottom: 1rem;
+            line-height: 1.5;
+        }
+
+        .template-preview {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            font-size: 0.9rem;
+        }
+
+        .preview-when {
+            color: var(--accent-secondary);
+            margin-bottom: 0.5rem;
+        }
+
+        .preview-action {
+            color: var(--accent-primary);
+            font-family: monospace;
+            margin-bottom: 0.5rem;
+        }
+
+        .preview-result {
+            color: var(--text-secondary);
+        }
+
+        /* Loading States */
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 3rem;
+            color: var(--text-secondary);
+        }
+
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--glass-border);
+            border-top: 2px solid var(--accent-primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 0.5rem;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Error States */
+        .error {
+            background: rgba(220, 38, 38, 0.1);
+            border: 1px solid rgba(220, 38, 38, 0.3);
+            color: #FCA5A5;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+        }
+
+        /* Success States */
+        .success {
+            background: rgba(34, 197, 94, 0.1);
+            border: 1px solid rgba(34, 197, 94, 0.3);
+            color: #86EFAC;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+        }
+
+        /* Checkbox Styling */
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        .checkbox {
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border: 2px solid var(--glass-border);
+            border-radius: 4px;
+            position: relative;
+            cursor: pointer;
+        }
+
+        .checkbox:checked {
+            background: var(--accent-primary);
+            border-color: var(--accent-primary);
+        }
+
+        .checkbox:checked::after {
+            content: '✓';
+            position: absolute;
+            top: -2px;
+            left: 2px;
+            color: white;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        /* New Hooks Interface Styles */
+        .quick-actions {
+            display: flex !important;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+            visibility: visible !important;
+            opacity: 1 !important;
+        }
+
+        .hooks-container {
+            display: flex !important;
+            flex-direction: column;
+            gap: 2rem;
+            visibility: visible !important;
+            opacity: 1 !important;
+        }
+
+        .hook-category {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 24px;
+            backdrop-filter: blur(10px);
+        }
+
+        .category-header {
+            margin-bottom: 1.5rem;
+        }
+
+        .category-header h2 {
+            font-size: 1.4rem;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .category-header p {
+            color: var(--text-secondary);
+            margin: 0;
+        }
+
+        .hooks-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 1rem;
+        }
+
+        .hook-card {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .hook-card:hover {
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 20px rgba(139, 92, 246, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .hook-card.selected {
+            border-color: var(--accent-primary);
+            background: rgba(139, 92, 246, 0.1);
+        }
+
+        .hook-icon {
+            font-size: 2rem;
+            min-width: 3rem;
+            text-align: center;
+        }
+
+        .hook-info {
+            flex: 1;
+        }
+
+        .hook-info h3 {
+            font-size: 1.1rem;
+            color: var(--text-primary);
+            margin: 0 0 0.5rem 0;
+        }
+
+        .hook-info p {
+            color: var(--text-secondary);
+            margin: 0 0 0.5rem 0;
+            font-size: 0.9rem;
+            line-height: 1.4;
+        }
+
+        .hook-example {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+
+        .hook-example .before {
+            color: #a855f7;
+        }
+
+        .hook-example .after {
+            color: #8b5cf6;
+        }
+
+        .hook-toggle {
+            padding: 0.5rem 1rem;
+            border: 1px solid var(--glass-border);
+            border-radius: 8px;
+            background: var(--glass-bg);
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+            min-width: 80px;
+        }
+
+        .hook-toggle[data-state="off"] {
+            border-color: var(--accent-primary);
+            color: var(--accent-primary);
+        }
+
+        .hook-toggle[data-state="off"]:hover {
+            background: rgba(139, 92, 246, 0.1);
+        }
+
+        .hook-toggle[data-state="on"] {
+            background: var(--success);
+            border-color: var(--success);
+            color: white;
+        }
+
+        .summary-panel {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            max-width: 400px;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 1.5rem;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .summary-content h3 {
+            margin: 0 0 1rem 0;
+            color: var(--text-primary);
+        }
+
+        .summary-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        .summary-actions .btn {
+            flex: 1;
+            padding: 0.75rem 1rem;
+            font-size: 0.9rem;
+        }
+
+        /* Hook selection summary */
+        .selected-hook-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem;
+            background: rgba(139, 92, 246, 0.1);
+            border-radius: 8px;
+            margin-bottom: 0.5rem;
+        }
+
+        .selected-hook-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .selected-hook-item .hook-name {
+            color: var(--text-primary);
+            font-size: 0.9rem;
+        }
+
+        .selected-hook-item .remove-hook {
+            margin-left: auto;
+            background: none;
+            border: none;
+            color: var(--error);
+            cursor: pointer;
+            padding: 0.25rem;
+            border-radius: 4px;
+        }
+
+        .selected-hook-item .remove-hook:hover {
+            background: rgba(239, 68, 68, 0.1);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+
+            .header-content {
+                padding: 1rem;
+                min-height: auto;
+            }
+
+            .header-left, .header-controls {
+                width: 100% !important;
+                min-width: auto !important;
+                margin: 0 !important;
+            }
+
+            .header-controls {
+                flex-direction: row !important;
+                justify-content: center !important;
+                align-items: center !important;
+                gap: 1rem !important;
+            }
+
+            .main-header {
+                font-size: 1.5rem;
+            }
+
+            .hooks-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .hook-card {
+                flex-direction: column;
+                text-align: center;
+                gap: 1rem;
+            }
+
+            .hook-info {
+                text-align: left;
+            }
+
+            .summary-panel {
+                position: relative;
+                bottom: auto;
+                right: auto;
+                max-width: none;
+                margin-top: 2rem;
+            }
+
+            .quick-actions {
+                flex-direction: column;
+            }
+        }
+
+        /* Header Styling */
+        .header {
+            margin-bottom: 3rem !important;
+            position: relative;
+            z-index: 10;
+        }
+
+        .header-content {
+            min-height: 140px;
+        }
+
+        .main-header {
+            margin: 0;
+            font-size: 1.8rem;
+            font-weight: 700;
+            text-align: center;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            line-height: 1.2;
+            background: linear-gradient(135deg, #8b5cf6, #06b6d4);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header-controls a {
+            display: block;
+            margin-bottom: 0.5rem;
+        }
+
+        .header-controls span {
+            white-space: nowrap;
+        }
+
+        .category-header h2 {
+            font-size: 1.4rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .category-header h2 i {
+            color: var(--accent-primary);
+        }
+
+        .category-header p {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin: 0;
+            margin-bottom: 1rem;
+        }
+
+        .section-header {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: var(--accent-primary);
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+
+        .comparison-header {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 0.75rem;
+        }
+
+        .comparison-header.before {
+            color: var(--text-secondary);
+        }
+
+        .comparison-header.after {
+            color: var(--accent-secondary);
+        }
+
+        .hook-info h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .selected-hooks h3 {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 1rem;
+        }
+
+        /* Circuit Animation */
+        @keyframes blink-node {
+            0%, 100% { 
+                opacity: 0.5; 
+                box-shadow: 0 0 5px var(--accent-secondary);
+            }
+            50% { 
+                opacity: 1; 
+                box-shadow: 0 0 15px var(--accent-secondary);
+            }
+        }
+
+        /* Floating animation for hook cards */
+        @keyframes floatHookCard {
+            0%, 100% { transform: translateY(0) translateZ(0); }
+            50% { transform: translateY(-8px) translateZ(8px); }
+        }
+
+        /* Hook card base styles */
+        .hook-card {
+            background: linear-gradient(135deg, rgba(10, 20, 30, 0.5), rgba(10, 20, 30, 0.3)) !important;
+            backdrop-filter: blur(12px) !important;
+            -webkit-backdrop-filter: blur(12px) !important;
+            border: 1px solid rgba(255, 255, 255, 0.1) !important;
+            border-radius: 16px !important;
+            padding: 24px !important;
+            cursor: pointer !important;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important;
+            position: relative !important;
+            overflow: hidden !important;
+            transform-style: preserve-3d !important;
+            will-change: transform !important;
+            animation: floatHookCard 6s ease-in-out infinite !important;
+        }
+
+        /* Animation delays for each card */
+        .hook-card:nth-child(1) { animation-delay: 0s; }
+        .hook-card:nth-child(2) { animation-delay: 0.1s; }
+        .hook-card:nth-child(3) { animation-delay: 0.2s; }
+        .hook-card:nth-child(4) { animation-delay: 0.3s; }
+        .hook-card:nth-child(5) { animation-delay: 0.4s; }
+        .hook-card:nth-child(6) { animation-delay: 0.5s; }
+        .hook-card:nth-child(7) { animation-delay: 0.6s; }
+        .hook-card:nth-child(8) { animation-delay: 0.7s; }
+        .hook-card:nth-child(9) { animation-delay: 0.8s; }
+        .hook-card:nth-child(10) { animation-delay: 0.9s; }
+        .hook-card:nth-child(11) { animation-delay: 1.0s; }
+        .hook-card:nth-child(12) { animation-delay: 1.1s; }
+        .hook-card:nth-child(13) { animation-delay: 1.2s; }
+        .hook-card:nth-child(14) { animation-delay: 1.3s; }
+        .hook-card:nth-child(15) { animation-delay: 1.4s; }
+        .hook-card:nth-child(16) { animation-delay: 1.5s; }
+
+        /* Hook card glow effects */
+        .hook-card-glow {
+            position: absolute;
+            inset: -2px;
+            border-radius: 16px;
+            opacity: 0;
+            transition: opacity 0.6s ease;
+            filter: blur(12px);
+            z-index: -1;
+        }
+
+        .hook-card:hover .hook-card-glow {
+            opacity: 0.5;
+        }
+
+        /* Back to IDE button hover effect */
+        .back-to-ide-btn:hover {
+            background: rgba(6, 182, 212, 0.1) !important;
+            border-color: rgba(6, 182, 212, 0.5) !important;
+            box-shadow: 0 0 30px rgba(6, 182, 212, 0.4) !important;
+            transform: translateX(-2px);
+        }
+
+        /* AI Hooks Hero Section */
+        .hooks-hero-section {
+            position: relative;
+            padding: 100px 0 60px;
+            margin: -2rem -2rem 2rem -2rem;
+            overflow: hidden;
+            background: linear-gradient(180deg, #0a0a0a 0%, #050505 100%);
+            border-bottom: 1px solid rgba(6, 182, 212, 0.2);
+        }
+
+        /* Electric Gradient Mesh Background for Hooks */
+        .hooks-hero-section::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: 
+                radial-gradient(circle at 20% 50%, rgba(6, 182, 212, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(0, 255, 255, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 40% 20%, rgba(59, 130, 246, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 90% 10%, rgba(0, 191, 255, 0.1) 0%, transparent 50%);
+            animation: gradient-shift 20s ease infinite;
+            pointer-events: none;
+        }
+
+        @keyframes gradient-shift {
+            0%, 100% { transform: rotate(0deg) scale(1); }
+            25% { transform: rotate(45deg) scale(1.1); }
+            50% { transform: rotate(90deg) scale(1); }
+            75% { transform: rotate(135deg) scale(1.1); }
+        }
+
+        .hooks-hero-section .hero-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+            position: relative;
+            z-index: 2;
+        }
+
+        .hooks-hero-section .hero-header {
+            text-align: center;
+            margin-bottom: 60px;
+            animation: fadeInUp 0.8s ease-out;
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .hooks-hero-section .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: linear-gradient(135deg, rgba(6, 182, 212, 0.2), rgba(0, 255, 255, 0.2));
+            border: 1px solid rgba(6, 182, 212, 0.3);
+            padding: 8px 20px;
+            border-radius: 30px;
+            font-size: 14px;
+            font-weight: 600;
+            color: #06b6d4;
+            margin-bottom: 20px;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+        }
+
+        .hooks-hero-section .hero-title {
+            font-size: 56px;
+            font-weight: 800;
+            margin-bottom: 16px;
+            background: linear-gradient(135deg, #06b6d4 0%, #00ffff 50%, #3b82f6 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            line-height: 1.2;
+            letter-spacing: -1px;
+        }
+
+        .hooks-hero-section .hero-subtitle {
+            font-size: 20px;
+            color: rgba(255, 255, 255, 0.7);
+            max-width: 600px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+
+        /* Feature Cards Container */
+        .hooks-hero-section .feature-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 30px;
+            margin-top: 60px;
+        }
+
+        /* Hooks Hero Cards with Electric Theme */
+        .hooks-hero-section .feature-card {
+            background: rgba(10, 20, 30, 0.4);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(6, 182, 212, 0.2);
+            border-radius: 20px;
+            padding: 32px;
+            position: relative;
+            overflow: hidden;
+            transform-style: preserve-3d;
+            animation: float-card 6s ease-in-out infinite;
+            animation-delay: var(--delay);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        @keyframes float-card {
+            0%, 100% { transform: translateY(0) translateZ(0); }
+            50% { transform: translateY(-10px) translateZ(10px); }
+        }
+
+        .hooks-hero-section .feature-card:hover {
+            transform: translateY(-10px) rotateX(2deg) rotateY(2deg);
+            border-color: rgba(0, 255, 255, 0.4);
+            box-shadow: 
+                0 20px 40px rgba(6, 182, 212, 0.3),
+                0 30px 60px rgba(0, 255, 255, 0.2),
+                inset 0 0 30px rgba(6, 182, 212, 0.1);
+        }
+
+        .hooks-hero-section .feature-icon {
+            width: 56px;
+            height: 56px;
+            background: linear-gradient(135deg, #06b6d4, #00ffff);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            margin-bottom: 20px;
+            box-shadow: 0 8px 20px rgba(6, 182, 212, 0.3);
+        }
+
+        .hooks-hero-section .feature-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: #ffffff;
+            margin-bottom: 12px;
+        }
+
+        .hooks-hero-section .feature-description {
+            color: rgba(255, 255, 255, 0.7);
+            line-height: 1.6;
+            font-size: 15px;
+            margin-bottom: 20px;
+        }
+
+        .hooks-hero-section .feature-stats {
+            display: flex;
+            gap: 20px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .hooks-hero-section .stat-item {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .hooks-hero-section .stat-value {
+            font-size: 24px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #06b6d4, #00ffff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hooks-hero-section .stat-label {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.5);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Back to IDE Button -->
+        <a href="/ide" class="back-to-ide-btn" style="position: fixed; top: 20px; left: 20px; z-index: 1000; background: rgba(10, 10, 10, 0.8); backdrop-filter: blur(10px); border: 1px solid rgba(6, 182, 212, 0.3); color: #06b6d4; padding: 10px 20px; border-radius: 8px; text-decoration: none; font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 8px; transition: all 0.3s ease; box-shadow: 0 0 20px rgba(6, 182, 212, 0.2);">
+            <i class="fas fa-arrow-left"></i>
+            Back to IDE
+        </a>
+
+        <!-- AI-Powered Hooks Hero Section -->
+        <div class="hooks-hero-section">
+            <div class="hero-container">
+                <div class="hero-header">
+                    <div class="hero-badge">
+                        <span>⚡</span>
+                        <span>Revolutionary Performance</span>
+                    </div>
+                    <h1 class="hero-title">Hybrid Hook System</h1>
+                    <p class="hero-subtitle">Bash + AI architecture delivering instant responses with intelligent delegation when complexity demands it</p>
+                </div>
+                
+                <div class="feature-cards">
+                    <!-- Lightning Performance Card -->
+                    <div class="feature-card" style="--delay: 0s;">
+                        <div class="feature-icon">⚡</div>
+                        <h3 class="feature-title">Instant Response</h3>
+                        <p class="feature-description">Bash triggers execute in ~50ms with intelligent AI delegation only when complexity demands it</p>
+                        <div class="feature-stats">
+                            <div class="stat-item">
+                                <span class="stat-value">50ms</span>
+                                <span class="stat-label">Avg Response</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-value">90%</span>
+                                <span class="stat-label">Faster</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Intelligent Automation Card -->
+                    <div class="feature-card" style="--delay: 0.2s;">
+                        <div class="feature-icon">🧠</div>
+                        <h3 class="feature-title">25 AI Specialists</h3>
+                        <p class="feature-description">Domain-specific agents for commits, security, testing, performance, debugging, and more</p>
+                        <div class="feature-stats">
+                            <div class="stat-item">
+                                <span class="stat-value">25</span>
+                                <span class="stat-label">AI Agents</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-value">30%</span>
+                                <span class="stat-label">AI Usage</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Zero Configuration Card -->
+                    <div class="feature-card" style="--delay: 0.4s;">
+                        <div class="feature-icon">🚀</div>
+                        <h3 class="feature-title">Drop-in Ready</h3>
+                        <p class="feature-description">Works alongside existing hooks with no breaking changes. Progressive enhancement at its finest</p>
+                        <div class="feature-stats">
+                            <div class="stat-item">
+                                <span class="stat-value">0</span>
+                                <span class="stat-label">Config</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-value">100%</span>
+                                <span class="stat-label">Compatible</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Category Filters -->
+        <div class="category-filters" style="display: flex; gap: 12px; margin-bottom: 40px; flex-wrap: wrap; justify-content: center;">
+            <button class="filter-pill active" data-category="all" style="
+                padding: 10px 24px;
+                border-radius: 25px;
+                border: 1px solid rgba(6, 182, 212, 0.3);
+                background: rgba(6, 182, 212, 0.1);
+                color: #06b6d4;
+                font-size: 14px;
+                font-weight: 600;
+                cursor: pointer;
+                transition: all 0.3s ease;
+            ">All Hooks</button>
+            <button class="filter-pill" data-category="essential" style="
+                padding: 10px 24px;
+                border-radius: 25px;
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                background: transparent;
+                color: rgba(255, 255, 255, 0.7);
+                font-size: 14px;
+                font-weight: 600;
+                cursor: pointer;
+                transition: all 0.3s ease;
+            ">Essential</button>
+            <button class="filter-pill" data-category="quality" style="
+                padding: 10px 24px;
+                border-radius: 25px;
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                background: transparent;
+                color: rgba(255, 255, 255, 0.7);
+                font-size: 14px;
+                font-weight: 600;
+                cursor: pointer;
+                transition: all 0.3s ease;
+            ">Code Quality</button>
+            <button class="filter-pill" data-category="git" style="
+                padding: 10px 24px;
+                border-radius: 25px;
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                background: transparent;
+                color: rgba(255, 255, 255, 0.7);
+                font-size: 14px;
+                font-weight: 600;
+                cursor: pointer;
+                transition: all 0.3s ease;
+            ">Git Workflow</button>
+            <button class="filter-pill" data-category="performance" style="
+                padding: 10px 24px;
+                border-radius: 25px;
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                background: transparent;
+                color: rgba(255, 255, 255, 0.7);
+                font-size: 14px;
+                font-weight: 600;
+                cursor: pointer;
+                transition: all 0.3s ease;
+            ">Performance</button>
+            <button class="filter-pill" data-category="ai-powered" style="
+                padding: 10px 24px;
+                border-radius: 25px;
+                border: 1px solid rgba(139, 92, 246, 0.3);
+                background: transparent;
+                color: rgba(255, 255, 255, 0.7);
+                font-size: 14px;
+                font-weight: 600;
+                cursor: pointer;
+                transition: all 0.3s ease;
+            ">AI-Powered</button>
+        </div>
+
+        <!-- Hooks Grid -->
+        <div class="hooks-grid-container" style="max-width: 1400px; margin: 0 auto;">
+            <!-- Hooks Grid -->
+            <div class="hooks-grid" style="
+                display: grid;
+                grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+                gap: 24px;
+                margin-bottom: 40px;
+            ">
+                <!-- Essential Hooks -->
+                <div class="hook-card" data-category="essential" data-hook="format-on-save" style="
+                ">
+                    <div class="hook-card-glow" style="background: linear-gradient(135deg, rgba(6, 182, 212, 0.3), rgba(59, 130, 246, 0.3));"></div>
+                    <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 12px;">
+                        <div style="
+                            width: 48px;
+                            height: 48px;
+                            background: linear-gradient(135deg, rgba(6, 182, 212, 0.2), rgba(59, 130, 246, 0.2));
+                            border-radius: 12px;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            font-size: 24px;
+                        "><i class="fas fa-magic"></i></div>
+                        <h3 style="margin: 0; font-size: 18px; font-weight: 600; color: #ffffff;">Auto-Format</h3>
+                    </div>
+                    <p style="color: rgba(255, 255, 255, 0.7); font-size: 14px; line-height: 1.5; margin: 0 0 16px 0;">Formats code on save using project rules</p>
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 8px; border-top: 1px solid rgba(255, 255, 255, 0.05);">
+                        <span style="
+                            font-size: 11px;
+                            color: rgba(6, 182, 212, 0.7);
+                            font-weight: 700;
+                            letter-spacing: 1.5px;
+                            text-transform: uppercase;
+                        ">Essential</span>
+                        <button class="hook-toggle" data-state="off" style="
+                            padding: 8px 18px;
+                            border-radius: 20px;
+                            border: 1px solid rgba(6, 182, 212, 0.3);
+                            background: rgba(6, 182, 212, 0.05);
+                            color: #06b6d4;
+                            font-size: 13px;
+                            font-weight: 600;
+                            cursor: pointer;
+                            transition: all 0.3s ease;
+                        ">Enable</button>
+                    </div>
+                </div>
+
+                <div class="hook-card" data-category="essential" data-hook="fix-imports" style="
+                ">
+                    <div class="hook-card-glow" style="background: linear-gradient(135deg, rgba(6, 182, 212, 0.3), rgba(59, 130, 246, 0.3));"></div>
+                    <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 12px;">
+                        <div style="
+                            width: 48px;
+                            height: 48px;
+                            background: linear-gradient(135deg, rgba(6, 182, 212, 0.2), rgba(59, 130, 246, 0.2));
+                            border-radius: 12px;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            font-size: 24px;
+                        "><i class="fas fa-link"></i></div>
+                        <h3 style="margin: 0; font-size: 18px; font-weight: 600; color: #ffffff;">Fix Imports</h3>
+                    </div>
+                    <p style="color: rgba(255, 255, 255, 0.7); font-size: 14px; line-height: 1.5; margin: 0 0 16px 0;">Organizes and fixes import statements</p>
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 8px; border-top: 1px solid rgba(255, 255, 255, 0.05);">
+                        <span style="
+                            font-size: 11px;
+                            color: rgba(6, 182, 212, 0.7);
+                            font-weight: 700;
+                            letter-spacing: 1.5px;
+                            text-transform: uppercase;
+                        ">Essential</span>
+                        <button class="hook-toggle" data-state="off" style="
+                            padding: 8px 18px;
+                            border-radius: 20px;
+                            border: 1px solid rgba(6, 182, 212, 0.3);
+                            background: rgba(6, 182, 212, 0.05);
+                            color: #06b6d4;
+                            font-size: 13px;
+                            font-weight: 600;
+                            cursor: pointer;
+                            transition: all 0.3s ease;
+                        ">Enable</button>
+                    </div>
+                </div>
+
+                <div class="hook-card" data-category="essential" data-hook="run-tests" style="
+                ">
+                    <div class="hook-card-glow" style="background: linear-gradient(135deg, rgba(6, 182, 212, 0.3), rgba(59, 130, 246, 0.3));"></div>
+                    <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 12px;">
+                        <div style="
+                            width: 48px;
+                            height: 48px;
+                            background: linear-gradient(135deg, rgba(6, 182, 212, 0.2), rgba(59, 130, 246, 0.2));
+                            border-radius: 12px;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            font-size: 24px;
+                        "><i class="fas fa-check-circle"></i></div>
+                        <h3 style="margin: 0; font-size: 18px; font-weight: 600; color: #ffffff;">Test on Save</h3>
+                    </div>
+                    <p style="color: rgba(255, 255, 255, 0.7); font-size: 14px; line-height: 1.5; margin: 0 0 16px 0;">Runs tests automatically when you save</p>
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 8px; border-top: 1px solid rgba(255, 255, 255, 0.05);">
+                        <span style="
+                            font-size: 11px;
+                            color: rgba(6, 182, 212, 0.7);
+                            font-weight: 700;
+                            letter-spacing: 1.5px;
+                            text-transform: uppercase;
+                        ">Essential</span>
+                        <button class="hook-toggle" data-state="off" style="
+                            padding: 8px 18px;
+                            border-radius: 20px;
+                            border: 1px solid rgba(6, 182, 212, 0.3);
+                            background: rgba(6, 182, 212, 0.05);
+                            color: #06b6d4;
+                            font-size: 13px;
+                            font-weight: 600;
+                            cursor: pointer;
+                            transition: all 0.3s ease;
+                        ">Enable</button>
+                    </div>
+                </div>
+
+                <!-- Code Quality Hooks -->
+                <div class="hook-card" data-category="quality" data-hook="lint-check" style="
+                ">
+                    <div class="hook-card-glow" style="background: linear-gradient(135deg, rgba(139, 92, 246, 0.3), rgba(168, 85, 247, 0.3));"></div>
+                    <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 12px;">
+                        <div style="
+                            width: 48px;
+                            height: 48px;
+                            background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(168, 85, 247, 0.2));
+                            border-radius: 12px;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            font-size: 24px;
+                        "><i class="fas fa-search"></i></div>
+                        <h3 style="margin: 0; font-size: 18px; font-weight: 600; color: #ffffff;">Lint Code</h3>
+                    </div>
+                    <p style="color: rgba(255, 255, 255, 0.7); font-size: 14px; line-height: 1.5; margin: 0 0 16px 0;">Catches errors and enforces style rules</p>
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 8px; border-top: 1px solid rgba(255, 255, 255, 0.05);">
+                        <span style="
+                            font-size: 11px;
+                            color: rgba(139, 92, 246, 0.7);
+                            font-weight: 700;
+                            letter-spacing: 1.5px;
+                            text-transform: uppercase;
+                        ">Quality</span>
+                        <button class="hook-toggle" data-state="off" style="
+                            padding: 8px 18px;
+                            border-radius: 20px;
+                            border: 1px solid rgba(139, 92, 246, 0.3);
+                            background: rgba(139, 92, 246, 0.05);
+                            color: #8b5cf6;
+                            font-size: 13px;
+                            font-weight: 600;
+                            cursor: pointer;
+                            transition: all 0.3s ease;
+                        ">Enable</button>
+                    </div>
+                </div>
+
+                <div class="hook-card" data-category="quality" data-hook="type-check" style="
+                ">
+                    <div class="hook-card-glow" style="background: linear-gradient(135deg, rgba(139, 92, 246, 0.3), rgba(168, 85, 247, 0.3));"></div>
+                    <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 12px;">
+                        <div style="
+                            width: 48px;
+                            height: 48px;
+                            background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(168, 85, 247, 0.2));
+                            border-radius: 12px;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            font-size: 24px;
+                        "><i class="fas fa-shield-alt"></i></div>
+                        <h3 style="margin: 0; font-size: 18px; font-weight: 600; color: #ffffff;">Type Check</h3>
+                    </div>
+                    <p style="color: rgba(255, 255, 255, 0.7); font-size: 14px; line-height: 1.5; margin: 0 0 16px 0;">Validates TypeScript types on save</p>
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 8px; border-top: 1px solid rgba(255, 255, 255, 0.05);">
+                        <span style="
+                            font-size: 11px;
+                            color: rgba(139, 92, 246, 0.7);
+                            font-weight: 700;
+                            letter-spacing: 1.5px;
+                            text-transform: uppercase;
+                        ">Quality</span>
+                        <button class="hook-toggle" data-state="off" style="
+                            padding: 8px 18px;
+                            border-radius: 20px;
+                            border: 1px solid rgba(139, 92, 246, 0.3);
+                            background: rgba(139, 92, 246, 0.05);
+                            color: #8b5cf6;
+                            font-size: 13px;
+                            font-weight: 600;
+                            cursor: pointer;
+                            transition: all 0.3s ease;
+                        ">Enable</button>
+                    </div>
+                </div>
+
+                <div class="hook-card" data-category="quality" data-hook="security-scan" style="
+                ">
+                    <div class="hook-card-glow" style="background: linear-gradient(135deg, rgba(139, 92, 246, 0.3), rgba(168, 85, 247, 0.3));"></div>
+                    <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 12px;">
+                        <div style="
+                            width: 48px;
+                            height: 48px;
+                            background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(168, 85, 247, 0.2));
+                            border-radius: 12px;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            font-size: 24px;
+                        "><i class="fas fa-lock"></i></div>
+                        <h3 style="margin: 0; font-size: 18px; font-weight: 600; color: #ffffff;">Security Scan</h3>
+                    </div>
+                    <p style="color: rgba(255, 255, 255, 0.7); font-size: 14px; line-height: 1.5; margin: 0 0 16px 0;">Scans for vulnerabilities in dependencies</p>
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 8px; border-top: 1px solid rgba(255, 255, 255, 0.05);">
+                        <span style="
+                            font-size: 11px;
+                            color: rgba(139, 92, 246, 0.7);
+                            font-weight: 700;
+                            letter-spacing: 1.5px;
+                            text-transform: uppercase;
+                        ">Quality</span>
+                        <button class="hook-toggle" data-state="off" style="
+                            padding: 8px 18px;
+                            border-radius: 20px;
+                            border: 1px solid rgba(139, 92, 246, 0.3);
+                            background: rgba(139, 92, 246, 0.05);
+                            color: #8b5cf6;
+                            font-size: 13px;
+                            font-weight: 600;
+                            cursor: pointer;
+                            transition: all 0.3s ease;
+                        ">Enable</button>
+                    </div>
+                </div>
+
+                <!-- Git Workflow Hooks -->
+                <div class="hook-card" data-category="git" data-hook="commit-message" style="
+                ">
+                    <div class="hook-card-glow" style="background: linear-gradient(135deg, rgba(245, 158, 11, 0.3), rgba(251, 191, 36, 0.3));"></div>
+                    <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 12px;">
+                        <div style="
+                            width: 48px;
+                            height: 48px;
+                            background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(251, 191, 36, 0.2));
+                            border-radius: 12px;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            font-size: 24px;
+                        "><i class="fas fa-pen"></i></div>
+                        <h3 style="margin: 0; font-size: 18px; font-weight: 600; color: #ffffff;">Smart Commits</h3>
+                    </div>
+                    <p style="color: rgba(255, 255, 255, 0.7); font-size: 14px; line-height: 1.5; margin: 0 0 16px 0;">Improves commit messages automatically</p>
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 8px; border-top: 1px solid rgba(255, 255, 255, 0.05);">
+                        <span style="
+                            font-size: 11px;
+                            color: rgba(245, 158, 11, 0.7);
+                            font-weight: 700;
+                            letter-spacing: 1.5px;
+                            text-transform: uppercase;
+                        ">Git</span>
+                        <button class="hook-toggle" data-state="off" style="
+                            padding: 8px 18px;
+                            border-radius: 20px;
+                            border: 1px solid rgba(245, 158, 11, 0.3);
+                            background: rgba(245, 158, 11, 0.05);
+                            color: #f59e0b;
+                            font-size: 13px;
+                            font-weight: 600;
+                            cursor: pointer;
+                            transition: all 0.3s ease;
+                        ">Enable</button>
+                    </div>
+                </div>
+
+                <div class="hook-card" data-category="git" data-hook="branch-naming" style="
+                ">
+                    <div class="hook-card-glow" style="background: linear-gradient(135deg, rgba(245, 158, 11, 0.3), rgba(251, 191, 36, 0.3));"></div>
+                    <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 12px;">
+                        <div style="
+                            width: 48px;
+                            height: 48px;
+                            background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(251, 191, 36, 0.2));
+                            border-radius: 12px;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            font-size: 24px;
+                        "><i class="fas fa-code-branch"></i></div>
+                        <h3 style="margin: 0; font-size: 18px; font-weight: 600; color: #ffffff;">Branch Names</h3>
+                    </div>
+                    <p style="color: rgba(255, 255, 255, 0.7); font-size: 14px; line-height: 1.5; margin: 0 0 16px 0;">Enforces naming conventions for branches</p>
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 8px; border-top: 1px solid rgba(255, 255, 255, 0.05);">
+                        <span style="
+                            font-size: 11px;
+                            color: rgba(245, 158, 11, 0.7);
+                            font-weight: 700;
+                            letter-spacing: 1.5px;
+                            text-transform: uppercase;
+                        ">Git</span>
+                        <button class="hook-toggle" data-state="off" style="
+                            padding: 8px 18px;
+                            border-radius: 20px;
+                            border: 1px solid rgba(245, 158, 11, 0.3);
+                            background: rgba(245, 158, 11, 0.05);
+                            color: #f59e0b;
+                            font-size: 13px;
+                            font-weight: 600;
+                            cursor: pointer;
+                            transition: all 0.3s ease;
+                        ">Enable</button>
+                    </div>
+                </div>
+
+                <div class="hook-card" data-category="git" data-hook="prevent-secrets" style="
+                ">
+                    <div class="hook-card-glow" style="background: linear-gradient(135deg, rgba(245, 158, 11, 0.3), rgba(251, 191, 36, 0.3));"></div>
+                    <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 12px;">
+                        <div style="
+                            width: 48px;
+                            height: 48px;
+                            background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(251, 191, 36, 0.2));
+                            border-radius: 12px;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            font-size: 24px;
+                        "><i class="fas fa-key"></i></div>
+                        <h3 style="margin: 0; font-size: 18px; font-weight: 600; color: #ffffff;">Protect Secrets</h3>
+                    </div>
+                    <p style="color: rgba(255, 255, 255, 0.7); font-size: 14px; line-height: 1.5; margin: 0 0 16px 0;">Blocks commits with exposed API keys</p>
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 8px; border-top: 1px solid rgba(255, 255, 255, 0.05);">
+                        <span style="
+                            font-size: 11px;
+                            color: rgba(245, 158, 11, 0.7);
+                            font-weight: 700;
+                            letter-spacing: 1.5px;
+                            text-transform: uppercase;
+                        ">Git</span>
+                        <button class="hook-toggle" data-state="off" style="
+                            padding: 8px 18px;
+                            border-radius: 20px;
+                            border: 1px solid rgba(245, 158, 11, 0.3);
+                            background: rgba(245, 158, 11, 0.05);
+                            color: #f59e0b;
+                            font-size: 13px;
+                            font-weight: 600;
+                            cursor: pointer;
+                            transition: all 0.3s ease;
+                        ">Enable</button>
+                    </div>
+                </div>
+
+                <!-- Performance Hooks -->
+                <div class="hook-card" data-category="performance" data-hook="bundle-analysis" style="
+                ">
+                    <div class="hook-card-glow" style="background: linear-gradient(135deg, rgba(34, 197, 94, 0.3), rgba(16, 185, 129, 0.3));"></div>
+                    <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 12px;">
+                        <div style="
+                            width: 48px;
+                            height: 48px;
+                            background: linear-gradient(135deg, rgba(34, 197, 94, 0.2), rgba(16, 185, 129, 0.2));
+                            border-radius: 12px;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            font-size: 24px;
+                        "><i class="fas fa-chart-bar"></i></div>
+                        <h3 style="margin: 0; font-size: 18px; font-weight: 600; color: #ffffff;">Bundle Check</h3>
+                    </div>
+                    <p style="color: rgba(255, 255, 255, 0.7); font-size: 14px; line-height: 1.5; margin: 0 0 16px 0;">Monitors and alerts on bundle size</p>
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 8px; border-top: 1px solid rgba(255, 255, 255, 0.05);">
+                        <span style="
+                            font-size: 11px;
+                            color: rgba(34, 197, 94, 0.7);
+                            font-weight: 700;
+                            letter-spacing: 1.5px;
+                            text-transform: uppercase;
+                        ">Performance</span>
+                        <button class="hook-toggle" data-state="off" style="
+                            padding: 8px 18px;
+                            border-radius: 20px;
+                            border: 1px solid rgba(34, 197, 94, 0.3);
+                            background: rgba(34, 197, 94, 0.05);
+                            color: #22c55e;
+                            font-size: 13px;
+                            font-weight: 600;
+                            cursor: pointer;
+                            transition: all 0.3s ease;
+                        ">Enable</button>
+                    </div>
+                </div>
+
+                <div class="hook-card" data-category="performance" data-hook="image-optimization" style="
+                ">
+                    <div class="hook-card-glow" style="background: linear-gradient(135deg, rgba(34, 197, 94, 0.3), rgba(16, 185, 129, 0.3));"></div>
+                    <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 12px;">
+                        <div style="
+                            width: 48px;
+                            height: 48px;
+                            background: linear-gradient(135deg, rgba(34, 197, 94, 0.2), rgba(16, 185, 129, 0.2));
+                            border-radius: 12px;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            font-size: 24px;
+                        "><i class="fas fa-image"></i></div>
+                        <h3 style="margin: 0; font-size: 18px; font-weight: 600; color: #ffffff;">Image Optimizer</h3>
+                    </div>
+                    <p style="color: rgba(255, 255, 255, 0.7); font-size: 14px; line-height: 1.5; margin: 0 0 16px 0;">Auto-compresses images on commit</p>
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 8px; border-top: 1px solid rgba(255, 255, 255, 0.05);">
+                        <span style="
+                            font-size: 11px;
+                            color: rgba(34, 197, 94, 0.7);
+                            font-weight: 700;
+                            letter-spacing: 1.5px;
+                            text-transform: uppercase;
+                        ">Performance</span>
+                        <button class="hook-toggle" data-state="off" style="
+                            padding: 8px 18px;
+                            border-radius: 20px;
+                            border: 1px solid rgba(34, 197, 94, 0.3);
+                            background: rgba(34, 197, 94, 0.05);
+                            color: #22c55e;
+                            font-size: 13px;
+                            font-weight: 600;
+                            cursor: pointer;
+                            transition: all 0.3s ease;
+                        ">Enable</button>
+                    </div>
+                </div>
+
+                <!-- AI-Powered Hooks -->
+                <div class="hook-card" data-category="ai-powered" data-hook="ai-commit" style="
+                    background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(6, 182, 212, 0.1));
+                    backdrop-filter: blur(10px);
+                    border: 1px solid rgba(139, 92, 246, 0.3);
+                    border-radius: 16px;
+                    padding: 24px;
+                    cursor: pointer;
+                    transition: all 0.3s ease;
+                    position: relative;
+                    overflow: hidden;
+                ">
+                    <div class="hook-card-glow" style="background: linear-gradient(135deg, rgba(139, 92, 246, 0.3), rgba(6, 182, 212, 0.3));"></div>
+                    <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 12px;">
+                        <div style="
+                            width: 48px;
+                            height: 48px;
+                            background: linear-gradient(135deg, #8b5cf6, #06b6d4);
+                            border-radius: 12px;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            font-size: 24px;
+                            color: white;
+                        "><i class="fas fa-bolt"></i></div>
+                        <h3 style="margin: 0; font-size: 18px; font-weight: 600; color: #ffffff;">AI Commits</h3>
+                    </div>
+                    <p style="color: rgba(255, 255, 255, 0.7); font-size: 14px; line-height: 1.5; margin: 0 0 16px 0;">Instant smart commit messages</p>
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 8px; border-top: 1px solid rgba(255, 255, 255, 0.05);">
+                        <span style="
+                            font-size: 11px;
+                            background: linear-gradient(135deg, #8b5cf6, #06b6d4);
+                            -webkit-background-clip: text;
+                            -webkit-text-fill-color: transparent;
+                            background-clip: text;
+                            font-weight: 700;
+                            letter-spacing: 1.5px;
+                            text-transform: uppercase;
+                        ">AI-Powered</span>
+                        <button class="hook-toggle" data-state="off" style="
+                            padding: 8px 18px;
+                            border-radius: 20px;
+                            background: linear-gradient(135deg, rgba(139, 92, 246, 0.15), rgba(6, 182, 212, 0.15));
+                            border: 1px solid rgba(139, 92, 246, 0.3);
+                            color: #8b5cf6;
+                            font-size: 13px;
+                            font-weight: 600;
+                            cursor: pointer;
+                            transition: all 0.3s ease;
+                        ">Enable</button>
+                    </div>
+                </div>
+
+                <div class="hook-card" data-category="ai-powered" data-hook="ai-debug" style="
+                    background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(6, 182, 212, 0.1));
+                    backdrop-filter: blur(10px);
+                    border: 1px solid rgba(139, 92, 246, 0.3);
+                    border-radius: 16px;
+                    padding: 24px;
+                    cursor: pointer;
+                    transition: all 0.3s ease;
+                    position: relative;
+                    overflow: hidden;
+                ">
+                    <div class="hook-card-glow" style="background: linear-gradient(135deg, rgba(139, 92, 246, 0.3), rgba(6, 182, 212, 0.3));"></div>
+                    <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 12px;">
+                        <div style="
+                            width: 48px;
+                            height: 48px;
+                            background: linear-gradient(135deg, #8b5cf6, #06b6d4);
+                            border-radius: 12px;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            font-size: 24px;
+                            color: white;
+                        "><i class="fas fa-brain"></i></div>
+                        <h3 style="margin: 0; font-size: 18px; font-weight: 600; color: #ffffff;">AI Debug</h3>
+                    </div>
+                    <p style="color: rgba(255, 255, 255, 0.7); font-size: 14px; line-height: 1.5; margin: 0 0 16px 0;">Explains errors with instant fixes</p>
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 8px; border-top: 1px solid rgba(255, 255, 255, 0.05);">
+                        <span style="
+                            font-size: 11px;
+                            background: linear-gradient(135deg, #8b5cf6, #06b6d4);
+                            -webkit-background-clip: text;
+                            -webkit-text-fill-color: transparent;
+                            background-clip: text;
+                            font-weight: 700;
+                            letter-spacing: 1.5px;
+                            text-transform: uppercase;
+                        ">AI-Powered</span>
+                        <button class="hook-toggle" data-state="off" style="
+                            padding: 8px 18px;
+                            border-radius: 20px;
+                            background: linear-gradient(135deg, rgba(139, 92, 246, 0.15), rgba(6, 182, 212, 0.15));
+                            border: 1px solid rgba(139, 92, 246, 0.3);
+                            color: #8b5cf6;
+                            font-size: 13px;
+                            font-weight: 600;
+                            cursor: pointer;
+                            transition: all 0.3s ease;
+                        ">Enable</button>
+                    </div>
+                </div>
+
+                <div class="hook-card" data-category="ai-powered" data-hook="ai-security" style="
+                    background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(6, 182, 212, 0.1));
+                    backdrop-filter: blur(10px);
+                    border: 1px solid rgba(139, 92, 246, 0.3);
+                    border-radius: 16px;
+                    padding: 24px;
+                    cursor: pointer;
+                    transition: all 0.3s ease;
+                    position: relative;
+                    overflow: hidden;
+                ">
+                    <div class="hook-card-glow" style="background: linear-gradient(135deg, rgba(139, 92, 246, 0.3), rgba(6, 182, 212, 0.3));"></div>
+                    <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 12px;">
+                        <div style="
+                            width: 48px;
+                            height: 48px;
+                            background: linear-gradient(135deg, #8b5cf6, #06b6d4);
+                            border-radius: 12px;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            font-size: 24px;
+                            color: white;
+                        "><i class="fas fa-key"></i></div>
+                        <h3 style="margin: 0; font-size: 18px; font-weight: 600; color: #ffffff;">AI Security</h3>
+                    </div>
+                    <p style="color: rgba(255, 255, 255, 0.7); font-size: 14px; line-height: 1.5; margin: 0 0 16px 0;">AI-powered secret detection</p>
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 8px; border-top: 1px solid rgba(255, 255, 255, 0.05);">
+                        <span style="
+                            font-size: 11px;
+                            background: linear-gradient(135deg, #8b5cf6, #06b6d4);
+                            -webkit-background-clip: text;
+                            -webkit-text-fill-color: transparent;
+                            background-clip: text;
+                            font-weight: 700;
+                            letter-spacing: 1.5px;
+                            text-transform: uppercase;
+                        ">AI-Powered</span>
+                        <button class="hook-toggle" data-state="off" style="
+                            padding: 8px 18px;
+                            border-radius: 20px;
+                            background: linear-gradient(135deg, rgba(139, 92, 246, 0.15), rgba(6, 182, 212, 0.15));
+                            border: 1px solid rgba(139, 92, 246, 0.3);
+                            color: #8b5cf6;
+                            font-size: 13px;
+                            font-weight: 600;
+                            cursor: pointer;
+                            transition: all 0.3s ease;
+                        ">Enable</button>
+                    </div>
+                </div>
+
+                <div class="hook-card" data-category="ai-powered" data-hook="ai-performance" style="
+                    background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(6, 182, 212, 0.1));
+                    backdrop-filter: blur(10px);
+                    border: 1px solid rgba(139, 92, 246, 0.3);
+                    border-radius: 16px;
+                    padding: 24px;
+                    cursor: pointer;
+                    transition: all 0.3s ease;
+                    position: relative;
+                    overflow: hidden;
+                ">
+                    <div class="hook-card-glow" style="background: linear-gradient(135deg, rgba(139, 92, 246, 0.3), rgba(6, 182, 212, 0.3));"></div>
+                    <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 12px;">
+                        <div style="
+                            width: 48px;
+                            height: 48px;
+                            background: linear-gradient(135deg, #8b5cf6, #06b6d4);
+                            border-radius: 12px;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            font-size: 24px;
+                            color: white;
+                        "><i class="fas fa-rocket"></i></div>
+                        <h3 style="margin: 0; font-size: 18px; font-weight: 600; color: #ffffff;">AI Performance</h3>
+                    </div>
+                    <p style="color: rgba(255, 255, 255, 0.7); font-size: 14px; line-height: 1.5; margin: 0 0 16px 0;">Smart performance optimization</p>
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 8px; border-top: 1px solid rgba(255, 255, 255, 0.05);">
+                        <span style="
+                            font-size: 11px;
+                            background: linear-gradient(135deg, #8b5cf6, #06b6d4);
+                            -webkit-background-clip: text;
+                            -webkit-text-fill-color: transparent;
+                            background-clip: text;
+                            font-weight: 700;
+                            letter-spacing: 1.5px;
+                            text-transform: uppercase;
+                        ">AI-Powered</span>
+                        <button class="hook-toggle" data-state="off" style="
+                            padding: 8px 18px;
+                            border-radius: 20px;
+                            background: linear-gradient(135deg, rgba(139, 92, 246, 0.15), rgba(6, 182, 212, 0.15));
+                            border: 1px solid rgba(139, 92, 246, 0.3);
+                            color: #8b5cf6;
+                            font-size: 13px;
+                            font-weight: 600;
+                            cursor: pointer;
+                            transition: all 0.3s ease;
+                        ">Enable</button>
+                    </div>
+                </div>
+
+                <div class="hook-card" data-category="ai-powered" data-hook="ai-test" style="
+                    background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(6, 182, 212, 0.1));
+                    backdrop-filter: blur(10px);
+                    border: 1px solid rgba(139, 92, 246, 0.3);
+                    border-radius: 16px;
+                    padding: 24px;
+                    cursor: pointer;
+                    transition: all 0.3s ease;
+                    position: relative;
+                    overflow: hidden;
+                ">
+                    <div class="hook-card-glow" style="background: linear-gradient(135deg, rgba(139, 92, 246, 0.3), rgba(6, 182, 212, 0.3));"></div>
+                    <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 12px;">
+                        <div style="
+                            width: 48px;
+                            height: 48px;
+                            background: linear-gradient(135deg, #8b5cf6, #06b6d4);
+                            border-radius: 12px;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            font-size: 24px;
+                            color: white;
+                        "><i class="fas fa-vial"></i></div>
+                        <h3 style="margin: 0; font-size: 18px; font-weight: 600; color: #ffffff;">AI Testing</h3>
+                    </div>
+                    <p style="color: rgba(255, 255, 255, 0.7); font-size: 14px; line-height: 1.5; margin: 0 0 16px 0;">Intelligently runs affected tests</p>
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 8px; border-top: 1px solid rgba(255, 255, 255, 0.05);">
+                        <span style="
+                            font-size: 11px;
+                            background: linear-gradient(135deg, #8b5cf6, #06b6d4);
+                            -webkit-background-clip: text;
+                            -webkit-text-fill-color: transparent;
+                            background-clip: text;
+                            font-weight: 700;
+                            letter-spacing: 1.5px;
+                            text-transform: uppercase;
+                        ">AI-Powered</span>
+                        <button class="hook-toggle" data-state="off" style="
+                            padding: 8px 18px;
+                            border-radius: 20px;
+                            background: linear-gradient(135deg, rgba(139, 92, 246, 0.15), rgba(6, 182, 212, 0.15));
+                            border: 1px solid rgba(139, 92, 246, 0.3);
+                            color: #8b5cf6;
+                            font-size: 13px;
+                            font-weight: 600;
+                            cursor: pointer;
+                            transition: all 0.3s ease;
+                        ">Enable</button>
+                    </div>
+                </div>
+                
+                <!-- Sound Alert Hook - Added for Claude Code task completion -->
+                <div class="hook-card" data-category="ai-powered" data-hook="sound-alert" style="
+                    background: linear-gradient(135deg, rgba(16, 16, 16, 0.9), rgba(24, 24, 24, 0.9));
+                    border: 1px solid rgba(139, 92, 246, 0.3);
+                    border-radius: 16px;
+                    padding: 24px;
+                    position: relative;
+                    overflow: hidden;
+                    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+                    cursor: pointer;
+                    transform-style: preserve-3d;
+                ">
+                    <!-- Gradient overlay for depth -->
+                    <div style="
+                        position: absolute;
+                        top: 0;
+                        left: 0;
+                        right: 0;
+                        bottom: 0;
+                        background: radial-gradient(circle at var(--mouse-x, 50%) var(--mouse-y, 50%), 
+                            rgba(139, 92, 246, 0.15) 0%, 
+                            transparent 50%);
+                        pointer-events: none;
+                        transition: opacity 0.3s ease;
+                        opacity: 0;
+                    " class="hover-glow"></div>
+                    
+                    <!-- Hook content -->
+                    <div style="position: relative; z-index: 1;">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px;">
+                            <h3 style="
+                                font-size: 18px;
+                                font-weight: 600;
+                                margin: 0;
+                                background: linear-gradient(135deg, #8b5cf6, #06b6d4);
+                                -webkit-background-clip: text;
+                                -webkit-text-fill-color: transparent;
+                                background-clip: text;
+                            ">🔔 Sound Alert on Task Complete</h3>
+                            <span style="
+                                background: linear-gradient(135deg, #8b5cf6, #06b6d4);
+                                padding: 4px 12px;
+                                border-radius: 20px;
+                                font-size: 11px;
+                                font-weight: 600;
+                                color: white;
+                                text-transform: uppercase;
+                            ">AI-Powered</span>
+                        </div>
+                        
+                        <p style="
+                            color: rgba(255, 255, 255, 0.7);
+                            font-size: 14px;
+                            line-height: 1.6;
+                            margin-bottom: 20px;
+                        ">
+                            Plays a notification sound when Claude Code completes a task. Perfect for long-running operations - work on something else and get alerted when your AI assistant finishes.
+                        </p>
+                        
+                        <!-- Features -->
+                        <div style="
+                            display: grid;
+                            grid-template-columns: repeat(2, 1fr);
+                            gap: 12px;
+                            margin-bottom: 20px;
+                        ">
+                            <div style="
+                                display: flex;
+                                align-items: center;
+                                gap: 8px;
+                                color: rgba(255, 255, 255, 0.6);
+                                font-size: 13px;
+                            ">
+                                <span style="color: #06b6d4;">✓</span>
+                                Custom sound selection
+                            </div>
+                            <div style="
+                                display: flex;
+                                align-items: center;
+                                gap: 8px;
+                                color: rgba(255, 255, 255, 0.6);
+                                font-size: 13px;
+                            ">
+                                <span style="color: #06b6d4;">✓</span>
+                                Volume control
+                            </div>
+                            <div style="
+                                display: flex;
+                                align-items: center;
+                                gap: 8px;
+                                color: rgba(255, 255, 255, 0.6);
+                                font-size: 13px;
+                            ">
+                                <span style="color: #06b6d4;">✓</span>
+                                Smart detection
+                            </div>
+                            <div style="
+                                display: flex;
+                                align-items: center;
+                                gap: 8px;
+                                color: rgba(255, 255, 255, 0.6);
+                                font-size: 13px;
+                            ">
+                                <span style="color: #06b6d4;">✓</span>
+                                Task duration filter
+                            </div>
+                        </div>
+                        
+                        <!-- Status indicator -->
+                        <div style="
+                            display: flex;
+                            align-items: center;
+                            gap: 8px;
+                            margin-bottom: 20px;
+                            padding: 8px 12px;
+                            background: rgba(255, 255, 255, 0.03);
+                            border-radius: 8px;
+                            border: 1px solid rgba(255, 255, 255, 0.05);
+                        ">
+                            <div style="
+                                width: 8px;
+                                height: 8px;
+                                background: #ef4444;
+                                border-radius: 50%;
+                                animation: pulse 2s ease-in-out infinite;
+                            "></div>
+                            <span style="
+                                color: rgba(255, 255, 255, 0.5);
+                                font-size: 12px;
+                            ">Currently Disabled</span>
+                        </div>
+                        
+                        <!-- Action buttons -->
+                        <div style="display: flex; gap: 8px;">
+                            <button onclick="enableHook('sound-alert')" style="
+                                flex: 1;
+                                padding: 10px 16px;
+                                background: linear-gradient(135deg, #8b5cf6, #06b6d4);
+                                border: none;
+                                border-radius: 8px;
+                                color: white;
+                                font-size: 14px;
+                                font-weight: 600;
+                                cursor: pointer;
+                                transition: all 0.3s ease;
+                            ">Enable</button>
+                            <button onclick="configureHook('sound-alert')" style="
+                                padding: 10px 16px;
+                                background: rgba(255, 255, 255, 0.05);
+                                border: 1px solid rgba(255, 255, 255, 0.1);
+                                border-radius: 8px;
+                                color: rgba(255, 255, 255, 0.7);
+                                font-size: 14px;
+                                font-weight: 600;
+                                cursor: pointer;
+                                transition: all 0.3s ease;
+                            ">Configure</button>
+                            <button onclick="testSoundAlert()" style="
+                                padding: 10px 16px;
+                                background: rgba(255, 255, 255, 0.05);
+                                border: 1px solid rgba(255, 255, 255, 0.1);
+                                border-radius: 8px;
+                                color: rgba(255, 255, 255, 0.7);
+                                font-size: 14px;
+                                font-weight: 600;
+                                cursor: pointer;
+                                transition: all 0.3s ease;
+                            ">Test Sound</button>
+                        </div>
+                    </div>
+                </div>
+        </div>
+    </div>
+
+    <script>
+        // Category filter functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const filterPills = document.querySelectorAll('.filter-pill');
+            const hookCards = document.querySelectorAll('.hook-card');
+            
+            // Add hover effects to filter pills
+            filterPills.forEach(pill => {
+                pill.addEventListener('mouseenter', function() {
+                    if (!this.classList.contains('active')) {
+                        this.style.background = 'rgba(255, 255, 255, 0.05)';
+                        this.style.borderColor = 'rgba(255, 255, 255, 0.2)';
+                    }
+                });
+                
+                pill.addEventListener('mouseleave', function() {
+                    if (!this.classList.contains('active')) {
+                        this.style.background = 'transparent';
+                        this.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+                    }
+                });
+            });
+            
+            filterPills.forEach(pill => {
+                pill.addEventListener('click', function() {
+                    // Update active state
+                    filterPills.forEach(p => {
+                        p.classList.remove('active');
+                        p.style.background = 'transparent';
+                        p.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+                        p.style.color = 'rgba(255, 255, 255, 0.7)';
+                    });
+                    
+                    this.classList.add('active');
+                    if (this.dataset.category === 'ai-powered') {
+                        this.style.background = 'linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(6, 182, 212, 0.2))';
+                        this.style.borderColor = 'rgba(139, 92, 246, 0.5)';
+                        this.style.color = '#8b5cf6';
+                    } else {
+                        this.style.background = 'rgba(6, 182, 212, 0.1)';
+                        this.style.borderColor = 'rgba(6, 182, 212, 0.3)';
+                        this.style.color = '#06b6d4';
+                    }
+                    
+                    // Filter cards
+                    const selectedCategory = this.dataset.category;
+                    
+                    hookCards.forEach(card => {
+                        if (selectedCategory === 'all' || card.dataset.category === selectedCategory) {
+                            card.style.display = 'block';
+                        } else {
+                            card.style.display = 'none';
+                        }
+                    });
+                });
+            });
+            
+            // Hook toggle functionality
+            const toggleButtons = document.querySelectorAll('.hook-toggle');
+            
+            toggleButtons.forEach(button => {
+                button.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    
+                    if (this.dataset.state === 'off') {
+                        this.dataset.state = 'on';
+                        this.textContent = 'Enabled';
+                        this.style.background = 'rgba(34, 197, 94, 0.2)';
+                        this.style.borderColor = 'rgba(34, 197, 94, 0.5)';
+                        this.style.color = '#22c55e';
+                    } else {
+                        this.dataset.state = 'off';
+                        this.textContent = 'Enable';
+                        // Reset to original colors based on category
+                        const card = this.closest('.hook-card');
+                        if (card.dataset.category === 'ai-powered') {
+                            this.style.background = 'linear-gradient(135deg, #8b5cf6, #06b6d4)';
+                            this.style.border = 'none';
+                            this.style.color = 'white';
+                        } else {
+                            this.style.background = 'transparent';
+                            this.style.color = '';
+                            this.style.borderColor = '';
+                        }
+                    }
+                });
+            });
+            
+            // 3D Card Effects with Mouse Tracking
+            hookCards.forEach(card => {
+                // Mouse move handler for 3D rotation
+                card.addEventListener('mousemove', (e) => {
+                    const rect = card.getBoundingClientRect();
+                    const centerX = rect.left + rect.width / 2;
+                    const centerY = rect.top + rect.height / 2;
+                    
+                    // Calculate rotation based on mouse position
+                    const mouseX = e.clientX - centerX;
+                    const mouseY = e.clientY - centerY;
+                    
+                    // Limit rotation to reasonable values
+                    const rotateX = (mouseY / (rect.height / 2)) * -10; // -10 to 10 degrees
+                    const rotateY = (mouseX / (rect.width / 2)) * 10;   // -10 to 10 degrees
+                    
+                    // Apply transform with perspective
+                    card.style.transform = `
+                        perspective(1500px)
+                        rotateX(${rotateX}deg)
+                        rotateY(${rotateY}deg)
+                        translateY(-8px)
+                        translateZ(20px)
+                    `;
+                    
+                    // Add glow effect
+                    if (card.dataset.category === 'ai-powered') {
+                        card.style.boxShadow = '0 15px 40px rgba(139, 92, 246, 0.4), 0 0 30px rgba(6, 182, 212, 0.2)';
+                    } else if (card.dataset.category === 'essential') {
+                        card.style.boxShadow = '0 15px 40px rgba(6, 182, 212, 0.3), 0 0 20px rgba(59, 130, 246, 0.2)';
+                    } else if (card.dataset.category === 'quality') {
+                        card.style.boxShadow = '0 15px 40px rgba(139, 92, 246, 0.3), 0 0 20px rgba(168, 85, 247, 0.2)';
+                    } else if (card.dataset.category === 'git') {
+                        card.style.boxShadow = '0 15px 40px rgba(245, 158, 11, 0.3), 0 0 20px rgba(251, 191, 36, 0.2)';
+                    } else if (card.dataset.category === 'performance') {
+                        card.style.boxShadow = '0 15px 40px rgba(34, 197, 94, 0.3), 0 0 20px rgba(16, 185, 129, 0.2)';
+                    }
+                });
+                
+                // Enhanced hover effect (non-mouse tracking)
+                card.addEventListener('mouseenter', function() {
+                    // Add border glow
+                    if (this.dataset.category === 'ai-powered') {
+                        this.style.borderColor = 'rgba(139, 92, 246, 0.4)';
+                    } else if (this.dataset.category === 'essential') {
+                        this.style.borderColor = 'rgba(6, 182, 212, 0.4)';
+                    } else if (this.dataset.category === 'quality') {
+                        this.style.borderColor = 'rgba(139, 92, 246, 0.4)';
+                    } else if (this.dataset.category === 'git') {
+                        this.style.borderColor = 'rgba(245, 158, 11, 0.4)';
+                    } else if (this.dataset.category === 'performance') {
+                        this.style.borderColor = 'rgba(34, 197, 94, 0.4)';
+                    }
+                });
+                
+                // Reset on mouse leave
+                card.addEventListener('mouseleave', function() {
+                    this.style.transform = '';
+                    this.style.boxShadow = 'none';
+                    this.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+                });
+            });
+        });
+        
+        // Hook management functions
+        window.enableHook = function(hookName) {
+            console.log(`Enabling hook: ${hookName}`);
+            // TODO: Implement actual hook enabling logic
+            alert(`Hook "${hookName}" would be enabled here`);
+        };
+        
+        window.configureHook = function(hookName) {
+            console.log(`Configuring hook: ${hookName}`);
+            // TODO: Implement configuration modal
+            alert(`Configuration for "${hookName}" would open here`);
+        };
+        
+        window.testHook = function(hookName) {
+            console.log(`Testing hook: ${hookName}`);
+            // TODO: Implement test functionality
+            alert(`Testing "${hookName}" hook`);
+        };
+        
+        // Test Sound Alert function
+        window.testSoundAlert = function() {
+            // Create a simple notification sound using Web Audio API
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            // Create a pleasant notification sound
+            oscillator.frequency.value = 800; // Frequency in Hz
+            oscillator.type = 'sine';
+            
+            // Fade in and out for smooth sound
+            gainNode.gain.setValueAtTime(0, audioContext.currentTime);
+            gainNode.gain.linearRampToValueAtTime(0.3, audioContext.currentTime + 0.1);
+            gainNode.gain.linearRampToValueAtTime(0, audioContext.currentTime + 0.5);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.5);
+            
+            // Show visual feedback
+            const button = event.target;
+            const originalText = button.textContent;
+            button.textContent = '🔊 Playing...';
+            button.style.background = 'linear-gradient(135deg, #10b981, #06b6d4)';
+            
+            setTimeout(() => {
+                button.textContent = originalText;
+                button.style.background = 'rgba(255, 255, 255, 0.05)';
+            }, 500);
+        };
+    </script>
+</body>
+</html>

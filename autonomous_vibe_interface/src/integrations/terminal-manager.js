@@ -644,7 +644,7 @@ class TerminalManager {
             this.localServers.set(projectPath, server);
             
         } catch (error) {
-            console.error(`❌ Failed to start local server:`, error);
+            console.error('❌ Failed to start local server:', error);
         }
     }
     

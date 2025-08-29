@@ -214,7 +214,7 @@ async function spawnClaudeAgent(sessionName, agentId, spec, role, paneIndex) {
         let createPaneCommand;
         if (paneIndex === 0) {
             // First agent uses the main window
-            createPaneCommand = `echo "Using main pane for first agent"`;
+            createPaneCommand = 'echo "Using main pane for first agent"';
         } else {
             // Create new panes for additional agents with equal distribution
             createPaneCommand = `tmux split-window -t ${sessionName}:0 -h -p 50`;
@@ -530,7 +530,7 @@ router.post('/spawn-team', async (req, res) => {
                     if (layoutError) {
                         log(`Failed to balance panes: ${layoutError.message}`);
                     } else {
-                        log(`Panes rebalanced for equal distribution`);
+                        log('Panes rebalanced for equal distribution');
                     }
                 });
             }, 1000);
@@ -895,10 +895,10 @@ router.post('/agent-input/:sessionId/:agentId', async (req, res) => {
     const { sessionId, agentId } = req.params;
     const { input } = req.body;
     
-    console.log(`📥 [Agent Input] Received request:`, { sessionId, agentId, input });
+    console.log('📥 [Agent Input] Received request:', { sessionId, agentId, input });
     
     if (!input || !input.trim()) {
-        console.log(`❌ [Agent Input] No input provided`);
+        console.log('❌ [Agent Input] No input provided');
         return res.status(400).json({
             success: false,
             message: 'Input is required'
@@ -908,7 +908,7 @@ router.post('/agent-input/:sessionId/:agentId', async (req, res) => {
     const session = orchestratorState.sessions.get(sessionId);
     const sessionName = orchestratorState.tmuxSessions.get(sessionId);
     
-    console.log(`🔍 [Agent Input] Session lookup:`, { 
+    console.log('🔍 [Agent Input] Session lookup:', { 
         sessionFound: !!session, 
         sessionName,
         agentCount: session?.agents?.length 
@@ -934,7 +934,7 @@ router.post('/agent-input/:sessionId/:agentId', async (req, res) => {
     try {
         // Get the agent's actual pane index
         const agentPaneIndex = agent.paneIndex;
-        console.log(`📍 [Agent Input] Agent pane info:`, { 
+        console.log('📍 [Agent Input] Agent pane info:', { 
             agentId,
             agentName: agent.name,
             paneIndex: agentPaneIndex,
@@ -950,12 +950,12 @@ router.post('/agent-input/:sessionId/:agentId', async (req, res) => {
         
         // Send input to the specific tmux pane using the correct pane index
         const command = `tmux send-keys -t ${sessionName}:0.${agentPaneIndex} "${input.trim()}" Enter`;
-        console.log(`🚀 [Agent Input] Executing tmux command:`, command);
+        console.log('🚀 [Agent Input] Executing tmux command:', command);
         
         await new Promise((resolve, reject) => {
             exec(command, (error, stdout, stderr) => {
                 if (error) {
-                    console.error(`❌ [Agent Input] tmux error:`, error.message, stderr);
+                    console.error('❌ [Agent Input] tmux error:', error.message, stderr);
                     log(`Failed to send input to agent ${agentId}: ${error.message}`);
                     reject(error);
                 } else {
@@ -1053,10 +1053,10 @@ router.post('/agent-permission/:sessionId', async (req, res) => {
     const { sessionId } = req.params;
     const { input } = req.body;
     
-    console.log(`🔐 [Agent Permission] Received request:`, { sessionId, input });
+    console.log('🔐 [Agent Permission] Received request:', { sessionId, input });
     
     if (!input || !input.trim()) {
-        console.log(`❌ [Agent Permission] No input provided`);
+        console.log('❌ [Agent Permission] No input provided');
         return res.status(400).json({
             success: false,
             message: 'Input is required'
@@ -1076,16 +1076,16 @@ router.post('/agent-permission/:sessionId', async (req, res) => {
     try {
         // Send to first pane (where permission dialog appears)
         const command = `tmux send-keys -t ${sessionName}:0.0 "${input.trim()}" Enter`;
-        console.log(`🚀 [Agent Permission] Executing tmux command:`, command);
+        console.log('🚀 [Agent Permission] Executing tmux command:', command);
         
         await new Promise((resolve, reject) => {
             exec(command, (error, stdout, stderr) => {
                 if (error) {
-                    console.error(`❌ [Agent Permission] tmux error:`, error.message, stderr);
+                    console.error('❌ [Agent Permission] tmux error:', error.message, stderr);
                     log(`Failed to send permission input: ${error.message}`);
                     reject(error);
                 } else {
-                    console.log(`✅ [Agent Permission] Successfully sent permission input to first pane`);
+                    console.log('✅ [Agent Permission] Successfully sent permission input to first pane');
                     log(`Sent permission input: "${input.trim()}"`);
                     resolve();
                 }

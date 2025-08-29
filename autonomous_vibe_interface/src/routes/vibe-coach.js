@@ -340,17 +340,17 @@ router.get('/status', async (req, res) => {
 function getEncouragementMessage(skills) {
     const avgSkill = Object.values(skills).reduce((a, b) => a + b, 0) / Object.keys(skills).length;
     
-    if (avgSkill >= 70) return "You're becoming a coding ninja! 🥷";
-    if (avgSkill >= 50) return "Great progress - you're really getting this! 🚀";
-    if (avgSkill >= 30) return "You're building solid foundations! 🏗️";
-    return "Every expert was once a beginner - keep going! 🌱";
+    if (avgSkill >= 70) return 'You\'re becoming a coding ninja! 🥷';
+    if (avgSkill >= 50) return 'Great progress - you\'re really getting this! 🚀';
+    if (avgSkill >= 30) return 'You\'re building solid foundations! 🏗️';
+    return 'Every expert was once a beginner - keep going! 🌱';
 }
 
 function getHealthEncouragement(healthScore) {
-    if (healthScore >= 90) return "Your code health is excellent! 💚";
-    if (healthScore >= 75) return "Looking good - minor tweaks will make it perfect! 💛";
-    if (healthScore >= 60) return "Some areas to improve, but you're on the right track! 🧡";
-    return "Let's tackle these issues together - you've got this! 💪";
+    if (healthScore >= 90) return 'Your code health is excellent! 💚';
+    if (healthScore >= 75) return 'Looking good - minor tweaks will make it perfect! 💛';
+    if (healthScore >= 60) return 'Some areas to improve, but you\'re on the right track! 🧡';
+    return 'Let\'s tackle these issues together - you\'ve got this! 💪';
 }
 
 function getTimeAgo(timestamp) {

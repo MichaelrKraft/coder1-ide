@@ -36,29 +36,29 @@ class WebSocketServer {
                     console.log('📨 WebSocket message:', data.type);
                     
                     switch (data.type) {
-                        case 'create_session':
-                            const result = await this.handleCreateSession(ws, data);
-                            currentSessionId = result.sessionId;
-                            break;
+                    case 'create_session':
+                        const result = await this.handleCreateSession(ws, data);
+                        currentSessionId = result.sessionId;
+                        break;
                             
-                        case 'start_claude_code':
-                            await this.handleStartClaudeCode(ws, data);
-                            break;
+                    case 'start_claude_code':
+                        await this.handleStartClaudeCode(ws, data);
+                        break;
                             
-                        case 'terminal_input':
-                            this.handleTerminalInput(data);
-                            break;
+                    case 'terminal_input':
+                        this.handleTerminalInput(data);
+                        break;
                             
-                        case 'get_status':
-                            this.handleGetStatus(ws, data);
-                            break;
+                    case 'get_status':
+                        this.handleGetStatus(ws, data);
+                        break;
                             
-                        case 'terminate_session':
-                            await this.handleTerminateSession(ws, data);
-                            break;
+                    case 'terminate_session':
+                        await this.handleTerminateSession(ws, data);
+                        break;
                             
-                        default:
-                            console.warn('⚠️ Unknown message type:', data.type);
+                    default:
+                        console.warn('⚠️ Unknown message type:', data.type);
                     }
                     
                 } catch (error) {
