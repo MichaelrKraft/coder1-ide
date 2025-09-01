@@ -9,6 +9,30 @@ export default function DiscoverSection() {
   const [showCommandInput, setShowCommandInput] = useState(false);
   const [customCommands, setCustomCommands] = useState<Array<{id: string, name: string, description: string, action: string}>>([]);
 
+  // Debug function to reset panel state
+  const resetPanel = () => {
+    setIsExpanded(true);
+    console.log('Discover panel reset to expanded state');
+  };
+
+  // Handle panel toggle with debugging
+  const handleToggle = () => {
+    console.log('Discover panel toggle:', isExpanded ? 'collapsing' : 'expanding');
+    setIsExpanded(!isExpanded);
+  };
+
+  // Add keyboard shortcut to restore panel (Ctrl+Shift+D)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.ctrlKey && e.shiftKey && e.key === 'D') {
+        e.preventDefault();
+        resetPanel();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
   // Load custom commands from localStorage
   useEffect(() => {
     const saved = localStorage.getItem('coder1-custom-commands');
@@ -47,24 +71,41 @@ export default function DiscoverSection() {
 
   // Always render the component with a minimum height
   return (
-    <div className="border-t border-border-default bg-bg-secondary" style={{ minHeight: '40px' }}>
+    <div className="border-t border-border-default bg-bg-secondary" style={{ 
+      minHeight: '40px',
+      position: 'relative',
+      zIndex: 10
+    }}>
       {/* Discover Header - Always Visible */}
       <div 
-        className="px-3 py-2 flex items-center justify-between cursor-pointer hover:bg-bg-tertiary transition-colors"
-        onClick={() => setIsExpanded(!isExpanded)}
-        style={{ minHeight: '40px' }}
+        className="px-3 py-2 flex items-center justify-between cursor-pointer hover:bg-bg-tertiary transition-colors select-none"
+        onClick={handleToggle}
+        onDoubleClick={resetPanel}
+        title={isExpanded ? "Click to collapse" : "Click to expand (or Ctrl+Shift+D to force restore)"}
+        style={{ 
+          minHeight: '40px',
+          position: 'sticky',
+          top: 0,
+          zIndex: 11,
+          backgroundColor: 'var(--bg-secondary)'
+        }}
       >
         <div className="flex items-center gap-2">
           <Compass className="w-4 h-4 text-coder1-cyan" />
           <h3 className="text-xs font-semibold text-text-muted uppercase tracking-wider">
             Discover
           </h3>
+          {!isExpanded && (
+            <span className="text-xs text-text-muted">(collapsed)</span>
+          )}
         </div>
-        {isExpanded ? (
-          <ChevronDown className="w-3 h-3 text-text-muted" />
-        ) : (
-          <ChevronUp className="w-3 h-3 text-text-muted" />
-        )}
+        <div className="flex items-center">
+          {isExpanded ? (
+            <ChevronDown className="w-4 h-4 text-text-muted hover:text-text-primary transition-colors" />
+          ) : (
+            <ChevronUp className="w-4 h-4 text-text-muted hover:text-text-primary transition-colors" />
+          )}
+        </div>
       </div>
       
       {/* Discover Content - Only shown when expanded */}
