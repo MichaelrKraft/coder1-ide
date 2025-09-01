@@ -48,9 +48,9 @@ export default function DiscoverSection() {
   };
 
   const addCustomCommand = () => {
-    const name = prompt('Command name (without /):')?. trim();
-    const description = prompt('Description:')?. trim();
-    const action = prompt('Action/Command:')?. trim();
+    const name = prompt('Command name (without /):')?.trim();
+    const description = prompt('Description:')?.trim();
+    const action = prompt('Action/Command:')?.trim();
     
     if (name && description && action) {
       const newCommand = {
@@ -69,25 +69,27 @@ export default function DiscoverSection() {
     // This would integrate with the Terminal component
   };
 
-  // Always render the component with a minimum height
+  // Always render the component - container should never disappear
   return (
-    <div className="border-t border-border-default bg-bg-secondary" style={{ 
-      minHeight: '40px',
-      position: 'relative',
-      zIndex: 10
-    }}>
-      {/* Discover Header - Always Visible */}
+    <div 
+      className="border-t border-border-default bg-bg-secondary"
+      style={{ 
+        minHeight: '40px',
+        position: 'relative',
+        zIndex: 10
+      }}
+    >
+      {/* Discover Header - ALWAYS VISIBLE NO MATTER WHAT */}
       <div 
         className="px-3 py-2 flex items-center justify-between cursor-pointer hover:bg-bg-tertiary transition-colors select-none"
         onClick={handleToggle}
         onDoubleClick={resetPanel}
         title={isExpanded ? "Click to collapse" : "Click to expand (or Ctrl+Shift+D to force restore)"}
         style={{ 
-          minHeight: '40px',
-          position: 'sticky',
-          top: 0,
-          zIndex: 11,
-          backgroundColor: 'var(--bg-secondary)'
+          height: '40px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between'
         }}
       >
         <div className="flex items-center gap-2">
@@ -99,18 +101,22 @@ export default function DiscoverSection() {
             <span className="text-xs text-text-muted">(collapsed)</span>
           )}
         </div>
-        <div className="flex items-center">
+        <div className="flex items-center" style={{ pointerEvents: 'none' }}>
           {isExpanded ? (
-            <ChevronDown className="w-4 h-4 text-text-muted hover:text-text-primary transition-colors" />
+            <ChevronDown className="w-4 h-4 text-text-muted" />
           ) : (
-            <ChevronUp className="w-4 h-4 text-text-muted hover:text-text-primary transition-colors" />
+            <ChevronUp className="w-4 h-4 text-text-muted" />
           )}
         </div>
       </div>
       
       {/* Discover Content - Only shown when expanded */}
-      {isExpanded && (
-        <div className="px-3 pb-3 space-y-3">
+      <div 
+        className="px-3 pb-3 space-y-3"
+        style={{
+          display: isExpanded ? 'block' : 'none'
+        }}
+      >
           {/* Menu Items */}
           <div className="space-y-1">
             <a href="http://localhost:3000/component-studio.html" className="w-full flex items-center gap-2 px-2 py-1.5 text-xs text-text-secondary hover:text-text-primary hover:bg-bg-tertiary rounded transition-colors">
@@ -222,8 +228,7 @@ export default function DiscoverSection() {
               </button>
             </div>
           </div>
-        </div>
-      )}
+      </div>
     </div>
   );
 }
