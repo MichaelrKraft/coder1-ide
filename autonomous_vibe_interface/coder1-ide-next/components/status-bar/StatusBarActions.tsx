@@ -37,26 +37,30 @@ export default function StatusBarActions({
   const { addToast, openModal, isModalOpen } = useUIStore();
   
   // Get current session ID
-  const sessionId = currentSession?.metadata.sessionId || 
-                   localStorage.getItem('currentSessionId') || 
-                   `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-
-  // Update session ID if needed
+  const [sessionId, setSessionId] = React.useState<string>('');
+  
   React.useEffect(() => {
-    if (!localStorage.getItem('currentSessionId')) {
-      localStorage.setItem('currentSessionId', sessionId);
+    // Only access localStorage on client side
+    const storedId = typeof window !== 'undefined' ? localStorage.getItem('currentSessionId') : null;
+    const newSessionId = currentSession?.metadata.sessionId || 
+                        storedId || 
+                        `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    
+    setSessionId(newSessionId);
+    
+    // Update localStorage if needed
+    if (typeof window !== 'undefined' && !storedId) {
+      localStorage.setItem('currentSessionId', newSessionId);
     }
-  }, [sessionId]);
+  }, [currentSession]);
 
   // Button hover effects
   const applyHoverEffect = (e: React.MouseEvent<HTMLButtonElement>, isLoading: boolean) => {
     if (isLoading) return;
-    e.currentTarget.style.borderColor = glows.orange.borderHover;
     e.currentTarget.style.boxShadow = glows.orange.soft;
   };
 
   const removeHoverEffect = (e: React.MouseEvent<HTMLButtonElement>) => {
-    e.currentTarget.style.borderColor = '#9333EA';
     e.currentTarget.style.boxShadow = 'none';
   };
 
@@ -67,11 +71,10 @@ export default function StatusBarActions({
       createCheckpoint('Manual checkpoint', false);
       
       // Also save via API for persistence
-      const response = await fetch('/api/checkpoint', {
+      const response = await fetch(`/api/sessions/${sessionId}/checkpoint`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          sessionId,
           timestamp: new Date().toISOString(),
           activeFile,
           snapshot: {
@@ -103,7 +106,7 @@ export default function StatusBarActions({
 
   const handleTimeline = async () => {
     try {
-      const response = await fetch(`/api/timeline?sessionId=${sessionId}`);
+      const response = await fetch(`/api/sessions/${sessionId}/timeline`);
       const data = await response.json();
       
       if (response.ok) {
@@ -127,14 +130,13 @@ export default function StatusBarActions({
 
   const handleExport = async () => {
     try {
-      const response = await fetch('/api/export', {
+      const response = await fetch(`/api/sessions/${sessionId}/export`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           format: 'zip',
           includeNodeModules: false,
-          includeGitHistory: true,
-          sessionId
+          includeGitHistory: true
         })
       });
       
@@ -168,7 +170,7 @@ export default function StatusBarActions({
   };
 
   const handleDocs = () => {
-    window.open('/documentation', '_blank');
+    window.open('/documentation.html', '_blank');
   };
 
   const isLoadingState = (state: string) => loading === state;
@@ -177,104 +179,94 @@ export default function StatusBarActions({
     <>
       <div className="flex items-center gap-2">
         {/* CheckPoint Button */}
-        <button
-          onClick={handleCheckpoint}
-          disabled={isLoadingState('checkpoint')}
-          className="flex items-center gap-1.5 px-4 py-1.5 text-sm font-medium text-text-secondary hover:text-text-primary rounded transition-all duration-200 disabled:opacity-50"
-          style={{
-            border: '1px solid #9333EA',
-            backgroundColor: 'transparent',
-          }}
-          onMouseEnter={(e) => applyHoverEffect(e, isLoadingState('checkpoint'))}
-          onMouseLeave={removeHoverEffect}
-          title="Save a checkpoint of your current work"
-        >
-          {isLoadingState('checkpoint') ? (
-            <Loader2 className="w-4 h-4 animate-spin" />
-          ) : (
-            <Save className="w-4 h-4" />
-          )}
-          <span>CheckPoint</span>
-        </button>
+        <div className="p-[1px] rounded-md bg-gradient-to-r from-purple-500 to-cyan-500">
+          <button
+            onClick={handleCheckpoint}
+            disabled={isLoadingState('checkpoint')}
+            className="flex items-center gap-1.5 px-4 py-1.5 text-sm font-medium text-text-secondary hover:text-text-primary rounded transition-all duration-200 disabled:opacity-50 bg-bg-secondary w-full"
+            onMouseEnter={(e) => applyHoverEffect(e, isLoadingState('checkpoint'))}
+            onMouseLeave={removeHoverEffect}
+            title="Save a checkpoint of your current work"
+          >
+            {isLoadingState('checkpoint') ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Save className="w-4 h-4" />
+            )}
+            <span>CheckPoint</span>
+          </button>
+        </div>
 
         {/* TimeLine Button */}
-        <button
-          onClick={handleTimeline}
-          disabled={isLoadingState('timeline')}
-          className="flex items-center gap-1.5 px-4 py-1.5 text-sm font-medium text-text-secondary hover:text-text-primary rounded transition-all duration-200 disabled:opacity-50"
-          style={{
-            border: '1px solid #9333EA',
-            backgroundColor: 'transparent',
-          }}
-          onMouseEnter={(e) => applyHoverEffect(e, isLoadingState('timeline'))}
-          onMouseLeave={removeHoverEffect}
-          title="View timeline of changes"
-        >
-          {isLoadingState('timeline') ? (
-            <Loader2 className="w-4 h-4 animate-spin" />
-          ) : (
-            <Clock className="w-4 h-4" />
-          )}
-          <span>TimeLine</span>
-        </button>
+        <div className="p-[1px] rounded-md bg-gradient-to-r from-purple-500 to-cyan-500">
+          <button
+            onClick={handleTimeline}
+            disabled={isLoadingState('timeline')}
+            className="flex items-center gap-1.5 px-4 py-1.5 text-sm font-medium text-text-secondary hover:text-text-primary rounded transition-all duration-200 disabled:opacity-50 bg-bg-secondary w-full"
+            onMouseEnter={(e) => applyHoverEffect(e, isLoadingState('timeline'))}
+            onMouseLeave={removeHoverEffect}
+            title="View timeline of changes"
+          >
+            {isLoadingState('timeline') ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Clock className="w-4 h-4" />
+            )}
+            <span>TimeLine</span>
+          </button>
+        </div>
 
         {/* Export Button */}
-        <button
-          onClick={handleExport}
-          disabled={isLoadingState('export')}
-          className="flex items-center gap-1.5 px-4 py-1.5 text-sm font-medium text-text-secondary hover:text-text-primary rounded transition-all duration-200 disabled:opacity-50"
-          style={{
-            border: '1px solid #9333EA',
-            backgroundColor: 'transparent',
-          }}
-          onMouseEnter={(e) => applyHoverEffect(e, isLoadingState('export'))}
-          onMouseLeave={removeHoverEffect}
-          title="Export your project"
-        >
-          {isLoadingState('export') ? (
-            <Loader2 className="w-4 h-4 animate-spin" />
-          ) : (
-            <Download className="w-4 h-4" />
-          )}
-          <span>Export</span>
-        </button>
+        <div className="p-[1px] rounded-md bg-gradient-to-r from-purple-500 to-cyan-500">
+          <button
+            onClick={handleExport}
+            disabled={isLoadingState('export')}
+            className="flex items-center gap-1.5 px-4 py-1.5 text-sm font-medium text-text-secondary hover:text-text-primary rounded transition-all duration-200 disabled:opacity-50 bg-bg-secondary w-full"
+            onMouseEnter={(e) => applyHoverEffect(e, isLoadingState('export'))}
+            onMouseLeave={removeHoverEffect}
+            title="Export your project"
+          >
+            {isLoadingState('export') ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Download className="w-4 h-4" />
+            )}
+            <span>Export</span>
+          </button>
+        </div>
 
         {/* Session Summary Button */}
-        <button
-          onClick={handleSessionSummary}
-          disabled={isLoadingState('session')}
-          className="flex items-center gap-1.5 px-4 py-1.5 text-sm font-medium text-text-secondary hover:text-text-primary rounded transition-all duration-200 disabled:opacity-50"
-          style={{
-            border: '1px solid #9333EA',
-            backgroundColor: 'transparent',
-          }}
-          onMouseEnter={(e) => applyHoverEffect(e, isLoadingState('session'))}
-          onMouseLeave={removeHoverEffect}
-          title="Generate AI session summary"
-        >
-          {isLoadingState('session') ? (
-            <Loader2 className="w-4 h-4 animate-spin" />
-          ) : (
-            <FileText className="w-4 h-4" />
-          )}
-          <span>Session Summary</span>
-        </button>
+        <div className="p-[1px] rounded-md bg-gradient-to-r from-purple-500 to-cyan-500">
+          <button
+            onClick={handleSessionSummary}
+            disabled={isLoadingState('session')}
+            className="flex items-center gap-1.5 px-4 py-1.5 text-sm font-medium text-text-secondary hover:text-text-primary rounded transition-all duration-200 disabled:opacity-50 bg-bg-secondary w-full"
+            onMouseEnter={(e) => applyHoverEffect(e, isLoadingState('session'))}
+            onMouseLeave={removeHoverEffect}
+            title="Generate AI session summary"
+          >
+            {isLoadingState('session') ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <FileText className="w-4 h-4" />
+            )}
+            <span>Session Summary</span>
+          </button>
+        </div>
 
         {/* Docs Button */}
-        <button
-          onClick={handleDocs}
-          className="flex items-center gap-1.5 px-4 py-1.5 text-sm font-medium text-text-secondary hover:text-text-primary rounded transition-all duration-200"
-          style={{
-            border: '1px solid #9333EA',
-            backgroundColor: 'transparent',
-          }}
-          onMouseEnter={(e) => applyHoverEffect(e, false)}
-          onMouseLeave={removeHoverEffect}
-          title="Open documentation"
-        >
-          <BookOpen className="w-4 h-4" />
-          <span>Docs</span>
-        </button>
+        <div className="p-[1px] rounded-md bg-gradient-to-r from-purple-500 to-cyan-500">
+          <button
+            onClick={handleDocs}
+            className="flex items-center gap-1.5 px-4 py-1.5 text-sm font-medium text-text-secondary hover:text-text-primary rounded transition-all duration-200 bg-bg-secondary w-full"
+            onMouseEnter={(e) => applyHoverEffect(e, false)}
+            onMouseLeave={removeHoverEffect}
+            title="Open documentation"
+          >
+            <BookOpen className="w-4 h-4" />
+            <span>Docs</span>
+          </button>
+        </div>
       </div>
 
       {/* Session Summary Modal */}
