@@ -18,7 +18,7 @@ export default function DiscoverSection() {
   // Handle panel toggle with debugging
   const handleToggle = () => {
     console.log('Discover panel toggle:', isExpanded ? 'collapsing' : 'expanding');
-    setIsExpanded(!isExpanded);
+    setIsExpanded(prev => !prev);
   };
 
   // Add keyboard shortcut to restore panel (Ctrl+Shift+D)
@@ -76,9 +76,12 @@ export default function DiscoverSection() {
       style={{ 
         backgroundColor: 'var(--bg-secondary)',
         minHeight: '40px',
+        height: 'auto',
         position: 'relative',
         zIndex: 10,
-        boxSizing: 'border-box'
+        boxSizing: 'border-box',
+        display: 'block !important',
+        visibility: 'visible !important'
       }}
     >
       {/* Discover Header - ALWAYS VISIBLE NO MATTER WHAT */}
@@ -101,7 +104,7 @@ export default function DiscoverSection() {
             Discover
           </h3>
           {!isExpanded && (
-            <span className="text-xs text-text-muted">(collapsed)</span>
+            <span className="text-xs text-text-muted bg-red-500">(collapsed)</span>
           )}
         </div>
         <div className="flex items-center">
@@ -120,6 +123,7 @@ export default function DiscoverSection() {
           overflow: 'hidden',
           transition: 'max-height 0.3s ease-in-out'
         }}
+        data-expanded={isExpanded}
       >
         <div className="px-3 pb-3 space-y-3">
           {/* Menu Items */}

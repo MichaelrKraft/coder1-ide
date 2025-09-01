@@ -11,6 +11,9 @@ import StatusBar from '@/components/StatusBar';
 import HeroSection from '@/components/HeroSection';
 import { SessionProvider } from '@/contexts/SessionContext';
 import { SupervisionProvider } from '@/contexts/SupervisionContext';
+import AboutModal from '@/components/AboutModal';
+import KeyboardShortcutsModal from '@/components/KeyboardShortcutsModal';
+import SettingsModal from '@/components/SettingsModal';
 
 // Dynamic imports for heavy components
 const MonacoEditor = dynamic(() => import('@/components/editor/MonacoEditor'), {
@@ -34,6 +37,11 @@ export default function IDEPage() {
   const [fontSize, setFontSize] = useState(14);
   const [toast, setToast] = useState<string | null>(null);
   const [showHero, setShowHero] = useState(true); // Show hero initially in editor area
+  
+  // Modal states
+  const [showAboutModal, setShowAboutModal] = useState(false);
+  const [showKeyboardShortcutsModal, setShowKeyboardShortcutsModal] = useState(false);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
   
   // Session tracking for Session Summary feature
   const [openFiles, setOpenFiles] = useState<string[]>([]);
@@ -145,6 +153,73 @@ export default function IDEPage() {
       localStorage.setItem(`file_${fileName}`, editorContent);
       console.log('File saved as:', fileName);
       showToast(`Saved as ${fileName}`);
+    }
+  };
+  
+  const handleCloseFile = () => {
+    if (activeFile) {
+      setActiveFile(null);
+      setEditorContent('');
+      showToast('File closed');
+    } else {
+      showToast('No file to close');
+    }
+  };
+  
+  const handleExit = () => {
+    if (confirm('Are you sure you want to exit? Any unsaved changes will be lost.')) {
+      showToast('Exiting...');
+      // In a real app, this would close the application or navigate away
+      setTimeout(() => {
+        window.location.href = '/';
+      }, 1000);
+    }
+  };
+  
+  const handleStop = () => {
+    // In a real implementation, this would stop running processes
+    console.log('Stopping execution...');
+    showToast('Execution stopped');
+  };
+  
+  const handleCopy = async () => {
+    try {
+      const selection = window.getSelection()?.toString();
+      if (selection) {
+        await navigator.clipboard.writeText(selection);
+        showToast('Copied to clipboard');
+      } else {
+        showToast('Nothing to copy');
+      }
+    } catch (err) {
+      showToast('Failed to copy');
+    }
+  };
+  
+  const handleCut = async () => {
+    try {
+      const selection = window.getSelection()?.toString();
+      if (selection) {
+        await navigator.clipboard.writeText(selection);
+        // In a real editor, we would delete the selected text
+        document.execCommand('delete');
+        showToast('Cut to clipboard');
+      } else {
+        showToast('Nothing to cut');
+      }
+    } catch (err) {
+      showToast('Failed to cut');
+    }
+  };
+  
+  const handlePaste = async () => {
+    try {
+      const text = await navigator.clipboard.readText();
+      // In a real editor, we would insert the text at cursor position
+      console.log('Pasting:', text);
+      showToast('Pasted from clipboard');
+    } catch (err) {
+      showToast('Failed to paste - clipboard access denied');
     }
   };
 
@@ -331,6 +406,15 @@ export default function IDEPage() {
         onResetZoom={handleResetZoom}
         onFind={handleFind}
         onReplace={handleReplace}
+        onCloseFile={handleCloseFile}
+        onExit={handleExit}
+        onStop={handleStop}
+        onShowAbout={() => setShowAboutModal(true)}
+        onShowKeyboardShortcuts={() => setShowKeyboardShortcutsModal(true)}
+        onShowSettings={() => setShowSettingsModal(true)}
+        onCopy={handleCopy}
+        onCut={handleCut}
+        onPaste={handlePaste}
       />
 
       {/* Version Banner - Current Active IDE */}
@@ -365,6 +449,24 @@ export default function IDEPage() {
           onClose={() => setToast(null)}
         />
       )}
+      
+      {/* Modals */}
+      <AboutModal 
+        isOpen={showAboutModal}
+        onClose={() => setShowAboutModal(false)}
+      />
+      
+      <KeyboardShortcutsModal
+        isOpen={showKeyboardShortcutsModal}
+        onClose={() => setShowKeyboardShortcutsModal(false)}
+      />
+      
+      <SettingsModal
+        isOpen={showSettingsModal}
+        onClose={() => setShowSettingsModal(false)}
+        fontSize={fontSize}
+        onFontSizeChange={setFontSize}
+      />
       </div>
     </SupervisionProvider>
   );

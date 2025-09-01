@@ -165,7 +165,7 @@ export default function MenuBar({
     { icon: Home, label: 'Coder1 Dashboard', href: 'http://localhost:3000/' },
     { icon: Info, label: 'Agent Dashboard', href: 'http://localhost:3000/agent-dashboard.html' },
     { icon: BookOpen, label: 'Docs Manager', href: 'http://localhost:3000/docs-manager' },
-    { icon: Settings, label: 'PRD Generator', href: 'http://localhost:3000/orchestrator/' },
+    { icon: SettingsIcon, label: 'PRD Generator', href: 'http://localhost:3000/orchestrator/' },
   ];
 
   return (
