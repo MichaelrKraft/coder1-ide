@@ -76,3 +76,37 @@ public/index.html
 
 # Testing reports and documentation
 *_TESTING_REPORT.md
+
+# Backup directories
+backup_*/
+**/backup_*/
+backups/
+**/backups/
+ide-backup*/
+ide-old*/
+ARCHIVE/
+
+# Build artifacts and debug files
+**/target/debug/
+**/target/release/
+**/*.rlib
+**/*.rmeta
+**/*.a
+**/*.so
+**/*.dylib
+
+# Large binary files
+**/exports/
+**/*.zip
+**/*.tar.gz
+
+# Session summaries (too many)
+**/summaries/summary-*.md
+
+# Tauri builds
+**/src-tauri/target/
+
+# Cache and temporary directories
+**/.next/
+**/.cache/
+**/tmp/
