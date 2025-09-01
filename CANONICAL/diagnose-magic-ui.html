@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Magic UI Diagnostic Tool</title>
+    <style>
+        body { 
+            font-family: 'Monaco', 'Courier New', monospace; 
+            padding: 20px; 
+            background: #0a0a0a;
+            color: #00ff00;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        .section {
+            background: #1a1a1a;
+            border: 1px solid #00ff00;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        h1 { color: #00ff00; text-shadow: 0 0 10px #00ff00; }
+        h2 { color: #00ffff; border-bottom: 1px solid #00ffff; padding-bottom: 5px; }
+        .success { color: #00ff00; }
+        .error { color: #ff0000; }
+        .warning { color: #ffff00; }
+        .info { color: #00ffff; }
+        button {
+            background: #003300;
+            color: #00ff00;
+            border: 1px solid #00ff00;
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+            font-family: inherit;
+        }
+        button:hover { 
+            background: #00ff00;
+            color: #000;
+        }
+        .log {
+            background: #000;
+            padding: 10px;
+            max-height: 300px;
+            overflow-y: auto;
+            font-size: 12px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        .test-iframe {
+            width: 100%;
+            height: 400px;
+            border: 2px solid #00ff00;
+            background: white;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔬 Magic UI Diagnostic Tool</h1>
+        
+        <div class="section">
+            <h2>Step 1: API Response Test</h2>
+            <button onclick="testAPIResponse()">Test API Response</button>
+            <div id="api-log" class="log">Waiting...</div>
+        </div>
+
+        <div class="section">
+            <h2>Step 2: Component Code Analysis</h2>
+            <button onclick="analyzeComponentCode()">Analyze Component Code</button>
+            <div id="code-log" class="log">Waiting...</div>
+        </div>
+
+        <div class="section">
+            <h2>Step 3: iframe Rendering Tests</h2>
+            <div class="grid">
+                <div>
+                    <h3>Test 1: Simple HTML</h3>
+                    <button onclick="testSimpleIframe()">Test Simple iframe</button>
+                    <iframe id="simple-iframe" class="test-iframe"></iframe>
+                </div>
+                <div>
+                    <h3>Test 2: React Component</h3>
+                    <button onclick="testReactIframe()">Test React iframe</button>
+                    <iframe id="react-iframe" class="test-iframe"></iframe>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Step 4: Full Magic Preview Simulation</h2>
+            <button onclick="simulateMagicPreview()">Simulate Magic Preview</button>
+            <div id="simulation-log" class="log">Waiting...</div>
+            <iframe id="magic-iframe" class="test-iframe" sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals"></iframe>
+        </div>
+
+        <div class="section">
+            <h2>Console Monitor</h2>
+            <div id="console-monitor" class="log">Console messages will appear here...</div>
+        </div>
+    </div>
+
+    <script>
+        // Global storage for component data
+        let lastComponentData = null;
+        
+        // Console interceptor
+        const originalLog = console.log;
+        const originalError = console.error;
+        const consoleMonitor = document.getElementById('console-monitor');
+        
+        console.log = function(...args) {
+            originalLog.apply(console, args);
+            const message = args.map(arg => 
+                typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
+            ).join(' ');
+            consoleMonitor.innerHTML += `<span class="info">[LOG] ${message}</span>\n`;
+            consoleMonitor.scrollTop = consoleMonitor.scrollHeight;
+        };
+        
+        console.error = function(...args) {
+            originalError.apply(console, args);
+            const message = args.map(arg => 
+                typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
+            ).join(' ');
+            consoleMonitor.innerHTML += `<span class="error">[ERROR] ${message}</span>\n`;
+            consoleMonitor.scrollTop = consoleMonitor.scrollHeight;
+        };
+
+        async function testAPIResponse() {
+            const log = document.getElementById('api-log');
+            log.innerHTML = '<span class="info">Testing Magic API...</span>\n';
+            
+            try {
+                const response = await fetch('/api/magic/generate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ prompt: 'simple button component' })
+                });
+                
+                const data = await response.json();
+                lastComponentData = data;
+                
+                log.innerHTML += '<span class="success">✅ API Response Received</span>\n';
+                log.innerHTML += '<span class="info">Response Structure:</span>\n';
+                log.innerHTML += `  success: ${data.success}\n`;
+                log.innerHTML += `  code: ${data.code ? '✅ Present (' + data.code.length + ' chars)' : '❌ Missing'}\n`;
+                log.innerHTML += `  name: ${data.name || '❌ Missing'}\n`;
+                log.innerHTML += `  source: ${data.source || 'Unknown'}\n`;
+                
+                if (data.code) {
+                    log.innerHTML += '\n<span class="info">Code Preview (first 200 chars):</span>\n';
+                    log.innerHTML += data.code.substring(0, 200) + '...\n';
+                }
+                
+                // Check for React patterns
+                const hasReactState = data.code?.includes('useState');
+                const hasReactImport = data.code?.includes('import React');
+                const hasComponentName = data.code?.includes(data.name);
+                
+                log.innerHTML += '\n<span class="info">Code Analysis:</span>\n';
+                log.innerHTML += `  Has React.useState: ${hasReactState ? '✅' : '❌'}\n`;
+                log.innerHTML += `  Has React import: ${hasReactImport ? '✅' : '❌'}\n`;
+                log.innerHTML += `  Has component name: ${hasComponentName ? '✅' : '❌'}\n`;
+                
+            } catch (error) {
+                log.innerHTML += `<span class="error">❌ Error: ${error.message}</span>\n`;
+            }
+        }
+
+        function analyzeComponentCode() {
+            const log = document.getElementById('code-log');
+            
+            if (!lastComponentData) {
+                log.innerHTML = '<span class="warning">⚠️ Please test API first</span>\n';
+                return;
+            }
+            
+            log.innerHTML = '<span class="info">Analyzing component code...</span>\n';
+            
+            const code = lastComponentData.code;
+            const name = lastComponentData.name;
+            
+            // Clean the code like MagicPreview does
+            const cleanedCode = code
+                .replace(/interface\s+\w+\s*{[^{}]*(?:{[^{}]*}[^{}]*)*}/gm, '')
+                .replace(/type\s+\w+\s*=\s*[^;\n]+;/gm, '')
+                .replace(/:\s*(string|number|boolean|any|void|null|undefined|object|\w+(?:\[\])?|{[^}]*}|\([^)]*\)\s*=>\s*\w+)\s*([,);=\n])/g, '$2')
+                .replace(/<[^>]+>/g, '')
+                .replace(/\s+as\s+\w+/g, '')
+                .replace(/:\s*(?:React\.)?FC(?:<[^>]*>)?/g, '')
+                .replace(/^import\s+.*?from\s+['"].*?['"];?\s*$/gm, '')
+                .replace(/^export\s+default\s+/gm, '')
+                .replace(/^export\s+/gm, '');
+            
+            log.innerHTML += '<span class="success">✅ Code cleaned</span>\n';
+            log.innerHTML += `  Original length: ${code.length} chars\n`;
+            log.innerHTML += `  Cleaned length: ${cleanedCode.length} chars\n`;
+            log.innerHTML += `  Removed: ${code.length - cleanedCode.length} chars\n`;
+            
+            // Test if component can be evaluated
+            try {
+                const testEval = new Function('React', cleanedCode + '\n return typeof ' + name);
+                const result = testEval({ useState: () => {} });
+                log.innerHTML += `<span class="success">✅ Component evaluation test: ${result}</span>\n`;
+            } catch (error) {
+                log.innerHTML += `<span class="error">❌ Evaluation error: ${error.message}</span>\n`;
+            }
+            
+            // Store cleaned code
+            lastComponentData.cleanedCode = cleanedCode;
+        }
+
+        function testSimpleIframe() {
+            const iframe = document.getElementById('simple-iframe');
+            const html = `<!DOCTYPE html>
+<html>
+<head><style>body { font-family: Arial; padding: 20px; }</style></head>
+<body>
+    <h1 style="color: green;">✅ Simple iframe Works!</h1>
+    <p>If you can see this, basic iframe rendering is working.</p>
+</body>
+</html>`;
+            
+            iframe.srcdoc = html;
+            console.log('Simple iframe test completed');
+        }
+
+        function testReactIframe() {
+            const iframe = document.getElementById('react-iframe');
+            const html = `<!DOCTYPE html>
+<html>
+<head>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+</head>
+<body>
+    <div id="root"></div>
+    <script>
+        try {
+            const e = React.createElement;
+            const TestComponent = () => {
+                const [count, setCount] = React.useState(0);
+                return e('div', { style: { padding: '20px' } }, [
+                    e('h1', { key: 'title', style: { color: 'green' } }, '✅ React Works!'),
+                    e('p', { key: 'count' }, 'Count: ' + count),
+                    e('button', { 
+                        key: 'btn',
+                        onClick: () => setCount(count + 1)
+                    }, 'Click Me')
+                ]);
+            };
+            
+            const root = ReactDOM.createRoot(document.getElementById('root'));
+            root.render(e(TestComponent));
+            
+            console.log('React component rendered successfully');
+            window.parent.postMessage({ type: 'react-success' }, '*');
+        } catch (error) {
+            console.error('React error:', error);
+            document.body.innerHTML = '<h1 style="color:red;">React Error: ' + error.message + '</h1>';
+            window.parent.postMessage({ type: 'react-error', error: error.message }, '*');
+        }
+    </script>
+</body>
+</html>`;
+            
+            iframe.srcdoc = html;
+            console.log('React iframe test initiated');
+        }
+
+        function simulateMagicPreview() {
+            const log = document.getElementById('simulation-log');
+            const iframe = document.getElementById('magic-iframe');
+            
+            if (!lastComponentData || !lastComponentData.cleanedCode) {
+                log.innerHTML = '<span class="warning">⚠️ Please complete steps 1 and 2 first</span>\n';
+                return;
+            }
+            
+            log.innerHTML = '<span class="info">Simulating Magic Preview...</span>\n';
+            
+            const cleanedCode = lastComponentData.cleanedCode;
+            const componentName = lastComponentData.name;
+            
+            const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        body { 
+            margin: 0; 
+            padding: 20px; 
+            font-family: Arial;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        #error {
+            background: #fee;
+            padding: 20px;
+            border-radius: 8px;
+            color: #c00;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+    <div id="error" style="display: none;"></div>
+    
+    <script type="text/babel">
+        console.log('🎯 Starting Magic Preview simulation...');
+        
+        // Make React available globally
+        window.React = React;
+        window.ReactDOM = ReactDOM;
+        const { useState, useEffect, useRef } = React;
+        
+        console.log('React available:', typeof React);
+        console.log('ReactDOM available:', typeof ReactDOM);
+        console.log('Component name to render:', '${componentName}');
+        
+        try {
+            // Inject component code
+            console.log('Injecting component code...');
+            ${cleanedCode}
+            
+            console.log('Component type after injection:', typeof ${componentName});
+            
+            if (typeof ${componentName} === 'undefined') {
+                throw new Error('Component "${componentName}" is not defined after code injection');
+            }
+            
+            // Create wrapper
+            const App = () => {
+                return React.createElement(
+                    'div',
+                    { style: { background: 'white', padding: '40px', borderRadius: '12px', boxShadow: '0 10px 40px rgba(0,0,0,0.2)' } },
+                    React.createElement(${componentName})
+                );
+            };
+            
+            // Render
+            console.log('Creating React root...');
+            const root = ReactDOM.createRoot(document.getElementById('root'));
+            root.render(React.createElement(App));
+            
+            console.log('✅ Component rendered successfully!');
+            window.parent.postMessage({ 
+                type: 'preview-success', 
+                component: '${componentName}' 
+            }, '*');
+            
+        } catch (error) {
+            console.error('❌ Preview error:', error);
+            const errorDiv = document.getElementById('error');
+            errorDiv.style.display = 'block';
+            errorDiv.innerHTML = '<h3>Error</h3><p>' + error.message + '</p><pre>' + error.stack + '</pre>';
+            
+            window.parent.postMessage({ 
+                type: 'preview-error', 
+                error: error.message,
+                stack: error.stack
+            }, '*');
+        }
+    </script>
+</body>
+</html>`;
+            
+            log.innerHTML += '<span class="info">Setting iframe content...</span>\n';
+            log.innerHTML += `  Component: ${componentName}\n`;
+            log.innerHTML += `  Code length: ${cleanedCode.length} chars\n`;
+            log.innerHTML += `  Sandbox: allow-scripts allow-same-origin allow-forms allow-popups allow-modals\n`;
+            
+            iframe.srcdoc = html;
+            
+            log.innerHTML += '<span class="success">✅ iframe content set</span>\n';
+            log.innerHTML += '<span class="info">Check iframe below and console for results</span>\n';
+        }
+
+        // Listen for messages from iframes
+        window.addEventListener('message', (event) => {
+            console.log('Message from iframe:', event.data);
+            
+            if (event.data.type === 'preview-success') {
+                document.getElementById('simulation-log').innerHTML += 
+                    `<span class="success">✅ SUCCESS: Component "${event.data.component}" rendered!</span>\n`;
+            } else if (event.data.type === 'preview-error') {
+                document.getElementById('simulation-log').innerHTML += 
+                    `<span class="error">❌ ERROR: ${event.data.error}</span>\n`;
+            }
+        });
+
+        // Auto-run tests on load
+        window.addEventListener('load', async () => {
+            console.log('🔬 Diagnostic tool loaded');
+            await testAPIResponse();
+            setTimeout(() => {
+                analyzeComponentCode();
+                testSimpleIframe();
+                testReactIframe();
+                setTimeout(() => simulateMagicPreview(), 1000);
+            }, 1000);
+        });
+    </script>
+</body>
+</html>

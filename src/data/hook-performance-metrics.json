@@ -1,0 +1,60 @@
+{
+  "hooks": {
+    "prettier-format": {
+      "totalExecutions": 1,
+      "successfulExecutions": 1,
+      "totalExecutionTime": 1200,
+      "totalTimeSaved": 30,
+      "errorCount": 0,
+      "lastExecuted": "2025-08-21T03:54:08.833Z",
+      "averageExecutionTime": 1200,
+      "successRate": 1,
+      "impactScore": 5,
+      "context": {}
+    },
+    "eslint-fix": {
+      "totalExecutions": 1,
+      "successfulExecutions": 1,
+      "totalExecutionTime": 800,
+      "totalTimeSaved": 45,
+      "errorCount": 0,
+      "lastExecuted": "2025-08-21T03:54:08.833Z",
+      "averageExecutionTime": 800,
+      "successRate": 1,
+      "impactScore": 5,
+      "context": {}
+    }
+  },
+  "globalStats": {
+    "totalExecutions": 2,
+    "totalTimeSaved": 75,
+    "totalErrorsPrevented": 0,
+    "averageExecutionTime": 0,
+    "successRate": 0,
+    "lastUpdated": "2025-08-21T03:54:08.833Z"
+  },
+  "performanceHistory": [
+    {
+      "timestamp": "2025-08-21T03:54:08.833Z",
+      "hookId": "prettier-format",
+      "executionTime": 1200,
+      "success": true,
+      "timeSaved": 30,
+      "sessionId": "test-session"
+    },
+    {
+      "timestamp": "2025-08-21T03:54:08.833Z",
+      "hookId": "eslint-fix",
+      "executionTime": 800,
+      "success": true,
+      "timeSaved": 45,
+      "sessionId": "test-session"
+    }
+  ],
+  "roi": {
+    "weeklyTimeSavings": 10.714285714285714,
+    "monthlyTimeSavings": 2.5,
+    "estimatedCostSavings": 1.0416666666666665,
+    "productivityGain": 1
+  }
+}

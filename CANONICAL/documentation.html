@@ -1,0 +1,1195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Features - Coder1 IDE</title>
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
+    <meta name="version" content="v2.1.0" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <!-- Cache buster: <?php echo time(); ?> -->
+    <style>
+        :root {
+            --bg-primary: #0a0a0a;
+            --bg-secondary: #1a1a1a;
+            --bg-card: #141414;
+            --text-primary: #ffffff;
+            --text-secondary: #a0a0a0;
+            --text-muted: #666666;
+            --accent-primary: #8b5cf6;
+            --accent-secondary: #06b6d4;
+            --border-color: rgba(139, 92, 246, 0.2);
+            --border-subtle: rgba(255, 255, 255, 0.08);
+            --success: #10b981;
+            --warning: #f59e0b;
+            --info: #3b82f6;
+            --gradient-primary: linear-gradient(135deg, #8b5cf6, #06b6d4);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+
+        /* Grid Background Pattern */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(rgba(139, 92, 246, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(139, 92, 246, 0.03) 1px, transparent 1px);
+            background-size: 50px 50px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* Header - Reduced by 20% from Templates Hub */
+        .header {
+            background: #050505;
+            border: 1px solid rgba(6, 182, 212, 0.2);
+            border-top: none;
+            border-left: none;
+            border-right: none;
+            padding: 19px 0;  /* Reduced by 20% from 24px */
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            backdrop-filter: blur(10px);
+            box-shadow: 
+                0 0 30px rgba(6, 182, 212, 0.3), 
+                0 0 60px rgba(6, 182, 212, 0.1), 
+                inset 0 0 20px rgba(6, 182, 212, 0.05);
+        }
+
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo img {
+            height: 70px;  /* Reduced by 20% from 87px */
+            width: auto;
+            object-fit: contain;
+            margin: -24px 0;  /* Adjusted for new header height */
+        }
+        
+        /* Title styling */
+        .logo-text {
+            font-size: 24px;
+            font-weight: 700;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: -0.5px;
+        }
+
+        .nav-actions {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .search-box {
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: 8px;
+            padding: 10px 16px;
+            color: var(--text-primary);
+            width: 300px;
+            transition: all 0.3s;
+        }
+
+        .search-box:focus {
+            outline: none;
+            border-color: var(--accent-primary);
+            background: var(--bg-secondary);
+        }
+
+        .back-to-ide {
+            background: rgba(6, 182, 212, 0.1);
+            border: 1px solid rgba(6, 182, 212, 0.3);
+            padding: 10px 20px;
+            border-radius: 8px;
+            color: var(--accent-secondary);
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .back-to-ide:hover {
+            background: rgba(6, 182, 212, 0.2);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(6, 182, 212, 0.3);
+        }
+
+        /* Categories Section */
+        .categories-section {
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-subtle);
+            padding: 20px 0;
+            position: sticky;
+            top: 65px;  /* Adjusted for reduced header height */
+            z-index: 99;
+            backdrop-filter: blur(10px);
+        }
+
+        .categories-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        .categories-title {
+            color: var(--text-muted);
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 12px;
+            font-weight: 600;
+        }
+
+        .category-pills {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .category-pill {
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            padding: 10px 20px;
+            border-radius: 24px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .category-pill:hover {
+            background: var(--bg-secondary);
+            border-color: var(--accent-primary);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(139, 92, 246, 0.2);
+        }
+
+        .category-pill.active {
+            background: var(--gradient-primary);
+            border-color: var(--accent-primary);
+            color: white;
+            box-shadow: 0 4px 20px rgba(139, 92, 246, 0.3);
+        }
+
+        .category-count {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        /* Hero Section with Gradient Mesh */
+        .hero-section {
+            position: relative;
+            padding: 40px 0 40px;
+            overflow: hidden;
+            background: #050505;
+            border-bottom: 1px solid rgba(139, 92, 246, 0.2);
+        }
+
+        /* Animated Gradient Mesh Background */
+        .hero-section::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle at 20% 50%, rgba(139, 92, 246, 0.15) 0%, transparent 50%),
+                        radial-gradient(circle at 80% 80%, rgba(6, 182, 212, 0.15) 0%, transparent 50%),
+                        radial-gradient(circle at 40% 20%, rgba(236, 72, 153, 0.1) 0%, transparent 50%),
+                        radial-gradient(circle at 90% 10%, rgba(59, 130, 246, 0.1) 0%, transparent 50%);
+            animation: meshAnimation 20s ease-in-out infinite;
+            z-index: 0;
+        }
+
+        @keyframes meshAnimation {
+            0%, 100% { transform: rotate(0deg) scale(1); }
+            25% { transform: rotate(45deg) scale(1.1); }
+            50% { transform: rotate(90deg) scale(1); }
+            75% { transform: rotate(135deg) scale(1.1); }
+        }
+
+        .hero-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+            position: relative;
+            z-index: 2;
+        }
+
+        /* Hero Header */
+        .hero-header {
+            text-align: center;
+            margin-bottom: 60px;
+            animation: fadeInUp 0.8s ease-out;
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .hero-title {
+            font-size: 56px;
+            font-weight: 800;
+            margin-bottom: 16px;
+            background: linear-gradient(135deg, #8b5cf6 0%, #06b6d4 50%, #ec4899 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            line-height: 1.2;
+            letter-spacing: -1px;
+        }
+
+        .hero-subtitle {
+            font-size: 20px;
+            color: rgba(255, 255, 255, 0.7);
+            max-width: 600px;
+            margin: 0 auto 40px;
+            line-height: 1.6;
+        }
+
+        /* Features Grid - Same as Templates */
+        .features-section {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 60px 20px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+            gap: 24px;
+            perspective: 1500px;
+            transform-style: preserve-3d;
+        }
+
+        /* Feature Cards with 3D Transform Support */
+        .feature-card {
+            background: linear-gradient(180deg, rgba(20, 20, 20, 0.8), rgba(10, 10, 10, 0.9));
+            border: 1px solid var(--border-subtle);
+            border-radius: 16px;
+            padding: 24px;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+            transform-style: preserve-3d;
+            will-change: transform;
+            animation: floatCard 6s ease-in-out infinite;
+            animation-delay: calc(var(--card-index, 0) * 0.1s);
+        }
+
+        @keyframes floatCard {
+            0%, 100% { transform: translateY(0) translateZ(0); }
+            50% { transform: translateY(-8px) translateZ(10px); }
+        }
+
+        .feature-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: var(--gradient-primary);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .feature-card:hover {
+            border-color: var(--accent-primary);
+            box-shadow: 
+                0 20px 60px rgba(139, 92, 246, 0.3),
+                0 30px 80px rgba(6, 182, 212, 0.2),
+                inset 0 0 30px rgba(139, 92, 246, 0.1),
+                0 0 0 1px rgba(139, 92, 246, 0.2);
+            /* Transform will be handled by JavaScript for 3D effect */
+        }
+        
+        /* Ensure 3D transforms work by removing animation conflicts */
+        .feature-card.no-animation {
+            animation: none !important;
+        }
+
+        .feature-card:hover::before {
+            opacity: 1;
+        }
+
+        .feature-card.expanded {
+            background: linear-gradient(135deg, 
+                rgba(139, 92, 246, 0.05) 0%, 
+                rgba(6, 182, 212, 0.05) 100%);
+            border-color: var(--accent-primary);
+        }
+
+        .feature-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 16px;
+        }
+
+        .feature-title-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex: 1;
+        }
+
+        .feature-icon {
+            font-size: 28px;
+            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+        }
+
+        .feature-title {
+            margin: 0;
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .feature-description {
+            color: var(--text-secondary);
+            line-height: 1.6;
+            margin: 0 0 16px 0;
+            font-size: 14px;
+        }
+
+        /* Status Badges */
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 16px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .status-badge.active {
+            background: rgba(16, 185, 129, 0.2);
+            color: #10b981;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .status-badge.experimental {
+            background: rgba(245, 158, 11, 0.2);
+            color: #f59e0b;
+            border: 1px solid rgba(245, 158, 11, 0.3);
+        }
+
+        .status-badge.coming-soon {
+            background: rgba(59, 130, 246, 0.2);
+            color: #3b82f6;
+            border: 1px solid rgba(59, 130, 246, 0.3);
+        }
+
+        /* Feature Details */
+        .feature-details {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border-subtle);
+            animation: slideDown 0.3s ease-out;
+            max-height: 500px;
+            overflow: hidden;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                max-height: 0;
+            }
+            to {
+                opacity: 1;
+                max-height: 500px;
+            }
+        }
+
+        .details-section,
+        .usage-section,
+        .shortcut-section {
+            margin-bottom: 16px;
+        }
+
+        .details-section h4,
+        .usage-section h4,
+        .shortcut-section h4 {
+            margin: 0 0 8px 0;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--accent-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .details-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .details-list li {
+            padding: 8px 0;
+            color: var(--text-secondary);
+            font-size: 14px;
+            line-height: 1.6;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+        }
+
+        .details-list li:last-child {
+            border-bottom: none;
+        }
+
+        .usage-section p {
+            color: var(--text-secondary);
+            font-size: 14px;
+            line-height: 1.6;
+            margin: 0;
+        }
+
+        .shortcut-key {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-subtle);
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 13px;
+            color: var(--accent-primary);
+            display: inline-block;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .header {
+                padding: 16px 0;
+            }
+            
+            .hero-title {
+                font-size: 36px;
+            }
+            
+            .features-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .search-box {
+                width: 200px;
+            }
+        }
+
+        /* Loading State */
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.5;
+            }
+        }
+
+        .loading {
+            animation: pulse 2s ease-in-out infinite;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <div class="logo">
+                <img src="/Coder1-Logo-Sharp.svg" alt="Coder1 IDE" />
+            </div>
+            <div class="nav-actions">
+                <input type="text" class="search-box" placeholder="Search features..." id="searchInput">
+                <a href="http://localhost:3001/ide" class="back-to-ide">
+                    <i class="fas fa-arrow-left"></i>
+                    Back to IDE
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Categories -->
+    <section class="categories-section">
+        <div class="categories-container">
+            <div class="categories-title">Categories</div>
+            <div class="category-pills">
+                <div class="category-pill active" data-category="all">
+                    All
+                    <span class="category-count" id="count-all">0</span>
+                </div>
+                <div class="category-pill" data-category="ai-control">
+                    AI Control
+                    <span class="category-count" id="count-ai-control">0</span>
+                </div>
+                <div class="category-pill" data-category="advanced-features">
+                    Advanced Features
+                    <span class="category-count" id="count-advanced-features">0</span>
+                </div>
+                <div class="category-pill" data-category="session-management">
+                    Session Management
+                    <span class="category-count" id="count-session-management">0</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Hero Section -->
+    <section class="hero-section">
+        <div class="hero-container">
+            <div class="hero-header">
+                <h1 class="hero-title">Coder1 Features</h1>
+                <p class="hero-subtitle">Master the power of AI-enhanced development</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="features-section">
+        <div class="features-grid" id="featuresGrid">
+            <!-- Features will be rendered here by JavaScript -->
+        </div>
+    </section>
+
+    <script>
+        // Test basic JavaScript execution
+        console.log('🔥 JavaScript loading started...');
+        
+        // Features data
+        const FEATURES = [
+            // Core AI Features
+            {
+                id: 'claude-code-integration',
+                title: 'Native Claude Code CLI Integration',
+                icon: '🤖',
+                category: 'AI Control',
+                categorySlug: 'ai-control',
+                description: 'Built from the ground up for Claude Code CLI with seamless AI assistance',
+                details: [
+                    '🔧 Direct CLI bridge for native integration',
+                    '🧠 Session intelligence and context management',
+                    '🔄 Smart handoffs between human and AI coding',
+                    '📊 Real-time session tracking and analysis',
+                    '⚡ Optimized for Claude Code workflows'
+                ],
+                usage: 'The IDE automatically detects Claude Code CLI and provides deep integration. Simply type "claude" in the terminal to activate AI assistance.',
+                status: 'active'
+            },
+            {
+                id: 'ai-team-orchestration',
+                title: 'AI Team Orchestration',
+                icon: '👥',
+                category: 'AI Control',
+                categorySlug: 'ai-control',
+                description: 'Spawn 6 specialized AI agents working simultaneously on your project',
+                details: [
+                    '👑 Queen Agent - 5-question requirements coordinator',
+                    '🎨 Frontend Specialist - UI/UX and React expert',
+                    '🔧 Backend Specialist - APIs and server architecture',
+                    '🏗️ Architect - System design and planning',
+                    '⚡ Optimizer - Performance and efficiency',
+                    '🐛 Debugger - Testing and edge case analysis',
+                    '💻 Implementer - Core functionality development',
+                    '🔄 Autonomous task execution without manual approval'
+                ],
+                usage: 'Click "AI Team" button in terminal header. Agents spawn in tmux sessions and work autonomously based on Queen Agent\'s task distribution.',
+                status: 'active'
+            },
+            {
+                id: 'supervision',
+                title: 'AI Supervision System',
+                icon: '👁️',
+                category: 'AI Control',
+                categorySlug: 'ai-control',
+                description: 'Real-time AI monitoring and proactive assistance',
+                details: [
+                    '🔍 Auto-activates when typing "claude" in terminal',
+                    '💡 Proactive suggestions before you ask',
+                    '🔄 Context-aware help based on your actions',
+                    '🛡️ Privacy-first local processing',
+                    '📊 Real-time activity monitoring'
+                ],
+                usage: 'Supervision automatically engages when AI assistance is detected. The system watches your coding activities and offers help proactively.',
+                status: 'active'
+            },
+
+            // Advanced Features
+            {
+                id: 'hybrid-hook-system',
+                title: 'Hybrid Hook System',
+                icon: '⚡',
+                category: 'Advanced Features',
+                categorySlug: 'advanced-features',
+                description: 'Lightning-fast bash triggers with intelligent AI delegation',
+                details: [
+                    '⚡ ~50ms execution time for simple operations',
+                    '🧠 25 specialized AI agents for different domains',
+                    '📊 90% reduction in unnecessary AI calls',
+                    '🎯 Intelligent complexity threshold detection',
+                    '📈 Performance metrics and ROI tracking',
+                    '🔄 Delegates only when complexity demands it (~25-30% of cases)',
+                    '💾 Persistent context between delegations',
+                    '🚀 Non-breaking integration with existing workflow'
+                ],
+                usage: 'Hybrid hooks run instantly for simple tasks and intelligently delegate to AI when complexity requires it. Access via /api/hooks/hybrid/execute or the Hooks Manager UI.',
+                status: 'active'
+            },
+            {
+                id: 'session-summary',
+                title: 'Session Summary Generator',
+                icon: '📋',
+                category: 'Advanced Features',
+                categorySlug: 'advanced-features',
+                description: 'Creates comprehensive handoff documents for perfect session continuity',
+                details: [
+                    '📊 Analyzes entire coding session',
+                    '📝 Export to Markdown, JSON, or HTML',
+                    '🔄 "Claude, continue where I left off" actually works',
+                    '📍 Tracks all changes, decisions, and context',
+                    '🎯 Perfect for team handoffs',
+                    '💾 Preserves complete session state'
+                ],
+                usage: 'Click "Session Summary" button in status bar. The system analyzes your session and creates a comprehensive document for future reference or handoff.',
+                status: 'active'
+            },
+            {
+                id: 'smart-prd-generator',
+                title: 'Smart PRD Generator',
+                icon: '🎯',
+                category: 'Advanced Features',
+                categorySlug: 'advanced-features',
+                description: '7-step AI wizard transforms ideas into detailed technical specifications',
+                details: [
+                    '❓ 5 strategic questions for requirements gathering',
+                    '🎨 Automatic wireframe generation',
+                    '👤 Persona consultation system',
+                    '📊 Enhanced brief creation from basic ideas',
+                    '🔄 Direct IDE integration via localStorage',
+                    '📋 Version management capabilities',
+                    '✨ AI-powered requirement analysis'
+                ],
+                usage: 'Access at localhost:3000. Answer guided questions and receive detailed PRDs with wireframes that automatically integrate with the IDE.',
+                status: 'active'
+            },
+            {
+                id: 'repository-intelligence',
+                title: 'Repository Intelligence',
+                icon: '🧠',
+                category: 'Advanced Features',
+                categorySlug: 'advanced-features',
+                description: 'Instant GitHub repository analysis and understanding',
+                details: [
+                    '📊 Code pattern detection and analysis',
+                    '🔍 Dependency mapping and tracking',
+                    '🏗️ Architecture understanding',
+                    '📚 Best practices extraction',
+                    '🔄 Universal query system across all repos',
+                    '💡 Intelligent code suggestions',
+                    '📈 Codebase health metrics'
+                ],
+                usage: 'Add any GitHub repository URL and the system instantly analyzes it. Query across all loaded repositories with natural language questions.',
+                status: 'active'
+            },
+            {
+                id: 'documentation-intelligence',
+                title: 'Documentation Intelligence System',
+                icon: '📚',
+                category: 'Advanced Features',
+                categorySlug: 'advanced-features',
+                description: 'Smart documentation extraction and AI-optimal processing',
+                details: [
+                    '🌐 Smart content extraction from any URL',
+                    '📊 Intelligent chunking for AI processing',
+                    '🔍 Advanced search and ranking algorithms',
+                    '💾 24-hour intelligent caching',
+                    '🎯 Token-aware optimization (800 words/chunk)',
+                    '📑 MD5-based deduplication',
+                    '📈 Context-sensitive snippet extraction'
+                ],
+                usage: 'Add documentation via POST /api/docs/add. The system extracts, processes, and makes it searchable for AI assistance during development.',
+                status: 'active'
+            },
+            {
+                id: 'ai-intelligence-systems',
+                title: '8 Core AI Intelligence Systems',
+                icon: '🤖',
+                category: 'Advanced Features',
+                categorySlug: 'advanced-features',
+                description: 'Comprehensive AI subsystems for intelligent development assistance',
+                details: [
+                    '🏗️ Context Builder - Dynamic project context from file watching',
+                    '💭 Conversation Threading - Session continuity and memory',
+                    '🧠 Memory System - Persistent JSON-based learning',
+                    '⚡ Command Parser - Natural language to code translation',
+                    '💡 Proactive Intelligence - Smart suggestion generation',
+                    '✅ Approval Workflows - Action authorization system',
+                    '📊 Performance Optimizer - Resource and efficiency management',
+                    '🔄 Enhanced Claude Bridge - API orchestration with fallbacks',
+                    '📈 Real-time monitoring dashboard with Chart.js'
+                ],
+                usage: 'All 8 systems work together automatically. Monitor their status at localhost:3000/ai-monitor.html for real-time insights.',
+                status: 'active'
+            },
+
+            // Session Management & Productivity
+            {
+                id: 'mcp-integration',
+                title: 'MCP Server Integration',
+                icon: '🌐',
+                category: 'Session Management',
+                categorySlug: 'session-management',
+                description: 'Universal tool access through Model Context Protocol servers',
+                details: [
+                    '🌐 Browser-Use MCP - Natural language browser automation',
+                    '📁 Filesystem MCP - Full local file system access',
+                    '🔄 Git MCP - Version control operations',
+                    '🎭 Playwright MCP - Advanced browser testing',
+                    '🔥 Firecrawl MCP - Web scraping and documentation',
+                    '🤖 Natural language control for everything',
+                    '📊 Session persistence across commands'
+                ],
+                usage: 'MCP servers are automatically available. Use natural language commands like "Open Chrome and search for TypeScript tutorials" to control tools.',
+                status: 'active'
+            },
+            {
+                id: 'vibe-coder',
+                title: 'Vibe Coder Features',
+                icon: '🎓',
+                category: 'Session Management',
+                categorySlug: 'session-management',
+                description: 'Making coding accessible for beginners',
+                details: [
+                    '💬 Plain English to code translation',
+                    '❗ Human-friendly error explanations',
+                    '💭 Automatic code commenting',
+                    '💡 Hover tooltips with AI explanations',
+                    '📚 Beginner learning mode',
+                    '🎯 Step-by-step guidance',
+                    '✨ Code suggestions in real-time'
+                ],
+                usage: 'Type what you want in plain English. The system translates to code, explains errors in simple terms, and teaches as you code.',
+                status: 'active'
+            },
+            {
+                id: 'monaco-editor',
+                title: 'Monaco Editor Excellence',
+                icon: '💻',
+                category: 'Session Management',
+                categorySlug: 'session-management',
+                description: 'VSCode-quality editing experience optimized for AI workflows',
+                details: [
+                    '📐 890px optimized width for maximum coding space',
+                    '🎨 Syntax highlighting for 100+ languages',
+                    '🧠 IntelliSense and auto-completion',
+                    '✏️ Multi-cursor editing',
+                    '🎭 Tokyo Night theme by default',
+                    '📊 Code folding and minimap',
+                    '🔍 Advanced search and replace'
+                ],
+                usage: 'The Monaco Editor is your primary coding interface with all VSCode features. The layout is optimized for AI-assisted development.',
+                status: 'active'
+            },
+            {
+                id: 'terminal-integration',
+                title: 'Advanced Terminal System',
+                icon: '🖥️',
+                category: 'Session Management',
+                categorySlug: 'session-management',
+                description: 'Full PTY terminal with AI supervision and optimization',
+                details: [
+                    '💻 Full PTY support with SafePtyManager',
+                    '📊 107 columns optimized width',
+                    '🔄 WebSocket real-time communication',
+                    '💾 Session persistence and management',
+                    '🎛️ AI control buttons in header',
+                    '🔍 Terminal output analysis',
+                    '⚡ Background process support'
+                ],
+                usage: 'The terminal provides full shell access with AI supervision. Control buttons in the header activate various AI features.',
+                status: 'active'
+            },
+            {
+                id: 'templates-hub',
+                title: 'Templates Hub',
+                icon: '📋',
+                category: 'Session Management',
+                categorySlug: 'session-management',
+                description: 'Pre-built project templates and custom template creation',
+                details: [
+                    '🎯 Pre-built project templates',
+                    '✨ Custom template creation',
+                    '🔄 Template sharing and discovery',
+                    '📁 Category-based organization',
+                    '⚡ One-click project initialization',
+                    '📊 Template usage analytics'
+                ],
+                usage: 'Access Templates Hub to start projects from templates or create your own. Share templates with the community.',
+                status: 'active'
+            },
+            {
+                id: 'workflow-dashboard',
+                title: 'Workflow Dashboard',
+                icon: '📊',
+                category: 'Session Management',
+                categorySlug: 'session-management',
+                description: 'Visual workflow management and automation',
+                details: [
+                    '📈 Visual workflow builder',
+                    '✅ Task tracking and automation',
+                    '📊 Progress monitoring',
+                    '👥 Team collaboration features',
+                    '⏰ Deadline tracking',
+                    '🔄 Automated workflow execution'
+                ],
+                usage: 'Open Timeline to see your development journey. Perfect for tracking progress or recovering lost work.',
+                shortcut: 'Cmd/Ctrl+Shift+T',
+                status: 'active'
+            }
+        ];
+
+        let currentCategory = 'all';
+        let searchQuery = '';
+        let expandedFeature = null;
+
+        // Initialize the page
+        function init() {
+            try {
+                console.log('🚀 Initializing features page...');
+                console.log('📊 Total features:', FEATURES.length);
+                console.log('🔍 Current category:', currentCategory);
+                console.log('🔎 Search query:', searchQuery);
+                
+                // Add immediate feedback
+                const grid = document.getElementById('featuresGrid');
+                if (!grid) {
+                    console.error('❌ Features grid element not found!');
+                    return;
+                }
+                
+                // Test with simple content first
+                grid.innerHTML = '<div style="color: white; padding: 20px;">✅ JavaScript is working! Loading ' + FEATURES.length + ' features...</div>';
+                
+                // Delay the real rendering to ensure DOM is ready
+                setTimeout(function() {
+                    console.log('🎬 Starting main rendering process...');
+                    renderFeatures();
+                    updateCategoryCounts();
+                    bindEventListeners();
+                }, 100);
+            } catch (error) {
+                console.error('❌ Error during initialization:', error);
+            }
+        }
+
+        // Bind event listeners
+        function bindEventListeners() {
+            // Search functionality
+            document.getElementById('searchInput').addEventListener('input', (e) => {
+                searchQuery = e.target.value.toLowerCase();
+                renderFeatures();
+            });
+
+            // Category filter functionality
+            document.querySelectorAll('.category-pill').forEach(pill => {
+                pill.addEventListener('click', (e) => {
+                    // Remove active class from all pills
+                    document.querySelectorAll('.category-pill').forEach(p => p.classList.remove('active'));
+                    // Add active class to clicked pill
+                    e.currentTarget.classList.add('active');
+                    
+                    currentCategory = e.currentTarget.dataset.category;
+                    renderFeatures();
+                });
+            });
+        }
+
+        // Filter features based on search and category
+        function getFilteredFeatures() {
+            return FEATURES.filter(feature => {
+                const matchesSearch = searchQuery === '' || 
+                    feature.title.toLowerCase().includes(searchQuery) ||
+                    feature.description.toLowerCase().includes(searchQuery) ||
+                    feature.details.some(d => d.toLowerCase().includes(searchQuery));
+                
+                const matchesCategory = currentCategory === 'all' || feature.categorySlug === currentCategory;
+                
+                return matchesSearch && matchesCategory;
+            });
+        }
+
+        // Render features grid
+        function renderFeatures() {
+            try {
+                const filteredFeatures = getFilteredFeatures();
+                const grid = document.getElementById('featuresGrid');
+                console.log('Rendering features...', filteredFeatures.length, 'features found');
+                console.log('Grid element:', grid);
+                
+                if (!grid) {
+                    console.error('Grid element not found during render!');
+                    return;
+                }
+                
+                if (filteredFeatures.length === 0) {
+                    grid.innerHTML = '<div style="color: white; padding: 20px; text-align: center;">No features found matching current criteria.</div>';
+                    return;
+                }
+            
+            // Build HTML for features using safer string concatenation
+            const featuresHTML = filteredFeatures.map(function(feature, index) {
+                const isExpanded = expandedFeature === feature.id;
+                const statusBadge = getStatusBadge(feature.status);
+                
+                let html = '<div class="feature-card';
+                if (isExpanded) html += ' expanded';
+                html += '" data-feature-id="' + feature.id + '" style="--card-index: ' + index + '" onclick="toggleFeature(\'' + feature.id + '\')">';
+                
+                // Header
+                html += '<div class="feature-header">';
+                html += '<div class="feature-title-row">';
+                html += '<span class="feature-icon">' + feature.icon + '</span>';
+                html += '<h3 class="feature-title">' + feature.title.replace(/'/g, '&apos;').replace(/"/g, '&quot;') + '</h3>';
+                html += '</div>';
+                html += statusBadge;
+                html += '</div>';
+                
+                // Description
+                html += '<p class="feature-description">' + feature.description.replace(/'/g, '&apos;').replace(/"/g, '&quot;') + '</p>';
+                
+                // Expanded details
+                if (isExpanded) {
+                    html += '<div class="feature-details">';
+                    html += '<div class="details-section">';
+                    html += '<h4>Features</h4>';
+                    html += '<ul class="details-list">';
+                    for (let i = 0; i < feature.details.length; i++) {
+                        html += '<li>' + feature.details[i].replace(/'/g, '&apos;').replace(/"/g, '&quot;') + '</li>';
+                    }
+                    html += '</ul>';
+                    html += '</div>';
+                    
+                    html += '<div class="usage-section">';
+                    html += '<h4>How to Use</h4>';
+                    html += '<p>' + feature.usage.replace(/'/g, '&apos;').replace(/"/g, '&quot;') + '</p>';
+                    html += '</div>';
+                    
+                    if (feature.shortcut) {
+                        html += '<div class="shortcut-section">';
+                        html += '<h4>Keyboard Shortcut</h4>';
+                        html += '<span class="shortcut-key">' + feature.shortcut + '</span>';
+                        html += '</div>';
+                    }
+                    html += '</div>';
+                }
+                
+                html += '</div>';
+                return html;
+            });
+            
+            grid.innerHTML = featuresHTML.join('');
+            console.log('✅ Features rendered successfully! Generated', featuresHTML.length, 'cards');
+            
+            // Initialize 3D card effects after rendering with better timing
+            setTimeout(() => {
+                console.log('🚀 Starting 3D effects initialization...');
+                init3DCardEffects();
+            }, 150);
+            
+            } catch (error) {
+                console.error('Error rendering features:', error);
+                const grid = document.getElementById('featuresGrid');
+                if (grid) {
+                    grid.innerHTML = '<div style="color: red; padding: 20px;">Error loading features: ' + error.message + '</div>';
+                }
+            }
+        }
+
+        // Toggle feature expansion
+        function toggleFeature(featureId) {
+            expandedFeature = expandedFeature === featureId ? null : featureId;
+            renderFeatures();
+        }
+
+        // Get status badge HTML
+        function getStatusBadge(status) {
+            // Removed status badges per user request
+            return '';
+        }
+
+        // 3D Card Rotation Effect for Feature Cards
+        function init3DCardEffects() {
+            try {
+                console.log('🎯 Initializing 3D card effects...');
+                const cards = document.querySelectorAll('.feature-card');
+                console.log('🎯 Found', cards.length, 'feature cards');
+                
+                if (cards.length === 0) {
+                    console.warn('⚠️ No feature cards found for 3D effects');
+                    return;
+                }
+                
+                cards.forEach((card, index) => {
+                    console.log('🎯 Adding 3D effects to card', index, card.dataset.featureId);
+                    
+                    // Remove any existing 3D event listeners to prevent duplicates
+                    card.removeEventListener('mousemove', card._3dMouseMove);
+                    card.removeEventListener('mouseleave', card._3dMouseLeave);
+                    
+                    // Create mouse move handler for 3D rotation
+                    const mouseMoveHandler = (e) => {
+                        const rect = card.getBoundingClientRect();
+                        const centerX = rect.left + rect.width / 2;
+                        const centerY = rect.top + rect.height / 2;
+                        
+                        // Calculate rotation based on mouse position
+                        const mouseX = e.clientX - centerX;
+                        const mouseY = e.clientY - centerY;
+                        
+                        // Calculate rotation angles (limited to -10 to 10 degrees)
+                        const rotateX = (mouseY / (rect.height / 2)) * -10;
+                        const rotateY = (mouseX / (rect.width / 2)) * 10;
+                        
+                        // Disable floating animation during 3D transform
+                        card.classList.add('no-animation');
+                        
+                        // Apply 3D transform with !important override
+                        card.style.setProperty('transform', `
+                            perspective(1500px)
+                            rotateX(${rotateX}deg)
+                            rotateY(${rotateY}deg)
+                            translateY(-8px)
+                            translateZ(25px)
+                            scale(1.05)
+                        `, 'important');
+                        
+                        console.log('🎯 Applied transform to card:', card.dataset.featureId);
+                    };
+                    
+                    // Create mouse leave handler to reset
+                    const mouseLeaveHandler = () => {
+                        card.classList.remove('no-animation');
+                        card.style.removeProperty('transform');
+                        console.log('🎯 Reset transform for card:', card.dataset.featureId);
+                    };
+                    
+                    // Store references to handlers for cleanup
+                    card._3dMouseMove = mouseMoveHandler;
+                    card._3dMouseLeave = mouseLeaveHandler;
+                    
+                    // Add event listeners (without interfering with onclick)
+                    card.addEventListener('mousemove', mouseMoveHandler);
+                    card.addEventListener('mouseleave', mouseLeaveHandler);
+                });
+                
+                console.log('✅ 3D card effects initialized successfully');
+            } catch (error) {
+                console.error('❌ Error initializing 3D card effects:', error);
+            }
+        }
+
+        // Update category counts
+        function updateCategoryCounts() {
+            const categoryCounts = {
+                'all': FEATURES.length,
+                'ai-control': 0,
+                'advanced-features': 0,
+                'session-management': 0
+            };
+
+            FEATURES.forEach(feature => {
+                const slug = feature.categorySlug;
+                if (categoryCounts[slug] !== undefined) {
+                    categoryCounts[slug]++;
+                }
+            });
+
+            // Update UI
+            Object.keys(categoryCounts).forEach(category => {
+                const countElement = document.getElementById(`count-${category}`);
+                if (countElement) {
+                    countElement.textContent = categoryCounts[category];
+                }
+            });
+        }
+
+        // Initialize when DOM is loaded
+        console.log('🔥 About to add DOMContentLoaded listener...');
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🔥 DOMContentLoaded fired!');
+            init();
+        });
+        console.log('🔥 JavaScript file loaded completely!');
+        
+        // Add a visual test for 3D effects
+        setTimeout(() => {
+            console.log('🔍 Running visual test...');
+            const testCard = document.querySelector('.feature-card');
+            if (testCard) {
+                console.log('✅ Found test card:', testCard);
+                console.log('🎮 Testing 3D transform...');
+                
+                // Add dramatic test transform
+                testCard.classList.add('no-animation');
+                testCard.style.setProperty('transform', 'perspective(1500px) rotateY(25deg) rotateX(10deg) translateZ(50px) scale(1.1)', 'important');
+                testCard.style.setProperty('border', '3px solid #00ff00', 'important'); // Green border for visibility
+                
+                setTimeout(() => {
+                    testCard.classList.remove('no-animation');
+                    testCard.style.removeProperty('transform');
+                    testCard.style.removeProperty('border');
+                    console.log('🎮 3D test complete - card should have been visibly tilted with green border');
+                }, 3000);
+            } else {
+                console.log('❌ No feature cards found for test');
+            }
+        }, 3000);
+    </script>
+</body>
+</html>

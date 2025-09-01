@@ -1,0 +1,1981 @@
+// SafePTYManager Integration for Main Server
+// Replaces terminal-websocket.js with Socket.IO compatible implementation
+
+const os = require('os');
+const { PTYSupervisionAdapter } = require('../services/supervision/PTYSupervisionAdapter');
+const { SupervisionCommands } = require('../services/supervision/SupervisionCommands');
+const { ClaudeInputHandler } = require('../services/supervision/ClaudeInputHandler');
+const { getInstance: getRepositoryCommands } = require('../services/terminal-commands/repository-intelligence-commands');
+const claudeFileTracker = require('../services/claude-file-tracker');
+const BrainstormOrchestrator = require('../services/brainstorm-orchestrator');
+
+// SafePTYManager - Production-ready PTY session management
+class SafePTYManager {
+    constructor() {
+        this.sessions = new Map();
+        this.sessionCount = 0;
+        this.maxSessions = 10; // Increased max sessions
+        this.lastSessionCreation = 0;
+        this.minSessionInterval = 50; // Reduced to 50ms rate limit for auto-creation
+        this.telemetry = {
+            sessionsCreated: 0,
+            sessionsDestroyed: 0,
+            rateLimitHits: 0,
+            errors: 0
+        };
+        
+        console.log('[SafePTYManager] Initialized with rate limiting and session management');
+    }
+    
+    // Rate limiting to prevent PTY exhaustion
+    canCreateSession() {
+        const now = Date.now();
+        const timeSinceLastCreation = now - this.lastSessionCreation;
+        
+        if (timeSinceLastCreation < this.minSessionInterval) {
+            this.telemetry.rateLimitHits++;
+            return false;
+        }
+        
+        if (this.sessionCount >= this.maxSessions) {
+            this.telemetry.rateLimitHits++;
+            return false;
+        }
+        
+        return true;
+    }
+    
+    // Create new PTY session with Claude Code detection
+    createSession(socketId, options = {}) {
+        if (!this.canCreateSession()) {
+            throw new Error(`Rate limited: Max ${this.maxSessions} sessions, min ${this.minSessionInterval}ms interval`);
+        }
+        
+        try {
+            let pty;
+            try {
+                pty = require('node-pty');
+            } catch (error) {
+                throw new Error('node-pty not available - terminal features disabled');
+            }
+            
+            // Use provided ID if available, otherwise generate one
+            const sessionId = options.id || `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+            const shell = process.platform === 'win32' ? 'powershell.exe' : 'bash';
+            const cwd = options.cwd || process.env.HOME;
+            
+            // Enhanced environment for Claude Code CLI
+            const env = {
+                ...process.env,
+                TERM: 'xterm-256color',
+                COLORTERM: 'truecolor',
+                // Ensure Claude Code CLI is in PATH
+                PATH: `/opt/homebrew/bin:/usr/local/bin:${process.env.PATH}`,
+                // Claude-specific optimizations
+                CLAUDE_CLI_MODE: '1',
+                CLAUDE_TERMINAL_INTEGRATION: '1'
+            };
+            
+            console.log(`[SafePTYManager] Creating session: ${sessionId}`);
+            console.log(`[SafePTYManager] Shell: ${shell}, CWD: ${cwd}`);
+            
+            const ptyProcess = pty.spawn(shell, ['-l'], {
+                name: 'xterm-256color',
+                cols: options.cols || 80,
+                rows: options.rows || 24,
+                cwd: cwd,
+                env: env
+            });
+            
+            const session = {
+                id: sessionId,
+                process: ptyProcess,
+                socketId: socketId,
+                createdAt: Date.now(),
+                lastActivity: Date.now(),  // Track session activity
+                claudeDetected: false,
+                commandHistory: [],
+                thinkingMode: 'normal',  // Default thinking mode
+                protected: false,  // Protection flag for restart scenarios
+                protectedReason: null  // Why this session is protected
+            };
+            
+            // Don't send welcome message - it's causing display issues
+            // Users will see the prompt to type claude from the React UI instead
+            
+            // Claude Code CLI detection
+            ptyProcess.onData((data) => {
+                // Update activity timestamp on any terminal output
+                session.lastActivity = Date.now();
+                
+                // Look for Claude Code CLI prompts or responses
+                if (data.includes('claude') && (data.includes('>', '<') || data.includes('$'))) {
+                    if (!session.claudeDetected) {
+                        session.claudeDetected = true;
+                        session.protected = true;  // Protect Claude Code sessions
+                        session.protectedReason = 'Claude Code CLI session';
+                        console.log(`[SafePTYManager] Claude Code CLI detected in session ${sessionId} - PROTECTED`);
+                    }
+                }
+            });
+            
+            // Store session
+            this.sessions.set(sessionId, session);
+            this.sessionCount++;
+            this.lastSessionCreation = Date.now();
+            this.telemetry.sessionsCreated++;
+            
+            console.log(`[SafePTYManager] Session created: ${sessionId} (${this.sessionCount}/${this.maxSessions})`);
+            
+            return session;
+            
+        } catch (error) {
+            this.telemetry.errors++;
+            console.error('[SafePTYManager] Session creation failed:', error);
+            throw error;
+        }
+    }
+    
+    // Get session by ID
+    getSession(sessionId) {
+        return this.sessions.get(sessionId);
+    }
+    
+    // Destroy session and cleanup
+    destroySession(sessionId) {
+        const session = this.sessions.get(sessionId);
+        if (session) {
+            try {
+                session.process.kill();
+                this.sessions.delete(sessionId);
+                this.sessionCount--;
+                this.telemetry.sessionsDestroyed++;
+                console.log(`[SafePTYManager] Session destroyed: ${sessionId} (${this.sessionCount}/${this.maxSessions})`);
+            } catch (error) {
+                console.error(`[SafePTYManager] Error destroying session ${sessionId}:`, error);
+            }
+        }
+    }
+    
+    // Get telemetry data
+    getTelemetry() {
+        return {
+            ...this.telemetry,
+            activeSessions: this.sessionCount,
+            maxSessions: this.maxSessions,
+            rateLimitEffectiveness: this.telemetry.rateLimitHits / (this.telemetry.sessionsCreated + this.telemetry.rateLimitHits)
+        };
+    }
+    
+    // Cleanup disconnected sessions based on inactivity
+    cleanup() {
+        // Check for infinite mode (useful for development)
+        const INFINITE_MODE = process.env.TERMINAL_INFINITE_MODE === 'true';
+        if (INFINITE_MODE) {
+            // In infinite mode, only clean up truly dead sessions (process no longer exists)
+            for (const [sessionId, session] of this.sessions) {
+                if (session.process && session.process.killed) {
+                    console.log(`[SafePTYManager] Cleaning up dead session: ${sessionId} (process terminated)`);
+                    this.destroySession(sessionId);
+                }
+            }
+            return;
+        }
+        
+        // Normal timeout-based cleanup
+        const INACTIVE_TIMEOUT = process.env.TERMINAL_SESSION_TIMEOUT || 28800000; // 8 hours default
+        const CLEANUP_LOG_ENABLED = process.env.TERMINAL_CLEANUP_LOGGING !== 'false';
+        
+        for (const [sessionId, session] of this.sessions) {
+            const inactiveTime = Date.now() - (session.lastActivity || session.createdAt);
+            if (inactiveTime > INACTIVE_TIMEOUT) {
+                if (CLEANUP_LOG_ENABLED) {
+                    console.log(`[SafePTYManager] Cleaning up inactive session: ${sessionId} (inactive for ${Math.round(inactiveTime/3600000)}h)`);
+                }
+                this.destroySession(sessionId);
+            }
+        }
+    }
+    
+    // Enhanced cleanup for shutdown
+    async cleanupAll(forceAll = false) {
+        const protectionEnabled = process.env.TERMINAL_SESSION_PROTECTION === 'true';
+        const protectedSessions = [];
+        
+        console.log(`[SafePTYManager] Cleaning up ${this.sessions.size} sessions (protection: ${protectionEnabled}, forceAll: ${forceAll})...`);
+        const promises = [];
+        
+        for (const [sessionId, session] of this.sessions) {
+            // Check if session is protected
+            if (!forceAll && protectionEnabled && session.protected) {
+                protectedSessions.push(sessionId);
+                console.log(`[SafePTYManager] Skipping protected session: ${sessionId} (${session.protectedReason})`);
+                continue;
+            }
+            
+            promises.push(new Promise((resolve) => {
+                try {
+                    this.destroySession(sessionId);
+                    resolve();
+                } catch (error) {
+                    console.error(`Error cleaning session ${sessionId}:`, error);
+                    resolve();
+                }
+            }));
+        }
+        
+        await Promise.all(promises);
+        
+        if (protectedSessions.length > 0) {
+            console.log(`[SafePTYManager] Cleanup complete. Protected sessions preserved: ${protectedSessions.length}`);
+        } else {
+            console.log('[SafePTYManager] All sessions cleaned up');
+        }
+    }
+}
+
+// Global SafePTYManager instance
+const safeptyManager = new SafePTYManager();
+
+// Make it globally available for cleanup
+global.safePTYManager = safeptyManager;
+
+// Global ClaudeInputHandler instance for managing Claude subprocess input
+const claudeInputHandler = new ClaudeInputHandler();
+
+// Global BrainstormOrchestrator instance for AI Mastermind sessions (legacy)
+const brainstormOrchestrator = new BrainstormOrchestrator();
+
+// Use shared singleton instance to maintain sessions across all handlers
+const conversationOrchestrator = require('../services/conversation-orchestrator-singleton');
+const ClaudeCodeIntegration = require('../services/claude-code-integration');
+const claudeCodeIntegration = new ClaudeCodeIntegration();
+
+// Socket.IO terminal integration (compatible with frontend)
+function setupTerminalWebSocket(io) {
+    console.log('[SafePTYManager] Setting up Socket.IO terminal integration...');
+    
+    // Import Claude button routes for WebSocket integration
+    const claudeButtonRoutes = require('./claude-buttons');
+    
+    // Track connected clients for both voice and terminal
+    const connectedClients = new Map();
+    
+    // Track active supervision adapters
+    const activeSupervision = new Map();
+    
+    io.on('connection', (socket) => {
+        console.log(`[SafePTYManager] Client connected: ${socket.id}`);
+        
+        // Track client connection (for both voice and terminal)
+        connectedClients.set(socket.id, { 
+            connectedAt: Date.now(),
+            sessionId: null,
+            type: 'mixed' // Can handle both voice and terminal
+        });
+        
+        // DISABLED: Auto-create terminal session - React component manages its own session
+        // The React IDE creates its own session with a specific ID format
+        // Keeping both creates conflicts where the backend session ID doesn't match frontend
+        /*
+        const isIDEClient = socket.handshake.headers.referer?.includes('/ide') || 
+                           socket.handshake.headers.origin?.includes('localhost');
+        
+        if (isIDEClient) {
+            console.log(`🖥️ [AUTO-TERMINAL] Creating terminal session for IDE client: ${socket.id}`);
+            
+            // Auto-create terminal session with default options
+            try {
+                const session = safeptyManager.createSession(socket.id, {
+                    cols: 80,
+                    rows: 24,
+                    autoCreate: true
+                });
+                
+                if (session) {
+                    // Send terminal created event to initialize XTerm.js
+                    socket.emit('terminal:created', {
+                        id: session.id,
+                        pid: session.process.pid,
+                        autoCreated: true
+                    });
+                    
+                    console.log(`✅ [AUTO-TERMINAL] Terminal session created: ${session.id}`);
+                } else {
+                    console.log(`⚠️ [AUTO-TERMINAL] Failed to create terminal session for ${socket.id}`);
+                }
+            } catch (error) {
+                console.error(`❌ [AUTO-TERMINAL] Error creating terminal session:`, error.message);
+            }
+        }
+        */
+        
+        // Let React component create its own session with its preferred ID format
+        console.log(`🖥️ [TERMINAL] Client connected: ${socket.id} (React will create session)`);
+        socket.emit('terminal:ready', { socketId: socket.id });
+        
+        // Handle terminal creation requests
+        socket.on('terminal:create', (options = {}) => {
+            try {
+                const session = safeptyManager.createSession(socket.id, options);
+                
+                // Send success response
+                socket.emit('terminal:created', {
+                    id: session.id,
+                    pid: session.process.pid
+                });
+                
+                // Initialize line buffer for supervision
+                session.lineBuffer = '';
+                session.lastAnalyzedLine = '';
+                session.recentQuestions = new Set(); // Track recent questions to avoid duplicates
+                session.answeredQuestions = new Set(); // Track questions we've already answered
+                session.pendingQuestions = []; // Collect questions before responding
+                session.questionTimer = null; // Timer to batch questions
+                session.claudeActive = false; // Track if Claude is the active process
+                session.claudePromptDetected = false; // Track if Claude's prompt is detected
+                session.responsesDelivered = false; // Track if we've already delivered responses
+                session.pendingResponses = []; // Queue responses to send when Claude is ready
+                
+                // Forward terminal output to client (emit both events for compatibility)
+                session.process.onData((data) => {
+                    const outputData = {
+                        id: session.id,
+                        data: data
+                    };
+                    socket.emit('terminal:data', outputData);
+                    socket.emit('terminal:output', outputData);
+                    
+                    // ERROR DOCTOR: Detect errors in terminal output
+                    const errorPatterns = [
+                        /error:/i,
+                        /exception:/i,
+                        /cannot find module/i,
+                        /unexpected token/i,
+                        /reference.*?is not defined/i,
+                        /type.*?error/i,
+                        /permission denied/i,
+                        /enoent/i,
+                        /address already in use/i,
+                        /command not found/i,
+                        /failed to/i,
+                        /syntax.*?error/i
+                    ];
+                    
+                    // Check if data contains error patterns (but exclude Claude's normal output)
+                    const isClaudeNormalOutput = data.includes('Saving session') || 
+                                               data.includes('Claude Code CLI') || 
+                                               data.includes('interrupt)') ||
+                                               data.includes('Germinating') ||
+                                               data.includes('Smooshing');
+                    
+                    if (!isClaudeNormalOutput && errorPatterns.some(pattern => pattern.test(data))) {
+                        console.log('🔍 Error Doctor: Error detected in terminal output');
+                        
+                        // Trigger error analysis (non-blocking)
+                        setTimeout(async () => {
+                            try {
+                                const axios = require('axios');
+                                
+                                // Check if Error Doctor is enabled before proceeding
+                                let isErrorDoctorEnabled = false;
+                                try {
+                                    const statusResponse = await axios.get(`http://localhost:${process.env.PORT || 3000}/api/error-doctor/status`);
+                                    if (statusResponse.data && statusResponse.data.success) {
+                                        isErrorDoctorEnabled = statusResponse.data.status.enabled;
+                                    }
+                                } catch (statusError) {
+                                    console.log('⚠️ Error Doctor: Status check failed, assuming disabled:', statusError.message);
+                                    return;
+                                }
+                                
+                                if (!isErrorDoctorEnabled) {
+                                    console.log('🔇 Error Doctor: Analysis skipped - disabled by user toggle');
+                                    return;
+                                }
+                                const analysisResult = await axios.post(`http://localhost:${process.env.PORT || 3000}/api/error-doctor/analyze`, {
+                                    errorText: data,
+                                    errorType: 'terminal',
+                                    context: {
+                                        workingDirectory: process.cwd(),
+                                        hasPackageJson: require('fs').existsSync('package.json'),
+                                        nodeVersion: process.version
+                                    }
+                                });
+                                
+                                if (analysisResult.data.success && analysisResult.data.fixes?.length > 0) {
+                                    // Emit error analysis to frontend
+                                    socket.emit('error-doctor:analysis', {
+                                        sessionId: session.id,
+                                        analysis: analysisResult.data,
+                                        timestamp: Date.now()
+                                    });
+                                    console.log(`✅ Error Doctor: Found ${analysisResult.data.fixes.length} potential fixes`);
+                                }
+                            } catch (error) {
+                                console.log('⚠️ Error Doctor: Analysis failed silently:', error.message);
+                            }
+                        }, 100); // Small delay to avoid blocking terminal output
+                    }
+                    
+                    // Pass data to supervision systems if active
+                    if (session.supervisionAdapter && session.supervisionAdapter.isActive) {
+                        session.supervisionAdapter.processOutput(data);
+                    }
+                    
+                    // Also pass to SupervisionEngine if it exists
+                    if (session.supervisionEngine) {
+                        session.supervisionEngine.handleClaudeCodeOutput(data);
+                    }
+                    
+                    // Detect Claude state from output - look for Claude's actual input prompt
+                    if (data.includes('Claude Code CLI') || data.includes('⏺')) {
+                        session.claudeActive = true;
+                        session.claudePromptDetected = false;
+                        console.log('[Supervision] Claude detected as active process');
+                    }
+                    
+                    // Capture Claude output for dashboard analytics
+                    if (session.claudeActive && session.currentAgentId && data.length > 10) {
+                        // Filter out control characters and prompts, keep actual content
+                        const cleanData = data.replace(/\x1b\[[0-9;]*m/g, '').trim();
+                        if (cleanData && 
+                            !cleanData.includes('⏺') && 
+                            !cleanData.includes('Claude Code CLI') &&
+                            !cleanData.includes('Saving session') &&
+                            !cleanData.includes('exit')) {
+                            
+                            // Accumulate output (limit to prevent memory issues)
+                            if (!session.claudeOutput) session.claudeOutput = '';
+                            if (session.claudeOutput.length < 5000) { // Limit to 5KB
+                                session.claudeOutput += cleanData + '\n';
+                            }
+                        }
+                    }
+                    
+                    // Better detection of Claude's input prompt after questions
+                    // Claude shows a thinking animation then waits for input
+                    if (session.claudeActive) {
+                        // Track file activity from Claude's output
+                        // Throttle updates to prevent excessive events
+                        if (!session.lastOutputCheck || Date.now() - session.lastOutputCheck > 2000) {
+                            session.lastOutputCheck = Date.now();
+                            
+                            // Look for file references in Claude's output
+                            if (data.length > 10) { // Only process substantial output
+                                const fileRefs = claudeFileTracker.parseFileReferences(data);
+                                if (fileRefs.length > 0) {
+                                    const operation = claudeFileTracker.detectOperation(data);
+                                    claudeFileTracker.trackFileOperation(
+                                        fileRefs[0],
+                                        operation,
+                                        session.id,
+                                        { source: 'claude-output', dataPreview: data.substring(0, 100) }
+                                    );
+                                }
+                            }
+                        }
+                        
+                        // Check for the end of Claude's output (when it stops "thinking")
+                        // Also check if Claude has asked numbered questions (e.g., "1. What is..." or "2. What key...")
+                        const hasQuestionPattern = data.match(/\d+\.\s+.*\?/) || data.includes('etc.)');
+                        const hasThinkingEnded = data.includes('interrupt)') && !data.includes('Germinating') && !data.includes('Smooshing');
+                        
+                        if (hasThinkingEnded || (hasQuestionPattern && session.pendingResponses.length > 0)) {
+                            // Claude has finished its animation and is ready OR has asked questions and we have responses
+                            session.claudePromptDetected = true;
+                            
+                            // Small delay to ensure Claude is fully ready
+                            setTimeout(async () => {
+                                if (session.pendingResponses && session.pendingResponses.length > 0 && !session.responsesDelivered) {
+                                    console.log(`[Supervision] Claude ready - delivering ${session.pendingResponses.length} responses`);
+                                    session.responsesDelivered = true;
+                                    
+                                    // Use ClaudeInputHandler for proper input delivery
+                                    for (let i = 0; i < session.pendingResponses.length; i++) {
+                                        const response = session.pendingResponses[i];
+                                        console.log(`[Supervision] Sending response ${i + 1}: "${response}"`);
+                                        
+                                        // Try to send via ClaudeInputHandler
+                                        const success = await claudeInputHandler.sendToClaudeProcess(
+                                            session.id,
+                                            response,
+                                            session.process
+                                        );
+                                        
+                                        if (success) {
+                                            console.log(`[Supervision] Response ${i + 1} delivered successfully`);
+                                        } else {
+                                            console.log(`[Supervision] Response ${i + 1} delivery may have failed`);
+                                        }
+                                        
+                                        // Small delay between responses
+                                        if (i < session.pendingResponses.length - 1) {
+                                            await new Promise(resolve => setTimeout(resolve, 500));
+                                        }
+                                    }
+                                    
+                                    session.pendingResponses = [];
+                                }
+                            }, 100);
+                        }
+                    }
+                    
+                    // Detect when Claude exits
+                    if (data.includes('Saving session') || data.includes('exit')) {
+                        session.claudeActive = false;
+                        session.claudeWaitingForInput = false;
+                        console.log('[Supervision] Claude process ended');
+                        
+                        // Emit agent completion event to dashboard if available
+                        if (global.agentObserver && session.currentAgentId) {
+                            const endTime = new Date();
+                            const startTime = session.agentStartTime || endTime;
+                            const duration = endTime - startTime;
+                            
+                            global.agentObserver.emit('agent-complete', {
+                                id: session.currentAgentId,
+                                responseTime: (duration / 1000).toFixed(1) + 's',
+                                confidence: 85, // Estimate based on successful completion
+                                timestamp: endTime,
+                                output: session.claudeOutput || 'Command completed successfully',
+                                sessionId: session.id
+                            });
+                            
+                            console.log(`[SafePTYManager] Emitted agent-complete event for ${session.currentAgentType}`);
+                            
+                            // Record execution in store
+                            try {
+                                const agentExecutionStore = require('../services/agent-execution-store');
+                                agentExecutionStore.recordExecution({
+                                    id: session.currentAgentId,
+                                    agentType: session.currentAgentType,
+                                    agentId: session.currentAgentId,
+                                    status: 'completed',
+                                    endTime: endTime,
+                                    duration: duration,
+                                    success: true,
+                                    output: session.claudeOutput || 'Terminal Claude command completed',
+                                    sessionId: session.id,
+                                    source: 'terminal'
+                                });
+                            } catch (error) {
+                                console.error('[SafePTYManager] Error recording agent execution:', error);
+                            }
+                            
+                            // Clear tracking variables
+                            session.currentAgentId = null;
+                            session.currentAgentType = null;
+                            session.agentStartTime = null;
+                            session.claudeOutput = '';
+                        }
+                        
+                        // Set file tracker back to idle when Claude exits
+                        claudeFileTracker.setIdle(session.id);
+                    }
+                    
+                    // If supervision is active, buffer and analyze complete lines
+                    if (session.supervisionActive && global.supervisionEngine) {
+                        // Add to line buffer
+                        session.lineBuffer += data;
+                        
+                        // Check if we have complete lines (ending with newline)
+                        const lines = session.lineBuffer.split(/\r?\n/);
+                        
+                        // Process all complete lines except the last (which might be incomplete)
+                        for (let i = 0; i < lines.length - 1; i++) {
+                            const completeLine = lines[i].trim();
+                            
+                            // Skip empty lines, prompts, ANSI codes, and UI elements
+                            if (completeLine.length > 10 && 
+                                !completeLine.includes('michaelkraft$') &&
+                                !completeLine.includes('? for shortcuts') &&
+                                !completeLine.includes('╭') &&
+                                !completeLine.includes('╰') &&
+                                !completeLine.includes('│') &&
+                                !completeLine.includes('[2K') &&
+                                !completeLine.includes('[1A') &&
+                                !completeLine.match(/^\[.*?m.*?$/) &&
+                                completeLine !== session.lastAnalyzedLine) {
+                                
+                                // Check if we've seen this question recently to avoid duplicates
+                                const questionKey = completeLine.substring(0, 50);
+                                if (session.recentQuestions.has(questionKey)) {
+                                    console.log('[Supervision] Skipping duplicate question');
+                                    continue;
+                                }
+                                
+                                // Track this question
+                                session.recentQuestions.add(questionKey);
+                                // Clean up old questions (keep last 10)
+                                if (session.recentQuestions.size > 10) {
+                                    const oldKeys = Array.from(session.recentQuestions).slice(0, session.recentQuestions.size - 10);
+                                    oldKeys.forEach(key => session.recentQuestions.delete(key));
+                                }
+                                
+                                // Analyze this complete line
+                                session.lastAnalyzedLine = completeLine;
+                                console.log('[Supervision] Analyzing line:', completeLine);
+                                console.log('[Supervision] Global engine exists:', !!global.supervisionEngine);
+                                if (global.supervisionEngine) {
+                                    global.supervisionEngine.handleClaudeCodeOutput(completeLine);
+                                } else {
+                                    console.log('[Supervision] WARNING: No global supervision engine available');
+                                }
+                            }
+                        }
+                        
+                        // Keep the incomplete last line in the buffer
+                        session.lineBuffer = lines[lines.length - 1];
+                    }
+                });
+                
+                // Store session reference for supervision integration
+                session.socketId = socket.id;
+                session.supervisionAdapter = null;
+                
+                // Handle terminal exit
+                session.process.onExit((exitCode, signal) => {
+                    console.log(`[SafePTYManager] Session ${session.id} exited: code=${exitCode}, signal=${signal}`);
+                    
+                    // Clean up ClaudeInputHandler for this session
+                    claudeInputHandler.cleanup(session.id);
+                    
+                    socket.emit('terminal:exit', {
+                        id: session.id,
+                        exitCode: exitCode,
+                        signal: signal
+                    });
+                    safeptyManager.destroySession(session.id);
+                });
+                
+            } catch (error) {
+                console.error('[SafePTYManager] Terminal creation error:', error);
+                socket.emit('terminal:error', {
+                    message: error.message
+                });
+            }
+        });
+        
+        // Handle terminal input (support both terminal:data and terminal:input for compatibility)
+        const handleTerminalInput = async ({ id, data, thinkingMode }) => {
+            console.log('🔵 [Backend] terminal:data received:', { id, data: data?.substring(0, 50), thinkingMode });
+            const session = safeptyManager.getSession(id);
+            
+            // Update activity timestamp on any user input
+            if (session) {
+                session.lastActivity = Date.now();
+            }
+            if (session && session.process) {
+                // Store thinking mode in session for use by Claude API calls
+                if (thinkingMode) {
+                    session.thinkingMode = thinkingMode;
+                }
+                
+                // Initialize command buffer if it doesn't exist
+                if (!session.commandBuffer) {
+                    session.commandBuffer = '';
+                }
+                
+                // When AI Team is active, just pass through to PTY normally
+                // Claude Code CLI will handle all terminal I/O
+                if (session.aiTeamActive) {
+                    console.log('[AI-TEAM] AI Team active, passing through to PTY');
+                    // Fall through to normal PTY handling below
+                }
+                
+                // Helper function to clean ANSI escape sequences
+                function cleanCommand(rawData) {
+                    // Remove ANSI escape sequences
+                    let cleaned = rawData.replace(/\x1b\[[0-9;]*[A-Za-z]/g, '');
+                    // Remove other escape sequences
+                    cleaned = cleaned.replace(/\x1b\][0-9;]*[^\x07]*\x07/g, '');
+                    cleaned = cleaned.replace(/\x1b\][0-9;]*[^\x1b\\]*\x1b\\/g, '');
+                    // Remove special terminal sequences like \x1BOA, \x1BOB, etc.
+                    cleaned = cleaned.replace(/\x1bO[A-Z]/g, '');
+                    
+                    // Process backspace characters (\x7F and \x08) properly
+                    let result = '';
+                    for (let i = 0; i < cleaned.length; i++) {
+                        const char = cleaned[i];
+                        if (char === '\x7F' || char === '\x08') {
+                            // Backspace: remove the last character from result
+                            if (result.length > 0) {
+                                result = result.slice(0, -1);
+                            }
+                        } else if (char.charCodeAt(0) >= 32 || char === '\r' || char === '\n') {
+                            // Only add printable characters and newlines
+                            result += char;
+                        }
+                        // Skip other control characters
+                    }
+                    
+                    return result;
+                }
+                
+                
+                // Build command buffer to track what's being typed
+                session.commandBuffer += data;
+                
+                // Clean the current buffer to check what's being typed
+                const currentClean = cleanCommand(session.commandBuffer).trim();
+                
+                // Check if we have a complete command (ended with enter/return)
+                if (data.includes('\r') || data.includes('\n')) {
+                    console.log(`[CODER1-DEBUG] Complete command detected: "${currentClean}"`);
+                    
+                    // Clear the buffer for next command
+                    session.commandBuffer = '';
+                    
+                    // NOTE: AI Team command handling moved earlier to prevent Claude CLI interference
+                    // The check is now at the beginning of handleTerminalInput function
+                    
+                    // Check if this is a coder1 command
+                    if (currentClean && (currentClean.startsWith('coder1 ') || currentClean === 'coder1')) {
+                        console.log(`[CODER1-DEBUG] Intercepted coder1 command: "${currentClean}"`);
+                        
+                        // Send a newline to move to next line (visual feedback)
+                        socket.emit('terminal:data', {
+                            id: session.id,
+                            data: '\r\n'
+                        });
+                        
+                        try {
+                            const repositoryCommands = getRepositoryCommands();
+                            
+                            // Create a wrapper to write to the terminal
+                            const terminalWrapper = {
+                                write: (text) => {
+                                    socket.emit('terminal:data', {
+                                        id: session.id,
+                                        data: text
+                                    });
+                                },
+                                session: session
+                            };
+                            
+                            // Process the command
+                            console.log(`[CODER1-DEBUG] Processing command: "${currentClean}"`);
+                            const handled = await repositoryCommands.processCommand(currentClean, terminalWrapper);
+                            console.log(`[CODER1-DEBUG] Command processing result: ${handled}`);
+                            
+                            if (handled) {
+                                console.log('[CODER1-DEBUG] Command handled successfully, refreshing prompt');
+                            } else {
+                                console.log('[CODER1-DEBUG] Command not recognized');
+                                socket.emit('terminal:data', {
+                                    id: session.id,
+                                    data: `❌ Unknown coder1 command: ${currentClean}\r\n`
+                                });
+                            }
+                        } catch (error) {
+                            console.error('Repository command error:', error);
+                            socket.emit('terminal:data', {
+                                id: session.id,
+                                data: `❌ Command error: ${error.message}\r\n`
+                            });
+                        }
+                        
+                        // Clear the line in bash and show a new prompt
+                        // Send Ctrl+C to cancel any pending command in bash
+                        session.process.write('\x03');
+                        
+                        // Important: Return early to prevent sending enter to PTY
+                        return;
+                    } else {
+                        // Not a coder1 command, send the enter key normally
+                        session.process.write(data);
+                        
+                        // Track command history for Claude detection
+                        session.commandHistory.push(currentClean);
+                        if (session.commandHistory.length > 100) {
+                            session.commandHistory = session.commandHistory.slice(-50);
+                        }
+                        
+                        // Detect when Claude is launched
+                        if (currentClean === 'claude' || currentClean.startsWith('claude ')) {
+                            console.log('[SafePTYManager] Claude command detected:', currentClean);
+                            console.log('[SafePTYManager] Full command:', currentClean);
+                            session.claudeLaunching = true;
+                            
+                            // Emit agent event to dashboard if available
+                            if (global.agentObserver) {
+                                // Determine agent type from command context
+                                const commandLower = currentClean.toLowerCase();
+                                const agentType = commandLower.includes('architect') ? 'architect' :
+                                    commandLower.includes('frontend') ? 'frontend-specialist' :
+                                        commandLower.includes('backend') ? 'backend-specialist' :
+                                            commandLower.includes('debug') ? 'debugger' :
+                                                commandLower.includes('optimi') ? 'optimizer' :
+                                                    commandLower.includes('implement') ? 'implementer' : 'claude-general';
+                                
+                                const agentId = `${agentType}-${Date.now()}`;
+                                
+                                // Emit spawn event
+                                global.agentObserver.emit('agent-spawn', {
+                                    id: agentId,
+                                    name: agentType,
+                                    status: 'spawning',
+                                    command: currentClean,
+                                    sessionId: session.id,
+                                    timestamp: new Date()
+                                });
+                                
+                                // Store agent ID in session for tracking
+                                session.currentAgentId = agentId;
+                                session.currentAgentType = agentType;
+                                session.agentStartTime = new Date();
+                                session.claudeOutput = '';
+                                
+                                // Record initial execution in store
+                                try {
+                                    const agentExecutionStore = require('../services/agent-execution-store');
+                                    agentExecutionStore.recordExecution({
+                                        id: agentId,
+                                        agentType: agentType,
+                                        agentId: agentId,
+                                        task: currentClean,
+                                        status: 'starting',
+                                        startTime: session.agentStartTime,
+                                        sessionId: session.id,
+                                        source: 'terminal',
+                                        command: currentClean
+                                    });
+                                } catch (error) {
+                                    console.error('[SafePTYManager] Error recording initial agent execution:', error);
+                                }
+                                
+                                console.log(`[SafePTYManager] Emitted agent-spawn event for ${agentType}`);
+                                
+                                // Set up execution tracking
+                                setTimeout(() => {
+                                    if (global.agentObserver && session.claudeActive) {
+                                        global.agentObserver.emit('agent-execute', {
+                                            id: agentId,
+                                            name: agentType,
+                                            status: 'executing',
+                                            timestamp: new Date()
+                                        });
+                                    }
+                                }, 2000);
+                            }
+                            
+                            // Track file activity for Claude commands
+                            console.log('[SafePTYManager] File tracker loaded:', typeof claudeFileTracker);
+                            
+                            // Parse the Claude command for context
+                            if (currentClean.startsWith('claude ')) {
+                                const claudePrompt = currentClean.substring(7); // Remove 'claude ' prefix
+                                
+                                // Track that Claude is analyzing/working
+                                const fileRefs = claudeFileTracker.parseFileReferences(claudePrompt);
+                                if (fileRefs.length > 0) {
+                                    // Found file references in the command
+                                    const operation = claudeFileTracker.detectOperation(claudePrompt);
+                                    claudeFileTracker.trackFileOperation(
+                                        fileRefs[0],
+                                        operation,
+                                        session.id,
+                                        { source: 'terminal', prompt: claudePrompt }
+                                    );
+                                } else {
+                                    // No specific files, mark as analyzing
+                                    claudeFileTracker.trackFileOperation(
+                                        null,
+                                        'analyzing',
+                                        session.id,
+                                        { source: 'terminal', prompt: claudePrompt }
+                                    );
+                                }
+                            }
+                            
+                            // Try to detect Claude process after a short delay
+                            setTimeout(async () => {
+                                const claudePid = await claudeInputHandler.detectClaudeProcess(
+                                    session.id, 
+                                    session.process.pid
+                                );
+                                
+                                if (claudePid) {
+                                    session.claudePid = claudePid;
+                                    session.claudeActive = true;
+                                    console.log(`[SafePTYManager] Claude subprocess tracked: PID ${claudePid}`);
+                                    
+                                    // Notify supervision system
+                                    socket.emit('supervision:claude-detected', {
+                                        sessionId: session.id,
+                                        claudePid: claudePid
+                                    });
+                                }
+                            }, 1000); // Wait 1 second for Claude to fully spawn
+                        }
+                    }
+                } else {
+                    // For coder1 commands, we need to echo manually since bash won't see them
+                    // BUT NOT when Claude is active - Claude handles its own echo
+                    if (currentClean.startsWith('coder1') && !session.claudeActive) {
+                        // Echo the character back to the terminal display
+                        socket.emit('terminal:data', {
+                            id: session.id,
+                            data: data
+                        });
+                        // Don't send to PTY for coder1 commands
+                    } else if (session.claudeActive) {
+                        // When Claude is active, always send input to PTY
+                        // Claude CLI handles its own echo and prompt
+                        session.process.write(data);
+                    } else {
+                        // Normal command, send to PTY for echo and processing
+                        session.process.write(data);
+                    }
+                }
+                
+            } else {
+                socket.emit('terminal:error', {
+                    message: `Terminal session ${id} not found`
+                });
+            }
+        };
+        
+        // Register both terminal:data and terminal:input event handlers for compatibility
+        socket.on('terminal:data', handleTerminalInput);
+        socket.on('terminal:input', handleTerminalInput);
+        
+        // Handle terminal resize with debouncing to prevent ResizeObserver loops
+        const resizeTimeouts = new Map();
+        socket.on('terminal:resize', ({ id, cols, rows }) => {
+            const session = safeptyManager.getSession(id);
+            if (session && session.process) {
+                // Clear previous resize timeout
+                if (resizeTimeouts.has(id)) {
+                    clearTimeout(resizeTimeouts.get(id));
+                }
+                
+                // Debounce resize events to prevent loops
+                const timeout = setTimeout(() => {
+                    try {
+                        session.process.resize(cols, rows);
+                        console.log(`[SafePTYManager] Terminal ${id} resized to ${cols}x${rows}`);
+                    } catch (error) {
+                        console.error(`[SafePTYManager] Resize error for ${id}:`, error);
+                    } finally {
+                        resizeTimeouts.delete(id);
+                    }
+                }, 100); // 100ms debounce
+                
+                resizeTimeouts.set(id, timeout);
+            }
+        });
+        
+        // Register Claude button WebSocket handlers
+        socket.on('claude:button', ({ action, prompt, sessionId }) => {
+            console.log(`[SafePTYManager] Claude button action: ${action} with sessionId: ${sessionId}`);
+            
+            // Store socket reference for later registration
+            socket.claudeSessionId = sessionId;
+            socket.claudeSocket = socket;
+            
+            // For supervision, mark the current terminal session as supervised
+            if (action === 'supervision') {
+                // Find the terminal session for this socket
+                for (const [id, session] of safeptyManager.sessions) {
+                    if (session.socketId === socket.id) {
+                        session.supervisionActive = true;
+                        session.supervisionSessionId = sessionId;
+                        console.log(`[SafePTYManager] Marked session ${id} for supervision`);
+                        
+                        // Set up supervision event listeners - check periodically for global engine
+                        console.log(`[SafePTYManager] Setting up supervision listeners. Global engine exists: ${!!global.supervisionEngine}`);
+                        
+                        // Function to setup listeners when engine becomes available
+                        const setupListeners = () => {
+                            if (global.supervisionEngine && !session.supervisionListenersSetup) {
+                                session.supervisionListenersSetup = true;
+                                console.log(`[SafePTYManager] Attaching supervision event listeners for session ${id}`);
+                            
+                                // When supervision has an intervention, display it and deliver to Claude
+                                global.supervisionEngine.on('interventionReady', (intervention) => {
+                                    const message = '\r\n\x1b[33m━━━━━ AI Supervision Suggestion ━━━━━\x1b[0m\r\n' +
+                                                  `\x1b[36m${intervention.intervention}\x1b[0m\r\n` +
+                                                  '\x1b[33m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\x1b[0m\r\n';
+                                    
+                                    socket.emit('terminal:data', {
+                                        id: session.id,
+                                        data: message
+                                    });
+                                    
+                                    // For general interventions, we display them but don't auto-input
+                                    // These are typically guidance/suggestions rather than direct answers
+                                    console.log(`[Supervision] Intervention displayed: ${intervention.intervention.substring(0, 50)}...`);
+                                });
+                                
+                                // Show when supervision detects questions and auto-respond
+                                global.supervisionEngine.on('questionAnswered', (event) => {
+                                    // Reset delivery flag for new questions
+                                    session.responsesDelivered = false;
+                                    
+                                    // Collect questions and batch responses
+                                    if (!session.pendingQuestions) {
+                                        session.pendingQuestions = [];
+                                    }
+                                    
+                                    session.pendingQuestions.push(event);
+                                    
+                                    // Clear existing timer
+                                    if (session.questionTimer) {
+                                        clearTimeout(session.questionTimer);
+                                    }
+                                    
+                                    // Set timer to respond after collecting all questions (wait 3 seconds for more questions)
+                                    session.questionTimer = setTimeout(() => {
+                                        if (session.pendingQuestions.length > 0) {
+                                            console.log(`[Supervision] Collected ${session.pendingQuestions.length} questions from Claude`);
+                                            
+                                            // Display message that we're responding
+                                            const displayMessage = `\r\n\x1b[35m🤖 AI Supervisor: I detected ${session.pendingQuestions.length} questions!\x1b[0m\r\n` +
+                                                                  '\x1b[33m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\x1b[0m\r\n' +
+                                                                  '\x1b[36mPreparing auto-responses...\x1b[0m\r\n';
+                                            
+                                            socket.emit('terminal:data', {
+                                                id: session.id,
+                                                data: displayMessage
+                                            });
+                                            
+                                            // Clear any existing responses first
+                                            session.pendingResponses = [];
+                                            
+                                            // Queue responses to be sent when Claude is ready
+                                            session.pendingQuestions.forEach((q, index) => {
+                                                // Display each answer
+                                                const answerDisplay = `\x1b[32m${index + 1}. ${q.answer}\x1b[0m\r\n`;
+                                                socket.emit('terminal:data', {
+                                                    id: session.id,
+                                                    data: answerDisplay
+                                                });
+                                                
+                                                // Queue the response
+                                                session.pendingResponses.push(q.answer);
+                                            });
+                                            
+                                            console.log(`[Supervision] Queued ${session.pendingResponses.length} responses`);
+                                            console.log('[Supervision] Waiting for Claude to be ready to receive input...');
+                                            
+                                            // Fallback timer - send responses after 5 seconds if not already sent
+                                            setTimeout(async () => {
+                                                if (session.pendingResponses && session.pendingResponses.length > 0 && !session.responsesDelivered) {
+                                                    console.log('[Supervision] Fallback timer triggered - sending responses now');
+                                                    session.responsesDelivered = true;
+                                                    
+                                                    for (let i = 0; i < session.pendingResponses.length; i++) {
+                                                        const response = session.pendingResponses[i];
+                                                        console.log(`[Supervision] Sending response ${i + 1} via fallback: "${response}"`);
+                                                        
+                                                        // Try to send via ClaudeInputHandler
+                                                        const success = await claudeInputHandler.sendToClaudeProcess(
+                                                            session.id,
+                                                            response,
+                                                            session.process
+                                                        );
+                                                        
+                                                        if (success) {
+                                                            console.log(`[Supervision] Response ${i + 1} delivered via fallback`);
+                                                        } else {
+                                                            // Try direct PTY write as last resort
+                                                            session.process.write(response + '\n');
+                                                            console.log(`[Supervision] Response ${i + 1} sent via direct PTY`);
+                                                        }
+                                                        
+                                                        // Small delay between responses
+                                                        if (i < session.pendingResponses.length - 1) {
+                                                            await new Promise(resolve => setTimeout(resolve, 500));
+                                                        }
+                                                    }
+                                                    
+                                                    session.pendingResponses = [];
+                                                }
+                                            }, 5000); // 5 second fallback timer
+                                            
+                                            // Clear pending questions
+                                            session.pendingQuestions = [];
+                                        }
+                                    }, 3000); // Wait 3 seconds to collect all questions
+                                });
+                                
+                                // Show when supervision grants permission and auto-approve
+                                global.supervisionEngine.on('permissionGranted', (event) => {
+                                    const message = `\r\n\x1b[32m✅ AI Supervisor: ${event.approval}\x1b[0m\r\n`;
+                                    
+                                    socket.emit('terminal:data', {
+                                        id: session.id,
+                                        data: message
+                                    });
+                                    
+                                    // Actually send the approval to Claude's input stream
+                                    setTimeout(async () => {
+                                        if (session.process && !session.process.killed) {
+                                            // Use ClaudeInputHandler for proper delivery
+                                            const success = await claudeInputHandler.sendToClaudeProcess(
+                                                session.id,
+                                                'yes',
+                                                session.process
+                                            );
+                                            
+                                            if (success) {
+                                                console.log('[Supervision] Auto-approval delivered successfully');
+                                            } else {
+                                                console.log('[Supervision] Auto-approval delivery may have failed');
+                                            }
+                                        }
+                                    }, 1000);
+                                });
+                                
+                                // NEW: Listen for question responses from supervision engine
+                                global.supervisionEngine.on('responseGenerated', async (data) => {
+                                    console.log(`[SafePTYManager] 📝 Response generated for question: ${data.response}`);
+                                    console.log(`[SafePTYManager] Supervision mode: ${session.supervisionMode || 'auto'}`);
+                                    
+                                    // Check supervision mode (default to auto for autonomous operation)
+                                    const mode = session.supervisionMode || 'auto';
+                                    
+                                    if (mode === 'suggestion') {
+                                        // SUGGESTION MODE: Show response to user, don't auto-type
+                                        console.log('[SafePTYManager] Suggestion mode - displaying response to user');
+                                        socket.emit('supervision:suggestion', {
+                                            sessionId: data.sessionId,
+                                            suggestion: data.response,
+                                            message: 'Suggested response (you can type this manually):',
+                                            timestamp: Date.now()
+                                        });
+                                    } else if (mode === 'auto' && session.process && !session.process.killed) {
+                                        // AUTO MODE: Type the response automatically for autonomous operation
+                                        console.log('[SafePTYManager] Auto mode - typing response into Claude...');
+                                        
+                                        // Slightly longer delay to make it clear this is automated
+                                        await new Promise(resolve => setTimeout(resolve, 1000));
+                                        
+                                        // Type each character to simulate input (slightly slower for clarity)
+                                        for (const char of data.response) {
+                                            session.process.write(char);
+                                            await new Promise(resolve => setTimeout(resolve, 20)); // Slightly slower typing
+                                        }
+                                        
+                                        // Press enter
+                                        session.process.write('\r');
+                                        console.log('[SafePTYManager] ✅ Response typed into Claude');
+                                    }
+                                });
+                                
+                                console.log('[SafePTYManager] Supervision event listeners attached');
+                            } else if (!global.supervisionEngine) {
+                                console.log('[SafePTYManager] Global supervision engine not ready yet, will retry...');
+                            }
+                        };
+                        
+                        // Try to setup listeners immediately
+                        setupListeners();
+                        
+                        // If engine wasn't ready, poll for it
+                        if (!session.supervisionListenersSetup) {
+                            const pollForEngine = setInterval(() => {
+                                setupListeners();
+                                if (session.supervisionListenersSetup) {
+                                    clearInterval(pollForEngine);
+                                }
+                            }, 1000); // Check every second for up to 10 seconds
+                            
+                            setTimeout(() => {
+                                clearInterval(pollForEngine);
+                                if (!session.supervisionListenersSetup) {
+                                    console.log('[SafePTYManager] WARNING: Supervision engine never became available');
+                                }
+                            }, 10000);
+                        }
+                        break;
+                    }
+                }
+            }
+            
+            // Emit appropriate action based on button
+            switch (action) {
+            case 'supervision':
+            case 'parallel':
+            case 'infinite':
+            case 'hivemind':
+                // These are handled via REST API calls from frontend
+                socket.emit('claude:ready', { action, sessionId });
+                break;
+            default:
+                socket.emit('claude:error', { message: `Unknown action: ${action}` });
+            }
+        });
+        
+        // Register for Claude session output
+        socket.on('claude:register', ({ sessionId }) => {
+            console.log(`[SafePTYManager] Registering socket ${socket.id} for Claude session: ${sessionId}`);
+            if (claudeButtonRoutes.registerWebSocket) {
+                claudeButtonRoutes.registerWebSocket(sessionId, socket);
+            }
+        });
+        
+        // Handle AI Team state updates
+        socket.on('ai-team:state', ({ terminalId, isActive, teamConfig = null }) => {
+            console.log(`[SafePTYManager] AI Team state update: terminalId=${terminalId}, active=${isActive}`);
+            
+            const session = safeptyManager.getSession(terminalId);
+            if (session) {
+                // If activating AI Team and Claude is running, kill Claude first
+                if (isActive && (session.claudePid || session.claudeActive || session.claudeLaunching)) {
+                    console.log('[SafePTYManager] Claude is active - terminating to start AI Team');
+                    try {
+                        // Send Ctrl+C to terminate Claude
+                        session.process.write('\x03');
+                        
+                        // Clear Claude tracking
+                        session.claudePid = null;
+                        session.claudeActive = false;
+                        session.claudeLaunching = false;
+                        session.claudePromptDetected = false;
+                        session.claudeWaitingForInput = false;
+                        
+                        // Wait a moment for Claude to exit, then clear screen
+                        setTimeout(() => {
+                            // Clear the terminal and reset cursor
+                            socket.emit('terminal:data', {
+                                id: session.id,
+                                data: '\x1b[2J\x1b[H' // Clear screen and move cursor to top
+                            });
+                            
+                            // Show fresh prompt
+                            socket.emit('terminal:data', {
+                                id: session.id,
+                                data: 'michaelkraft$ '
+                            });
+                        }, 500);
+                    } catch (error) {
+                        console.error('Error killing Claude process:', error);
+                    }
+                }
+                
+                session.aiTeamActive = isActive;
+                session.aiTeamConfig = teamConfig;
+                console.log(`[SafePTYManager] AI Team state set for session ${terminalId}: ${isActive}`);
+            } else {
+                console.warn(`[SafePTYManager] Session ${terminalId} not found for AI Team state update`);
+            }
+        });
+        
+        // Handle supervision activation
+        socket.on('supervision:start', ({ sessionId, terminalId, mode = 'auto' }) => {
+            console.log('[SafePTYManager] 🎯 SUPERVISION START REQUEST RECEIVED');
+            console.log(`[SafePTYManager] SessionId: ${sessionId}, TerminalId: ${terminalId}`);
+            console.log(`[SafePTYManager] Supervision Mode: ${mode}`); // 'auto' or 'suggestion'
+            console.log(`[SafePTYManager] Socket ID: ${socket.id}`);
+            console.log(`[SafePTYManager] Active sessions count: ${safeptyManager.sessions.size}`);
+            
+            const session = terminalId ? safeptyManager.getSession(terminalId) : 
+                Array.from(safeptyManager.sessions.values()).find(s => s.socketId === socket.id);
+            
+            console.log(`[SafePTYManager] Found session: ${session ? session.id : 'NONE'}`);
+            console.log(`[SafePTYManager] Session has process: ${!!session?.process}`);
+            console.log(`[SafePTYManager] Session already has supervision: ${!!session?.supervisionAdapter}`);
+            
+            if (session && session.process) {
+                console.log('[SafePTYManager] ✅ Creating PTYSupervisionAdapter...');
+                
+                // Import and create SupervisionEngine
+                const { SupervisionEngine } = require('../services/supervision/SupervisionEngine');
+                const supervisionEngine = new SupervisionEngine({
+                    sessionId: sessionId,
+                    projectPath: process.cwd(),
+                    logger: console
+                });
+                
+                // Create supervision adapter for this PTY session
+                const adapter = new PTYSupervisionAdapter(session.process, supervisionEngine, {
+                    sessionId: sessionId,
+                    logger: console,
+                    projectRoot: process.cwd()
+                });
+                
+                console.log('[SafePTYManager] ✅ PTYSupervisionAdapter created');
+                console.log('[SafePTYManager] 🔗 Connecting ClaudeInputHandler...');
+                
+                // Pass ClaudeInputHandler to the adapter for proper subprocess communication
+                adapter.claudeInputHandler = claudeInputHandler;
+                console.log('[SafePTYManager] ✅ ClaudeInputHandler connected');
+                
+                // Create supervision commands interface
+                const supervisionCommands = new SupervisionCommands(adapter);
+                
+                // Set up event forwarding to frontend
+                adapter.on('intervention', (data) => {
+                    socket.emit('supervision:intervention', data);
+                    console.log(`[Supervision] Intervention: ${data.response}`);
+                });
+                
+                adapter.on('smart-decision', (data) => {
+                    socket.emit('supervision:smart-decision', data);
+                    console.log(`[Supervision] Smart decision: ${data.decision.reason}`);
+                });
+                
+                adapter.on('confusion-detected', (data) => {
+                    socket.emit('supervision:confusion', data);
+                    console.log(`[Supervision] Confusion detected: ${data.text}`);
+                });
+                
+                adapter.on('error-detected', (data) => {
+                    socket.emit('supervision:error', data);
+                    console.log(`[Supervision] Error detected: ${data.text}`);
+                });
+                
+                // Listen for responses from SupervisionEngine
+                supervisionEngine.on('responseGenerated', async (data) => {
+                    console.log(`[SafePTYManager] 📝 SupervisionEngine generated response: ${data.response}`);
+                    console.log(`[SafePTYManager] Supervision mode: ${session.supervisionMode || 'auto'}`);
+                    
+                    // Check supervision mode (default to auto for autonomous operation)
+                    const currentMode = session.supervisionMode || 'auto';
+                    
+                    if (currentMode === 'suggestion') {
+                        // SUGGESTION MODE: Show response to user, don't auto-type
+                        console.log('[SafePTYManager] Suggestion mode - displaying response to user');
+                        socket.emit('supervision:suggestion', {
+                            sessionId: data.sessionId,
+                            suggestion: data.response,
+                            message: 'Suggested response (you can type this manually):',
+                            timestamp: Date.now()
+                        });
+                    } else if (currentMode === 'auto' && session.process && !session.process.killed) {
+                        // AUTO MODE: Type the response automatically for autonomous operation
+                        console.log('[SafePTYManager] Auto mode - typing response into Claude...');
+                        
+                        // Slightly longer delay to make it clear this is automated
+                        await new Promise(resolve => setTimeout(resolve, 1000));
+                        
+                        // Type each character to simulate input (slightly slower for clarity)
+                        for (const char of data.response) {
+                            session.process.write(char);
+                            await new Promise(resolve => setTimeout(resolve, 20)); // Slightly slower typing
+                        }
+                        
+                        // Press enter
+                        session.process.write('\r');
+                        console.log('[SafePTYManager] ✅ Response typed into Claude');
+                    }
+                });
+                
+                adapter.on('output', (data) => {
+                    socket.emit('supervision:output', data);
+                });
+                
+                adapter.on('supervision-mode-changed', (data) => {
+                    socket.emit('supervision:mode-changed', data);
+                    console.log(`[Supervision] Mode changed to: ${data.mode}`);
+                });
+                
+                // Start supervision
+                console.log('[SafePTYManager] 🚀 Starting supervision adapter...');
+                adapter.startSupervision();
+                console.log('[SafePTYManager] ✅ Supervision adapter started');
+                
+                // Store adapter, commands references, engine, and mode
+                session.supervisionAdapter = adapter;
+                session.supervisionEngine = supervisionEngine; // Store the engine reference
+                session.supervisionCommands = supervisionCommands;
+                session.supervisionMode = mode; // Store supervision mode (auto/suggestion)
+                activeSupervision.set(sessionId, adapter);
+                
+                console.log('[SafePTYManager] 📊 Supervision state:');
+                console.log(`[SafePTYManager] - Session ID: ${sessionId}`);
+                console.log(`[SafePTYManager] - Terminal ID: ${session.id}`);
+                console.log(`[SafePTYManager] - Adapter stored: ${!!session.supervisionAdapter}`);
+                console.log(`[SafePTYManager] - Active supervisions count: ${activeSupervision.size}`);
+                console.log(`[SafePTYManager] - Global supervision engine exists: ${!!global.supervisionEngine}`);
+                
+                socket.emit('supervision:started', { sessionId, terminalId: session.id });
+                console.log('[SafePTYManager] ✅ SUPERVISION FULLY ACTIVATED');
+                
+            } else {
+                console.log('[SafePTYManager] ❌ SUPERVISION FAILED TO START');
+                console.log(`[SafePTYManager] - Session found: ${!!session}`);
+                console.log(`[SafePTYManager] - Has process: ${!!session?.process}`);
+                console.log('[SafePTYManager] - Socket ID mismatch?');
+                socket.emit('supervision:error', { message: 'No terminal session found for supervision' });
+            }
+        });
+        
+        // Handle supervision stop
+        socket.on('supervision:stop', ({ sessionId }) => {
+            console.log(`[SafePTYManager] Stopping supervision for session ${sessionId}`);
+            
+            const adapter = activeSupervision.get(sessionId);
+            if (adapter) {
+                adapter.stopSupervision();
+                activeSupervision.delete(sessionId);
+                
+                // Clear adapter reference from session
+                for (const session of safeptyManager.sessions.values()) {
+                    if (session.supervisionAdapter === adapter) {
+                        session.supervisionAdapter = null;
+                        break;
+                    }
+                }
+                
+                socket.emit('supervision:stopped', { sessionId });
+            }
+        });
+        
+        // Handle supervision commands
+        socket.on('supervision:command', ({ command, args }) => {
+            console.log(`[SafePTYManager] Supervision command: ${command}`, args);
+            // This will be implemented in Phase 5
+            socket.emit('supervision:command-result', { 
+                command, 
+                result: `Command ${command} received - full implementation pending`
+            });
+        });
+        
+        // Handle supervision status checks
+        socket.on('supervision:status-check', () => {
+            console.log(`[SafePTYManager] Status check requested from ${socket.id}`);
+            
+            // Check if any supervision is currently active
+            let hasActiveSupervision = false;
+            let activeSessions = [];
+            
+            for (const [sessionId, adapter] of activeSupervision) {
+                if (adapter && adapter.isActive) {
+                    hasActiveSupervision = true;
+                    activeSessions.push({
+                        sessionId,
+                        mode: adapter.getSupervisionMode?.()?.mode || 'unknown',
+                        interventions: adapter.interventionCount || 0
+                    });
+                }
+            }
+            
+            socket.emit('supervision:status', {
+                active: hasActiveSupervision,
+                sessionCount: activeSupervision.size,
+                activeSessions: activeSessions,
+                totalSessions: safeptyManager.sessionCount
+            });
+        });
+        
+        // Handle Error Doctor fix application
+        socket.on('error-doctor:apply-fix', async ({ sessionId, fix }) => {
+            console.log(`[SafePTYManager] Error Doctor: Applying fix for session ${sessionId}`);
+            
+            const session = safeptyManager.getSession(sessionId);
+            if (session && session.process && fix) {
+                try {
+                    if (fix.command) {
+                        // Execute the fix command in the terminal
+                        console.log(`[Error Doctor] Executing fix command: ${fix.command}`);
+                        session.process.write(fix.command + '\r');
+                        
+                        // Notify frontend that fix was applied
+                        socket.emit('error-doctor:fix-applied', {
+                            sessionId: sessionId,
+                            fix: fix,
+                            message: `Applied fix: ${fix.title}`,
+                            timestamp: Date.now()
+                        });
+                    } else {
+                        console.log(`[Error Doctor] Fix requires manual intervention: ${fix.title}`);
+                        socket.emit('error-doctor:fix-manual', {
+                            sessionId: sessionId,
+                            fix: fix,
+                            message: 'This fix requires manual intervention',
+                            timestamp: Date.now()
+                        });
+                    }
+                } catch (error) {
+                    console.error('[Error Doctor] Fix application failed:', error);
+                    socket.emit('error-doctor:fix-error', {
+                        sessionId: sessionId,
+                        error: error.message,
+                        timestamp: Date.now()
+                    });
+                }
+            } else {
+                socket.emit('error-doctor:fix-error', {
+                    sessionId: sessionId,
+                    error: 'Terminal session not found or invalid fix',
+                    timestamp: Date.now()
+                });
+            }
+        });
+        
+        // Handle PTY supervision trigger from API
+        socket.on('supervision:start-pty', ({ sessionId }) => {
+            console.log(`[SafePTYManager] PTY supervision triggered for session ${sessionId}`);
+            
+            // Find the active terminal session for this socket
+            const session = Array.from(safeptyManager.sessions.values())
+                .find(s => s.socketId === socket.id);
+            
+            if (session && session.process && !session.supervisionAdapter) {
+                // Trigger supervision start
+                socket.emit('supervision:start', { 
+                    sessionId: sessionId, 
+                    terminalId: session.id 
+                });
+            } else if (session && session.supervisionAdapter) {
+                console.log(`[SafePTYManager] Supervision already active for session ${sessionId}`);
+            } else {
+                console.log('[SafePTYManager] No terminal session found for PTY supervision');
+            }
+        });
+        
+        // Handle brainstorm events for AI Mastermind
+        socket.on('brainstorm:start', async (data) => {
+            console.log(`[SafePTYManager] Starting brainstorm session for socket ${socket.id}:`, data);
+            
+            const { query, options = {} } = data;
+            if (!query || !query.trim()) {
+                socket.emit('brainstorm:error', { error: 'Query is required' });
+                return;
+            }
+            
+            try {
+                // Generate unique session ID
+                const sessionId = `brainstorm-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+                
+                // Start the brainstorm session
+                const session = await brainstormOrchestrator.startSession(sessionId, query.trim(), options);
+                
+                // Emit session started event
+                socket.emit('brainstorm:started', {
+                    sessionId: session.sessionId,
+                    query: session.query,
+                    agents: session.agents,
+                    timestamp: Date.now()
+                });
+                
+                console.log(`[SafePTYManager] Brainstorm session ${sessionId} started`);
+                
+                // Create emit callback function for this socket
+                const emitCallback = (event, data) => {
+                    socket.emit(event, data);
+                };
+                
+                // Start the first brainstorm round with a small delay
+                setTimeout(async () => {
+                    try {
+                        await brainstormOrchestrator.runBrainstormRound(sessionId, emitCallback);
+                    } catch (error) {
+                        console.error('[SafePTYManager] Error running brainstorm round:', error);
+                        socket.emit('brainstorm:error', { 
+                            error: 'Failed to run brainstorm round', 
+                            sessionId 
+                        });
+                    }
+                }, 1000);
+                
+            } catch (error) {
+                console.error('[SafePTYManager] Error starting brainstorm:', error);
+                socket.emit('brainstorm:error', { error: error.message });
+            }
+        });
+        
+        socket.on('brainstorm:stop', (data) => {
+            console.log('[SafePTYManager] Stopping brainstorm session:', data);
+            
+            const { sessionId } = data;
+            if (sessionId) {
+                const stopped = brainstormOrchestrator.stopSession(sessionId);
+                socket.emit('brainstorm:session-complete', { 
+                    sessionId, 
+                    stopped: true,
+                    timestamp: Date.now()
+                });
+                console.log(`[SafePTYManager] Brainstorm session ${sessionId} stopped:`, stopped);
+            }
+        });
+        
+        socket.on('brainstorm:continue', async (data) => {
+            console.log('[SafePTYManager] Continuing brainstorm session:', data);
+            
+            const { sessionId } = data;
+            if (!sessionId) {
+                socket.emit('brainstorm:error', { error: 'Session ID required' });
+                return;
+            }
+            
+            try {
+                const emitCallback = (event, data) => {
+                    socket.emit(event, data);
+                };
+                
+                const result = await brainstormOrchestrator.runBrainstormRound(sessionId, emitCallback);
+                console.log(`[SafePTYManager] Brainstorm round completed for ${sessionId}:`, result);
+                
+            } catch (error) {
+                console.error('[SafePTYManager] Error continuing brainstorm:', error);
+                socket.emit('brainstorm:error', { 
+                    error: error.message, 
+                    sessionId 
+                });
+            }
+        });
+        
+        // Handle user input during brainstorm sessions
+        socket.on('brainstorm:user-input', async (data) => {
+            console.log('[SafePTYManager] User input received:', data);
+            
+            const { sessionId, message, timestamp } = data;
+            if (!sessionId || !message) {
+                socket.emit('brainstorm:error', { error: 'Session ID and message required' });
+                return;
+            }
+            
+            try {
+                // Add user input to session context
+                const userMessage = brainstormOrchestrator.addUserInput(sessionId, message, timestamp);
+                
+                // Broadcast user input to other connected clients (if any)
+                socket.broadcast.emit('brainstorm:agent-message', {
+                    ...userMessage,
+                    sessionId
+                });
+                
+                console.log(`[SafePTYManager] User input added to session ${sessionId}`);
+                
+                // Get the current session to determine which agents should respond
+                const session = brainstormOrchestrator.getSession(sessionId);
+                if (session && session.active) {
+                    // Add a small delay for natural flow
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                    
+                    // Trigger responses from 1-2 agents acknowledging the user input
+                    const agentsToRespond = session.agents.slice(0, Math.min(2, session.agents.length));
+                    
+                    for (const agentId of agentsToRespond) {
+                        try {
+                            const response = await brainstormOrchestrator.generateAgentResponse(
+                                agentId,
+                                session.query,
+                                session.messages,
+                                session.currentRound,
+                                session
+                            );
+                            
+                            session.messages.push(response);
+                            
+                            // Emit agent response to all connected clients
+                            io.to(socket.id).emit('brainstorm:agent-message', {
+                                ...response,
+                                sessionId
+                            });
+                            socket.broadcast.emit('brainstorm:agent-message', {
+                                ...response,
+                                sessionId
+                            });
+                            
+                            // Small delay between agent responses
+                            await new Promise(resolve => setTimeout(resolve, 800));
+                        } catch (error) {
+                            console.error('[SafePTYManager] Error generating agent response:', error);
+                        }
+                    }
+                }
+                
+            } catch (error) {
+                console.error('[SafePTYManager] Error handling user input:', error);
+                socket.emit('brainstorm:error', { 
+                    error: 'Failed to process user input', 
+                    sessionId 
+                });
+            }
+        });
+        
+        // ==========================================
+        // NEW: ORCHESTRATOR-LED CONVERSATION HANDLERS
+        // ==========================================
+        
+        // Start orchestrator-led expert consultation
+        socket.on('conversation:start', async (data) => {
+            console.log('[SafePTYManager] Starting orchestrator conversation:', data);
+            
+            const { query, options = {} } = data;
+            if (!query || !query.trim()) {
+                socket.emit('conversation:error', { error: 'Query required' });
+                return;
+            }
+
+            try {
+                const userId = socket.id; // Use socket ID as user ID for now
+                
+                const result = await conversationOrchestrator.startSession(
+                    userId,
+                    query.trim(),
+                    options
+                );
+
+                // Emit conversation started event
+                socket.emit('conversation:started', {
+                    sessionId: result.sessionId,
+                    orchestratorMessage: result.orchestratorMessage,
+                    phase: result.phase,
+                    status: result.status,
+                    timestamp: Date.now()
+                });
+
+                console.log(`[SafePTYManager] Orchestrator conversation started: ${result.sessionId}`);
+
+            } catch (error) {
+                console.error('[SafePTYManager] Error starting orchestrator conversation:', error);
+                socket.emit('conversation:error', { error: error.message });
+            }
+        });
+
+        // Handle user messages in orchestrator conversation
+        socket.on('conversation:message', async (data) => {
+            console.log('[SafePTYManager] User message in conversation:', data);
+            
+            const { sessionId, message } = data;
+            if (!sessionId || !message?.trim()) {
+                socket.emit('conversation:error', { error: 'Session ID and message required' });
+                return;
+            }
+
+            try {
+                // Create emit callback for this socket
+                const emitCallback = (event, data) => {
+                    socket.emit(event, data);
+                };
+
+                const result = await conversationOrchestrator.handleUserMessage(
+                    sessionId, 
+                    message.trim(),
+                    emitCallback
+                );
+
+                console.log(`[SafePTYManager] User message processed for session: ${sessionId}`);
+
+            } catch (error) {
+                console.error('[SafePTYManager] Error handling conversation message:', error);
+                socket.emit('conversation:error', { 
+                    error: 'Failed to process message', 
+                    sessionId 
+                });
+            }
+        });
+
+        // Stop orchestrator conversation
+        socket.on('conversation:stop', (data) => {
+            console.log('[SafePTYManager] Stopping orchestrator conversation:', data);
+            
+            const { sessionId } = data;
+            if (sessionId) {
+                const stopped = conversationOrchestrator.stopSession(sessionId);
+                socket.emit('conversation:session-complete', { 
+                    sessionId, 
+                    stopped: true,
+                    timestamp: Date.now()
+                });
+                console.log(`[SafePTYManager] Orchestrator conversation ${sessionId} stopped:`, stopped);
+            }
+        });
+
+        // Get conversation status
+        socket.on('conversation:status', (data) => {
+            const { sessionId } = data;
+            if (sessionId) {
+                const session = conversationOrchestrator.getSession(sessionId);
+                socket.emit('conversation:status-response', {
+                    sessionId,
+                    session: session ? {
+                        phase: session.phase,
+                        active: session.active,
+                        selectedExperts: session.selectedExperts,
+                        messageCount: session.messages.length
+                    } : null
+                });
+            }
+        });
+
+        // Generate Claude Code handoff
+        socket.on('conversation:generate-claude-code', async (data) => {
+            console.log('[SafePTYManager] Generating Claude Code handoff:', data);
+            
+            const { sessionId } = data;
+            if (!sessionId) {
+                socket.emit('conversation:error', { error: 'Session ID required' });
+                return;
+            }
+
+            try {
+                const session = conversationOrchestrator.getSession(sessionId);
+                if (!session || !session.synthesis) {
+                    socket.emit('conversation:error', { 
+                        error: 'Session not found or synthesis not complete',
+                        sessionId 
+                    });
+                    return;
+                }
+
+                // Generate Claude Code handoff
+                const handoffResult = await claudeCodeIntegration.createClaudeCodeHandoff(
+                    session.synthesis,
+                    session.userContext,
+                    session.expertPlans
+                );
+
+                if (handoffResult.success) {
+                    socket.emit('conversation:claude-code-ready', {
+                        sessionId,
+                        prompt: handoffResult.prompt,
+                        metadata: handoffResult.metadata,
+                        handoffOptions: handoffResult.handoffOptions,
+                        timestamp: Date.now()
+                    });
+                    console.log(`[SafePTYManager] Claude Code handoff generated for: ${session.userContext.projectDescription}`);
+                } else {
+                    socket.emit('conversation:error', {
+                        error: 'Failed to generate Claude Code handoff',
+                        sessionId,
+                        fallback: handoffResult.fallbackPrompt
+                    });
+                }
+
+            } catch (error) {
+                console.error('[SafePTYManager] Error generating Claude Code handoff:', error);
+                socket.emit('conversation:error', { 
+                    error: 'Failed to generate Claude Code handoff', 
+                    sessionId 
+                });
+            }
+        });
+
+        // Export conversation data
+        socket.on('conversation:export', async (data) => {
+            const { sessionId, format = 'prd' } = data; // Default to PRD format
+            if (!sessionId) {
+                socket.emit('conversation:error', { error: 'Session ID required' });
+                return;
+            }
+
+            try {
+                const session = conversationOrchestrator.getSession(sessionId);
+                if (!session) {
+                    socket.emit('conversation:error', { 
+                        error: 'Session not found',
+                        sessionId 
+                    });
+                    return;
+                }
+
+                let exportData;
+                let filename;
+                let fileExtension;
+                
+                if (format === 'prd' || format === 'md') {
+                    // Generate professional PRD in Markdown format
+                    exportData = conversationOrchestrator.generateProfessionalPRD(session);
+                    fileExtension = 'md';
+                    filename = `PRD-${sessionId}-${Date.now()}.${fileExtension}`;
+                } else {
+                    // Legacy JSON format
+                    exportData = {
+                        sessionId,
+                        projectDescription: session.userContext.projectDescription,
+                        phase: session.phase,
+                        messages: session.messages,
+                        selectedExperts: session.selectedExperts,
+                        expertPlans: session.expertPlans,
+                        synthesis: session.synthesis,
+                        claudeCodePrompt: session.claudeCodePrompt,
+                        timestamp: Date.now()
+                    };
+                    fileExtension = 'json';
+                    filename = `conversation-${sessionId.slice(-8)}-${Date.now()}.${fileExtension}`;
+                }
+
+                socket.emit('conversation:export-ready', {
+                    sessionId,
+                    format: fileExtension,
+                    data: exportData,
+                    filename
+                });
+
+            } catch (error) {
+                console.error('[SafePTYManager] Error exporting conversation:', error);
+                socket.emit('conversation:error', { 
+                    error: 'Failed to export conversation', 
+                    sessionId 
+                });
+            }
+        });
+        
+        // Handle voice events (moved from app.js)
+        socket.on('voice:join_session', (data) => {
+            if (data.sessionId) {
+                socket.join(`session:${data.sessionId}`);
+                const client = connectedClients.get(socket.id);
+                if (client) {
+                    client.sessionId = data.sessionId;
+                }
+                socket.emit('voice:session_joined', { sessionId: data.sessionId });
+                console.log(`[SafePTYManager] Voice session joined: ${data.sessionId}`);
+            }
+        });
+        
+        // Handle client disconnect
+        socket.on('disconnect', () => {
+            console.log(`[SafePTYManager] Client disconnected: ${socket.id}`);
+            
+            // Remove from connected clients tracking
+            connectedClients.delete(socket.id);
+            
+            // Clean up sessions for this socket
+            for (const [sessionId, session] of safeptyManager.sessions) {
+                if (session.socketId === socket.id) {
+                    safeptyManager.destroySession(sessionId);
+                }
+            }
+            
+            // Clean up brainstorm sessions for this socket (legacy)
+            for (const [sessionId, session] of brainstormOrchestrator.activeSessions) {
+                if (session.socketId === socket.id) {
+                    brainstormOrchestrator.stopSession(sessionId);
+                    console.log(`[SafePTYManager] Cleaned up brainstorm session ${sessionId} for disconnected socket`);
+                }
+            }
+            
+            // Clean up old clients periodically
+            if (connectedClients.size > 100) {
+                const now = Date.now();
+                for (const [id, client] of connectedClients.entries()) {
+                    const CLIENT_TIMEOUT = process.env.TERMINAL_CLIENT_TIMEOUT || 28800000; // 8 hours default
+                    if (now - client.connectedAt > CLIENT_TIMEOUT) {
+                        connectedClients.delete(id);
+                    }
+                }
+            }
+        });
+    });
+    
+    // Periodic cleanup with configurable interval
+    // Default to 30 minutes (more reasonable than 5 minutes for development)
+    const CLEANUP_INTERVAL = process.env.TERMINAL_CLEANUP_INTERVAL || 1800000; // 30 minutes
+    setInterval(() => {
+        safeptyManager.cleanup();
+    }, CLEANUP_INTERVAL);
+    
+    console.log(`[SafePTYManager] Cleanup scheduled every ${CLEANUP_INTERVAL/60000} minutes, sessions timeout after ${(process.env.TERMINAL_SESSION_TIMEOUT || 28800000)/3600000} hours of inactivity`);
+    
+    // Log configuration on startup
+    console.log('[SafePTYManager] Socket.IO terminal integration ready');
+}
+
+// Export telemetry endpoint
+function getTerminalTelemetry() {
+    return safeptyManager.getTelemetry();
+}
+
+module.exports = {
+    setupTerminalWebSocket,
+    getTerminalTelemetry
+};

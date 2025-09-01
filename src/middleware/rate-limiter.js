@@ -1,0 +1,189 @@
+// Rate limiter middleware to prevent excessive API calls
+const rateLimitMap = new Map();
+
+// Configuration
+const RATE_LIMIT_CONFIG = {
+    windowMs: 60 * 1000, // 1 minute window
+    maxRequests: 200, // Significantly increased for IDE functionality
+    anthropicLimit: 3, // Max 3 Anthropic API calls per minute
+    openaiLimit: 5, // Max 5 OpenAI API calls per minute
+    blockDuration: 30 * 1000 // Reduced to 30 seconds block if exceeded
+};
+
+// Clean up old entries periodically
+setInterval(() => {
+    const now = Date.now();
+    for (const [key, data] of rateLimitMap.entries()) {
+        if (now - data.windowStart > RATE_LIMIT_CONFIG.windowMs * 2) {
+            rateLimitMap.delete(key);
+        }
+    }
+}, 60 * 1000); // Clean every minute
+
+// General rate limiter
+const rateLimit = (req, res, next) => {
+    // Skip rate limiting for terminal-related endpoints, IDE, AI enhancement, experimental, and coaching endpoints
+    if (req.path.includes('/terminal') || 
+        req.path.includes('/health') || 
+        req.path.includes('/commands') ||
+        req.path.includes('/claude/suggestions') ||
+        req.path.includes('/claude/approvals') ||
+        req.path.includes('/claude/performance') ||
+        req.path.includes('/claude/coaching') ||
+        req.path.includes('/experimental') ||  // Allow AI Team polling
+        req.path.includes('/ide') ||
+        req.path.includes('/orchestrator') ||  // Allow orchestrator static files
+        req.path.includes('/github') ||        // Allow GitHub API calls
+        req.path.includes('/sessions') ||      // Allow session management
+        req.path.includes('/checkpoints') ||   // Allow checkpoint calls
+        req.path.includes('/repository') ||    // Allow repository calls
+        req.path.includes('/api/github') ||    // Allow GitHub status calls
+        req.path.includes('/api/sessions')) {  // Allow session API calls
+        return next();
+    }
+    
+    const clientId = req.ip || req.sessionId || 'anonymous';
+    const now = Date.now();
+    
+    if (!rateLimitMap.has(clientId)) {
+        rateLimitMap.set(clientId, {
+            windowStart: now,
+            requestCount: 0,
+            anthropicCalls: 0,
+            openaiCalls: 0,
+            blockedUntil: null
+        });
+    }
+    
+    const clientData = rateLimitMap.get(clientId);
+    
+    // Check if client is blocked
+    if (clientData.blockedUntil && now < clientData.blockedUntil) {
+        const remainingTime = Math.ceil((clientData.blockedUntil - now) / 1000);
+        return res.status(429).json({
+            error: 'Too many requests',
+            message: `Rate limit exceeded. Please try again in ${remainingTime} seconds.`,
+            retryAfter: remainingTime
+        });
+    }
+    
+    // Reset window if expired
+    if (now - clientData.windowStart > RATE_LIMIT_CONFIG.windowMs) {
+        clientData.windowStart = now;
+        clientData.requestCount = 0;
+        clientData.anthropicCalls = 0;
+        clientData.openaiCalls = 0;
+        clientData.blockedUntil = null;
+    }
+    
+    // Check general rate limit
+    if (clientData.requestCount >= RATE_LIMIT_CONFIG.maxRequests) {
+        clientData.blockedUntil = now + RATE_LIMIT_CONFIG.blockDuration;
+        return res.status(429).json({
+            error: 'Too many requests',
+            message: 'Rate limit exceeded. Please slow down your requests.',
+            retryAfter: Math.ceil(RATE_LIMIT_CONFIG.blockDuration / 1000)
+        });
+    }
+    
+    clientData.requestCount++;
+    next();
+};
+
+// API-specific rate limiters
+const anthropicRateLimit = (req, res, next) => {
+    const clientId = req.ip || req.sessionId || 'anonymous';
+    const clientData = rateLimitMap.get(clientId);
+    
+    if (!clientData) {
+        return next();
+    }
+    
+    if (clientData.anthropicCalls >= RATE_LIMIT_CONFIG.anthropicLimit) {
+        return res.status(429).json({
+            error: 'Anthropic API rate limit exceeded',
+            message: `Maximum ${RATE_LIMIT_CONFIG.anthropicLimit} Anthropic API calls per minute allowed.`,
+            retryAfter: 60
+        });
+    }
+    
+    clientData.anthropicCalls++;
+    next();
+};
+
+const openaiRateLimit = (req, res, next) => {
+    const clientId = req.ip || req.sessionId || 'anonymous';
+    const clientData = rateLimitMap.get(clientId);
+    
+    if (!clientData) {
+        return next();
+    }
+    
+    if (clientData.openaiCalls >= RATE_LIMIT_CONFIG.openaiLimit) {
+        return res.status(429).json({
+            error: 'OpenAI API rate limit exceeded',
+            message: `Maximum ${RATE_LIMIT_CONFIG.openaiLimit} OpenAI API calls per minute allowed.`,
+            retryAfter: 60
+        });
+    }
+    
+    clientData.openaiCalls++;
+    next();
+};
+
+// Connection rate limiter for Socket.IO
+const connectionRateLimit = new Map();
+
+const socketConnectionLimit = (socket, next) => {
+    const clientId = socket.handshake.address;
+    const now = Date.now();
+    
+    if (!connectionRateLimit.has(clientId)) {
+        connectionRateLimit.set(clientId, {
+            lastConnection: now,
+            connectionCount: 0,
+            blocked: false
+        });
+    }
+    
+    const clientData = connectionRateLimit.get(clientId);
+    
+    // Block rapid reconnections (more than 5 in 10 seconds)
+    if (now - clientData.lastConnection < 10000) {
+        clientData.connectionCount++;
+        
+        if (clientData.connectionCount > 5) {
+            clientData.blocked = true;
+            setTimeout(() => {
+                clientData.blocked = false;
+                clientData.connectionCount = 0;
+            }, 30000); // Unblock after 30 seconds
+            
+            return next(new Error('Too many connection attempts. Please wait.'));
+        }
+    } else {
+        clientData.connectionCount = 1;
+    }
+    
+    clientData.lastConnection = now;
+    next();
+};
+
+// Function to clear rate limit data (useful for development)
+const clearRateLimit = (clientId) => {
+    if (clientId) {
+        rateLimitMap.delete(clientId);
+        connectionRateLimit.delete(clientId);
+    } else {
+        rateLimitMap.clear();
+        connectionRateLimit.clear();
+    }
+};
+
+module.exports = {
+    rateLimit,
+    anthropicRateLimit,
+    openaiRateLimit,
+    socketConnectionLimit,
+    clearRateLimit
+};

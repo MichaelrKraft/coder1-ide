@@ -1,0 +1,111 @@
+# Dependencies
+node_modules/
+npm-debug.log*
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Build outputs
+dist/
+build/
+
+# React build artifacts
+public/ide/static/css/main.*.css
+public/ide/static/css/main.*.css.map
+public/ide/static/js/main.*.js
+public/ide/static/js/main.*.js.map
+public/ide/static/js/*.chunk.js
+public/ide/static/js/*.chunk.js.map
+
+# Logs
+logs/
+*.log
+
+# OS files
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+
+# Server logs
+server.log
+
+# Test files
+test-*.js
+test-*.html
+test-pty/
+test-supervision/
+
+# GitHub CLI integration test files
+playwright-*.js
+comprehensive-*.js
+*-test.png
+github-cli-*.png
+
+# Terminal test files
+terminal-client.html
+terminal-server.js
+terminal-server-debug.js
+
+# Script files
+*.sh
+
+# Development files
+simple-terminal-test.html
+simple-test-server.js
+standalone-ide.html
+.vercel
+
+# Memory and cache files  
+.coder1/memory/
+.coder1/cache/
+
+# IDE build assets
+public/ide/ide/
+public/index.html
+
+# Testing reports and documentation
+*_TESTING_REPORT.md
+
+# Backup directories
+backup_*/
+**/backup_*/
+backups/
+**/backups/
+ide-backup*/
+ide-old*/
+
+# Build artifacts and debug files
+**/target/debug/
+**/target/release/
+**/*.rlib
+**/*.rmeta
+**/*.a
+**/*.so
+**/*.dylib
+
+# Large binary files
+**/exports/
+**/*.zip
+**/*.tar.gz
+
+# Session summaries (too many)
+**/summaries/summary-*.md
+
+# Tauri builds
+**/src-tauri/target/
+
+# Cache and temporary directories
+**/.next/
+**/.cache/
+**/tmp/

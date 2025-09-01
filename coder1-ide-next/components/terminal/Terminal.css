@@ -1,0 +1,140 @@
+/* Terminal Button Styles - Glass effect with Blue glow default, Orange on hover */
+.terminal-control-btn {
+  background: linear-gradient(135deg, rgba(125, 211, 252, 0.1) 0%, rgba(187, 154, 247, 0.1) 100%);
+  border: 1px solid rgba(0, 217, 255, 0.3);
+  box-shadow: 
+    0 0 10px rgba(0, 217, 255, 0.2),
+    0 0 20px rgba(0, 217, 255, 0.1),
+    0 2px 4px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  color: #ffffff;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transform: translateY(0);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Sweep animation effect */
+.terminal-control-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+  transition: left 0.5s;
+}
+
+.terminal-control-btn:hover {
+  border-color: rgba(251, 146, 60, 0.5);
+  box-shadow: 
+    0 0 20px rgba(251, 146, 60, 0.4),
+    0 0 40px rgba(251, 146, 60, 0.2),
+    0 2px 8px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  transform: translateY(-2px) scale(1.02);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+.terminal-control-btn:hover::before {
+  left: 100%;
+}
+
+.terminal-control-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: translateY(0);
+}
+
+/* Stop button special style - same glass effect as others */
+.terminal-stop-btn {
+  background: linear-gradient(135deg, rgba(125, 211, 252, 0.1) 0%, rgba(187, 154, 247, 0.1) 100%);
+  border: 1px solid rgba(0, 217, 255, 0.3);
+  box-shadow: 
+    0 0 10px rgba(0, 217, 255, 0.2),
+    0 0 20px rgba(0, 217, 255, 0.1),
+    0 2px 4px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  color: #ffffff;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transform: translateY(0);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Sweep animation effect for stop button */
+.terminal-stop-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+  transition: left 0.5s;
+}
+
+.terminal-stop-btn:hover {
+  border-color: rgba(251, 146, 60, 0.5);
+  box-shadow: 
+    0 0 20px rgba(251, 146, 60, 0.4),
+    0 0 40px rgba(251, 146, 60, 0.2),
+    0 2px 8px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  transform: translateY(-2px) scale(1.02);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+.terminal-stop-btn:hover::before {
+  left: 100%;
+}
+
+/* Terminal content padding for plan mode visibility */
+.terminal-content {
+  position: relative;
+  height: calc(100% - 80px) !important; /* Reserve 80px at bottom for Claude prompt */
+  margin-bottom: 80px; /* Ensure space is actually reserved */
+}
+
+/* Add scroll padding to terminal viewport for better visibility */
+.terminal-content .xterm-viewport {
+  scroll-padding-bottom: 100px; /* Keep content away from bottom edge */
+}
+
+/* Terminal screen container */
+.terminal-content .xterm-screen {
+  padding-bottom: 20px; /* Small padding for visual comfort */
+}
+
+/* Scroll to Follow button styles */
+.scroll-to-follow-btn {
+  background: linear-gradient(135deg, rgba(125, 211, 252, 0.1) 0%, rgba(187, 154, 247, 0.1) 100%);
+  border: 1px solid rgba(0, 217, 255, 0.3);
+  box-shadow: 
+    0 0 10px rgba(0, 217, 255, 0.2),
+    0 0 20px rgba(0, 217, 255, 0.1),
+    0 2px 4px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.scroll-to-follow-btn:hover {
+  border-color: rgba(251, 146, 60, 0.5);
+  box-shadow: 
+    0 0 20px rgba(251, 146, 60, 0.4),
+    0 0 40px rgba(251, 146, 60, 0.2),
+    0 2px 8px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  transform: translateY(-2px);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}

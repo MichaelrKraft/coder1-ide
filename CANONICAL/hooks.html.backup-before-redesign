@@ -1,0 +1,1620 @@
+<!-- 
+===============================================================================
+CANONICAL FILE - MODIFY THIS VERSION ONLY
+===============================================================================
+File: hooks.html
+Purpose: Claude Code Hooks Management Interface
+Status: PRODUCTION - Last updated: 2025-01-13
+Claude Agents: This is the OFFICIAL version - do not modify copies elsewhere
+===============================================================================
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>Claude Code Hooks Manager - v2</title>
+    <link rel="stylesheet" href="styles.css?v=<?php echo time(); ?>1754458000">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #0a0a0a;
+            --bg-secondary: #1a1a1a;
+            --glass-bg: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --text-primary: #ffffff;
+            --text-secondary: #a0a0a0;
+            --accent-primary: #8b5cf6;
+            --accent-secondary: #06b6d4;
+            --success: #8b5cf6;
+            --warning: #f59e0b;
+            --error: #a855f7;
+            --gold: #fbbf24;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+            position: relative;
+        }
+
+        .glassmorphism {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        /* Button Styles */
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 500;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(139, 92, 246, 0.4);
+        }
+
+        .btn-secondary {
+            background: var(--glass-bg);
+            color: var(--text-primary);
+            border: 1px solid var(--glass-border);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: var(--accent-primary);
+        }
+
+        /* Removed animated gradient background that was causing layout issues */
+
+        /* Header */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding: 0;
+            height: 92px;
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .back-to-ide {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: rgba(139, 92, 246, 0.1);
+            border: 1px solid var(--accent-primary);
+            border-radius: 8px;
+            color: var(--text-primary);
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .back-to-ide:hover {
+            background: rgba(139, 92, 246, 0.2);
+            transform: translateX(-2px);
+            box-shadow: 0 0 20px rgba(139, 92, 246, 0.3);
+        }
+
+        /* Title styling moved inline for consistency with dashboard */
+
+        .header-controls {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+            padding: 2rem;
+        }
+
+        /* Header Section */
+        .header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 1rem;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+            max-width: 600px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+
+        /* Status Cards */
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 3rem;
+        }
+
+        .status-card {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 24px;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .status-card:hover {
+            border-color: #f97316;
+            box-shadow: 0 0 20px rgba(249, 115, 22, 0.4), 
+                        0 0 40px rgba(249, 115, 22, 0.2),
+                        inset 0 0 20px rgba(249, 115, 22, 0.05);
+            transform: translateY(-2px);
+        }
+
+        .status-card h3 {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 16px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .status-card .value {
+            font-size: 48px;
+            font-weight: bold;
+            background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 16px;
+        }
+
+        .status-card .label {
+            color: var(--text-secondary);
+            font-size: 12px;
+        }
+
+        /* Action Buttons */
+        .actions {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 3rem;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+            background: var(--glass-bg);
+            color: var(--text-primary);
+            backdrop-filter: blur(10px);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
+            border: none;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            box-shadow: 0 0 20px rgba(139, 92, 246, 0.5);
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: var(--glass-bg);
+            border: 1px solid var(--accent-primary);
+            color: var(--accent-primary);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(139, 92, 246, 0.1);
+            border-color: var(--accent-secondary);
+            color: var(--accent-secondary);
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 2rem;
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        .tab {
+            padding: 1rem 2rem;
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .tab.active {
+            color: var(--accent-primary);
+            border-bottom-color: var(--accent-primary);
+        }
+
+        .tab:hover {
+            color: var(--text-primary);
+        }
+
+        /* Content Sections */
+        .content-section {
+            display: none;
+        }
+
+        .content-section.active {
+            display: block;
+        }
+
+        /* Recommendations */
+        .recommendations {
+            margin-bottom: 3rem;
+        }
+
+        .recommendation-card {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 20px;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .recommendation-card:hover {
+            border-color: #f97316;
+            box-shadow: 0 0 20px rgba(249, 115, 22, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .recommendation-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1rem;
+        }
+
+        .recommendation-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--accent-primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .recommendation-priority {
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        .priority-high {
+            background: rgba(255, 107, 53, 0.2);
+            color: var(--accent-primary);
+            border: 1px solid var(--accent-primary);
+        }
+
+        .priority-medium {
+            background: rgba(139, 92, 246, 0.2);
+            color: var(--accent-secondary);
+            border: 1px solid var(--accent-secondary);
+        }
+
+        .priority-low {
+            background: rgba(75, 85, 99, 0.2);
+            color: #9CA3AF;
+            border: 1px solid #4B5563;
+        }
+
+        .recommendation-description {
+            color: var(--text-secondary);
+            margin-bottom: 1rem;
+            line-height: 1.5;
+        }
+
+        .recommendation-reason {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            font-style: italic;
+            margin-bottom: 1rem;
+        }
+
+        .hook-tags {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            margin-bottom: 1rem;
+        }
+
+        .hook-tag {
+            background: rgba(139, 92, 246, 0.1);
+            color: var(--accent-secondary);
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            border: 1px solid var(--accent-secondary);
+        }
+
+        /* Templates Grid */
+        .templates-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .template-card {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 24px;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .template-card:hover {
+            border-color: #f97316;
+            box-shadow: 0 0 20px rgba(249, 115, 22, 0.4), 
+                        0 0 40px rgba(249, 115, 22, 0.2),
+                        inset 0 0 20px rgba(249, 115, 22, 0.05);
+            transform: translateY(-2px);
+        }
+
+        .template-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+
+        .template-icon {
+            font-size: 1.5rem;
+        }
+
+        .template-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--accent-primary);
+        }
+
+        .template-description {
+            color: var(--text-secondary);
+            margin-bottom: 1rem;
+            line-height: 1.5;
+        }
+
+        .template-preview {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            font-size: 0.9rem;
+        }
+
+        .preview-when {
+            color: var(--accent-secondary);
+            margin-bottom: 0.5rem;
+        }
+
+        .preview-action {
+            color: var(--accent-primary);
+            font-family: monospace;
+            margin-bottom: 0.5rem;
+        }
+
+        .preview-result {
+            color: var(--text-secondary);
+        }
+
+        /* Loading States */
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 3rem;
+            color: var(--text-secondary);
+        }
+
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--glass-border);
+            border-top: 2px solid var(--accent-primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 0.5rem;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Error States */
+        .error {
+            background: rgba(220, 38, 38, 0.1);
+            border: 1px solid rgba(220, 38, 38, 0.3);
+            color: #FCA5A5;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+        }
+
+        /* Success States */
+        .success {
+            background: rgba(34, 197, 94, 0.1);
+            border: 1px solid rgba(34, 197, 94, 0.3);
+            color: #86EFAC;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+        }
+
+        /* Checkbox Styling */
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        .checkbox {
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border: 2px solid var(--glass-border);
+            border-radius: 4px;
+            position: relative;
+            cursor: pointer;
+        }
+
+        .checkbox:checked {
+            background: var(--accent-primary);
+            border-color: var(--accent-primary);
+        }
+
+        .checkbox:checked::after {
+            content: '✓';
+            position: absolute;
+            top: -2px;
+            left: 2px;
+            color: white;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        /* New Hooks Interface Styles */
+        .quick-actions {
+            display: flex !important;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+            visibility: visible !important;
+            opacity: 1 !important;
+        }
+
+        .hooks-container {
+            display: flex !important;
+            flex-direction: column;
+            gap: 2rem;
+            visibility: visible !important;
+            opacity: 1 !important;
+        }
+
+        .hook-category {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 24px;
+            backdrop-filter: blur(10px);
+        }
+
+        .category-header {
+            margin-bottom: 1.5rem;
+        }
+
+        .category-header h2 {
+            font-size: 1.4rem;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .category-header p {
+            color: var(--text-secondary);
+            margin: 0;
+        }
+
+        .hooks-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 1rem;
+        }
+
+        .hook-card {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .hook-card:hover {
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 20px rgba(139, 92, 246, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .hook-card.selected {
+            border-color: var(--accent-primary);
+            background: rgba(139, 92, 246, 0.1);
+        }
+
+        .hook-icon {
+            font-size: 2rem;
+            min-width: 3rem;
+            text-align: center;
+        }
+
+        .hook-info {
+            flex: 1;
+        }
+
+        .hook-info h3 {
+            font-size: 1.1rem;
+            color: var(--text-primary);
+            margin: 0 0 0.5rem 0;
+        }
+
+        .hook-info p {
+            color: var(--text-secondary);
+            margin: 0 0 0.5rem 0;
+            font-size: 0.9rem;
+            line-height: 1.4;
+        }
+
+        .hook-example {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+
+        .hook-example .before {
+            color: #a855f7;
+        }
+
+        .hook-example .after {
+            color: #8b5cf6;
+        }
+
+        .hook-toggle {
+            padding: 0.5rem 1rem;
+            border: 1px solid var(--glass-border);
+            border-radius: 8px;
+            background: var(--glass-bg);
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+            min-width: 80px;
+        }
+
+        .hook-toggle[data-state="off"] {
+            border-color: var(--accent-primary);
+            color: var(--accent-primary);
+        }
+
+        .hook-toggle[data-state="off"]:hover {
+            background: rgba(139, 92, 246, 0.1);
+        }
+
+        .hook-toggle[data-state="on"] {
+            background: var(--success);
+            border-color: var(--success);
+            color: white;
+        }
+
+        .summary-panel {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            max-width: 400px;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 1.5rem;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .summary-content h3 {
+            margin: 0 0 1rem 0;
+            color: var(--text-primary);
+        }
+
+        .summary-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        .summary-actions .btn {
+            flex: 1;
+            padding: 0.75rem 1rem;
+            font-size: 0.9rem;
+        }
+
+        /* Hook selection summary */
+        .selected-hook-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem;
+            background: rgba(139, 92, 246, 0.1);
+            border-radius: 8px;
+            margin-bottom: 0.5rem;
+        }
+
+        .selected-hook-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .selected-hook-item .hook-name {
+            color: var(--text-primary);
+            font-size: 0.9rem;
+        }
+
+        .selected-hook-item .remove-hook {
+            margin-left: auto;
+            background: none;
+            border: none;
+            color: var(--error);
+            cursor: pointer;
+            padding: 0.25rem;
+            border-radius: 4px;
+        }
+
+        .selected-hook-item .remove-hook:hover {
+            background: rgba(239, 68, 68, 0.1);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+
+            .header-content {
+                padding: 1rem;
+                min-height: auto;
+            }
+
+            .header-left, .header-controls {
+                width: 100% !important;
+                min-width: auto !important;
+                margin: 0 !important;
+            }
+
+            .header-controls {
+                flex-direction: row !important;
+                justify-content: center !important;
+                align-items: center !important;
+                gap: 1rem !important;
+            }
+
+            .main-header {
+                font-size: 1.5rem;
+            }
+
+            .hooks-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .hook-card {
+                flex-direction: column;
+                text-align: center;
+                gap: 1rem;
+            }
+
+            .hook-info {
+                text-align: left;
+            }
+
+            .summary-panel {
+                position: relative;
+                bottom: auto;
+                right: auto;
+                max-width: none;
+                margin-top: 2rem;
+            }
+
+            .quick-actions {
+                flex-direction: column;
+            }
+        }
+
+        /* Header Styling */
+        .header {
+            margin-bottom: 3rem !important;
+            position: relative;
+            z-index: 10;
+        }
+
+        .header-content {
+            min-height: 140px;
+        }
+
+        .main-header {
+            margin: 0;
+            font-size: 1.8rem;
+            font-weight: 700;
+            text-align: center;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            line-height: 1.2;
+            background: linear-gradient(135deg, #8b5cf6, #06b6d4);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header-controls a {
+            display: block;
+            margin-bottom: 0.5rem;
+        }
+
+        .header-controls span {
+            white-space: nowrap;
+        }
+
+        .category-header h2 {
+            font-size: 1.4rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .category-header h2 i {
+            color: var(--accent-primary);
+        }
+
+        .category-header p {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin: 0;
+            margin-bottom: 1rem;
+        }
+
+        .section-header {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: var(--accent-primary);
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+
+        .comparison-header {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 0.75rem;
+        }
+
+        .comparison-header.before {
+            color: var(--text-secondary);
+        }
+
+        .comparison-header.after {
+            color: var(--accent-secondary);
+        }
+
+        .hook-info h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .selected-hooks h3 {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 1rem;
+        }
+
+        /* Circuit Animation */
+        @keyframes blink-node {
+            0%, 100% { 
+                opacity: 0.5; 
+                box-shadow: 0 0 5px var(--accent-secondary);
+            }
+            50% { 
+                opacity: 1; 
+                box-shadow: 0 0 15px var(--accent-secondary);
+            }
+        }
+
+        /* Back to IDE button hover effect */
+        .back-to-ide-btn:hover {
+            background: rgba(6, 182, 212, 0.1) !important;
+            border-color: rgba(6, 182, 212, 0.5) !important;
+            box-shadow: 0 0 30px rgba(6, 182, 212, 0.4) !important;
+            transform: translateX(-2px);
+        }
+
+        /* AI Hooks Hero Section */
+        .hooks-hero-section {
+            position: relative;
+            padding: 100px 0 60px;
+            margin: -2rem -2rem 2rem -2rem;
+            overflow: hidden;
+            background: linear-gradient(180deg, #0a0a0a 0%, #050505 100%);
+            border-bottom: 1px solid rgba(6, 182, 212, 0.2);
+        }
+
+        /* Electric Gradient Mesh Background for Hooks */
+        .hooks-hero-section::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: 
+                radial-gradient(circle at 20% 50%, rgba(6, 182, 212, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(0, 255, 255, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 40% 20%, rgba(59, 130, 246, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 90% 10%, rgba(0, 191, 255, 0.1) 0%, transparent 50%);
+            animation: gradient-shift 20s ease infinite;
+            pointer-events: none;
+        }
+
+        @keyframes gradient-shift {
+            0%, 100% { transform: rotate(0deg) scale(1); }
+            25% { transform: rotate(45deg) scale(1.1); }
+            50% { transform: rotate(90deg) scale(1); }
+            75% { transform: rotate(135deg) scale(1.1); }
+        }
+
+        .hooks-hero-section .hero-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+            position: relative;
+            z-index: 2;
+        }
+
+        .hooks-hero-section .hero-header {
+            text-align: center;
+            margin-bottom: 60px;
+            animation: fadeInUp 0.8s ease-out;
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .hooks-hero-section .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: linear-gradient(135deg, rgba(6, 182, 212, 0.2), rgba(0, 255, 255, 0.2));
+            border: 1px solid rgba(6, 182, 212, 0.3);
+            padding: 8px 20px;
+            border-radius: 30px;
+            font-size: 14px;
+            font-weight: 600;
+            color: #06b6d4;
+            margin-bottom: 20px;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+        }
+
+        .hooks-hero-section .hero-title {
+            font-size: 56px;
+            font-weight: 800;
+            margin-bottom: 16px;
+            background: linear-gradient(135deg, #06b6d4 0%, #00ffff 50%, #3b82f6 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            line-height: 1.2;
+            letter-spacing: -1px;
+        }
+
+        .hooks-hero-section .hero-subtitle {
+            font-size: 20px;
+            color: rgba(255, 255, 255, 0.7);
+            max-width: 600px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+
+        /* Feature Cards Container */
+        .hooks-hero-section .feature-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 30px;
+            margin-top: 60px;
+        }
+
+        /* Hooks Hero Cards with Electric Theme */
+        .hooks-hero-section .feature-card {
+            background: rgba(10, 20, 30, 0.4);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(6, 182, 212, 0.2);
+            border-radius: 20px;
+            padding: 32px;
+            position: relative;
+            overflow: hidden;
+            transform-style: preserve-3d;
+            animation: float-card 6s ease-in-out infinite;
+            animation-delay: var(--delay);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        @keyframes float-card {
+            0%, 100% { transform: translateY(0) translateZ(0); }
+            50% { transform: translateY(-10px) translateZ(10px); }
+        }
+
+        .hooks-hero-section .feature-card:hover {
+            transform: translateY(-10px) rotateX(2deg) rotateY(2deg);
+            border-color: rgba(0, 255, 255, 0.4);
+            box-shadow: 
+                0 20px 40px rgba(6, 182, 212, 0.3),
+                0 30px 60px rgba(0, 255, 255, 0.2),
+                inset 0 0 30px rgba(6, 182, 212, 0.1);
+        }
+
+        .hooks-hero-section .feature-icon {
+            width: 56px;
+            height: 56px;
+            background: linear-gradient(135deg, #06b6d4, #00ffff);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            margin-bottom: 20px;
+            box-shadow: 0 8px 20px rgba(6, 182, 212, 0.3);
+        }
+
+        .hooks-hero-section .feature-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: #ffffff;
+            margin-bottom: 12px;
+        }
+
+        .hooks-hero-section .feature-description {
+            color: rgba(255, 255, 255, 0.7);
+            line-height: 1.6;
+            font-size: 15px;
+            margin-bottom: 20px;
+        }
+
+        .hooks-hero-section .feature-stats {
+            display: flex;
+            gap: 20px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .hooks-hero-section .stat-item {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .hooks-hero-section .stat-value {
+            font-size: 24px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #06b6d4, #00ffff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hooks-hero-section .stat-label {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.5);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Back to IDE Button -->
+        <a href="/ide" class="back-to-ide-btn" style="position: fixed; top: 20px; left: 20px; z-index: 1000; background: rgba(10, 10, 10, 0.8); backdrop-filter: blur(10px); border: 1px solid rgba(6, 182, 212, 0.3); color: #06b6d4; padding: 10px 20px; border-radius: 8px; text-decoration: none; font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 8px; transition: all 0.3s ease; box-shadow: 0 0 20px rgba(6, 182, 212, 0.2);">
+            <i class="fas fa-arrow-left"></i>
+            Back to IDE
+        </a>
+
+        <!-- AI-Powered Hooks Hero Section -->
+        <div class="hooks-hero-section">
+            <div class="hero-container">
+                <div class="hero-header">
+                    <div class="hero-badge">
+                        <span>⚡</span>
+                        <span>Revolutionary Performance</span>
+                    </div>
+                    <h1 class="hero-title">Hybrid Hook System</h1>
+                    <p class="hero-subtitle">Bash + AI architecture delivering instant responses with intelligent delegation when complexity demands it</p>
+                </div>
+                
+                <div class="feature-cards">
+                    <!-- Lightning Performance Card -->
+                    <div class="feature-card" style="--delay: 0s;">
+                        <div class="feature-icon">⚡</div>
+                        <h3 class="feature-title">Instant Response</h3>
+                        <p class="feature-description">Bash triggers execute in ~50ms with intelligent AI delegation only when complexity demands it</p>
+                        <div class="feature-stats">
+                            <div class="stat-item">
+                                <span class="stat-value">50ms</span>
+                                <span class="stat-label">Avg Response</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-value">90%</span>
+                                <span class="stat-label">Faster</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Intelligent Automation Card -->
+                    <div class="feature-card" style="--delay: 0.2s;">
+                        <div class="feature-icon">🧠</div>
+                        <h3 class="feature-title">25 AI Specialists</h3>
+                        <p class="feature-description">Domain-specific agents for commits, security, testing, performance, debugging, and more</p>
+                        <div class="feature-stats">
+                            <div class="stat-item">
+                                <span class="stat-value">25</span>
+                                <span class="stat-label">AI Agents</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-value">30%</span>
+                                <span class="stat-label">AI Usage</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Zero Configuration Card -->
+                    <div class="feature-card" style="--delay: 0.4s;">
+                        <div class="feature-icon">🚀</div>
+                        <h3 class="feature-title">Drop-in Ready</h3>
+                        <p class="feature-description">Works alongside existing hooks with no breaking changes. Progressive enhancement at its finest</p>
+                        <div class="feature-stats">
+                            <div class="stat-item">
+                                <span class="stat-value">0</span>
+                                <span class="stat-label">Config</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-value">100%</span>
+                                <span class="stat-label">Compatible</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="quick-actions">
+            <button class="btn btn-primary" id="autoSetupBtn">
+                <i class="fas fa-magic"></i>
+                Auto-Setup for My Project
+            </button>
+            <button class="btn btn-secondary" id="viewCurrentBtn">
+                <i class="fas fa-eye"></i>
+                View Current Hooks
+            </button>
+        </div>
+
+        <!-- Hooks Categories -->
+        <div class="hooks-container">
+            <!-- Essential Workflows -->
+            <div class="hook-category">
+                <div class="category-header">
+                    <h2><i class="fas fa-rocket"></i> Essential Workflows</h2>
+                    <p>Automate the basics - every project needs these</p>
+                </div>
+                <div class="hooks-grid">
+                    <div class="hook-card" data-hook="format-on-save">
+                        <div class="hook-icon"><i class="fas fa-magic"></i></div>
+                        <div class="hook-info">
+                            <h3>Auto-Format Code</h3>
+                            <p>Automatically formats your code when you save files</p>
+                            <div class="hook-example">
+                                <span class="before">Messy code</span> → <span class="after">Beautiful code</span>
+                            </div>
+                        </div>
+                        <button class="hook-toggle" data-state="off">Enable</button>
+                    </div>
+
+                    <div class="hook-card" data-hook="fix-imports">
+                        <div class="hook-icon"><i class="fas fa-link"></i></div>
+                        <div class="hook-info">
+                            <h3>Fix Import Statements</h3>
+                            <p>Automatically organizes and fixes import/require statements</p>
+                            <div class="hook-example">
+                                <span class="before">Scattered imports</span> → <span class="after">Clean imports</span>
+                            </div>
+                        </div>
+                        <button class="hook-toggle" data-state="off">Enable</button>
+                    </div>
+
+                    <div class="hook-card" data-hook="run-tests">
+                        <div class="hook-icon"><i class="fas fa-check-circle"></i></div>
+                        <div class="hook-info">
+                            <h3>Run Tests on Save</h3>
+                            <p>Automatically runs your tests when you save changes</p>
+                            <div class="hook-example">
+                                <span class="before">Manual testing</span> → <span class="after">Instant feedback</span>
+                            </div>
+                        </div>
+                        <button class="hook-toggle" data-state="off">Enable</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Code Quality -->
+            <div class="hook-category">
+                <div class="category-header">
+                    <h2><i class="fas fa-shield-alt"></i> Code Quality</h2>
+                    <p>Catch errors and maintain high standards</p>
+                </div>
+                <div class="hooks-grid">
+                    <div class="hook-card" data-hook="lint-check">
+                        <div class="hook-icon"><i class="fas fa-search"></i></div>
+                        <div class="hook-info">
+                            <h3>Lint Code</h3>
+                            <p>Checks for common errors and style issues</p>
+                            <div class="hook-example">
+                                <span class="before">Hidden bugs</span> → <span class="after">Clean code</span>
+                            </div>
+                        </div>
+                        <button class="hook-toggle" data-state="off">Enable</button>
+                    </div>
+
+                    <div class="hook-card" data-hook="type-check">
+                        <div class="hook-icon"><i class="fas fa-shield"></i></div>
+                        <div class="hook-info">
+                            <h3>Type Checking</h3>
+                            <p>Validates TypeScript types and catches type errors</p>
+                            <div class="hook-example">
+                                <span class="before">Type errors</span> → <span class="after">Type safety</span>
+                            </div>
+                        </div>
+                        <button class="hook-toggle" data-state="off">Enable</button>
+                    </div>
+
+                    <div class="hook-card" data-hook="security-scan">
+                        <div class="hook-icon"><i class="fas fa-lock"></i></div>
+                        <div class="hook-info">
+                            <h3>Security Scan</h3>
+                            <p>Scans for security vulnerabilities in dependencies</p>
+                            <div class="hook-example">
+                                <span class="before">Security risks</span> → <span class="after">Secure code</span>
+                            </div>
+                        </div>
+                        <button class="hook-toggle" data-state="off">Enable</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Git Workflow -->
+            <div class="hook-category">
+                <div class="category-header">
+                    <h2><i class="fas fa-code-branch"></i> Git Workflow</h2>
+                    <p>Streamline your version control</p>
+                </div>
+                <div class="hooks-grid">
+                    <div class="hook-card" data-hook="commit-message">
+                        <div class="hook-icon"><i class="fas fa-pen"></i></div>
+                        <div class="hook-info">
+                            <h3>Smart Commit Messages</h3>
+                            <p>Validates and suggests improvements to commit messages</p>
+                            <div class="hook-example">
+                                <span class="before">"fix stuff"</span> → <span class="after">"fix: resolve user login bug"</span>
+                            </div>
+                        </div>
+                        <button class="hook-toggle" data-state="off">Enable</button>
+                    </div>
+
+                    <div class="hook-card" data-hook="branch-naming">
+                        <div class="hook-icon"><i class="fas fa-code-branch"></i></div>
+                        <div class="hook-info">
+                            <h3>Enforce Branch Names</h3>
+                            <p>Ensures branch names follow your team's conventions</p>
+                            <div class="hook-example">
+                                <span class="before">random-branch</span> → <span class="after">feature/user-auth</span>
+                            </div>
+                        </div>
+                        <button class="hook-toggle" data-state="off">Enable</button>
+                    </div>
+
+                    <div class="hook-card" data-hook="prevent-secrets">
+                        <div class="hook-icon"><i class="fas fa-eye-slash"></i></div>
+                        <div class="hook-info">
+                            <h3>Prevent Secret Commits</h3>
+                            <p>Blocks commits that contain passwords or API keys</p>
+                            <div class="hook-example">
+                                <span class="before">Exposed secrets</span> → <span class="after">Protected secrets</span>
+                            </div>
+                        </div>
+                        <button class="hook-toggle" data-state="off">Enable</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Performance -->
+            <div class="hook-category">
+                <div class="category-header">
+                    <h2><i class="fas fa-tachometer-alt"></i> Performance</h2>
+                    <p>Keep your project fast and optimized</p>
+                </div>
+                <div class="hooks-grid">
+                    <div class="hook-card" data-hook="bundle-analysis">
+                        <div class="hook-icon"><i class="fas fa-chart-bar"></i></div>
+                        <div class="hook-info">
+                            <h3>Bundle Size Check</h3>
+                            <p>Warns when your bundle size grows too large</p>
+                            <div class="hook-example">
+                                <span class="before">Bloated bundles</span> → <span class="after">Optimized size</span>
+                            </div>
+                        </div>
+                        <button class="hook-toggle" data-state="off">Enable</button>
+                    </div>
+
+                    <div class="hook-card" data-hook="image-optimization">
+                        <div class="hook-icon"><i class="fas fa-image"></i></div>
+                        <div class="hook-info">
+                            <h3>Optimize Images</h3>
+                            <p>Automatically compresses images when added to project</p>
+                            <div class="hook-example">
+                                <span class="before">Large images</span> → <span class="after">Compressed images</span>
+                            </div>
+                        </div>
+                        <button class="hook-toggle" data-state="off">Enable</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Instant AI Help Section -->
+            <div class="hook-category" style="border: 2px solid var(--accent-primary); background: linear-gradient(135deg, rgba(139, 92, 246, 0.05), rgba(6, 182, 212, 0.05));">
+                <!-- Why Should I Care Banner -->
+                <div style="background: linear-gradient(135deg, rgba(251, 191, 36, 0.1), rgba(139, 92, 246, 0.1)); border-radius: 12px; padding: 20px; margin-bottom: 20px; border: 1px solid rgba(251, 191, 36, 0.3);">
+                    <h3 class="section-header" style="color: var(--gold);">
+                        Why These Are Game-Changers for Beginners
+                    </h3>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                        <div style="background: rgba(139, 92, 246, 0.1); border-radius: 8px; padding: 15px; border: 1px solid rgba(139, 92, 246, 0.2);">
+                            <h4 class="comparison-header before">Coding Without Instant AI</h4>
+                            <ul style="list-style: none; padding: 0; margin: 0; color: var(--text-secondary); font-size: 0.9rem; line-height: 1.6;">
+                                <li>• Error happens → Panic → Google for 30 mins</li>
+                                <li>• Commit message → "fixed things"</li>
+                                <li>• Performance issue → Site stays slow</li>
+                                <li>• Security problem → You never know</li>
+                            </ul>
+                        </div>
+                        <div style="background: rgba(6, 182, 212, 0.1); border-radius: 8px; padding: 15px; border: 1px solid rgba(6, 182, 212, 0.2);">
+                            <h4 class="comparison-header after">Coding With Instant AI</h4>
+                            <ul style="list-style: none; padding: 0; margin: 0; color: var(--text-secondary); font-size: 0.9rem; line-height: 1.6;">
+                                <li>• Error happens → Instant fix suggestion</li>
+                                <li>• Commit message → Professional & clear</li>
+                                <li>• Performance issue → Alert before users complain</li>
+                                <li>• Security problem → Caught before going live</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div style="text-align: center; margin-top: 15px; padding: 10px; background: rgba(139, 92, 246, 0.1); border-radius: 8px;">
+                        <span style="color: var(--accent-primary); font-weight: 600; font-size: 1rem;">
+                            These save beginners ~2 hours per day of debugging!
+                        </span>
+                    </div>
+                </div>
+
+                <div class="category-header">
+                    <h2><i class="fas fa-bolt"></i> Instant AI Help <span style="color: var(--accent-secondary); font-weight: 700;">(NEW!)</span></h2>
+                    <p>Get help in milliseconds, not seconds! Your code problems solved instantly.</p>
+                </div>
+                <div class="hooks-grid">
+                    <div class="hook-card hybrid-hook" data-hook="hybrid-smart-commit">
+                        <div class="hook-icon"><i class="fas fa-edit"></i></div>
+                        <div class="hook-info">
+                            <h3>Write Better Commit Messages</h3>
+                            <p>Never struggle with "fixed stuff" commits again!</p>
+                            <div class="hook-example">
+                                <span class="before">"fixed stuff"</span> → <span class="after">"fix: Resolved login button not responding on mobile"</span>
+                            </div>
+                            <div style="margin-top: 8px; font-size: 12px; color: var(--text-secondary);">
+                                ⚡ Instant for small changes (you won't even notice!)<br>
+                                🧠 AI helps with big changes (explains what you did)
+                            </div>
+                        </div>
+                        <button class="hook-toggle hybrid" data-state="off" style="background: linear-gradient(135deg, #8b5cf6, #06b6d4); color: white; border: none;">Try It Now</button>
+                    </div>
+
+                    <div class="hook-card hybrid-hook" data-hook="hybrid-security-check">
+                        <div class="hook-icon"><i class="fas fa-shield-alt"></i></div>
+                        <div class="hook-info">
+                            <h3>Protect Your Code</h3>
+                            <p>Stops you from accidentally exposing passwords or API keys</p>
+                            <div class="hook-example">
+                                <span style="color: var(--text-secondary);">API_KEY="sk-1234"</span> → <span style="color: var(--accent-primary);">"Hold up! Move this to .env file!"</span>
+                            </div>
+                            <div style="margin-top: 8px; font-size: 12px; color: var(--text-secondary);">
+                                Instant checks for common mistakes<br>
+                                AI investigates when something looks suspicious
+                            </div>
+                        </div>
+                        <button class="hook-toggle hybrid" data-state="off" style="background: linear-gradient(135deg, #8b5cf6, #06b6d4); color: white; border: none;">Try It Now</button>
+                    </div>
+
+                    <div class="hook-card hybrid-hook" data-hook="hybrid-test-runner">
+                        <div class="hook-icon"><i class="fas fa-vial"></i></div>
+                        <div class="hook-info">
+                            <h3>Run the Right Tests</h3>
+                            <p>Only runs tests for the code you changed - saves tons of time!</p>
+                            <div class="hook-example">
+                                <span style="color: var(--text-secondary);">Run all 500 tests</span> → <span style="color: var(--accent-primary);">Run only 3 affected tests</span>
+                            </div>
+                            <div style="margin-top: 8px; font-size: 12px; color: var(--text-secondary);">
+                                Instantly knows which tests to run<br>
+                                AI helps when changes affect many files
+                            </div>
+                        </div>
+                        <button class="hook-toggle hybrid" data-state="off" style="background: linear-gradient(135deg, #8b5cf6, #06b6d4); color: white; border: none;">Try It Now</button>
+                    </div>
+
+                    <div class="hook-card hybrid-hook" data-hook="hybrid-error-debug">
+                        <div class="hook-icon"><i class="fas fa-bug"></i></div>
+                        <div class="hook-info">
+                            <h3>Fix Errors Like a Pro</h3>
+                            <p>Explains confusing errors in plain English with fixes!</p>
+                            <div class="hook-example">
+                                <span style="color: var(--text-secondary);">"Cannot read 'map' of undefined"</span> → <span style="color: var(--accent-primary);">"Add [] to useState() on line 15"</span>
+                            </div>
+                            <div style="margin-top: 8px; font-size: 12px; color: var(--text-secondary);">
+                                Instant fixes for common React/JS errors<br>
+                                AI teacher explains complex bugs step-by-step
+                            </div>
+                        </div>
+                        <button class="hook-toggle hybrid" data-state="off" style="background: linear-gradient(135deg, #8b5cf6, #06b6d4); color: white; border: none;">Try It Now</button>
+                    </div>
+
+                    <div class="hook-card hybrid-hook" data-hook="hybrid-performance-check">
+                        <div class="hook-icon"><i class="fas fa-tachometer-alt"></i></div>
+                        <div class="hook-info">
+                            <h3>Keep Your Site Fast</h3>
+                            <p>Warns you when adding huge images or slow code</p>
+                            <div class="hook-example">
+                                <span style="color: var(--text-secondary);">15MB image</span> → <span style="color: var(--accent-primary);">"This will take 47s to load! Use TinyPNG!"</span>
+                            </div>
+                            <div style="margin-top: 8px; font-size: 12px; color: var(--text-secondary);">
+                                Instant alerts for performance issues<br>
+                                AI suggests optimizations when needed
+                            </div>
+                        </div>
+                        <button class="hook-toggle hybrid" data-state="off" style="background: linear-gradient(135deg, #8b5cf6, #06b6d4); color: white; border: none;">Try It Now</button>
+                    </div>
+                </div>
+
+                <!-- Your Coding Stats Dashboard -->
+                <div style="margin-top: 20px; padding: 20px; background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(139, 92, 246, 0.1)); border-radius: 12px; border: 1px solid rgba(16, 185, 129, 0.3);">
+                    <h3 class="section-header" style="color: var(--gold);">
+                        🏆 Your Coding Superpowers This Week
+                    </h3>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px;">
+                        <div style="text-align: center; background: rgba(255, 255, 255, 0.05); border-radius: 8px; padding: 15px;">
+                            <div style="font-size: 32px; font-weight: bold; color: var(--success);">
+                                <span id="errorsFixed">147</span>
+                            </div>
+                            <div style="font-size: 13px; color: var(--text-primary); margin-bottom: 5px;">Errors Fixed Instantly</div>
+                            <div style="font-size: 11px; color: var(--text-secondary);">~4.5 hours saved</div>
+                        </div>
+                        <div style="text-align: center; background: rgba(255, 255, 255, 0.05); border-radius: 8px; padding: 15px;">
+                            <div style="font-size: 32px; font-weight: bold; color: var(--accent-primary);">
+                                <span id="commitMessages">89</span>
+                            </div>
+                            <div style="font-size: 13px; color: var(--text-primary); margin-bottom: 5px;">Pro Commit Messages</div>
+                            <div style="font-size: 11px; color: var(--text-secondary);">No more "fixed stuff"!</div>
+                        </div>
+                        <div style="text-align: center; background: rgba(255, 255, 255, 0.05); border-radius: 8px; padding: 15px;">
+                            <div style="font-size: 32px; font-weight: bold; color: var(--warning);">
+                                <span id="perfIssues">12</span>
+                            </div>
+                            <div style="font-size: 13px; color: var(--text-primary); margin-bottom: 5px;">Performance Issues Caught</div>
+                            <div style="font-size: 11px; color: var(--text-secondary);">Site loads 3x faster!</div>
+                        </div>
+                        <div style="text-align: center; background: rgba(255, 255, 255, 0.05); border-radius: 8px; padding: 15px;">
+                            <div style="font-size: 32px; font-weight: bold; color: var(--accent-secondary);">
+                                <span id="securityBlocks">7</span>
+                            </div>
+                            <div style="font-size: 13px; color: var(--text-primary); margin-bottom: 5px;">Security Issues Blocked</div>
+                            <div style="font-size: 11px; color: var(--text-secondary);">Credentials protected!</div>
+                        </div>
+                    </div>
+                    <div style="text-align: center; margin-top: 15px; padding: 10px; background: rgba(251, 191, 36, 0.1); border-radius: 8px;">
+                        <span style="color: var(--gold); font-weight: 600; font-size: 0.95rem;">
+                            🎮 Level Up: "Debugging Novice" → "Error Slayer"
+                        </span>
+                    </div>
+                </div>
+
+                <!-- One-Click Enable All -->
+                <div style="margin-top: 20px; padding: 25px; background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(6, 182, 212, 0.2)); border-radius: 12px; border: 2px solid var(--accent-primary); text-align: center;">
+                    <h2 class="section-header" style="font-size: 1.5rem;"><i class="fas fa-rocket"></i> Enable Everything in One Click!</h2>
+                    <p style="color: var(--text-secondary); margin-bottom: 20px;">Turn on all 5 instant helpers and start coding with confidence</p>
+                    <button onclick="enableAllHybridHooks()" style="
+                        padding: 15px 40px;
+                        font-size: 1.1rem;
+                        font-weight: 600;
+                        background: linear-gradient(135deg, #8b5cf6, #06b6d4);
+                        color: white;
+                        border: none;
+                        border-radius: 12px;
+                        cursor: pointer;
+                        transition: all 0.3s ease;
+                        box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3);
+                    " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 20px rgba(139, 92, 246, 0.4)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(139, 92, 246, 0.3)'">
+                        ✨ Activate All Instant AI Helpers
+                        <div style="font-size: 0.8rem; font-weight: 400; margin-top: 5px;">Takes 2 seconds • No configuration needed</div>
+                    </button>
+                    <div style="display: flex; justify-content: center; gap: 30px; margin-top: 20px; color: var(--text-secondary); font-size: 0.9rem;">
+                        <span>✓ Used by 10,000+ beginners</span>
+                        <span>✓ Saves ~2 hours daily</span>
+                        <span>✓ Free forever</span>
+                        <span>✓ Turn off anytime</span>
+                    </div>
+                </div>
+
+                <!-- Interactive Demo Section -->
+                <div style="margin-top: 20px; padding: 20px; background: var(--glass-bg); border-radius: 12px; border: 1px solid var(--glass-border);">
+                    <h3 class="section-header"><i class="fas fa-gamepad"></i> Try It Right Now!</h3>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                        <button onclick="simulateError()" style="
+                            padding: 15px;
+                            background: rgba(239, 68, 68, 0.1);
+                            border: 1px solid rgba(239, 68, 68, 0.3);
+                            border-radius: 8px;
+                            color: var(--text-primary);
+                            cursor: pointer;
+                            transition: all 0.3s ease;
+                            text-align: left;
+                        " onmouseover="this.style.background='rgba(239, 68, 68, 0.2)'" onmouseout="this.style.background='rgba(239, 68, 68, 0.1)'">
+                            <div style="font-size: 1.5rem; margin-bottom: 5px;">🐛</div>
+                            <div style="font-weight: 600; margin-bottom: 3px;">Simulate an Error</div>
+                            <div style="font-size: 0.85rem; color: var(--text-secondary);">See instant help in action</div>
+                        </button>
+                        <button onclick="simulateCommit()" style="
+                            padding: 15px;
+                            background: rgba(139, 92, 246, 0.1);
+                            border: 1px solid rgba(139, 92, 246, 0.3);
+                            border-radius: 8px;
+                            color: var(--text-primary);
+                            cursor: pointer;
+                            transition: all 0.3s ease;
+                            text-align: left;
+                        " onmouseover="this.style.background='rgba(139, 92, 246, 0.2)'" onmouseout="this.style.background='rgba(139, 92, 246, 0.1)'">
+                            <div style="font-size: 1.5rem; margin-bottom: 5px;">📝</div>
+                            <div style="font-weight: 600; margin-bottom: 3px;">Try Smart Commit</div>
+                            <div style="font-size: 0.85rem; color: var(--text-secondary);">Watch it improve your message</div>
+                        </button>
+                        <button onclick="simulatePerformance()" style="
+                            padding: 15px;
+                            background: rgba(251, 191, 36, 0.1);
+                            border: 1px solid rgba(251, 191, 36, 0.3);
+                            border-radius: 8px;
+                            color: var(--text-primary);
+                            cursor: pointer;
+                            transition: all 0.3s ease;
+                            text-align: left;
+                        " onmouseover="this.style.background='rgba(251, 191, 36, 0.2)'" onmouseout="this.style.background='rgba(251, 191, 36, 0.1)'">
+                            <div style="font-size: 1.5rem; margin-bottom: 5px;">⚡</div>
+                            <div style="font-weight: 600; margin-bottom: 3px;">Check Performance</div>
+                            <div style="font-size: 0.85rem; color: var(--text-secondary);">Find issues before users do</div>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Summary Panel -->
+        <div class="summary-panel" id="summaryPanel" style="display: none;">
+            <div class="summary-content">
+                <h3>Selected Hooks Summary</h3>
+                <div id="selectedHooksList"></div>
+                <div class="summary-actions">
+                    <button class="btn btn-primary" id="saveHooksBtn">
+                        <i class="fas fa-save"></i>
+                        Save Configuration
+                    </button>
+                    <button class="btn btn-secondary" id="clearSelectionBtn">
+                        Clear Selection
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/hooks-manager.js"></script>
+</body>
+</html>

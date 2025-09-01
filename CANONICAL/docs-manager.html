@@ -1,0 +1,557 @@
+<!-- 
+===============================================================================
+CANONICAL FILE - MODIFY THIS VERSION ONLY
+===============================================================================
+File: docs-manager.html
+Purpose: Document Management Console with Unified Design System
+Status: PRODUCTION - Last updated: January 31, 2025
+Claude Agents: This is the OFFICIAL version - do not modify copies elsewhere
+===============================================================================
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document Management Console - Coder1 IDE</title>
+    
+    <!-- Unified Design System -->
+    <link rel="stylesheet" href="unified-design-system.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <style>
+        /* Fallback variables in case unified design system isn't loaded */
+        :root {
+            --spacing-xs: 4px;
+            --spacing-sm: 8px;
+            --spacing-md: 16px;
+            --spacing-lg: 24px;
+            --spacing-xl: 32px;
+            --border-radius-sm: 4px;
+            --border-radius-md: 8px;
+            --border-radius-lg: 12px;
+            --font-size-xs: 12px;
+            --font-size-sm: 14px;
+            --font-size-base: 16px;
+            --font-size-lg: 18px;
+            --font-size-xl: 20px;
+            --font-size-2xl: 24px;
+            --font-weight-normal: 400;
+            --font-weight-medium: 500;
+            --font-weight-semibold: 600;
+            --font-weight-bold: 700;
+            --line-height-relaxed: 1.6;
+            --transition-fast: all 0.2s ease;
+            --bg-primary: #0a0a0a;
+            --text-primary: #ffffff;
+            --text-secondary: #a0a0a0;
+            --text-muted: #666666;
+            --accent-primary: #8b5cf6;
+            --accent-secondary: #06b6d4;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --error: #ef4444;
+            --glass-bg: rgba(255, 255, 255, 0.03);
+            --glass-bg-hover: rgba(255, 255, 255, 0.08);
+            --glass-border: 1px solid rgba(255, 255, 255, 0.08);
+            --glass-blur: blur(10px);
+            --input-bg: rgba(255, 255, 255, 0.05);
+            --input-border: 1px solid rgba(255, 255, 255, 0.1);
+            --gradient-primary: linear-gradient(135deg, #8b5cf6, #06b6d4);
+            --glow-purple: 0 0 20px rgba(139, 92, 246, 0.3);
+        }
+        
+        body {
+            margin: 0;
+            padding: 0;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            line-height: var(--line-height-relaxed);
+        }
+
+        /* Docs Manager specific styles */
+        .coder1-doc-item {
+            background: var(--glass-bg);
+            padding: var(--spacing-md);
+            border-radius: var(--border-radius-md);
+            margin-bottom: var(--spacing-sm);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: var(--glass-border);
+            transition: var(--transition-fast);
+        }
+        
+        .coder1-doc-item:hover {
+            background: var(--glass-bg-hover);
+            transform: translateX(5px);
+        }
+        
+        .coder1-status {
+            padding: var(--spacing-xs) var(--spacing-sm);
+            border-radius: var(--border-radius-sm);
+            font-size: var(--font-size-xs);
+            font-weight: var(--font-weight-medium);
+        }
+        
+        .coder1-status.active { 
+            background: rgba(16, 185, 129, 0.2); 
+            color: #10b981; 
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+        
+        .coder1-status.cached { 
+            background: rgba(251, 191, 36, 0.2); 
+            color: #fbbf24; 
+            border: 1px solid rgba(251, 191, 36, 0.3);
+        }
+        
+        .coder1-form {
+            display: none;
+            margin-top: var(--spacing-md);
+            padding: var(--spacing-md);
+            background: var(--glass-bg);
+            border-radius: var(--border-radius-md);
+            border: var(--glass-border);
+        }
+        
+        .coder1-input {
+            width: 100%;
+            padding: var(--spacing-sm);
+            background: var(--input-bg);
+            border: var(--input-border);
+            border-radius: var(--border-radius-md);
+            color: var(--text-primary);
+            font-size: var(--font-size-sm);
+            margin-bottom: var(--spacing-sm);
+        }
+        
+        .coder1-input:focus {
+            outline: none;
+            border-color: var(--accent-primary);
+            box-shadow: var(--glow-purple);
+        }
+        
+        .coder1-section {
+            background: var(--glass-bg);
+            border-radius: var(--border-radius-lg);
+            padding: var(--spacing-lg);
+            margin-bottom: var(--spacing-lg);
+            border: var(--glass-border);
+            backdrop-filter: var(--glass-blur);
+        }
+        
+        .coder1-section h2 {
+            color: var(--accent-primary);
+            margin-bottom: var(--spacing-md);
+            font-size: var(--font-size-xl);
+            font-weight: var(--font-weight-semibold);
+        }
+        
+        .coder1-button-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: var(--spacing-md);
+            margin-top: var(--spacing-md);
+        }
+        
+        .coder1-back-btn {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 20px;
+            background: rgba(10, 10, 10, 0.9);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--accent-primary);
+            border-radius: 8px;
+            color: var(--text-primary);
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 20px rgba(139, 92, 246, 0.2);
+        }
+        
+        .coder1-back-btn:hover {
+            background: rgba(139, 92, 246, 0.2);
+            transform: translateX(-3px);
+            box-shadow: 0 6px 25px rgba(139, 92, 246, 0.4);
+        }
+        
+        .coder1-header {
+            background: var(--glass-bg);
+            padding: var(--spacing-md);
+            border-bottom: var(--glass-border);
+            backdrop-filter: var(--glass-blur);
+        }
+        
+        .coder1-header h1 {
+            font-size: var(--font-size-2xl);
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin: 0;
+        }
+        
+        .coder1-header p {
+            color: var(--text-secondary);
+            margin: var(--spacing-xs) 0 0 0;
+        }
+        
+        .coder1-container {
+            flex: 1;
+            padding: var(--spacing-xl);
+            max-width: 1200px;
+            margin: 0 auto;
+            width: 100%;
+        }
+        
+        .coder1-stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: var(--spacing-md);
+        }
+        
+        .coder1-stat-item {
+            text-align: center;
+        }
+        
+        .coder1-stat-value {
+            font-size: var(--font-size-2xl);
+            font-weight: var(--font-weight-bold);
+        }
+        
+        .coder1-stat-label {
+            color: var(--text-secondary);
+            font-size: var(--font-size-sm);
+        }
+        
+        .coder1-doc-title {
+            color: var(--text-secondary);
+            font-size: var(--font-size-sm);
+            margin-top: 4px;
+        }
+        
+        .coder1-doc-actions {
+            display: flex;
+            gap: var(--spacing-sm);
+            align-items: center;
+        }
+        
+        .coder1-form-actions {
+            display: flex;
+            gap: var(--spacing-sm);
+        }
+        
+        .coder1-search-section {
+            margin-bottom: var(--spacing-md);
+        }
+        
+        .coder1-search-button {
+            margin-top: var(--spacing-sm);
+        }
+        
+        .coder1-search-placeholder {
+            color: var(--text-secondary);
+            text-align: center;
+            padding: var(--spacing-lg);
+        }
+    </style>
+</head>
+<body>
+    <!-- Back to IDE Button -->
+    <a href="http://localhost:3001/ide" class="coder1-back-btn">
+        <i class="fas fa-arrow-left"></i>
+        Back to IDE
+    </a>
+
+    <!-- Header -->
+    <div class="coder1-header">
+        <h1>Document Management Console</h1>
+        <p>Intelligent documentation management with AI-powered search and organization</p>
+    </div>
+
+    <!-- Main Container -->
+    <div class="coder1-container">
+        
+        <!-- Quick Actions Section -->
+        <div class="coder1-section coder1-card-3d">
+            <h2><i class="fas fa-bolt"></i> Quick Actions</h2>
+            <div class="coder1-button-grid">
+                <button class="coder1-btn" onclick="showAddForm()">
+                    <i class="fas fa-plus"></i> Add Documentation
+                </button>
+                <button class="coder1-btn" onclick="searchDocs()">
+                    <i class="fas fa-search"></i> Search Documents  
+                </button>
+                <button class="coder1-btn" onclick="refreshDocs()">
+                    <i class="fas fa-sync-alt"></i> Refresh Cache
+                </button>
+                <button class="coder1-btn" onclick="exportDocs()">
+                    <i class="fas fa-download"></i> Export All
+                </button>
+            </div>
+        </div>
+
+        <!-- Add Document Form -->
+        <div id="addDocForm" class="coder1-form">
+            <h3 style="color: #06b6d4; margin-bottom: 16px;">Add New Documentation</h3>
+            <input type="url" id="docUrl" class="coder1-input" placeholder="Enter documentation URL...">
+            <input type="text" id="docTitle" class="coder1-input" placeholder="Enter title (optional)...">
+            <div class="coder1-form-actions">
+                <button class="coder1-btn" onclick="addDocument()">
+                    <i class="fas fa-plus"></i> Add Document
+                </button>
+                <button class="coder1-btn" onclick="hideAddForm()" style="background: rgba(255, 255, 255, 0.03); color: #a0a0a0;">
+                    <i class="fas fa-times"></i> Cancel
+                </button>
+            </div>
+        </div>
+
+        <!-- Current Documents Section -->
+        <div class="coder1-section coder1-card-3d">
+            <h2><i class="fas fa-file-alt"></i> Stored Documents</h2>
+            <div id="documentsList">
+                <div class="coder1-doc-item">
+                    <div>
+                        <strong>React Documentation</strong>
+                        <div class="coder1-doc-title">
+                            https://react.dev/learn
+                        </div>
+                    </div>
+                    <div class="coder1-doc-actions">
+                        <span class="coder1-status active">Active</span>
+                        <button class="coder1-btn" onclick="searchInDoc('react')">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="coder1-doc-item">
+                    <div>
+                        <strong>TypeScript Handbook</strong>
+                        <div class="coder1-doc-title">
+                            https://www.typescriptlang.org/docs/
+                        </div>
+                    </div>
+                    <div class="coder1-doc-actions">
+                        <span class="coder1-status cached">Cached</span>
+                        <button class="coder1-btn" onclick="searchInDoc('typescript')">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="coder1-doc-item">
+                    <div>
+                        <strong>Next.js Documentation</strong>
+                        <div style="color: var(--text-secondary); font-size: var(--font-size-sm); margin-top: 4px;">
+                            https://nextjs.org/docs
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: var(--spacing-sm); align-items: center;">
+                        <span class="coder1-status active">Active</span>
+                        <button class="coder1-btn" onclick="searchInDoc('nextjs')">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Search Results Section -->
+        <div class="coder1-section coder1-card-3d">
+            <h2><i class="fas fa-search"></i> AI-Powered Search</h2>
+            <div class="coder1-search-section">
+                <input type="text" id="searchQuery" class="coder1-input" placeholder="Ask anything about your documentation...">
+                <button class="coder1-btn coder1-search-button" onclick="performSearch()">
+                    <i class="fas fa-robot"></i> AI Search
+                </button>
+            </div>
+            <div id="searchResults">
+                <div class="coder1-search-placeholder">
+                    Enter a search query to find relevant information across all your documentation
+                </div>
+            </div>
+        </div>
+
+        <!-- Statistics Section -->
+        <div class="coder1-section coder1-card-3d">
+            <h2><i class="fas fa-chart-bar"></i> Statistics</h2>
+            <div class="coder1-stats-grid">
+                <div class="coder1-stat-item">
+                    <div class="coder1-stat-value" style="color: #8b5cf6;">12</div>
+                    <div class="coder1-stat-label">Documents</div>
+                </div>
+                <div class="coder1-stat-item">
+                    <div class="coder1-stat-value" style="color: #06b6d4;">3.2MB</div>
+                    <div class="coder1-stat-label">Cached Data</div>
+                </div>
+                <div class="coder1-stat-item">
+                    <div class="coder1-stat-value" style="color: #10b981;">847</div>
+                    <div class="coder1-stat-label">Searches</div>
+                </div>
+                <div class="coder1-stat-item">
+                    <div class="coder1-stat-value" style="color: #f59e0b;">98%</div>
+                    <div class="coder1-stat-label">Accuracy</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function showAddForm() {
+            document.getElementById('addDocForm').style.display = 'block';
+        }
+        
+        function hideAddForm() {
+            document.getElementById('addDocForm').style.display = 'none';
+            document.getElementById('docUrl').value = '';
+            document.getElementById('docTitle').value = '';
+        }
+        
+        async function addDocument() {
+            const url = document.getElementById('docUrl').value;
+            const title = document.getElementById('docTitle').value;
+            
+            if (!url) {
+                alert('Please enter a URL');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/docs/add', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url, title })
+                });
+                
+                const result = await response.json();
+                if (result.success) {
+                    alert('Document added successfully!');
+                    hideAddForm();
+                    refreshDocs();
+                } else {
+                    alert('Error: ' + result.error);
+                }
+            } catch (error) {
+                alert('Network error: ' + error.message);
+            }
+        }
+        
+        async function refreshDocs() {
+            try {
+                const response = await fetch('/api/docs/list');
+                const docs = await response.json();
+                updateDocumentsList(docs.documents || []);
+            } catch (error) {
+                console.error('Error refreshing docs:', error);
+            }
+        }
+        
+        function updateDocumentsList(docs) {
+            const container = document.getElementById('documentsList');
+            if (docs.length === 0) {
+                container.innerHTML = '<div style="color: var(--text-secondary); text-align: center; padding: var(--spacing-lg);">No documents found. Add some documentation to get started.</div>';
+                return;
+            }
+            
+            container.innerHTML = docs.map(doc => `
+                <div class="coder1-doc-item">
+                    <div>
+                        <strong>${doc.title}</strong>
+                        <div style="color: var(--text-secondary); font-size: var(--font-size-sm); margin-top: 4px;">
+                            ${doc.url}
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: var(--spacing-sm); align-items: center;">
+                        <span class="coder1-status ${doc.status === 'active' ? 'active' : 'cached'}">${doc.status}</span>
+                        <button class="coder1-btn" onclick="searchInDoc('${doc.id}')">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        async function performSearch() {
+            const query = document.getElementById('searchQuery').value;
+            if (!query) return;
+            
+            const resultsDiv = document.getElementById('searchResults');
+            resultsDiv.innerHTML = '<div style="text-align: center; padding: var(--spacing-lg); color: var(--text-secondary);"><i class="fas fa-spinner fa-spin"></i> Searching...</div>';
+            
+            try {
+                const response = await fetch('/api/docs/search', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ query })
+                });
+                
+                const results = await response.json();
+                displaySearchResults(results);
+            } catch (error) {
+                resultsDiv.innerHTML = '<div style="color: var(--error); text-align: center; padding: var(--spacing-lg);">Search error: ' + error.message + '</div>';
+            }
+        }
+        
+        function displaySearchResults(results) {
+            const resultsDiv = document.getElementById('searchResults');
+            
+            if (!results.success || results.results.length === 0) {
+                resultsDiv.innerHTML = '<div style="color: var(--text-secondary); text-align: center; padding: var(--spacing-lg);">No results found</div>';
+                return;
+            }
+            
+            resultsDiv.innerHTML = results.results.map(result => `
+                <div style="background: var(--glass-bg); padding: var(--spacing-md); border-radius: var(--border-radius-md); margin-bottom: var(--spacing-sm); border: var(--glass-border);">
+                    <strong style="color: var(--accent-primary);">${result.title}</strong>
+                    <p style="color: var(--text-secondary); margin: var(--spacing-xs) 0;">${result.snippet}</p>
+                    <small style="color: var(--text-muted);">Relevance: ${(result.score * 100).toFixed(1)}%</small>
+                </div>
+            `).join('');
+        }
+        
+        function searchInDoc(docId) {
+            const query = prompt('Enter search terms:');
+            if (query) {
+                document.getElementById('searchQuery').value = `doc:${docId} ${query}`;
+                performSearch();
+            }
+        }
+        
+        function searchDocs() {
+            document.getElementById('searchQuery').focus();
+        }
+        
+        function exportDocs() {
+            window.open('/api/docs/export', '_blank');
+        }
+        
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', () => {
+            refreshDocs();
+        });
+    </script>
+    
+    <!-- Unified Design System JavaScript -->
+    <script src="unified-design-system.js"></script>
+    <script>
+        // Initialize unified design system for docs manager
+        document.addEventListener('DOMContentLoaded', () => {
+            // The unified design system will automatically detect .coder1-card-3d classes
+            // and apply mouse tracking effects to documentation sections
+            console.log('🎨 Docs Manager: Design system integration active');
+        });
+    </script>
+</body>
+</html>

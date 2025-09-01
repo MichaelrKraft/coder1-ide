@@ -1,0 +1,58 @@
+{
+  "currentSession": {
+    "startTime": null,
+    "hooks": [],
+    "metrics": {}
+  },
+  "previousSessions": [
+    {
+      "id": "test-session",
+      "startTime": "2025-08-21T03:54:08.831Z",
+      "hooks": [
+        {
+          "hookId": "prettier-format",
+          "timestamp": "2025-08-21T03:54:08.833Z",
+          "executionTime": 1200,
+          "success": true,
+          "timeSaved": 30,
+          "context": {
+            "fileType": "javascript"
+          }
+        },
+        {
+          "hookId": "eslint-fix",
+          "timestamp": "2025-08-21T03:54:08.833Z",
+          "executionTime": 800,
+          "success": true,
+          "timeSaved": 45,
+          "context": {
+            "errorsFixed": 3
+          }
+        }
+      ],
+      "metrics": {
+        "commandsExecuted": 2,
+        "filesModified": 0,
+        "errorsEncountered": 0,
+        "timeSaved": 75,
+        "automationsTriggered": 2
+      },
+      "aiRecommendations": [],
+      "implementedHooks": [],
+      "endTime": "2025-08-21T03:54:08.833Z",
+      "duration": 2,
+      "roi": {
+        "timeEfficiency": 1,
+        "totalTimeSaved": 75,
+        "automationValue": 60,
+        "errorPreventionValue": 0,
+        "overallValue": 135
+      },
+      "feedback": {
+        "userRating": 4,
+        "feedback": "Test session completed successfully"
+      }
+    }
+  ],
+  "sessionCount": 1
+}

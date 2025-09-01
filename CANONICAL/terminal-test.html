@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Terminal Test - Simple</title>
+    <link rel="stylesheet" href="/ide/static/css/xterm.css"/>
+    <style>
+        body { 
+            font-family: monospace; 
+            padding: 20px; 
+            background: #1a1a1a; 
+            color: #fff; 
+        }
+        #terminal { 
+            width: 900px; 
+            height: 400px; 
+            background: #000; 
+            border: 2px solid #333;
+            margin: 20px 0;
+        }
+        .status { 
+            padding: 10px; 
+            margin: 10px 0; 
+            background: #333; 
+            border-radius: 4px;
+        }
+        .success { color: #4CAF50; }
+        .error { color: #f44336; }
+        button { 
+            margin: 5px; 
+            padding: 10px 20px; 
+            background: #2196F3;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover { background: #1976D2; }
+    </style>
+</head>
+<body>
+    <h1>🔧 Terminal Functionality Test</h1>
+    
+    <div class="status" id="status">
+        ⏳ Initializing terminal...
+    </div>
+    
+    <button onclick="testTerminal()">Test Terminal</button>
+    <button onclick="sendCommand('ls -la')">Run 'ls -la'</button>
+    <button onclick="sendCommand('pwd')">Run 'pwd'</button>
+    <button onclick="sendCommand('echo Hello from terminal!')">Run 'echo'</button>
+    
+    <div id="terminal"></div>
+    
+    <!-- Load libraries -->
+    <script src="/ide/static/lib/xterm.js"></script>
+    <script src="/ide/static/lib/addon-fit.js"></script>
+    <script src="/ide/static/lib/xterm-loader.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    
+    <script>
+        let terminal = null;
+        let fitAddon = null;
+        let socket = null;
+        let sessionId = null;
+        
+        function updateStatus(message, type = 'success') {
+            const statusDiv = document.getElementById('status');
+            statusDiv.className = 'status ' + type;
+            statusDiv.textContent = message;
+            console.log(`[${type}] ${message}`);
+        }
+        
+        function initTerminal() {
+            // Wait for libraries to load
+            if (!window.Terminal || !window.FitAddon) {
+                setTimeout(initTerminal, 100);
+                return;
+            }
+            
+            try {
+                updateStatus('Creating terminal...', 'success');
+                
+                // Create terminal
+                terminal = new window.Terminal({
+                    theme: {
+                        background: '#1a1b26',
+                        foreground: '#c0caf5'
+                    },
+                    fontSize: 14,
+                    cursorBlink: true,
+                    rows: 24,
+                    cols: 80
+                });
+                
+                // Create and load FitAddon
+                fitAddon = new window.FitAddon();
+                terminal.loadAddon(fitAddon);
+                
+                // Open terminal in container
+                const container = document.getElementById('terminal');
+                terminal.open(container);
+                
+                // Fit terminal to container
+                setTimeout(() => {
+                    fitAddon.fit();
+                    updateStatus('✅ Terminal created, connecting to backend...', 'success');
+                    connectToBackend();
+                }, 100);
+                
+            } catch (error) {
+                updateStatus(`❌ Error: ${error.message}`, 'error');
+                console.error(error);
+            }
+        }
+        
+        function connectToBackend() {
+            socket = io('http://localhost:3000', {
+                transports: ['websocket'],
+                reconnection: true
+            });
+            
+            socket.on('connect', () => {
+                updateStatus(`✅ Connected! Creating session...`, 'success');
+                
+                // Create terminal session
+                socket.emit('terminal:create', {
+                    cols: terminal.cols,
+                    rows: terminal.rows
+                });
+            });
+            
+            socket.on('terminal:created', (data) => {
+                sessionId = data.id;
+                updateStatus(`✅ Terminal ready! Session: ${data.id}`, 'success');
+                terminal.writeln('🎉 Terminal connected successfully!');
+                terminal.writeln('Type commands below or use the buttons above.');
+                terminal.writeln('');
+                terminal.focus();
+            });
+            
+            socket.on('terminal:data', (data) => {
+                terminal.write(data.data);
+            });
+            
+            socket.on('disconnect', () => {
+                updateStatus('❌ Disconnected from backend', 'error');
+                terminal.writeln('\r\n❌ Connection lost');
+            });
+            
+            socket.on('error', (error) => {
+                updateStatus(`❌ Socket error: ${error}`, 'error');
+            });
+            
+            // Forward terminal input to backend
+            terminal.onData(data => {
+                if (socket && socket.connected && sessionId) {
+                    socket.emit('terminal:input', { 
+                        sessionId: sessionId,
+                        data: data 
+                    });
+                }
+            });
+            
+            // Handle resize
+            terminal.onResize(({ cols, rows }) => {
+                if (socket && socket.connected && sessionId) {
+                    socket.emit('terminal:resize', {
+                        sessionId: sessionId,
+                        cols: cols,
+                        rows: rows
+                    });
+                }
+            });
+        }
+        
+        function testTerminal() {
+            if (!terminal) {
+                alert('Terminal not initialized');
+                return;
+            }
+            
+            terminal.writeln('\r\n=== Terminal Test ===');
+            terminal.writeln(`Terminal size: ${terminal.cols}x${terminal.rows}`);
+            terminal.writeln(`Session ID: ${sessionId || 'Not connected'}`);
+            terminal.writeln(`Socket connected: ${socket && socket.connected}`);
+            terminal.writeln('=====================\r\n');
+        }
+        
+        function sendCommand(cmd) {
+            if (!terminal || !socket || !socket.connected || !sessionId) {
+                alert('Terminal not connected');
+                return;
+            }
+            
+            // Send the command
+            socket.emit('terminal:input', {
+                sessionId: sessionId,
+                data: cmd + '\r'
+            });
+        }
+        
+        // Initialize on page load
+        window.addEventListener('load', () => {
+            setTimeout(initTerminal, 500);
+        });
+    </script>
+</body>
+</html>
