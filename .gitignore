@@ -109,3 +109,27 @@ ide-old*/
 **/.next/
 **/.cache/
 **/tmp/
+
+# Repository confusion prevention
+# These paths should NEVER be tracked to avoid confusion with home directory git
+~/.git/
+../.git/
+../../.git/
+../../../.git/
+
+# Home directory artifacts (legacy cleanup)
+/.bash_*
+/.zsh*
+/.npm/
+/.config/
+/.local/
+/.cargo/
+/.rustup/
+/.ollama/
+
+# Prevent accidental inclusion of other project directories
+/backup_*/
+/Coder1-*/
+/Desktop/
+/Documents/
+/Downloads/

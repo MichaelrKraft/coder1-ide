@@ -1,5 +1,43 @@
 # 🚀 Coder1 IDE - The Claude Code Native Development Environment
 
+## 🚨 CRITICAL GITHUB REPOSITORY INFORMATION FOR ALL AI AGENTS
+
+**PRIMARY REPOSITORY**: 
+- **Local Path**: `/Users/michaelkraft/autonomous_vibe_interface/`
+- **GitHub**: `git@github.com:MichaelrKraft/coder1-ide.git`
+- **Branch**: `master` 
+- **Status**: ✅ ACTIVE - This is the ONLY repository to use
+- **Last Cleanup**: September 1, 2025 - Repository completely cleaned and pushed
+
+**⚠️ DO NOT USE**:
+- Home directory git (~/): Legacy setup, DO NOT COMMIT HERE
+- Any other coder1-ide repositories or branches
+- Any backup directories or old clones
+- The old 3.6GB home directory repository (cleaned up)
+
+**Commit Process for All Agents**:
+```bash
+# 1. Always work from the correct directory
+cd /Users/michaelkraft/autonomous_vibe_interface
+
+# 2. Make your changes
+[edit files]
+
+# 3. Stage and commit
+git add [files]
+git commit -m "[message]"
+
+# 4. Push to GitHub
+git push origin master
+```
+
+**Repository History**:
+- September 1, 2025: Major cleanup - Removed 3.6GB of large files, created fresh repository
+- All Phase 1 refactoring completed and successfully pushed to GitHub
+- Repository now clean, fast, and ready for collaborative development
+
+---
+
 ## 📖 **ESSENTIAL READING FOR ALL AI AGENTS**
 
 **🚨 CRITICAL NAMING CONVENTION: The platform name is "Coder1" (with number 1), NOT "CoderOne" or "Coder One"**
