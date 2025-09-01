@@ -109,7 +109,7 @@ class ClaudeService {
     // Claude analyzes the error and provides solution
     return {
       explanation: 'Understanding the error...',
-      solution: 'Here\'s how to fix it...',
+      solution: "Here's how to fix it...",
       codeExample: '// Example fix code',
     };
   }

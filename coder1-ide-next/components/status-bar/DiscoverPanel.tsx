@@ -280,7 +280,13 @@ export default function DiscoverPanel() {
                 {customCommands.map((cmd) => (
                   <button 
                     key={cmd.id}
-                    onClick={() => executeSlashCommand(cmd.action)}
+                    onClick={() => {
+                      if (typeof cmd.action === 'string') {
+                        executeSlashCommand(cmd.action);
+                      } else {
+                        cmd.action(); // Execute the function directly
+                      }
+                    }}
                     className="w-full text-left px-2 py-1 text-xs text-text-secondary hover:text-text-primary hover:bg-bg-tertiary rounded transition-colors"
                     title={cmd.description}
                   >

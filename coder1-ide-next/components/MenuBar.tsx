@@ -162,9 +162,10 @@ export default function MenuBar({
   // DO NOT change to generic placeholders - user spent hours on these pages!
   // NOTE: Components, Templates, Hooks, and Workflows moved to Discover panel
   const menuItems = [
-    { icon: Home, label: 'Coder1 Dashboard', href: 'http://localhost:3000/' },
+    { icon: Home, label: 'Coder1 Dashboard', href: 'http://localhost:3000/vibe-dashboard.html' },
     { icon: Info, label: 'Agent Dashboard', href: 'http://localhost:3000/agent-dashboard.html' },
     { icon: BookOpen, label: 'Docs Manager', href: 'http://localhost:3000/docs-manager' },
+    { icon: FileText, label: 'Documentation', href: 'http://localhost:3000/documentation' },
     { icon: SettingsIcon, label: 'PRD Generator', href: 'http://localhost:3000/orchestrator/' },
   ];
 

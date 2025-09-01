@@ -14,6 +14,7 @@ import { SupervisionProvider } from '@/contexts/SupervisionContext';
 import AboutModal from '@/components/AboutModal';
 import KeyboardShortcutsModal from '@/components/KeyboardShortcutsModal';
 import SettingsModal from '@/components/SettingsModal';
+import type { IDEFile } from '@/types';
 
 // Dynamic imports for heavy components
 const MonacoEditor = dynamic(() => import('@/components/editor/MonacoEditor'), {
@@ -44,7 +45,7 @@ export default function IDEPage() {
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   
   // Session tracking for Session Summary feature
-  const [openFiles, setOpenFiles] = useState<string[]>([]);
+  const [openFiles, setOpenFiles] = useState<IDEFile[]>([]);
   const [terminalHistory, setTerminalHistory] = useState<string>('');
   const [terminalCommands, setTerminalCommands] = useState<string[]>([]);
 
@@ -106,7 +107,7 @@ export default function IDEPage() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  }, []); // Note: Handler functions are stable and don't need to be dependencies
 
   // Helper to show toast
   const showToast = (message: string) => {
@@ -120,9 +121,22 @@ export default function IDEPage() {
     setActiveFile(newFileName);
     setEditorContent('// New file\n');
     
+    // Create new IDEFile object
+    const newFile: IDEFile = {
+      id: `file_${Date.now()}`,
+      path: newFileName,
+      name: newFileName,
+      content: '// New file\n',
+      isDirty: false,
+      isOpen: true,
+      language: 'typescript',
+      type: 'typescript',
+      lastModified: new Date()
+    };
+    
     // Track in openFiles if not already there
-    if (!openFiles.includes(newFileName)) {
-      setOpenFiles([...openFiles, newFileName]);
+    if (!openFiles.some(f => f.path === newFileName)) {
+      setOpenFiles([...openFiles, newFile]);
     }
     
     showToast('New file created');
@@ -285,9 +299,20 @@ export default function IDEPage() {
   const handleFileSelect = (fileName: string) => {
     setActiveFile(fileName);
     
-    // Track in openFiles if not already there
-    if (!openFiles.includes(fileName)) {
-      setOpenFiles([...openFiles, fileName]);
+    // Create IDEFile object if not already in openFiles
+    if (!openFiles.some(f => f.path === fileName)) {
+      const newFile: IDEFile = {
+        id: `file_${Date.now()}`,
+        path: fileName,
+        name: fileName,
+        content: localStorage.getItem(`file_${fileName}`) || '',
+        isDirty: false,
+        isOpen: true,
+        language: fileName.endsWith('.tsx') ? 'typescript' : fileName.endsWith('.js') ? 'javascript' : 'text',
+        type: fileName.endsWith('.tsx') ? 'typescript' : fileName.endsWith('.js') ? 'javascript' : 'text',
+        lastModified: new Date()
+      };
+      setOpenFiles([...openFiles, newFile]);
     }
   };
 

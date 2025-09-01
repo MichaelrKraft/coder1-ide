@@ -6,6 +6,7 @@ import { FitAddon } from '@xterm/addon-fit';
 import '@xterm/xterm/css/xterm.css';
 import './Terminal.css';
 import { Users, Zap, StopCircle, Brain, Eye, Code2, Mic, MicOff, Speaker, ChevronDown } from 'lucide-react';
+import TerminalSettings, { TerminalSettingsState } from './TerminalSettings';
 import { glows, spacing } from '@/lib/design-tokens';
 import { getSocket } from '@/lib/socket';
 import ErrorDoctor from './ErrorDoctor';
@@ -58,6 +59,19 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
   const [commandHistory, setCommandHistory] = useState<string[]>([]);
   const [currentCommand, setCurrentCommand] = useState('');
   const [conversationMode, setConversationMode] = useState(false);
+  const [sessionTokens, setSessionTokens] = useState(0);
+  const [currentFile, setCurrentFile] = useState<string | null>(null);
+  
+  // Terminal settings state
+  const [terminalSettings, setTerminalSettings] = useState<TerminalSettingsState>({
+    skipPermissions: false,
+    statusLine: {
+      enabled: false,
+      showFile: true,
+      showModel: true,
+      showTokens: true
+    }
+  });
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [terminalReady, setTerminalReady] = useState(false);
   const [lastError, setLastError] = useState<string | null>(null);
@@ -165,7 +179,7 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
             // Add custom welcome message
             term.clear();
             term.writeln('Coder1 Terminal Ready');
-            term.writeln('Type \'claude\' to start AI-assisted coding');
+            term.writeln("Type 'claude' to start AI-assisted coding");
             term.writeln('──────────────────────────────────────────────');
             term.writeln('');
             
@@ -622,6 +636,23 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
           setConversationMode(true);
         }
         
+        // Track current file for status line
+        // Simple pattern matching for common file operations
+        const lines = data.split('\n');
+        for (const line of lines) {
+          // Look for editor commands with file names
+          const editorMatch = line.match(/(?:code|vim|nano|edit)\s+([^\s]+\.[a-zA-Z0-9]+)/);
+          if (editorMatch) {
+            setCurrentFile(editorMatch[1]);
+          }
+          // Look for cd commands to track current directory
+          const cdMatch = line.match(/cd\s+([^\s]+)/);
+          if (cdMatch && !cdMatch[1].startsWith('-')) {
+            // Reset file when changing directories
+            setCurrentFile(null);
+          }
+        }
+        
         // Check for errors to trigger Error Doctor
         if (data.includes('error') || data.includes('Error') || data.includes('failed')) {
           console.log('❌ ERROR DETECTED:', data.substring(0, 100));
@@ -890,136 +921,22 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
             {voiceListening ? <MicOff className="w-4 h-4 text-red-500" /> : <Mic className="w-4 h-4" />}
           </button>
 
-          {/* Thinking mode selector with dropdown */}
-          <div className="relative">
-            <button
-              onClick={() => setShowThinkingDropdown(!showThinkingDropdown)}
-              className="glass-button flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-text-primary rounded-md transition-all duration-200"
-              style={{
-                background: 'linear-gradient(135deg, rgba(125, 211, 252, 0.1) 0%, rgba(187, 154, 247, 0.1) 100%)',
-                border: `1px solid rgba(0, 217, 255, 0.3)`,
-                boxShadow: '0 0 10px rgba(0, 217, 255, 0.2), 0 0 20px rgba(0, 217, 255, 0.1), 0 2px 4px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.05)',
-                backdropFilter: 'blur(4px)',
-                WebkitBackdropFilter: 'blur(4px)',
-                position: 'relative' as const,
-                overflow: 'hidden',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = 'rgba(251, 146, 60, 0.5)';
-                e.currentTarget.style.boxShadow = '0 0 20px rgba(251, 146, 60, 0.4), 0 0 40px rgba(251, 146, 60, 0.2), 0 2px 8px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1)';
-                e.currentTarget.style.transform = 'translateY(-2px) scale(1.02)';
-                e.currentTarget.style.backdropFilter = 'blur(6px)';
-                (e.currentTarget.style as any).WebkitBackdropFilter = 'blur(6px)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = 'rgba(0, 217, 255, 0.3)';
-                e.currentTarget.style.boxShadow = '0 0 10px rgba(0, 217, 255, 0.2), 0 0 20px rgba(0, 217, 255, 0.1), 0 2px 4px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.05)';
-                e.currentTarget.style.transform = 'translateY(0) scale(1)';
-                e.currentTarget.style.backdropFilter = 'blur(4px)';
-                (e.currentTarget.style as any).WebkitBackdropFilter = 'blur(4px)';
-              }}
-              title="Select thinking mode for Claude responses"
-            >
-              <Zap className="w-4 h-4" />
-              <span className="capitalize">{thinkingMode === 'think_hard' ? 'Think Hard' : thinkingMode === 'ultrathink' ? 'Ultrathink' : thinkingMode}</span>
-              <ChevronDown className={`w-3 h-3 transition-transform ${showThinkingDropdown ? 'rotate-180' : ''}`} />
-            </button>
-
-            {/* Thinking modes dropdown */}
-            {showThinkingDropdown && (
-              <div className="absolute top-full left-0 mt-1 min-w-[180px] bg-bg-secondary border border-border-default rounded-lg shadow-xl z-50 py-1">
-                {[
-                  { mode: 'normal', label: 'Normal', tokens: '-5s' },
-                  { mode: 'think', label: 'Think', tokens: '-15s' },
-                  { mode: 'think_hard', label: 'Think Hard', tokens: '-30s' },
-                  { mode: 'ultrathink', label: 'Ultrathink', tokens: '-60s' }
-                ].map((item) => (
-                  <button
-                    key={item.mode}
-                    onClick={() => {
-                      setThinkingMode(item.mode as typeof thinkingMode);
-                      setShowThinkingDropdown(false);
-                      xtermRef.current?.writeln(`\r\nThinking mode: ${item.label} (${item.tokens})`);
-                    }}
-                    className={`w-full flex items-center justify-between px-3 py-2 text-sm hover:bg-bg-tertiary transition-colors ${
-                      thinkingMode === item.mode ? 'text-coder1-cyan' : 'text-text-secondary'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2">
-                      <span>{item.label}</span>
-                    </div>
-                    <span className="text-xs text-text-muted">{item.tokens}</span>
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Audio alerts button with preset dropdown */}
-          <div className="relative">
-            <button
-              ref={soundButtonRef}
-              onClick={() => {
-                const newState = !audioAlertsEnabled;
-                setAudioAlertsEnabled(newState);
-                soundAlertService.setEnabled(newState);
-                
-                if (newState) {
-                  xtermRef.current?.writeln('\r\n🔊 Audio alerts enabled');
-                  xtermRef.current?.writeln(`Sound preset: ${selectedSoundPreset}`);
-                  xtermRef.current?.writeln('You will hear sounds when Claude Code tasks take longer than 20 seconds');
-                  
-                  // Play a test sound
-                  soundAlertService.testSound();
-                } else {
-                  xtermRef.current?.writeln('\r\n🔇 Audio alerts disabled');
-                }
-              }}
-              onContextMenu={(e) => {
-                e.preventDefault();
-                setShowSoundPresetDropdown(!showSoundPresetDropdown);
-              }}
-              className="terminal-control-btn p-1.5 rounded-md"
-              title={`Audio alerts: ${audioAlertsEnabled ? `ON (${selectedSoundPreset})` : 'OFF'} for Claude tasks >20s • Right-click for presets`}
-            >
-              <Speaker className="w-4 h-4" />
-            </button>
-            
-            {/* Sound preset dropdown */}
-            {showSoundPresetDropdown && (
-              <div
-                ref={soundDropdownRef}
-                className="absolute top-full mt-1 left-0 min-w-[200px] bg-bg-secondary border border-coder1-cyan rounded-lg shadow-xl z-50 overflow-hidden"
-                style={{
-                  background: '#0a0a0a',
-                  borderColor: '#00D9FF',
-                  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.4), 0 0 20px rgba(0, 217, 255, 0.1)'
-                }}
-              >
-                <div className="px-3 py-2 border-b border-border-default bg-bg-tertiary">
-                  <span className="text-xs font-semibold text-coder1-cyan uppercase tracking-wider">Sound Presets</span>
-                </div>
-                {soundAlertService.getAvailablePresets().map((preset) => (
-                  <button
-                    key={preset.key}
-                    onClick={() => {
-                      setSelectedSoundPreset(preset.key);
-                      soundAlertService.setPreset(preset.key);
-                      soundAlertService.samplePreset(preset.key);
-                      setShowSoundPresetDropdown(false);
-                      xtermRef.current?.writeln(`\r\n🔊 Sound preset changed to: ${preset.name}`);
-                    }}
-                    className={`w-full px-3 py-2 text-left hover:bg-bg-tertiary transition-colors ${
-                      selectedSoundPreset === preset.key ? 'bg-coder1-purple bg-opacity-20 text-coder1-cyan' : 'text-text-secondary'
-                    }`}
-                  >
-                    <div className="text-sm font-medium">{preset.name}</div>
-                    <div className="text-xs text-text-muted opacity-70">{preset.description}</div>
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
+          {/* Terminal Settings */}
+          <TerminalSettings
+            thinkingMode={thinkingMode}
+            setThinkingMode={setThinkingMode}
+            showThinkingDropdown={showThinkingDropdown}
+            setShowThinkingDropdown={setShowThinkingDropdown}
+            audioAlertsEnabled={audioAlertsEnabled}
+            setAudioAlertsEnabled={setAudioAlertsEnabled}
+            selectedSoundPreset={selectedSoundPreset}
+            setSelectedSoundPreset={setSelectedSoundPreset}
+            showSoundPresetDropdown={showSoundPresetDropdown}
+            setShowSoundPresetDropdown={setShowSoundPresetDropdown}
+            soundButtonRef={soundButtonRef}
+            soundDropdownRef={soundDropdownRef}
+            xtermRef={xtermRef}
+          />
         </div>
 
         {/* Right section - All terminal control buttons */}
@@ -1198,6 +1115,32 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
           <ChevronDown className="w-4 h-4" />
           <span>Follow Output</span>
         </button>
+      )}
+
+      {/* Status Line */}
+      {terminalSettings.statusLine.enabled && (
+        <div className="absolute bottom-0 left-0 right-0 bg-bg-tertiary border-t border-border-default px-4 py-2 text-xs text-text-secondary flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            {terminalSettings.statusLine.showFile && (
+              <div className="flex items-center gap-1">
+                <span className="text-coder1-cyan">📁</span>
+                <span>{currentFile || 'No file selected'}</span>
+              </div>
+            )}
+            {terminalSettings.statusLine.showModel && (
+              <div className="flex items-center gap-1">
+                <span className="text-coder1-cyan">🤖</span>
+                <span>Claude Sonnet 3.5</span>
+              </div>
+            )}
+          </div>
+          {terminalSettings.statusLine.showTokens && (
+            <div className="flex items-center gap-1">
+              <span className="text-coder1-cyan">💬</span>
+              <span>{sessionTokens} tokens</span>
+            </div>
+          )}
+        </div>
       )}
     </div>
   );

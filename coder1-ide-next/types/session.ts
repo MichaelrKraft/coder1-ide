@@ -3,6 +3,8 @@
  * Types for session management, summaries, and AI agent orchestration
  */
 
+import { FileType } from './ide';
+
 // ================================================================================
 // Session Management Types
 // ================================================================================
@@ -210,7 +212,7 @@ export interface TeamSession {
   status: TeamStatus;
   startTime: Date;
   files: GeneratedFile[];
-  context: ProjectContext;
+  context: AIProjectContext;
   metrics: TeamMetrics;
 }
 
@@ -222,7 +224,7 @@ export type TeamStatus =
   | 'completed'
   | 'error';
 
-export interface ProjectContext {
+export interface AIProjectContext {
   requirement: string;
   projectType: string;
   framework: string;

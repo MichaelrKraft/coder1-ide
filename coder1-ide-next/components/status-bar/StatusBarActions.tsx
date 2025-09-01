@@ -57,11 +57,13 @@ export default function StatusBarActions({
   // Button hover effects
   const applyHoverEffect = (e: React.MouseEvent<HTMLButtonElement>, isLoading: boolean) => {
     if (isLoading) return;
-    e.currentTarget.style.boxShadow = glows.orange.soft;
+    e.currentTarget.style.boxShadow = glows.orange.medium;
+    e.currentTarget.parentElement!.style.background = 'linear-gradient(135deg, #FB923C, #F97316)';
   };
 
   const removeHoverEffect = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.currentTarget.style.boxShadow = 'none';
+    e.currentTarget.parentElement!.style.background = 'linear-gradient(135deg, #6366f1, #8b5cf6)';
   };
 
   // Action handlers
@@ -71,10 +73,11 @@ export default function StatusBarActions({
       createCheckpoint('Manual checkpoint', false);
       
       // Also save via API for persistence
-      const response = await fetch(`/api/sessions/${sessionId}/checkpoint`, {
+      const response = await fetch('/api/checkpoint', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          sessionId,
           timestamp: new Date().toISOString(),
           activeFile,
           snapshot: {
@@ -106,7 +109,7 @@ export default function StatusBarActions({
 
   const handleTimeline = async () => {
     try {
-      const response = await fetch(`/api/sessions/${sessionId}/timeline`);
+      const response = await fetch(`/api/timeline?sessionId=${sessionId}`);
       const data = await response.json();
       
       if (response.ok) {
@@ -130,10 +133,11 @@ export default function StatusBarActions({
 
   const handleExport = async () => {
     try {
-      const response = await fetch(`/api/sessions/${sessionId}/export`, {
+      const response = await fetch('/api/export', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          sessionId,
           format: 'zip',
           includeNodeModules: false,
           includeGitHistory: true
@@ -170,7 +174,7 @@ export default function StatusBarActions({
   };
 
   const handleDocs = () => {
-    window.open('/documentation.html', '_blank');
+    window.open('http://localhost:3000/docs-manager', '_blank');
   };
 
   const isLoadingState = (state: string) => loading === state;
@@ -179,7 +183,7 @@ export default function StatusBarActions({
     <>
       <div className="flex items-center gap-2">
         {/* CheckPoint Button */}
-        <div className="p-[1px] rounded-md bg-gradient-to-r from-purple-500 to-cyan-500">
+        <div className="p-[1px] rounded-md" style={{background: 'linear-gradient(135deg, #6366f1, #8b5cf6)'}}>
           <button
             onClick={handleCheckpoint}
             disabled={isLoadingState('checkpoint')}
@@ -198,7 +202,7 @@ export default function StatusBarActions({
         </div>
 
         {/* TimeLine Button */}
-        <div className="p-[1px] rounded-md bg-gradient-to-r from-purple-500 to-cyan-500">
+        <div className="p-[1px] rounded-md" style={{background: 'linear-gradient(135deg, #6366f1, #8b5cf6)'}}>
           <button
             onClick={handleTimeline}
             disabled={isLoadingState('timeline')}
@@ -217,7 +221,7 @@ export default function StatusBarActions({
         </div>
 
         {/* Export Button */}
-        <div className="p-[1px] rounded-md bg-gradient-to-r from-purple-500 to-cyan-500">
+        <div className="p-[1px] rounded-md" style={{background: 'linear-gradient(135deg, #6366f1, #8b5cf6)'}}>
           <button
             onClick={handleExport}
             disabled={isLoadingState('export')}
@@ -236,7 +240,7 @@ export default function StatusBarActions({
         </div>
 
         {/* Session Summary Button */}
-        <div className="p-[1px] rounded-md bg-gradient-to-r from-purple-500 to-cyan-500">
+        <div className="p-[1px] rounded-md" style={{background: 'linear-gradient(135deg, #6366f1, #8b5cf6)'}}>
           <button
             onClick={handleSessionSummary}
             disabled={isLoadingState('session')}
@@ -255,7 +259,7 @@ export default function StatusBarActions({
         </div>
 
         {/* Docs Button */}
-        <div className="p-[1px] rounded-md bg-gradient-to-r from-purple-500 to-cyan-500">
+        <div className="p-[1px] rounded-md" style={{background: 'linear-gradient(135deg, #6366f1, #8b5cf6)'}}>
           <button
             onClick={handleDocs}
             className="flex items-center gap-1.5 px-4 py-1.5 text-sm font-medium text-text-secondary hover:text-text-primary rounded transition-all duration-200 bg-bg-secondary w-full"

@@ -7,6 +7,7 @@
 import fs from 'fs';
 import path from 'path';
 import { claudeAPI, ClaudeMessage, ClaudeResponse } from './claude-api';
+import type { AIProjectContext } from '@/types/session';
 
 export interface AgentDefinition {
   name: string;
@@ -76,16 +77,7 @@ export interface TeamSession {
   status: 'spawning' | 'planning' | 'executing' | 'integrating' | 'completed' | 'error';
   startTime: Date;
   files: GeneratedFile[];
-  context: ProjectContext;
-}
-
-export interface ProjectContext {
-  requirement: string;
-  projectType: string;
-  framework: string;
-  features: string[];
-  constraints: string[];
-  memoryContext?: string;
+  context: AIProjectContext;
 }
 
 class AIAgentOrchestrator {
@@ -144,8 +136,8 @@ class AIAgentOrchestrator {
   /**
    * Parse project requirements and determine appropriate workflow
    */
-  parseProjectRequirement(requirement: string): ProjectContext {
-    const context: ProjectContext = {
+  parseProjectRequirement(requirement: string): AIProjectContext {
+    const context: AIProjectContext = {
       requirement,
       projectType: 'web-application',
       framework: 'react',
@@ -195,7 +187,7 @@ class AIAgentOrchestrator {
   /**
    * Determine appropriate workflow based on project context
    */
-  selectWorkflow(context: ProjectContext): string {
+  selectWorkflow(context: AIProjectContext): string {
     const { projectType, features } = context;
 
     // Authentication required
@@ -422,7 +414,7 @@ class AIAgentOrchestrator {
    */
   private buildAgentPrompt(
     agentDef: AgentDefinition, 
-    context: ProjectContext, 
+    context: AIProjectContext, 
     step: WorkflowStep,
     agentContext: string
   ): string {
