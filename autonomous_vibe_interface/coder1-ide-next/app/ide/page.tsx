@@ -7,7 +7,7 @@ import PreviewPanel from '@/components/preview/PreviewPanel';
 import MenuBar from '@/components/MenuBar';
 import LeftPanel from '@/components/LeftPanel';
 import Toast from '@/components/Toast';
-import StatusBar from '@/components/StatusBar';
+import StatusBarCore from '@/components/status-bar/StatusBarCore';
 import HeroSection from '@/components/HeroSection';
 import { SessionProvider } from '@/contexts/SessionContext';
 import { SupervisionProvider } from '@/contexts/SupervisionContext';
@@ -434,7 +434,7 @@ export default function IDEPage() {
       </div>
 
       {/* Status Bar */}
-      <StatusBar 
+      <StatusBarCore 
         activeFile={activeFile}
         isConnected={agentsActive}
         openFiles={openFiles}
