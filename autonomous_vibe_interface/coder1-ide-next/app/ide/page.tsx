@@ -10,6 +10,7 @@ import Toast from '@/components/Toast';
 import StatusBar from '@/components/StatusBar';
 import HeroSection from '@/components/HeroSection';
 import { SessionProvider } from '@/contexts/SessionContext';
+import { SupervisionProvider } from '@/contexts/SupervisionContext';
 
 // Dynamic imports for heavy components
 const MonacoEditor = dynamic(() => import('@/components/editor/MonacoEditor'), {
@@ -33,6 +34,11 @@ export default function IDEPage() {
   const [fontSize, setFontSize] = useState(14);
   const [toast, setToast] = useState<string | null>(null);
   const [showHero, setShowHero] = useState(true); // Show hero initially in editor area
+  
+  // Session tracking for Session Summary feature
+  const [openFiles, setOpenFiles] = useState<string[]>([]);
+  const [terminalHistory, setTerminalHistory] = useState<string>('');
+  const [terminalCommands, setTerminalCommands] = useState<string[]>([]);
 
   // Add keyboard shortcuts
   React.useEffect(() => {
@@ -102,8 +108,15 @@ export default function IDEPage() {
   // Menu handlers
   const handleNewFile = () => {
     console.log('New file');
-    setActiveFile('untitled.tsx');
+    const newFileName = 'untitled.tsx';
+    setActiveFile(newFileName);
     setEditorContent('// New file\n');
+    
+    // Track in openFiles if not already there
+    if (!openFiles.includes(newFileName)) {
+      setOpenFiles([...openFiles, newFileName]);
+    }
+    
     showToast('New file created');
   };
 
@@ -193,10 +206,20 @@ export default function IDEPage() {
     console.log('Replace in editor');
   };
 
+  // Handle file selection from explorer
+  const handleFileSelect = (fileName: string) => {
+    setActiveFile(fileName);
+    
+    // Track in openFiles if not already there
+    if (!openFiles.includes(fileName)) {
+      setOpenFiles([...openFiles, fileName]);
+    }
+  };
+
   // Left Panel - Explorer and Discover tabs
   const leftPanel = showExplorer ? (
     <LeftPanel 
-      onFileSelect={setActiveFile}
+      onFileSelect={handleFileSelect}
       activeFile={activeFile}
     />
   ) : null;
@@ -260,6 +283,20 @@ export default function IDEPage() {
           <Terminal 
             onAgentsSpawn={() => setAgentsActive(true)}
             onClaudeTyped={() => setShowHero(false)}
+            onTerminalData={(data) => {
+              // Capture terminal output (limit to last 10KB to avoid memory issues)
+              setTerminalHistory(prev => {
+                const newHistory = prev + data;
+                return newHistory.length > 10000 ? newHistory.slice(-10000) : newHistory;
+              });
+            }}
+            onTerminalCommand={(command) => {
+              // Track executed commands (limit to last 100 commands)
+              setTerminalCommands(prev => {
+                const newCommands = [...prev, command];
+                return newCommands.length > 100 ? newCommands.slice(-100) : newCommands;
+              });
+            }}
           />
         </div>
       )}
@@ -276,7 +313,8 @@ export default function IDEPage() {
   );
 
   return (
-    <div className="h-screen w-full flex flex-col bg-bg-primary">
+    <SupervisionProvider>
+      <div className="h-screen w-full flex flex-col bg-bg-primary">
       {/* Menu Bar */}
       <MenuBar 
         onNewFile={handleNewFile}
@@ -315,6 +353,9 @@ export default function IDEPage() {
       <StatusBar 
         activeFile={activeFile}
         isConnected={agentsActive}
+        openFiles={openFiles}
+        terminalHistory={terminalHistory}
+        terminalCommands={terminalCommands}
       />
 
       {/* Toast Notifications */}
@@ -324,6 +365,7 @@ export default function IDEPage() {
           onClose={() => setToast(null)}
         />
       )}
-    </div>
+      </div>
+    </SupervisionProvider>
   );
 }

@@ -6,19 +6,33 @@ const EXPRESS_BACKEND_URL = 'http://localhost:3000';
 
 export async function POST(request: NextRequest) {
   try {
-    const { sessionId, includeTerminalHistory, includeFileChanges, includeCommits } = await request.json();
+    const requestData = await request.json();
+    let { sessionId, sessionData, prompt, includeTerminalHistory, includeFileChanges, includeCommits } = requestData;
     
-    // Gather session data
-    const sessionData = {
-      sessionId: sessionId || 'default',
-      timestamp: new Date().toISOString(),
-      terminalHistory: includeTerminalHistory ? await getTerminalHistory() : null,
-      fileChanges: includeFileChanges ? await getFileChanges() : null,
-      commits: includeCommits ? await getCommits() : null
-    };
-    
-    // Create prompt for the session summary
-    const prompt = `Please generate a comprehensive session summary for a coding session with the following data:
+    // If we received the enhanced sessionData and prompt from SessionSummaryService, use those
+    if (sessionData && prompt) {
+      // This is the enhanced call from SessionSummaryService
+      // Pass it through to the backend with the comprehensive prompt
+    } else {
+      // Legacy simple call - gather basic session data
+      sessionData = {
+        sessionId: sessionId || 'default',
+        timestamp: new Date().toISOString(),
+        terminalHistory: includeTerminalHistory ? await getTerminalHistory() : null,
+        fileChanges: includeFileChanges ? await getFileChanges() : null,
+        commits: includeCommits ? await getCommits() : null
+      };
+      
+      // For legacy calls, create the comprehensive prompt
+      prompt = `CRITICAL INSTRUCTION: Please go back through EVERY DETAIL of this session, read EVERYTHING carefully, and provide an IN-DEPTH summary.
+
+BE AS DETAILED AS POSSIBLE. Include:
+- What happened (chronologically, step by step)
+- What hurdles were encountered (every single one)
+- What the problems were (root causes, not just symptoms)
+- Where we're at now (exact current state)
+- Where we want to go (clear direction)
+- A detailed plan for moving forward
 
 Session ID: ${sessionData.sessionId}
 Timestamp: ${sessionData.timestamp}
@@ -32,14 +46,21 @@ ${sessionData.fileChanges}` : ''}
 ${sessionData.commits ? `Git Commits:
 ${sessionData.commits}` : ''}
 
-Please provide:
-1. A brief overview of what was accomplished
-2. Key files that were modified
-3. Important commands that were run
-4. Any errors or issues encountered
-5. Next steps or recommendations
+Provide an EXHAUSTIVELY DETAILED analysis including:
+1. Complete session chronicle (blow-by-blow account)
+2. Deep analysis of ALL problems and hurdles
+3. Technical decisions and rationale
+4. Exact current state (what works, what doesn't)
+5. Complete list of unresolved issues
+6. Successes and what worked
+7. Detailed code change review
+8. Testing and validation status
+9. Environment and configuration changes
+10. Step-by-step handoff instructions for next agent
+11. Strategic recommendations (short/medium/long term)
 
-Format the response as a well-structured markdown document.`;
+Remember: BE EXHAUSTIVELY DETAILED. The next agent should know EVERYTHING about this session.`;
+    }
     
     // Try to call the Express backend endpoint for session summary
     let result: any = null;

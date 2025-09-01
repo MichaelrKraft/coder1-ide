@@ -3,7 +3,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { ChevronDown, Home, Grid, FileText, Code, Sparkles, BookOpen, Settings, Info } from 'lucide-react';
+import { ChevronDown, Home, Grid, FileText, Code, Sparkles, BookOpen, Settings as SettingsIcon, Info, HelpCircle, Keyboard, AlertCircle } from 'lucide-react';
 import { glows } from '@/lib/design-tokens';
 
 interface MenuItem {
@@ -32,6 +32,15 @@ interface MenuBarProps {
   onResetZoom?: () => void;
   onFind?: () => void;
   onReplace?: () => void;
+  onCloseFile?: () => void;
+  onExit?: () => void;
+  onStop?: () => void;
+  onShowAbout?: () => void;
+  onShowKeyboardShortcuts?: () => void;
+  onShowSettings?: () => void;
+  onCopy?: () => void;
+  onCut?: () => void;
+  onPaste?: () => void;
 }
 
 /**
@@ -60,6 +69,15 @@ export default function MenuBar({
   onResetZoom,
   onFind,
   onReplace,
+  onCloseFile,
+  onExit,
+  onStop,
+  onShowAbout,
+  onShowKeyboardShortcuts,
+  onShowSettings,
+  onCopy,
+  onCut,
+  onPaste,
 }: MenuBarProps) {
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -75,16 +93,16 @@ export default function MenuBar({
       { label: 'Save', action: onSave || (() => console.log('Save')), shortcut: 'Ctrl+S' },
       { label: 'Save As...', action: onSaveAs || (() => console.log('Save As')), shortcut: 'Ctrl+Shift+S' },
       { separator: true },
-      { label: 'Close Editor', action: () => console.log('Close editor'), shortcut: 'Ctrl+W' },
-      { label: 'Exit', action: () => window.close() }
+      { label: 'Close Editor', action: onCloseFile || (() => console.log('Close editor')), shortcut: 'Ctrl+W' },
+      { label: 'Exit', action: onExit || (() => console.log('Exit')) }
     ],
     Edit: [
       { label: 'Undo', action: () => document.execCommand('undo'), shortcut: 'Ctrl+Z' },
       { label: 'Redo', action: () => document.execCommand('redo'), shortcut: 'Ctrl+Y' },
       { separator: true },
-      { label: 'Cut', action: () => document.execCommand('cut'), shortcut: 'Ctrl+X' },
-      { label: 'Copy', action: () => document.execCommand('copy'), shortcut: 'Ctrl+C' },
-      { label: 'Paste', action: () => document.execCommand('paste'), shortcut: 'Ctrl+V' },
+      { label: 'Cut', action: onCut || (() => console.log('Cut')), shortcut: 'Ctrl+X' },
+      { label: 'Copy', action: onCopy || (() => console.log('Copy')), shortcut: 'Ctrl+C' },
+      { label: 'Paste', action: onPaste || (() => console.log('Paste')), shortcut: 'Ctrl+V' },
       { separator: true },
       { label: 'Find', action: onFind || (() => console.log('Find')), shortcut: 'Ctrl+F' },
       { label: 'Replace', action: onReplace || (() => console.log('Replace')), shortcut: 'Ctrl+H' }
@@ -102,14 +120,14 @@ export default function MenuBar({
       { label: 'Run Code', action: onRunCode || (() => console.log('Run Code')), shortcut: 'F5' },
       { label: 'Debug', action: onDebug || (() => console.log('Debug')), shortcut: 'F9' },
       { separator: true },
-      { label: 'Stop', action: () => console.log('Stop'), shortcut: 'Shift+F5' }
+      { label: 'Stop', action: onStop || (() => console.log('Stop')), shortcut: 'Shift+F5' }
     ],
     Help: [
-      { label: 'About Coder1', action: () => alert('Coder1 IDE v1.0.0\nBuilt for Claude Code and vibe coders'), shortcut: '' },
+      { label: 'About Coder1', action: onShowAbout || (() => alert('Coder1 IDE v2.0.0\nBuilt for Claude Code and vibe coders')), shortcut: '' },
       { label: 'Documentation', action: () => window.open('/documentation', '_blank'), shortcut: '' },
       { separator: true },
-      { label: 'Keyboard Shortcuts', action: () => console.log('Shortcuts'), shortcut: 'Ctrl+K Ctrl+S' },
-      { label: 'Report Issue', action: () => window.open('https://github.com', '_blank') }
+      { label: 'Keyboard Shortcuts', action: onShowKeyboardShortcuts || (() => console.log('Shortcuts')), shortcut: 'Ctrl+K Ctrl+S' },
+      { label: 'Report Issue', action: () => window.open('https://github.com/michaelkraft/autonomous_vibe_interface/issues', '_blank') }
     ]
   };
 
@@ -230,6 +248,33 @@ export default function MenuBar({
             )}
           </div>
         ))}
+        
+        {/* Settings Gear Icon - positioned after Help menu */}
+        <div className="relative ml-4">
+          <button
+            onClick={() => {
+              if (onShowSettings) {
+                onShowSettings();
+                setActiveMenu(null);
+              }
+            }}
+            className="p-1.5 text-text-secondary hover:text-text-primary rounded transition-all duration-200 hover:bg-bg-tertiary"
+            style={{
+              transition: 'all 0.3s ease',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'rotate(180deg) scale(1.1)';
+              e.currentTarget.style.color = '#FB923C';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'rotate(0deg) scale(1)';
+              e.currentTarget.style.color = '';
+            }}
+            title="Settings"
+          >
+            <SettingsIcon className="w-5 h-5" />
+          </button>
+        </div>
         </div>
       </div>
 

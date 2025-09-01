@@ -51,7 +51,7 @@ export default function HeroSection() {
           backgroundClip: 'text',
         }}
       >
-        Your AI-powered development environment
+        The only IDE in the world built just for Claude Code
       </p>
 
       {/* Action buttons */}

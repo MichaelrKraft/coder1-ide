@@ -10,6 +10,7 @@ import { glows, spacing } from '@/lib/design-tokens';
 import { getSocket } from '@/lib/socket';
 import ErrorDoctor from './ErrorDoctor';
 import { soundAlertService, SoundPreset } from '@/lib/sound-alert-service';
+import { useSupervision } from '@/contexts/SupervisionContext';
 
 // TypeScript declarations for Web Speech API
 declare global {
@@ -22,6 +23,8 @@ declare global {
 interface TerminalProps {
   onAgentsSpawn?: () => void;
   onClaudeTyped?: () => void;
+  onTerminalData?: (data: string) => void;
+  onTerminalCommand?: (command: string) => void;
 }
 
 /**
@@ -35,15 +38,17 @@ interface TerminalProps {
  * 
  * DO NOT MODIFY button positioning without checking original
  */
-export default function Terminal({ onAgentsSpawn, onClaudeTyped }: TerminalProps) {
+export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData, onTerminalCommand }: TerminalProps) {
   console.log('🖥️ Terminal component rendering...');
   const terminalRef = useRef<HTMLDivElement>(null);
   const xtermRef = useRef<XTerm | null>(null);
   const fitAddonRef = useRef<FitAddon | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [agentsRunning, setAgentsRunning] = useState(false);
-  const [supervisionActive, setSupervisionActive] = useState(false);
   const [voiceListening, setVoiceListening] = useState(false);
+  
+  // Use supervision context instead of local state
+  const { isSupervisionActive, toggleSupervision, enableSupervision } = useSupervision();
   const [terminalMode, setTerminalMode] = useState<'normal' | 'vim' | 'emacs'>('normal');
   const [thinkingMode, setThinkingMode] = useState<'normal' | 'think' | 'think_hard' | 'ultrathink'>('normal');
   const [showThinkingDropdown, setShowThinkingDropdown] = useState(false);
@@ -248,11 +253,73 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped }: TerminalProps
         const resizeObserver = new ResizeObserver(() => {
           if (fitAddonRef.current && term) {
             try {
+              // 🔍 DIAGNOSTIC: Log resize events and terminal state before/after
+              const beforeBuffer = term.buffer?.active;
+              const beforeState = beforeBuffer ? {
+                viewportY: beforeBuffer.viewportY,
+                baseY: beforeBuffer.baseY,
+                isAtBottom: beforeBuffer.viewportY === beforeBuffer.baseY
+              } : null;
+              
+              console.log('🔄 RESIZE EVENT TRIGGERED:', {
+                timestamp: Date.now(),
+                beforeState,
+                sessionId
+              });
+
               setTimeout(() => {
                 fitAddonRef.current?.fit();
+                
+                // Check state after resize
+                const afterBuffer = term.buffer?.active;
+                const afterState = afterBuffer ? {
+                  viewportY: afterBuffer.viewportY,
+                  baseY: afterBuffer.baseY,
+                  isAtBottom: afterBuffer.viewportY === afterBuffer.baseY
+                } : null;
+                
+                console.log('📐 RESIZE COMPLETED:', {
+                  timestamp: Date.now(),
+                  beforeState,
+                  afterState,
+                  stateChanged: JSON.stringify(beforeState) !== JSON.stringify(afterState)
+                });
+                
+                // If resize broke the viewport sync, fix it immediately
+                if (afterBuffer && afterBuffer.viewportY !== afterBuffer.baseY) {
+                  console.log('🚨 RESIZE BROKE VIEWPORT SYNC - FIXING:', {
+                    viewportY: afterBuffer.viewportY,
+                    baseY: afterBuffer.baseY,
+                    scrollLines: afterBuffer.baseY - afterBuffer.viewportY
+                  });
+                  term.scrollLines(afterBuffer.baseY - afterBuffer.viewportY);
+                }
+                
+                // Additional fix: If resize caused container to jump to top but content fits
+                // Force the terminal to stay at bottom by scrolling the container
+                const terminalContainer = terminalRef.current?.parentElement;
+                if (terminalContainer) {
+                  const isContainerAtTop = terminalContainer.scrollTop === 0;
+                  const hasContent = afterBuffer && afterBuffer.baseY > 0;
+                  
+                  if (isContainerAtTop && hasContent) {
+                    console.log('🚨 RESIZE CAUSED CONTAINER TOP JUMP - FIXING:', {
+                      containerScrollTop: terminalContainer.scrollTop,
+                      containerScrollHeight: terminalContainer.scrollHeight,
+                      containerClientHeight: terminalContainer.clientHeight,
+                      baseY: afterBuffer.baseY
+                    });
+                    
+                    // Force container to bottom
+                    terminalContainer.scrollTop = terminalContainer.scrollHeight;
+                    
+                    // Also ensure xterm is at bottom
+                    term.scrollToBottom();
+                  }
+                }
               }, 10);
             } catch (error) {
-              console.log('Resize error (non-critical):', error);
+              console.error('❌ RESIZE ERROR:', error);
             }
           }
         });
@@ -543,6 +610,11 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped }: TerminalProps
         // Write the data (this is all we should do here)
         term.write(data);
         
+        // Capture terminal output for session tracking
+        if (onTerminalData) {
+          onTerminalData(data);
+        }
+        
         // Check for Claude activation in output
         if (data.includes('Claude conversation mode') || data.includes('Claude>')) {
           console.log('🤖 CLAUDE ACTIVATED');
@@ -619,7 +691,13 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped }: TerminalProps
         if (data === '\r') {
           // Enter pressed - command was sent
           if (currentLineBuffer.trim()) {
-            setCommandHistory(prev => [...prev, currentLineBuffer.trim()]);
+            const command = currentLineBuffer.trim();
+            setCommandHistory(prev => [...prev, command]);
+            
+            // Notify parent component about the command
+            if (onTerminalCommand) {
+              onTerminalCommand(command);
+            }
           }
           setCurrentLineBuffer('');
         } else if (data === '\x7F') {
@@ -630,8 +708,15 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped }: TerminalProps
           setCurrentLineBuffer(prev => {
             const newBuffer = prev + data;
             // Check if "claude" has been typed
-            if (newBuffer.toLowerCase().includes('claude') && onClaudeTyped) {
-              onClaudeTyped();
+            if (newBuffer.toLowerCase().includes('claude')) {
+              // Activate supervision when claude is typed
+              if (!isSupervisionActive) {
+                enableSupervision();
+                console.log('👁️ Supervision auto-activated: claude detected');
+              }
+              if (onClaudeTyped) {
+                onClaudeTyped();
+              }
             }
             return newBuffer;
           });
@@ -700,7 +785,7 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped }: TerminalProps
       project: 'Next.js 14 + TypeScript + Tailwind IDE',
       directory: 'coder1-ide-next',
       agents_active: agentsRunning,
-      supervision_active: supervisionActive,
+      supervision_active: isSupervisionActive,
       terminal_mode: terminalMode,
       voice_input: voiceListening
     };
@@ -865,7 +950,7 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped }: TerminalProps
               // Stop all running processes
               setAgentsRunning(false);
               setVoiceListening(false);
-              setSupervisionActive(false);
+              // Supervision is managed by context, not local state
               
               // Stop speech recognition if active
               if (recognition && voiceListening) {
@@ -923,10 +1008,9 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped }: TerminalProps
           {/* Supervision button */}
           <button
             onClick={() => {
-              const newState = !supervisionActive;
-              setSupervisionActive(newState);
+              toggleSupervision();
               
-              if (newState) {
+              if (!isSupervisionActive) {
                 xtermRef.current?.writeln('\r\n👁️ AI Supervision Mode Activated');
                 xtermRef.current?.writeln('\r\n🔍 Monitoring Systems:');
                 xtermRef.current?.writeln('• Code quality analysis: ACTIVE');

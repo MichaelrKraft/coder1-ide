@@ -423,99 +423,254 @@ export class SessionSummaryService {
     // Context-aware prompt based on session type
     const sessionTypeContext = this.getSessionTypeContext(sessionData.sessionType);
     
-    return `You are creating a comprehensive session handoff document for the next AI agent. This is a ${sessionData.sessionType} session that lasted ${sessionData.sessionDuration} minutes.
+    // Extract patterns from terminal history for deeper analysis
+    const terminalLines = sessionData.terminalHistory.split('\n');
+    const errorLines = terminalLines.filter(line => 
+      /error|failed|exception|warning|traceback/i.test(line)
+    ).slice(-20);
+    
+    const successLines = terminalLines.filter(line =>
+      /success|fixed|resolved|works|passed|complete/i.test(line)  
+    ).slice(-10);
+    
+    // Analyze command patterns
+    const debuggingCommands = sessionData.terminalCommands.filter(cmd =>
+      /console\.log|debug|test|npm run|grep|find|cat|ls -la/i.test(cmd)
+    );
+    
+    const buildCommands = sessionData.terminalCommands.filter(cmd =>
+      /npm run build|npm install|yarn|pip install|cargo build/i.test(cmd)
+    );
+    
+    return `You are creating an EXTREMELY COMPREHENSIVE session handoff document. The next agent needs to understand EVERYTHING that happened, every problem encountered, every solution attempted, and the exact state of the project.
 
-# SESSION INTELLIGENCE REPORT
+CRITICAL INSTRUCTION: Please go back through EVERY DETAIL of this session, read EVERYTHING carefully, and provide an IN-DEPTH summary about:
+- What happened (chronologically, step by step)
+- What hurdles were encountered (every single one)
+- What the problems were (root causes, not just symptoms)
+- Where we're at now (exact current state)
+- Where we want to go (clear direction)
+- A detailed plan for moving forward
 
-## Session Overview
-- **Type**: ${sessionData.sessionType}
+BE AS DETAILED AS POSSIBLE. The next agent should feel like they were present for the entire session.
+
+# 📊 COMPREHENSIVE SESSION DATA
+
+## Session Metrics
+- **Session Type**: ${sessionData.sessionType}
 - **Duration**: ${sessionData.sessionDuration} minutes
-- **Files Modified**: ${dirtyFiles.length} files
-- **Commands Executed**: ${sessionData.terminalCommands.length} commands
-- **Errors Encountered**: ${sessionData.errors.length} errors
-${sessionData.gitStatus ? `- **Git Branch**: ${sessionData.gitStatus.branch}` : ''}
-${sessionData.testResults ? `- **Test Results**: ${sessionData.testResults.passed} passed, ${sessionData.testResults.failed} failed` : ''}
+- **Files Touched**: ${activeFiles.length} files opened, ${dirtyFiles.length} modified
+- **Terminal Commands**: ${sessionData.terminalCommands.length} total commands
+- **Debugging Commands**: ${debuggingCommands.length} debugging/testing commands
+- **Build Commands**: ${buildCommands.length} build/install commands
+- **Errors Detected**: ${sessionData.errors.length} errors, ${errorLines.length} error lines in terminal
+- **Successes**: ${sessionData.breakthroughs.length} breakthroughs, ${successLines.length} success indicators
+${sessionData.gitStatus ? `- **Git Branch**: ${sessionData.gitStatus.branch}
+- **Modified Files in Git**: ${sessionData.gitStatus.modifiedFiles.length}
+- **Staged Files**: ${sessionData.gitStatus.stagedFiles.length}
+- **Untracked Files**: ${sessionData.gitStatus.untrackedFiles.length}` : ''}
+${sessionData.testResults ? `- **Test Results**: ${sessionData.testResults.passed} passed, ${sessionData.testResults.failed} failed
+- **Test Failures**: ${sessionData.testResults.failures.join(', ')}` : ''}
 
-## Key Session Insights
-${sessionData.keyDecisions.length > 0 ? `### Decisions Made:\n${sessionData.keyDecisions.map(d => `- ${d}`).join('\n')}` : ''}
-${sessionData.breakthroughs.length > 0 ? `### Breakthroughs:\n${sessionData.breakthroughs.map(b => `- ${b}`).join('\n')}` : ''}
-${sessionData.blockers.length > 0 ? `### Current Blockers:\n${sessionData.blockers.map(b => `- ${b}`).join('\n')}` : ''}
+## Detected Patterns
+- **Session Focus**: ${sessionData.sessionType === 'bug-fix' ? 'Debugging and fixing issues' : 
+  sessionData.sessionType === 'feature-dev' ? 'Implementing new functionality' :
+  sessionData.sessionType === 'refactoring' ? 'Improving code structure' :
+  sessionData.sessionType === 'exploration' ? 'Investigating and learning' : 'General development'}
+- **Error Frequency**: ${(sessionData.errors.length / Math.max(sessionData.sessionDuration, 1)).toFixed(2)} errors per minute
+- **Command Velocity**: ${(sessionData.terminalCommands.length / Math.max(sessionData.sessionDuration, 1)).toFixed(2)} commands per minute
+- **File Switching Pattern**: ${activeFiles.length > 5 ? 'High - indicates complex multi-file work' : 'Low - focused work'}
 
-## File Analysis
-${activeFiles.map(file => `
-### ${file.name} ${file.isDirty ? '🔴 UNSAVED' : '✅'}
+## Session Intelligence Insights
+${sessionData.keyDecisions.length > 0 ? `### 🎯 Key Decisions Made:\n${sessionData.keyDecisions.map(d => `- ${d}`).join('\n')}` : '### 🎯 Key Decisions: None explicitly recorded'}
+
+${sessionData.breakthroughs.length > 0 ? `### ✅ Breakthroughs & Successes:\n${sessionData.breakthroughs.map(b => `- ${b}`).join('\n')}
+${successLines.length > 0 ? '\n### Additional Success Indicators from Terminal:\n' + successLines.slice(0, 5).map(l => `- ${l.trim()}`).join('\n') : ''}` : '### ✅ Breakthroughs: None detected'}
+
+${sessionData.blockers.length > 0 ? `### 🚧 Current Blockers & Issues:\n${sessionData.blockers.map(b => `- ${b}`).join('\n')}` : '### 🚧 Blockers: None explicitly recorded'}
+
+${errorLines.length > 0 ? `### ⚠️ Error Patterns Detected:\n${errorLines.slice(0, 10).map(e => `- ${e.trim()}`).join('\n')}` : ''}
+
+## Detailed File Analysis
+${activeFiles.length > 0 ? activeFiles.map(file => `
+### 📄 ${file.name} ${file.isDirty ? '🔴 UNSAVED CHANGES' : '✅ SAVED'}
+- **Full Path**: ${file.path}
 - **Language**: ${file.language}
-- **Path**: ${file.path}
-- **Status**: ${file.isDirty ? 'Modified but not saved' : 'Saved'}
+- **Last Modified**: ${new Date(file.lastModified || Date.now()).toLocaleString()}
+- **Status**: ${file.isDirty ? '⚠️ Has unsaved modifications - SAVE REQUIRED' : '✓ All changes saved'}
+- **Size**: ${file.content.length} characters
+
+#### Code Content (First 1500 chars):
 \`\`\`${file.language}
-${file.content.substring(0, 1000)}${file.content.length > 1000 ? '\n... [truncated for preview]' : ''}
+${file.content.substring(0, 1500)}${file.content.length > 1500 ? '\n... [${file.content.length - 1500} more characters truncated]' : ''}
 \`\`\`
-`).join('\n')}
 
-## Terminal Command History
+#### Analysis:
+- Lines of code: ~${file.content.split('\n').length}
+- Has TODOs: ${file.content.includes('TODO') ? 'Yes' : 'No'}
+- Has FIXMEs: ${file.content.includes('FIXME') ? 'Yes' : 'No'}
+- Has console.logs: ${file.content.includes('console.log') ? 'Yes (consider removing)' : 'No'}
+`).join('\n---\n') : '*No files were opened during this session*'}
+
+## Complete Terminal Command History
+### All Commands Executed (${sessionData.terminalCommands.length} total):
 \`\`\`bash
-${sessionData.terminalCommands.slice(-30).join('\n')}
+${sessionData.terminalCommands.join('\n')}
 \`\`\`
 
-${sessionData.errors.length > 0 ? `## Error Analysis
-${sessionData.errors.slice(-5).map(e => `- ${e.message}`).join('\n')}` : ''}
+### Command Analysis:
+- **Most Common Command**: ${this.getMostCommonCommand(sessionData.terminalCommands)}
+- **Debugging Commands**: ${debuggingCommands.length > 0 ? debuggingCommands.join(', ') : 'None'}
+- **Build/Install Commands**: ${buildCommands.length > 0 ? buildCommands.join(', ') : 'None'}
 
-## Terminal Output Context
+## Error Deep Dive
+${sessionData.errors.length > 0 ? `### All Errors Encountered (${sessionData.errors.length} total):
+${sessionData.errors.map((e, i) => `
+#### Error ${i + 1} - ${new Date(e.timestamp).toLocaleTimeString()}
+- **Source**: ${e.source}
+- **Message**: ${e.message}
+- **Occurred After**: ${this.getCommandBeforeError(e.timestamp, sessionData.terminalCommands)}`).join('\n')}` : 'No explicit errors recorded in session data'}
+
+## Terminal Output Analysis (Last 3000 chars):
 \`\`\`
-${sessionData.terminalHistory.substring(-2000)}
+${sessionData.terminalHistory.slice(-3000)}
 \`\`\`
 
 ${sessionData.mcpToolUsage.length > 0 ? `## MCP Tool Usage
 ${sessionData.mcpToolUsage.map(m => `- ${new Date(m.timestamp).toLocaleTimeString()}: ${m.tool} - ${m.result}`).join('\n')}` : ''}
 
-# HANDOFF INSTRUCTIONS FOR NEXT AGENT
+# 🎯 COMPREHENSIVE HANDOFF ANALYSIS
 
-Based on this ${sessionData.sessionType} session, please provide:
+Now, based on ALL of the above data, please provide an EXTREMELY DETAILED analysis covering:
 
-1. **Executive Summary** (2-3 sentences)
-   - What was accomplished
-   - Current state of the project
-   - Most critical next step
+## 1. 📖 COMPLETE SESSION CHRONICLE
+Provide a blow-by-blow account of EVERYTHING that happened during this session:
+- Start with what the developer was trying to achieve
+- Walk through each major action taken (referencing specific files and commands)
+- Explain the thought process behind command sequences
+- Identify where things went wrong and right
+- Note any patterns of trial and error
+- Highlight moments of progress and setbacks
 
-2. **Detailed Work Completed**
-   - Specific features/fixes implemented
-   - Code changes and their rationale
-   - Configuration changes made
+## 2. 🔍 PROBLEMS & HURDLES - DEEP ANALYSIS
+For EVERY problem encountered (even minor ones):
+- What was the initial symptom?
+- What debugging steps were taken?
+- What was the suspected cause?
+- What solutions were attempted?
+- Did the solution work? If not, why?
+- Is the problem fully resolved or partially addressed?
+- What was learned from this problem?
 
-3. **Current State Analysis**
-   - What's working correctly
-   - What's partially complete
-   - What hasn't been started
+## 3. 💡 TECHNICAL DECISIONS & RATIONALE
+Document EVERY technical decision:
+- Why were certain approaches chosen?
+- What alternatives were considered?
+- What trade-offs were made?
+- Which decisions might need revisiting?
+- What assumptions were made?
 
-4. **Critical Context**
-   - Technical decisions and why they were made
-   - Gotchas or non-obvious implementation details
-   - Dependencies or environment setup required
+## 4. 📊 CURRENT STATE - EXACT STATUS
+Be EXTREMELY specific about where things stand:
+- What is 100% working and tested?
+- What is partially working (specify exactly what works and what doesn't)?
+- What is completely broken?
+- What hasn't been started yet?
+- What's in an unknown state (needs testing)?
+- Are there any files with unsaved changes? (CRITICAL)
 
-5. **Errors & Issues**
-   - Unresolved errors and their context
-   - Attempted solutions that didn't work
-   - Potential root causes to investigate
+## 5. 🚨 UNRESOLVED ISSUES - COMPLETE LIST
+Every single unresolved issue, no matter how small:
+- Error messages that still appear
+- Features that don't work as expected
+- Performance issues noticed
+- Code that needs cleanup
+- TODOs and FIXMEs in the code
+- Potential bugs not yet investigated
 
-6. **Immediate Next Steps** (prioritized)
-   - Exactly what to do next
-   - Commands to run
-   - Files to modify
-   - Tests to write
+## 6. ✨ SUCCESSES & WHAT WORKED
+Document what went well:
+- Solutions that worked on first try
+- Clever fixes or workarounds discovered
+- Performance improvements achieved
+- Code quality improvements made
+- Knowledge gained
 
-7. **Testing & Validation**
-   - How to verify the work done
-   - Test commands to run
-   - Expected outcomes
+## 7. 🔧 CODE CHANGES - DETAILED REVIEW
+For each file modified:
+- What specific changes were made?
+- Why were these changes necessary?
+- Do the changes follow project conventions?
+- Are there any temporary hacks that need cleanup?
+- Is the code production-ready or needs more work?
 
-8. **Long-term Recommendations**
-   - Architectural improvements needed
-   - Technical debt to address
-   - Performance optimizations to consider
+## 8. 🧪 TESTING & VALIDATION STATUS
+- What has been tested manually?
+- What automated tests were run?
+- What tests are passing/failing?
+- What still needs to be tested?
+- Are there edge cases to consider?
+
+## 9. ⚙️ ENVIRONMENT & CONFIGURATION
+- Were any dependencies added/updated?
+- Were any configuration files changed?
+- Are there new environment variables needed?
+- Did any tools or settings change?
+- Is the development environment stable?
+
+## 10. 📋 NEXT AGENT HANDOFF - STEP-BY-STEP INSTRUCTIONS
+
+### IMMEDIATE ACTIONS (Do these first):
+1. [Specific first action with exact command if applicable]
+2. [Second action with file path and what to change]
+3. [Continue numbering all immediate actions]
+
+### CONTINUE DEVELOPMENT:
+- Provide the EXACT next steps in the development process
+- Include specific files to edit and what to add/change
+- List commands to run and their expected output
+- Specify what success looks like for each step
+
+### TESTING CHECKLIST:
+- [ ] Test 1: [Specific test with command]
+- [ ] Test 2: [What to verify and how]
+- [ ] Test 3: [Continue with all needed tests]
+
+### DEBUGGING GUIDANCE:
+If the next agent encounters issues:
+- If you see [error X], try [solution Y]
+- Common gotcha: [describe potential issue]
+- Watch out for: [thing that might trip them up]
+
+## 11. 🎯 STRATEGIC RECOMMENDATIONS
+
+### Short-term (This session or next):
+- Priority fixes needed
+- Quick wins available
+- Urgent refactoring required
+
+### Medium-term (Next few sessions):
+- Architectural improvements
+- Performance optimizations  
+- Technical debt to address
+
+### Long-term (Project evolution):
+- Major refactoring opportunities
+- Scalability considerations
+- Feature enhancements to consider
+
+## 12. 📝 SESSION METADATA & CONTEXT
+- IDE: CoderOne v2.0 Next.js IDE
+- Session ID: ${sessionData.sessionDuration}min session
+- Key Technologies: ${this.detectTechnologies(sessionData)}
+- Development Pattern: ${sessionData.sessionType}
 
 ${sessionTypeContext}
 
-Format your response as a structured document that another AI agent can immediately use to continue work without any confusion or lost context. Use clear headings, bullet points, and code blocks where appropriate.`;
+# FINAL HANDOFF SUMMARY
+[Provide a clear, actionable paragraph that the next agent can read to immediately understand what to do next]
+
+Remember: BE EXHAUSTIVELY DETAILED. The next agent should know EVERYTHING about this session.`;
   }
 
   private getSessionTypeContext(sessionType?: string): string {
@@ -527,6 +682,51 @@ Format your response as a structured document that another AI agent can immediat
       'general': ''
     };
     return contexts[sessionType || 'general'] || '';
+  }
+
+  private getMostCommonCommand(commands: string[]): string {
+    if (commands.length === 0) return 'None';
+    
+    const frequency: Record<string, number> = {};
+    commands.forEach(cmd => {
+      const baseCmd = cmd.split(' ')[0];
+      frequency[baseCmd] = (frequency[baseCmd] || 0) + 1;
+    });
+    
+    const mostCommon = Object.entries(frequency)
+      .sort((a, b) => b[1] - a[1])[0];
+    
+    return mostCommon ? `${mostCommon[0]} (${mostCommon[1]} times)` : 'None';
+  }
+
+  private getCommandBeforeError(errorTime: number, commands: string[]): string {
+    // This is a simplified version - in reality would need timestamps for commands
+    return commands.length > 0 ? commands[commands.length - 1] : 'Unknown';
+  }
+
+  private detectTechnologies(sessionData: SessionData): string {
+    const techs = new Set<string>();
+    
+    // Detect from file extensions
+    sessionData.openFiles.forEach(file => {
+      if (file.name.endsWith('.tsx') || file.name.endsWith('.ts')) techs.add('TypeScript');
+      if (file.name.endsWith('.jsx') || file.name.endsWith('.js')) techs.add('JavaScript');
+      if (file.name.endsWith('.py')) techs.add('Python');
+      if (file.name.endsWith('.rs')) techs.add('Rust');
+      if (file.name.endsWith('.go')) techs.add('Go');
+    });
+    
+    // Detect from commands
+    sessionData.terminalCommands.forEach(cmd => {
+      if (cmd.includes('npm')) techs.add('Node.js');
+      if (cmd.includes('yarn')) techs.add('Yarn');
+      if (cmd.includes('pip')) techs.add('Python');
+      if (cmd.includes('cargo')) techs.add('Rust');
+      if (cmd.includes('go')) techs.add('Go');
+      if (cmd.includes('docker')) techs.add('Docker');
+    });
+    
+    return Array.from(techs).join(', ') || 'Not detected';
   }
 
   /**
@@ -722,7 +922,7 @@ ${sessionData.gitStatus ? `branch: ${sessionData.gitStatus.branch}` : ''}
   private generateFallbackSummary(sessionData: SessionData): string {
     const activeFiles = sessionData.openFiles.filter(f => f.content && f.content.trim().length > 0);
     const dirtyFiles = sessionData.openFiles.filter(f => f.isDirty);
-    const recentCommands = sessionData.terminalCommands.slice(-10); // Last 10 commands
+    const allCommands = sessionData.terminalCommands;
     
     // Get meaningful session metrics
     const sessionMinutes = sessionData.sessionDuration || 0;
@@ -735,64 +935,180 @@ ${sessionData.gitStatus ? `branch: ${sessionData.gitStatus.branch}` : ''}
     // Detect session type
     const sessionType = sessionData.sessionType || 'Development';
     
-    // Create a rich fallback summary
-    return `# 🚀 CoderOne v2.0 Session Intelligence Report
+    // Extract more patterns from terminal history
+    const terminalLines = sessionData.terminalHistory.split('\n');
+    const errorPatterns = terminalLines.filter(line => 
+      /error|failed|exception|warning/i.test(line)
+    ).slice(-10);
+    
+    const successPatterns = terminalLines.filter(line =>
+      /success|fixed|complete|passed/i.test(line)  
+    ).slice(-5);
+    
+    // Create a comprehensive fallback summary
+    return `# 🚀 CoderOne v2.0 Session Intelligence Report - Comprehensive Handoff Document
 
-## 📊 Session Overview
-- **Type**: ${sessionType} Session
-- **Duration**: ${durationText}
-- **Files Active**: ${activeFiles.length} files
-- **Files Modified**: ${dirtyFiles.length} files
-- **Terminal Activity**: ${recentCommands.length} recent commands
+## 📊 Session Metrics & Overview
+- **Session Type**: ${sessionType} Session
+- **Duration**: ${durationText} (${sessionMinutes} minutes total)
+- **Files Opened**: ${activeFiles.length} files
+- **Files Modified**: ${dirtyFiles.length} files (${dirtyFiles.length > 0 ? '⚠️ UNSAVED CHANGES' : '✅ All saved'})
+- **Commands Executed**: ${allCommands.length} total commands
+- **Errors Detected**: ${sessionData.errors.length} errors
+- **Breakthroughs**: ${sessionData.breakthroughs.length} successes
 - **Focus Area**: ${sessionData.activeFile || 'Multiple files'}
+- **Command Velocity**: ${(allCommands.length / Math.max(sessionMinutes, 1)).toFixed(2)} commands/minute
 
-## 📁 Active Development Files
+## 📖 Session Chronicle
+Based on the available data, this session involved:
+${allCommands.length > 0 ? `
+- Started with: \`${allCommands[0]}\`
+- Most recent: \`${allCommands[allCommands.length - 1]}\`
+- Command pattern indicates: ${sessionType === 'bug-fix' ? 'debugging and testing' : 
+  sessionType === 'feature-dev' ? 'new feature implementation' :
+  sessionType === 'refactoring' ? 'code improvement' : 'general development'}` : '- No commands recorded'}
+
+## 📁 Detailed File Analysis
 ${activeFiles.length > 0 
-  ? activeFiles.map(file => `- **${file.name}** ${file.isDirty ? '🔴 *modified*' : '✅ *saved*'} (${file.language || 'unknown'})`).join('\n')
+  ? activeFiles.map(file => `
+### ${file.name} ${file.isDirty ? '🔴 UNSAVED CHANGES' : '✅ SAVED'}
+- **Path**: ${file.path}
+- **Language**: ${file.language || 'unknown'}
+- **Status**: ${file.isDirty ? '⚠️ Has unsaved modifications - SAVE IMMEDIATELY' : '✓ All changes saved'}
+- **Size**: ${file.content.length} characters
+- **Lines**: ~${file.content.split('\n').length}
+${file.content.includes('TODO') ? '- **Has TODOs**: Yes - review needed' : ''}
+${file.content.includes('FIXME') ? '- **Has FIXMEs**: Yes - urgent attention needed' : ''}
+${file.content.includes('console.log') ? '- **Has console.logs**: Yes - consider removing before production' : ''}
+
+#### Code Preview (first 500 chars):
+\`\`\`${file.language || 'text'}
+${file.content.substring(0, 500)}${file.content.length > 500 ? '\n... [${file.content.length - 500} more characters]' : ''}
+\`\`\`
+`).join('\n---\n')
   : '- *No files currently open*'
 }
 
-## 💻 Recent Terminal Activity
-${recentCommands.length > 0 
-  ? recentCommands.map(cmd => `- \`${cmd}\``).join('\n')
-  : '- *No recent terminal commands recorded*'
+## 💻 Complete Command History
+${allCommands.length > 0 
+  ? '### All Commands Executed:\n```bash\n' + allCommands.join('\n') + '\n```\n\n### Command Analysis:\n' +
+    `- Most common: ${this.getMostCommonCommand(allCommands)}\n` +
+    `- Debugging commands: ${allCommands.filter(c => /test|debug|console/i.test(c)).length}\n` +
+    `- Build/install commands: ${allCommands.filter(c => /npm|yarn|build|install/i.test(c)).length}`
+  : '- *No terminal commands recorded*'
 }
 
-${sessionData.errors && sessionData.errors.length > 0 ? `
-## ⚠️ Issues Encountered
-${sessionData.errors.slice(0, 3).map(error => `- ${error.message}`).join('\n')}
+${errorPatterns.length > 0 ? `
+## ⚠️ Errors & Problems Detected
+### Error Patterns from Terminal:
+${errorPatterns.map(error => `- ${error.trim()}`).join('\n')}
+
+### Explicit Errors:
+${sessionData.errors.length > 0 
+  ? sessionData.errors.map((e, i) => `${i + 1}. **${new Date(e.timestamp).toLocaleTimeString()}** - ${e.message} (${e.source})`).join('\n')
+  : 'No explicit errors in session data'
+}` : ''}
+
+${successPatterns.length > 0 || (sessionData.breakthroughs && sessionData.breakthroughs.length > 0) ? `
+## ✅ Successes & Breakthroughs
+${successPatterns.length > 0 ? '### Success Indicators from Terminal:\n' + successPatterns.map(s => `- ${s.trim()}`).join('\n') : ''}
+${sessionData.breakthroughs && sessionData.breakthroughs.length > 0 ? '\n### Documented Breakthroughs:\n' + sessionData.breakthroughs.map(b => `- ${b}`).join('\n') : ''}
 ` : ''}
 
-${sessionData.breakthroughs && sessionData.breakthroughs.length > 0 ? `
-## 🎉 Progress Made
-${sessionData.breakthroughs.map(breakthrough => `- ${breakthrough}`).join('\n')}
+${sessionData.blockers && sessionData.blockers.length > 0 ? `
+## 🚧 Current Blockers
+${sessionData.blockers.map(blocker => `- ${blocker}`).join('\n')}
 ` : ''}
 
-${dirtyFiles.length > 0 ? `
-## 📝 Modified Code Preview
-${dirtyFiles.slice(0, 2).map(file => `
-### ${file.name}
-\`\`\`${file.language || 'text'}
-${file.content.substring(0, 300)}${file.content.length > 300 ? '\n... [truncated]' : ''}
+## 🔍 Terminal Output Analysis
+### Recent Terminal Activity (last 1000 chars):
 \`\`\`
-`).join('\n')}
-` : ''}
+${sessionData.terminalHistory.slice(-1000) || 'No terminal output recorded'}
+\`\`\`
 
-## 🔄 Next Steps
-1. **Save Progress**: ${dirtyFiles.length > 0 ? `${dirtyFiles.length} file(s) have unsaved changes` : 'All files are saved'}
-2. **Test Recent Changes**: Verify functionality from recent terminal commands
-3. **Create Checkpoint**: Consider saving a checkpoint before major changes
-4. **Code Review**: Review modified files for quality and consistency
+## 📊 Current State Assessment
+${dirtyFiles.length > 0 ? `### ⚠️ CRITICAL: ${dirtyFiles.length} Files Have Unsaved Changes
+${dirtyFiles.map(f => `- ${f.name} - MUST BE SAVED`).join('\n')}
 
-## 🎯 Handoff Recommendations
-- **Immediate Priority**: ${dirtyFiles.length > 0 ? 'Save unsaved changes and test functionality' : 'Continue development or run tests'}
-- **Session Type**: This appears to be a ${sessionType.toLowerCase()} session
-- **Context**: CoderOne v2.0 Next.js IDE with advanced session management
+**IMMEDIATE ACTION REQUIRED**: Save these files before continuing!` : '### ✅ All Files Saved'}
+
+### Working Status:
+- **Definitely Working**: ${successPatterns.length > 0 ? 'Some features showing success' : 'Unknown - needs testing'}
+- **Potentially Broken**: ${errorPatterns.length > 0 ? 'Errors detected - investigation needed' : 'No obvious breaks'}
+- **Needs Testing**: ${activeFiles.length > 0 ? 'All modified code should be tested' : 'No recent changes to test'}
+
+## 📋 Next Agent Handoff Instructions
+
+### 🔴 IMMEDIATE ACTIONS (Do First):
+1. ${dirtyFiles.length > 0 ? `SAVE ALL UNSAVED FILES: ${dirtyFiles.map(f => f.name).join(', ')}` : 'Check for any uncommitted changes with `git status`'}
+2. ${errorPatterns.length > 0 ? 'Review and fix the errors listed above' : 'Run tests to verify current state'}
+3. ${sessionData.terminalHistory.includes('npm install') ? 'Verify dependencies installed correctly' : 'Check if dependencies are up to date'}
+4. Review the terminal output for any missed issues
+
+### 📝 Continue Development:
+${sessionType === 'bug-fix' ? `
+- Continue debugging the issues identified
+- Add tests to prevent regression
+- Verify fixes work in all scenarios` :
+sessionType === 'feature-dev' ? `
+- Complete the feature implementation
+- Add necessary tests
+- Update documentation` :
+sessionType === 'refactoring' ? `
+- Continue code improvements
+- Ensure no functionality is broken
+- Update affected tests` : `
+- Review the session activity above
+- Determine next development priority
+- Continue based on project requirements`}
+
+### 🧪 Testing Checklist:
+- [ ] All modified files saved
+- [ ] No syntax errors in terminal
+- [ ] Core functionality still works
+- [ ] New changes tested manually
+- [ ] Automated tests pass (if applicable)
+
+### ⚠️ Debugging Guidance:
+${errorPatterns.length > 0 ? `
+Known errors to investigate:
+${errorPatterns.slice(0, 3).map(e => `- ${e.trim()}`).join('\n')}` : ''}
+- Check terminal output for additional context
+- Review file changes for potential issues
+- Use debugging commands from history as reference
+
+## 🎯 Strategic Recommendations
+
+### Short-term (This Session):
+- ${dirtyFiles.length > 0 ? 'Save all unsaved changes immediately' : 'Create a checkpoint of current work'}
+- ${errorPatterns.length > 0 ? 'Fix identified errors before proceeding' : 'Run comprehensive tests'}
+- ${allCommands.length < 5 ? 'Session appears incomplete - continue work' : 'Review work done and plan next steps'}
+
+### Medium-term (Next Session):
+- ${sessionData.errors.length > 3 ? 'Focus on error reduction and stability' : 'Continue feature development'}
+- ${activeFiles.length > 5 ? 'Consider refactoring for better organization' : 'Maintain focused development'}
+- Add more comprehensive error handling
+
+### Long-term (Project Evolution):
+- Implement automated testing if not present
+- Consider architectural improvements based on session patterns
+- Document complex areas identified during this session
+
+## 🔧 Session Context & Metadata
+- **IDE**: CoderOne v2.0 Next.js IDE
+- **Session ID**: ${sessionMinutes}min-${Date.now()}
+- **Detected Technologies**: ${this.detectTechnologies(sessionData)}
+- **Development Pattern**: ${sessionType}
+- **Checkpoint Recommended**: ${dirtyFiles.length > 0 || errorPatterns.length > 0 ? 'YES - URGENT' : 'Yes - for continuity'}
+
+## 🎯 Final Handoff Summary
+This ${sessionType} session lasted ${durationText} and involved work on ${activeFiles.length} files with ${allCommands.length} commands executed. ${dirtyFiles.length > 0 ? `⚠️ CRITICAL: ${dirtyFiles.length} files have unsaved changes that MUST be saved immediately. ` : ''}${errorPatterns.length > 0 ? `There are ${errorPatterns.length} error patterns that need investigation. ` : ''}The session ${successPatterns.length > 0 ? 'made progress with some successes' : 'status needs verification through testing'}. The next agent should ${dirtyFiles.length > 0 ? 'FIRST save all unsaved files, then ' : ''}${errorPatterns.length > 0 ? 'address the errors identified' : 'continue development based on the session analysis above'}.
 
 ---
-*📝 Enhanced fallback summary - CoderOne v2.0 Session Intelligence*
-*⚡ For full AI analysis, configure Claude Code API connection*
-*🚀 Generated by CoderOne v2.0 SessionSummaryService*`;
+*📝 Comprehensive fallback summary - CoderOne v2.0 Session Intelligence*
+*⚡ Note: This is an enhanced fallback summary without AI analysis*
+*💡 For full AI-powered analysis, ensure Claude API is configured*
+*🚀 Generated by CoderOne v2.0 SessionSummaryService at ${new Date().toLocaleString()}*`;
   }
 }
 

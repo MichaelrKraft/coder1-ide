@@ -72,24 +72,22 @@ export default function DiscoverSection() {
   // Always render the component - container should never disappear
   return (
     <div 
-      className={`border-t border-border-default bg-bg-secondary ${isExpanded ? '' : 'h-[40px] overflow-hidden'}`}
+      className="border-t border-border-default"
       style={{ 
+        backgroundColor: 'var(--bg-secondary)',
         minHeight: '40px',
         position: 'relative',
         zIndex: 10,
-        transition: 'height 0.3s ease, max-height 0.3s ease',
-        boxSizing: 'border-box'  // Include border in height calculation
+        boxSizing: 'border-box'
       }}
     >
       {/* Discover Header - ALWAYS VISIBLE NO MATTER WHAT */}
       <div 
-        className="px-3 py-2 flex items-center justify-between cursor-pointer hover:bg-bg-tertiary transition-colors select-none"
+        className="px-3 flex items-center justify-between cursor-pointer hover:bg-bg-tertiary transition-colors select-none"
         onClick={handleToggle}
         onDoubleClick={resetPanel}
         title={isExpanded ? "Click to collapse" : "Click to expand (or Ctrl+Shift+D to force restore)"}
         style={{
-          minHeight: '39px',  // 40px minus 1px border
-          maxHeight: '39px',
           height: '40px',
           display: 'flex',
           alignItems: 'center',
@@ -115,8 +113,14 @@ export default function DiscoverSection() {
         </div>
       </div>
       
-      {/* Discover Content - Only shown when expanded */}
-      {isExpanded && (
+      {/* Discover Content - Collapsible wrapper */}
+      <div 
+        style={{
+          maxHeight: isExpanded ? '400px' : '0',
+          overflow: 'hidden',
+          transition: 'max-height 0.3s ease-in-out'
+        }}
+      >
         <div className="px-3 pb-3 space-y-3">
           {/* Menu Items */}
           <div className="space-y-1">
@@ -230,7 +234,7 @@ export default function DiscoverSection() {
             </div>
           </div>
         </div>
-      )}
+      </div>
     </div>
   );
 }

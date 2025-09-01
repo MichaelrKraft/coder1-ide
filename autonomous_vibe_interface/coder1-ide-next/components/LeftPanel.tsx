@@ -106,7 +106,14 @@ export default function LeftPanel({ onFileSelect, activeFile }: LeftPanelProps) 
       </div>
       
       {/* Discover Section - Fixed at bottom - ALWAYS VISIBLE */}
-      <div className="flex-shrink-0 relative">
+      <div style={{ 
+        flexShrink: 0,
+        flexGrow: 0,
+        flexBasis: 'auto',
+        minHeight: '40px',
+        height: 'auto',
+        display: 'block'
+      }}>
         <DiscoverSection />
       </div>
     </div>
