@@ -37,9 +37,9 @@
     "insightType": "suggestion",
     "content": "New code has been added without corresponding tests. Shall I create comprehensive test coverage?",
     "confidence": 0.75,
-    "usageCount": 326,
+    "usageCount": 418,
     "createdAt": 1754411945446,
-    "lastUsed": 1756443213227,
+    "lastUsed": 1756700411255,
     "metadata": {
       "type": "test_coverage",
       "priority": "medium",
@@ -53,9 +53,9 @@
     "insightType": "file-change",
     "content": "File public/ide/static was modified, suggesting active development in general development",
     "confidence": 0.7,
-    "usageCount": 73,
+    "usageCount": 147,
     "createdAt": 1755060407470,
-    "lastUsed": 1756420528582,
+    "lastUsed": 1756674337343,
     "metadata": {
       "path": "public/ide/static",
       "eventType": "change"
@@ -170,6 +170,34 @@
     "lastUsed": 1754451669179,
     "metadata": {
       "path": "public/ide/static/js/main.db468f99.js.map",
+      "eventType": "change"
+    }
+  },
+  {
+    "id": "1756619454411-du919cp5f",
+    "agentType": "context-builder",
+    "insightType": "file-change",
+    "content": "File public/ide/logo512.png was modified, suggesting active development in general development",
+    "confidence": 0.7,
+    "usageCount": 2,
+    "createdAt": 1756619454410,
+    "lastUsed": 1756619454413,
+    "metadata": {
+      "path": "public/ide/logo512.png",
+      "eventType": "change"
+    }
+  },
+  {
+    "id": "1756480313376-8hp0i0ana",
+    "agentType": "context-builder",
+    "insightType": "file-change",
+    "content": "File src/app.js was modified, suggesting active development in general development",
+    "confidence": 0.7,
+    "usageCount": 1,
+    "createdAt": 1756480313373,
+    "lastUsed": 1756480313373,
+    "metadata": {
+      "path": "src/app.js",
       "eventType": "change"
     }
   },

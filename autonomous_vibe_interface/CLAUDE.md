@@ -1,6 +1,10 @@
-# 🚀 CoderOne IDE - The Claude Code Native Development Environment
+# 🚀 Coder1 IDE - The Claude Code Native Development Environment
 
 ## 📖 **ESSENTIAL READING FOR ALL AI AGENTS**
+
+**🚨 CRITICAL NAMING CONVENTION: The platform name is "Coder1" (with number 1), NOT "CoderOne" or "Coder One"**
+
+**🚨 FIRST PRIORITY: Before ANY IDE work, check `/CURRENT_IDE_STATUS.md` for correct IDE location**
 
 **🚨 CRITICAL: Before working on this project, read `/MASTER_CONTEXT.md` completely**
 
@@ -23,7 +27,7 @@ This document contains:
 
 ## 🎯 Vision & Mission
 
-**CoderOne is the first IDE built specifically for Claude Code and the new generation of vibe coders.**
+**Coder1 is the first IDE built specifically for Claude Code and the new generation of vibe coders.**
 
 We're building an IDE that bridges the gap between AI capabilities and human creativity, making programming accessible to newcomers while providing power features for experienced developers. This isn't just another code editor - it's a collaborative workspace where humans and AI work together seamlessly.
 
@@ -35,7 +39,7 @@ We're building an IDE that bridges the gap between AI capabilities and human cre
 
 ---
 
-## 🌟 What Makes CoderOne Special
+## 🌟 What Makes Coder1 Special
 
 ### For Claude Code Users
 - **Native Integration**: Built from the ground up to work perfectly with Claude Code CLI
@@ -136,7 +140,7 @@ Where the magic happens:
 ## 🏗️ Architecture Overview
 
 ```
-CoderOne Platform
+Coder1 Platform
 ├── 🎨 PRD Generator (Creative Mode)
 │   ├── 5-Question Intelligent Flow
 │   ├── AI Brief Enhancement
@@ -687,9 +691,9 @@ The Error Doctor Service provides AI-powered error analysis and automatic fix su
 
 ## 🎭 The Vibe
 
-CoderOne isn't just about writing code - it's about making coding feel like creative expression. Whether you're a complete beginner taking your first steps or an experienced developer looking for AI amplification, CoderOne meets you where you are.
+Coder1 isn't just about writing code - it's about making coding feel like creative expression. Whether you're a complete beginner taking your first steps or an experienced developer looking for AI amplification, Coder1 meets you where you are.
 
-**Remember**: Every expert was once a beginner. CoderOne makes that journey shorter, more fun, and less intimidating.
+**Remember**: Every expert was once a beginner. Coder1 makes that journey shorter, more fun, and less intimidating.
 
 ---
 

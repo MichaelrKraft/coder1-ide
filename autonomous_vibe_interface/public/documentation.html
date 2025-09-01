@@ -1,0 +1,1184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Documentation - Coder1 IDE</title>
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
+    <meta name="version" content="v2.1.0" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <!-- Cache buster: <?php echo time(); ?> -->
+    <style>
+        :root {
+            --bg-primary: #0a0a0a;
+            --bg-secondary: #1a1a1a;
+            --bg-card: #141414;
+            --text-primary: #ffffff;
+            --text-secondary: #a0a0a0;
+            --text-muted: #666666;
+            --accent-primary: #8b5cf6;
+            --accent-secondary: #06b6d4;
+            --border-color: rgba(139, 92, 246, 0.2);
+            --border-subtle: rgba(255, 255, 255, 0.08);
+            --success: #10b981;
+            --warning: #f59e0b;
+            --info: #3b82f6;
+            --gradient-primary: linear-gradient(135deg, #8b5cf6, #06b6d4);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+
+        /* Grid Background Pattern */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(rgba(139, 92, 246, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(139, 92, 246, 0.03) 1px, transparent 1px);
+            background-size: 50px 50px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* Header - Reduced by 20% from Templates Hub */
+        .header {
+            background: #050505;
+            border: 1px solid rgba(6, 182, 212, 0.2);
+            border-top: none;
+            border-left: none;
+            border-right: none;
+            padding: 19px 0;  /* Reduced by 20% from 24px */
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            backdrop-filter: blur(10px);
+            box-shadow: 
+                0 0 30px rgba(6, 182, 212, 0.3), 
+                0 0 60px rgba(6, 182, 212, 0.1), 
+                inset 0 0 20px rgba(6, 182, 212, 0.05);
+        }
+
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo img {
+            height: 70px;  /* Reduced by 20% from 87px */
+            width: auto;
+            object-fit: contain;
+            margin: -24px 0;  /* Adjusted for new header height */
+        }
+        
+        /* Title styling */
+        .logo-text {
+            font-size: 24px;
+            font-weight: 700;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: -0.5px;
+        }
+
+        .nav-actions {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .search-box {
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: 8px;
+            padding: 10px 16px;
+            color: var(--text-primary);
+            width: 300px;
+            transition: all 0.3s;
+        }
+
+        .search-box:focus {
+            outline: none;
+            border-color: var(--accent-primary);
+            background: var(--bg-secondary);
+        }
+
+        .back-to-ide {
+            background: rgba(6, 182, 212, 0.1);
+            border: 1px solid rgba(6, 182, 212, 0.3);
+            padding: 10px 20px;
+            border-radius: 8px;
+            color: var(--accent-secondary);
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .back-to-ide:hover {
+            background: rgba(6, 182, 212, 0.2);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(6, 182, 212, 0.3);
+        }
+
+        /* Categories Section */
+        .categories-section {
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-subtle);
+            padding: 20px 0;
+            position: sticky;
+            top: 65px;  /* Adjusted for reduced header height */
+            z-index: 99;
+            backdrop-filter: blur(10px);
+        }
+
+        .categories-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        .categories-title {
+            color: var(--text-muted);
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 12px;
+            font-weight: 600;
+        }
+
+        .category-pills {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .category-pill {
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            padding: 10px 20px;
+            border-radius: 24px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .category-pill:hover {
+            background: var(--bg-secondary);
+            border-color: var(--accent-primary);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(139, 92, 246, 0.2);
+        }
+
+        .category-pill.active {
+            background: var(--gradient-primary);
+            border-color: var(--accent-primary);
+            color: white;
+            box-shadow: 0 4px 20px rgba(139, 92, 246, 0.3);
+        }
+
+        .category-count {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        /* Hero Section with Gradient Mesh */
+        .hero-section {
+            position: relative;
+            padding: 40px 0 40px;
+            overflow: hidden;
+            background: #050505;
+            border-bottom: 1px solid rgba(139, 92, 246, 0.2);
+        }
+
+        /* Animated Gradient Mesh Background */
+        .hero-section::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle at 20% 50%, rgba(139, 92, 246, 0.15) 0%, transparent 50%),
+                        radial-gradient(circle at 80% 80%, rgba(6, 182, 212, 0.15) 0%, transparent 50%),
+                        radial-gradient(circle at 40% 20%, rgba(236, 72, 153, 0.1) 0%, transparent 50%),
+                        radial-gradient(circle at 90% 10%, rgba(59, 130, 246, 0.1) 0%, transparent 50%);
+            animation: meshAnimation 20s ease-in-out infinite;
+            z-index: 0;
+        }
+
+        @keyframes meshAnimation {
+            0%, 100% { transform: rotate(0deg) scale(1); }
+            25% { transform: rotate(45deg) scale(1.1); }
+            50% { transform: rotate(90deg) scale(1); }
+            75% { transform: rotate(135deg) scale(1.1); }
+        }
+
+        .hero-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+            position: relative;
+            z-index: 2;
+        }
+
+        /* Hero Header */
+        .hero-header {
+            text-align: center;
+            margin-bottom: 60px;
+            animation: fadeInUp 0.8s ease-out;
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .hero-title {
+            font-size: 56px;
+            font-weight: 800;
+            margin-bottom: 16px;
+            background: linear-gradient(135deg, #8b5cf6 0%, #06b6d4 50%, #ec4899 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            line-height: 1.2;
+            letter-spacing: -1px;
+        }
+
+        .hero-subtitle {
+            font-size: 20px;
+            color: rgba(255, 255, 255, 0.7);
+            max-width: 600px;
+            margin: 0 auto 40px;
+            line-height: 1.6;
+        }
+
+        /* Features Grid - Same as Templates */
+        .features-section {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 60px 20px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+            gap: 24px;
+            perspective: 1500px;
+            transform-style: preserve-3d;
+        }
+
+        /* Feature Cards with 3D Transform Support */
+        .feature-card {
+            background: linear-gradient(180deg, rgba(20, 20, 20, 0.8), rgba(10, 10, 10, 0.9));
+            border: 1px solid var(--border-subtle);
+            border-radius: 16px;
+            padding: 24px;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+            transform-style: preserve-3d;
+            will-change: transform;
+            animation: floatCard 6s ease-in-out infinite;
+            animation-delay: calc(var(--card-index, 0) * 0.1s);
+        }
+
+        @keyframes floatCard {
+            0%, 100% { transform: translateY(0) translateZ(0); }
+            50% { transform: translateY(-8px) translateZ(10px); }
+        }
+
+        .feature-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: var(--gradient-primary);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .feature-card:hover {
+            border-color: var(--accent-primary);
+            box-shadow: 
+                0 20px 60px rgba(139, 92, 246, 0.3),
+                0 30px 80px rgba(6, 182, 212, 0.2),
+                inset 0 0 30px rgba(139, 92, 246, 0.1),
+                0 0 0 1px rgba(139, 92, 246, 0.2);
+            /* Transform will be handled by JavaScript for 3D effect */
+        }
+        
+        /* Ensure 3D transforms work by removing animation conflicts */
+        .feature-card.no-animation {
+            animation: none !important;
+        }
+
+        .feature-card:hover::before {
+            opacity: 1;
+        }
+
+        .feature-card.expanded {
+            background: linear-gradient(135deg, 
+                rgba(139, 92, 246, 0.05) 0%, 
+                rgba(6, 182, 212, 0.05) 100%);
+            border-color: var(--accent-primary);
+        }
+
+        .feature-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 16px;
+        }
+
+        .feature-title-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex: 1;
+        }
+
+        .feature-icon {
+            font-size: 28px;
+            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+        }
+
+        .feature-title {
+            margin: 0;
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .feature-description {
+            color: var(--text-secondary);
+            line-height: 1.6;
+            margin: 0 0 16px 0;
+            font-size: 14px;
+        }
+
+        /* Status Badges */
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 16px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .status-badge.active {
+            background: rgba(16, 185, 129, 0.2);
+            color: #10b981;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .status-badge.experimental {
+            background: rgba(245, 158, 11, 0.2);
+            color: #f59e0b;
+            border: 1px solid rgba(245, 158, 11, 0.3);
+        }
+
+        .status-badge.coming-soon {
+            background: rgba(59, 130, 246, 0.2);
+            color: #3b82f6;
+            border: 1px solid rgba(59, 130, 246, 0.3);
+        }
+
+        /* Feature Details */
+        .feature-details {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border-subtle);
+            animation: slideDown 0.3s ease-out;
+            max-height: 500px;
+            overflow: hidden;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                max-height: 0;
+            }
+            to {
+                opacity: 1;
+                max-height: 500px;
+            }
+        }
+
+        .details-section,
+        .usage-section,
+        .shortcut-section {
+            margin-bottom: 16px;
+        }
+
+        .details-section h4,
+        .usage-section h4,
+        .shortcut-section h4 {
+            margin: 0 0 8px 0;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--accent-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .details-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .details-list li {
+            padding: 8px 0;
+            color: var(--text-secondary);
+            font-size: 14px;
+            line-height: 1.6;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+        }
+
+        .details-list li:last-child {
+            border-bottom: none;
+        }
+
+        .usage-section p {
+            color: var(--text-secondary);
+            font-size: 14px;
+            line-height: 1.6;
+            margin: 0;
+        }
+
+        .shortcut-key {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-subtle);
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 13px;
+            color: var(--accent-primary);
+            display: inline-block;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .header {
+                padding: 16px 0;
+            }
+            
+            .hero-title {
+                font-size: 36px;
+            }
+            
+            .features-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .search-box {
+                width: 200px;
+            }
+        }
+
+        /* Loading State */
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.5;
+            }
+        }
+
+        .loading {
+            animation: pulse 2s ease-in-out infinite;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <!-- Logo removed per user request -->
+            <div class="nav-actions">
+                <input type="text" class="search-box" placeholder="Search features..." id="searchInput">
+                <a href="http://localhost:3002/ide" class="back-to-ide">
+                    <i class="fas fa-arrow-left"></i>
+                    Back to IDE
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Categories -->
+    <section class="categories-section">
+        <div class="categories-container">
+            <div class="categories-title">Categories</div>
+            <div class="category-pills">
+                <div class="category-pill active" data-category="all">
+                    All
+                    <span class="category-count" id="count-all">0</span>
+                </div>
+                <div class="category-pill" data-category="getting-started">
+                    Getting Started
+                    <span class="category-count" id="count-getting-started">0</span>
+                </div>
+                <div class="category-pill" data-category="ai-features">
+                    AI Features
+                    <span class="category-count" id="count-ai-features">0</span>
+                </div>
+                <div class="category-pill" data-category="advanced-usage">
+                    Advanced Usage
+                    <span class="category-count" id="count-advanced-usage">0</span>
+                </div>
+                <div class="category-pill" data-category="troubleshooting">
+                    Troubleshooting
+                    <span class="category-count" id="count-troubleshooting">0</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Hero Section -->
+    <section class="hero-section">
+        <div class="hero-container">
+            <div class="hero-header">
+                <h1 class="hero-title">Coder1 Documentation</h1>
+                <p class="hero-subtitle">Complete guide to the Claude Code native development environment</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="features-section">
+        <div class="features-grid" id="featuresGrid">
+            <!-- Features will be rendered here by JavaScript -->
+        </div>
+    </section>
+
+    <script>
+        // Test basic JavaScript execution
+        console.log('🔥 JavaScript loading started...');
+        
+        // Documentation sections data
+        const DOCUMENTATION = [
+            // Getting Started
+            {
+                id: 'quick-start',
+                title: 'Quick Start Guide',
+                icon: '🚀',
+                category: 'Getting Started',
+                categorySlug: 'getting-started',
+                description: 'Get up and running with Coder1 IDE in minutes',
+                details: [
+                    '1. Open your browser to http://localhost:3000/ide',
+                    '2. Click "New File" or press Ctrl+N to create your first file',
+                    '3. Start typing - Monaco editor provides full VSCode experience',
+                    '4. Use the terminal below to run commands and activate AI assistance',
+                    '5. Click "Session Summary" in status bar when done to save your progress'
+                ],
+                usage: 'Coder1 IDE launches with a dark theme and intuitive interface. The editor takes up 70% of the screen with terminal below. Start coding immediately with full syntax highlighting and IntelliSense support.',
+                status: 'active'
+            },
+            {
+                id: 'interface-overview',
+                title: 'Interface Overview',
+                icon: '🖥️',
+                category: 'Getting Started',
+                categorySlug: 'getting-started',
+                description: 'Understanding the Coder1 IDE layout and components',
+                details: [
+                    '📁 Left Panel: File Explorer with project navigation',
+                    '💻 Center Panel: Monaco Editor + Terminal (resizable split)',
+                    '🔍 Right Panel: Preview, Agent Dashboard, and tools',
+                    '📋 Menu Bar: File, Edit, View, Run, Help, Settings menus',
+                    '📊 Status Bar: File info, connection status, Session Summary button',
+                    '🎛️ Resize Handle: Drag between editor and terminal to adjust heights'
+                ],
+                usage: 'The interface is optimized for AI-assisted development. Terminal is prominently featured (52% height by default) to encourage CLI interaction. All panels are resizable to fit your workflow.',
+                status: 'active'
+            },
+            {
+                id: 'keyboard-shortcuts',
+                title: 'Essential Keyboard Shortcuts',
+                icon: '⌨️',
+                category: 'Getting Started',
+                categorySlug: 'getting-started',
+                description: 'Master the most important shortcuts for efficient coding',
+                details: [
+                    'Ctrl+N - New File',
+                    'Ctrl+O - Open File',
+                    'Ctrl+S - Save File',
+                    'Ctrl+` - Toggle Terminal',
+                    'Ctrl+Shift+E - Toggle File Explorer',
+                    'F5 - Run Code',
+                    'Ctrl+= / Ctrl+- - Zoom In/Out',
+                    'Ctrl+0 - Reset Zoom'
+                ],
+                usage: 'Access the complete shortcuts list via Help → Keyboard Shortcuts or press the shortcuts button in settings. Shortcuts are Mac-aware (⌘ replaces Ctrl on macOS).',
+                shortcut: 'Help → Keyboard Shortcuts',
+                status: 'active'
+            },
+            // AI Features
+            {
+                id: 'claude-integration',
+                title: 'Claude Code CLI Integration',
+                icon: '🤖',
+                category: 'AI Features',
+                categorySlug: 'ai-features',
+                description: 'Native integration with Claude Code for seamless AI assistance',
+                details: [
+                    'Simply type "claude" in the terminal to activate AI assistance',
+                    'AI supervision automatically detects when you need help',
+                    'Context-aware suggestions based on your current files and terminal history',
+                    'Session intelligence maintains conversation context across interactions',
+                    'Smart handoffs between human coding and AI assistance'
+                ],
+                usage: 'The IDE automatically detects when Claude Code CLI is active. All terminal output, file changes, and editor context are available to Claude for intelligent assistance.',
+                status: 'active'
+            },
+            {
+                id: 'session-summary',
+                title: 'Session Summary Generator',
+                icon: '📋',
+                category: 'AI Features',
+                categorySlug: 'ai-features',
+                description: 'Generate comprehensive session handoff documents',
+                details: [
+                    'Click "Session Summary" button in the status bar',
+                    'AI analyzes all files opened, terminal commands executed, and changes made',
+                    'Creates detailed handoff document with problems encountered and solutions',
+                    'Export to Markdown, JSON, or HTML formats',
+                    'Perfect for "Claude, continue where I left off" scenarios'
+                ],
+                usage: 'The Session Summary feature tracks your entire development session and creates comprehensive documentation for seamless handoffs between coding sessions.',
+                status: 'active'
+            },
+            {
+                id: 'ai-supervision',
+                title: 'AI Supervision Mode',
+                icon: '👁️',
+                category: 'AI Features',
+                categorySlug: 'ai-features',
+                description: 'Real-time AI monitoring and proactive assistance',
+                details: [
+                    'Automatically activates when you type "claude" in terminal',
+                    'Monitors file changes, terminal output, and editing patterns',
+                    'Provides proactive suggestions and help before you ask',
+                    'Context-aware assistance based on your current project',
+                    'Privacy-focused local processing where possible'
+                ],
+                usage: 'AI Supervision runs in the background and becomes active when AI assistance is detected. It provides intelligent context and proactive help throughout your coding session.',
+                status: 'active'
+            },
+            {
+                id: 'settings-management',
+                title: 'Settings & Customization',
+                icon: '⚙️',
+                category: 'AI Features',  
+                categorySlug: 'ai-features',
+                description: 'Comprehensive IDE customization and preferences',
+                details: [
+                    'Click the gear icon next to Help menu to open Settings',
+                    'General: Theme, auto-save, and delay settings',
+                    'Editor: Font size, tab size, word wrap, minimap, line numbers',
+                    'Terminal: Font size, font family, scrollback lines',
+                    'AI: Enable/disable supervision, AI suggestions, API key management'
+                ],
+                usage: 'Access Settings via the gear icon in the menu bar. All settings are saved locally and persist between sessions. Real-time preview of changes.',
+                status: 'active'
+            },
+
+            // Advanced Usage
+            {
+                id: 'monaco-editor',
+                title: 'Monaco Editor Features',
+                icon: '💻',
+                category: 'Advanced Usage',
+                categorySlug: 'advanced-usage',
+                description: 'VSCode-quality editing with AI optimization',
+                details: [
+                    '890px optimized width for maximum coding space',
+                    'Syntax highlighting for 100+ programming languages',
+                    'IntelliSense auto-completion and error detection',
+                    'Multi-cursor editing and advanced selection',
+                    'Tokyo Night theme optimized for long coding sessions',
+                    'Code folding, minimap, and advanced search/replace'
+                ],
+                usage: 'The Monaco Editor provides a full VSCode editing experience. All standard editor features are available, optimized for AI-assisted development workflows.',
+                status: 'active'
+            },
+            {
+                id: 'terminal-integration',
+                title: 'Advanced Terminal System',
+                icon: '🖥️',
+                category: 'Advanced Usage',
+                categorySlug: 'advanced-usage',
+                description: 'Full PTY terminal with AI supervision capabilities',
+                details: [
+                    '107 columns optimized width for readability',
+                    'Full PTY support with SafePtyManager for security',
+                    'WebSocket real-time communication with backend',
+                    'Session persistence across browser refreshes',
+                    'Resizable height - drag the handle between editor and terminal',
+                    'AI control buttons in terminal header for quick access'
+                ],
+                usage: 'The terminal provides complete shell access with AI supervision. Use it for running commands, starting development servers, and interacting with Claude Code CLI.',
+                status: 'active'
+            },
+            {
+                id: 'file-management',
+                title: 'File & Project Management',
+                icon: '📁',
+                category: 'Advanced Usage',
+                categorySlug: 'advanced-usage',
+                description: 'Efficient project organization and file operations',
+                details: [
+                    'Left panel Explorer shows your project file tree',
+                    'Click any file to open it in the Monaco editor',
+                    'Files auto-save to localStorage for demo purposes',
+                    'Use File menu for New, Open, Save, and Save As operations',
+                    'Session tracks all opened files for summary generation',
+                    'Support for all major programming languages'
+                ],
+                usage: 'Navigate projects using the file explorer or keyboard shortcuts. The IDE remembers your open files and session state for seamless workflow continuation.',
+                status: 'active'
+            },
+            {
+                id: 'theme-customization',
+                title: 'Themes & Visual Customization',
+                icon: '🎨',
+                category: 'Advanced Usage',
+                categorySlug: 'advanced-usage',
+                description: 'Personalize your development environment',
+                details: [
+                    'Tokyo Night theme optimized for long coding sessions',
+                    'Customizable font sizes for both editor and terminal',
+                    'Adjustable panel layouts with resizable splits',
+                    'Dark theme reduces eye strain during extended use',
+                    'Settings persist across browser sessions',
+                    'Professional color scheme designed for readability'
+                ],
+                usage: 'Access customization options through Settings (gear icon) or View menu. All changes are saved locally and take effect immediately.',
+                status: 'active'
+            },
+
+            // Troubleshooting
+            {
+                id: 'common-issues',
+                title: 'Common Issues & Solutions',
+                icon: '🔧',
+                category: 'Troubleshooting',
+                categorySlug: 'troubleshooting',
+                description: 'Quick fixes for the most common problems',
+                details: [
+                    'Terminal not responding: Refresh the page or restart the server',
+                    'Monaco editor not loading: Clear browser cache and reload',
+                    'AI features not working: Check console for API key errors',
+                    'Session Summary empty: Ensure you have terminal history and open files',
+                    'Settings not saving: Check browser localStorage permissions',
+                    'File operations failing: Verify you have proper file permissions'
+                ],
+                usage: 'Most issues can be resolved with a browser refresh. Check the browser console (F12) for detailed error messages and diagnostic information.',
+                status: 'active'
+            },
+            {
+                id: 'api-configuration',
+                title: 'API Keys & Configuration',
+                icon: '🔑',
+                category: 'Troubleshooting',
+                categorySlug: 'troubleshooting',
+                description: 'Setting up AI services and API access',
+                details: [
+                    'Claude API: Set ANTHROPIC_API_KEY in Settings → AI tab',
+                    'Use format: sk-ant-api03-... (NOT OAuth tokens)',
+                    'OpenAI API: Optional fallback, set in same AI settings',
+                    'API keys are stored locally in browser localStorage',
+                    'Keys are required for AI Supervision and Session Summary',
+                    'Never share or commit API keys to version control'
+                ],
+                usage: 'Configure API keys through Settings → AI tab. Test connectivity using the Session Summary feature to verify keys are working correctly.',
+                status: 'active'
+            },
+            {
+                id: 'performance-optimization',
+                title: 'Performance & Optimization',
+                icon: '⚡',
+                category: 'Troubleshooting',
+                categorySlug: 'troubleshooting',
+                description: 'Optimizing IDE performance for best experience',
+                details: [
+                    'Close unused browser tabs to free up memory',
+                    'Use Chrome or Firefox for best Monaco editor performance',
+                    'Clear browser cache if IDE feels sluggish',
+                    'Limit terminal history length in Settings for better performance',
+                    'Monaco editor performs best with files under 10MB',
+                    'Consider using localhost instead of network addresses'
+                ],
+                usage: 'Monitor performance using browser DevTools. The IDE is optimized for modern browsers and should run smoothly on most systems.',
+                status: 'active'
+            },
+            {
+                id: 'browser-compatibility',
+                title: 'Browser Compatibility',
+                icon: '🌐',
+                category: 'Troubleshooting',
+                categorySlug: 'troubleshooting',
+                description: 'Supported browsers and compatibility notes',
+                details: [
+                    '✅ Chrome 90+ (Recommended) - Full feature support',
+                    '✅ Firefox 88+ - Full support with minor styling differences',
+                    '✅ Safari 14+ - Good support, some WebSocket limitations',
+                    '✅ Edge 90+ - Full support, same as Chrome',
+                    '❌ Internet Explorer - Not supported',
+                    'Modern JavaScript features required for Monaco editor'
+                ],
+                usage: 'For the best experience, use Chrome or Firefox. Safari works well but may have occasional WebSocket reconnection delays.',
+                status: 'active'
+            }
+        ];
+
+        let currentCategory = 'all';
+        let searchQuery = '';
+        let expandedSection = null;
+
+        // Initialize the page
+        function init() {
+            try {
+                console.log('🚀 Initializing documentation page...');
+                console.log('📊 Total documentation sections:', DOCUMENTATION.length);
+                console.log('🔍 Current category:', currentCategory);
+                console.log('🔎 Search query:', searchQuery);
+                
+                // Add immediate feedback
+                const grid = document.getElementById('featuresGrid');
+                if (!grid) {
+                    console.error('❌ Documentation grid element not found!');
+                    return;
+                }
+                
+                // Test with simple content first
+                grid.innerHTML = '<div style="color: white; padding: 20px;">✅ JavaScript is working! Loading ' + DOCUMENTATION.length + ' documentation sections...</div>';
+                
+                // Delay the real rendering to ensure DOM is ready
+                setTimeout(function() {
+                    console.log('🎬 Starting main rendering process...');
+                    renderDocumentation();
+                    updateCategoryCounts();
+                    bindEventListeners();
+                }, 100);
+            } catch (error) {
+                console.error('❌ Error during initialization:', error);
+            }
+        }
+
+        // Bind event listeners
+        function bindEventListeners() {
+            // Search functionality
+            document.getElementById('searchInput').addEventListener('input', (e) => {
+                searchQuery = e.target.value.toLowerCase();
+                renderDocumentation();
+            });
+
+            // Category filter functionality
+            document.querySelectorAll('.category-pill').forEach(pill => {
+                pill.addEventListener('click', (e) => {
+                    // Remove active class from all pills
+                    document.querySelectorAll('.category-pill').forEach(p => p.classList.remove('active'));
+                    // Add active class to clicked pill
+                    e.currentTarget.classList.add('active');
+                    
+                    currentCategory = e.currentTarget.dataset.category;
+                    renderDocumentation();
+                });
+            });
+        }
+
+        // Filter documentation sections based on search and category
+        function getFilteredDocumentation() {
+            return DOCUMENTATION.filter(section => {
+                const matchesSearch = searchQuery === '' || 
+                    section.title.toLowerCase().includes(searchQuery) ||
+                    section.description.toLowerCase().includes(searchQuery) ||
+                    section.details.some(d => d.toLowerCase().includes(searchQuery));
+                
+                const matchesCategory = currentCategory === 'all' || section.categorySlug === currentCategory;
+                
+                return matchesSearch && matchesCategory;
+            });
+        }
+
+        // Render documentation grid
+        function renderDocumentation() {
+            try {
+                const filteredSections = getFilteredDocumentation();
+                const grid = document.getElementById('featuresGrid');
+                console.log('Rendering documentation...', filteredSections.length, 'sections found');
+                console.log('Grid element:', grid);
+                
+                if (!grid) {
+                    console.error('Grid element not found during render!');
+                    return;
+                }
+                
+                if (filteredSections.length === 0) {
+                    grid.innerHTML = '<div style="color: white; padding: 20px; text-align: center;">No documentation sections found matching current criteria.</div>';
+                    return;
+                }
+            
+            // Build HTML for documentation sections using safer string concatenation
+            const sectionsHTML = filteredSections.map(function(section, index) {
+                const isExpanded = expandedSection === section.id;
+                const statusBadge = getStatusBadge(section.status);
+                
+                let html = '<div class="feature-card';
+                if (isExpanded) html += ' expanded';
+                html += '" data-feature-id="' + section.id + '" style="--card-index: ' + index + '" onclick="toggleSection(\'' + section.id + '\')">';
+                
+                // Header
+                html += '<div class="feature-header">';
+                html += '<div class="feature-title-row">';
+                html += '<span class="feature-icon">' + section.icon + '</span>';
+                html += '<h3 class="feature-title">' + section.title.replace(/'/g, '&apos;').replace(/"/g, '&quot;') + '</h3>';
+                html += '</div>';
+                html += statusBadge;
+                html += '</div>';
+                
+                // Description
+                html += '<p class="feature-description">' + section.description.replace(/'/g, '&apos;').replace(/"/g, '&quot;') + '</p>';
+                
+                // Expanded details
+                if (isExpanded) {
+                    html += '<div class="feature-details">';
+                    html += '<div class="details-section">';
+                    html += '<h4>Details</h4>';
+                    html += '<ul class="details-list">';
+                    for (let i = 0; i < section.details.length; i++) {
+                        html += '<li>' + section.details[i].replace(/'/g, '&apos;').replace(/"/g, '&quot;') + '</li>';
+                    }
+                    html += '</ul>';
+                    html += '</div>';
+                    
+                    html += '<div class="usage-section">';
+                    html += '<h4>How to Use</h4>';
+                    html += '<p>' + section.usage.replace(/'/g, '&apos;').replace(/"/g, '&quot;') + '</p>';
+                    html += '</div>';
+                    
+                    if (section.shortcut) {
+                        html += '<div class="shortcut-section">';
+                        html += '<h4>Keyboard Shortcut</h4>';
+                        html += '<span class="shortcut-key">' + section.shortcut + '</span>';
+                        html += '</div>';
+                    }
+                    html += '</div>';
+                }
+                
+                html += '</div>';
+                return html;
+            });
+            
+            grid.innerHTML = sectionsHTML.join('');
+            console.log('✅ Documentation rendered successfully! Generated', sectionsHTML.length, 'cards');
+            
+            // Initialize 3D card effects after rendering with better timing
+            setTimeout(() => {
+                console.log('🚀 Starting 3D effects initialization...');
+                init3DCardEffects();
+            }, 150);
+            
+            } catch (error) {
+                console.error('Error rendering documentation:', error);
+                const grid = document.getElementById('featuresGrid');
+                if (grid) {
+                    grid.innerHTML = '<div style="color: red; padding: 20px;">Error loading documentation: ' + error.message + '</div>';
+                }
+            }
+        }
+
+        // Toggle section expansion
+        function toggleSection(sectionId) {
+            expandedSection = expandedSection === sectionId ? null : sectionId;
+            renderDocumentation();
+        }
+
+        // Get status badge HTML
+        function getStatusBadge(status) {
+            // Removed status badges per user request
+            return '';
+        }
+
+        // 3D Card Rotation Effect for Feature Cards
+        function init3DCardEffects() {
+            try {
+                console.log('🎯 Initializing 3D card effects...');
+                const cards = document.querySelectorAll('.feature-card');
+                console.log('🎯 Found', cards.length, 'feature cards');
+                
+                if (cards.length === 0) {
+                    console.warn('⚠️ No feature cards found for 3D effects');
+                    return;
+                }
+                
+                cards.forEach((card, index) => {
+                    console.log('🎯 Adding 3D effects to card', index, card.dataset.featureId);
+                    
+                    // Remove any existing 3D event listeners to prevent duplicates
+                    card.removeEventListener('mousemove', card._3dMouseMove);
+                    card.removeEventListener('mouseleave', card._3dMouseLeave);
+                    
+                    // Create mouse move handler for 3D rotation
+                    const mouseMoveHandler = (e) => {
+                        const rect = card.getBoundingClientRect();
+                        const centerX = rect.left + rect.width / 2;
+                        const centerY = rect.top + rect.height / 2;
+                        
+                        // Calculate rotation based on mouse position
+                        const mouseX = e.clientX - centerX;
+                        const mouseY = e.clientY - centerY;
+                        
+                        // Calculate rotation angles (limited to -10 to 10 degrees)
+                        const rotateX = (mouseY / (rect.height / 2)) * -10;
+                        const rotateY = (mouseX / (rect.width / 2)) * 10;
+                        
+                        // Disable floating animation during 3D transform
+                        card.classList.add('no-animation');
+                        
+                        // Apply 3D transform with !important override
+                        card.style.setProperty('transform', `
+                            perspective(1500px)
+                            rotateX(${rotateX}deg)
+                            rotateY(${rotateY}deg)
+                            translateY(-8px)
+                            translateZ(25px)
+                            scale(1.05)
+                        `, 'important');
+                        
+                        console.log('🎯 Applied transform to card:', card.dataset.featureId);
+                    };
+                    
+                    // Create mouse leave handler to reset
+                    const mouseLeaveHandler = () => {
+                        card.classList.remove('no-animation');
+                        card.style.removeProperty('transform');
+                        console.log('🎯 Reset transform for card:', card.dataset.featureId);
+                    };
+                    
+                    // Store references to handlers for cleanup
+                    card._3dMouseMove = mouseMoveHandler;
+                    card._3dMouseLeave = mouseLeaveHandler;
+                    
+                    // Add event listeners (without interfering with onclick)
+                    card.addEventListener('mousemove', mouseMoveHandler);
+                    card.addEventListener('mouseleave', mouseLeaveHandler);
+                });
+                
+                console.log('✅ 3D card effects initialized successfully');
+            } catch (error) {
+                console.error('❌ Error initializing 3D card effects:', error);
+            }
+        }
+
+        // Update category counts
+        function updateCategoryCounts() {
+            const categoryCounts = {
+                'all': DOCUMENTATION.length,
+                'getting-started': 0,
+                'ai-features': 0,
+                'advanced-usage': 0,
+                'troubleshooting': 0
+            };
+
+            DOCUMENTATION.forEach(section => {
+                const slug = section.categorySlug;
+                if (categoryCounts[slug] !== undefined) {
+                    categoryCounts[slug]++;
+                }
+            });
+
+            // Update UI
+            Object.keys(categoryCounts).forEach(category => {
+                const countElement = document.getElementById(`count-${category}`);
+                if (countElement) {
+                    countElement.textContent = categoryCounts[category];
+                }
+            });
+        }
+
+        // Initialize when DOM is loaded
+        console.log('🔥 About to add DOMContentLoaded listener...');
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🔥 DOMContentLoaded fired!');
+            init();
+        });
+        console.log('🔥 JavaScript file loaded completely!');
+        
+        // Add a visual test for 3D effects
+        setTimeout(() => {
+            console.log('🔍 Running visual test...');
+            const testCard = document.querySelector('.feature-card');
+            if (testCard) {
+                console.log('✅ Found test card:', testCard);
+                console.log('🎮 Testing 3D transform...');
+                
+                // Add dramatic test transform
+                testCard.classList.add('no-animation');
+                testCard.style.setProperty('transform', 'perspective(1500px) rotateY(25deg) rotateX(10deg) translateZ(50px) scale(1.1)', 'important');
+                testCard.style.setProperty('border', '3px solid #00ff00', 'important'); // Green border for visibility
+                
+                setTimeout(() => {
+                    testCard.classList.remove('no-animation');
+                    testCard.style.removeProperty('transform');
+                    testCard.style.removeProperty('border');
+                    console.log('🎮 3D test complete - card should have been visibly tilted with green border');
+                }, 3000);
+            } else {
+                console.log('❌ No feature cards found for test');
+            }
+        }, 3000);
+    </script>
+</body>
+</html>

@@ -21,6 +21,208 @@ Claude Agents: This is the OFFICIAL version - do not modify copies elsewhere
     <link rel="stylesheet" href="product-creation-hub.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 350px 350px;
+            gap: var(--space-6);
+            margin-top: var(--space-8);
+        }
+        
+        .left-column {
+            min-height: 600px;
+        }
+        
+        .chat-container {
+            padding: var(--space-6);
+            min-height: 500px;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .chat-header {
+            margin-bottom: var(--space-5);
+            padding-bottom: var(--space-3);
+            border-bottom: 1px solid var(--glass-border);
+        }
+        
+        .chat-header h2 {
+            color: var(--text-primary);
+            font-size: var(--font-size-xl);
+            font-weight: var(--font-weight-semibold);
+            margin: 0;
+        }
+        
+        .creation-panel {
+            padding: var(--space-6);
+            min-height: 300px;
+        }
+        
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--space-5);
+            padding-bottom: var(--space-3);
+            border-bottom: 1px solid var(--glass-border);
+        }
+        
+        .panel-header h3 {
+            color: var(--text-primary);
+            font-size: var(--font-size-lg);
+            font-weight: var(--font-weight-medium);
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
+        }
+        
+        .panel-header i {
+            color: var(--accent-primary);
+        }
+        
+        .message {
+            margin-bottom: var(--space-4);
+            padding: var(--space-4);
+            border-radius: var(--radius-md);
+            transition: all var(--duration-base) var(--ease-out);
+        }
+        
+        .assistant-message {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+        }
+        
+        .message-content p {
+            color: var(--text-secondary);
+            margin: 0;
+            line-height: var(--line-height-base);
+        }
+        
+        .input-wrapper {
+            padding: var(--space-4);
+        }
+        
+        .input-wrapper textarea {
+            width: 100%;
+            background: var(--bg-secondary);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-base);
+            padding: var(--space-3);
+            color: var(--text-primary);
+            font-family: var(--font-family-primary);
+            resize: vertical;
+            min-height: 60px;
+        }
+        
+        .input-wrapper textarea:focus {
+            outline: none;
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.2);
+        }
+        
+        .send-btn {
+            margin-top: var(--space-3);
+            padding: var(--space-2) var(--space-4);
+        }
+        
+        .website-selector {
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
+        }
+        
+        .website-selector label {
+            color: var(--text-secondary);
+            font-size: var(--font-size-sm);
+            white-space: nowrap;
+        }
+        
+        .website-selector input {
+            padding: var(--space-2) var(--space-3);
+            background: var(--bg-secondary);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-base);
+            color: var(--text-primary);
+            font-family: var(--font-family-primary);
+            font-size: var(--font-size-sm);
+        }
+        
+        .set-website-btn {
+            padding: var(--space-2);
+            background: var(--accent-primary);
+            border: none;
+            border-radius: var(--radius-base);
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: all var(--duration-base) var(--ease-out);
+        }
+        
+        .set-website-btn:hover {
+            background: var(--accent-secondary);
+            transform: scale(1.05);
+        }
+        
+        .theme-toggle {
+            padding: var(--space-2);
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-base);
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: all var(--duration-base) var(--ease-out);
+        }
+        
+        .theme-toggle:hover {
+            background: var(--glass-hover);
+            border-color: var(--accent-primary);
+        }
+        
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: var(--space-1);
+        }
+        
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--success);
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .status-text {
+            color: var(--text-secondary);
+            font-size: var(--font-size-sm);
+        }
+        
+        /* Responsive design */
+        @media (max-width: 1200px) {
+            .main-content {
+                grid-template-columns: 1fr;
+                gap: var(--space-5);
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .coder1-header-content {
+                grid-template-columns: 1fr;
+                gap: var(--space-3);
+                text-align: center;
+            }
+            
+            .coder1-header-actions {
+                justify-self: center;
+                flex-wrap: wrap;
+            }
+        }
+    </style>
 </head>
 <body>
     <div class="animated-background">
@@ -886,5 +1088,27 @@ Claude Agents: This is the OFFICIAL version - do not modify copies elsewhere
     <script src="js/toast-notifications.js"></script>
     <script src="js/loading-states.js"></script>
     <script src="product-creation-hub.js"></script>
+    
+    <script>
+        // Initialize additional homepage-specific 3D effects
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add 3D effects to buttons
+            const buttons = document.querySelectorAll('.prd-btn, .send-btn, .action-btn');
+            buttons.forEach(btn => {
+                btn.classList.add('coder1-btn', 'coder1-btn-primary');
+            });
+            
+            // Add 3D hover to message elements
+            const messages = document.querySelectorAll('.message');
+            messages.forEach(msg => {
+                msg.classList.add('coder1-card-3d');
+            });
+            
+            // Reinitialize design system for new elements
+            setTimeout(() => {
+                new Coder1DesignSystem();
+            }, 100);
+        });
+    </script>
 </body>
 </html>

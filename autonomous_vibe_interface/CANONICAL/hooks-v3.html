@@ -17,6 +17,8 @@ Claude Agents: This is the OFFICIAL version - do not modify copies elsewhere
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
     <title>AI-Powered Hooks - Version 3</title>
+    <!-- Unified Design System -->
+    <link rel="stylesheet" href="unified-design-system.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
@@ -26,25 +28,12 @@ Claude Agents: This is the OFFICIAL version - do not modify copies elsewhere
             box-sizing: border-box;
         }
 
+        /* Hooks-specific overrides for unified design system */
         :root {
-            --bg-primary: #0a0a0a;
-            --bg-secondary: #1a1a1a;
-            --glass-bg: rgba(255, 255, 255, 0.03);
-            --glass-border: rgba(255, 255, 255, 0.08);
-            --text-primary: #ffffff;
-            --text-secondary: #a0a0a0;
-            --accent-primary: #8b5cf6;
-            --accent-secondary: #06b6d4;
+            /* Inherit from unified design system */
         }
 
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
-            background: var(--bg-primary);
-            color: var(--text-primary);
-            margin: 0;
-            padding: 0;
-            overflow-x: hidden;
-        }
+        /* Body styles inherited from unified design system */
 
         /* Back to IDE Button */
         .back-to-ide-container {
@@ -78,24 +67,24 @@ Claude Agents: This is the OFFICIAL version - do not modify copies elsewhere
         }
 
         /* Main Content */
-        .container {
+        .coder1-container {
             max-width: 1400px;
             margin: 0 auto;
-            padding: 2rem;
+            padding: var(--spacing-xl);
         }
 
-        /* Button Styles */
-        .btn {
-            padding: 0.75rem 1.5rem;
-            border-radius: 8px;
-            font-weight: 500;
-            font-size: 0.95rem;
+        /* Button Styles - Enhanced with unified design system */
+        .coder1-btn {
+            padding: var(--spacing-sm) var(--spacing-md);
+            border-radius: var(--border-radius-md);
+            font-weight: var(--font-weight-medium);
+            font-size: var(--font-size-sm);
             cursor: pointer;
-            transition: all 0.3s ease;
+            transition: var(--transition-fast);
             border: none;
             display: inline-flex;
             align-items: center;
-            gap: 0.5rem;
+            gap: var(--spacing-xs);
         }
 
         .btn-primary {
@@ -108,19 +97,19 @@ Claude Agents: This is the OFFICIAL version - do not modify copies elsewhere
             box-shadow: 0 6px 20px rgba(139, 92, 246, 0.4);
         }
 
-        .btn-secondary {
+        .coder1-btn-secondary {
             background: var(--glass-bg);
             color: var(--text-primary);
-            border: 1px solid var(--glass-border);
+            border: var(--glass-border);
             position: relative;
             overflow: hidden;
         }
 
-        .btn-secondary:hover {
-            background: rgba(255, 255, 255, 0.08);
+        .coder1-btn-secondary:hover {
+            background: var(--glass-bg-hover);
             border-color: var(--accent-primary);
             transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(139, 92, 246, 0.3);
+            box-shadow: var(--glow-purple);
         }
 
         /* Purple Glow Effect for Action Section Buttons */
@@ -887,7 +876,7 @@ Claude Agents: This is the OFFICIAL version - do not modify copies elsewhere
 <body>
     <!-- Back to IDE Button -->
     <div class="back-to-ide-container">
-        <a href="/ide" class="back-to-ide-btn">
+        <a href="http://localhost:3001/ide" class="back-to-ide-btn">
             <i class="fas fa-arrow-left"></i>
             Back to IDE
         </a>
@@ -907,7 +896,7 @@ Claude Agents: This is the OFFICIAL version - do not modify copies elsewhere
             
             <div class="feature-cards">
                 <!-- Speed Card -->
-                <div class="feature-card" style="--delay: 0s;">
+                <div class="feature-card coder1-card-3d-enhanced" style="--delay: 0s;">
                     <!-- Card glow effect -->
                     <div class="hero-card-glow"></div>
                     
@@ -941,7 +930,7 @@ Claude Agents: This is the OFFICIAL version - do not modify copies elsewhere
                 </div>
                 
                 <!-- Intelligence Card -->
-                <div class="feature-card" style="--delay: 0.2s;">
+                <div class="feature-card coder1-card-3d-enhanced" style="--delay: 0.2s;">
                     <!-- Card glow effect -->
                     <div class="hero-card-glow"></div>
                     
@@ -975,7 +964,7 @@ Claude Agents: This is the OFFICIAL version - do not modify copies elsewhere
                 </div>
                 
                 <!-- ROI Card -->
-                <div class="feature-card" style="--delay: 0.4s;">
+                <div class="feature-card coder1-card-3d-enhanced" style="--delay: 0.4s;">
                     <!-- Card glow effect -->
                     <div class="hero-card-glow"></div>
                     
@@ -1012,7 +1001,7 @@ Claude Agents: This is the OFFICIAL version - do not modify copies elsewhere
     </div>
 
     <!-- Main Content -->
-    <div class="container">
+    <div class="coder1-container">
         <!-- Action Buttons -->
         <div class="action-section">
             <button class="btn btn-primary" onclick="autoSetupHooks()">
@@ -1339,6 +1328,17 @@ Claude Agents: This is the OFFICIAL version - do not modify copies elsewhere
 
         // Initialize 3D effects when page loads
         document.addEventListener('DOMContentLoaded', init3DEffects);
+    </script>
+    
+    <!-- Unified Design System JavaScript -->
+    <script src="unified-design-system.js"></script>
+    <script>
+        // Initialize unified design system for hooks page
+        document.addEventListener('DOMContentLoaded', () => {
+            // The unified design system will automatically detect .coder1-card-3d-enhanced classes
+            // and apply enhanced mouse tracking effects with the stronger rotation
+            console.log('🎨 Hooks: Design system integration active');
+        });
     </script>
 </body>
 </html>

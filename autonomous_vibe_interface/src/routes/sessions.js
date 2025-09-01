@@ -88,21 +88,94 @@ loadPersistedData();
 setInterval(saveDataToDisk, 30000); // Save every 30 seconds
 
 /**
- * Create a new session
+ * Create a new session with deduplication
  */
 router.post('/', (req, res) => {
     try {
+        const now = Date.now();
+        const DEDUP_WINDOW = 5 * 60 * 1000; // 5 minutes in milliseconds
+        const SESSION_REUSE_WINDOW = 60 * 60 * 1000; // 1 hour for session reuse
+        
+        // Check for IDE sessions that can be reused
+        const isIDESession = req.body.metadata?.ide === true || 
+                           req.body.metadata?.createdFrom === 'coder1-ide';
+        
+        if (isIDESession) {
+            // Find recent IDE sessions that can be reused
+            const recentSessions = Array.from(sessions.values())
+                .filter(session => {
+                    const isRecent = (now - session.updatedAt) < SESSION_REUSE_WINDOW;
+                    const isIDEType = session.metadata?.ide === true || 
+                                    session.metadata?.createdFrom === 'coder1-ide';
+                    const isNotActive = (now - session.updatedAt) > DEDUP_WINDOW;
+                    return isRecent && isIDEType && isNotActive;
+                })
+                .sort((a, b) => b.updatedAt - a.updatedAt);
+            
+            if (recentSessions.length > 0) {
+                // Reuse the most recent session
+                const existingSession = recentSessions[0];
+                existingSession.updatedAt = now;
+                sessions.set(existingSession.id, existingSession);
+                
+                console.log(`♻️ Reusing existing IDE session: ${existingSession.id}`);
+                
+                return res.json({
+                    success: true,
+                    session: existingSession,
+                    reused: true
+                });
+            }
+        }
+        
+        // Check for very recent duplicate sessions (within dedup window)
+        const veryRecentSessions = Array.from(sessions.values())
+            .filter(session => {
+                const timeDiff = now - session.createdAt;
+                const isSameName = session.name === (req.body.name || `Session ${new Date().toLocaleString()}`);
+                const isSameType = (session.metadata?.ide === req.body.metadata?.ide) &&
+                                  (session.metadata?.createdFrom === req.body.metadata?.createdFrom);
+                return timeDiff < DEDUP_WINDOW && isSameType;
+            });
+        
+        if (veryRecentSessions.length > 0) {
+            // Return the existing session instead of creating duplicate
+            const existingSession = veryRecentSessions[0];
+            existingSession.updatedAt = now;
+            
+            console.log(`🔄 Deduplicating session request, returning existing: ${existingSession.id}`);
+            
+            return res.json({
+                success: true,
+                session: existingSession,
+                deduplicated: true
+            });
+        }
+        
+        // Create new session if no reusable session found
         const sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
         const sessionData = {
             id: sessionId,
             name: req.body.name || `Session ${new Date().toLocaleString()}`,
             description: req.body.description || '',
-            createdAt: Date.now(),
-            updatedAt: Date.now(),
+            createdAt: now,
+            updatedAt: now,
             metadata: req.body.metadata || {}
         };
         
         sessions.set(sessionId, sessionData);
+        
+        // Clean up old sessions (older than 7 days)
+        const CLEANUP_AGE = 7 * 24 * 60 * 60 * 1000; // 7 days
+        const staleSessions = Array.from(sessions.entries())
+            .filter(([_, session]) => (now - session.updatedAt) > CLEANUP_AGE);
+        
+        staleSessions.forEach(([sessionId]) => {
+            sessions.delete(sessionId);
+            console.log(`🗑️ Cleaned up stale session: ${sessionId}`);
+        });
+        
+        console.log(`✨ Created new session: ${sessionId}`);
         
         res.json({
             success: true,

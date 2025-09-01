@@ -18,6 +18,13 @@ const os = require('os');
 const terminals = new Map();
 const terminalSessions = new Map();
 
+// Import ErrorPatternMemory for capturing error→fix patterns
+const { ErrorPatternMemory } = require('../services/memory/ErrorPatternMemory');
+const errorMemory = ErrorPatternMemory.getInstance();
+
+// Track terminal context for error capturing
+const terminalContext = new Map();
+
 // Mock terminal for when node-pty isn't available
 class MockTerminal {
     constructor(options) {
@@ -142,9 +149,78 @@ function setupTerminalSocket(io) {
                     isReal: ptyAvailable
                 });
                 
-                // Handle terminal output
-                terminalProcess.onData((data) => {
-                    socket.emit('terminal:data', data);
+                // Initialize context for this terminal
+                terminalContext.set(socket.id, {
+                    lastCommands: [],
+                    workingDirectory: data.cwd || process.env.HOME,
+                    sessionId: socket.id,
+                    currentErrorId: null,
+                    outputBuffer: ''
+                });
+                
+                // Handle terminal output with error detection
+                terminalProcess.onData(async (outputData) => {
+                    socket.emit('terminal:data', outputData);
+                    
+                    // Analyze output for errors
+                    const context = terminalContext.get(socket.id) || {};
+                    context.outputBuffer = (context.outputBuffer + outputData).slice(-1000); // Keep last 1000 chars
+                    
+                    // Detect common error patterns
+                    const errorPatterns = [
+                        /command not found/i,
+                        /permission denied/i,
+                        /cannot find module/i,
+                        /syntaxerror/i,
+                        /typeerror/i,
+                        /referenceerror/i,
+                        /ENOENT/i,
+                        /EACCES/i,
+                        /Error:/i,
+                        /failed/i,
+                        /unable to/i
+                    ];
+                    
+                    const hasError = errorPatterns.some(pattern => pattern.test(outputData));
+                    
+                    if (hasError) {
+                        // Capture the error
+                        const result = await errorMemory.captureError(outputData, {
+                            lastCommands: context.lastCommands,
+                            workingDirectory: context.workingDirectory,
+                            sessionId: socket.id
+                        });
+                        
+                        if (result.matched && result.pattern && result.pattern.solution) {
+                            // Found a matching pattern with solution!
+                            const suggestion = `\n\x1b[33m💡 Memory: This looks similar to a previous error.\x1b[0m\n` +
+                                            `\x1b[32mPrevious fix: ${result.pattern.solution.fix}\x1b[0m\n`;
+                            
+                            // Send suggestion to terminal
+                            setTimeout(() => {
+                                socket.emit('terminal:data', suggestion);
+                            }, 100);
+                            
+                            console.log(`✨ Error pattern matched with confidence: ${result.confidence}`);
+                        } else if (!result.matched) {
+                            // New error, store ID for potential fix capture
+                            context.currentErrorId = result.errorId;
+                            terminalContext.set(socket.id, context);
+                        }
+                    } else if (context.currentErrorId && outputData.length > 2) {
+                        // Check if this might be a fix for the recent error
+                        // Simple heuristic: if no error in output and it's substantial, might be a fix
+                        const possibleFix = context.outputBuffer;
+                        
+                        // Don't capture prompts or empty output as fixes
+                        if (possibleFix.length > 10 && !possibleFix.match(/^\$|^>/)) {
+                            await errorMemory.captureFix(possibleFix, context.currentErrorId, {
+                                sessionId: socket.id
+                            });
+                            context.currentErrorId = null;
+                            terminalContext.set(socket.id, context);
+                        }
+                    }
                 });
                 
                 // Handle terminal exit
@@ -179,6 +255,21 @@ function setupTerminalSocket(io) {
             const terminalProcess = terminals.get(socket.id);
             if (terminalProcess) {
                 try {
+                    // Track commands for context
+                    const context = terminalContext.get(socket.id);
+                    if (context && data.includes('\r')) {
+                        // User pressed enter, likely a command
+                        const command = data.replace(/\r|\n/g, '').trim();
+                        if (command) {
+                            context.lastCommands.push(command);
+                            // Keep only last 10 commands
+                            if (context.lastCommands.length > 10) {
+                                context.lastCommands.shift();
+                            }
+                            terminalContext.set(socket.id, context);
+                        }
+                    }
+                    
                     terminalProcess.write(data);
                 } catch (error) {
                     console.error('Error writing to terminal:', error);
@@ -212,6 +303,7 @@ function setupTerminalSocket(io) {
                 }
                 terminals.delete(socket.id);
                 terminalSessions.delete(socket.id);
+                terminalContext.delete(socket.id); // Clean up context
             }
         });
     });

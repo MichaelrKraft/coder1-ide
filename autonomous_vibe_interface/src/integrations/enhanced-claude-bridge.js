@@ -36,6 +36,9 @@ const { THINKING_MODE_CONFIGS, getThinkingModeConfig } = require('../config/thin
 // Import agent personality loader
 const { AgentPersonalityLoader } = require('../utils/agent-personality-loader');
 
+// Import VectorMemoryEnhancer for RAG context injection
+const { VectorMemoryEnhancer } = require('../services/ai-enhancement/VectorMemoryEnhancer');
+
 class EnhancedClaudeCodeButtonBridge extends ClaudeCodeButtonBridge {
     constructor(options = {}) {
         super(options);
@@ -83,6 +86,9 @@ class EnhancedClaudeCodeButtonBridge extends ClaudeCodeButtonBridge {
         
         this.conversationManager = new ConversationThreadManager();
         this.memorySystem = MemorySystem.getInstance();
+        
+        // Initialize vector memory for RAG
+        this.vectorMemory = VectorMemoryEnhancer.getInstance();
         
         // Initialize proactive intelligence
         this.proactiveIntelligence = new ProactiveIntelligence({
@@ -1422,6 +1428,67 @@ class EnhancedClaudeCodeButtonBridge extends ClaudeCodeButtonBridge {
     async buildEnhancedPrompt(originalPrompt, sessionId, mode) {
         let enhancedPrompt = '';
         
+        // Add vector memory context (RAG)
+        try {
+            const startTime = Date.now();
+            
+            // Search for relevant error patterns if prompt mentions errors
+            const errorKeywords = ['error', 'fail', 'bug', 'issue', 'problem', 'fix', 'broken'];
+            const hasErrorContext = errorKeywords.some(keyword => 
+                originalPrompt.toLowerCase().includes(keyword)
+            );
+            
+            if (hasErrorContext && this.vectorMemory) {
+                const errorPatterns = await this.vectorMemory.searchSimilar('errors', originalPrompt, 3);
+                if (errorPatterns && errorPatterns.length > 0) {
+                    enhancedPrompt += '## 🧠 Memory: Similar Error Patterns\n';
+                    errorPatterns.forEach(pattern => {
+                        if (pattern.metadata && pattern.metadata.solution) {
+                            enhancedPrompt += `- Previous fix: ${pattern.metadata.solution.fix} (confidence: ${(pattern.similarity * 100).toFixed(0)}%)\n`;
+                        }
+                    });
+                    enhancedPrompt += '\n';
+                    console.log(`💡 Injected ${errorPatterns.length} error patterns (${Date.now() - startTime}ms)`);
+                }
+            }
+            
+            // Search for relevant code patterns
+            if (this.vectorMemory) {
+                const codePatterns = await this.vectorMemory.searchSimilar('codePatterns', originalPrompt, 2);
+                if (codePatterns && codePatterns.length > 0) {
+                    enhancedPrompt += '## 📝 Memory: Relevant Code Patterns\n';
+                    codePatterns.forEach(pattern => {
+                        if (pattern.metadata && pattern.metadata.patternName) {
+                            enhancedPrompt += `- ${pattern.metadata.patternName}: ${pattern.metadata.patternData}\n`;
+                        }
+                    });
+                    enhancedPrompt += '\n';
+                }
+            }
+            
+            // Search for relevant insights
+            if (this.vectorMemory) {
+                const insights = await this.vectorMemory.searchSimilar('insights', originalPrompt, 2);
+                if (insights && insights.length > 0) {
+                    enhancedPrompt += '## 💭 Memory: Related Insights\n';
+                    insights.forEach(insight => {
+                        if (insight.metadata && insight.metadata.content) {
+                            enhancedPrompt += `- ${insight.metadata.content}\n`;
+                        }
+                    });
+                    enhancedPrompt += '\n';
+                }
+            }
+            
+            const totalTime = Date.now() - startTime;
+            if (totalTime > 100) {
+                console.log(`⚠️ Vector search took ${totalTime}ms (target: <100ms)`);
+            }
+        } catch (error) {
+            console.error('Vector memory search failed (non-critical):', error);
+            // Continue without vector context - JSON fallback still works
+        }
+        
         // Add project context awareness
         if (this.projectContext && this.projectContext.summary) {
             enhancedPrompt += '## Project Context\n';
@@ -1449,7 +1516,7 @@ class EnhancedClaudeCodeButtonBridge extends ClaudeCodeButtonBridge {
             enhancedPrompt += '\n\n';
         }
         
-        // Add relevant insights from memory
+        // Add relevant insights from memory (JSON fallback)
         const relevantInsights = this.memorySystem.getAgentInsights(mode, null, 3);
         if (relevantInsights.length > 0) {
             enhancedPrompt += '## Relevant Past Insights\n';

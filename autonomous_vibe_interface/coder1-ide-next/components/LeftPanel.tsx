@@ -4,7 +4,6 @@ import React, { useState } from 'react';
 import { FolderTree, Clock } from 'lucide-react';
 import FileExplorer from './FileExplorer';
 import SessionsPanel from './SessionsPanel';
-import DiscoverSection from './DiscoverSection';
 
 interface LeftPanelProps {
   onFileSelect: (path: string) => void;
@@ -105,17 +104,6 @@ export default function LeftPanel({ onFileSelect, activeFile }: LeftPanelProps) 
         )}
       </div>
       
-      {/* Discover Section - Fixed at bottom - ALWAYS VISIBLE */}
-      <div style={{ 
-        flexShrink: 0,
-        flexGrow: 0,
-        flexBasis: 'auto',
-        minHeight: '40px',
-        height: 'auto',
-        display: 'block'
-      }}>
-        <DiscoverSection />
-      </div>
     </div>
   );
 }

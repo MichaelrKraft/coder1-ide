@@ -1,17 +1,17 @@
 {
   "byAgent": {
     "claude-general": {
-      "executions": 16,
-      "successRate": 62.5,
-      "avgDuration": 347842,
+      "executions": 58,
+      "successRate": 58.620689655172406,
+      "avgDuration": 419222.4137931034,
       "totalCost": 0,
-      "lastUsed": "2025-08-29T04:20:38.839Z"
+      "lastUsed": "2025-09-01T02:20:20.469Z"
     }
   },
   "overall": {
-    "totalExecutions": 16,
-    "successRate": 62.5,
-    "avgDuration": 347842,
+    "totalExecutions": 58,
+    "successRate": 58.620689655172406,
+    "avgDuration": 419222.4137931034,
     "totalCost": 0
   }
 }

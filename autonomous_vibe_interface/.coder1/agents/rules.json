@@ -1,0 +1,243 @@
+{
+  "version": "1.0.0",
+  "lastUpdated": "2025-01-29",
+  "description": "Agent collaboration rules and patterns for Coder1 Swarm Intelligence",
+  
+  "collaborationPatterns": {
+    "parallel": {
+      "frontend-backend": {
+        "agents": ["frontend-specialist", "backend-specialist"],
+        "condition": "fullstack project",
+        "description": "Frontend and backend can work simultaneously on different layers"
+      },
+      "testing-documentation": {
+        "agents": ["test-engineer", "documentation-writer"],
+        "condition": "feature complete",
+        "description": "Tests and docs can be created in parallel"
+      },
+      "security-performance": {
+        "agents": ["security-auditor", "performance-optimizer"],
+        "condition": "optimization phase",
+        "description": "Security and performance audits can run concurrently"
+      },
+      "multi-review": {
+        "agents": ["code-reviewer", "security-auditor", "quality-analyst"],
+        "condition": "pre-deployment",
+        "description": "Multiple review agents for comprehensive analysis"
+      }
+    },
+    
+    "sequential": {
+      "design-implement": {
+        "agents": ["architect", "implementer"],
+        "order": "strict",
+        "description": "Architecture must be defined before implementation"
+      },
+      "implement-test": {
+        "agents": ["implementer", "test-engineer"],
+        "order": "strict",
+        "description": "Implementation must complete before testing"
+      },
+      "debug-fix": {
+        "agents": ["debugger", "implementer"],
+        "order": "strict",
+        "description": "Debug analysis before fix implementation"
+      },
+      "refactor-test": {
+        "agents": ["refactoring-expert", "test-engineer"],
+        "order": "strict",
+        "description": "Refactoring requires re-testing"
+      }
+    },
+    
+    "conditional": {
+      "error-response": {
+        "trigger": "error detected",
+        "agents": ["debugger", "error-doctor"],
+        "fallback": "implementer",
+        "description": "Deploy debugging agents on error detection"
+      },
+      "performance-degradation": {
+        "trigger": "performance threshold exceeded",
+        "agents": ["performance-optimizer", "optimizer"],
+        "threshold": {
+          "responseTime": ">2000ms",
+          "memoryUsage": ">80%"
+        }
+      },
+      "security-threat": {
+        "trigger": "vulnerability detected",
+        "agents": ["security-auditor", "security-analyst"],
+        "priority": "immediate",
+        "description": "Immediate security response team"
+      }
+    }
+  },
+  
+  "priorityRules": {
+    "agentPriority": {
+      "critical": ["security-auditor", "debugger", "error-doctor"],
+      "high": ["architect", "implementer", "test-engineer"],
+      "medium": ["optimizer", "code-reviewer", "documentation-writer"],
+      "low": ["refactoring-expert", "i18n-specialist"]
+    },
+    
+    "scenarioPriority": {
+      "production-error": {
+        "priority": 1,
+        "agents": ["debugger", "error-doctor", "implementer"],
+        "override": true
+      },
+      "security-breach": {
+        "priority": 1,
+        "agents": ["security-auditor", "security-analyst"],
+        "override": true
+      },
+      "new-feature": {
+        "priority": 3,
+        "agents": ["architect", "frontend-specialist", "backend-specialist"],
+        "override": false
+      },
+      "optimization": {
+        "priority": 4,
+        "agents": ["optimizer", "performance-optimizer"],
+        "override": false
+      }
+    }
+  },
+  
+  "triggerConditions": {
+    "commandTriggers": {
+      "npm test": ["test-engineer"],
+      "npm run build": ["optimizer", "performance-optimizer"],
+      "git commit": ["commit-specialist"],
+      "npm audit": ["security-auditor"],
+      "npm install": ["dependency-manager"],
+      "deploy": ["devops-engineer", "cloud-architect"]
+    },
+    
+    "fileTriggers": {
+      "*.test.js": ["test-engineer"],
+      "*.spec.ts": ["test-engineer"],
+      "package.json": ["dependency-manager"],
+      "Dockerfile": ["devops-engineer"],
+      "*.sql": ["database-specialist"],
+      "*.css": ["frontend-specialist", "ui-ux-designer"],
+      "api.js": ["api-designer", "backend-specialist"]
+    },
+    
+    "errorTriggers": {
+      "TypeError": ["debugger", "implementer"],
+      "SecurityError": ["security-auditor"],
+      "PerformanceWarning": ["performance-optimizer"],
+      "TestFailure": ["test-engineer", "debugger"],
+      "BuildError": ["devops-engineer", "implementer"]
+    }
+  },
+  
+  "agentConstraints": {
+    "maxConcurrent": 6,
+    "maxPerType": {
+      "reviewer": 3,
+      "implementer": 2,
+      "architect": 1,
+      "debugger": 2
+    },
+    "timeouts": {
+      "default": 300000,
+      "architect": 600000,
+      "test-engineer": 180000,
+      "documentation-writer": 120000
+    },
+    "resourceLimits": {
+      "memoryPerAgent": "512MB",
+      "cpuPerAgent": "25%"
+    }
+  },
+  
+  "presetTeams": {
+    "frontend-trio": {
+      "agents": ["frontend-specialist", "ui-ux-designer", "accessibility-expert"],
+      "description": "Complete frontend development team"
+    },
+    "backend-squad": {
+      "agents": ["backend-specialist", "database-specialist", "api-designer"],
+      "description": "Full backend development team"
+    },
+    "full-stack": {
+      "agents": ["architect", "frontend-specialist", "backend-specialist"],
+      "description": "Complete full-stack team"
+    },
+    "debug-force": {
+      "agents": ["debugger", "error-doctor", "test-engineer"],
+      "description": "Error resolution team"
+    },
+    "security-team": {
+      "agents": ["security-auditor", "security-analyst", "code-reviewer"],
+      "description": "Security audit team"
+    },
+    "optimization-crew": {
+      "agents": ["optimizer", "performance-optimizer", "refactoring-expert"],
+      "description": "Performance optimization team"
+    },
+    "quality-assurance": {
+      "agents": ["test-engineer", "qa-testing", "quality-analyst"],
+      "description": "Complete QA team"
+    },
+    "documentation-team": {
+      "agents": ["documentation-writer", "code-reviewer"],
+      "description": "Documentation and review team"
+    }
+  },
+  
+  "learningRules": {
+    "patternThreshold": 3,
+    "confidenceMinimum": 0.7,
+    "memoryRetention": "30 days",
+    "updateFrequency": "5 minutes",
+    "categories": [
+      "command-sequences",
+      "error-solutions",
+      "workflow-patterns",
+      "agent-effectiveness"
+    ]
+  },
+  
+  "communicationProtocol": {
+    "eventChannels": {
+      "deployment": "agent:deployed",
+      "completion": "agent:completed",
+      "error": "agent:error",
+      "handoff": "agent:handoff",
+      "collaboration": "agent:collaborate"
+    },
+    "messageFormat": {
+      "type": "string",
+      "agentId": "string",
+      "payload": "object",
+      "timestamp": "number",
+      "sessionId": "string"
+    }
+  },
+  
+  "fallbackStrategies": {
+    "agentUnavailable": {
+      "strategy": "use-next-best",
+      "fallbackMap": {
+        "architect": "implementer",
+        "frontend-specialist": "implementer",
+        "backend-specialist": "implementer",
+        "debugger": "error-doctor",
+        "security-auditor": "code-reviewer"
+      }
+    },
+    "timeout": {
+      "strategy": "escalate",
+      "escalationPath": ["retry", "fallback-agent", "manual-intervention"]
+    },
+    "error": {
+      "strategy": "debug-first",
+      "agents": ["debugger", "error-doctor"]
+    }
+  }
+}

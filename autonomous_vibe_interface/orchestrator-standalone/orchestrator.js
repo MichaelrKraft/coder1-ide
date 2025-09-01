@@ -2109,11 +2109,338 @@ document.addEventListener('DOMContentLoaded', () => {
     document.head.appendChild(script);
 });
 
+// ===== TIMELINE ANIMATION CONTROLLER =====
+
+class TimelineAnimationController {
+    constructor() {
+        this.steps = [];
+        this.connectors = [];
+        this.currentStep = -1;
+        this.isPlaying = false;
+        this.isPaused = false;
+        this.animationTimeout = null;
+        this.observer = null;
+        this.hasStarted = false;
+        
+        this.stepNames = [
+            'Discovery',
+            'Team Assembly', 
+            'Collaboration',
+            'Individual Planning',
+            'Plan Synthesis'
+        ];
+        
+        this.stepDescriptions = [
+            'Orchestrator analyzes your requirements',
+            'Assembles 3+ expert AI agents',
+            'Experts discuss and ask questions',
+            'Each expert creates individual plans',
+            'Best ideas combined into final plan'
+        ];
+        
+        this.init();
+    }
+    
+    init() {
+        this.setupElements();
+        this.setupControls();
+        this.setupIntersectionObserver();
+        this.setupClickNavigation();
+        this.checkReducedMotion();
+        this.initializeState();
+    }
+    
+    setupElements() {
+        // Get all step cards
+        this.steps = Array.from(document.querySelectorAll('.step-card')).sort((a, b) => {
+            const aStep = parseInt(a.id.replace('step-', ''));
+            const bStep = parseInt(b.id.replace('step-', ''));
+            return aStep - bStep;
+        });
+        
+        // Get all flow connectors
+        this.connectors = Array.from(document.querySelectorAll('.flow-connector'));
+    }
+    
+    setupControls() {
+        const playBtn = document.getElementById('play-animation');
+        const pauseBtn = document.getElementById('pause-animation');
+        const replayBtn = document.getElementById('replay-animation');
+        
+        if (playBtn) {
+            playBtn.addEventListener('click', () => this.play());
+        }
+        if (pauseBtn) {
+            pauseBtn.addEventListener('click', () => this.pause());
+        }
+        if (replayBtn) {
+            replayBtn.addEventListener('click', () => this.replay());
+        }
+    }
+    
+    setupClickNavigation() {
+        // Allow clicking on step cards to jump to that step
+        this.steps.forEach((step, index) => {
+            step.addEventListener('click', () => {
+                if (!this.isPlaying) {
+                    this.jumpToStep(index);
+                    // Labels are now always visible, no need to show/hide
+                }
+            });
+        });
+    }
+    
+    showStepLabel(stepIndex) {
+        // Labels are now always visible, this method is kept for compatibility
+        // but doesn't need to do anything
+    }
+    
+    setupIntersectionObserver() {
+        const timelineSection = document.querySelector('.process-flow-timeline');
+        if (!timelineSection) return;
+        
+        this.observer = new IntersectionObserver(
+            (entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting && !this.hasStarted) {
+                        // Auto-start animation when timeline becomes visible
+                        setTimeout(() => {
+                            if (!this.hasStarted) {
+                                this.play();
+                            }
+                        }, 500);
+                    }
+                });
+            },
+            { threshold: 0.3 }
+        );
+        
+        this.observer.observe(timelineSection);
+    }
+    
+    initializeState() {
+        // Initialize with first step ready to animate
+        this.reset();
+    }
+    
+    checkReducedMotion() {
+        const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        if (prefersReducedMotion) {
+            // Show all steps as active for accessibility
+            this.steps.forEach((step, index) => {
+                step.classList.add('step-completed');
+                this.activateConnector(index);
+            });
+            this.updateStatus(4, true); // Show final step
+            this.updateProgressBar(100);
+            return;
+        }
+    }
+    
+    play() {
+        if (this.isPlaying && !this.isPaused) return;
+        
+        this.hasStarted = true;
+        this.isPlaying = true;
+        this.isPaused = false;
+        
+        this.updateControlButtons();
+        
+        if (this.currentStep === -1) {
+            // Start from beginning
+            this.currentStep = 0;
+            this.animateStep(0);
+        } else if (this.isPaused) {
+            // Resume from current position
+            this.animateStep(this.currentStep + 1);
+        }
+    }
+    
+    pause() {
+        if (!this.isPlaying) return;
+        
+        this.isPaused = true;
+        this.isPlaying = false;
+        
+        if (this.animationTimeout) {
+            clearTimeout(this.animationTimeout);
+            this.animationTimeout = null;
+        }
+        
+        this.updateControlButtons();
+    }
+    
+    replay() {
+        this.reset();
+        setTimeout(() => this.play(), 100);
+    }
+    
+    reset() {
+        this.isPlaying = false;
+        this.isPaused = false;
+        this.currentStep = -1;
+        this.hasStarted = false;
+        
+        if (this.animationTimeout) {
+            clearTimeout(this.animationTimeout);
+            this.animationTimeout = null;
+        }
+        
+        // Reset all step cards
+        this.steps.forEach(step => {
+            step.classList.remove('step-active', 'step-completed');
+        });
+        
+        // Reset all connectors
+        this.connectors.forEach(connector => {
+            connector.classList.remove('connector-active');
+        });
+        
+        // Reset progress and status
+        this.updateStatus(0);
+        this.updateProgressBar(0);
+        this.updateControlButtons();
+    }
+    
+    jumpToStep(stepIndex) {
+        if (stepIndex < 0 || stepIndex >= this.steps.length) return;
+        
+        // Mark all previous steps as completed
+        for (let i = 0; i <= stepIndex; i++) {
+            this.steps[i].classList.remove('step-active');
+            this.steps[i].classList.add('step-completed');
+            
+            if (i < this.connectors.length) {
+                this.activateConnector(i);
+            }
+        }
+        
+        // Mark future steps as inactive
+        for (let i = stepIndex + 1; i < this.steps.length; i++) {
+            this.steps[i].classList.remove('step-active', 'step-completed');
+        }
+        
+        this.currentStep = stepIndex;
+        this.updateStatus(stepIndex);
+        this.updateProgressBar(((stepIndex + 1) / this.steps.length) * 100);
+    }
+    
+    animateStep(stepIndex) {
+        if (stepIndex >= this.steps.length || this.isPaused) {
+            if (stepIndex >= this.steps.length) {
+                // Animation complete
+                this.isPlaying = false;
+                this.updateControlButtons();
+            }
+            return;
+        }
+        
+        const step = this.steps[stepIndex];
+        this.currentStep = stepIndex;
+        
+        // Remove active from previous step
+        if (stepIndex > 0) {
+            this.steps[stepIndex - 1].classList.remove('step-active');
+            this.steps[stepIndex - 1].classList.add('step-completed');
+            // Hide previous step label
+            const prevLabel = document.getElementById(`label-${stepIndex}`);
+            if (prevLabel) prevLabel.classList.remove('visible');
+        }
+        
+        // Activate current step
+        step.classList.add('step-active');
+        
+        // Labels are always visible now, no need to show them
+        
+        // Activate connector to this step
+        if (stepIndex > 0) {
+            this.activateConnector(stepIndex - 1);
+        }
+        
+        // Update status and progress
+        this.updateStatus(stepIndex);
+        this.updateProgressBar(((stepIndex + 1) / this.steps.length) * 100);
+        
+        // Schedule next step
+        this.animationTimeout = setTimeout(() => {
+            this.animateStep(stepIndex + 1);
+        }, 1500); // 1.5s delay between steps for better visibility with labels
+    }
+    
+    activateConnector(connectorIndex) {
+        const connector = this.connectors.find(c => 
+            c.dataset.connector === `${connectorIndex + 1}-${connectorIndex + 2}`
+        );
+        if (connector) {
+            connector.classList.add('connector-active');
+        }
+    }
+    
+    updateStatus(stepIndex, isComplete = false) {
+        const stepNameEl = document.getElementById('current-step-name');
+        const stepDescEl = document.getElementById('current-step-desc');
+        const stepNumberEl = document.getElementById('current-step-number');
+        
+        if (stepNameEl && stepIndex < this.stepNames.length) {
+            stepNameEl.textContent = this.stepNames[stepIndex];
+        }
+        if (stepDescEl && stepIndex < this.stepDescriptions.length) {
+            stepDescEl.textContent = this.stepDescriptions[stepIndex];
+        }
+        if (stepNumberEl) {
+            stepNumberEl.textContent = stepIndex + 1;
+        }
+    }
+    
+    updateProgressBar(percentage) {
+        const progressBar = document.getElementById('timeline-progress');
+        if (progressBar) {
+            progressBar.style.width = `${percentage}%`;
+        }
+    }
+    
+    updateControlButtons() {
+        const playBtn = document.getElementById('play-animation');
+        const pauseBtn = document.getElementById('pause-animation');
+        const replayBtn = document.getElementById('replay-animation');
+        
+        if (playBtn) {
+            playBtn.style.display = this.isPlaying ? 'none' : 'inline-flex';
+        }
+        if (pauseBtn) {
+            pauseBtn.style.display = this.isPlaying ? 'inline-flex' : 'none';
+        }
+        if (replayBtn) {
+            replayBtn.disabled = !this.hasStarted;
+        }
+    }
+    
+    destroy() {
+        if (this.observer) {
+            this.observer.disconnect();
+        }
+        if (this.animationTimeout) {
+            clearTimeout(this.animationTimeout);
+        }
+    }
+}
+
+// Initialize timeline animation controller when DOM is ready
+let timelineAnimationController = null;
+
+document.addEventListener('DOMContentLoaded', () => {
+    timelineAnimationController = new TimelineAnimationController();
+});
+
 // Cleanup streaming resources when page unloads
 window.addEventListener('beforeunload', () => {
     if (app && typeof app.cleanupStreamingResources === 'function') {
         app.cleanupStreamingResources();
         console.log('[Orchestrator] Streaming resources cleaned up');
+    }
+    
+    if (timelineAnimationController) {
+        timelineAnimationController.destroy();
     }
 });
 

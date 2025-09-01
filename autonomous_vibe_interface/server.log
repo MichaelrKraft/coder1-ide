@@ -1,14 +1,16 @@
-
-> autonomous-vibe-coding-agent@1.0.0 start
-> node --max-old-space-size=512 --expose-gc src/app.js
-
-[dotenv@17.2.1] injecting env (4) from .env.local -- tip: 📡 version env with Radar: https://dotenvx.com/radar
-[dotenv@17.2.1] injecting env (10) from .env -- tip: 📡 auto-backup env with Radar: https://dotenvx.com/radar
+[dotenv@17.2.1] injecting env (3) from .env.local -- tip: 📡 observe env with Radar: https://dotenvx.com/radar
+[dotenv@17.2.1] injecting env (11) from .env -- tip: 📡 auto-backup env with Radar: https://dotenvx.com/radar
 ✅ node-pty loaded successfully
 🎯 Claude File Tracker initialized
 🤖 Claude Code API client initialized
-✅ Memory System: Loaded 204 items from persistent storage
+✅ Memory System: Loaded 207 items from persistent storage
 🧠 Memory System: Initialized at /Users/michaelkraft/autonomous_vibe_interface/.coder1/memory
+🚀 VectorMemoryEnhancer: Initializing...
+🔮 Proactive Intelligence: Initialized and watching for opportunities
+✅ Approval Workflows: Initialized with smart approval system
+🔍 Context Builder: Starting passive project analysis...
+🚀 Enhanced Claude Bridge: All intelligence systems active
+🤖 Claude Code API client initialized
 🔮 Proactive Intelligence: Initialized and watching for opportunities
 ✅ Approval Workflows: Initialized with smart approval system
 🔍 Context Builder: Starting passive project analysis...
@@ -24,9 +26,11 @@
 ✨ PureCode.ai: Advanced fallback client initialized
 ✅ Magic API: React Bits client initialized
 21st Magic: Initializing MCP client...
-🔑 ErrorDoctorService: Using API Key for Anthropic SDK
 [SafePTYManager] Initialized with rate limiting and session management
 [ClaudeInputHandler] Initialized with multiple input strategies
+[ConversationOrchestrator] 🏥 Initializing AI service health monitoring
+🤖 Executing Claude Code CLI...
+📝 Prompt length: 72 characters
 🎭 [ORCHESTRATOR-SINGLETON] Created shared orchestrator instance
 [SafePTYManager] Setting up Socket.IO terminal integration...
 [SafePTYManager] Cleanup scheduled every 30 minutes, sessions timeout after 8 hours of inactivity

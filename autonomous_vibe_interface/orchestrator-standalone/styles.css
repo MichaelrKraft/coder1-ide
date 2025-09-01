@@ -814,120 +814,364 @@ body.light-theme .microphone-btn svg {
   height: 14px;
 }
 
-/* Process Preview */
+/* ===== PROCESS PREVIEW SECTION ===== */
+
 .process-preview {
-  width: 100%;
-  max-width: 900px;
-  margin-bottom: 3rem;
+  background: transparent;
+  border: none;
+  border-radius: 16px;
+  padding: 2rem;
+  margin: 2rem 0;
 }
 
-.process-preview h4 {
-  font-size: 1.3rem;
-  font-weight: 700;
-  color: var(--text-primary);
+.process-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   margin-bottom: 2rem;
 }
 
-/* 2x2 Grid + 1 Centered Layout for Process Steps */
-.process-steps {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1rem;
-  width: 100%;
-  max-width: 900px;
-  margin: 0 auto;
+.process-header h4 {
+  color: var(--text-primary);
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0;
 }
 
-.process-step {
+.animation-controls {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.animation-btn {
+  background: var(--accent-primary);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 0.5rem 1rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
   display: flex;
   align-items: center;
-  gap: 1.5rem;
-  padding: 1.25rem 1.5rem;
-  background: var(--glass-bg);
-  border: 1px solid var(--glass-border);
-  border-radius: 12px;
-  transition: all 0.3s ease;
+  gap: 0.5rem;
+}
+
+.animation-btn:hover {
+  background: var(--accent-secondary);
+  transform: translateY(-1px);
+}
+
+/* ===== HORIZONTAL TIMELINE LAYOUT ===== */
+
+.process-flow-timeline {
   position: relative;
-  overflow: hidden;
-  width: 100%;
-  height: 80px;
-  box-sizing: border-box;
-}
-
-/* Special styling for the 5th box (Plan Synthesis) */
-.process-step:nth-child(5) {
-  grid-column: 1 / -1;
-  justify-self: center;
-  max-width: calc(50% - 0.5rem);
-}
-
-.process-step::before {
-  content: '';
-  position: absolute;
-  inset: -2px;
-  padding: 2px;
-  border-radius: 14px;
-  background: linear-gradient(45deg, transparent, var(--accent-secondary), transparent);
-  background-size: 400% 100%;
-  animation: stepGlow 3s linear infinite;
-  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  -webkit-mask-composite: exclude;
-  mask-composite: exclude;
-  opacity: 0;
-  transition: opacity 0.3s ease;
-  z-index: -1;
-}
-
-.process-step:hover {
-  transform: translateX(4px);
-  border-color: var(--accent-secondary);
-  background: rgba(6, 182, 212, 0.05);
-  box-shadow: 0 4px 20px rgba(6, 182, 212, 0.15);
-}
-
-.process-step:hover::before {
-  opacity: 0.6;
-}
-
-@keyframes stepGlow {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
-}
-
-/* Icon wrapper for professional look */
-.step-icon-wrapper {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 44px;
-  height: 44px;
-  background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
-  border-radius: 10px;
-  flex-shrink: 0;
+  gap: 20px;
+  margin: 2rem 0;
+  padding: 3rem 0 2rem;
+  min-height: 160px;
 }
 
-.step-icon-wrapper svg {
-  color: white;
-}
-
-.step-info {
-  flex: 1;
+.timeline-step {
+  flex: 0 0 auto;
   display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
+  justify-content: center;
+  z-index: 2;
+  position: relative;
 }
 
-.step-title {
-  font-weight: 600;
+.step-card {
+  background: rgba(255, 255, 255, 0.08);
+  border: 2px solid #6a72ed; /* Updated border color */
+  border-radius: 12px;
+  padding: 0.75rem;
+  padding-top: 0.75rem;
+  width: 140px;
+  text-align: center;
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  cursor: pointer;
+  position: relative;
+  overflow: visible;
+  box-shadow: 0 4px 20px rgba(106, 114, 237, 0.15); /* Matching shadow */
+}
+
+.step-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(6, 182, 212, 0.1), transparent);
+  transition: left 0.6s ease;
+}
+
+.step-card:hover::before {
+  left: 100%;
+}
+
+.step-card:hover {
+  transform: translateY(-4px) scale(1.02);
+  border-color: #ff9800; /* Orange on hover */
+  background: rgba(255, 152, 0, 0.08); /* Slight orange background */
+  box-shadow: 0 8px 30px rgba(255, 152, 0, 0.3);
+}
+
+.step-number {
+  display: none; /* Hide all number circles */
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 20px;
+  height: 20px;
+  background: var(--accent-primary);
+  color: white;
+  border-radius: 50%;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  font-weight: 700;
+  box-shadow: 0 2px 8px rgba(6, 182, 212, 0.3);
+}
+
+.step-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+  border-radius: 8px;
+  margin: 0 auto 0.5rem;
+  box-shadow: 0 4px 12px rgba(6, 182, 212, 0.2);
+}
+
+.step-icon svg {
+  color: white;
+  width: 16px;
+  height: 16px;
+}
+
+.step-content h5 {
   color: var(--text-primary);
-  font-size: 1rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  margin: 0 0 0.25rem 0;
+  line-height: 1.2;
 }
 
-.step-description {
-  font-size: 0.85rem;
+.step-content p {
   color: var(--text-secondary);
-  line-height: 1.4;
+  font-size: 0.65rem;
+  line-height: 1.2;
+  margin: 0;
+}
+
+/* Step label that appears above boxes when clicked */
+.step-label {
+  position: absolute;
+  top: -35px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--accent-primary);
+  color: white;
+  padding: 4px 12px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  opacity: 1;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(6, 182, 212, 0.3);
+}
+
+.step-label.visible {
+  opacity: 1;
+}
+
+.step-label::after {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+  border-top: 4px solid var(--accent-primary);
+}
+
+/* ===== FLOW CONNECTORS ===== */
+
+.flow-connector {
+  display: none; /* Completely hide connectors */
+  position: relative;
+  z-index: 1;
+  width: 20px;
+  height: 2px;
+  justify-content: center;
+  align-items: center;
+  margin: 0 -10px;
+}
+
+.connector-line {
+  display: none; /* Hide the line */
+  width: 100%;
+  height: 2px;
+  background: transparent;
+  position: relative;
+  opacity: 0;
+  transition: all 0.4s ease;
+}
+
+.flow-arrow {
+  display: none; /* Hide arrows */
+  position: absolute;
+  right: -10px;
+  top: -5px;
+  color: #9b59b6; /* Purple color */
+  opacity: 0;
+  transition: all 0.3s ease;
+}
+
+/* ===== PROGRESS TIMELINE (Hidden) ===== */
+
+.progress-timeline {
+  display: none; /* Hide the progress line */
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 3px;
+  transform: translateY(-50%);
+  z-index: 0;
+}
+
+.progress-track {
+  width: 100%;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 2px;
+}
+
+.progress-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #ff9800, #ff6b00);
+  border-radius: 2px;
+  transition: width 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 0 10px rgba(255, 152, 0, 0.5);
+}
+
+/* ===== TIMELINE STATUS ===== */
+
+.timeline-status {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 0;
+  margin-top: 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.status-text {
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.status-progress {
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+}
+
+/* ===== ANIMATION STATES ===== */
+
+.step-card.step-active {
+  border-color: #6a72ed; /* Keep new color for active */
+  background: rgba(106, 114, 237, 0.1); /* Matching tint */
+  box-shadow: 0 8px 30px rgba(106, 114, 237, 0.4);
+  transform: translateY(-4px) scale(1.05);
+}
+
+.step-card.step-active:hover {
+  border-color: #ff9800; /* Orange on hover even when active */
+  background: rgba(255, 152, 0, 0.1);
+  box-shadow: 0 8px 30px rgba(255, 152, 0, 0.4);
+}
+
+.step-card.step-active .step-number {
+  display: none; /* Hide the number */
+}
+
+.step-card.step-completed {
+  border-color: rgba(106, 114, 237, 0.8); /* New color for completed */
+  background: rgba(106, 114, 237, 0.05);
+}
+
+.step-card.step-completed:hover {
+  border-color: #ff9800; /* Orange on hover */
+  background: rgba(255, 152, 0, 0.08);
+}
+
+.step-card.step-completed .step-number {
+  display: none; /* Hide the number */
+}
+
+.flow-connector.connector-active .connector-line {
+  display: none; /* Hide even when active */
+  opacity: 0;
+  background: transparent;
+}
+
+.flow-connector.connector-active .flow-arrow {
+  display: none; /* Hide even when active */
+  opacity: 0;
+}
+
+@keyframes pulse-glow {
+  0%, 100% { 
+    box-shadow: 0 2px 8px rgba(6, 182, 212, 0.3); 
+  }
+  50% { 
+    box-shadow: 0 4px 16px rgba(6, 182, 212, 0.6); 
+  }
+}
+
+@keyframes pulse-glow-orange {
+  0%, 100% { 
+    box-shadow: 0 2px 8px rgba(255, 152, 0, 0.3); 
+  }
+  50% { 
+    box-shadow: 0 4px 16px rgba(255, 152, 0, 0.6); 
+  }
+}
+
+@keyframes pulse-glow-purple {
+  0%, 100% { 
+    box-shadow: 0 2px 8px rgba(155, 89, 182, 0.3); 
+  }
+  50% { 
+    box-shadow: 0 4px 16px rgba(155, 89, 182, 0.6); 
+  }
+}
+
+@keyframes arrow-pulse {
+  0%, 100% { 
+    transform: translateX(0); 
+    opacity: 0.8; 
+  }
+  50% { 
+    transform: translateX(3px); 
+    opacity: 1; 
+  }
 }
 
 /* Start Button */
@@ -2454,6 +2698,253 @@ body.light-theme .timer-phase {
 }
 
 /* Accessibility improvements for error states */
+/* ===== ANIMATED STEP REVEAL SYSTEM ===== */
+
+/* Process Header Layout */
+.process-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.process-header h4 {
+  margin: 0;
+}
+
+/* Animation Controls */
+.animation-controls {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.animation-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  color: var(--text-secondary);
+}
+
+.animation-btn:hover {
+  background: rgba(139, 92, 246, 0.1);
+  border-color: var(--accent-primary);
+  color: var(--accent-primary);
+  transform: scale(1.05);
+}
+
+.animation-btn svg {
+  transition: all 0.3s ease;
+}
+
+/* Play/Pause Button States */
+.pause-play-btn .pause-icon {
+  display: none;
+}
+
+.pause-play-btn.playing .play-icon {
+  display: none;
+}
+
+.pause-play-btn.playing .pause-icon {
+  display: block;
+}
+
+/* Animation Progress */
+.animation-progress {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  padding: 0.75rem 1rem;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 8px;
+}
+
+.progress-text {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.step-indicators {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.step-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--glass-border);
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.step-dot.active {
+  background: var(--accent-primary);
+  box-shadow: 0 0 8px rgba(139, 92, 246, 0.4);
+  transform: scale(1.2);
+}
+
+.step-dot:hover {
+  background: var(--accent-secondary);
+  transform: scale(1.1);
+}
+
+/* Step Animation States */
+.step-hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.step-revealing {
+  animation-duration: 0.8s;
+  animation-fill-mode: forwards;
+  animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.step-active {
+  opacity: 1;
+  pointer-events: all;
+  box-shadow: 0 0 20px rgba(139, 92, 246, 0.3);
+  border-color: var(--accent-primary);
+}
+
+.step-active .step-icon-wrapper {
+  animation: iconBounce 0.6s ease-out;
+  box-shadow: 0 0 15px rgba(139, 92, 246, 0.4);
+}
+
+/* Keyframe Animations */
+@keyframes slide-in-left {
+  0% {
+    opacity: 0;
+    transform: translateX(-60px) translateY(0);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0) translateY(0);
+  }
+}
+
+@keyframes slide-in-right {
+  0% {
+    opacity: 0;
+    transform: translateX(60px) translateY(0);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0) translateY(0);
+  }
+}
+
+@keyframes slide-in-bottom {
+  0% {
+    opacity: 0;
+    transform: translateX(0) translateY(60px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0) translateY(0);
+  }
+}
+
+@keyframes slide-in-top {
+  0% {
+    opacity: 0;
+    transform: translateX(0) translateY(-60px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0) translateY(0);
+  }
+}
+
+@keyframes scale-in-center {
+  0% {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.05);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes iconBounce {
+  0%, 20%, 53%, 80%, 100% {
+    transform: translate3d(0, 0, 0);
+  }
+  40%, 43% {
+    transform: translate3d(0, -8px, 0);
+  }
+  70% {
+    transform: translate3d(0, -4px, 0);
+  }
+  90% {
+    transform: translate3d(0, -2px, 0);
+  }
+}
+
+@keyframes stepGlowPulse {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(139, 92, 246, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 30px rgba(139, 92, 246, 0.6);
+  }
+}
+
+/* Animation Classes */
+.slide-in-left {
+  animation-name: slide-in-left;
+}
+
+.slide-in-right {
+  animation-name: slide-in-right;
+}
+
+.slide-in-bottom {
+  animation-name: slide-in-bottom;
+}
+
+.slide-in-top {
+  animation-name: slide-in-top;
+}
+
+.scale-in-center {
+  animation-name: scale-in-center;
+}
+
+/* Responsive Animation Adjustments */
+@media (max-width: 768px) {
+  .animation-progress {
+    flex-direction: column;
+    gap: 0.75rem;
+    text-align: center;
+  }
+  
+  .animation-controls {
+    order: -1;
+  }
+  
+  .step-indicators {
+    justify-content: center;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .message.error,
   .message.timeout,
@@ -2473,4 +2964,76 @@ body.light-theme .timer-phase {
   .confetti-container {
     display: none !important;
   }
+  
+  /* Disable step animations for accessibility */
+  .step-revealing,
+  .step-active .step-icon-wrapper {
+    animation: none !important;
+  }
+  
+  .step-hidden {
+    opacity: 1 !important;
+  }
+  
+  /* Hide animation controls for reduced motion users */
+  .animation-controls {
+    display: none !important;
+  }
+}
+
+/* ===== ANIMATION CONTROL BUTTON STYLES ===== */
+
+/* Control button specific styles */
+#play-animation,
+#pause-animation,
+#replay-animation {
+  transition: all 0.2s ease;
+  border-radius: 6px;
+  font-weight: 500;
+  position: relative;
+  overflow: hidden;
+}
+
+#play-animation:hover,
+#pause-animation:hover,
+#replay-animation:not(:disabled):hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+#pause-animation {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  border-color: #f59e0b;
+}
+
+#pause-animation:hover {
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+}
+
+#replay-animation:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+/* Add subtle animation to buttons */
+.animation-controls button {
+  position: relative;
+  overflow: hidden;
+}
+
+.animation-controls button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s ease;
+}
+
+.animation-controls button:hover::before {
+  left: 100%;
 }

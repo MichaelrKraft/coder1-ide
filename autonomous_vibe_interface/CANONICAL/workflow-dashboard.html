@@ -41,14 +41,14 @@
             margin: 0 auto;
         }
 
-        .header {
+        .coder1-header {
             text-align: center;
-            margin-bottom: 40px;
-            padding: 30px;
-            background: var(--bg-secondary);
-            border-radius: 16px;
-            backdrop-filter: blur(10px);
-            border: 1px solid var(--border-color);
+            margin-bottom: var(--spacing-xl);
+            padding: var(--spacing-lg);
+            background: var(--glass-bg);
+            border-radius: var(--border-radius-lg);
+            backdrop-filter: var(--glass-blur);
+            border: var(--glass-border);
         }
 
         .header h1 {
@@ -72,14 +72,16 @@
             margin-bottom: 40px;
         }
 
-        .workflow-card {
-            background: var(--bg-secondary);
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
-            padding: 25px;
-            transition: all 0.3s ease;
+        .coder1-workflow-card {
+            background: var(--glass-bg);
+            border: var(--glass-border);
+            border-radius: var(--border-radius-lg);
+            padding: var(--spacing-lg);
+            transition: var(--transition-slow);
             position: relative;
             overflow: hidden;
+            transform-style: preserve-3d;
+            will-change: transform;
         }
 
         .workflow-card::before {
@@ -98,10 +100,10 @@
             transform: translateX(0);
         }
 
-        .workflow-card:hover {
-            background: var(--hover-bg);
-            transform: translateY(-2px);
-            box-shadow: 0 10px 30px rgba(6, 182, 212, 0.15);
+        .coder1-workflow-card:hover {
+            background: var(--glass-bg-hover);
+            transform: translateY(-5px) translateZ(20px);
+            box-shadow: var(--glow-cyan), var(--shadow-elevated);
         }
 
         .workflow-icon {
@@ -983,7 +985,7 @@
 
         <div class="workflow-grid">
             <!-- Auto-Healer -->
-            <div class="workflow-card" data-workflow="AutoHealer">
+            <div class="coder1-workflow-card coder1-card-3d" data-workflow="AutoHealer">
                 <span class="workflow-icon"></span>
                 <h3 class="workflow-title">Auto-Healer</h3>
                 <p class="workflow-description">
@@ -1001,7 +1003,7 @@
             </div>
 
             <!-- Time Travel Debugger -->
-            <div class="workflow-card" data-workflow="TimeTravelDebugger">
+            <div class="coder1-workflow-card coder1-card-3d" data-workflow="TimeTravelDebugger">
                 <span class="workflow-icon"></span>
                 <h3 class="workflow-title">Time Travel Debugger</h3>
                 <p class="workflow-description">
@@ -1025,7 +1027,7 @@
             </div>
 
             <!-- AI Pair Programmer -->
-            <div class="workflow-card" data-workflow="AIPairProgrammer">
+            <div class="coder1-workflow-card coder1-card-3d" data-workflow="AIPairProgrammer">
                 <span class="workflow-icon"></span>
                 <h3 class="workflow-title">AI Pair Programmer</h3>
                 <p class="workflow-description">
@@ -1077,7 +1079,7 @@
             </div>
 
             <!-- Quantum Code Branching -->
-            <div class="workflow-card" data-workflow="QuantumCoding">
+            <div class="coder1-workflow-card coder1-card-3d" data-workflow="QuantumCoding">
                 <span class="workflow-icon"></span>
                 <h3 class="workflow-title">Quantum Code Branching</h3>
                 <p class="workflow-description">
@@ -1095,7 +1097,7 @@
             </div>
 
             <!-- Swarm Coding -->
-            <div class="workflow-card" data-workflow="SwarmCoding">
+            <div class="coder1-workflow-card coder1-card-3d" data-workflow="SwarmCoding">
                 <span class="workflow-icon"></span>
                 <h3 class="workflow-title">Swarm Coding</h3>
                 <p class="workflow-description">
@@ -1113,7 +1115,7 @@
             </div>
 
             <!-- Neural Code Evolution -->
-            <div class="workflow-card" data-workflow="NeuralEvolution">
+            <div class="coder1-workflow-card coder1-card-3d" data-workflow="NeuralEvolution">
                 <span class="workflow-icon"></span>
                 <h3 class="workflow-title">Neural Code Evolution</h3>
                 <p class="workflow-description">
@@ -1131,7 +1133,7 @@
             </div>
 
             <!-- EmotionEngine - Vibe Coder Special -->
-            <div class="workflow-card" data-workflow="EmotionEngine">
+            <div class="coder1-workflow-card coder1-card-3d" data-workflow="EmotionEngine">
                 <span class="workflow-icon">🎨</span>
                 <h3 class="workflow-title">EmotionEngine</h3>
                 <p class="workflow-description">
@@ -1483,6 +1485,17 @@
             
             // Periodic health check
             setInterval(checkHealth, 30000);
+        });
+    </script>
+    
+    <!-- Unified Design System JavaScript -->
+    <script src="unified-design-system.js"></script>
+    <script>
+        // Initialize unified design system for workflows page
+        document.addEventListener('DOMContentLoaded', () => {
+            // The unified design system will automatically detect .coder1-card-3d classes
+            // and apply mouse tracking effects to workflow cards
+            console.log('🎨 Workflows: Design system integration active');
         });
     </script>
 </body>

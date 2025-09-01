@@ -1,0 +1,2571 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Coder1 IDE - The AI-powered development environment that brings your ideas to life with intelligent code generation, real-time collaboration, and seamless deployment.">
+    <meta name="keywords" content="IDE, AI, Code Editor, Development, Programming, Coder1, Claude Code">
+    <title>Coder1 IDE - AI-Powered Development Environment</title>
+    
+    <!-- Fonts & Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    
+    <style>
+        :root {
+            /* Coder1 cyan/teal color scheme matching the logo */
+            --primary-cyan: #00D9FF;
+            --secondary-cyan: #00B4D8;
+            --light-cyan: #90E0EF;
+            --accent-cyan: #0077B6;
+            --dark-text: #030303;
+            --light-text: #666666;
+            --background-white: #FFFFFF;
+            --background-light: #FAFAFA;
+            --border-color: rgba(144, 224, 239, 0.6);
+            
+            /* Background gradients */
+            --bg-gradient: linear-gradient(135deg, #f0fafe 0%, #caf0f8 100%);
+            --card-bg: rgba(255, 255, 255, 0.95);
+            --hero-gradient: radial-gradient(ellipse at center, rgba(0, 217, 255, 0.1) 0%, transparent 70%);
+            
+            /* Updated gradients */
+            --gradient-primary: linear-gradient(135deg, #00D9FF, #00B4D8);
+            --gradient-secondary: linear-gradient(135deg, #00B4D8, #90E0EF);
+            --gradient-text: linear-gradient(135deg, #030303 0%, #00D9FF 100%);
+            
+            /* Legacy variables for compatibility */
+            --primary-blue: #00D9FF;
+            --secondary-blue: #00B4D8;
+            --light-blue: #90E0EF;
+            --accent-blue: #0077B6;
+            
+            --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: var(--font-family);
+            background: var(--bg-gradient);
+            color: var(--dark-text);
+            overflow-x: hidden;
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        /* Animated Background */
+        .bg-animation {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .bg-animation::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle at 20% 50%, rgba(255, 107, 53, 0.1) 0%, transparent 50%),
+                        radial-gradient(circle at 80% 80%, rgba(139, 92, 246, 0.05) 0%, transparent 50%),
+                        radial-gradient(circle at 40% 20%, rgba(255, 165, 0, 0.05) 0%, transparent 50%);
+            animation: gradient-shift 20s ease infinite;
+        }
+
+        @keyframes gradient-shift {
+            0%, 100% { transform: rotate(0deg) scale(1); }
+            50% { transform: rotate(180deg) scale(1.1); }
+        }
+
+        /* Grid Pattern Overlay */
+        .grid-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(rgba(255, 107, 53, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 107, 53, 0.03) 1px, transparent 1px);
+            background-size: 50px 50px;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        /* Container */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+            position: relative;
+            z-index: 2;
+        }
+
+        /* Navigation */
+        nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: rgba(0, 0, 0, 0.9);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            z-index: 1000;
+            transition: all 0.3s ease;
+        }
+
+        nav.scrolled {
+            background: rgba(0, 0, 0, 0.95);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .nav-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem 0;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 1.5rem;
+            font-weight: 800;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-decoration: none;
+        }
+
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            background: var(--gradient-primary);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 20px rgba(255, 107, 53, 0.3);
+        }
+
+        .logo-icon i {
+            color: white;
+            font-size: 1.2rem;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+        }
+
+        .nav-link {
+            color: white;
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: var(--gradient-primary);
+            transition: width 0.3s ease;
+        }
+
+        .nav-link:hover {
+            color: var(--primary-cyan);
+        }
+
+        .nav-link:hover::after {
+            width: 100%;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            cursor: pointer;
+            border: none;
+            font-size: 1rem;
+        }
+
+        .btn-primary {
+            background: var(--gradient-primary);
+            color: white;
+            box-shadow: 0 4px 15px rgba(255, 107, 53, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 25px rgba(0, 217, 255, 0.4), 0 0 20px rgba(0, 217, 255, 0.6);
+            border: 2px solid rgba(0, 217, 255, 0.8);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: var(--primary-orange);
+            border: 2px solid var(--primary-orange);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 107, 53, 0.1);
+            box-shadow: 0 0 20px rgba(255, 107, 53, 0.3);
+        }
+
+        /* Hero Section */
+        .hero {
+            padding: 100px 0 60px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 150%;
+            height: 100%;
+            background: var(--hero-gradient);
+            pointer-events: none;
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 2;
+        }
+
+        /* Early Access Button */
+        .coming-soon-badge {
+            display: inline-block;
+            margin-bottom: 2rem;
+            background: linear-gradient(135deg, #00D9FF 0%, #00B4D8 100%);
+            border-radius: 50px;
+            padding: 0.75rem 2rem;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 217, 255, 0.3);
+            animation: subtle-glow 3s ease-in-out infinite;
+        }
+        
+        .coming-soon-badge:hover {
+            transform: translateY(-2px) scale(1.05);
+            box-shadow: 0 6px 25px rgba(0, 217, 255, 0.4), 0 0 30px rgba(0, 217, 255, 0.5);
+            animation: none;
+        }
+        
+        @keyframes subtle-glow {
+            0%, 100% {
+                box-shadow: 0 4px 15px rgba(0, 217, 255, 0.3);
+            }
+            50% {
+                box-shadow: 0 4px 20px rgba(0, 217, 255, 0.4), 0 0 15px rgba(0, 217, 255, 0.3);
+            }
+        }
+        
+        .badge-content {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            color: white;
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: rgba(255, 107, 53, 0.1);
+            border: 1px solid var(--border);
+            border-radius: 50px;
+            margin-bottom: 2rem;
+            animation: pulse-glow 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 10px rgba(255, 107, 53, 0.2); }
+            50% { box-shadow: 0 0 20px rgba(255, 107, 53, 0.4); }
+        }
+
+        .hero-badge-icon {
+            width: 8px;
+            height: 8px;
+            background: var(--primary-orange);
+            border-radius: 50%;
+            animation: blink 2s ease-in-out infinite;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .hero h1 {
+            font-size: 4rem;
+            font-weight: 800;
+            line-height: 1.1;
+            margin-bottom: 1.5rem;
+            color: #030303; /* Fallback color */
+        }
+        
+        /* Override for typed text to ensure visibility */
+        #typed-text {
+            color: #030303 !important;
+            -webkit-text-fill-color: initial !important;
+        }
+        
+        #cursor {
+            color: #00D9FF !important;
+            -webkit-text-fill-color: initial !important;
+            font-weight: 300;
+        }
+
+        @keyframes gradient-animate {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .hero-subtitle {
+            font-size: 1.35rem;
+            color: var(--light-text);
+            margin-bottom: 3rem;
+            max-width: 900px;
+            margin-left: auto;
+            margin-right: auto;
+            line-height: 1.5;
+            font-weight: 400;
+        }
+
+        .hero-cta {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        
+        .email-form {
+            display: flex;
+            gap: 0.75rem;
+            max-width: 500px;
+            width: 100%;
+        }
+        
+        .email-input {
+            flex: 1;
+            min-width: 260px;
+            padding: 0.75rem 1.25rem;
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            font-size: 0.95rem;
+            background: white;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+        
+        .email-input:focus {
+            border-color: var(--primary-blue);
+            box-shadow: 0 0 0 3px rgba(31, 102, 255, 0.1);
+        }
+        
+        .cta-button {
+            padding: 0.75rem 1.5rem;
+            background: var(--primary-cyan);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 217, 255, 0.3);
+            white-space: nowrap;
+        }
+        
+        .cta-button:hover {
+            background: var(--secondary-cyan);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 217, 255, 0.4), 0 0 25px rgba(0, 217, 255, 0.6);
+            border: 2px solid rgba(0, 217, 255, 0.8);
+        }
+        
+        .cta-glow-button {
+            animation: glow-pulse 2s ease-in-out infinite;
+            position: relative;
+        }
+        
+        .cta-glow-button:hover {
+            animation: none;
+            transform: translateY(-2px) !important;
+            box-shadow: 0 8px 30px rgba(0, 217, 255, 0.5), 0 0 40px rgba(0, 217, 255, 0.7) !important;
+            background: linear-gradient(135deg, #ffffff 0%, #e6fcff 100%) !important;
+        }
+        
+        @keyframes glow-pulse {
+            0%, 100% {
+                box-shadow: 0 10px 30px rgba(0, 217, 255, 0.3), 0 0 20px rgba(0, 217, 255, 0.4);
+            }
+            50% {
+                box-shadow: 0 10px 35px rgba(0, 217, 255, 0.4), 0 0 30px rgba(0, 217, 255, 0.6);
+            }
+        }
+        
+        .beta-note {
+            font-size: 0.9rem;
+            color: var(--light-text);
+            margin-bottom: 2rem;
+        }
+
+        .btn-large {
+            padding: 1rem 2rem;
+            font-size: 1.1rem;
+        }
+
+        /* Stats */
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1.5rem;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        @media (max-width: 768px) {
+            .stats {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 1rem;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .stats {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .stat {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: 800;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .stat-label {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* Features Section */
+        .features {
+            padding: 5rem 0;
+            background: var(--background-white);
+            position: relative;
+        }
+
+        .section-header {
+            text-align: center;
+            margin-bottom: 4rem;
+        }
+
+        .section-badge {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            background: rgba(139, 92, 246, 0.1);
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            border-radius: 50px;
+            color: var(--secondary-light);
+            font-weight: 600;
+            margin-bottom: 1rem;
+            text-transform: uppercase;
+            font-size: 0.85rem;
+            letter-spacing: 1px;
+        }
+
+        .section-title {
+            font-size: 3rem;
+            font-weight: 800;
+            margin-bottom: 1rem;
+        }
+
+        .section-subtitle {
+            color: var(--text-secondary);
+            font-size: 1.2rem;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 2rem;
+        }
+
+        .feature-card {
+            background: white;
+            border: 1px solid rgba(163, 192, 255, 0.2);
+            border-radius: 16px;
+            padding: 2rem;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            text-align: center;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+        }
+
+        .feature-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: var(--gradient-primary);
+            transform: scaleX(0);
+            transition: transform 0.3s ease;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-8px) scale(1.02);
+            border-color: var(--primary-blue);
+            box-shadow: 0 20px 40px rgba(31, 102, 255, 0.2);
+        }
+
+        .feature-card:hover::before {
+            transform: scaleX(1);
+        }
+
+        .feature-icon {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, var(--primary-blue), var(--secondary-blue));
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1.5rem;
+            font-size: 1.5rem;
+            color: white;
+        }
+
+        .feature-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: var(--dark-text);
+        }
+
+        .feature-description {
+            color: var(--light-text);
+            line-height: 1.6;
+        }
+
+        /* IDE Preview Section */
+        .ide-preview {
+            padding: 100px 0;
+            position: relative;
+        }
+
+        .ide-preview-container {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        }
+
+        .ide-mockup {
+            position: relative;
+            height: 600px;
+            background: linear-gradient(180deg, #0D0D12 0%, #1A1A1F 100%);
+        }
+
+        .ide-header {
+            background: rgba(26, 26, 31, 0.9);
+            border-bottom: 1px solid var(--border);
+            padding: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .ide-dots {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .ide-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .ide-dot.red { background: #FF5F57; }
+        .ide-dot.yellow { background: #FFBD2E; }
+        .ide-dot.green { background: #28CA42; }
+
+        .ide-tabs {
+            display: flex;
+            gap: 1rem;
+            flex: 1;
+        }
+
+        .ide-tab {
+            padding: 0.5rem 1rem;
+            background: rgba(255, 107, 53, 0.1);
+            border-radius: 6px;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        .ide-tab.active {
+            background: var(--gradient-primary);
+            color: white;
+        }
+
+        .ide-body {
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            height: calc(100% - 60px);
+        }
+
+        .ide-sidebar {
+            background: rgba(13, 13, 18, 0.5);
+            border-right: 1px solid var(--border);
+            padding: 1rem;
+        }
+
+        .ide-editor {
+            padding: 2rem;
+            font-family: 'Courier New', monospace;
+            color: #ABB2BF;
+            overflow: auto;
+        }
+
+        .code-line {
+            margin-bottom: 0.5rem;
+            display: flex;
+            gap: 1rem;
+        }
+
+        .line-number {
+            color: #5C6370;
+            user-select: none;
+        }
+
+        .code-content {
+            flex: 1;
+        }
+
+        .code-keyword { color: #C678DD; }
+        .code-string { color: #98C379; }
+        .code-function { color: #61AFEF; }
+        .code-comment { color: #5C6370; font-style: italic; }
+
+        /* Workflow Section */
+        .workflow {
+            padding: 100px 0;
+            background: rgba(255, 107, 53, 0.02);
+        }
+
+        .workflow-steps {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 3rem;
+            margin-top: 4rem;
+        }
+
+        .workflow-step {
+            text-align: center;
+            position: relative;
+            padding: 1.5rem;
+            border-radius: 16px;
+            transition: all 0.3s ease;
+        }
+        
+        .workflow-step:hover {
+            background: rgba(0, 217, 255, 0.05);
+            transform: translateY(-5px);
+        }
+
+        .workflow-step::after {
+            content: '';
+            position: absolute;
+            top: 30px;
+            right: -1.5rem;
+            width: 3rem;
+            height: 2px;
+            background: linear-gradient(90deg, var(--primary-orange), transparent);
+            display: none;
+        }
+
+        @media (min-width: 768px) {
+            .workflow-step:not(:last-child)::after {
+                display: block;
+            }
+        }
+
+        .step-number {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #00D9FF, #00B4D8);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1.5rem;
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: white;
+            box-shadow: 0 4px 20px rgba(0, 217, 255, 0.3);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .step-number::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s ease, height 0.6s ease;
+        }
+        
+        .workflow-step:hover .step-number {
+            transform: scale(1.2) rotate(360deg);
+            box-shadow: 0 8px 35px rgba(0, 217, 255, 0.5), 0 0 0 3px rgba(0, 217, 255, 0.2);
+        }
+        
+        .workflow-step:hover .step-number::before {
+            width: 100px;
+            height: 100px;
+        }
+
+        .step-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .step-description {
+            color: var(--text-secondary);
+        }
+
+        /* Integrations */
+        .integrations {
+            padding: 100px 0;
+        }
+
+        .integrations-logos {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 3rem;
+            margin-top: 3rem;
+        }
+
+        .integration-logo {
+            width: 80px;
+            height: 80px;
+            background: white;
+            border: 2px solid rgba(144, 224, 239, 0.3);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1.25rem;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .integration-logo:hover {
+            transform: translateY(-5px) scale(1.1);
+            border-color: var(--primary-cyan);
+            box-shadow: 0 10px 25px rgba(0, 217, 255, 0.2);
+            background: rgba(144, 224, 239, 0.05);
+        }
+
+        /* Testimonials */
+        .testimonials {
+            padding: 100px 0;
+            background: rgba(139, 92, 246, 0.02);
+        }
+
+        .testimonials-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 2rem;
+            margin-top: 4rem;
+        }
+
+        .testimonial-card {
+            background: var(--bg-card);
+            border: 1px solid rgba(139, 92, 246, 0.2);
+            border-radius: 16px;
+            padding: 2rem;
+            position: relative;
+        }
+
+        .testimonial-quote {
+            font-size: 1.1rem;
+            line-height: 1.8;
+            margin-bottom: 2rem;
+            color: var(--text-primary);
+        }
+
+        .testimonial-author {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .author-avatar {
+            width: 50px;
+            height: 50px;
+            background: var(--gradient-secondary);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 700;
+            font-size: 1.2rem;
+        }
+
+        .author-info {
+            flex: 1;
+        }
+
+        .author-name {
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+        }
+
+        .author-role {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .testimonial-stars {
+            color: #FFD700;
+            margin-top: 1rem;
+            display: flex;
+            justify-content: center;
+            gap: 0.25rem;
+        }
+
+        /* Pricing */
+        .pricing {
+            padding: 100px 0;
+        }
+
+        .pricing-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-top: 4rem;
+        }
+
+        .pricing-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 2.5rem;
+            text-align: center;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .pricing-card.featured {
+            border-color: var(--primary-orange);
+            transform: scale(1.05);
+            box-shadow: 0 20px 40px rgba(255, 107, 53, 0.2);
+        }
+
+        .pricing-badge {
+            position: absolute;
+            top: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--gradient-primary);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .pricing-tier {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+        }
+
+        .pricing-price {
+            font-size: 3rem;
+            font-weight: 800;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+        }
+
+        .pricing-period {
+            color: var(--text-secondary);
+            margin-bottom: 2rem;
+        }
+
+        .pricing-features {
+            list-style: none;
+            margin-bottom: 2rem;
+        }
+
+        .pricing-feature {
+            padding: 0.75rem 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .pricing-feature i {
+            color: var(--primary-orange);
+        }
+
+        /* CTA Section */
+        .cta {
+            padding: 100px 0;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .cta::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 500px;
+            height: 500px;
+            background: radial-gradient(circle, rgba(255, 107, 53, 0.1) 0%, transparent 70%);
+            animation: pulse 4s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: translate(-50%, -50%) scale(1); }
+            50% { transform: translate(-50%, -50%) scale(1.1); }
+        }
+
+        .cta-content {
+            position: relative;
+            z-index: 2;
+        }
+
+        .cta-title {
+            font-size: 3rem;
+            font-weight: 800;
+            margin-bottom: 1rem;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .cta-subtitle {
+            font-size: 1.2rem;
+            color: var(--text-secondary);
+            margin-bottom: 2rem;
+        }
+
+        /* Footer */
+        footer {
+            padding: 30px 0 20px;
+            border-top: 1px solid rgba(0, 217, 255, 0.2);
+            background: #000000;
+        }
+
+        .footer-content {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1fr;
+            gap: 3rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .footer-brand {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .footer-logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 1.5rem;
+            font-weight: 800;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .footer-description {
+            color: rgba(255, 255, 255, 0.7);
+            line-height: 1.8;
+            font-size: 1rem;
+            margin-top: 1rem;
+        }
+
+        .footer-social {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .social-link {
+            width: 40px;
+            height: 40px;
+            background: rgba(255, 107, 53, 0.1);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-secondary);
+            transition: all 0.3s ease;
+        }
+
+        .social-link:hover {
+            background: var(--gradient-primary);
+            color: white;
+            transform: translateY(-3px);
+        }
+
+        .footer-column h4 {
+            font-weight: 700;
+            margin-bottom: 1rem;
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 1.1rem;
+        }
+
+        .footer-links {
+            list-style: none;
+        }
+
+        .footer-link {
+            color: rgba(255, 255, 255, 0.6);
+            text-decoration: none;
+            padding: 0.5rem 0;
+            display: block;
+            transition: color 0.3s ease;
+            font-size: 0.95rem;
+        }
+
+        .footer-link:hover {
+            color: var(--primary-cyan);
+        }
+
+        .footer-bottom {
+            padding-top: 1rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: var(--text-secondary);
+        }
+
+        /* Mobile Menu */
+        .mobile-menu-toggle {
+            display: none;
+            background: transparent;
+            border: none;
+            color: var(--text-primary);
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+
+        @media (max-width: 768px) {
+            .nav-links {
+                display: none;
+            }
+
+            .mobile-menu-toggle {
+                display: block;
+            }
+
+            .hero h1 {
+                font-size: 2.5rem;
+            }
+
+            .hero-subtitle {
+                font-size: 1.2rem;
+            }
+
+            .hero-cta {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .features-grid,
+            .testimonials-grid,
+            .pricing-cards {
+                grid-template-columns: 1fr;
+            }
+
+            .footer-content {
+                grid-template-columns: 1fr;
+                text-align: center;
+            }
+
+            .footer-social {
+                justify-content: center;
+            }
+
+            .footer-bottom {
+                flex-direction: column;
+                gap: 1rem;
+            }
+        }
+
+        /* Animations */
+        .fade-in {
+            opacity: 0;
+            transform: translateY(20px);
+            animation: fadeIn 0.8s ease forwards;
+        }
+
+        @keyframes fadeIn {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .slide-in-left {
+            opacity: 0;
+            transform: translateX(-50px);
+            animation: slideInLeft 0.8s ease forwards;
+        }
+
+        @keyframes slideInLeft {
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .slide-in-right {
+            opacity: 0;
+            transform: translateX(50px);
+            animation: slideInRight 0.8s ease forwards;
+        }
+
+        @keyframes slideInRight {
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        /* Loading Animation */
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-top-color: var(--primary-orange);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <!-- Background Effects -->
+    <div class="bg-animation"></div>
+    <div class="grid-overlay"></div>
+
+    <!-- Navigation -->
+    <nav id="navbar">
+        <div class="container">
+            <div class="nav-container">
+                <a href="#" class="logo">
+                    <img src="/coder1-logo.png" alt="Coder1" style="height: 55px; width: auto;">
+                </a>
+                <div class="nav-links">
+                    <a href="#demo" class="nav-link">Watch Demo</a>
+                    <a href="#features" class="nav-link">See Benefits</a>
+                    <a href="#docs" class="nav-link">Documentation</a>
+                    <a href="/ide" class="btn btn-primary" style="background: white; color: #00D9FF;">Try Free Now</a>
+                </div>
+                <button class="mobile-menu-toggle" id="mobileMenuToggle">
+                    <i class="fas fa-bars"></i>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="container">
+            <div class="hero-content fade-in">
+                <a href="#waitlist-form" class="coming-soon-badge" onclick="document.getElementById('waitlist-form').querySelector('input').focus(); return true;">
+                    <div class="badge-content">
+                        <span>Early Access • Join the Beta</span>
+                    </div>
+                </a>
+                
+                <h1><span id="typed-text"></span><span id="cursor">|</span></h1>
+                
+                <p class="hero-subtitle">
+                    We just made the most powerful AI coding tool in the world usable for anyone.
+                </p>
+                <div class="hero-cta">
+                    <form class="email-form" id="waitlist-form">
+                        <input type="email" class="email-input" placeholder="Enter your email address" required>
+                        <button type="submit" class="cta-button">Get Your Claude Code IDE</button>
+                    </form>
+                </div>
+                <p class="beta-note">Free forever for the first 500 Claude Code users</p>
+                <div class="stats">
+                    <div class="stat">
+                        <div class="stat-value">Zero</div>
+                        <div class="stat-label">Context Lost</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-value">100%</div>
+                        <div class="stat-label">Session Recovery</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-value">50ms</div>
+                        <div class="stat-label">AI Response Time</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-value">6 AI</div>
+                        <div class="stat-label">Agents Working</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Problem-Solution Section -->
+    <section class="problem-solution" style="padding: 80px 0; background: linear-gradient(135deg, rgba(31, 102, 255, 0.03) 0%, rgba(255, 255, 255, 0.95) 100%);">
+        <div class="container">
+            <div class="section-header" style="text-align: center; margin-bottom: 4rem;">
+                <h2 style="font-size: 2.5rem; font-weight: 800; margin-bottom: 1rem;">The Claude Code Struggle Is Real</h2>
+                <p style="font-size: 1.2rem; color: var(--light-text); max-width: 700px; margin: 0 auto;">
+                    We've all been there. You know Claude Code is powerful, but the workflow is broken.
+                </p>
+            </div>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4rem; align-items: center; max-width: 1000px; margin: 0 auto;">
+                <!-- Before Column -->
+                <div style="text-align: center;">
+                    <div style="background: white; border: 2px solid rgba(255, 0, 0, 0.2); border-radius: 20px; padding: 2.5rem; box-shadow: 0 10px 30px rgba(255, 0, 0, 0.1);">
+                        <h3 style="color: #FF4444; font-size: 1.5rem; margin-bottom: 1.5rem; display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
+                            <i class="fas fa-times-circle"></i> Before Coder1
+                        </h3>
+                        <ul style="text-align: left; list-style: none; space-y: 1rem;">
+                            <li style="margin-bottom: 1rem; display: flex; align-items: start; gap: 0.75rem;">
+                                <span style="color: #FF4444;">❌</span>
+                                <span>Copy-pasting code between terminal and Claude.ai all day</span>
+                            </li>
+                            <li style="margin-bottom: 1rem; display: flex; align-items: start; gap: 0.75rem;">
+                                <span style="color: #FF4444;">❌</span>
+                                <span>"Claude, remember what we were working on?" Never works.</span>
+                            </li>
+                            <li style="margin-bottom: 1rem; display: flex; align-items: start; gap: 0.75rem;">
+                                <span style="color: #FF4444;">❌</span>
+                                <span>Lost context every time you close the browser tab</span>
+                            </li>
+                            <li style="margin-bottom: 1rem; display: flex; align-items: start; gap: 0.75rem;">
+                                <span style="color: #FF4444;">❌</span>
+                                <span>Juggling multiple terminal windows and browser tabs</span>
+                            </li>
+                            <li style="margin-bottom: 1rem; display: flex; align-items: start; gap: 0.75rem;">
+                                <span style="color: #FF4444;">❌</span>
+                                <span>No way to hand off work to teammates or future you</span>
+                            </li>
+                        </ul>
+                        <div style="margin-top: 1.5rem; padding: 1rem; background: rgba(255, 0, 0, 0.05); border-radius: 10px;">
+                            <p style="font-style: italic; color: #666; margin: 0;">"I spend more time managing Claude than actually coding"</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- After Column -->
+                <div style="text-align: center;">
+                    <div style="background: white; border: 2px solid rgba(31, 102, 255, 0.3); border-radius: 20px; padding: 2.5rem; box-shadow: 0 10px 30px rgba(31, 102, 255, 0.15); position: relative;">
+                        <div style="position: absolute; top: -15px; right: 20px; background: linear-gradient(135deg, #1F66FF, #4D85FF); color: white; padding: 0.5rem 1rem; border-radius: 20px; font-size: 0.85rem; font-weight: 600;">
+                            ✨ The Coder1 Way
+                        </div>
+                        <h3 style="color: #1F66FF; font-size: 1.5rem; margin-bottom: 1.5rem; display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
+                            <i class="fas fa-check-circle"></i> After Coder1
+                        </h3>
+                        <ul style="text-align: left; list-style: none;">
+                            <li style="margin-bottom: 1rem; display: flex; align-items: start; gap: 0.75rem;">
+                                <span style="color: #1F66FF;">✅</span>
+                                <span>Claude lives inside your IDE - no more copy-pasting</span>
+                            </li>
+                            <li style="margin-bottom: 1rem; display: flex; align-items: start; gap: 0.75rem;">
+                                <span style="color: #1F66FF;">✅</span>
+                                <span>Perfect session summaries - Claude always knows the context</span>
+                            </li>
+                            <li style="margin-bottom: 1rem; display: flex; align-items: start; gap: 0.75rem;">
+                                <span style="color: #1F66FF;">✅</span>
+                                <span>Close your laptop, come back tomorrow, pick up instantly</span>
+                            </li>
+                            <li style="margin-bottom: 1rem; display: flex; align-items: start; gap: 0.75rem;">
+                                <span style="color: #1F66FF;">✅</span>
+                                <span>Everything in one place - code, terminal, AI, all integrated</span>
+                            </li>
+                            <li style="margin-bottom: 1rem; display: flex; align-items: start; gap: 0.75rem;">
+                                <span style="color: #1F66FF;">✅</span>
+                                <span>Export handoffs as Markdown/JSON - perfect team collaboration</span>
+                            </li>
+                        </ul>
+                        <div style="margin-top: 1.5rem; padding: 1rem; background: rgba(31, 102, 255, 0.05); border-radius: 10px;">
+                            <p style="font-style: italic; color: #1F66FF; margin: 0; font-weight: 500;">"It's like Claude is my co-pilot, not a separate tool"</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div style="text-align: center; margin-top: 3rem;">
+                <a href="#features" class="btn btn-primary btn-large" style="font-size: 1.1rem; padding: 1rem 2rem;">
+                    See How It Works <i class="fas fa-arrow-down" style="margin-left: 0.5rem;"></i>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="features" id="features">
+        <div class="container">
+            <div class="section-header fade-in">
+                <h2 class="section-title">Every Feature Solves a Real<br>Claude Code Pain Point</h2>
+                <p class="section-subtitle">We didn't just add features. We eliminated every single frustration Claude Code users face daily.</p>
+            </div>
+            <div class="features-grid">
+                <div class="feature-card fade-in">
+                    <div class="feature-icon">
+                        <i class="fas fa-robot"></i>
+                    </div>
+                    <h3 class="feature-title">Never Lose Your Claude Conversation Again</h3>
+                    <p class="feature-description">
+                        Every session is saved and resumable. Close your laptop mid-conversation, open it tomorrow, and Claude picks up exactly where you left off.
+                    </p>
+                </div>
+                <div class="feature-card fade-in">
+                    <div class="feature-icon">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <h3 class="feature-title">6 AI Experts Working For You 24/7</h3>
+                    <p class="feature-description">
+                        Like having a senior team on demand. Frontend, Backend, Architect, Optimizer, Debugger, and Implementer agents collaborate to solve complex problems while you sleep.
+                    </p>
+                </div>
+                <div class="feature-card fade-in">
+                    <div class="feature-icon">
+                        <i class="fas fa-file-alt"></i>
+                    </div>
+                    <h3 class="feature-title">"Claude, Continue Where I Left Off" Finally Works</h3>
+                    <p class="feature-description">
+                        One-click session summaries create perfect handoffs. Export as Markdown for teammates or JSON for Claude. No more explaining context for 20 minutes.
+                    </p>
+                </div>
+                <div class="feature-card fade-in">
+                    <div class="feature-icon">
+                        <i class="fas fa-bolt"></i>
+                    </div>
+                    <h3 class="feature-title">50ms Responses Instead of 5 Second Waits</h3>
+                    <p class="feature-description">
+                        Smart bash triggers handle simple tasks instantly. Complex problems automatically delegate to specialized AI. Result: 90% faster responses without sacrificing intelligence.
+                    </p>
+                </div>
+                <div class="feature-card fade-in">
+                    <div class="feature-icon">
+                        <i class="fas fa-magic"></i>
+                    </div>
+                    <h3 class="feature-title">Turn Vague Ideas Into Production-Ready Specs</h3>
+                    <p class="feature-description">
+                        Describe what you want in plain English. AI asks 5 strategic questions, then generates detailed specs, wireframes, and technical requirements. Go from idea to coding in minutes.
+                    </p>
+                </div>
+                <div class="feature-card fade-in">
+                    <div class="feature-icon">
+                        <i class="fas fa-brain"></i>
+                    </div>
+                    <h3 class="feature-title">AI That Actually Understands Your Project</h3>
+                    <p class="feature-description">
+                        8 intelligence systems work together to understand your codebase, remember your decisions, and proactively suggest solutions. It's like Claude has been on your team for years.
+                    </p>
+                </div>
+                <div class="feature-card fade-in">
+                    <div class="feature-icon">
+                        <i class="fas fa-code-branch"></i>
+                    </div>
+                    <h3 class="feature-title">Your Entire Codebase at Claude's Fingertips</h3>
+                    <p class="feature-description">
+                        Instantly analyze any GitHub repo. Claude understands your patterns, dependencies, and architecture. Ask "How does auth work?" and get accurate, codebase-specific answers.
+                    </p>
+                </div>
+                <div class="feature-card fade-in">
+                    <div class="feature-icon">
+                        <i class="fas fa-terminal"></i>
+                    </div>
+                    <h3 class="feature-title">Claude Watches and Helps as You Code</h3>
+                    <p class="feature-description">
+                        Type "claude" in the terminal and AI supervision activates. Get real-time suggestions, catch errors before they happen, and never Google a command again.
+                    </p>
+                </div>
+                <div class="feature-card fade-in">
+                    <div class="feature-icon">
+                        <i class="fas fa-book"></i>
+                    </div>
+                    <h3 class="feature-title">Claude Reads Documentation So You Don't Have To</h3>
+                    <p class="feature-description">
+                        Feed any documentation URL to Claude. It intelligently extracts, chunks, and indexes content. Ask questions in plain English instead of searching through 50 pages.
+                    </p>
+                </div>
+                <div class="feature-card fade-in">
+                    <div class="feature-icon">
+                        <i class="fas fa-globe"></i>
+                    </div>
+                    <h3 class="feature-title">Control Everything with Natural Language</h3>
+                    <p class="feature-description">
+                        "Deploy to production", "Run tests", "Scrape that website" - Claude handles it all. Browser automation, Git, filesystem, testing - everything responds to plain English commands.
+                    </p>
+                </div>
+                <div class="feature-card fade-in">
+                    <div class="feature-icon">
+                        <i class="fas fa-graduation-cap"></i>
+                    </div>
+                    <h3 class="feature-title">Code Without the Intimidation Factor</h3>
+                    <p class="feature-description">
+                        Perfect for beginners or when you're learning something new. Errors explained in plain English, hover for instant explanations, and Claude adds helpful comments automatically.
+                    </p>
+                </div>
+                <div class="feature-card fade-in">
+                    <div class="feature-icon">
+                        <i class="fas fa-code"></i>
+                    </div>
+                    <h3 class="feature-title">Finally, an IDE That Doesn't Feel Cramped</h3>
+                    <p class="feature-description">
+                        Full VSCode editing experience with 890px width (not the cramped 93px others offer). All the features you love: IntelliSense, multi-cursor, and that perfect Tokyo Night theme.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Why Claude Code Users Choose Coder1 -->
+    <section style="padding: 80px 0; background: linear-gradient(135deg, #f8fbff 0%, #e6f7ff 100%); color: #1a1a1a; position: relative; overflow: hidden; border-top: 1px solid #e0f2ff; border-bottom: 1px solid #e0f2ff;">
+        <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0.1; background-image: repeating-linear-gradient(45deg, transparent, transparent 35px, rgba(255,255,255,.1) 35px, rgba(255,255,255,.1) 70px);"></div>
+        <div class="container" style="position: relative; z-index: 2;">
+            <div style="text-align: center; margin-bottom: 4rem;">
+                <div style="display: inline-block; background: #00D9FF; color: white; padding: 0.5rem 1rem; border-radius: 20px; margin-bottom: 1rem;">
+                    <span style="font-weight: 600; text-transform: uppercase; letter-spacing: 1px; font-size: 0.85rem;">Built BY Claude Code Users FOR Claude Code Users</span>
+                </div>
+                <h2 style="font-size: 3rem; font-weight: 800; margin-bottom: 1rem; color: #1a1a1a;">Why Claude Code Users Switch</h2>
+                <p style="font-size: 1.3rem; color: #666; max-width: 700px; margin: 0 auto;">
+                    We use Claude Code every day. We felt your pain. So we fixed it.
+                </p>
+            </div>
+            
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 2rem; margin-bottom: 3rem;">
+                <div style="background: white; border: 2px solid #00D9FF; border-radius: 16px; padding: 2rem; text-align: center; box-shadow: 0 4px 20px rgba(0, 217, 255, 0.1);">
+                    <div style="width: 60px; height: 60px; background: linear-gradient(135deg, #00D9FF, #00B4D8); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; color: white; font-size: 1.5rem;"><i class="fas fa-clock"></i></div>
+                    <h3 style="font-size: 1.25rem; margin-bottom: 0.5rem; color: #1a1a1a;">80% Less Time</h3>
+                    <p style="color: #666;">Managing Claude sessions and context</p>
+                </div>
+                <div style="background: white; border: 2px solid #00D9FF; border-radius: 16px; padding: 2rem; text-align: center; box-shadow: 0 4px 20px rgba(0, 217, 255, 0.1);">
+                    <div style="width: 60px; height: 60px; background: linear-gradient(135deg, #00D9FF, #00B4D8); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; color: white; font-size: 1.5rem;"><i class="fas fa-bullseye"></i></div>
+                    <h3 style="font-size: 1.25rem; margin-bottom: 0.5rem; color: #1a1a1a;">100% Context</h3>
+                    <p style="color: #666;">Preserved between all sessions</p>
+                </div>
+                <div style="background: white; border: 2px solid #00D9FF; border-radius: 16px; padding: 2rem; text-align: center; box-shadow: 0 4px 20px rgba(0, 217, 255, 0.1);">
+                    <div style="width: 60px; height: 60px; background: linear-gradient(135deg, #00D9FF, #00B4D8); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; color: white; font-size: 1.5rem;"><i class="fas fa-rocket"></i></div>
+                    <h3 style="font-size: 1.25rem; margin-bottom: 0.5rem; color: #1a1a1a;">10x Faster</h3>
+                    <p style="color: #666;">Development with proper integration</p>
+                </div>
+            </div>
+            
+            <!-- Comparison Table -->
+            <div style="background: white; border: 2px solid #00D9FF; border-radius: 20px; padding: 2.5rem; margin-top: 3rem; box-shadow: 0 10px 30px rgba(0, 217, 255, 0.1);">
+                <h3 style="text-align: center; font-size: 1.75rem; margin-bottom: 2rem; color: #1a1a1a;">The Difference Is Night and Day</h3>
+                <table style="width: 100%; border-collapse: separate; border-spacing: 0;">
+                    <thead>
+                        <tr>
+                            <th style="text-align: left; padding: 1rem; border-bottom: 2px solid rgba(0, 217, 255, 0.3); width: 40%; color: #1a1a1a; font-weight: 700; font-size: 1.1rem; text-transform: uppercase; letter-spacing: 1px;">Workflow Task</th>
+                            <th style="text-align: center; padding: 1rem; border-bottom: 2px solid rgba(0, 217, 255, 0.3); width: 30%; color: #ff4444; font-weight: 800; font-size: 1.1rem; text-transform: uppercase; letter-spacing: 0.5px;"><i class="fas fa-times-circle" style="color: #ff4444; margin-right: 0.5rem;"></i>Without Coder1</th>
+                            <th style="text-align: center; padding: 1rem; border-bottom: 2px solid rgba(0, 217, 255, 0.3); width: 30%; color: #00D9FF; font-weight: 800; font-size: 1.1rem; text-transform: uppercase; letter-spacing: 0.5px;"><i class="fas fa-check-circle" style="color: #00D9FF; margin-right: 0.5rem;"></i>With Coder1</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td style="padding: 1rem; border-bottom: 1px solid rgba(0, 217, 255, 0.1); color: #1a1a1a;">Starting a new session</td>
+                            <td style="text-align: center; padding: 1rem; border-bottom: 1px solid rgba(0, 217, 255, 0.1); color: #666;">Copy all context, paste, explain</td>
+                            <td style="text-align: center; padding: 1rem; border-bottom: 1px solid rgba(0, 217, 255, 0.1); color: #00D9FF; font-weight: 600;">Click "Resume Session"</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 1rem; border-bottom: 1px solid rgba(0, 217, 255, 0.1); color: #1a1a1a;">Running Claude commands</td>
+                            <td style="text-align: center; padding: 1rem; border-bottom: 1px solid rgba(0, 217, 255, 0.1); color: #666;">Terminal → Copy → Browser → Paste</td>
+                            <td style="text-align: center; padding: 1rem; border-bottom: 1px solid rgba(0, 217, 255, 0.1); color: #00D9FF; font-weight: 600;">Type directly in IDE terminal</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 1rem; border-bottom: 1px solid rgba(0, 217, 255, 0.1); color: #1a1a1a;">Debugging with Claude</td>
+                            <td style="text-align: center; padding: 1rem; border-bottom: 1px solid rgba(0, 217, 255, 0.1); color: #666;">Screenshot, copy error, explain files</td>
+                            <td style="text-align: center; padding: 1rem; border-bottom: 1px solid rgba(0, 217, 255, 0.1); color: #00D9FF; font-weight: 600;">Claude sees everything automatically</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 1rem; border-bottom: 1px solid rgba(0, 217, 255, 0.1); color: #1a1a1a;">Team handoff</td>
+                            <td style="text-align: center; padding: 1rem; border-bottom: 1px solid rgba(0, 217, 255, 0.1); color: #666;">Write long documentation</td>
+                            <td style="text-align: center; padding: 1rem; border-bottom: 1px solid rgba(0, 217, 255, 0.1); color: #00D9FF; font-weight: 600;">Export session summary</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 1rem;">Context window management</td>
+                            <td style="text-align: center; padding: 1rem; opacity: 0.7;">Constantly hitting limits</td>
+                            <td style="text-align: center; padding: 1rem; color: #90EE90;">Intelligent chunking & caching</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <div style="text-align: center; margin-top: 3rem;">
+                <a href="/ide" class="btn cta-glow-button" style="background: white; color: #00D9FF; padding: 1rem 2.5rem; font-size: 1.1rem; font-weight: 600; border-radius: 12px; text-decoration: none; display: inline-block; box-shadow: 0 10px 30px rgba(0, 217, 255, 0.3); border: 2px solid #00D9FF; transition: all 0.3s ease;">
+                    Try Coder1 Free - No Credit Card Required
+                </a>
+                <p style="margin-top: 1rem; opacity: 0.9;">Join 10,000+ Claude Code users who've already made the switch</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- IDE Preview Section -->
+    <section class="ide-preview">
+        <div class="container">
+            <div class="section-header fade-in">
+                <div class="section-badge">Interface</div>
+                <h2 class="section-title">A Beautiful Coding Experience</h2>
+                <p class="section-subtitle">Designed for productivity, built for developers</p>
+            </div>
+            <div class="ide-preview-container fade-in">
+                <div class="ide-mockup">
+                    <div class="ide-header">
+                        <div class="ide-dots">
+                            <div class="ide-dot red"></div>
+                            <div class="ide-dot yellow"></div>
+                            <div class="ide-dot green"></div>
+                        </div>
+                        <div class="ide-tabs">
+                            <div class="ide-tab active">App.tsx</div>
+                            <div class="ide-tab">styles.css</div>
+                            <div class="ide-tab">package.json</div>
+                        </div>
+                    </div>
+                    <div class="ide-body">
+                        <div class="ide-sidebar">
+                            <div style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 1rem;">
+                                <i class="fas fa-folder"></i> src
+                            </div>
+                            <div style="padding-left: 1rem; color: var(--text-secondary); font-size: 0.85rem;">
+                                <div style="margin-bottom: 0.5rem;"><i class="fas fa-file-code"></i> App.tsx</div>
+                                <div style="margin-bottom: 0.5rem;"><i class="fas fa-file-code"></i> index.tsx</div>
+                                <div style="margin-bottom: 0.5rem;"><i class="fas fa-folder"></i> components</div>
+                                <div style="margin-bottom: 0.5rem;"><i class="fas fa-folder"></i> hooks</div>
+                                <div style="margin-bottom: 0.5rem;"><i class="fas fa-folder"></i> services</div>
+                            </div>
+                        </div>
+                        <div class="ide-editor">
+                            <div class="code-line">
+                                <span class="line-number">1</span>
+                                <span class="code-content">
+                                    <span class="code-keyword">import</span> React, { useState } <span class="code-keyword">from</span> <span class="code-string">'react'</span>;
+                                </span>
+                            </div>
+                            <div class="code-line">
+                                <span class="line-number">2</span>
+                                <span class="code-content">
+                                    <span class="code-keyword">import</span> <span class="code-string">'./App.css'</span>;
+                                </span>
+                            </div>
+                            <div class="code-line">
+                                <span class="line-number">3</span>
+                                <span class="code-content"></span>
+                            </div>
+                            <div class="code-line">
+                                <span class="line-number">4</span>
+                                <span class="code-content">
+                                    <span class="code-keyword">function</span> <span class="code-function">App</span>() {
+                                </span>
+                            </div>
+                            <div class="code-line">
+                                <span class="line-number">5</span>
+                                <span class="code-content" style="padding-left: 2rem;">
+                                    <span class="code-keyword">const</span> [count, setCount] = <span class="code-function">useState</span>(0);
+                                </span>
+                            </div>
+                            <div class="code-line">
+                                <span class="line-number">6</span>
+                                <span class="code-content"></span>
+                            </div>
+                            <div class="code-line">
+                                <span class="line-number">7</span>
+                                <span class="code-content" style="padding-left: 2rem;">
+                                    <span class="code-comment">// AI-generated code with intelligent suggestions</span>
+                                </span>
+                            </div>
+                            <div class="code-line">
+                                <span class="line-number">8</span>
+                                <span class="code-content" style="padding-left: 2rem;">
+                                    <span class="code-keyword">return</span> (
+                                </span>
+                            </div>
+                            <div class="code-line">
+                                <span class="line-number">9</span>
+                                <span class="code-content" style="padding-left: 4rem;">
+                                    &lt;<span class="code-function">div</span> className=<span class="code-string">"app"</span>&gt;
+                                </span>
+                            </div>
+                            <div class="code-line">
+                                <span class="line-number">10</span>
+                                <span class="code-content" style="padding-left: 6rem;">
+                                    &lt;<span class="code-function">h1</span>&gt;Welcome to Coder1&lt;/<span class="code-function">h1</span>&gt;
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Workflow Section -->
+    <section class="workflow" id="workflow">
+        <div class="container">
+            <div class="section-header fade-in">
+                <div class="section-badge">Process</div>
+                <h2 class="section-title">From Idea to Production</h2>
+                <p class="section-subtitle">Simple workflow, powerful results</p>
+            </div>
+            <div class="workflow-steps">
+                <div class="workflow-step fade-in">
+                    <div class="step-number">1</div>
+                    <h3 class="step-title">Describe Your Project</h3>
+                    <p class="step-description">Tell Coder1 what you want to build using natural language</p>
+                </div>
+                <div class="workflow-step fade-in">
+                    <div class="step-number">2</div>
+                    <h3 class="step-title">AI Generates Code</h3>
+                    <p class="step-description">Watch as production-ready code is created instantly</p>
+                </div>
+                <div class="workflow-step fade-in">
+                    <div class="step-number">3</div>
+                    <h3 class="step-title">Customize & Refine</h3>
+                    <p class="step-description">Make adjustments with AI assistance and real-time preview</p>
+                </div>
+                <div class="workflow-step fade-in">
+                    <div class="step-number">4</div>
+                    <h3 class="step-title">Deploy Anywhere</h3>
+                    <p class="step-description">One-click deployment to your favorite cloud provider</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Integrations Section -->
+    <section class="integrations">
+        <div class="container">
+            <div class="section-header fade-in">
+                <div class="section-badge">Ecosystem</div>
+                <h2 class="section-title">Seamless Integrations</h2>
+                <p class="section-subtitle">Works with your favorite tools and services</p>
+            </div>
+            <div class="integrations-logos">
+                <div class="integration-logo fade-in" title="GitHub">
+                    <i class="fab fa-github" style="font-size: 2rem; color: #333;"></i>
+                </div>
+                <div class="integration-logo fade-in" title="GitLab">
+                    <i class="fab fa-gitlab" style="font-size: 2rem; color: #FC6D26;"></i>
+                </div>
+                <div class="integration-logo fade-in" title="AWS">
+                    <i class="fab fa-aws" style="font-size: 2rem; color: #FF9900;"></i>
+                </div>
+                <div class="integration-logo fade-in" title="Google Cloud">
+                    <i class="fab fa-google" style="font-size: 2rem; color: #4285F4;"></i>
+                </div>
+                <div class="integration-logo fade-in" title="Azure">
+                    <i class="fab fa-microsoft" style="font-size: 2rem; color: #0078D4;"></i>
+                </div>
+                <div class="integration-logo fade-in" title="Vercel">
+                    <svg width="32" height="32" viewBox="0 0 256 222" style="fill: #000;">
+                        <path d="M128 0l128 221.705H0z"/>
+                    </svg>
+                </div>
+                <div class="integration-logo fade-in" title="Docker">
+                    <i class="fab fa-docker" style="font-size: 2rem; color: #2496ED;"></i>
+                </div>
+                <div class="integration-logo fade-in" title="Kubernetes">
+                    <svg width="32" height="32" viewBox="0 0 256 249" style="fill: #326CE5;">
+                        <path d="M124.3 0a13.4 13.4 0 00-5.2 1.1l-85 35.6a13.4 13.4 0 00-8 10.5l-14 91.6a13.4 13.4 0 004.8 12.3l71.7 60.5c3 2.5 6.8 3.8 10.6 3.6l91.8-2c4-.2 7.7-2 10.3-5l66-59.8a13.4 13.4 0 004-12.4L249 44.8a13.4 13.4 0 00-8.5-10L152.2 2.3A13.4 13.4 0 00145.7 0z"/>
+                    </svg>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Testimonials Section -->
+    <section class="testimonials">
+        <div class="container">
+            <div class="section-header fade-in">
+                <div class="section-badge">Testimonials</div>
+                <h2 class="section-title">Loved by Developers</h2>
+                <p class="section-subtitle">See what our users are saying</p>
+            </div>
+            <div class="testimonials-grid">
+                <div class="testimonial-card fade-in">
+                    <p class="testimonial-quote">
+                        "Coder1 has completely transformed how I approach development. The AI assistance is like having a senior developer by my side 24/7."
+                    </p>
+                    <div class="testimonial-author">
+                        <div class="author-avatar">JD</div>
+                        <div class="author-info">
+                            <div class="author-name">John Doe</div>
+                            <div class="author-role">Full Stack Developer</div>
+                        </div>
+                    </div>
+                    <div class="testimonial-stars">
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                    </div>
+                </div>
+                <div class="testimonial-card fade-in">
+                    <p class="testimonial-quote">
+                        "The integrated terminal with AI supervision is a game-changer. It catches errors before they happen and suggests optimizations I wouldn't have thought of."
+                    </p>
+                    <div class="testimonial-author">
+                        <div class="author-avatar">SM</div>
+                        <div class="author-info">
+                            <div class="author-name">Sarah Mitchell</div>
+                            <div class="author-role">DevOps Engineer</div>
+                        </div>
+                    </div>
+                    <div class="testimonial-stars">
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                    </div>
+                </div>
+                <div class="testimonial-card fade-in">
+                    <p class="testimonial-quote">
+                        "I've cut my development time in half. The AI understands context so well that it feels like it's reading my mind."
+                    </p>
+                    <div class="testimonial-author">
+                        <div class="author-avatar">AC</div>
+                        <div class="author-info">
+                            <div class="author-name">Alex Chen</div>
+                            <div class="author-role">Startup Founder</div>
+                        </div>
+                    </div>
+                    <div class="testimonial-stars">
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pricing Section -->
+    <section class="pricing" id="pricing">
+        <div class="container">
+            <div class="section-header fade-in">
+                <div class="section-badge">Pricing</div>
+                <h2 class="section-title">Choose Your Plan</h2>
+                <p class="section-subtitle">Start free, scale as you grow</p>
+            </div>
+            <div class="pricing-cards">
+                <div class="pricing-card fade-in">
+                    <h3 class="pricing-tier">Starter</h3>
+                    <div class="pricing-price">Free</div>
+                    <div class="pricing-period">Forever</div>
+                    <ul class="pricing-features">
+                        <li class="pricing-feature">
+                            <i class="fas fa-check"></i>
+                            <span>Basic AI assistance</span>
+                        </li>
+                        <li class="pricing-feature">
+                            <i class="fas fa-check"></i>
+                            <span>5 projects</span>
+                        </li>
+                        <li class="pricing-feature">
+                            <i class="fas fa-check"></i>
+                            <span>Community support</span>
+                        </li>
+                        <li class="pricing-feature">
+                            <i class="fas fa-check"></i>
+                            <span>Public repositories</span>
+                        </li>
+                    </ul>
+                    <a href="/signup" class="btn btn-secondary" style="width: 100%;">Get Started</a>
+                </div>
+                <div class="pricing-card featured fade-in">
+                    <div class="pricing-badge">Most Popular</div>
+                    <h3 class="pricing-tier">Pro</h3>
+                    <div class="pricing-price">$29</div>
+                    <div class="pricing-period">per month</div>
+                    <ul class="pricing-features">
+                        <li class="pricing-feature">
+                            <i class="fas fa-check"></i>
+                            <span>Advanced AI models</span>
+                        </li>
+                        <li class="pricing-feature">
+                            <i class="fas fa-check"></i>
+                            <span>Unlimited projects</span>
+                        </li>
+                        <li class="pricing-feature">
+                            <i class="fas fa-check"></i>
+                            <span>Priority support</span>
+                        </li>
+                        <li class="pricing-feature">
+                            <i class="fas fa-check"></i>
+                            <span>Private repositories</span>
+                        </li>
+                        <li class="pricing-feature">
+                            <i class="fas fa-check"></i>
+                            <span>Team collaboration</span>
+                        </li>
+                    </ul>
+                    <a href="/signup?plan=pro" class="btn btn-primary" style="width: 100%;">Start Free Trial</a>
+                </div>
+                <div class="pricing-card fade-in">
+                    <h3 class="pricing-tier">Enterprise</h3>
+                    <div class="pricing-price">Custom</div>
+                    <div class="pricing-period">Contact us</div>
+                    <ul class="pricing-features">
+                        <li class="pricing-feature">
+                            <i class="fas fa-check"></i>
+                            <span>Custom AI training</span>
+                        </li>
+                        <li class="pricing-feature">
+                            <i class="fas fa-check"></i>
+                            <span>Dedicated support</span>
+                        </li>
+                        <li class="pricing-feature">
+                            <i class="fas fa-check"></i>
+                            <span>On-premise deployment</span>
+                        </li>
+                        <li class="pricing-feature">
+                            <i class="fas fa-check"></i>
+                            <span>SLA guarantee</span>
+                        </li>
+                        <li class="pricing-feature">
+                            <i class="fas fa-check"></i>
+                            <span>Custom integrations</span>
+                        </li>
+                    </ul>
+                    <a href="/contact" class="btn btn-secondary" style="width: 100%;">Contact Sales</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Docs Section -->
+    <section class="docs" id="docs">
+        <div class="container">
+            <div class="section-header fade-in">
+                <div class="section-badge">Documentation</div>
+                <h2 class="section-title">Coder1 Features & Docs</h2>
+                <p class="section-subtitle">Everything you need to get started and master Coder1 IDE</p>
+            </div>
+            
+            <div class="docs-container">
+                <!-- Tabs Navigation -->
+                <div class="docs-tabs">
+                    <button class="docs-tab active" data-tab="getting-started">
+                        <i class="fas fa-rocket"></i>
+                        Getting Started
+                    </button>
+                    <button class="docs-tab" data-tab="templates">
+                        <i class="fas fa-cube"></i>
+                        Templates Hub
+                    </button>
+                    <button class="docs-tab" data-tab="api">
+                        <i class="fas fa-code"></i>
+                        API Reference
+                    </button>
+                    <button class="docs-tab" data-tab="tutorials">
+                        <i class="fas fa-graduation-cap"></i>
+                        Tutorials
+                    </button>
+                </div>
+                
+                <!-- Tab Content -->
+                <div class="docs-content">
+                    <!-- Getting Started Panel -->
+                    <div class="docs-panel active" id="getting-started-panel">
+                        <h3>Quick Start Guide</h3>
+                        <div class="docs-grid">
+                            <div class="docs-card">
+                                <div class="docs-card-icon">
+                                    <i class="fas fa-download"></i>
+                                </div>
+                                <h4>Installation</h4>
+                                <p>Get Coder1 IDE up and running in minutes with our simple installation process.</p>
+                                <a href="#" class="docs-link">Learn more →</a>
+                            </div>
+                            <div class="docs-card">
+                                <div class="docs-card-icon">
+                                    <i class="fas fa-cog"></i>
+                                </div>
+                                <h4>Configuration</h4>
+                                <p>Customize Coder1 to match your workflow with powerful configuration options.</p>
+                                <a href="#" class="docs-link">Learn more →</a>
+                            </div>
+                            <div class="docs-card">
+                                <div class="docs-card-icon">
+                                    <i class="fas fa-terminal"></i>
+                                </div>
+                                <h4>First Project</h4>
+                                <p>Create your first project with AI assistance and see the magic happen.</p>
+                                <a href="#" class="docs-link">Learn more →</a>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Templates Hub Panel -->
+                    <div class="docs-panel" id="templates-panel">
+                        <div class="templates-hub-header">
+                            <h3>Templates Hub</h3>
+                            <p>Discover and install pre-built templates to accelerate your development</p>
+                            <a href="/templates-hub.html" target="_blank" class="btn btn-secondary">
+                                <i class="fas fa-external-link-alt"></i>
+                                Open Full Templates Hub
+                            </a>
+                        </div>
+                        <div class="templates-preview">
+                            <iframe src="/public/templates-hub.html" frameborder="0" style="width: 100%; height: 600px; border-radius: 12px; border: 1px solid var(--border);"></iframe>
+                        </div>
+                    </div>
+                    
+                    <!-- API Reference Panel -->
+                    <div class="docs-panel" id="api-panel">
+                        <h3>API Reference</h3>
+                        <div class="api-categories">
+                            <div class="api-category">
+                                <h4>Core APIs</h4>
+                                <ul class="api-list">
+                                    <li><a href="#">Session Management</a></li>
+                                    <li><a href="#">File Operations</a></li>
+                                    <li><a href="#">Terminal Control</a></li>
+                                    <li><a href="#">AI Integration</a></li>
+                                </ul>
+                            </div>
+                            <div class="api-category">
+                                <h4>Extension APIs</h4>
+                                <ul class="api-list">
+                                    <li><a href="#">Template System</a></li>
+                                    <li><a href="#">Hook Management</a></li>
+                                    <li><a href="#">MCP Integration</a></li>
+                                    <li><a href="#">Custom Commands</a></li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Tutorials Panel -->
+                    <div class="docs-panel" id="tutorials-panel">
+                        <h3>Video Tutorials</h3>
+                        <div class="tutorials-grid">
+                            <div class="tutorial-card">
+                                <div class="tutorial-thumbnail">
+                                    <i class="fas fa-play-circle"></i>
+                                </div>
+                                <h4>Getting Started with Coder1</h4>
+                                <p>15 min • Beginner</p>
+                            </div>
+                            <div class="tutorial-card">
+                                <div class="tutorial-thumbnail">
+                                    <i class="fas fa-play-circle"></i>
+                                </div>
+                                <h4>AI-Powered Development</h4>
+                                <p>20 min • Intermediate</p>
+                            </div>
+                            <div class="tutorial-card">
+                                <div class="tutorial-thumbnail">
+                                    <i class="fas fa-play-circle"></i>
+                                </div>
+                                <h4>Advanced Workflows</h4>
+                                <p>25 min • Advanced</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <style>
+        /* Docs Section Styles */
+        .docs {
+            padding: 100px 0;
+            background: rgba(255, 107, 53, 0.02);
+        }
+        
+        .docs-container {
+            margin-top: 3rem;
+        }
+        
+        .docs-tabs {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            border-bottom: 2px solid var(--border);
+            overflow-x: auto;
+        }
+        
+        .docs-tab {
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            padding: 1rem 1.5rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 1rem;
+            font-weight: 600;
+            white-space: nowrap;
+            position: relative;
+        }
+        
+        .docs-tab:hover {
+            color: var(--text-primary);
+        }
+        
+        .docs-tab.active {
+            color: var(--primary-orange);
+        }
+        
+        .docs-tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: var(--gradient-primary);
+        }
+        
+        .docs-content {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 2rem;
+            min-height: 500px;
+        }
+        
+        .docs-panel {
+            display: none;
+        }
+        
+        .docs-panel.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        .docs-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+        
+        .docs-card {
+            background: rgba(255, 107, 53, 0.05);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            transition: all 0.3s ease;
+        }
+        
+        .docs-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--primary-orange);
+            box-shadow: 0 10px 20px rgba(255, 107, 53, 0.2);
+        }
+        
+        .docs-card-icon {
+            width: 50px;
+            height: 50px;
+            background: var(--gradient-primary);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1rem;
+            font-size: 1.5rem;
+            color: white;
+        }
+        
+        .docs-card h4 {
+            margin-bottom: 0.5rem;
+            color: var(--text-primary);
+        }
+        
+        .docs-card p {
+            color: var(--text-secondary);
+            margin-bottom: 1rem;
+            font-size: 0.9rem;
+        }
+        
+        .docs-link {
+            color: var(--primary-orange);
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .docs-link:hover {
+            transform: translateX(5px);
+            display: inline-block;
+        }
+        
+        .templates-hub-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        
+        .templates-hub-header h3 {
+            margin-bottom: 0.5rem;
+        }
+        
+        .templates-hub-header p {
+            color: var(--text-secondary);
+            margin-bottom: 1.5rem;
+        }
+        
+        .templates-preview {
+            margin-top: 1rem;
+        }
+        
+        .api-categories {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+        
+        .api-category h4 {
+            color: var(--primary-orange);
+            margin-bottom: 1rem;
+        }
+        
+        .api-list {
+            list-style: none;
+        }
+        
+        .api-list li {
+            padding: 0.5rem 0;
+            border-bottom: 1px solid rgba(255, 107, 53, 0.1);
+        }
+        
+        .api-list a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+        
+        .api-list a:hover {
+            color: var(--primary-orange);
+            padding-left: 10px;
+        }
+        
+        .tutorials-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+        
+        .tutorial-card {
+            background: rgba(139, 92, 246, 0.05);
+            border: 1px solid rgba(139, 92, 246, 0.2);
+            border-radius: 12px;
+            padding: 1.5rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .tutorial-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--secondary);
+            box-shadow: 0 10px 20px rgba(139, 92, 246, 0.2);
+        }
+        
+        .tutorial-thumbnail {
+            width: 100%;
+            height: 120px;
+            background: var(--gradient-secondary);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1rem;
+            font-size: 3rem;
+            color: white;
+        }
+        
+        .tutorial-card h4 {
+            margin-bottom: 0.5rem;
+            color: var(--text-primary);
+        }
+        
+        .tutorial-card p {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+    </style>
+
+    <script>
+        // Docs tabs functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const docsTabs = document.querySelectorAll('.docs-tab');
+            const docsPanels = document.querySelectorAll('.docs-panel');
+            
+            docsTabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    // Remove active class from all tabs and panels
+                    docsTabs.forEach(t => t.classList.remove('active'));
+                    docsPanels.forEach(p => p.classList.remove('active'));
+                    
+                    // Add active class to clicked tab
+                    tab.classList.add('active');
+                    
+                    // Show corresponding panel
+                    const tabName = tab.dataset.tab;
+                    const panel = document.getElementById(tabName + '-panel');
+                    if (panel) {
+                        panel.classList.add('active');
+                    }
+                });
+            });
+        });
+    </script>
+
+    <!-- CTA Section -->
+    <section class="cta">
+        <div class="container">
+            <div class="cta-content fade-in">
+                <h2 class="cta-title">Ready to Code Smarter?</h2>
+                <p class="cta-subtitle">Join thousands of developers building with AI assistance</p>
+                <a href="/ide" class="btn btn-primary btn-large">
+                    <i class="fas fa-rocket"></i>
+                    Launch Coder1 IDE
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-brand">
+                    <div class="footer-logo">
+                        <img src="/coder1-logo.png" alt="Coder1" style="height: 90px; width: auto;">
+                    </div>
+                    <p class="footer-description">
+                        The AI-powered IDE that accelerates your development workflow and brings your ideas to life faster.
+                    </p>
+                    <div class="footer-social">
+                        <a href="#" class="social-link"><i class="fab fa-github"></i></a>
+                        <a href="#" class="social-link"><i class="fab fa-twitter"></i></a>
+                        <a href="#" class="social-link"><i class="fab fa-discord"></i></a>
+                        <a href="#" class="social-link"><i class="fab fa-linkedin"></i></a>
+                    </div>
+                </div>
+                <div class="footer-column">
+                    <h4>Product</h4>
+                    <ul class="footer-links">
+                        <li><a href="#features" class="footer-link">Features</a></li>
+                        <li><a href="#pricing" class="footer-link">Pricing</a></li>
+                        <li><a href="#" class="footer-link">Changelog</a></li>
+                        <li><a href="#" class="footer-link">Roadmap</a></li>
+                    </ul>
+                </div>
+                <div class="footer-column">
+                    <h4>Resources</h4>
+                    <ul class="footer-links">
+                        <li><a href="#" class="footer-link">Documentation</a></li>
+                        <li><a href="#" class="footer-link">API Reference</a></li>
+                        <li><a href="#" class="footer-link">Tutorials</a></li>
+                        <li><a href="#" class="footer-link">Blog</a></li>
+                    </ul>
+                </div>
+                <div class="footer-column">
+                    <h4>Company</h4>
+                    <ul class="footer-links">
+                        <li><a href="#" class="footer-link">About</a></li>
+                        <li><a href="#" class="footer-link">Careers</a></li>
+                        <li><a href="#" class="footer-link">Contact</a></li>
+                        <li><a href="#" class="footer-link">Legal</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2024 Coder1. All rights reserved.</p>
+                <div>
+                    <a href="#" class="footer-link">Privacy Policy</a>
+                    <span style="margin: 0 1rem;">•</span>
+                    <a href="#" class="footer-link">Terms of Service</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Navbar scroll effect
+        window.addEventListener('scroll', () => {
+            const navbar = document.getElementById('navbar');
+            if (window.scrollY > 50) {
+                navbar.classList.add('scrolled');
+            } else {
+                navbar.classList.remove('scrolled');
+            }
+        });
+
+        // Smooth scrolling for anchor links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+
+        // Mobile menu toggle
+        const mobileMenuToggle = document.getElementById('mobileMenuToggle');
+        const navLinks = document.querySelector('.nav-links');
+        
+        mobileMenuToggle?.addEventListener('click', () => {
+            navLinks.style.display = navLinks.style.display === 'flex' ? 'none' : 'flex';
+            navLinks.style.position = 'absolute';
+            navLinks.style.top = '100%';
+            navLinks.style.left = '0';
+            navLinks.style.right = '0';
+            navLinks.style.flexDirection = 'column';
+            navLinks.style.background = 'rgba(10, 10, 15, 0.98)';
+            navLinks.style.padding = '2rem';
+            navLinks.style.borderTop = '1px solid var(--border)';
+        });
+
+        // Intersection Observer for animations
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.animationPlayState = 'running';
+                    observer.unobserve(entry.target);
+                }
+            });
+        }, observerOptions);
+
+        // Observe all animated elements
+        document.querySelectorAll('.fade-in, .slide-in-left, .slide-in-right').forEach(el => {
+            el.style.animationPlayState = 'paused';
+            observer.observe(el);
+        });
+
+        // Add stagger effect to cards
+        document.querySelectorAll('.feature-card, .testimonial-card, .pricing-card').forEach((card, index) => {
+            card.style.animationDelay = `${index * 0.1}s`;
+        });
+
+        // Hero title ready - no typing animation needed
+    </script>
+    <script>
+        // Enhanced button interactions with magnetic effect
+        document.querySelectorAll('.btn, .cta-button').forEach(button => {
+            button.addEventListener('mousemove', (e) => {
+                const rect = button.getBoundingClientRect();
+                const x = e.clientX - rect.left - rect.width / 2;
+                const y = e.clientY - rect.top - rect.height / 2;
+                
+                button.style.transform = `translate(${x * 0.1}px, ${y * 0.1}px) scale(1.05)`;
+                button.style.transition = 'transform 0.1s ease';
+            });
+            
+            button.addEventListener('mouseleave', () => {
+                button.style.transform = 'translate(0, 0) scale(1)';
+                button.style.transition = 'transform 0.3s ease';
+            });
+        });
+        
+        // Feature cards parallax effect on hover
+        document.querySelectorAll('.feature-card').forEach(card => {
+            card.addEventListener('mousemove', (e) => {
+                const rect = card.getBoundingClientRect();
+                const x = (e.clientX - rect.left) / rect.width;
+                const y = (e.clientY - rect.top) / rect.height;
+                
+                const tiltX = (y - 0.5) * 5;
+                const tiltY = (x - 0.5) * -5;
+                
+                card.style.transform = `perspective(1000px) rotateX(${tiltX}deg) rotateY(${tiltY}deg) translateZ(10px)`;
+                card.style.transition = 'transform 0.1s ease';
+            });
+            
+            card.addEventListener('mouseleave', () => {
+                card.style.transform = 'perspective(1000px) rotateX(0) rotateY(0) translateZ(0)';
+                card.style.transition = 'transform 0.5s ease';
+            });
+        });
+        
+        // Smooth reveal animations on scroll for cards
+        const cardObserverOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -100px 0px'
+        };
+        
+        const cardObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.opacity = '1';
+                    entry.target.style.transform = 'translateY(0)';
+                }
+            });
+        }, cardObserverOptions);
+        
+        document.querySelectorAll('.feature-card, .stat, .pricing-card').forEach(el => {
+            el.style.opacity = '0';
+            el.style.transform = 'translateY(20px)';
+            el.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+            cardObserver.observe(el);
+        });
+        
+        // Typing animation - with debugging
+        window.addEventListener('load', function() {
+            console.log('Page loaded, starting typewriter setup');
+            
+            const typedTextElement = document.getElementById('typed-text');
+            const cursorElement = document.getElementById('cursor');
+            
+            console.log('Found elements:', {typedText: typedTextElement, cursor: cursorElement});
+            
+            if (!typedTextElement || !cursorElement) {
+                console.error('Typing elements not found!');
+                return;
+            }
+            
+            const text = "Finally, an IDE That Actually Works With Claude Code";
+            let i = 0;
+            
+            // Force visibility and color
+            typedTextElement.style.color = '#030303';
+            typedTextElement.style.webkitTextFillColor = '#030303';
+            cursorElement.style.color = '#00D9FF';
+            cursorElement.style.webkitTextFillColor = '#00D9FF';
+            
+            console.log('Starting typewriter animation');
+            
+            function typeChar() {
+                if (i < text.length) {
+                    typedTextElement.textContent = text.substring(0, i + 1);
+                    i++;
+                    setTimeout(typeChar, 75);
+                } else {
+                    console.log('Typing complete');
+                    // Optional: hide cursor after typing
+                    setTimeout(() => {
+                        cursorElement.style.opacity = '0';
+                    }, 2000);
+                }
+            }
+            
+            // Start typing after page loads
+            setTimeout(() => {
+                console.log('Beginning to type...');
+                typeChar();
+            }, 300);
+        });
+        
+        // Floating animation for stats
+        document.querySelectorAll('.stat').forEach((stat, index) => {
+            stat.style.animation = `float ${3 + index * 0.2}s ease-in-out infinite`;
+            stat.style.animationDelay = `${index * 0.1}s`;
+        });
+    </script>
+</body>
+</html>

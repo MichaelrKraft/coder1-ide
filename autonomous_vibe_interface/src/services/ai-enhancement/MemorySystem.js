@@ -30,6 +30,15 @@ class MemorySystem extends EventEmitter {
             taskOutcomes: []
         };
         
+        // Rate limiting configuration
+        this.rateLimits = new Map(); // Track last recording time for each pattern
+        this.RATE_LIMIT_WINDOW = options.rateLimitWindow || 5000; // 5 seconds default
+        this.MAX_USAGE_COUNT = options.maxUsageCount || 50; // Max usage count per insight
+        
+        // Deduplication tracking
+        this.recentRecordings = new Map(); // Track recent recordings for dedup
+        this.DEDUP_WINDOW = options.dedupWindow || 60000; // 1 minute window
+        
         // Ensure directory exists
         this.ensureDirectoryExists();
         
@@ -40,6 +49,11 @@ class MemorySystem extends EventEmitter {
         this.autoSaveInterval = setInterval(() => {
             this.saveAllData();
         }, 30000);
+        
+        // Clean up rate limit tracking periodically
+        this.cleanupInterval = setInterval(() => {
+            this.cleanupRateLimits();
+        }, 60000); // Every minute
         
         console.log(`🧠 Memory System: Initialized at ${this.memoryDir}`);
     }
@@ -154,11 +168,20 @@ class MemorySystem extends EventEmitter {
     }
 
     /**
-     * Store agent insight
+     * Store agent insight with rate limiting
      */
     storeAgentInsight(agentType, insightType, content, confidence = 0.5, metadata = {}) {
         try {
             const now = Date.now();
+            const insightKey = `${agentType}:${insightType}:${content}`;
+            
+            // Check rate limiting
+            const lastRecorded = this.rateLimits.get(insightKey);
+            if (lastRecorded && (now - lastRecorded) < this.RATE_LIMIT_WINDOW) {
+                // Too soon, skip this recording
+                console.log(`⏳ Rate limited insight: ${insightType} (wait ${Math.ceil((this.RATE_LIMIT_WINDOW - (now - lastRecorded)) / 1000)}s)`);
+                return null;
+            }
             
             // Check if similar insight exists
             const existingIndex = this.data.agentInsights.findIndex(insight =>
@@ -170,9 +193,23 @@ class MemorySystem extends EventEmitter {
             if (existingIndex !== -1) {
                 // Update existing insight
                 const existing = this.data.agentInsights[existingIndex];
+                
+                // Check if usage count is too high
+                if (existing.usageCount >= this.MAX_USAGE_COUNT) {
+                    // Don't increment if already at max
+                    console.log(`📊 Insight at max usage count (${this.MAX_USAGE_COUNT}): ${insightType}`);
+                    existing.lastUsed = now;
+                    existing.confidence = Math.max(existing.confidence, confidence);
+                    this.rateLimits.set(insightKey, now);
+                    return existing.id;
+                }
+                
                 existing.usageCount = (existing.usageCount || 1) + 1;
                 existing.lastUsed = now;
                 existing.confidence = Math.max(existing.confidence, confidence);
+                
+                // Update rate limit tracking
+                this.rateLimits.set(insightKey, now);
                 
                 return existing.id;
             } else {
@@ -191,6 +228,9 @@ class MemorySystem extends EventEmitter {
                 
                 this.data.agentInsights.push(insight);
                 this.trimArray(this.data.agentInsights, 500); // Keep last 500 insights
+                
+                // Update rate limit tracking
+                this.rateLimits.set(insightKey, now);
                 
                 return insight.id;
             }
@@ -635,15 +675,32 @@ class MemorySystem extends EventEmitter {
     }
 
     /**
+     * Clean up old rate limit entries
+     */
+    cleanupRateLimits() {
+        const now = Date.now();
+        const cutoff = now - (this.RATE_LIMIT_WINDOW * 2); // Clean up entries older than 2x the window
+        
+        for (const [key, timestamp] of this.rateLimits.entries()) {
+            if (timestamp < cutoff) {
+                this.rateLimits.delete(key);
+            }
+        }
+    }
+    
+    /**
      * Close memory system
      */
     close() {
         // Save data before closing
         this.saveAllData();
         
-        // Clear auto-save interval
+        // Clear intervals
         if (this.autoSaveInterval) {
             clearInterval(this.autoSaveInterval);
+        }
+        if (this.cleanupInterval) {
+            clearInterval(this.cleanupInterval);
         }
         
         console.log('🧠 Memory System: Closed and data saved');

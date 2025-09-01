@@ -1,316 +1,391 @@
 /**
- * AI Team Management Routes
+ * AI Team Management Routes - REAL AI INTEGRATION
  * 
- * API endpoints for spawning and managing AI development teams
+ * API endpoints for spawning and managing REAL AI development teams
+ * Uses AI Agent Orchestrator Service with Claude API integration
  */
 
 const express = require('express');
 const router = express.Router();
 
-// In-memory storage for active AI teams
+// Import real AI Agent Orchestrator (JavaScript version)
+const { aiOrchestrator } = require('../services/ai-agent-orchestrator');
+
+// Legacy activeTeams for compatibility - now just mirrors orchestrator
 const activeTeams = new Map();
 
 /**
- * Spawn AI Team - Create a simulated multi-agent development team
+ * Spawn AI Team - Create REAL AI development team with Claude integration
  */
-router.post('/spawn', (req, res) => {
+router.post('/spawn', async (req, res) => {
     try {
-        const { sessionId, projectType = 'web-app', complexity = 'medium' } = req.body;
+        const { requirement, sessionId } = req.body;
         
-        // Generate unique team ID
-        const teamId = `team_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        if (!requirement) {
+            return res.status(400).json({
+                success: false,
+                error: 'Project requirement is required. Example: "I want to build a React todo app"'
+            });
+        }
+
+        console.log(`🚀 [AI-TEAM] Spawning REAL AI team for: "${requirement}"`);
         
-        // Define AI agents based on project type
-        const agentConfigs = {
-            'web-app': [
-                { name: 'Frontend Developer', role: 'frontend', expertise: ['React', 'TypeScript', 'Tailwind'] },
-                { name: 'Backend Developer', role: 'backend', expertise: ['Node.js', 'Express', 'API Design'] },
-                { name: 'UI/UX Designer', role: 'design', expertise: ['Figma', 'Design Systems', 'User Research'] },
-                { name: 'QA Engineer', role: 'testing', expertise: ['Jest', 'Cypress', 'Test Automation'] },
-                { name: 'DevOps Engineer', role: 'devops', expertise: ['Docker', 'CI/CD', 'Deployment'] },
-                { name: 'Tech Lead', role: 'architect', expertise: ['Architecture', 'Code Review', 'Best Practices'] }
-            ],
-            'mobile-app': [
-                { name: 'Mobile Developer', role: 'mobile', expertise: ['React Native', 'iOS', 'Android'] },
-                { name: 'Backend Developer', role: 'backend', expertise: ['Node.js', 'GraphQL', 'Database'] },
-                { name: 'UI/UX Designer', role: 'design', expertise: ['Mobile Design', 'Prototyping'] },
-                { name: 'QA Engineer', role: 'testing', expertise: ['Mobile Testing', 'Device Testing'] }
-            ]
-        };
+        // Use AI Agent Orchestrator to spawn real team
+        const teamSession = await aiOrchestrator.spawnTeam(requirement);
         
-        const agents = agentConfigs[projectType] || agentConfigs['web-app'];
-        
-        // Create team configuration
-        const team = {
-            teamId,
-            sessionId: sessionId || `session_${Date.now()}`,
-            projectType,
-            complexity,
-            status: 'initializing',
-            agents: agents.map((agent, index) => ({
+        // Map orchestrator format to legacy API format for compatibility
+        const compatibleTeam = {
+            teamId: teamSession.teamId,
+            sessionId: teamSession.sessionId,
+            projectRequirement: teamSession.projectRequirement,
+            workflow: teamSession.workflow,
+            status: teamSession.status,
+            agents: teamSession.agents.map((agent, index) => ({
                 id: `agent_${index + 1}`,
-                ...agent,
-                status: 'idle',
-                progress: 0,
-                currentTask: null,
-                completedTasks: []
+                name: agent.agentName,
+                role: agent.agentId,
+                status: agent.status,
+                progress: agent.progress,
+                currentTask: agent.currentTask,
+                completedTasks: agent.completedDeliverables,
+                expertise: [] // Legacy field
             })),
-            createdAt: Date.now(),
+            createdAt: teamSession.startTime.getTime(),
             startedAt: null,
             completedAt: null,
             progress: {
-                overall: 0,
+                overall: Math.floor(teamSession.agents.reduce((sum, a) => sum + a.progress, 0) / teamSession.agents.length),
                 planning: 0,
                 development: 0,
                 testing: 0,
                 deployment: 0
-            }
+            },
+            context: teamSession.context,
+            files: teamSession.files
         };
         
-        // Store active team
-        activeTeams.set(teamId, team);
+        // Store in legacy activeTeams for compatibility
+        activeTeams.set(teamSession.teamId, compatibleTeam);
         
-        // Emit socket event for real-time updates (if io is available)
+        // Emit socket event for real-time updates
         if (global.io) {
             global.io.emit('ai-team:spawned', {
-                teamId,
-                sessionId: team.sessionId,
-                agents: team.agents,
-                status: team.status
+                teamId: teamSession.teamId,
+                sessionId: teamSession.sessionId,
+                agents: compatibleTeam.agents,
+                status: teamSession.status,
+                requirement: requirement,
+                workflow: teamSession.workflow
             });
         }
         
-        console.log(`🤖 [AI-TEAM] Spawned team ${teamId} with ${agents.length} agents`);
+        console.log(`✅ [AI-TEAM] REAL team spawned: ${teamSession.teamId}`);
+        console.log(`📋 Workflow: ${teamSession.workflow}`);
+        console.log(`👥 Agents: ${teamSession.agents.map(a => a.agentName).join(', ')}`);
         
         res.json({
             success: true,
-            teamId,
-            sessionId: team.sessionId,
-            agents: team.agents,
-            status: team.status,
-            message: `AI Team spawned with ${agents.length} agents`
+            teamId: teamSession.teamId,
+            sessionId: teamSession.sessionId,
+            agents: compatibleTeam.agents,
+            status: teamSession.status,
+            workflow: teamSession.workflow,
+            requirement: requirement,
+            context: teamSession.context,
+            message: `REAL AI Team spawned with ${teamSession.agents.length} agents`
         });
         
     } catch (error) {
-        console.error('AI Team spawn error:', error);
+        console.error('❌ [AI-TEAM] Real spawn error:', error);
         res.status(500).json({ 
             success: false,
-            error: 'Failed to spawn AI team' 
+            error: `Failed to spawn AI team: ${error.message}` 
         });
     }
 });
 
 /**
- * Start AI Team Work - Begin the development process
+ * Start AI Team Work - Begin REAL AI development process
+ * Note: The orchestrator automatically starts workflow execution on spawn,
+ * so this endpoint mainly provides status updates and compatibility
  */
 router.post('/:teamId/start', async (req, res) => {
     try {
         const { teamId } = req.params;
-        const { tasks = [] } = req.body;
         
-        const team = activeTeams.get(teamId);
-        if (!team) {
+        // Get real team status from orchestrator
+        const realTeam = aiOrchestrator.getTeamStatus(teamId);
+        const legacyTeam = activeTeams.get(teamId);
+        
+        if (!realTeam || !legacyTeam) {
             return res.status(404).json({ 
                 success: false,
                 error: 'Team not found' 
             });
         }
+
+        // Update legacy team with real orchestrator status
+        legacyTeam.status = realTeam.status;
+        legacyTeam.startedAt = Date.now();
         
-        // Update team status
-        team.status = 'working';
-        team.startedAt = Date.now();
-        
-        // Assign initial tasks to agents
-        if (tasks.length > 0) {
-            tasks.slice(0, team.agents.length).forEach((task, index) => {
-                if (team.agents[index]) {
-                    team.agents[index].currentTask = task;
-                    team.agents[index].status = 'working';
-                }
-            });
-        } else {
-            // Default tasks based on roles
-            team.agents.forEach(agent => {
-                switch (agent.role) {
-                    case 'frontend':
-                        agent.currentTask = 'Setting up React components and UI structure';
-                        break;
-                    case 'backend':
-                        agent.currentTask = 'Creating API endpoints and database schema';
-                        break;
-                    case 'design':
-                        agent.currentTask = 'Designing user interface mockups';
-                        break;
-                    case 'testing':
-                        agent.currentTask = 'Setting up test framework and writing initial tests';
-                        break;
-                    case 'devops':
-                        agent.currentTask = 'Configuring deployment pipeline';
-                        break;
-                    case 'architect':
-                        agent.currentTask = 'Reviewing architecture and coordinating team';
-                        break;
-                    default:
-                        agent.currentTask = 'Analyzing project requirements';
-                }
-                agent.status = 'working';
-            });
-        }
+        // Sync agent statuses from orchestrator
+        legacyTeam.agents = realTeam.agents.map((agent, index) => ({
+            id: `agent_${index + 1}`,
+            name: agent.agentName,
+            role: agent.agentId,
+            status: agent.status,
+            progress: agent.progress,
+            currentTask: agent.currentTask,
+            completedTasks: agent.completedDeliverables,
+            expertise: []
+        }));
         
         // Create checkpoint for AI team activation
-        await createTeamCheckpoint(team, 'AI Team Started', 'AI development team activated and began work');
+        await createTeamCheckpoint(legacyTeam, 'REAL AI Team Started', 
+            `Real AI development team with ${realTeam.workflow} workflow activated`);
         
-        // Start simulated progress updates
-        startProgressSimulation(teamId);
+        // Start real-time status monitoring instead of fake simulation
+        startRealTimeMonitoring(teamId);
         
-        // Emit socket event
+        // Emit socket event with real data
         if (global.io) {
             global.io.emit('ai-team:started', {
                 teamId,
-                sessionId: team.sessionId,
-                agents: team.agents,
-                status: team.status
+                sessionId: realTeam.sessionId,
+                agents: legacyTeam.agents,
+                status: realTeam.status,
+                workflow: realTeam.workflow,
+                requirement: realTeam.projectRequirement
             });
         }
         
-        console.log(`🚀 [AI-TEAM] Started team ${teamId} with ${team.agents.length} agents working`);
+        console.log(`🚀 [AI-TEAM] REAL team started: ${teamId}`);
+        console.log(`📋 Workflow executing: ${realTeam.workflow}`);
+        console.log(`👥 Agents working: ${realTeam.agents.map(a => `${a.agentName} (${a.status})`).join(', ')}`);
         
         res.json({
             success: true,
             teamId,
-            agents: team.agents,
-            status: team.status,
-            message: 'AI Team started working'
+            agents: legacyTeam.agents,
+            status: realTeam.status,
+            workflow: realTeam.workflow,
+            requirement: realTeam.projectRequirement,
+            message: `REAL AI Team started - ${realTeam.workflow} workflow executing`
         });
         
     } catch (error) {
-        console.error('AI Team start error:', error);
+        console.error('❌ [AI-TEAM] Real start error:', error);
         res.status(500).json({ 
             success: false,
-            error: 'Failed to start AI team' 
+            error: `Failed to start AI team: ${error.message}` 
         });
     }
 });
 
 /**
- * Get AI Team Status - Retrieve current team progress
+ * Get AI Team Status - Retrieve REAL team progress from orchestrator
  */
 router.get('/:teamId/status', (req, res) => {
     try {
         const { teamId } = req.params;
         
-        const team = activeTeams.get(teamId);
-        if (!team) {
+        // Get real-time status from orchestrator
+        const realTeam = aiOrchestrator.getTeamStatus(teamId);
+        const legacyTeam = activeTeams.get(teamId);
+        
+        if (!realTeam || !legacyTeam) {
             return res.status(404).json({ 
                 success: false,
                 error: 'Team not found' 
             });
         }
         
+        // Update legacy format with real orchestrator data
+        const updatedTeam = {
+            ...legacyTeam,
+            status: realTeam.status,
+            agents: realTeam.agents.map((agent, index) => ({
+                id: `agent_${index + 1}`,
+                name: agent.agentName,
+                role: agent.agentId,
+                status: agent.status,
+                progress: agent.progress,
+                currentTask: agent.currentTask,
+                completedTasks: agent.completedDeliverables,
+                expertise: [],
+                output: agent.output,
+                files: agent.files.length
+            })),
+            progress: {
+                overall: Math.floor(realTeam.agents.reduce((sum, a) => sum + a.progress, 0) / realTeam.agents.length),
+                planning: realTeam.status === 'planning' ? 50 : (realTeam.status === 'completed' ? 100 : 25),
+                development: realTeam.status === 'executing' ? 75 : (realTeam.status === 'completed' ? 100 : 0),
+                testing: realTeam.status === 'integrating' ? 50 : (realTeam.status === 'completed' ? 100 : 0),
+                deployment: realTeam.status === 'completed' ? 100 : 0
+            },
+            workflow: realTeam.workflow,
+            requirement: realTeam.projectRequirement,
+            context: realTeam.context,
+            files: realTeam.files,
+            generatedFiles: realTeam.files.length
+        };
+        
+        // Update legacy storage
+        activeTeams.set(teamId, updatedTeam);
+        
+        console.log(`📊 [AI-TEAM] Status check: ${teamId} - ${realTeam.status} (${updatedTeam.progress.overall}% complete)`);
+        
         res.json({
             success: true,
-            team
+            team: updatedTeam,
+            realTimeData: {
+                activeAgents: realTeam.agents.filter(a => a.status === 'working').length,
+                completedAgents: realTeam.agents.filter(a => a.status === 'completed').length,
+                generatedFiles: realTeam.files.length,
+                workflow: realTeam.workflow,
+                lastUpdate: new Date().toISOString()
+            }
         });
         
     } catch (error) {
-        console.error('AI Team status error:', error);
+        console.error('❌ [AI-TEAM] Status error:', error);
         res.status(500).json({ 
             success: false,
-            error: 'Failed to get team status' 
+            error: `Failed to get team status: ${error.message}` 
         });
     }
 });
 
 /**
- * Stop AI Team - Halt all agent work
+ * Stop AI Team - Halt all REAL agent work
  */
 router.post('/:teamId/stop', async (req, res) => {
     try {
         const { teamId } = req.params;
         
-        const team = activeTeams.get(teamId);
-        if (!team) {
+        const realTeam = aiOrchestrator.getTeamStatus(teamId);
+        const legacyTeam = activeTeams.get(teamId);
+        
+        if (!realTeam || !legacyTeam) {
             return res.status(404).json({ 
                 success: false,
                 error: 'Team not found' 
             });
         }
         
-        // Update team status
-        team.status = 'stopped';
-        team.completedAt = Date.now();
+        console.log(`🛑 [AI-TEAM] Stopping REAL team: ${teamId}`);
         
-        // Stop all agents
-        team.agents.forEach(agent => {
-            agent.status = 'stopped';
-            agent.currentTask = null;
-        });
+        // Use orchestrator emergency stop for this specific team
+        // Note: Current orchestrator only has global emergency stop
+        // TODO: Add individual team stop functionality to orchestrator
+        console.log('⚠️ [AI-TEAM] Individual team stop not implemented in orchestrator - using emergency stop');
+        aiOrchestrator.emergencyStop();
         
-        // Clear progress timer if exists
-        if (team.progressTimer) {
-            clearInterval(team.progressTimer);
-            delete team.progressTimer;
+        // Update legacy team status
+        legacyTeam.status = 'stopped';
+        legacyTeam.completedAt = Date.now();
+        
+        // Clear monitoring timer if exists
+        if (legacyTeam.monitoringTimer) {
+            clearInterval(legacyTeam.monitoringTimer);
+            delete legacyTeam.monitoringTimer;
         }
         
+        // Update agents to stopped status
+        legacyTeam.agents = legacyTeam.agents.map(agent => ({
+            ...agent,
+            status: 'stopped',
+            currentTask: 'Stopped by user'
+        }));
+        
         // Create final checkpoint
-        await createTeamCheckpoint(team, 'AI Team Stopped', 'AI development team stopped by user');
+        await createTeamCheckpoint(legacyTeam, 'REAL AI Team Stopped', 
+            `Real AI development team stopped by user. Generated ${realTeam.files.length} files.`);
         
         // Emit socket event
         if (global.io) {
             global.io.emit('ai-team:stopped', {
                 teamId,
-                sessionId: team.sessionId,
-                agents: team.agents,
-                status: team.status,
-                duration: team.completedAt - team.startedAt
+                sessionId: legacyTeam.sessionId,
+                agents: legacyTeam.agents,
+                status: legacyTeam.status,
+                duration: legacyTeam.completedAt - legacyTeam.startedAt,
+                generatedFiles: realTeam.files.length,
+                workflow: realTeam.workflow
             });
         }
         
-        console.log(`🛑 [AI-TEAM] Stopped team ${teamId}`);
+        console.log(`✅ [AI-TEAM] REAL team stopped: ${teamId} (Generated ${realTeam.files.length} files)`);
         
         res.json({
             success: true,
             teamId,
-            status: team.status,
-            duration: team.completedAt - team.startedAt,
-            message: 'AI Team stopped'
+            status: legacyTeam.status,
+            duration: legacyTeam.completedAt - legacyTeam.startedAt,
+            generatedFiles: realTeam.files.length,
+            workflow: realTeam.workflow,
+            message: `REAL AI Team stopped - ${realTeam.files.length} files generated`
         });
         
     } catch (error) {
-        console.error('AI Team stop error:', error);
+        console.error('❌ [AI-TEAM] Real stop error:', error);
         res.status(500).json({ 
             success: false,
-            error: 'Failed to stop AI team' 
+            error: `Failed to stop AI team: ${error.message}` 
         });
     }
 });
 
 /**
- * List all active teams
+ * List all active REAL AI teams
  */
 router.get('/', (req, res) => {
     try {
-        const teams = Array.from(activeTeams.values()).map(team => ({
-            teamId: team.teamId,
-            sessionId: team.sessionId,
-            status: team.status,
-            agentCount: team.agents.length,
-            progress: team.progress.overall,
-            createdAt: team.createdAt,
-            duration: team.startedAt ? (team.completedAt || Date.now()) - team.startedAt : 0
-        }));
+        // Get all teams from orchestrator
+        const realTeams = aiOrchestrator.getAllTeams();
+        
+        const teams = realTeams.map(realTeam => {
+            const legacyTeam = activeTeams.get(realTeam.teamId);
+            const overallProgress = Math.floor(
+                realTeam.agents.reduce((sum, a) => sum + a.progress, 0) / realTeam.agents.length
+            );
+            
+            return {
+                teamId: realTeam.teamId,
+                sessionId: realTeam.sessionId,
+                status: realTeam.status,
+                agentCount: realTeam.agents.length,
+                progress: overallProgress,
+                createdAt: realTeam.startTime.getTime(),
+                duration: legacyTeam?.startedAt ? 
+                    (legacyTeam.completedAt || Date.now()) - legacyTeam.startedAt : 0,
+                workflow: realTeam.workflow,
+                requirement: realTeam.projectRequirement,
+                generatedFiles: realTeam.files.length,
+                activeAgents: realTeam.agents.filter(a => a.status === 'working').length,
+                completedAgents: realTeam.agents.filter(a => a.status === 'completed').length
+            };
+        });
+        
+        console.log(`📋 [AI-TEAM] Listed ${teams.length} REAL teams`);
         
         res.json({
             success: true,
             teams,
-            total: teams.length
+            total: teams.length,
+            realTimeData: {
+                totalActiveTeams: teams.filter(t => t.status === 'executing' || t.status === 'planning').length,
+                totalGeneratedFiles: teams.reduce((sum, t) => sum + t.generatedFiles, 0),
+                totalActiveAgents: teams.reduce((sum, t) => sum + t.activeAgents, 0),
+                lastUpdate: new Date().toISOString()
+            }
         });
         
     } catch (error) {
-        console.error('AI Teams list error:', error);
+        console.error('❌ [AI-TEAM] List error:', error);
         res.status(500).json({ 
             success: false,
-            error: 'Failed to list AI teams' 
+            error: `Failed to list AI teams: ${error.message}` 
         });
     }
 });
@@ -351,66 +426,127 @@ async function createTeamCheckpoint(team, name, description) {
 }
 
 /**
- * Helper: Simulate agent progress over time
+ * Monitor REAL AI team progress from orchestrator
  */
-function startProgressSimulation(teamId) {
-    const team = activeTeams.get(teamId);
-    if (!team || team.status !== 'working') return;
+function startRealTimeMonitoring(teamId) {
+    const legacyTeam = activeTeams.get(teamId);
+    if (!legacyTeam) {
+        console.error(`❌ [AI-TEAM] Cannot start monitoring - team ${teamId} not found`);
+        return;
+    }
     
-    team.progressTimer = setInterval(() => {
-        // Update individual agent progress
-        team.agents.forEach(agent => {
-            if (agent.status === 'working' && agent.progress < 100) {
-                // Random progress increment (1-5%)
-                const increment = Math.floor(Math.random() * 5) + 1;
-                agent.progress = Math.min(agent.progress + increment, 100);
-                
-                // Simulate task completion
-                if (agent.progress === 100 && agent.currentTask) {
-                    agent.completedTasks.push(agent.currentTask);
-                    agent.currentTask = `Completed: ${agent.currentTask}`;
-                    agent.status = 'completed';
-                }
+    console.log(`📡 [AI-TEAM] Starting REAL monitoring for team: ${teamId}`);
+    
+    legacyTeam.monitoringTimer = setInterval(() => {
+        try {
+            // Get real-time status from orchestrator
+            const realTeam = aiOrchestrator.getTeamStatus(teamId);
+            if (!realTeam) {
+                console.log(`⚠️ [AI-TEAM] Team ${teamId} not found in orchestrator - stopping monitoring`);
+                clearInterval(legacyTeam.monitoringTimer);
+                delete legacyTeam.monitoringTimer;
+                return;
             }
-        });
-        
-        // Update overall progress
-        const totalProgress = team.agents.reduce((sum, agent) => sum + agent.progress, 0);
-        team.progress.overall = Math.floor(totalProgress / team.agents.length);
-        
-        // Emit progress update
-        if (global.io) {
-            global.io.emit('ai-team:progress', {
-                teamId,
-                sessionId: team.sessionId,
-                agents: team.agents,
-                progress: team.progress
-            });
-        }
-        
-        // Check if all agents completed
-        const allCompleted = team.agents.every(agent => agent.progress >= 100);
-        if (allCompleted) {
-            team.status = 'completed';
-            team.completedAt = Date.now();
-            clearInterval(team.progressTimer);
             
-            // Create completion checkpoint
-            createTeamCheckpoint(team, 'AI Team Completed', 'All AI agents completed their assigned tasks');
+            // Update legacy team with real orchestrator data
+            legacyTeam.status = realTeam.status;
+            legacyTeam.agents = realTeam.agents.map((agent, index) => ({
+                id: `agent_${index + 1}`,
+                name: agent.agentName,
+                role: agent.agentId,
+                status: agent.status,
+                progress: agent.progress,
+                currentTask: agent.currentTask,
+                completedTasks: agent.completedDeliverables,
+                expertise: [],
+                output: agent.output,
+                files: agent.files.length
+            }));
             
+            // Calculate real progress
+            const overallProgress = Math.floor(
+                realTeam.agents.reduce((sum, a) => sum + a.progress, 0) / realTeam.agents.length
+            );
+            
+            legacyTeam.progress = {
+                overall: overallProgress,
+                planning: realTeam.status === 'planning' ? 50 : (realTeam.status === 'completed' ? 100 : 25),
+                development: realTeam.status === 'executing' ? 75 : (realTeam.status === 'completed' ? 100 : 0),
+                testing: realTeam.status === 'integrating' ? 50 : (realTeam.status === 'completed' ? 100 : 0),
+                deployment: realTeam.status === 'completed' ? 100 : 0
+            };
+            
+            legacyTeam.generatedFiles = realTeam.files.length;
+            
+            // Emit REAL progress update
             if (global.io) {
-                global.io.emit('ai-team:completed', {
+                global.io.emit('ai-team:progress', {
                     teamId,
-                    sessionId: team.sessionId,
-                    agents: team.agents,
-                    duration: team.completedAt - team.startedAt
+                    sessionId: realTeam.sessionId,
+                    agents: legacyTeam.agents,
+                    progress: legacyTeam.progress,
+                    status: realTeam.status,
+                    workflow: realTeam.workflow,
+                    generatedFiles: realTeam.files.length,
+                    activeAgents: realTeam.agents.filter(a => a.status === 'working').length,
+                    lastUpdate: new Date().toISOString()
                 });
             }
             
-            console.log(`✅ [AI-TEAM] Team ${teamId} completed all tasks`);
+            // Check if team completed
+            if (realTeam.status === 'completed') {
+                legacyTeam.status = 'completed';
+                legacyTeam.completedAt = Date.now();
+                clearInterval(legacyTeam.monitoringTimer);
+                delete legacyTeam.monitoringTimer;
+                
+                // Create completion checkpoint
+                createTeamCheckpoint(legacyTeam, 'REAL AI Team Completed', 
+                    `All AI agents completed their tasks. Generated ${realTeam.files.length} files using ${realTeam.workflow} workflow.`);
+                
+                if (global.io) {
+                    global.io.emit('ai-team:completed', {
+                        teamId,
+                        sessionId: realTeam.sessionId,
+                        agents: legacyTeam.agents,
+                        duration: legacyTeam.completedAt - legacyTeam.startedAt,
+                        generatedFiles: realTeam.files.length,
+                        workflow: realTeam.workflow,
+                        files: realTeam.files
+                    });
+                }
+                
+                console.log(`🎉 [AI-TEAM] REAL team ${teamId} completed! Generated ${realTeam.files.length} files`);
+                
+                // Log generated files
+                realTeam.files.forEach(file => {
+                    console.log(`📁 Generated: ${file.path} (by ${file.agent})`);
+                });
+            }
+            
+            // Handle error states
+            if (realTeam.status === 'error') {
+                legacyTeam.status = 'error';
+                clearInterval(legacyTeam.monitoringTimer);
+                delete legacyTeam.monitoringTimer;
+                
+                console.error(`❌ [AI-TEAM] Team ${teamId} encountered an error`);
+                
+                if (global.io) {
+                    global.io.emit('ai-team:error', {
+                        teamId,
+                        sessionId: realTeam.sessionId,
+                        status: 'error',
+                        message: 'AI team encountered an error during execution'
+                    });
+                }
+            }
+            
+        } catch (error) {
+            console.error(`❌ [AI-TEAM] Monitoring error for ${teamId}:`, error);
         }
         
-    }, 3000); // Update every 3 seconds
+    }, 2000); // Update every 2 seconds for real-time feel
 }
 
 module.exports = router;

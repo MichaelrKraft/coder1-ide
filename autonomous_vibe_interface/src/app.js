@@ -63,8 +63,18 @@ const io = socketIO(server, {
 // Apply rate limiting to Socket.IO connections
 io.use(socketConnectionLimit);
 
-// Middleware
-app.use(cors());
+// CORS configuration to allow Next.js IDE (localhost:3002) to access Express backend (localhost:3000)
+app.use(cors({
+    origin: [
+        'http://localhost:3002',  // Next.js IDE
+        'http://localhost:3000',  // Express backend (same-origin)
+        'http://127.0.0.1:3002',  // Alternative localhost format
+        'http://127.0.0.1:3000'   // Alternative localhost format
+    ],
+    credentials: true,  // Allow cookies/auth if needed
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 

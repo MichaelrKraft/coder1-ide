@@ -262,6 +262,9 @@
             
             socket.on('terminal-data', (data) => {
                 if (data.id === terminalId) {
+                    // Store scroll position before adding new content
+                    const wasNearBottom = (container.scrollTop + container.clientHeight) >= (container.scrollHeight - 50);
+                    
                     // Parse and display output
                     outputBuffer += data.data;
                     
@@ -287,8 +290,11 @@
                         container.appendChild(outputDiv);
                     }
                     
-                    // Scroll to bottom
-                    container.scrollTop = container.scrollHeight;
+                    // Smart scroll: only scroll to bottom if user was near bottom
+                    // This prevents interrupting manual scrolling to read Claude's output
+                    if (wasNearBottom) {
+                        container.scrollTop = container.scrollHeight;
+                    }
                     
                     // Clear buffer after display
                     outputBuffer = '';

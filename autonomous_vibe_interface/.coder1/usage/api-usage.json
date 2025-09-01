@@ -1,0 +1,736 @@
+{
+  "users": [
+    {
+      "userId": "127.0.0.1",
+      "dailyCalls": 0,
+      "dailyCost": 0,
+      "totalCalls": 0,
+      "totalCost": 0,
+      "firstCall": 1756486066659,
+      "lastCall": null,
+      "lastReset": 1756486066659,
+      "callHistory": [],
+      "plan": "free"
+    },
+    {
+      "userId": "test-user",
+      "dailyCalls": 105,
+      "dailyCost": 0.46798800000000024,
+      "totalCalls": 105,
+      "totalCost": 0.46798800000000024,
+      "firstCall": 1756486084043,
+      "lastCall": 1756486090437,
+      "lastReset": 1756486084043,
+      "callHistory": [
+        {
+          "timestamp": 1756486084043,
+          "service": "anthropic",
+          "model": "claude-3-sonnet",
+          "tokens": 1807,
+          "cost": 0.005421
+        },
+        {
+          "timestamp": 1756486084043,
+          "service": "anthropic",
+          "model": "claude-3-sonnet",
+          "tokens": 503,
+          "cost": 0.0015090000000000001
+        },
+        {
+          "timestamp": 1756486084043,
+          "service": "anthropic",
+          "model": "claude-3-sonnet",
+          "tokens": 1456,
+          "cost": 0.004368
+        },
+        {
+          "timestamp": 1756486084043,
+          "service": "anthropic",
+          "model": "claude-3-sonnet",
+          "tokens": 903,
+          "cost": 0.002709
+        },
+        {
+          "timestamp": 1756486084043,
+          "service": "anthropic",
+          "model": "claude-3-sonnet",
+          "tokens": 1813,
+          "cost": 0.005439
+        },
+        {
+          "timestamp": 1756486084043,
+          "service": "anthropic",
+          "model": "claude-3-sonnet",
+          "tokens": 1855,
+          "cost": 0.005565
+        },
+        {
+          "timestamp": 1756486084043,
+          "service": "anthropic",
+          "model": "claude-3-sonnet",
+          "tokens": 1656,
+          "cost": 0.004968
+        },
+        {
+          "timestamp": 1756486084043,
+          "service": "anthropic",
+          "model": "claude-3-sonnet",
+          "tokens": 792,
+          "cost": 0.002376
+        },
+        {
+          "timestamp": 1756486084043,
+          "service": "anthropic",
+          "model": "claude-3-sonnet",
+          "tokens": 1659,
+          "cost": 0.0049770000000000005
+        },
+        {
+          "timestamp": 1756486084043,
+          "service": "anthropic",
+          "model": "claude-3-sonnet",
+          "tokens": 1058,
+          "cost": 0.003174
+        },
+        {
+          "timestamp": 1756486084043,
+          "service": "anthropic",
+          "model": "claude-3-sonnet",
+          "tokens": 1836,
+          "cost": 0.005508000000000001
+        },
+        {
+          "timestamp": 1756486084043,
+          "service": "anthropic",
+          "model": "claude-3-sonnet",
+          "tokens": 942,
+          "cost": 0.002826
+        },
+        {
+          "timestamp": 1756486084043,
+          "service": "anthropic",
+          "model": "claude-3-sonnet",
+          "tokens": 844,
+          "cost": 0.002532
+        },
+        {
+          "timestamp": 1756486084043,
+          "service": "anthropic",
+          "model": "claude-3-sonnet",
+          "tokens": 2393,
+          "cost": 0.007179
+        },
+        {
+          "timestamp": 1756486084043,
+          "service": "anthropic",
+          "model": "claude-3-sonnet",
+          "tokens": 991,
+          "cost": 0.002973
+        },
+        {
+          "timestamp": 1756486084043,
+          "service": "anthropic",
+          "model": "claude-3-sonnet",
+          "tokens": 900,
+          "cost": 0.0027
+        },
+        {
+          "timestamp": 1756486084043,
+          "service": "anthropic",
+          "model": "claude-3-sonnet",
+          "tokens": 863,
+          "cost": 0.002589
+        },
+        {
+          "timestamp": 1756486084043,
+          "service": "anthropic",
+          "model": "claude-3-sonnet",
+          "tokens": 2173,
+          "cost": 0.0065190000000000005
+        },
+        {
+          "timestamp": 1756486084043,
+          "service": "anthropic",
+          "model": "claude-3-sonnet",
+          "tokens": 1498,
+          "cost": 0.004494
+        },
+        {
+          "timestamp": 1756486084043,
+          "service": "anthropic",
+          "model": "claude-3-sonnet",
+          "tokens": 2184,
+          "cost": 0.0065520000000000005
+        },
+        {
+          "timestamp": 1756486084043,
+          "service": "anthropic",
+          "model": "claude-3-sonnet",
+          "tokens": 1966,
+          "cost": 0.0058980000000000005
+        },
+        {
+          "timestamp": 1756486084043,
+          "service": "anthropic",
+          "model": "claude-3-sonnet",
+          "tokens": 1540,
+          "cost": 0.00462
+        },
+        {
+          "timestamp": 1756486084043,
+          "service": "anthropic",
+          "model": "claude-3-sonnet",
+          "tokens": 811,
+          "cost": 0.0024330000000000003
+        },
+        {
+          "timestamp": 1756486084043,
+          "service": "anthropic",
+          "model": "claude-3-sonnet",
+          "tokens": 973,
+          "cost": 0.002919
+        },
+        {
+          "timestamp": 1756486084043,
+          "service": "anthropic",
+          "model": "claude-3-sonnet",
+          "tokens": 2291,
+          "cost": 0.006873
+        },
+        {
+          "timestamp": 1756486084043,
+          "service": "anthropic",
+          "model": "claude-3-sonnet",
+          "tokens": 1929,
+          "cost": 0.0057870000000000005
+        },
+        {
+          "timestamp": 1756486084043,
+          "service": "anthropic",
+          "model": "claude-3-sonnet",
+          "tokens": 1720,
+          "cost": 0.00516
+        },
+        {
+          "timestamp": 1756486084043,
+          "service": "anthropic",
+          "model": "claude-3-sonnet",
+          "tokens": 2323,
+          "cost": 0.006969
+        },
+        {
+          "timestamp": 1756486084043,
+          "service": "anthropic",
+          "model": "claude-3-sonnet",
+          "tokens": 2309,
+          "cost": 0.006927000000000001
+        },
+        {
+          "timestamp": 1756486084043,
+          "service": "anthropic",
+          "model": "claude-3-sonnet",
+          "tokens": 1354,
+          "cost": 0.0040620000000000005
+        },
+        {
+          "timestamp": 1756486084043,
+          "service": "anthropic",
+          "model": "claude-3-sonnet",
+          "tokens": 2032,
+          "cost": 0.006096
+        },
+        {
+          "timestamp": 1756486084043,
+          "service": "anthropic",
+          "model": "claude-3-sonnet",
+          "tokens": 1026,
+          "cost": 0.003078
+        },
+        {
+          "timestamp": 1756486084043,
+          "service": "anthropic",
+          "model": "claude-3-sonnet",
+          "tokens": 1410,
+          "cost": 0.00423
+        },
+        {
+          "timestamp": 1756486084043,
+          "service": "anthropic",
+          "model": "claude-3-sonnet",
+          "tokens": 1535,
+          "cost": 0.004605
+        },
+        {
+          "timestamp": 1756486084043,
+          "service": "anthropic",
+          "model": "claude-3-sonnet",
+          "tokens": 1449,
+          "cost": 0.004347
+        },
+        {
+          "timestamp": 1756486084044,
+          "service": "anthropic",
+          "model": "claude-3-sonnet",
+          "tokens": 583,
+          "cost": 0.001749
+        },
+        {
+          "timestamp": 1756486084044,
+          "service": "anthropic",
+          "model": "claude-3-sonnet",
+          "tokens": 1084,
+          "cost": 0.003252
+        },
+        {
+          "timestamp": 1756486084044,
+          "service": "anthropic",
+          "model": "claude-3-sonnet",
+          "tokens": 1660,
+          "cost": 0.00498
+        },
+        {
+          "timestamp": 1756486084044,
+          "service": "anthropic",
+          "model": "claude-3-sonnet",
+          "tokens": 1471,
+          "cost": 0.004413
+        },
+        {
+          "timestamp": 1756486084044,
+          "service": "anthropic",
+          "model": "claude-3-sonnet",
+          "tokens": 1634,
+          "cost": 0.004902
+        },
+        {
+          "timestamp": 1756486084044,
+          "service": "anthropic",
+          "model": "claude-3-sonnet",
+          "tokens": 1838,
+          "cost": 0.005514000000000001
+        },
+        {
+          "timestamp": 1756486084044,
+          "service": "anthropic",
+          "model": "claude-3-sonnet",
+          "tokens": 1897,
+          "cost": 0.005691
+        },
+        {
+          "timestamp": 1756486084044,
+          "service": "anthropic",
+          "model": "claude-3-sonnet",
+          "tokens": 1595,
+          "cost": 0.004785
+        },
+        {
+          "timestamp": 1756486084044,
+          "service": "anthropic",
+          "model": "claude-3-sonnet",
+          "tokens": 1924,
+          "cost": 0.005772
+        },
+        {
+          "timestamp": 1756486084044,
+          "service": "anthropic",
+          "model": "claude-3-sonnet",
+          "tokens": 2304,
+          "cost": 0.006912
+        },
+        {
+          "timestamp": 1756486084044,
+          "service": "anthropic",
+          "model": "claude-3-sonnet",
+          "tokens": 2090,
+          "cost": 0.0062699999999999995
+        },
+        {
+          "timestamp": 1756486084044,
+          "service": "anthropic",
+          "model": "claude-3-sonnet",
+          "tokens": 681,
+          "cost": 0.002043
+        },
+        {
+          "timestamp": 1756486084044,
+          "service": "anthropic",
+          "model": "claude-3-sonnet",
+          "tokens": 1709,
+          "cost": 0.0051270000000000005
+        },
+        {
+          "timestamp": 1756486084044,
+          "service": "anthropic",
+          "model": "claude-3-sonnet",
+          "tokens": 1509,
+          "cost": 0.004527
+        },
+        {
+          "timestamp": 1756486084044,
+          "service": "anthropic",
+          "model": "claude-3-sonnet",
+          "tokens": 1021,
+          "cost": 0.0030629999999999998
+        },
+        {
+          "timestamp": 1756486084044,
+          "service": "anthropic",
+          "model": "claude-3-sonnet",
+          "tokens": 1209,
+          "cost": 0.0036270000000000004
+        },
+        {
+          "timestamp": 1756486084044,
+          "service": "anthropic",
+          "model": "claude-3-sonnet",
+          "tokens": 2219,
+          "cost": 0.006657
+        },
+        {
+          "timestamp": 1756486084044,
+          "service": "anthropic",
+          "model": "claude-3-sonnet",
+          "tokens": 1266,
+          "cost": 0.003798
+        },
+        {
+          "timestamp": 1756486084044,
+          "service": "anthropic",
+          "model": "claude-3-sonnet",
+          "tokens": 1282,
+          "cost": 0.003846
+        },
+        {
+          "timestamp": 1756486084044,
+          "service": "anthropic",
+          "model": "claude-3-sonnet",
+          "tokens": 961,
+          "cost": 0.002883
+        },
+        {
+          "timestamp": 1756486084044,
+          "service": "anthropic",
+          "model": "claude-3-sonnet",
+          "tokens": 607,
+          "cost": 0.001821
+        },
+        {
+          "timestamp": 1756486084044,
+          "service": "anthropic",
+          "model": "claude-3-sonnet",
+          "tokens": 876,
+          "cost": 0.002628
+        },
+        {
+          "timestamp": 1756486084044,
+          "service": "anthropic",
+          "model": "claude-3-sonnet",
+          "tokens": 569,
+          "cost": 0.001707
+        },
+        {
+          "timestamp": 1756486084044,
+          "service": "anthropic",
+          "model": "claude-3-sonnet",
+          "tokens": 1135,
+          "cost": 0.003405
+        },
+        {
+          "timestamp": 1756486084044,
+          "service": "anthropic",
+          "model": "claude-3-sonnet",
+          "tokens": 1482,
+          "cost": 0.004446
+        },
+        {
+          "timestamp": 1756486084044,
+          "service": "anthropic",
+          "model": "claude-3-sonnet",
+          "tokens": 587,
+          "cost": 0.001761
+        },
+        {
+          "timestamp": 1756486084044,
+          "service": "anthropic",
+          "model": "claude-3-sonnet",
+          "tokens": 826,
+          "cost": 0.0024779999999999997
+        },
+        {
+          "timestamp": 1756486084044,
+          "service": "anthropic",
+          "model": "claude-3-sonnet",
+          "tokens": 1145,
+          "cost": 0.003435
+        },
+        {
+          "timestamp": 1756486084044,
+          "service": "anthropic",
+          "model": "claude-3-sonnet",
+          "tokens": 1741,
+          "cost": 0.005223
+        },
+        {
+          "timestamp": 1756486084044,
+          "service": "anthropic",
+          "model": "claude-3-sonnet",
+          "tokens": 956,
+          "cost": 0.002868
+        },
+        {
+          "timestamp": 1756486084044,
+          "service": "anthropic",
+          "model": "claude-3-sonnet",
+          "tokens": 950,
+          "cost": 0.00285
+        },
+        {
+          "timestamp": 1756486084044,
+          "service": "anthropic",
+          "model": "claude-3-sonnet",
+          "tokens": 1016,
+          "cost": 0.003048
+        },
+        {
+          "timestamp": 1756486084044,
+          "service": "anthropic",
+          "model": "claude-3-sonnet",
+          "tokens": 874,
+          "cost": 0.002622
+        },
+        {
+          "timestamp": 1756486084044,
+          "service": "anthropic",
+          "model": "claude-3-sonnet",
+          "tokens": 2405,
+          "cost": 0.007214999999999999
+        },
+        {
+          "timestamp": 1756486084044,
+          "service": "anthropic",
+          "model": "claude-3-sonnet",
+          "tokens": 2041,
+          "cost": 0.006123
+        },
+        {
+          "timestamp": 1756486084044,
+          "service": "anthropic",
+          "model": "claude-3-sonnet",
+          "tokens": 1213,
+          "cost": 0.0036390000000000003
+        },
+        {
+          "timestamp": 1756486084044,
+          "service": "anthropic",
+          "model": "claude-3-sonnet",
+          "tokens": 1600,
+          "cost": 0.0048000000000000004
+        },
+        {
+          "timestamp": 1756486084044,
+          "service": "anthropic",
+          "model": "claude-3-sonnet",
+          "tokens": 1951,
+          "cost": 0.0058530000000000006
+        },
+        {
+          "timestamp": 1756486084044,
+          "service": "anthropic",
+          "model": "claude-3-sonnet",
+          "tokens": 1967,
+          "cost": 0.005901
+        },
+        {
+          "timestamp": 1756486084049,
+          "service": "anthropic",
+          "model": "claude-3-sonnet",
+          "tokens": 845,
+          "cost": 0.002535
+        },
+        {
+          "timestamp": 1756486084049,
+          "service": "anthropic",
+          "model": "claude-3-sonnet",
+          "tokens": 1916,
+          "cost": 0.005748
+        },
+        {
+          "timestamp": 1756486084049,
+          "service": "anthropic",
+          "model": "claude-3-sonnet",
+          "tokens": 2465,
+          "cost": 0.007395
+        },
+        {
+          "timestamp": 1756486084049,
+          "service": "anthropic",
+          "model": "claude-3-sonnet",
+          "tokens": 1913,
+          "cost": 0.005739
+        },
+        {
+          "timestamp": 1756486084049,
+          "service": "anthropic",
+          "model": "claude-3-sonnet",
+          "tokens": 1951,
+          "cost": 0.0058530000000000006
+        },
+        {
+          "timestamp": 1756486084049,
+          "service": "anthropic",
+          "model": "claude-3-sonnet",
+          "tokens": 1884,
+          "cost": 0.005652
+        },
+        {
+          "timestamp": 1756486084049,
+          "service": "anthropic",
+          "model": "claude-3-sonnet",
+          "tokens": 1215,
+          "cost": 0.0036450000000000002
+        },
+        {
+          "timestamp": 1756486084049,
+          "service": "anthropic",
+          "model": "claude-3-sonnet",
+          "tokens": 1887,
+          "cost": 0.005661
+        },
+        {
+          "timestamp": 1756486084049,
+          "service": "anthropic",
+          "model": "claude-3-sonnet",
+          "tokens": 907,
+          "cost": 0.0027210000000000003
+        },
+        {
+          "timestamp": 1756486084049,
+          "service": "anthropic",
+          "model": "claude-3-sonnet",
+          "tokens": 1841,
+          "cost": 0.005523
+        },
+        {
+          "timestamp": 1756486084049,
+          "service": "anthropic",
+          "model": "claude-3-sonnet",
+          "tokens": 2340,
+          "cost": 0.007019999999999999
+        },
+        {
+          "timestamp": 1756486084049,
+          "service": "anthropic",
+          "model": "claude-3-sonnet",
+          "tokens": 2450,
+          "cost": 0.007350000000000001
+        },
+        {
+          "timestamp": 1756486084049,
+          "service": "anthropic",
+          "model": "claude-3-sonnet",
+          "tokens": 1937,
+          "cost": 0.005811
+        },
+        {
+          "timestamp": 1756486084049,
+          "service": "anthropic",
+          "model": "claude-3-sonnet",
+          "tokens": 1843,
+          "cost": 0.005529
+        },
+        {
+          "timestamp": 1756486084049,
+          "service": "anthropic",
+          "model": "claude-3-sonnet",
+          "tokens": 1184,
+          "cost": 0.003552
+        },
+        {
+          "timestamp": 1756486084049,
+          "service": "anthropic",
+          "model": "claude-3-sonnet",
+          "tokens": 1980,
+          "cost": 0.00594
+        },
+        {
+          "timestamp": 1756486090436,
+          "service": "anthropic",
+          "model": "claude-3-sonnet",
+          "tokens": 1529,
+          "cost": 0.004587
+        },
+        {
+          "timestamp": 1756486090436,
+          "service": "anthropic",
+          "model": "claude-3-sonnet",
+          "tokens": 2411,
+          "cost": 0.007233
+        },
+        {
+          "timestamp": 1756486090436,
+          "service": "anthropic",
+          "model": "claude-3-sonnet",
+          "tokens": 1201,
+          "cost": 0.0036030000000000003
+        },
+        {
+          "timestamp": 1756486090436,
+          "service": "anthropic",
+          "model": "claude-3-sonnet",
+          "tokens": 787,
+          "cost": 0.0023610000000000003
+        },
+        {
+          "timestamp": 1756486090436,
+          "service": "anthropic",
+          "model": "claude-3-sonnet",
+          "tokens": 520,
+          "cost": 0.0015600000000000002
+        },
+        {
+          "timestamp": 1756486090436,
+          "service": "anthropic",
+          "model": "claude-3-sonnet",
+          "tokens": 1773,
+          "cost": 0.005319
+        },
+        {
+          "timestamp": 1756486090436,
+          "service": "anthropic",
+          "model": "claude-3-sonnet",
+          "tokens": 1022,
+          "cost": 0.003066
+        },
+        {
+          "timestamp": 1756486090437,
+          "service": "anthropic",
+          "model": "claude-3-sonnet",
+          "tokens": 1310,
+          "cost": 0.00393
+        },
+        {
+          "timestamp": 1756486090437,
+          "service": "anthropic",
+          "model": "claude-3-sonnet",
+          "tokens": 1699,
+          "cost": 0.005097
+        },
+        {
+          "timestamp": 1756486090437,
+          "service": "anthropic",
+          "model": "claude-3-sonnet",
+          "tokens": 932,
+          "cost": 0.0027960000000000003
+        }
+      ],
+      "plan": "free"
+    }
+  ],
+  "global": {
+    "totalCalls": 105,
+    "totalCost": 0.46798800000000024,
+    "startTime": 1756486049645,
+    "lastReset": 1756486049645
+  },
+  "savedAt": 1756490188648
+}

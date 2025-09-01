@@ -72,16 +72,11 @@ export default function DiscoverSection() {
   // Always render the component - container should never disappear
   return (
     <div 
-      className="border-t border-border-default"
+      className="border-t border-border-default bg-bg-secondary"
       style={{ 
-        backgroundColor: 'var(--bg-secondary)',
         minHeight: '40px',
-        height: 'auto',
         position: 'relative',
-        zIndex: 10,
-        boxSizing: 'border-box',
-        display: 'block !important',
-        visibility: 'visible !important'
+        zIndex: 10
       }}
     >
       {/* Discover Header - ALWAYS VISIBLE NO MATTER WHAT */}
