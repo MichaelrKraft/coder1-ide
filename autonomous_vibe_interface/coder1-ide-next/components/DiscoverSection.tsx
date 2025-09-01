@@ -72,11 +72,13 @@ export default function DiscoverSection() {
   // Always render the component - container should never disappear
   return (
     <div 
-      className="border-t border-border-default bg-bg-secondary"
+      className={`border-t border-border-default bg-bg-secondary ${isExpanded ? '' : 'h-[40px] overflow-hidden'}`}
       style={{ 
         minHeight: '40px',
         position: 'relative',
-        zIndex: 10
+        zIndex: 10,
+        transition: 'height 0.3s ease, max-height 0.3s ease',
+        boxSizing: 'border-box'  // Include border in height calculation
       }}
     >
       {/* Discover Header - ALWAYS VISIBLE NO MATTER WHAT */}
@@ -85,11 +87,14 @@ export default function DiscoverSection() {
         onClick={handleToggle}
         onDoubleClick={resetPanel}
         title={isExpanded ? "Click to collapse" : "Click to expand (or Ctrl+Shift+D to force restore)"}
-        style={{ 
+        style={{
+          minHeight: '39px',  // 40px minus 1px border
+          maxHeight: '39px',
           height: '40px',
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'space-between'
+          justifyContent: 'space-between',
+          boxSizing: 'border-box'
         }}
       >
         <div className="flex items-center gap-2">
@@ -101,22 +106,18 @@ export default function DiscoverSection() {
             <span className="text-xs text-text-muted">(collapsed)</span>
           )}
         </div>
-        <div className="flex items-center" style={{ pointerEvents: 'none' }}>
+        <div className="flex items-center">
           {isExpanded ? (
-            <ChevronDown className="w-4 h-4 text-text-muted" />
+            <ChevronDown className="w-4 h-4 text-text-muted hover:text-text-primary transition-colors" />
           ) : (
-            <ChevronUp className="w-4 h-4 text-text-muted" />
+            <ChevronUp className="w-4 h-4 text-text-muted hover:text-text-primary transition-colors" />
           )}
         </div>
       </div>
       
       {/* Discover Content - Only shown when expanded */}
-      <div 
-        className="px-3 pb-3 space-y-3"
-        style={{
-          display: isExpanded ? 'block' : 'none'
-        }}
-      >
+      {isExpanded && (
+        <div className="px-3 pb-3 space-y-3">
           {/* Menu Items */}
           <div className="space-y-1">
             <a href="http://localhost:3000/component-studio.html" className="w-full flex items-center gap-2 px-2 py-1.5 text-xs text-text-secondary hover:text-text-primary hover:bg-bg-tertiary rounded transition-colors">
@@ -228,7 +229,8 @@ export default function DiscoverSection() {
               </button>
             </div>
           </div>
-      </div>
+        </div>
+      )}
     </div>
   );
 }
