@@ -28,6 +28,11 @@ const config: Config = {
           'default': 'rgba(255, 255, 255, 0.08)',
           'hover': 'rgba(0, 217, 255, 0.3)',
           'active': 'rgba(0, 217, 255, 0.5)',
+        },
+        'text': {
+          'primary': '#ffffff',
+          'secondary': '#a0a0a0',
+          'muted': '#6b7280',
         }
       },
       boxShadow: {

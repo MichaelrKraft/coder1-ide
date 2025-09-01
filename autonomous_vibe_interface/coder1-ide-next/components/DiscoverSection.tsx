@@ -147,7 +147,7 @@ export default function DiscoverSection() {
               <h4 className="text-xs font-semibold text-text-muted">Commands</h4>
               <button 
                 onClick={addCustomCommand}
-                className="text-xs text-coder1-cyan hover:text-coder1-cyan-light transition-colors flex items-center gap-1"
+                className="text-xs text-coder1-cyan hover:text-coder1-cyan-secondary transition-colors flex items-center gap-1"
               >
                 <Plus className="w-3 h-3" />
                 Add
