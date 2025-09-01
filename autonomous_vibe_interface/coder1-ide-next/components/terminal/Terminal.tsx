@@ -745,30 +745,110 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
     }
   };
 
-  const handleSpawnAgents = () => {
+  const handleSpawnAgents = async () => {
     if (agentsRunning) {
       // Stop agents
       setAgentsRunning(false);
       xtermRef.current?.writeln('\r\n🛑 Stopping AI agents...');
+      
+      // Stop the team via backend API
+      try {
+        const teamId = localStorage.getItem('activeTeamId');
+        if (teamId) {
+          const response = await fetch(`http://localhost:3000/api/ai-team/${teamId}/stop`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+          });
+          
+          if (response.ok) {
+            const result = await response.json();
+            xtermRef.current?.writeln(`✅ AI Team stopped (${Math.round(result.duration / 1000)}s runtime)`);
+            localStorage.removeItem('activeTeamId');
+          }
+        }
+      } catch (error) {
+        console.error('Failed to stop AI team:', error);
+        xtermRef.current?.writeln('⚠️ Team stopped locally (backend unavailable)');
+      }
     } else {
-      // Spawn agents
+      // Start agents
       setAgentsRunning(true);
       setIsConnected(true);
       
-      // Show blinking instructions
       xtermRef.current?.writeln('\r\n⚡ Spawning AI Team...');
-      xtermRef.current?.writeln('👀 LOOK RIGHT! OPEN PREVIEW PANEL TO SEE AGENTS →');
+      xtermRef.current?.writeln('🤖 Connecting to AI Team Management System...');
       
-      // Notify parent
-      onAgentsSpawn?.();
-      
-      // Simulate agent startup
-      setTimeout(() => {
-        xtermRef.current?.writeln('✅ Frontend Agent ready');
-        xtermRef.current?.writeln('✅ Backend Agent ready');
-        xtermRef.current?.writeln('✅ Architect Agent ready');
+      try {
+        // Get current session ID from localStorage or create new one
+        const sessionId = localStorage.getItem('currentSessionId') || `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        localStorage.setItem('currentSessionId', sessionId);
+        
+        // Spawn AI team via backend API
+        const spawnResponse = await fetch('http://localhost:3000/api/ai-team/spawn', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            sessionId,
+            projectType: 'web-app',
+            complexity: 'medium'
+          })
+        });
+        
+        if (!spawnResponse.ok) {
+          throw new Error(`HTTP ${spawnResponse.status}`);
+        }
+        
+        const spawnResult = await spawnResponse.json();
+        
+        if (spawnResult.success) {
+          xtermRef.current?.writeln(`✅ Team spawned: ${spawnResult.teamId.slice(-8)}`);
+          xtermRef.current?.writeln(`👥 ${spawnResult.agents.length} AI agents initialized:`);
+          
+          // List each agent with their expertise
+          spawnResult.agents.forEach((agent: any, index: number) => {
+            const expertise = agent.expertise.slice(0, 2).join(', ');
+            xtermRef.current?.writeln(`   ${index + 1}. ${agent.name} - ${expertise}`);
+          });
+          
+          // Start the team working
+          xtermRef.current?.writeln('\r\n🚀 Starting AI development work...');
+          
+          const startResponse = await fetch(`http://localhost:3000/api/ai-team/${spawnResult.teamId}/start`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({})
+          });
+          
+          if (startResponse.ok) {
+            const startResult = await startResponse.json();
+            xtermRef.current?.writeln('✅ AI Team is now working on your project!');
+            xtermRef.current?.writeln('📊 Real-time progress tracking active');
+            xtermRef.current?.writeln('👀 LOOK RIGHT! OPEN PREVIEW PANEL TO SEE LIVE PROGRESS →');
+            xtermRef.current?.write('\r\n$ ');
+            
+            // Store team ID for future operations
+            localStorage.setItem('activeTeamId', spawnResult.teamId);
+            
+            // Notify parent component
+            onAgentsSpawn?.();
+          } else {
+            throw new Error('Failed to start team');
+          }
+          
+        } else {
+          throw new Error(spawnResult.error || 'Unknown error');
+        }
+        
+      } catch (error) {
+        console.error('AI Team spawn failed:', error);
+        xtermRef.current?.writeln(`❌ Failed to spawn AI team: ${error}`);
+        xtermRef.current?.writeln('🔧 Ensure backend server is running on port 3000');
         xtermRef.current?.write('\r\n$ ');
-      }, 1500);
+        
+        // Reset state on failure
+        setAgentsRunning(false);
+        setIsConnected(false);
+      }
     }
   };
 

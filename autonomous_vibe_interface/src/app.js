@@ -350,6 +350,7 @@ app.use('/api/project-pipeline', require('./routes/project-pipeline'));  // Proj
 app.use('/api/repository', require('./routes/repository-intelligence'));  // Repository Intelligence for IDE
 app.use('/api/repository-admin', require('./routes/repository-admin'));  // Repository Admin endpoints
 app.use('/api/sessions', require('./routes/sessions'));  // Session and Checkpoint Management
+app.use('/api/ai-team', require('./routes/ai-team'));  // AI Team Management
 
 // Terminal session status API for debugging timeout issues
 app.get('/api/terminal/sessions/status', (req, res) => {
@@ -396,6 +397,7 @@ app.get('/api/terminal/sessions/status', (req, res) => {
 app.use('/api/templates', require('./routes/templates'));  // Templates Hub API
 app.use('/api/claude-file-activity', require('./routes/claude-file-activity'));  // Claude File Activity Tracking
 app.use('/api/docs', require('./routes/documentation'));  // Documentation Intelligence System
+app.use('/api/codebase', require('./routes/codebase-search'));  // Codebase Wiki Search System
 app.use('/api/claude/session-doc', require('./routes/claude-session-doc'));  // Claude Session Documentation System
 app.use('/api/agents-context', require('./routes/agents-context'));  // AGENTS.md Context Integration for Claude Code
 // app.use('/api/workflows', require('./routes/workflows'));  // Revolutionary Workflow Automation System - TEMPORARILY DISABLED
@@ -407,6 +409,7 @@ app.use('/api', require('./routes/prettier-config'));
 // EXPERIMENTAL: Tmux Orchestrator Lab (isolated test environment)
 app.use('/api/experimental', require('./routes/experimental/orchestrator'));
 app.use('/api/agents', require('./routes/agent-dashboard').router);  // Multi-Agent Observability Dashboard
+app.use('/api/memory-metrics', require('./routes/memory-metrics'));  // Memory Performance Monitoring
 
 // Socket.IO connection handling with cleanup
 // NOTE: Moved to terminal-websocket-safepty.js to fix duplicate handler issue
@@ -673,8 +676,8 @@ app.get(['/landing', '/coderone-landing', '/coderone-landing.html'], (req, res) 
     res.sendFile(path.join(__dirname, '../public/coderone-landing.html'));
 });
 
-// Documentation route - serve with no-cache headers
-app.get(['/features', '/docs', '/documentation'], (req, res) => {
+// Features route (formerly documentation) - serve with no-cache headers
+app.get('/features', (req, res) => {
     // Add aggressive no-cache headers to prevent browser caching
     const timestamp = Date.now();
     const random = Math.random().toString(36).substr(2, 9);
@@ -698,18 +701,362 @@ app.get(['/features', '/docs', '/documentation'], (req, res) => {
     res.send(content);
 });
 
+// Documentation route - points to features page
+app.get('/documentation', (req, res) => {
+    // Serve the documentation page
+    res.sendFile(path.join(__dirname, '../public/documentation.html'));
+});
+
+// Document Management Console route
+app.get('/docs-manager', (req, res) => {
+    // Create a simple document management interface
+    res.send(`
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document Management Console - Coder1 IDE</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #0a0a0a;
+            color: #ffffff;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .header {
+            background: #1a1a1a;
+            padding: 20px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .header h1 {
+            font-size: 24px;
+            background: linear-gradient(135deg, #8b5cf6, #06b6d4);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .container {
+            flex: 1;
+            padding: 40px;
+            max-width: 1200px;
+            margin: 0 auto;
+            width: 100%;
+        }
+        .section {
+            background: #141414;
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 30px;
+            border: 1px solid rgba(139, 92, 246, 0.2);
+        }
+        .section h2 {
+            color: #8b5cf6;
+            margin-bottom: 20px;
+        }
+        .button-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .btn {
+            background: linear-gradient(135deg, #8b5cf6, #06b6d4);
+            color: white;
+            border: none;
+            padding: 15px 25px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(139, 92, 246, 0.3);
+        }
+        .doc-list {
+            margin-top: 20px;
+        }
+        .doc-item {
+            background: #1a1a1a;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .doc-item:hover {
+            background: #202020;
+        }
+        .status {
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+        .status.active { background: rgba(16, 185, 129, 0.2); color: #10b981; }
+        .status.cached { background: rgba(251, 191, 36, 0.2); color: #fbbf24; }
+        #addDocForm {
+            display: none;
+            margin-top: 20px;
+            padding: 20px;
+            background: #1a1a1a;
+            border-radius: 8px;
+        }
+        #addDocForm input {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            background: #0a0a0a;
+            border: 1px solid rgba(255,255,255,0.1);
+            color: white;
+            border-radius: 4px;
+        }
+        .search-box {
+            margin-bottom: 20px;
+        }
+        .search-box input {
+            width: 100%;
+            padding: 12px;
+            background: #1a1a1a;
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            color: white;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div style="display: flex; align-items: center; justify-content: space-between; position: relative;">
+            <button onclick="goBack()" style="
+                background: rgba(139, 92, 246, 0.1);
+                border: 1px solid rgba(139, 92, 246, 0.3);
+                color: #8b5cf6;
+                padding: 10px 20px;
+                border-radius: 8px;
+                cursor: pointer;
+                font-size: 14px;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                transition: all 0.3s ease;
+                position: absolute;
+                left: 20px;
+            " onmouseover="this.style.background='rgba(139, 92, 246, 0.2)'; this.style.transform='translateY(-2px)'" 
+               onmouseout="this.style.background='rgba(139, 92, 246, 0.1)'; this.style.transform='translateY(0)'">
+                ← Back
+            </button>
+            <div style="flex: 1; text-align: center;">
+                <h1>📚 Document Management Console</h1>
+                <p style="color: #a0a0a0; margin-top: 5px;">AI-powered documentation system for enhanced context</p>
+            </div>
+            <div style="width: 80px;"></div> <!-- Spacer to balance the layout -->
+        </div>
+    </div>
+    
+    <div class="container">
+        <div class="section">
+            <h2>Quick Actions</h2>
+            <div class="button-grid">
+                <button class="btn" onclick="toggleAddForm()">➕ Add Documentation</button>
+                <button class="btn" onclick="searchDocs()">🔍 Search Docs</button>
+                <button class="btn" onclick="refreshList()">🔄 Refresh List</button>
+                <button class="btn" onclick="checkHealth()">💚 System Health</button>
+            </div>
+            
+            <div id="addDocForm">
+                <h3 style="margin-bottom: 15px;">Add Documentation from URL</h3>
+                <input type="url" id="docUrl" placeholder="Enter documentation URL...">
+                <input type="text" id="docCategory" placeholder="Category (optional)">
+                <button class="btn" onclick="addDocumentation()">Add Documentation</button>
+            </div>
+        </div>
+        
+        <div class="section">
+            <h2>Search Documentation</h2>
+            <div class="search-box">
+                <input type="text" id="searchQuery" placeholder="Search your documentation..." onkeypress="if(event.key==='Enter') performSearch()">
+            </div>
+            <div id="searchResults"></div>
+        </div>
+        
+        <div class="section">
+            <h2>Stored Documentation</h2>
+            <div id="docList" class="doc-list">
+                <p style="color: #666;">Loading documentation list...</p>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Load documentation list on page load
+        window.onload = () => {
+            loadDocumentationList();
+        };
+        
+        // Back button function
+        function goBack() {
+            // Check if the referrer is from port 3001 (Next.js IDE)
+            if (document.referrer && document.referrer.includes('localhost:3001')) {
+                // Always go back to the IDE page specifically, not just the domain
+                window.location.href = 'http://localhost:3001/ide';
+            } else if (document.referrer && document.referrer !== '') {
+                // For other referrers, go back to them
+                window.location.href = document.referrer;
+            } else {
+                // If no referrer, go to IDE on port 3001 as fallback
+                window.location.href = 'http://localhost:3001/ide';
+            }
+        }
+        
+        function toggleAddForm() {
+            const form = document.getElementById('addDocForm');
+            form.style.display = form.style.display === 'none' ? 'block' : 'none';
+        }
+        
+        async function loadDocumentationList() {
+            try {
+                const response = await fetch('/api/docs/list');
+                const docs = await response.json();
+                
+                const listEl = document.getElementById('docList');
+                if (docs.length === 0) {
+                    listEl.innerHTML = '<p style="color: #666;">No documentation stored yet. Add some documentation to get started!</p>';
+                } else {
+                    listEl.innerHTML = docs.map(doc => \`
+                        <div class="doc-item">
+                            <div>
+                                <strong>\${doc.title || 'Untitled'}</strong>
+                                <br>
+                                <small style="color: #666;">\${doc.url}</small>
+                            </div>
+                            <div style="display: flex; gap: 10px; align-items: center;">
+                                <span class="status cached">Cached</span>
+                                <button onclick="removeDoc('\${doc.id}')" style="background: rgba(239, 68, 68, 0.2); color: #ef4444; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer;">Remove</button>
+                            </div>
+                        </div>
+                    \`).join('');
+                }
+            } catch (error) {
+                document.getElementById('docList').innerHTML = '<p style="color: #ef4444;">Failed to load documentation list</p>';
+            }
+        }
+        
+        async function addDocumentation() {
+            const url = document.getElementById('docUrl').value;
+            const category = document.getElementById('docCategory').value;
+            
+            if (!url) {
+                alert('Please enter a URL');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/docs/add', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url, category })
+                });
+                
+                if (response.ok) {
+                    alert('Documentation added successfully!');
+                    document.getElementById('docUrl').value = '';
+                    document.getElementById('docCategory').value = '';
+                    toggleAddForm();
+                    loadDocumentationList();
+                } else {
+                    alert('Failed to add documentation');
+                }
+            } catch (error) {
+                alert('Error adding documentation: ' + error.message);
+            }
+        }
+        
+        async function removeDoc(id) {
+            if (confirm('Remove this documentation?')) {
+                try {
+                    const response = await fetch('/api/docs/' + id, { method: 'DELETE' });
+                    if (response.ok) {
+                        loadDocumentationList();
+                    }
+                } catch (error) {
+                    alert('Failed to remove documentation');
+                }
+            }
+        }
+        
+        async function performSearch() {
+            const query = document.getElementById('searchQuery').value;
+            if (!query) return;
+            
+            try {
+                const response = await fetch('/api/docs/search', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ query, maxTokens: 2000 })
+                });
+                
+                const results = await response.json();
+                const resultsEl = document.getElementById('searchResults');
+                
+                if (results.chunks && results.chunks.length > 0) {
+                    resultsEl.innerHTML = '<h3>Search Results:</h3>' + results.chunks.map(chunk => \`
+                        <div class="doc-item">
+                            <div>
+                                <strong>\${chunk.docTitle}</strong>
+                                <br>
+                                <small style="color: #8b5cf6;">Relevance: \${(chunk.relevance * 100).toFixed(0)}%</small>
+                                <br>
+                                <p style="margin-top: 10px; color: #a0a0a0;">\${chunk.content.substring(0, 200)}...</p>
+                            </div>
+                        </div>
+                    \`).join('');
+                } else {
+                    resultsEl.innerHTML = '<p style="color: #666;">No results found</p>';
+                }
+            } catch (error) {
+                document.getElementById('searchResults').innerHTML = '<p style="color: #ef4444;">Search failed</p>';
+            }
+        }
+        
+        function searchDocs() {
+            document.getElementById('searchQuery').focus();
+        }
+        
+        function refreshList() {
+            loadDocumentationList();
+        }
+        
+        async function checkHealth() {
+            try {
+                const response = await fetch('/api/docs/health');
+                const health = await response.json();
+                alert('System Status: ' + health.status + '\\nDocuments: ' + health.documentsCount);
+            } catch (error) {
+                alert('Health check failed');
+            }
+        }
+    </script>
+</body>
+</html>
+    `);
+});
+
 // AI Consultation route
 app.get('/ai-consultation', (req, res) => {
     res.sendFile(path.join(__dirname, '../public/ai-consultation.html'));
 });
 
-// IDE route - serve from ide-old-backup with working Menu button
+// IDE route - serve from ide with Codebase Wiki feature
 app.get(['/ide', '/ide/'], (req, res) => {
     console.log('[IDE Route] Handling request for:', req.path);
-    console.warn('✅ SERVING IDE: Using public/ide/index.html with Menu button and 8-option navigation');
+    console.warn('✅ SERVING IDE: Using public/ide/index.html with Codebase Wiki feature');
     
     const fs = require('fs');
-    const ideHtmlPath = path.join(__dirname, '../public/ide-old-backup/index.html');
+    const ideHtmlPath = path.join(__dirname, '../public/ide/index.html');
     
     try {
         let htmlContent = fs.readFileSync(ideHtmlPath, 'utf8');
@@ -745,7 +1092,7 @@ app.get(['/ide', '/ide/'], (req, res) => {
 
 // Serve IDE static files from ide directory
 // Add no-cache headers for CSS files to prevent stale styles
-app.use('/ide', express.static(path.join(__dirname, '../public/ide-old-backup'), {
+app.use('/ide', express.static(path.join(__dirname, '../public/ide'), {
     setHeaders: (res, path) => {
         if (path.endsWith('.css')) {
             res.set({
