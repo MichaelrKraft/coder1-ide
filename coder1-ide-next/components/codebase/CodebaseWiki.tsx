@@ -341,7 +341,7 @@ const CodebaseWiki: React.FC = () => {
                     <div className="text-center py-8">
                         <h3 className="text-lg font-semibold text-coder1-cyan mb-4">Welcome to Codebase Wiki! 📚</h3>
                         <p className="text-text-muted mb-6 max-w-md mx-auto">
-                            Your code hasn't been indexed yet. Click "Reindex" to start exploring your codebase with AI-powered search.
+                            Your code hasn&apos;t been indexed yet. Click &quot;Reindex&quot; to start exploring your codebase with AI-powered search.
                         </p>
                         <div className="space-y-2 text-left max-w-lg mx-auto text-sm">
                             <div className="flex items-start gap-2">
@@ -470,7 +470,7 @@ const CodebaseWiki: React.FC = () => {
                 {searchResults && (
                     <div>
                         <h3 className="text-lg font-semibold text-coder1-cyan mb-4">
-                            Search Results for "{searchQuery}"
+                            Search Results for &quot;{searchQuery}&quot;
                         </h3>
                         
                         {/* Functions Results */}

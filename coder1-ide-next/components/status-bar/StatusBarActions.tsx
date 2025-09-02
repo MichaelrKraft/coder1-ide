@@ -8,7 +8,7 @@
 'use client';
 
 import React from 'react';
-import { Save, Clock, Download, FileText, BookOpen, Loader2 } from 'lucide-react';
+import { Save, Clock, Download, FileText, BookOpen, Loader2 } from '@/lib/icons';
 import StatusBarModals from './StatusBarModals';
 import { useIDEStore } from '@/stores/useIDEStore';
 import { useSessionStore } from '@/stores/useSessionStore';
@@ -24,7 +24,7 @@ interface StatusBarActionsProps {
   terminalCommands?: string[];
 }
 
-export default function StatusBarActions({
+const StatusBarActions = React.memo(function StatusBarActions({
   activeFile,
   isConnected = false,
   openFiles = [],
@@ -284,4 +284,6 @@ export default function StatusBarActions({
       )}
     </>
   );
-}
+});
+
+export default StatusBarActions;

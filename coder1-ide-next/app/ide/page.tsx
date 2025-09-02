@@ -10,19 +10,18 @@ import Toast from '@/components/Toast';
 import StatusBarCore from '@/components/status-bar/StatusBarCore';
 import HeroSection from '@/components/HeroSection';
 import { SessionProvider } from '@/contexts/SessionContext';
-import { SupervisionProvider } from '@/contexts/SupervisionContext';
+import { EnhancedSupervisionProvider } from '@/contexts/EnhancedSupervisionContext';
 import AboutModal from '@/components/AboutModal';
 import KeyboardShortcutsModal from '@/components/KeyboardShortcutsModal';
 import SettingsModal from '@/components/SettingsModal';
 import type { IDEFile } from '@/types';
 
-// Dynamic imports for heavy components
-const MonacoEditor = dynamic(() => import('@/components/editor/MonacoEditor'), {
-  ssr: false,
-  loading: () => <div className="h-full flex items-center justify-center">Loading Editor...</div>
+// Dynamic imports for heavy components with optimized lazy loading
+const MonacoEditor = dynamic(() => import('@/components/editor/LazyMonacoEditor'), {
+  ssr: false
 });
 
-const Terminal = dynamic(() => import('@/components/terminal/Terminal'), {
+const Terminal = dynamic(() => import('@/components/terminal/LazyTerminal'), {
   ssr: false,
   loading: () => <div className="h-full flex items-center justify-center">Loading Terminal...</div>
 });
@@ -413,7 +412,7 @@ export default function IDEPage() {
   );
 
   return (
-    <SupervisionProvider>
+    <EnhancedSupervisionProvider>
       <div className="h-screen w-full flex flex-col bg-bg-primary">
       {/* Menu Bar */}
       <MenuBar 
@@ -445,7 +444,7 @@ export default function IDEPage() {
       {/* Version Banner - Current Active IDE */}
       <div className="bg-green-600/20 border-b border-green-500/30 px-4 py-1 text-center">
         <span className="text-green-400 text-sm font-medium">
-          ✅ CURRENT IDE - Coder1 v2.0 (Next.js) | Terminal Connected to Backend ✅
+          ✅ CURRENT IDE - Coder1 v2.0 (Next.js) | Terminal Connected | Status Line Ready ✅
         </span>
       </div>
       
@@ -493,6 +492,6 @@ export default function IDEPage() {
         onFontSizeChange={setFontSize}
       />
       </div>
-    </SupervisionProvider>
+    </EnhancedSupervisionProvider>
   );
 }

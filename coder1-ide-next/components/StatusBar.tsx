@@ -1,10 +1,11 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { Save, Clock, Download, FileText, BookOpen, GitBranch, Check, Loader2, X, Eye, Compass, Grid, Code, Sparkles, Terminal, Plus, ChevronUp, ChevronDown } from 'lucide-react';
 import { glows } from '@/lib/design-tokens';
 import { useSessionSummary } from '@/lib/hooks/useSessionSummary';
-import { useSupervision } from '@/contexts/SupervisionContext';
+import { useEnhancedSupervision } from '@/contexts/EnhancedSupervisionContext';
 
 interface StatusBarProps {
   activeFile?: string | null;
@@ -60,7 +61,7 @@ export default function StatusBar({
   } = useSessionSummary();
   
   // Get supervision state from context
-  const { isSupervisionActive, supervisionStatus, lastSupervisionCheck } = useSupervision();
+  const { isSupervisionActive, supervisionStatus, lastSupervisionCheck } = useEnhancedSupervision();
 
   // Initialize sessionId on mount
   useEffect(() => {
@@ -388,9 +389,9 @@ export default function StatusBar({
         </div>
       )}
       
-      <div className="h-11 bg-bg-secondary border-t border-border-default flex items-center justify-between px-4">
-      {/* Left section - Discover Button */}
-      <div className="flex items-center gap-4 text-sm text-text-muted">
+      <div className="h-11 bg-bg-secondary border-t border-border-default flex items-center justify-center px-4 relative">
+      {/* Left section - Discover Button (absolute positioned) */}
+      <div className="absolute left-4 flex items-center gap-4 text-sm text-text-muted">
         <button
           onClick={handleDiscoverToggle}
           className="flex items-center gap-1.5 px-3 py-1 text-sm font-medium text-text-secondary hover:text-text-primary rounded transition-all duration-200"
@@ -439,7 +440,7 @@ export default function StatusBar({
         )}
       </div>
 
-      {/* Center section - Action buttons */}
+      {/* Center section - Action buttons (centered) */}
       <div className="flex items-center gap-2">
         {/* CheckPoint Button */}
         <div className="p-[1px] rounded-md bg-gradient-to-r from-purple-500 to-cyan-500">
@@ -577,13 +578,6 @@ export default function StatusBar({
           <BookOpen className="w-4 h-4" />
           <span>Docs</span>
         </button>
-      </div>
-
-      {/* Right section - Additional info */}
-      <div className="flex items-center gap-4 text-sm text-text-muted">
-        <span>UTF-8</span>
-        <span>TypeScript React</span>
-        <span>Ln 1, Col 1</span>
       </div>
     </div>
 
@@ -778,37 +772,37 @@ export default function StatusBar({
         <div className="flex-1 p-3">
           <h4 className="text-xs font-semibold text-coder1-cyan mb-2 uppercase tracking-wider">AI Tools</h4>
           <div className="grid grid-cols-2 gap-2">
-            <a 
-              href="http://localhost:3000/component-studio.html" 
+            <Link 
+              href="/components" 
               className="flex items-center gap-2 p-2 rounded border border-border-default hover:border-coder1-cyan hover:bg-bg-tertiary transition-all group"
             >
               <Grid className="w-4 h-4 text-text-muted group-hover:text-coder1-cyan" />
               <span className="text-xs text-text-secondary group-hover:text-text-primary">Components</span>
-            </a>
+            </Link>
             
-            <a 
-              href="http://localhost:3000/templates-hub.html" 
+            <Link 
+              href="/templates" 
               className="flex items-center gap-2 p-2 rounded border border-border-default hover:border-coder1-cyan hover:bg-bg-tertiary transition-all group"
             >
               <FileText className="w-4 h-4 text-text-muted group-hover:text-coder1-cyan" />
               <span className="text-xs text-text-secondary group-hover:text-text-primary">Templates</span>
-            </a>
+            </Link>
             
-            <a 
-              href="http://localhost:3000/hooks" 
+            <Link 
+              href="/hooks" 
               className="flex items-center gap-2 p-2 rounded border border-border-default hover:border-coder1-cyan hover:bg-bg-tertiary transition-all group"
             >
               <Code className="w-4 h-4 text-text-muted group-hover:text-coder1-cyan" />
               <span className="text-xs text-text-secondary group-hover:text-text-primary">Hooks</span>
-            </a>
+            </Link>
             
-            <a 
-              href="http://localhost:3000/workflow-dashboard.html" 
+            <Link 
+              href="/features" 
               className="flex items-center gap-2 p-2 rounded border border-border-default hover:border-coder1-cyan hover:bg-bg-tertiary transition-all group"
             >
               <Sparkles className="w-4 h-4 text-green-400 group-hover:text-green-300" />
-              <span className="text-xs text-text-secondary group-hover:text-text-primary">Workflows</span>
-            </a>
+              <span className="text-xs text-text-secondary group-hover:text-text-primary">Features</span>
+            </Link>
           </div>
         </div>
       </div>

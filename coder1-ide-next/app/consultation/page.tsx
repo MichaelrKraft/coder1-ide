@@ -101,7 +101,7 @@ export default function AIConsultationPage() {
             AI Development Consultation
           </h1>
           <p className="text-lg text-text-secondary">
-            Let's understand your project needs
+            Let&apos;s understand your project needs
           </p>
         </div>
 

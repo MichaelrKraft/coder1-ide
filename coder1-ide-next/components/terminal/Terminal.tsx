@@ -5,13 +5,14 @@ import { Terminal as XTerm } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
 import '@xterm/xterm/css/xterm.css';
 import './Terminal.css';
-import { Users, Zap, StopCircle, Brain, Eye, Code2, Mic, MicOff, Speaker, ChevronDown } from 'lucide-react';
+import { Users, Zap, StopCircle, Brain, Eye, Code2, Mic, MicOff, Speaker, ChevronDown } from '@/lib/icons';
 import TerminalSettings, { TerminalSettingsState } from './TerminalSettings';
 import { glows, spacing } from '@/lib/design-tokens';
 import { getSocket } from '@/lib/socket';
 import ErrorDoctor from './ErrorDoctor';
 import { soundAlertService, SoundPreset } from '@/lib/sound-alert-service';
-import { useSupervision } from '@/contexts/SupervisionContext';
+import { useEnhancedSupervision } from '@/contexts/EnhancedSupervisionContext';
+import SupervisionConfigModal from '@/components/supervision/SupervisionConfigModal';
 
 // TypeScript declarations for Web Speech API
 declare global {
@@ -44,12 +45,24 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
   const terminalRef = useRef<HTMLDivElement>(null);
   const xtermRef = useRef<XTerm | null>(null);
   const fitAddonRef = useRef<FitAddon | null>(null);
+  const sessionIdForVoiceRef = useRef<string | null>(null); // Move this up here
+  const sessionCreatedRef = useRef(false); // Track if session was already created
   const [isConnected, setIsConnected] = useState(false);
   const [agentsRunning, setAgentsRunning] = useState(false);
   const [voiceListening, setVoiceListening] = useState(false);
   
-  // Use supervision context instead of local state
-  const { isSupervisionActive, toggleSupervision, enableSupervision } = useSupervision();
+  // Use enhanced supervision context
+  const { 
+    isSupervisionActive, 
+    toggleSupervision, 
+    enableSupervision,
+    activeConfiguration,
+    isConfigModalOpen,
+    setConfigModalOpen,
+    saveConfiguration,
+    configurations,
+    templates
+  } = useEnhancedSupervision();
   const [terminalMode, setTerminalMode] = useState<'normal' | 'vim' | 'emacs'>('normal');
   const [thinkingMode, setThinkingMode] = useState<'normal' | 'think' | 'think_hard' | 'ultrathink'>('normal');
   const [showThinkingDropdown, setShowThinkingDropdown] = useState(false);
@@ -61,6 +74,14 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
   const [conversationMode, setConversationMode] = useState(false);
   const [sessionTokens, setSessionTokens] = useState(0);
   const [currentFile, setCurrentFile] = useState<string | null>(null);
+  const [totalTokens, setTotalTokens] = useState(0);
+  const [usageCost, setUsageCost] = useState('$0.0000');
+  const [mcpStatus, setMcpStatus] = useState<{ healthy: number; total: number; status: string }>({
+    healthy: 0,
+    total: 0,
+    status: 'unknown'
+  });
+  const [blockResetTime, setBlockResetTime] = useState<string>('--:--:--');
   
   // Terminal settings state
   const [terminalSettings, setTerminalSettings] = useState<TerminalSettingsState>({
@@ -72,6 +93,131 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
       showTokens: true
     }
   });
+
+  // Load terminal settings from localStorage on mount
+  useEffect(() => {
+    const savedSettings = localStorage.getItem('coder1-terminal-settings');
+    if (savedSettings) {
+      try {
+        const parsed = JSON.parse(savedSettings);
+        setTerminalSettings(prev => ({ ...prev, ...parsed }));
+      } catch (error) {
+        console.warn('Failed to parse terminal settings:', error);
+      }
+    }
+  }, []);
+  
+  // Fetch token usage periodically when statusline is enabled
+  useEffect(() => {
+    if (!terminalSettings.statusLine?.enabled) return;
+    
+    const fetchUsage = async () => {
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000);
+        
+        const response = await fetch('/api/claude/usage', {
+          signal: controller.signal
+        });
+        
+        clearTimeout(timeoutId);
+        
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success) {
+            setTotalTokens(data.tokens || 0);
+            setUsageCost(data.formattedCost || '$0.0000');
+          }
+        }
+      } catch (error) {
+        // Use console.warn instead of console.error to reduce noise
+        console.warn('Failed to fetch Claude usage:', error);
+      }
+    };
+    
+    // Fetch immediately and then every 60 seconds (reduced from 30)
+    fetchUsage();
+    const interval = setInterval(fetchUsage, 60000);
+    
+    return () => clearInterval(interval);
+  }, [terminalSettings.statusLine?.enabled]);
+  
+  // Fetch MCP server status periodically when statusline is enabled
+  useEffect(() => {
+    if (!terminalSettings.statusLine?.enabled) return;
+    
+    const fetchMCPStatus = async () => {
+      try {
+        const response = await fetch('/api/claude/mcp-status');
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success) {
+            setMcpStatus({
+              healthy: data.summary.healthy,
+              total: data.summary.total,
+              status: data.healthStatus
+            });
+          }
+        }
+      } catch (error) {
+        console.error('Failed to fetch MCP status:', error);
+      }
+    };
+    
+    // Fetch immediately and then every 60 seconds
+    fetchMCPStatus();
+    const interval = setInterval(fetchMCPStatus, 60000);
+    
+    return () => clearInterval(interval);
+  }, [terminalSettings.statusLine?.enabled]);
+  
+  // Calculate block reset timer (resets every 3 hours)
+  useEffect(() => {
+    if (!terminalSettings.statusLine?.enabled) return;
+    
+    const updateBlockTimer = () => {
+      // Get or create the block start time
+      const blockStartKey = 'claude-block-start-time';
+      let blockStartTime = localStorage.getItem(blockStartKey);
+      
+      if (!blockStartTime) {
+        // If no start time, set it now
+        blockStartTime = new Date().toISOString();
+        localStorage.setItem(blockStartKey, blockStartTime);
+      }
+      
+      const startTime = new Date(blockStartTime);
+      const now = new Date();
+      const resetTime = new Date(startTime.getTime() + (3 * 60 * 60 * 1000)); // 3 hours from start
+      
+      // Check if we've passed the reset time
+      if (now >= resetTime) {
+        // Reset the timer
+        const newStartTime = new Date().toISOString();
+        localStorage.setItem(blockStartKey, newStartTime);
+        setBlockResetTime('3:00:00');
+      } else {
+        // Calculate time remaining
+        const remaining = resetTime.getTime() - now.getTime();
+        const hours = Math.floor(remaining / (60 * 60 * 1000));
+        const minutes = Math.floor((remaining % (60 * 60 * 1000)) / (60 * 1000));
+        const seconds = Math.floor((remaining % (60 * 1000)) / 1000);
+        
+        setBlockResetTime(`${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`);
+      }
+    };
+    
+    // Update immediately and then every second
+    updateBlockTimer();
+    const interval = setInterval(updateBlockTimer, 1000);
+    
+    return () => clearInterval(interval);
+  }, [terminalSettings.statusLine?.enabled]);
+
+  // Save terminal settings to localStorage when they change
+  useEffect(() => {
+    localStorage.setItem('coder1-terminal-settings', JSON.stringify(terminalSettings));
+  }, [terminalSettings]);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [terminalReady, setTerminalReady] = useState(false);
   const [lastError, setLastError] = useState<string | null>(null);
@@ -91,10 +237,20 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
 
   // Create terminal session on mount via REST API
   useEffect(() => {
+    // Prevent duplicate session creation
+    if (sessionCreatedRef.current) {
+      console.log('Session already created, skipping');
+      return;
+    }
+    
     const createTerminalSession = async () => {
+      sessionCreatedRef.current = true;
+      console.log('🚀 CREATING TERMINAL SESSION...');
+      
       try {
         // Create a real terminal session via the backend
-        const response = await fetch('http://localhost:3000/api/terminal-rest/sessions', {
+        console.log('📡 Calling /api/terminal-rest/sessions...');
+        const response = await fetch('/api/terminal-rest/sessions', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -105,21 +261,30 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
           }),
         });
         
+        console.log('📡 Session response status:', response.status);
+        
         if (response.ok) {
           const data = await response.json();
+          console.log('📡 Session response data:', data);
           setSessionId(data.sessionId);
+          // Immediately update the ref for voice recognition
+          sessionIdForVoiceRef.current = data.sessionId;
           setTerminalReady(true);
           console.log('✅ Terminal session created:', data.sessionId);
         } else {
           console.error('Failed to create terminal session:', response.status);
           // Fallback to simulated mode
-          setSessionId('simulated-' + Date.now());
+          const simulatedId = 'simulated-' + Date.now();
+          setSessionId(simulatedId);
+          sessionIdForVoiceRef.current = simulatedId;
           setTerminalReady(true);
         }
       } catch (error) {
         console.error('Error creating terminal session:', error);
         // Fallback to simulated mode
-        setSessionId('simulated-' + Date.now());
+        const simulatedId = 'simulated-' + Date.now();
+        setSessionId(simulatedId);
+        sessionIdForVoiceRef.current = simulatedId;
         setTerminalReady(true);
       }
     };
@@ -132,21 +297,37 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
     };
   }, []);
   
-  // Cleanup session on unmount
+  // Store whether component is mounted
+  const isMountedRef = useRef(true);
+  
+  // Cleanup session only on actual unmount
   useEffect(() => {
+    isMountedRef.current = true;
+    
     return () => {
-      if (sessionId && !sessionId.startsWith('simulated-')) {
-        fetch(`http://localhost:3000/api/terminal-rest/sessions/${sessionId}`, {
+      isMountedRef.current = false;
+      // Only cleanup the current session on unmount
+      const currentSessionId = sessionIdForVoiceRef.current || sessionId;
+      if (currentSessionId && !currentSessionId.startsWith('simulated-')) {
+        console.log('🧹 Cleaning up terminal session on unmount:', currentSessionId);
+        fetch(`/api/terminal-rest/sessions/${currentSessionId}`, {
           method: 'DELETE'
-        }).catch(console.error);
+        }).catch(err => {
+          console.log('Session cleanup (expected on unmount):', err.message);
+        });
       }
     };
-  }, [sessionId]);
+  }, []); // Empty dependency array - only run on mount/unmount
 
   useEffect(() => {
-    if (!terminalRef.current) return;
+    console.log('🖥️ INITIALIZING XTERM...');
+    if (!terminalRef.current) {
+      console.log('❌ Terminal ref not ready');
+      return;
+    }
 
     try {
+      console.log('🔧 Creating XTerm instance...');
       // Initialize terminal with exact settings
       const term = new XTerm({
         theme: {
@@ -417,9 +598,21 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
     setSelectedSoundPreset(soundAlertService.getPreset());
   }, []);
 
+  // Keep sessionId ref in sync for voice callbacks
+  useEffect(() => {
+    sessionIdForVoiceRef.current = sessionId;
+    console.log('📝 Updated sessionIdForVoiceRef:', sessionId);
+  }, [sessionId]);
+
+  // Store isConnected in a ref for use in callbacks
+  const isConnectedRef = useRef(false);
+  useEffect(() => {
+    isConnectedRef.current = isConnected;
+  }, [isConnected]);
+
   // Initialize speech recognition
   useEffect(() => {
-    if (typeof window !== 'undefined' && 'webkitSpeechRecognition' in window) {
+    if (typeof window !== 'undefined' && ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
       const SpeechRecognition = window.webkitSpeechRecognition || window.SpeechRecognition;
       const recognitionInstance = new SpeechRecognition();
       
@@ -444,41 +637,83 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
           }
         }
         
-        if (finalTranscript && finalTranscript.trim() && xtermRef.current) {
-          // Clean up the transcript
-          const cleanTranscript = finalTranscript.trim();
-          console.log('Speech recognized:', cleanTranscript); // Debug log
-          
-          // Send the recognized text to the terminal backend via socket
-          const socket = socketRef.current;
-          if (sessionId && socket && socket.connected) {
-            // Send each character to the backend to simulate typing
-            for (const char of cleanTranscript) {
-              socket.emit('terminal:input', { 
-                id: sessionId, 
-                data: char,
-                thinkingMode 
-              });
-            }
-            // Add a space after the recognized text
-            socket.emit('terminal:input', { 
-              id: sessionId, 
-              data: ' ',
-              thinkingMode 
-            });
-          } else {
-            // Fallback: write directly to terminal if no backend connection
-            xtermRef.current.write(cleanTranscript + ' ');
-          }
-          
-          // Update current command buffer
-          setCurrentCommand(prev => prev + cleanTranscript + ' ');
+        // Show interim results as user speaks
+        if (interimTranscript && xtermRef.current) {
+          console.log('Interim transcript:', interimTranscript);
+          // Show interim feedback inline
+          xtermRef.current.write(`\r\n💬 Hearing: "${interimTranscript}"`);
         }
         
-        // Show interim results as user speaks (optional visual feedback)
-        if (interimTranscript && xtermRef.current) {
-          // Could show interim results in a different color or style
-          // For now, we'll skip this to avoid clutter
+        if (finalTranscript && finalTranscript.trim()) {
+          // Clean up the transcript
+          const cleanTranscript = finalTranscript.trim();
+          console.log('Final speech recognized:', cleanTranscript);
+          
+          // Clear interim feedback and show final
+          if (xtermRef.current) {
+            xtermRef.current.writeln(`\r\n✅ Recognized: "${cleanTranscript}"`);
+            
+            // Check if it's a Claude activation command
+            if (cleanTranscript.toLowerCase().includes('claude')) {
+              xtermRef.current.writeln('🤖 Claude mode activated');
+              setClaudeActive(true);
+              setConversationMode(true);
+              
+              // Activate supervision
+              if (!isSupervisionActive) {
+                enableSupervision();
+              }
+            }
+            
+            // Write the text to the terminal UI for immediate feedback
+            xtermRef.current.write(cleanTranscript);
+            
+            // Get the socket from the global socket service
+            const socket = getSocket();
+            const currentSessionId = sessionIdForVoiceRef.current;
+            
+            console.log('🎤 Voice input debug:', {
+              sessionIdFromRef: currentSessionId,
+              sessionIdFromState: sessionId,
+              socketConnected: socket?.connected,
+              transcript: cleanTranscript
+            });
+            
+            // Send to backend if we have a valid session
+            if (socket && socket.connected && currentSessionId && !currentSessionId.startsWith('simulated-')) {
+              console.log('✅ Sending voice input to real session:', currentSessionId);
+              
+              // Send as a single message (not character by character)
+              socket.emit('terminal:input', { 
+                id: currentSessionId, 
+                data: cleanTranscript,
+                thinkingMode 
+              });
+              
+              // Auto-execute for Claude commands  
+              if (cleanTranscript.toLowerCase().includes('claude')) {
+                xtermRef.current.write('\r\n');
+                socket.emit('terminal:input', { 
+                  id: currentSessionId, 
+                  data: '\r',
+                  thinkingMode 
+                });
+              }
+            } else {
+              console.warn('Cannot send voice input to backend:', {
+                socketConnected: socket?.connected,
+                sessionId: currentSessionId
+              });
+              
+              // Still show in terminal UI
+              if (cleanTranscript.toLowerCase().includes('claude')) {
+                xtermRef.current.write('\r\n');
+              }
+            }
+            
+            // Update current command buffer
+            setCurrentCommand(prev => prev + cleanTranscript);
+          }
         }
       };
       
@@ -587,16 +822,33 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
   };
 
   const connectToBackend = (term: XTerm) => {
+    console.log('🔌 CONNECTING TO BACKEND:', { sessionId, terminalReady });
     if (!sessionId || !terminalReady) {
-      console.log('Session not ready yet');
+      console.log('❌ Session not ready yet:', { sessionId, terminalReady });
       return;
     }
 
     // Get Socket.IO instance to connect to Express backend
+    console.log('🔧 Getting Socket.IO instance...');
     const socket = getSocket();
+    console.log('✅ Socket.IO instance obtained:', socket.connected ? 'CONNECTED' : 'DISCONNECTED');
     socketRef.current = socket;
 
+    // Add connection status listeners for debugging
+    socket.on('connect', () => {
+      console.log('🟢 Socket.IO CONNECTED to backend');
+    });
+    
+    socket.on('disconnect', (reason) => {
+      console.log('🔴 Socket.IO DISCONNECTED:', reason);
+    });
+    
+    socket.on('connect_error', (error) => {
+      console.error('❌ Socket.IO CONNECTION ERROR:', error);
+    });
+
     // Join the terminal session
+    console.log('📡 Emitting terminal:create for session:', sessionId);
     socket.emit('terminal:create', { id: sessionId });
     console.log('📡 Connecting to Express backend terminal:', sessionId);
 
@@ -623,6 +875,39 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
         
         // Write the data (this is all we should do here)
         term.write(data);
+        
+        // Check if we should display statusline after command completion
+        if (terminalSettings.statusLine?.enabled && data.includes('\n')) {
+          // Check for command prompt pattern (indicates command completed)
+          if (data.match(/\$\s*$/) || data.match(/>\s*$/) || data.match(/#\s*$/) || data.match(/❯\s*$/)) {
+            // Generate and display statusline
+            const width = term.cols || 80;
+            const separator = '─'.repeat(width);
+            
+            // Line 1: Session info and tokens
+            const sessionInfo = `Session: ${sessionId?.slice(-8) || 'none'} | Tokens: ${totalTokens || 0} | Cost: ${usageCost} | Reset: ${blockResetTime}`;
+            const model = 'claude-3-5-sonnet';
+            const line1 = `${sessionInfo}${' '.repeat(Math.max(0, width - sessionInfo.length - model.length))}${model}`;
+            
+            // Line 2: Current file and git info
+            const currentFileDisplay = currentFile || 'No file open';
+            const gitBranch = 'main'; // TODO: Get from git status
+            const line2 = `File: ${currentFileDisplay} | Branch: ${gitBranch}`;
+            
+            // Line 3: Status and mode
+            const mode = thinkingMode !== 'normal' ? `Mode: ${thinkingMode}` : 'Mode: normal';
+            const status = agentsRunning ? 'AI Team Active' : claudeActive ? 'Claude Active' : 'Ready';
+            const mcpInfo = mcpStatus.total > 0 ? ` | MCP: ${mcpStatus.healthy}/${mcpStatus.total} ` : '';
+            const line3 = `${mode} | ${status}${mcpInfo}`;
+            
+            // Write the statusline
+            term.write('\r\n' + separator);
+            term.write('\r\n' + line1);
+            term.write('\r\n' + line2);
+            term.write('\r\n' + line3);
+            term.write('\r\n' + separator + '\r\n');
+          }
+        }
         
         // Capture terminal output for session tracking
         if (onTerminalData) {
@@ -786,7 +1071,7 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
       try {
         const teamId = localStorage.getItem('activeTeamId');
         if (teamId) {
-          const response = await fetch(`http://localhost:3000/api/ai-team/${teamId}/stop`, {
+          const response = await fetch(`/api/ai-team/${teamId}/stop`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' }
           });
@@ -815,7 +1100,7 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
         localStorage.setItem('currentSessionId', sessionId);
         
         // Spawn AI team via backend API
-        const spawnResponse = await fetch('http://localhost:3000/api/ai-team/spawn', {
+        const spawnResponse = await fetch('/api/ai-team/spawn', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -844,7 +1129,7 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
           // Start the team working
           xtermRef.current?.writeln('\r\n🚀 Starting AI development work...');
           
-          const startResponse = await fetch(`http://localhost:3000/api/ai-team/${spawnResult.teamId}/start`, {
+          const startResponse = await fetch(`/api/ai-team/${spawnResult.teamId}/start`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({})
@@ -935,6 +1220,8 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
             setShowSoundPresetDropdown={setShowSoundPresetDropdown}
             soundButtonRef={soundButtonRef}
             soundDropdownRef={soundDropdownRef}
+            terminalSettings={terminalSettings}
+            setTerminalSettings={setTerminalSettings}
             xtermRef={xtermRef}
           />
         </div>
@@ -1002,24 +1289,19 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
             <span>AI Mastermind</span>
           </button>
 
-          {/* Supervision button */}
+          {/* Enhanced Supervision button */}
           <button
             onClick={() => {
-              toggleSupervision();
-              
-              if (!isSupervisionActive) {
-                xtermRef.current?.writeln('\r\n👁️ AI Supervision Mode Activated');
-                xtermRef.current?.writeln('\r\n🔍 Monitoring Systems:');
-                xtermRef.current?.writeln('• Code quality analysis: ACTIVE');
-                xtermRef.current?.writeln('• Security vulnerability scanning: ACTIVE');
-                xtermRef.current?.writeln('• Performance monitoring: ACTIVE');
-                xtermRef.current?.writeln('• Error detection: ACTIVE');
-                xtermRef.current?.writeln('');
-                xtermRef.current?.writeln('⚠️ Supervision will analyze all commands and provide warnings.');
-                xtermRef.current?.writeln('Type "supervision status" to view current alerts.');
-              } else {
+              if (isSupervisionActive) {
+                // If supervision is active, disable it
+                toggleSupervision();
                 xtermRef.current?.writeln('\r\n👁️ AI Supervision Disabled');
                 xtermRef.current?.writeln('Manual oversight mode restored.');
+              } else {
+                // If not active, open configuration modal
+                setConfigModalOpen(true);
+                xtermRef.current?.writeln('\r\n🧠 Opening AI Supervision Configuration...');
+                xtermRef.current?.writeln('Program your custom supervision bot for this project.');
               }
             }}
             className="terminal-control-btn flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md"
@@ -1077,6 +1359,15 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
       <ErrorDoctor 
         lastError={lastError} 
         isActive={errorDoctorActive} 
+      />
+
+      {/* Supervision Configuration Modal */}
+      <SupervisionConfigModal 
+        isOpen={isConfigModalOpen}
+        onClose={() => setConfigModalOpen(false)}
+        onSave={saveConfiguration}
+        currentConfig={activeConfiguration}
+        templates={templates}
       />
       
       {/* Phase 2: Scroll to bottom button - appears when user has scrolled up */}

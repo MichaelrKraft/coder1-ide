@@ -1,30 +1,62 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import Image from 'next/image';
 import TypewriterText from './TypewriterText';
 
 export default function HeroSection() {
-  return (
-    <div className="hero-section relative flex flex-col items-center justify-center min-h-[400px] px-8 py-16 overflow-hidden">
-      {/* Logo - increased by 50% */}
-      <div className="relative z-10 mb-8 mt-12">
-        <Image
-          src="/Coder1-logo-Trans.png"
-          alt="Coder1 Logo"
-          width={180}
-          height={180}
-          className="drop-shadow-2xl"
-          priority
-        />
-      </div>
+  const [logoAnimated, setLogoAnimated] = useState(false);
 
-      {/* Title with typewriter effect */}
+  useEffect(() => {
+    // Trigger animation after component mounts
+    const timer = setTimeout(() => {
+      setLogoAnimated(true);
+    }, 100);
+    return () => clearTimeout(timer);
+  }, []);
+
+  return (
+    <div className="hero-section relative flex flex-col items-center justify-center h-full w-full px-4 py-4 overflow-auto">
+      {/* Logo - responsive sizing with zoom-in from back animation */}
+      <div className="relative z-10 mb-2 mt-2">
+        <div 
+          className={`relative w-24 h-24 sm:w-32 sm:h-32 lg:w-44 lg:h-44 transition-all duration-1000 ease-out ${
+            logoAnimated 
+              ? 'opacity-100 scale-100' 
+              : 'opacity-0 scale-[0.01]'
+          }`}
+          style={{
+            transformOrigin: 'center',
+            transform: logoAnimated ? 'perspective(1000px) translateZ(0)' : 'perspective(1000px) translateZ(-500px)',
+            animation: logoAnimated ? 'pulse-glow 3s ease-in-out infinite' : 'none'
+          }}
+        >
+          <Image
+            src="/Coder1-logo-Trans.png"
+            alt="Coder1 Logo"
+            fill
+            className="drop-shadow-2xl object-contain"
+            priority
+          />
+        </div>
+      </div>
+      
+      <style jsx>{`
+        @keyframes pulse-glow {
+          0%, 100% {
+            filter: drop-shadow(0 0 20px rgba(0, 217, 255, 0.5));
+          }
+          50% {
+            filter: drop-shadow(0 0 40px rgba(0, 217, 255, 0.8)) drop-shadow(0 0 60px rgba(251, 146, 60, 0.4));
+          }
+        }
+      `}</style>
+
+      {/* Title with typewriter effect - responsive */}
       <h1 
-        className="relative z-10 shimmer-text mb-4"
+        className="relative z-10 shimmer-text mb-2 text-[clamp(1.5rem,5vw,3.5rem)] text-center"
         style={{
           fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
-          fontSize: '56px',
           fontWeight: 800,
           letterSpacing: '-0.02em'
         }}
@@ -41,9 +73,9 @@ export default function HeroSection() {
         />
       </h1>
 
-      {/* Subtitle */}
+      {/* Subtitle - responsive */}
       <p 
-        className="relative z-10 text-lg mb-8 text-center max-w-2xl font-semibold"
+        className="relative z-10 text-[clamp(0.875rem,2vw,1.125rem)] mb-3 text-center max-w-[90%] font-semibold px-2"
         style={{
           background: 'linear-gradient(90deg, #FCD34D 0%, #FB923C 50%, #F97316 100%)',
           WebkitBackgroundClip: 'text',
@@ -54,10 +86,10 @@ export default function HeroSection() {
         The only IDE in the world built just for Claude Code
       </p>
 
-      {/* Action buttons */}
-      <div className="relative z-10 flex flex-col gap-4 mb-8">
+      {/* Action buttons - responsive */}
+      <div className="relative z-10 flex flex-col gap-2 mb-3 w-full max-w-[min(90%,500px)] px-2">
         <button 
-          className="glass-button flex items-center gap-4 px-6 py-4 rounded-lg transition-all duration-300 min-w-[350px] transform hover:translate-y-[-2px]"
+          className="glass-button flex items-center gap-3 sm:gap-4 px-4 sm:px-6 py-3 sm:py-4 rounded-lg transition-all duration-300 w-full transform hover:translate-y-[-2px]"
           style={{
             background: 'linear-gradient(135deg, rgba(125, 211, 252, 0.1) 0%, rgba(187, 154, 247, 0.1) 100%)',
           backdropFilter: 'blur(4px)',
@@ -80,14 +112,14 @@ export default function HeroSection() {
             (e.currentTarget.style as any).WebkitBackdropFilter = 'blur(4px)';
           }}
         >
-          <span className="text-2xl">📁</span>
-          <span className="text-gray-300 text-left">
+          <span className="text-xl sm:text-2xl">📁</span>
+          <span className="text-gray-300 text-left text-sm sm:text-base">
             Open a file to start coding
           </span>
         </button>
 
         <button 
-          className="glass-button flex items-center gap-4 px-6 py-4 rounded-lg transition-all duration-300 min-w-[350px] transform hover:translate-y-[-2px]"
+          className="glass-button flex items-center gap-3 sm:gap-4 px-4 sm:px-6 py-3 sm:py-4 rounded-lg transition-all duration-300 w-full transform hover:translate-y-[-2px]"
           style={{
             background: 'linear-gradient(135deg, rgba(125, 211, 252, 0.1) 0%, rgba(187, 154, 247, 0.1) 100%)',
           backdropFilter: 'blur(4px)',
@@ -110,14 +142,14 @@ export default function HeroSection() {
             (e.currentTarget.style as any).WebkitBackdropFilter = 'blur(4px)';
           }}
         >
-          <span className="text-2xl">💻</span>
-          <span className="text-gray-300 text-left">
+          <span className="text-xl sm:text-2xl">💻</span>
+          <span className="text-gray-300 text-left text-sm sm:text-base">
             Use the terminal for commands
           </span>
         </button>
 
         <button 
-          className="glass-button flex items-center gap-4 px-6 py-4 rounded-lg transition-all duration-300 min-w-[350px] transform hover:translate-y-[-2px]"
+          className="glass-button flex items-center gap-3 sm:gap-4 px-4 sm:px-6 py-3 sm:py-4 rounded-lg transition-all duration-300 w-full transform hover:translate-y-[-2px]"
           style={{
             background: 'linear-gradient(135deg, rgba(125, 211, 252, 0.1) 0%, rgba(187, 154, 247, 0.1) 100%)',
           backdropFilter: 'blur(4px)',
@@ -140,16 +172,16 @@ export default function HeroSection() {
             (e.currentTarget.style as any).WebkitBackdropFilter = 'blur(4px)';
           }}
         >
-          <span className="text-2xl">🤖</span>
-          <span className="text-gray-300 text-left">
+          <span className="text-xl sm:text-2xl">🤖</span>
+          <span className="text-gray-300 text-left text-sm sm:text-base">
             Claude Code integration ready
           </span>
         </button>
       </div>
 
-      {/* Hint text - positioned closer to the buttons */}
-      <div className="relative z-10 mt-6 mb-16">
-        <p className="text-gray-500 text-sm italic">
+      {/* Hint text - responsive positioning */}
+      <div className="relative z-10 mt-2 mb-4">
+        <p className="text-gray-500 text-[clamp(0.75rem,1.5vw,0.875rem)] italic text-center">
           Type claude in the terminal below to begin
         </p>
       </div>

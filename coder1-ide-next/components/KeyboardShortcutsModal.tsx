@@ -187,7 +187,7 @@ export default function KeyboardShortcutsModal({ isOpen, onClose }: KeyboardShor
         <div className="flex-1 overflow-auto p-4">
           {filteredShortcuts.length === 0 ? (
             <div className="text-center py-8 text-text-muted">
-              No shortcuts found matching "{searchTerm}"
+              No shortcuts found matching &quot;{searchTerm}&quot;
             </div>
           ) : (
             <div className="space-y-6">

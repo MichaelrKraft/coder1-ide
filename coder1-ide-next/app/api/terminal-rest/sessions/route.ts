@@ -1,16 +1,37 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-// Simple in-memory store for terminal sessions
+const EXPRESS_BACKEND_URL = process.env.EXPRESS_BACKEND_URL || 'http://localhost:3001';
+
+// Simple in-memory store for terminal sessions (fallback)
 const terminalSessions = new Map();
 
 export async function POST(request: NextRequest) {
   try {
-    const { cols, rows } = await request.json();
+    const body = await request.json();
     
-    // Generate a session ID
+    // Try to proxy to Express backend first
+    try {
+      const response = await fetch(`${EXPRESS_BACKEND_URL}/api/terminal-rest/sessions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(body),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log(`✅ Terminal session created via Express: ${data.sessionId}`);
+        return NextResponse.json(data);
+      }
+    } catch (backendError) {
+      console.warn('Failed to connect to Express backend, using fallback:', backendError);
+    }
+    
+    // Fallback to local implementation if Express is unavailable
+    const { cols, rows } = body;
     const sessionId = `session_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
     
-    // Store session info (in production this would connect to a real terminal process)
     terminalSessions.set(sessionId, {
       id: sessionId,
       cols: cols || 80,
@@ -19,7 +40,7 @@ export async function POST(request: NextRequest) {
       isActive: true
     });
     
-    console.log(`✅ Terminal session created: ${sessionId}`);
+    console.log(`✅ Terminal session created (fallback): ${sessionId}`);
     
     return NextResponse.json({
       sessionId,

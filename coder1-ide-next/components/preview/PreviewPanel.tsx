@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { BookOpen, Users, Eye, X } from 'lucide-react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { BookOpen, Users, Eye, X } from '@/lib/icons';
 import { colors, glows } from '@/lib/design-tokens';
 import CodebaseWiki from '@/components/codebase/CodebaseWiki';
 
@@ -41,7 +41,7 @@ interface TeamData {
  * - Live Preview (when HTML/React files open)
  * - Terminal Output (optional)
  */
-export default function PreviewPanel({
+const PreviewPanel = React.memo(function PreviewPanel({
   agentsActive = false,
   fileOpen = false,
   isPreviewable = false,
@@ -60,22 +60,7 @@ export default function PreviewPanel({
     }
   }, [agentsActive, fileOpen, isPreviewable]);
 
-  // Fetch real team data when dashboard is active
-  useEffect(() => {
-    let interval: NodeJS.Timeout;
-    
-    if (mode === 'dashboard') {
-      fetchTeamData();
-      // Poll for updates every 5 seconds (reduced frequency to prevent blinking)
-      interval = setInterval(fetchTeamData, 5000);
-    }
-    
-    return () => {
-      if (interval) clearInterval(interval);
-    };
-  }, [mode]);
-
-  const fetchTeamData = async () => {
+  const fetchTeamData = useCallback(async () => {
     // Don't show loading spinner during polling updates to prevent blinking
     const isFirstLoad = !teamData && !error;
     
@@ -85,8 +70,8 @@ export default function PreviewPanel({
         setError(null);
       }
       
-      // Call the correct Express backend API (not Next.js API)
-      const teamsResponse = await fetch('http://localhost:3000/api/ai-team/');
+      // Call the Next.js API route which proxies to Express backend
+      const teamsResponse = await fetch('/api/ai-team/');
       const teamsData = await teamsResponse.json();
       
       if (teamsData.success && teamsData.teams.length > 0) {
@@ -94,7 +79,7 @@ export default function PreviewPanel({
         const activeTeam = teamsData.teams[0];
         
         // Get detailed status for this team
-        const statusResponse = await fetch(`http://localhost:3000/api/ai-team/${activeTeam.teamId}/status`);
+        const statusResponse = await fetch(`/api/ai-team/${activeTeam.teamId}/status`);
         const statusData = await statusResponse.json();
         
         if (statusData.success) {
@@ -123,9 +108,29 @@ export default function PreviewPanel({
         setIsLoading(false);
       }
     }
-  };
+  }, [teamData, error]);
 
-  const renderTabButton = (
+  // Fetch real team data when dashboard is active
+  useEffect(() => {
+    let interval: NodeJS.Timeout | undefined;
+    
+    if (mode === 'dashboard') {
+      // TEMPORARILY DISABLED: AI team polling causing timeouts
+      // TODO: Fix Express backend /api/ai-team endpoint performance
+      // fetchTeamData();
+      // interval = setInterval(fetchTeamData, 5000);
+      
+      // For now, just set mock data to prevent loading spinner
+      setTeamData(null);
+      setIsLoading(false);
+    }
+    
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [mode, fetchTeamData]);
+
+  const renderTabButton = useCallback((
     tabMode: PreviewMode,
     icon: React.ReactNode,
     label: string
@@ -144,7 +149,7 @@ export default function PreviewPanel({
       {icon}
       <span>{label}</span>
     </button>
-  );
+  ), [mode]);
 
   return (
     <div className="h-full flex flex-col bg-bg-secondary border border-coder1-cyan/50 shadow-glow-cyan">
@@ -332,7 +337,7 @@ export default function PreviewPanel({
       </div>
     </div>
   );
-}
+});
 
 // Agent Status Card Component - REAL AI INTEGRATION
 const AgentStatusCard = React.memo(function AgentStatusCard({
@@ -400,3 +405,4 @@ const AgentStatusCard = React.memo(function AgentStatusCard({
     </div>
   );
 });
+export default PreviewPanel;

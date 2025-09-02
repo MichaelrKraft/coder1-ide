@@ -3,7 +3,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { ChevronDown, Home, Grid, FileText, Code, Sparkles, BookOpen, Settings as SettingsIcon, Info, HelpCircle, Keyboard, AlertCircle } from 'lucide-react';
+import { ChevronDown, Home, Grid, FileText, Code, Sparkles, BookOpen, SettingsIcon, Info, HelpCircle, Keyboard, AlertCircle } from '@/lib/icons';
 import { glows } from '@/lib/design-tokens';
 
 interface MenuItem {
@@ -158,15 +158,13 @@ export default function MenuBar({
     setActiveMenu(null);
   };
 
-  // IMPORTANT: These menu items point to ACTUAL pages the user built
-  // DO NOT change to generic placeholders - user spent hours on these pages!
-  // NOTE: Components, Templates, Hooks, and Workflows moved to Discover panel
+  // Menu items with proper routing to Express backend pages
   const menuItems = [
-    { icon: Home, label: 'Coder1 Dashboard', href: 'http://localhost:3000/vibe-dashboard.html' },
-    { icon: Info, label: 'Agent Dashboard', href: 'http://localhost:3000/agent-dashboard.html' },
-    { icon: BookOpen, label: 'Docs Manager', href: 'http://localhost:3000/docs-manager' },
-    { icon: FileText, label: 'Documentation', href: 'http://localhost:3000/documentation' },
-    { icon: SettingsIcon, label: 'PRD Generator', href: 'http://localhost:3000/orchestrator/' },
+    { icon: Home, label: 'Home page', href: '/', emoji: '🏠' },
+    { icon: Grid, label: 'AI dashboard', href: 'http://localhost:3001/vibe-dashboard', emoji: '🤖' },
+    { icon: Code, label: 'Agent dashboard', href: 'http://localhost:3001/agent-dashboard', emoji: '👥' },
+    { icon: FileText, label: 'Documentation', href: 'http://localhost:3001/documentation', emoji: '📚' },
+    { icon: SettingsIcon, label: 'Settings', href: '#', onClick: () => onShowSettings?.(), emoji: '⚙️' },
   ];
 
   return (
@@ -316,8 +314,42 @@ export default function MenuBar({
         {isMenuOpen && (
           <div className="absolute right-0 mt-2 w-56 bg-bg-secondary border border-border-default rounded-lg shadow-2xl overflow-hidden z-50">
             <div className="py-1">
-              {menuItems.map((item, index) => {
+              {menuItems.map((item) => {
                 const Icon = item.icon;
+                
+                // Handle settings menu item with onClick instead of Link
+                if (item.onClick) {
+                  return (
+                    <button
+                      key={item.label}
+                      onClick={() => {
+                        item.onClick?.();
+                        setIsMenuOpen(false);
+                      }}
+                      className="w-full group flex items-center gap-3 px-4 py-2.5 text-sm text-text-secondary hover:text-text-primary hover:bg-bg-tertiary transition-colors"
+                    >
+                      <Icon 
+                        className="w-4 h-4 transition-all duration-300 group-hover:text-orange-400" 
+                        style={{
+                          filter: 'drop-shadow(0 0 0px transparent)',
+                          transition: 'filter 0.3s ease, color 0.3s ease',
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.filter = 'drop-shadow(0 0 8px rgba(251, 146, 60, 0.9)) drop-shadow(0 0 16px rgba(251, 146, 60, 0.7)) drop-shadow(0 0 24px rgba(251, 146, 60, 0.5))';
+                          e.currentTarget.style.color = '#FB923C';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.filter = 'drop-shadow(0 0 0px transparent)';
+                          e.currentTarget.style.color = '';
+                        }}
+                      />
+                      <span>{item.label}</span>
+                      <span className="ml-auto text-xs text-text-muted">{item.emoji}</span>
+                    </button>
+                  );
+                }
+
+                // Handle regular navigation menu items
                 return (
                   <Link
                     key={item.label}
@@ -341,10 +373,7 @@ export default function MenuBar({
                       }}
                     />
                     <span>{item.label}</span>
-                    {index === 0 && <span className="ml-auto text-xs text-text-muted">🏠</span>}
-                    {index === 1 && <span className="ml-auto text-xs text-text-muted">ℹ️</span>}
-                    {index === 2 && <span className="ml-auto text-xs text-text-muted">📚</span>}
-                    {index === 3 && <span className="ml-auto text-xs text-text-muted">⚙️</span>}
+                    <span className="ml-auto text-xs text-text-muted">{item.emoji}</span>
                   </Link>
                 );
               })}

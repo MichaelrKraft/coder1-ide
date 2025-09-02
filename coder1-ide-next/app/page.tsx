@@ -18,7 +18,7 @@ export default function HomePage() {
             Active Agents: 3
           </p>
           <p className="text-lg text-coder1-cyan">
-            Today's Progress: 67% complete
+            Today&apos;s Progress: 67% complete
           </p>
         </div>
 
