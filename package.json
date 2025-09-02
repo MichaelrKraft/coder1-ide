@@ -6,6 +6,10 @@
   "scripts": {
     "start": "node --max-old-space-size=512 --expose-gc src/app.js",
     "dev": "nodemon --max-old-space-size=512 --expose-gc src/app.js",
+    "deploy": "./deploy.sh",
+    "build:all": "cd coder1-ide-next && npm run build",
+    "verify:deployment": "curl -f http://localhost:3000/ide || echo 'Deployment verification failed'",
+    "rollback": "if [ -f .last_backup ]; then BACKUP_DIR=$(cat .last_backup); rm -rf public/ide && mv \"$BACKUP_DIR\" public/ide && echo 'Rollback completed'; else echo 'No backup found'; fi",
     "terminal-server": "node terminal-server.js",
     "test": "echo \"Error: no test specified\" && exit 1",
     "lint": "eslint src/",
