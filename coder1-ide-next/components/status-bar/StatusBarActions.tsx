@@ -174,7 +174,7 @@ const StatusBarActions = React.memo(function StatusBarActions({
   };
 
   const handleDocs = () => {
-    window.open('http://localhost:3000/docs-manager', '_blank');
+    window.open('http://localhost:3001/docs-manager', '_blank');
   };
 
   const isLoadingState = (state: string) => loading === state;

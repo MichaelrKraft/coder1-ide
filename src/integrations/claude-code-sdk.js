@@ -183,7 +183,7 @@ Format your response with clear file separators like:
         const content = message.content || message.toString();
         
         // Look for file markers
-        const filePattern = /---\s*(.+?)\s*---\s*\n([\s\S]*?)(?=---|\z)/g;
+        const filePattern = /---\s*(.+?)\s*---\s*\n([\s\S]*?)(?=---|$)/g;
         let match;
 
         while ((match = filePattern.exec(content)) !== null) {
@@ -340,7 +340,7 @@ Format your response as a clear, structured analysis.`;
         }
 
         // Extract features
-        const featuresMatch = content.match(/features?[:\s]+([^\.]+)/i);
+        const featuresMatch = content.match(/features?[:\s]+([^.]+)/i);
         if (featuresMatch) {
             analysis.keyFeatures = featuresMatch[1].split(',').map(f => f.trim());
         }

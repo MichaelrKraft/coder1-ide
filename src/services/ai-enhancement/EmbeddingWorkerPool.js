@@ -127,34 +127,34 @@ class EmbeddingWorkerPool extends EventEmitter {
     
     handleWorkerMessage(worker, message) {
         switch (message.type) {
-            case 'ready':
-                worker.isReady = true;
-                this.availableWorkers.push(worker);
-                worker.emit('ready');
-                console.log(`Worker ${worker.workerId} ready`);
-                break;
+        case 'ready':
+            worker.isReady = true;
+            this.availableWorkers.push(worker);
+            worker.emit('ready');
+            console.log(`Worker ${worker.workerId} ready`);
+            break;
                 
-            case 'result':
-                this.handleTaskResult(message);
-                this.returnWorkerToPool(worker);
-                break;
+        case 'result':
+            this.handleTaskResult(message);
+            this.returnWorkerToPool(worker);
+            break;
                 
-            case 'batch_result':
-                this.handleTaskResult(message);
-                this.returnWorkerToPool(worker);
-                break;
+        case 'batch_result':
+            this.handleTaskResult(message);
+            this.returnWorkerToPool(worker);
+            break;
                 
-            case 'error':
-                this.handleTaskError(message);
-                this.returnWorkerToPool(worker);
-                break;
+        case 'error':
+            this.handleTaskError(message);
+            this.returnWorkerToPool(worker);
+            break;
                 
-            case 'health_response':
-                // Handle health check response
-                break;
+        case 'health_response':
+            // Handle health check response
+            break;
                 
-            default:
-                console.warn(`Unknown message type from worker: ${message.type}`);
+        default:
+            console.warn(`Unknown message type from worker: ${message.type}`);
         }
     }
     

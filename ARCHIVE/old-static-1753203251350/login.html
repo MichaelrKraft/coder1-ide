@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Coder1 - Login</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0a0a0a;
+            color: #e0e0e0;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .login-container {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 12px;
+            padding: 40px;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+        }
+
+        .logo {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .logo h1 {
+            font-size: 32px;
+            background: linear-gradient(45deg, #007bff, #00d4ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .logo p {
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #ccc;
+            font-size: 14px;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px;
+            background: #0a0a0a;
+            border: 1px solid #333;
+            border-radius: 6px;
+            color: #e0e0e0;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #007bff;
+        }
+
+        .api-key-section {
+            margin-top: 25px;
+            padding-top: 25px;
+            border-top: 1px solid #333;
+        }
+
+        .api-key-info {
+            background: #1e2936;
+            border: 1px solid #2a3f5f;
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 15px;
+            font-size: 14px;
+            color: #8ab4f8;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(45deg, #007bff, #00d4ff);
+            border: none;
+            border-radius: 6px;
+            color: white;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 123, 255, 0.4);
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .form-toggle {
+            text-align: center;
+            margin-top: 20px;
+            color: #666;
+        }
+
+        .form-toggle a {
+            color: #007bff;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .form-toggle a:hover {
+            text-decoration: underline;
+        }
+
+        .error-message {
+            background: #ff00001a;
+            border: 1px solid #ff0000;
+            color: #ff6b6b;
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            display: none;
+        }
+
+        .success-message {
+            background: #00ff001a;
+            border: 1px solid #00ff00;
+            color: #51cf66;
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            display: none;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #ffffff33;
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s linear infinite;
+            vertical-align: middle;
+            margin-left: 10px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="logo">
+            <h1>Coder1</h1>
+            <p>Autonomous Coding Platform</p>
+        </div>
+
+        <div class="error-message" id="errorMessage"></div>
+        <div class="success-message" id="successMessage"></div>
+
+        <form id="authForm">
+            <div class="form-group">
+                <label for="email">Email</label>
+                <input type="email" id="email" name="email" required placeholder="your@email.com">
+            </div>
+
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" required placeholder="••••••••">
+            </div>
+
+            <div class="api-key-section" id="apiKeySection" style="display: none;">
+                <div class="api-key-info">
+                    🔑 Add your Claude API key to enable AI features
+                </div>
+                <div class="form-group">
+                    <label for="apiKey">Claude API Key (Optional)</label>
+                    <input type="password" id="apiKey" name="apiKey" placeholder="sk-ant-api03-...">
+                </div>
+            </div>
+
+            <button type="submit" id="submitButton">
+                <span id="buttonText">Login</span>
+            </button>
+        </form>
+
+        <div class="form-toggle">
+            <span id="toggleText">Don't have an account?</span>
+            <a href="#" id="toggleLink">Sign up</a>
+        </div>
+    </div>
+
+    <script>
+        const form = document.getElementById('authForm');
+        const submitButton = document.getElementById('submitButton');
+        const buttonText = document.getElementById('buttonText');
+        const toggleLink = document.getElementById('toggleLink');
+        const toggleText = document.getElementById('toggleText');
+        const apiKeySection = document.getElementById('apiKeySection');
+        const errorMessage = document.getElementById('errorMessage');
+        const successMessage = document.getElementById('successMessage');
+
+        let isLoginMode = true;
+
+        toggleLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            isLoginMode = !isLoginMode;
+            
+            if (isLoginMode) {
+                buttonText.textContent = 'Login';
+                toggleText.textContent = "Don't have an account?";
+                toggleLink.textContent = 'Sign up';
+                apiKeySection.style.display = 'none';
+            } else {
+                buttonText.textContent = 'Sign Up';
+                toggleText.textContent = "Already have an account?";
+                toggleLink.textContent = 'Login';
+                apiKeySection.style.display = 'block';
+            }
+            
+            // Clear messages
+            errorMessage.style.display = 'none';
+            successMessage.style.display = 'none';
+        });
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const apiKey = document.getElementById('apiKey').value;
+            
+            // Clear previous messages
+            errorMessage.style.display = 'none';
+            successMessage.style.display = 'none';
+            
+            // Show loading
+            submitButton.disabled = true;
+            buttonText.innerHTML = isLoginMode ? 'Logging in...' : 'Creating account...';
+            
+            try {
+                const endpoint = isLoginMode ? '/api/auth/login' : '/api/auth/register';
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ email, password, apiKey }),
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.success) {
+                    // Store token
+                    localStorage.setItem('authToken', data.token);
+                    localStorage.setItem('userEmail', data.user.email);
+                    
+                    // Show success
+                    successMessage.textContent = isLoginMode ? 'Login successful! Redirecting...' : 'Account created! Redirecting...';
+                    successMessage.style.display = 'block';
+                    
+                    // Redirect to IDE
+                    setTimeout(() => {
+                        window.location.href = '/ide';
+                    }, 1500);
+                } else {
+                    throw new Error(data.error || 'Authentication failed');
+                }
+            } catch (error) {
+                errorMessage.textContent = error.message;
+                errorMessage.style.display = 'block';
+                
+                // Reset button
+                submitButton.disabled = false;
+                buttonText.textContent = isLoginMode ? 'Login' : 'Sign Up';
+            }
+        });
+
+        // Check if already logged in
+        const token = localStorage.getItem('authToken');
+        if (token) {
+            // Verify token
+            fetch('/api/auth/me', {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            }).then(response => {
+                if (response.ok) {
+                    window.location.href = '/ide';
+                }
+            });
+        }
+    </script>
+</body>
+</html>

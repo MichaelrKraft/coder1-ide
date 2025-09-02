@@ -1,0 +1,28 @@
+{
+  "id": "solution-1756789935071-ojkuik",
+  "label": "test-solution",
+  "type": "solution",
+  "created": 1756789935071,
+  "problem": {
+    "description": "Problem description here",
+    "symptoms": [],
+    "context": {},
+    "errorMessages": []
+  },
+  "solution": {
+    "steps": [],
+    "codeChanges": [],
+    "configChanges": [],
+    "reasoning": "Solution extracted from current work"
+  },
+  "validation": {
+    "howToTest": [],
+    "expectedResults": [],
+    "successMetrics": []
+  },
+  "agentGuidance": {
+    "diagnosticApproach": "",
+    "implementationOrder": [],
+    "troubleshooting": ""
+  }
+}

@@ -8,8 +8,8 @@
 const express = require('express');
 const router = express.Router();
 
-// Import real AI Agent Orchestrator (JavaScript version)
-const { aiOrchestrator } = require('../services/ai-agent-orchestrator');
+// Import REAL AI Agent Orchestrator with runtime isolation
+const { realAiOrchestrator } = require('../services/real-ai-agent-orchestrator');
 
 // Legacy activeTeams for compatibility - now just mirrors orchestrator
 const activeTeams = new Map();
@@ -30,8 +30,8 @@ router.post('/spawn', async (req, res) => {
 
         console.log(`🚀 [AI-TEAM] Spawning REAL AI team for: "${requirement}"`);
         
-        // Use AI Agent Orchestrator to spawn real team
-        const teamSession = await aiOrchestrator.spawnTeam(requirement);
+        // Use REAL AI Agent Orchestrator to spawn team with runtime isolation
+        const teamSession = await realAiOrchestrator.spawnTeam(requirement);
         
         // Map orchestrator format to legacy API format for compatibility
         const compatibleTeam = {
@@ -114,7 +114,7 @@ router.post('/:teamId/start', async (req, res) => {
         const { teamId } = req.params;
         
         // Get real team status from orchestrator
-        const realTeam = aiOrchestrator.getTeamStatus(teamId);
+        const realTeam = realAiOrchestrator.getTeamStatus(teamId);
         const legacyTeam = activeTeams.get(teamId);
         
         if (!realTeam || !legacyTeam) {
@@ -190,7 +190,7 @@ router.get('/:teamId/status', (req, res) => {
         const { teamId } = req.params;
         
         // Get real-time status from orchestrator
-        const realTeam = aiOrchestrator.getTeamStatus(teamId);
+        const realTeam = realAiOrchestrator.getTeamStatus(teamId);
         const legacyTeam = activeTeams.get(teamId);
         
         if (!realTeam || !legacyTeam) {
@@ -263,7 +263,7 @@ router.post('/:teamId/stop', async (req, res) => {
     try {
         const { teamId } = req.params;
         
-        const realTeam = aiOrchestrator.getTeamStatus(teamId);
+        const realTeam = realAiOrchestrator.getTeamStatus(teamId);
         const legacyTeam = activeTeams.get(teamId);
         
         if (!realTeam || !legacyTeam) {
@@ -279,7 +279,7 @@ router.post('/:teamId/stop', async (req, res) => {
         // Note: Current orchestrator only has global emergency stop
         // TODO: Add individual team stop functionality to orchestrator
         console.log('⚠️ [AI-TEAM] Individual team stop not implemented in orchestrator - using emergency stop');
-        aiOrchestrator.emergencyStop();
+        realAiOrchestrator.emergencyStop();
         
         // Update legacy team status
         legacyTeam.status = 'stopped';
@@ -342,7 +342,7 @@ router.post('/:teamId/stop', async (req, res) => {
 router.get('/', (req, res) => {
     try {
         // Get all teams from orchestrator
-        const realTeams = aiOrchestrator.getAllTeams();
+        const realTeams = realAiOrchestrator.getAllTeams();
         
         const teams = realTeams.map(realTeam => {
             const legacyTeam = activeTeams.get(realTeam.teamId);
@@ -440,7 +440,7 @@ function startRealTimeMonitoring(teamId) {
     legacyTeam.monitoringTimer = setInterval(() => {
         try {
             // Get real-time status from orchestrator
-            const realTeam = aiOrchestrator.getTeamStatus(teamId);
+            const realTeam = realAiOrchestrator.getTeamStatus(teamId);
             if (!realTeam) {
                 console.log(`⚠️ [AI-TEAM] Team ${teamId} not found in orchestrator - stopping monitoring`);
                 clearInterval(legacyTeam.monitoringTimer);

@@ -109,9 +109,9 @@ export default function StatusBarCore({
   
   return (
     <>
-      <div className="h-11 bg-bg-secondary border-t border-border-default flex items-center justify-between px-4">
+      <div className="h-11 bg-bg-secondary border-t border-border-default flex items-center px-4 relative">
         {/* Left section - Discover Button & Supervision Indicator */}
-        <div className="flex items-center gap-4 text-sm text-text-muted">
+        <div className="flex items-center gap-4 text-sm text-text-muted flex-1">
           <DiscoverPanel />
           
           {/* Supervision Indicator */}
@@ -131,40 +131,20 @@ export default function StatusBarCore({
           )}
         </div>
 
-        {/* Center section - Action buttons */}
-        <StatusBarActions
-          activeFile={activeFile}
-          isConnected={actuallyConnected}
-          openFiles={openFiles}
-          terminalHistory={terminalHistory}
-          terminalCommands={terminalCommands}
-        />
+        {/* Center section - Action buttons (absolutely positioned to center) */}
+        <div className="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2">
+          <StatusBarActions
+            activeFile={activeFile}
+            isConnected={actuallyConnected}
+            openFiles={openFiles}
+            terminalHistory={terminalHistory}
+            terminalCommands={terminalCommands}
+          />
+        </div>
 
-        {/* Right section - Status info */}
-        <div className="flex items-center gap-4 text-sm text-text-muted">
-          {/* Git Information */}
-          {gitInfo.branch && (
-            <div className="flex items-center gap-1" title={`Git branch: ${gitInfo.branch}${gitInfo.modifiedCount > 0 ? ` • ${gitInfo.modifiedCount} modified` : ''}`}>
-              <GitBranch className="w-3 h-3" />
-              <span className="text-text-secondary">{gitInfo.branch}</span>
-              {gitInfo.modifiedCount > 0 && (
-                <div className="flex items-center gap-1">
-                  <span className="text-text-muted">•</span>
-                  <FileText className="w-3 h-3 text-orange-400" />
-                  <span className="text-orange-400">{gitInfo.modifiedCount}</span>
-                </div>
-              )}
-            </div>
-          )}
-          <span>UTF-8</span>
-          <span>TypeScript React</span>
-          <span>Ln 1, Col 1</span>
-          {actuallyConnected && (
-            <div className="flex items-center gap-1">
-              <span className="w-2 h-2 rounded-full bg-green-400"></span>
-              <span className="text-green-400">Connected</span>
-            </div>
-          )}
+        {/* Right section - Empty spacer for layout balance */}
+        <div className="flex items-center gap-4 text-sm text-text-muted flex-1">
+          {/* Empty spacer */}
         </div>
       </div>
     </>

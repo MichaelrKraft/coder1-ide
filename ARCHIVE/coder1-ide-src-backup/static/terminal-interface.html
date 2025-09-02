@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Coder1 - Integrated Terminal</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@xterm/xterm@5.5.0/css/xterm.css">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: #1a1a1a;
+            color: #ffffff;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .header {
+            background: #2a2a2a;
+            padding: 15px 20px;
+            border-bottom: 1px solid #333;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .header h1 {
+            margin: 0;
+            color: #8b5cf6;
+            font-size: 1.5rem;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        .btn {
+            background: #8b5cf6;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: background 0.3s;
+        }
+        
+        .btn:hover {
+            background: #7c3aed;
+        }
+        
+        .btn:disabled {
+            background: #666;
+            cursor: not-allowed;
+        }
+        
+        .btn.danger {
+            background: #ef4444;
+        }
+        
+        .btn.danger:hover {
+            background: #dc2626;
+        }
+        
+        .status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+        }
+        
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #666;
+        }
+        
+        .status-indicator.connected {
+            background: #10b981;
+        }
+        
+        .status-indicator.active {
+            background: #3b82f6;
+        }
+        
+        .status-indicator.error {
+            background: #ef4444;
+        }
+        
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+        }
+        
+        .project-info {
+            background: #2a2a2a;
+            padding: 10px 20px;
+            border-bottom: 1px solid #333;
+            display: none;
+        }
+        
+        .project-info.show {
+            display: block;
+        }
+        
+        .project-info h3 {
+            margin: 0 0 5px 0;
+            color: #8b5cf6;
+            font-size: 1rem;
+        }
+        
+        .project-info p {
+            margin: 0;
+            color: #ccc;
+            font-size: 0.9rem;
+        }
+        
+        .terminal-container {
+            flex: 1;
+            padding: 20px;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .terminal-wrapper {
+            flex: 1;
+            background: #000;
+            border-radius: 8px;
+            padding: 10px;
+            min-height: 400px;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        #terminal {
+            flex: 1;
+        }
+        
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 200px;
+            color: #8b5cf6;
+            font-size: 1.1rem;
+        }
+        
+        .loading::after {
+            content: "...";
+            animation: loading 1.5s infinite;
+        }
+        
+        @keyframes loading {
+            0%, 20% { content: "..."; }
+            40% { content: ".."; }
+            60% { content: "."; }
+            80%, 100% { content: ""; }
+        }
+        
+        .setup-form {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #ccc;
+            font-weight: 500;
+        }
+        
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #555;
+            border-radius: 4px;
+            background: #333;
+            color: #fff;
+            font-size: 1rem;
+        }
+        
+        .form-group textarea {
+            height: 120px;
+            resize: vertical;
+        }
+        
+        .form-group input:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #8b5cf6;
+        }
+        
+        .error-message {
+            background: #ef4444;
+            color: white;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+            display: none;
+        }
+        
+        .success-message {
+            background: #10b981;
+            color: white;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🧪 Coder1 Terminal</h1>
+        <div class="controls">
+            <div class="status">
+                <div class="status-indicator" id="statusIndicator"></div>
+                <span id="statusText">Disconnected</span>
+            </div>
+            <button class="btn" id="startBtn" onclick="startClaudeCode()" disabled>Start Claude Code</button>
+            <button class="btn danger" id="terminateBtn" onclick="terminateSession()" disabled>Terminate</button>
+        </div>
+    </div>
+    
+    <div class="project-info" id="projectInfo">
+        <h3 id="projectName">Project Name</h3>
+        <p id="projectPath">Project Path</p>
+    </div>
+    
+    <div class="main-content">
+        <div id="setupForm" class="setup-form">
+            <h2>Create New Project</h2>
+            <div class="error-message" id="errorMessage"></div>
+            <div class="success-message" id="successMessage"></div>
+            
+            <div class="form-group">
+                <label for="userId">User ID:</label>
+                <input type="text" id="userId" value="coder1-user" placeholder="Enter your user ID">
+            </div>
+            
+            <div class="form-group">
+                <label for="projectRequest">Project Description:</label>
+                <textarea id="projectRequest" placeholder="Describe what you want to build...">Create a modern, responsive landing page for a tech startup. Include a hero section, features section, and contact form. Use modern CSS with smooth animations and a professional color scheme.</textarea>
+            </div>
+            
+            <button class="btn" onclick="createSession()">Create Terminal Session</button>
+        </div>
+        
+        <div class="terminal-container" id="terminalContainer" style="display: none;">
+            <div class="terminal-wrapper">
+                <div id="terminal"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@xterm/xterm@5.5.0/lib/xterm.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@xterm/addon-fit@0.10.0/lib/addon-fit.js"></script>
+    <script>
+        class TerminalInterface {
+            constructor() {
+                this.websocket = null;
+                this.terminal = null;
+                this.fitAddon = null;
+                this.currentSessionId = null;
+                this.isConnected = false;
+                this.currentInput = '';
+                
+                this.initializeUI();
+                this.connectWebSocket();
+            }
+            
+            initializeUI() {
+                // Initialize terminal
+                this.terminal = new Terminal({
+                    cursorBlink: true,
+                    fontSize: 14,
+                    fontFamily: 'Monaco, Menlo, "Ubuntu Mono", monospace',
+                    theme: {
+                        background: '#000000',
+                        foreground: '#ffffff',
+                        cursor: '#8b5cf6'
+                    }
+                });
+                
+                this.fitAddon = new FitAddon.FitAddon();
+                this.terminal.loadAddon(this.fitAddon);
+                
+                // Handle terminal input
+                this.terminal.onData((data) => {
+                    // Handle special characters
+                    if (data === '\r' || data === '\n') {
+                        // Check if current input is a UI command
+                        if (this.currentInput.trim().startsWith('/ui ')) {
+                            this.handleUICommand(this.currentInput.trim());
+                            return;
+                        }
+                        // Clear input buffer after processing
+                        this.currentInput = '';
+                    } else if (data === '\u007f') { // Backspace
+                        this.currentInput = this.currentInput.slice(0, -1);
+                    } else if (data === '\u0003') { // Ctrl+C
+                        this.currentInput = '';
+                    } else if (data.length === 1 && data.charCodeAt(0) >= 32) { // Printable characters
+                        this.currentInput += data;
+                    }
+                    
+                    // Send to WebSocket for regular terminal processing
+                    if (this.websocket && this.currentSessionId) {
+                        this.websocket.send(JSON.stringify({
+                            type: 'terminal_input',
+                            sessionId: this.currentSessionId,
+                            input: data
+                        }));
+                    }
+                });
+                
+                // Handle window resize
+                window.addEventListener('resize', () => {
+                    if (this.fitAddon) {
+                        this.fitAddon.fit();
+                    }
+                });
+            }
+            
+            connectWebSocket() {
+                const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+                const wsUrl = `${protocol}//${window.location.host}`;
+                
+                console.log('Connecting to WebSocket:', wsUrl);
+                
+                this.websocket = new WebSocket(wsUrl);
+                
+                this.websocket.onopen = () => {
+                    console.log('WebSocket connected');
+                    this.updateStatus('connected', 'Connected');
+                    this.isConnected = true;
+                };
+                
+                this.websocket.onmessage = (event) => {
+                    try {
+                        const data = JSON.parse(event.data);
+                        this.handleWebSocketMessage(data);
+                    } catch (error) {
+                        console.error('WebSocket message error:', error);
+                    }
+                };
+                
+                this.websocket.onclose = () => {
+                    console.log('WebSocket disconnected');
+                    this.updateStatus('error', 'Disconnected');
+                    this.isConnected = false;
+                    
+                    // Attempt to reconnect after 3 seconds
+                    setTimeout(() => {
+                        this.connectWebSocket();
+                    }, 3000);
+                };
+                
+                this.websocket.onerror = (error) => {
+                    console.error('WebSocket error:', error);
+                    this.updateStatus('error', 'Connection Error');
+                };
+            }
+            
+            handleWebSocketMessage(data) {
+                console.log('WebSocket message:', data.type);
+                
+                switch (data.type) {
+                    case 'connected':
+                        console.log('WebSocket connection established');
+                        break;
+                        
+                    case 'session_created':
+                        this.handleSessionCreated(data);
+                        break;
+                        
+                    case 'claude_code_started':
+                        this.handleClaudeCodeStarted(data);
+                        break;
+                        
+                    case 'output':
+                        if (this.terminal) {
+                            this.terminal.write(data.data);
+                        }
+                        break;
+                        
+                    case 'error':
+                        if (this.terminal) {
+                            this.terminal.write(`\r\n\x1b[31mError: ${data.data}\x1b[0m\r\n`);
+                        }
+                        console.error('Terminal error:', data.data);
+                        break;
+                        
+                    case 'close':
+                        if (this.terminal) {
+                            this.terminal.write(`\r\n\x1b[33mProcess exited with code ${data.code}\x1b[0m\r\n`);
+                        }
+                        this.updateStatus('connected', 'Process Completed');
+                        document.getElementById('startBtn').disabled = false;
+                        document.getElementById('terminateBtn').disabled = true;
+                        break;
+                        
+                    case 'session_terminated':
+                        this.handleSessionTerminated(data);
+                        break;
+                        
+                    default:
+                        console.log('Unknown message type:', data.type);
+                }
+            }
+            
+            handleSessionCreated(data) {
+                this.currentSessionId = data.sessionId;
+                
+                // Update UI
+                document.getElementById('projectName').textContent = data.projectName;
+                document.getElementById('projectPath').textContent = data.projectPath;
+                document.getElementById('projectInfo').classList.add('show');
+                
+                // Hide setup form and show terminal
+                document.getElementById('setupForm').style.display = 'none';
+                document.getElementById('terminalContainer').style.display = 'flex';
+                
+                // Initialize terminal in DOM
+                this.terminal.open(document.getElementById('terminal'));
+                this.fitAddon.fit();
+                
+                // Enable start button
+                document.getElementById('startBtn').disabled = false;
+                
+                this.terminal.write('\\x1b[32mTerminal session created successfully!\\x1b[0m\\r\\n');
+                this.terminal.write(`Project: ${data.projectName}\\r\\n`);
+                this.terminal.write(`Path: ${data.projectPath}\\r\\n`);
+                this.terminal.write('\\x1b[33mClick "Start Claude Code" to begin...\\x1b[0m\\r\\n\\r\\n');
+                
+                this.updateStatus('connected', 'Session Ready');
+                
+                this.showSuccess('Terminal session created successfully!');
+            }
+            
+            handleClaudeCodeStarted(data) {
+                if (data.success) {
+                    this.updateStatus('active', 'Claude Code Running');
+                    document.getElementById('startBtn').disabled = true;
+                    document.getElementById('terminateBtn').disabled = false;
+                    
+                    this.terminal.write('\\x1b[32mClaude Code started successfully!\\x1b[0m\\r\\n');
+                    this.terminal.write(`Process ID: ${data.pid}\\r\\n\\r\\n`);
+                } else {
+                    this.terminal.write(`\\x1b[31mFailed to start Claude Code: ${data.error}\\x1b[0m\\r\\n`);
+                    this.showError(data.error);
+                }
+            }
+            
+            handleSessionTerminated(data) {
+                if (data.success) {
+                    this.terminal.write('\\r\\n\\x1b[33mSession terminated by user\\x1b[0m\\r\\n');
+                    this.updateStatus('connected', 'Session Terminated');
+                } else {
+                    this.terminal.write(`\\r\\n\\x1b[31mFailed to terminate session: ${data.error}\\x1b[0m\\r\\n`);
+                }
+                
+                document.getElementById('startBtn').disabled = false;
+                document.getElementById('terminateBtn').disabled = true;
+            }
+            
+            updateStatus(type, text) {
+                const indicator = document.getElementById('statusIndicator');
+                const statusText = document.getElementById('statusText');
+                
+                indicator.className = `status-indicator ${type}`;
+                statusText.textContent = text;
+            }
+            
+            showError(message) {
+                const errorDiv = document.getElementById('errorMessage');
+                errorDiv.textContent = message;
+                errorDiv.style.display = 'block';
+                
+                setTimeout(() => {
+                    errorDiv.style.display = 'none';
+                }, 5000);
+            }
+            
+            showSuccess(message) {
+                const successDiv = document.getElementById('successMessage');
+                successDiv.textContent = message;
+                successDiv.style.display = 'block';
+                
+                setTimeout(() => {
+                    successDiv.style.display = 'none';
+                }, 5000);
+            }
+            
+            getCurrentLine() {
+                // Return the current input buffer
+                return this.currentInput || '';
+            }
+            
+            async handleUICommand(command) {
+                this.terminal.write('\r\n');
+                this.terminal.write('\\x1b[36m🎨 React Bits: Processing UI command...\\x1b[0m\r\n');
+                
+                const message = command.replace('/ui ', '').trim();
+                
+                if (!message) {
+                    this.terminal.write('\\x1b[33mUsage: /ui <description>\\x1b[0m\r\n');
+                    this.terminal.write('\\x1b[33mExample: /ui create a blue glowing button\\x1b[0m\r\n');
+                    this.terminal.write('$ ');
+                    return;
+                }
+                
+                try {
+                    const response = await fetch('/api/magic/ui', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ message })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        this.terminal.write(`\\x1b[32m✅ Component generated: ${data.component.explanation}\\x1b[0m\r\n`);
+                        this.terminal.write(`\\x1b[33m📊 Generated ${data.variants.length} variants (TypeScript+Tailwind, JavaScript+Tailwind, TypeScript+CSS, JavaScript+CSS)\\x1b[0m\r\n`);
+                        
+                        // Show customizations if any
+                        if (data.customizations && data.customizations.applied && Object.keys(data.customizations.applied).length > 0) {
+                            this.terminal.write('\\x1b[35m🎯 Applied customizations:\\x1b[0m\r\n');
+                            Object.entries(data.customizations.applied).forEach(([key, value]) => {
+                                this.terminal.write(`\\x1b[35m  • ${key}: ${value}\\x1b[0m\r\n`);
+                            });
+                        }
+                        
+                        this.terminal.write('\r\n\\x1b[36m📋 Component Code (TypeScript + Tailwind):\\x1b[0m\r\n');
+                        this.terminal.write('\\x1b[2m' + '-'.repeat(60) + '\\x1b[0m\r\n');
+                        
+                        // Split code into lines and display
+                        const codeLines = data.component.code.split('\n');
+                        codeLines.forEach(line => {
+                            this.terminal.write(`\\x1b[37m${line}\\x1b[0m\r\n`);
+                        });
+                        
+                        this.terminal.write('\\x1b[2m' + '-'.repeat(60) + '\\x1b[0m\r\n');
+                        this.terminal.write('\\x1b[32m💡 Tip: Use the variant selector API to switch between TypeScript/JavaScript and Tailwind/CSS versions\\x1b[0m\r\n');
+                        
+                    } else {
+                        this.terminal.write(`\\x1b[31m❌ Error: ${data.error}\\x1b[0m\r\n`);
+                    }
+                } catch (error) {
+                    this.terminal.write(`\\x1b[31m❌ Network error: ${error.message}\\x1b[0m\r\n`);
+                }
+                
+                this.terminal.write('\r\n$ ');
+                this.currentInput = '';
+            }
+        }
+        
+        // Global terminal interface instance
+        let terminalInterface;
+        
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            terminalInterface = new TerminalInterface();
+        });
+        
+        function createSession() {
+            const userId = document.getElementById('userId').value.trim();
+            const projectRequest = document.getElementById('projectRequest').value.trim();
+            
+            if (!userId) {
+                terminalInterface.showError('Please enter a user ID');
+                return;
+            }
+            
+            if (!projectRequest) {
+                terminalInterface.showError('Please describe your project');
+                return;
+            }
+            
+            if (!terminalInterface.isConnected) {
+                terminalInterface.showError('WebSocket not connected. Please wait...');
+                return;
+            }
+            
+            const projectData = {
+                originalRequest: projectRequest
+            };
+            
+            terminalInterface.websocket.send(JSON.stringify({
+                type: 'create_session',
+                userId: userId,
+                projectData: projectData
+            }));
+            
+            console.log('Creating session for user:', userId);
+        }
+        
+        function startClaudeCode() {
+            if (!terminalInterface.currentSessionId) {
+                terminalInterface.showError('No active session');
+                return;
+            }
+            
+            terminalInterface.websocket.send(JSON.stringify({
+                type: 'start_claude_code',
+                sessionId: terminalInterface.currentSessionId
+            }));
+            
+            console.log('Starting Claude Code for session:', terminalInterface.currentSessionId);
+        }
+        
+        function terminateSession() {
+            if (!terminalInterface.currentSessionId) {
+                terminalInterface.showError('No active session');
+                return;
+            }
+            
+            terminalInterface.websocket.send(JSON.stringify({
+                type: 'terminate_session',
+                sessionId: terminalInterface.currentSessionId
+            }));
+            
+            console.log('Terminating session:', terminalInterface.currentSessionId);
+        }
+    </script>
+</body>
+</html>

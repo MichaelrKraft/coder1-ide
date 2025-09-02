@@ -1,0 +1,55 @@
+{
+  "id": "shared-1756790022421-3lzi1o",
+  "label": "test-auth",
+  "tags": [
+    "frontend",
+    "backend"
+  ],
+  "type": "session",
+  "created": 1756790022421,
+  "originalSessionId": "test-session-123",
+  "metadata": {
+    "totalAgents": 2,
+    "tasksCompleted": 5,
+    "summary": "Test authentication implementation"
+  },
+  "agents": {
+    "frontend": {
+      "workCompleted": [
+        "Built UI",
+        "Added auth"
+      ],
+      "approach": "not specified",
+      "keyDecisions": [],
+      "lessonsLearned": []
+    },
+    "backend": {
+      "workCompleted": [
+        "Created API",
+        "Added security"
+      ],
+      "approach": "not specified",
+      "keyDecisions": [],
+      "lessonsLearned": []
+    }
+  },
+  "keyLearnings": [],
+  "patterns": [],
+  "solutions": [],
+  "usageContext": {
+    "whenToUse": [
+      "When creating user interfaces"
+    ],
+    "applicableScenarios": [],
+    "prerequisites": [],
+    "estimatedTime": "1-2 hours"
+  },
+  "agentGuidance": {
+    "suggestedApproach": [
+      "Follow the agent work order from this session"
+    ],
+    "commonPitfalls": [],
+    "successMetrics": [],
+    "followUpTasks": []
+  }
+}

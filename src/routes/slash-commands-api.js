@@ -276,17 +276,17 @@ router.get('/terminal/:command', (req, res) => {
         
         let output;
         switch (command) {
-            case 'list':
-                output = req.slashCommands.getSlashCommandList();
-                break;
-            case 'stats':
-                output = req.slashCommands.getStatsForTerminal();
-                break;
-            case 'help':
-                output = req.slashCommands.getHelpText();
-                break;
-            default:
-                output = `Unknown command: ${command}`;
+        case 'list':
+            output = req.slashCommands.getSlashCommandList();
+            break;
+        case 'stats':
+            output = req.slashCommands.getStatsForTerminal();
+            break;
+        case 'help':
+            output = req.slashCommands.getHelpText();
+            break;
+        default:
+            output = `Unknown command: ${command}`;
         }
         
         res.json({

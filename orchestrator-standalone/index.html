@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Mastermind Consultation - Orchestrator</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Hero Gradient Background -->
+    <div class="hero-gradient">
+        <div class="hero-glow-main"></div>
+        <div class="hero-top-line"></div>
+    </div>
+
+    <div class="orchestrator-panel">
+        <!-- Theme Toggle Button -->
+        <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()" title="Toggle theme">
+            <svg class="sun-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="5"></circle>
+                <line x1="12" y1="1" x2="12" y2="3"></line>
+                <line x1="12" y1="21" x2="12" y2="23"></line>
+                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                <line x1="1" y1="12" x2="3" y2="12"></line>
+                <line x1="21" y1="12" x2="23" y2="12"></line>
+                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+            </svg>
+            <svg class="moon-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+            </svg>
+        </button>
+        
+        <!-- Consultation Timer -->
+        <div class="consultation-timer" id="consultation-timer" style="display: none;">
+            <div class="timer-circle">
+                <svg class="timer-progress" width="70" height="70">
+                    <circle class="timer-track" cx="35" cy="35" r="30" />
+                    <circle class="timer-progress-ring" cx="35" cy="35" r="30" />
+                </svg>
+                <div class="timer-content">
+                    <div class="timer-display" id="timer-display">3:00</div>
+                </div>
+            </div>
+            <div class="timer-phase" id="timer-phase">Getting Started</div>
+        </div>
+        
+        <!-- Main Content -->
+        <div class="orchestrator-content">
+            <!-- Setup Screen -->
+            <div class="consultation-setup" id="setup-screen">
+                <div class="setup-header">
+                    <h3>AI PRD Generator</h3>
+                    <p class="setup-subtitle">
+                        Transform your idea into an expert-grade development plan through AI-powered collaboration
+                    </p>
+                </div>
+
+                <div class="input-section">
+                    <label for="user-query">What would you like to build?</label>
+                    <div class="query-input-wrapper">
+                        <textarea
+                            id="user-query"
+                            placeholder="Describe your project idea, challenge, or goal in detail..."
+                            rows="4"
+                            class="query-input"
+                        ></textarea>
+                    </div>
+                    
+                    <!-- Input Action Buttons - Moved outside wrapper -->
+                    <div class="input-action-buttons">
+                        <button class="microphone-btn" id="microphone-btn" onclick="toggleVoiceInput()" title="Voice to text">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path>
+                                <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                                <line x1="12" y1="19" x2="12" y2="22"></line>
+                            </svg>
+                        </button>
+                        <button class="paperclip-btn" id="paperclip-btn" onclick="toggleUploadArea()" title="Attach documents">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path>
+                            </svg>
+                        </button>
+                        <button id="start-btn" class="enter-btn btn-animated" onclick="startConsultation()" style="width: auto; padding: 8px 16px; background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary)); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px; margin-left: 8px; transition: all 0.3s ease;" 
+                                onmouseover="this.style.transform='scale(1.05)'; this.style.boxShadow='0 4px 12px rgba(249, 115, 22, 0.3)'"
+                                onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='none'"
+                                title="Press Enter or click to start consultation">
+                            Enter
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="9 10 4 15 9 20"></polyline>
+                                <path d="M20 4v7a4 4 0 0 1-4 4H4"></path>
+                            </svg>
+                        </button>
+                    </div>
+                    
+                    <!-- Document Upload Section (hidden by default, appears on click) -->
+                    <div class="document-upload-section">
+                    <label class="upload-label">Add Supporting Documents (Optional)</label>
+                    <div class="upload-area" id="upload-area" onclick="handleUploadClick()">
+                        <input type="file" id="file-input" class="upload-input" multiple accept=".pdf,.doc,.docx,.txt,.md,.json,.xml">
+                        <div class="upload-icon">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="17 8 12 3 7 8"></polyline>
+                                <line x1="12" y1="3" x2="12" y2="15"></line>
+                            </svg>
+                        </div>
+                        <div class="upload-text">Click to upload or drag and drop</div>
+                        <div class="upload-subtext">PDF, DOC, TXT, MD, JSON (max 10MB per file)</div>
+                    </div>
+                    <div class="uploaded-files" id="uploaded-files"></div>
+                    </div>
+                    <div class="input-hints">
+                        <div class="input-hint">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <line x1="12" y1="16" x2="12" y2="12"></line>
+                                <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                            </svg>
+                            <span>The more details you provide, the better the expert consultation</span>
+                        </div>
+                        <div class="input-hint secondary">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path>
+                            </svg>
+                            <span>Use the paperclip button to upload anything that might be useful for the AI</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Value Proposition -->
+                <div class="value-proposition" style="margin: 2rem 0; padding: 1.5rem; background: linear-gradient(135deg, rgba(135, 206, 250, 0.05) 0%, rgba(135, 206, 250, 0.08) 100%); border-radius: 16px; border: 1px solid rgba(135, 206, 250, 0.6);">
+                    <p style="margin: 0; color: var(--text-primary); line-height: 1.8; font-size: 0.95rem; text-align: center;">
+                        Welcome to the <strong style="color: var(--accent-secondary);">Agent Mastermind PRD Generator</strong> — where specialized AI agents collaborate to transform vague
+                        ideas into comprehensive, AI-ready specifications. Our orchestrator learns your goals through natural
+                        conversation, then brings in relevant experts who brainstorm together, uncovering blind spots and
+                        challenging assumptions. In 3-5 minutes, this collaborative intelligence produces a detailed PRD with the
+                        context engineering needed for exceptional Claude Code results — helping you discover not just what you want, but
+                        what you truly need to build.
+                    </p>
+                </div>
+
+                <div class="process-preview">
+                    <div class="process-header">
+                        <h4>How it works:</h4>
+                        <div class="animation-controls">
+                            <button class="animation-btn" id="play-animation" title="Play animation">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polygon points="5,3 19,12 5,21"></polygon>
+                                </svg>
+                                Play
+                            </button>
+                            <button class="animation-btn" id="pause-animation" title="Pause animation" style="display: none;">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="6" y="4" width="4" height="16"></rect>
+                                    <rect x="14" y="4" width="4" height="16"></rect>
+                                </svg>
+                                Pause
+                            </button>
+                            <button class="animation-btn" id="replay-animation" title="Replay animation">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"></path>
+                                    <path d="M21 3v5h-5"></path>
+                                    <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"></path>
+                                    <path d="M3 21v-5h5"></path>
+                                </svg>
+                                Replay
+                            </button>
+                        </div>
+                    </div>
+                    <!-- Dynamic Process Flow Timeline -->
+                    <div class="process-flow-timeline" id="process-flow-timeline">
+                        
+                        <!-- Step 1: Discovery -->
+                        <div class="timeline-step" data-step="1">
+                            <div class="step-label" id="label-1">Step 1</div>
+                            <div class="step-card" id="step-1">
+                                <div class="step-number">1</div>
+                                <div class="step-icon">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <circle cx="11" cy="11" r="8"></circle>
+                                        <path d="m21 21-4.35-4.35"></path>
+                                    </svg>
+                                </div>
+                                <div class="step-content">
+                                    <h5>Discovery</h5>
+                                    <p>Orchestrator analyzes</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Flow Connector 1->2 -->
+                        <div class="flow-connector" data-connector="1-2">
+                            <div class="connector-line">
+                                <div class="flow-arrow">
+                                    <svg width="20" height="12" viewBox="0 0 20 12" fill="none">
+                                        <path d="M0 6h16m0 0-4-4m4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    </svg>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Step 2: Team Assembly -->
+                        <div class="timeline-step" data-step="2">
+                            <div class="step-label" id="label-2">Step 2</div>
+                            <div class="step-card" id="step-2">
+                                <div class="step-number">2</div>
+                                <div class="step-icon">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+                                        <circle cx="9" cy="7" r="4"></circle>
+                                        <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
+                                        <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                                    </svg>
+                                </div>
+                                <div class="step-content">
+                                    <h5>Team Assembly</h5>
+                                    <p>3+ AI experts</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Flow Connector 2->3 -->
+                        <div class="flow-connector" data-connector="2-3">
+                            <div class="connector-line">
+                                <div class="flow-arrow">
+                                    <svg width="20" height="12" viewBox="0 0 20 12" fill="none">
+                                        <path d="M0 6h16m0 0-4-4m4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    </svg>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Step 3: Collaboration -->
+                        <div class="timeline-step" data-step="3">
+                            <div class="step-label" id="label-3">Step 3</div>
+                            <div class="step-card" id="step-3">
+                                <div class="step-number">3</div>
+                                <div class="step-icon">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                                    </svg>
+                                </div>
+                                <div class="step-content">
+                                    <h5>Collaboration</h5>
+                                    <p>Expert discussion</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Flow Connector 3->4 -->
+                        <div class="flow-connector" data-connector="3-4">
+                            <div class="connector-line">
+                                <div class="flow-arrow">
+                                    <svg width="20" height="12" viewBox="0 0 20 12" fill="none">
+                                        <path d="M0 6h16m0 0-4-4m4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    </svg>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Step 4: Individual Planning -->
+                        <div class="timeline-step" data-step="4">
+                            <div class="step-label" id="label-4">Step 4</div>
+                            <div class="step-card" id="step-4">
+                                <div class="step-number">4</div>
+                                <div class="step-icon">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                        <polyline points="14,2 14,8 20,8"></polyline>
+                                        <line x1="16" y1="13" x2="8" y2="13"></line>
+                                        <line x1="16" y1="17" x2="8" y2="17"></line>
+                                        <polyline points="10,9 9,9 8,9"></polyline>
+                                    </svg>
+                                </div>
+                                <div class="step-content">
+                                    <h5>Planning</h5>
+                                    <p>Individual plans</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Flow Connector 4->5 -->
+                        <div class="flow-connector" data-connector="4-5">
+                            <div class="connector-line">
+                                <div class="flow-arrow">
+                                    <svg width="20" height="12" viewBox="0 0 20 12" fill="none">
+                                        <path d="M0 6h16m0 0-4-4m4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    </svg>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Step 5: Plan Synthesis -->
+                        <div class="timeline-step" data-step="5">
+                            <div class="step-label" id="label-5">Step 5</div>
+                            <div class="step-card" id="step-5">
+                                <div class="step-number">5</div>
+                                <div class="step-icon">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <polyline points="20,6 9,17 4,12"></polyline>
+                                    </svg>
+                                </div>
+                                <div class="step-content">
+                                    <h5>Synthesis</h5>
+                                    <p>Final plan</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Overall Progress Line -->
+                        <div class="progress-timeline">
+                            <div class="progress-track"></div>
+                            <div class="progress-fill" id="timeline-progress"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Progress Indicator -->
+                    <div class="timeline-status">
+                        <div class="status-text">
+                            <span id="current-step-name">Discovery</span> - 
+                            <span id="current-step-desc">Orchestrator analyzes your requirements</span>
+                        </div>
+                        <div class="status-progress">Step <span id="current-step-number">1</span> of 5</div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Conversation Area -->
+            <div class="conversation-area" id="conversation-screen" style="display: none;">
+                <div class="phase-progress">
+                    <div class="progress-header">
+                        <h4>Consultation Progress</h4>
+                        <span class="phase-indicator" id="phase-indicator">1 of 5</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progress-fill" style="width: 20%;"></div>
+                    </div>
+                    <div class="phase-steps" id="phase-steps">
+                        <!-- Phase steps will be populated by JavaScript -->
+                    </div>
+                </div>
+
+                <div class="messages-container" id="messages-container">
+                    <!-- Messages will be populated by JavaScript -->
+                </div>
+
+                <!-- User Interaction Area -->
+                <div class="user-interaction-area" id="interaction-area" style="display: none;">
+                    <div class="interaction-prompt">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                            <path d="M13 8H7"></path>
+                            <path d="M17 12H7"></path>
+                        </svg>
+                        <span>You can join the conversation at any time</span>
+                    </div>
+                    <div class="interaction-controls">
+                        <div style="position: relative; flex: 1;">
+                            <textarea
+                                id="user-input"
+                                placeholder="Share your thoughts, ask questions, or provide direction..."
+                                rows="2"
+                                class="user-message-input"
+                                style="width: 100%;"
+                            ></textarea>
+                            <button class="microphone-btn" style="position: absolute; bottom: 12px; right: 12px;" onclick="toggleVoiceInput('user-input')">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                                    <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                                    <line x1="12" y1="19" x2="12" y2="23"></line>
+                                    <line x1="8" y1="23" x2="16" y2="23"></line>
+                                </svg>
+                            </button>
+                        </div>
+                        <button onclick="sendUserMessage()" class="send-message-btn">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="m22 2-7 20-4-9-9-4Z"></path>
+                                <path d="M22 2 11 13"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Completion Actions -->
+                <div class="completion-actions" id="completion-actions" style="display: none;">
+                    <div class="completion-header">
+                        <div class="completion-icon">
+                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                        </div>
+                        <div class="completion-content">
+                            <h3>Expert Consultation Complete!</h3>
+                            <p>Your comprehensive development plan is ready</p>
+                        </div>
+                    </div>
+                    
+                    <div class="action-buttons">
+                        <button class="claude-code-btn primary" onclick="generateClaudeCodePrompt()">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="4 17 10 11 4 5"></polyline>
+                                <line x1="12" y1="19" x2="20" y2="19"></line>
+                            </svg>
+                            Generate Claude Code Prompt
+                        </button>
+                        <button class="export-btn secondary" onclick="exportPlan()">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="7 10 12 15 17 10"></polyline>
+                                <line x1="12" y1="15" x2="12" y2="3"></line>
+                            </svg>
+                            Export Plan
+                        </button>
+                        <button class="new-consultation-btn secondary" onclick="startNewConsultation()">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="12" y1="5" x2="12" y2="19"></line>
+                                <line x1="5" y1="12" x2="19" y2="12"></line>
+                            </svg>
+                            New Consultation
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="orchestrator.js"></script>
+</body>
+</html>

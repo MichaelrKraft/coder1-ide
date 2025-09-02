@@ -314,14 +314,14 @@ class TaskBridgeService extends EventEmitter {
      */
     getPriorityFromConfidence(confidence) {
         switch (confidence) {
-            case 'high':
-                return 'high';
-            case 'medium':
-                return 'medium';
-            case 'low':
-                return 'low';
-            default:
-                return 'medium';
+        case 'high':
+            return 'high';
+        case 'medium':
+            return 'medium';
+        case 'low':
+            return 'low';
+        default:
+            return 'medium';
         }
     }
     
@@ -395,7 +395,7 @@ class TaskBridgeService extends EventEmitter {
                     command: command,
                     type: type,
                     title: `Complete: ${command.substr(0, 50)}`,
-                    description: `Task generated from command execution`,
+                    description: 'Task generated from command execution',
                     tags: [type, 'command-generated']
                 };
             }

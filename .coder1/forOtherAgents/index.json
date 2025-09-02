@@ -1,0 +1,52 @@
+{
+  "version": "1.0.0",
+  "lastUpdated": 1756790022423,
+  "totalItems": 1,
+  "categories": {
+    "sessions": {
+      "count": 1,
+      "lastAdded": 1756790022423,
+      "items": []
+    },
+    "patterns": {
+      "count": 0,
+      "lastAdded": null,
+      "items": []
+    },
+    "solutions": {
+      "count": 0,
+      "lastAdded": null,
+      "items": []
+    }
+  },
+  "sessions": {
+    "shared-1756790022421-3lzi1o": {
+      "label": "test-auth",
+      "filename": "test-auth-1756790022422.json",
+      "created": 1756790022421,
+      "tags": [
+        "frontend",
+        "backend"
+      ],
+      "type": "session",
+      "description": "Test authentication implementation"
+    }
+  },
+  "patterns": {},
+  "solutions": {},
+  "tags": {
+    "frontend": [
+      "shared-1756790022421-3lzi1o"
+    ],
+    "backend": [
+      "shared-1756790022421-3lzi1o"
+    ]
+  },
+  "agentTypes": {},
+  "searchIndex": {
+    "byLabel": {},
+    "byTag": {},
+    "byAgentType": {},
+    "byTimestamp": []
+  }
+}

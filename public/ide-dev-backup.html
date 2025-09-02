@@ -1,0 +1,13 @@
+<!doctype html><html lang="en"><head>
+<script>
+// IMMEDIATE ResizeObserver error blocker - runs before ANYTHING else
+(function() {
+    const block = e => e.error?.message?.includes('ResizeObserver loop') && (e.preventDefault(), e.stopImmediatePropagation());
+    window.addEventListener('error', block, true);
+    document.addEventListener('error', block, true);
+})();
+</script>
+<meta charset="utf-8"/><link rel="icon" href="/favicon.ico"/><meta name="viewport" content="width=device-width,initial-scale=1"/><meta name="theme-color" content="#000000"/><meta name="description" content="Coder1 IDE - AI-Powered Development Environment"/><link rel="apple-touch-icon" href="/logo192.png"/><link rel="manifest" href="/manifest.json"/><title>Coder1 IDE</title>
+<script src="/fix-resize-observer-error.js"></script>
+<script src="/suppress-resize-observer-error.js"></script>
+<script defer="defer" src="/static/js/main.3301213f.js"></script><link href="/static/css/main.7550d21d.css" rel="stylesheet"></head><body><noscript>You need to enable JavaScript to run this app.</noscript><div id="root"></div><script src="/static/api-injection.js"></script><script src="/static/terminal-button-simple.js"></script><script src="/browser-terminal-integration.js"></script></body></html>

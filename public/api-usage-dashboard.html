@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Usage Dashboard - CoderOne</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            font-size: 2.5em;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: #666;
+            font-size: 1.1em;
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
+        }
+
+        .card-title {
+            font-size: 1.2em;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #444;
+        }
+
+        .metric {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 10px 0;
+            padding: 10px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .metric:last-child {
+            border-bottom: none;
+        }
+
+        .metric-label {
+            color: #666;
+            font-size: 0.95em;
+        }
+
+        .metric-value {
+            font-size: 1.2em;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: #f0f0f0;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            transition: width 0.5s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 0.85em;
+            font-weight: 600;
+        }
+
+        .warning {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            color: #856404;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 10px 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .critical {
+            background: #f8d7da;
+            border: 1px solid #dc3545;
+            color: #721c24;
+        }
+
+        .info {
+            background: #d1ecf1;
+            border: 1px solid #17a2b8;
+            color: #0c5460;
+        }
+
+        .history-table {
+            width: 100%;
+            margin-top: 15px;
+        }
+
+        .history-table th,
+        .history-table td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+
+        .history-table th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #666;
+        }
+
+        .cost {
+            color: #28a745;
+            font-weight: 600;
+        }
+
+        .high-cost {
+            color: #dc3545;
+        }
+
+        .button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+            margin: 5px;
+        }
+
+        .button:hover {
+            transform: scale(1.05);
+        }
+
+        .button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .button.danger {
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+        }
+
+        .button.success {
+            background: linear-gradient(135deg, #28a745 0%, #218838 100%);
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 5px;
+        }
+
+        .status-green {
+            background: #28a745;
+            animation: pulse 2s infinite;
+        }
+
+        .status-red {
+            background: #dc3545;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 0 0 0 currentColor;
+            }
+            70% {
+                box-shadow: 0 0 0 10px transparent;
+            }
+            100% {
+                box-shadow: 0 0 0 0 transparent;
+            }
+        }
+
+        .loading {
+            text-align: center;
+            padding: 50px;
+            color: white;
+            font-size: 1.2em;
+        }
+
+        @media (max-width: 768px) {
+            .dashboard {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🛡️ API Usage Dashboard</h1>
+            <p class="subtitle">Monitor and control your API usage to prevent unexpected charges</p>
+        </div>
+
+        <div id="loading" class="loading">Loading usage data...</div>
+        
+        <div id="dashboard" style="display: none;">
+            <div id="warnings"></div>
+            
+            <div class="dashboard">
+                <div class="card">
+                    <div class="card-title">📊 Daily Usage</div>
+                    <div class="metric">
+                        <span class="metric-label">API Calls</span>
+                        <span class="metric-value" id="daily-calls">0 / 0</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="calls-progress" style="width: 0%">0%</div>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Cost</span>
+                        <span class="metric-value" id="daily-cost">$0.00 / $0.00</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="cost-progress" style="width: 0%">0%</div>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Resets In</span>
+                        <span class="metric-value" id="reset-time">--</span>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">📈 Total Usage</div>
+                    <div class="metric">
+                        <span class="metric-label">Total Calls</span>
+                        <span class="metric-value" id="total-calls">0</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Total Cost</span>
+                        <span class="metric-value" id="total-cost">$0.00</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">First Call</span>
+                        <span class="metric-value" id="first-call">Never</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Last Call</span>
+                        <span class="metric-value" id="last-call">Never</span>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">⚙️ System Status</div>
+                    <div class="metric">
+                        <span class="metric-label">API Status</span>
+                        <span class="metric-value" id="api-status">
+                            <span class="status-indicator status-green"></span>Active
+                        </span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Mock Mode</span>
+                        <span class="metric-value" id="mock-mode">Disabled</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Circuit Breaker</span>
+                        <span class="metric-value" id="circuit-breaker">Closed</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Plan</span>
+                        <span class="metric-value" id="user-plan">Free</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">📜 Recent API Calls</div>
+                <div id="history-container">
+                    <table class="history-table">
+                        <thead>
+                            <tr>
+                                <th>Time</th>
+                                <th>Service</th>
+                                <th>Model</th>
+                                <th>Tokens</th>
+                                <th>Cost</th>
+                            </tr>
+                        </thead>
+                        <tbody id="history-body">
+                            <tr>
+                                <td colspan="5" style="text-align: center; color: #999;">No recent calls</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">🎮 Controls</div>
+                <div class="controls">
+                    <button class="button" onclick="refreshData()">🔄 Refresh</button>
+                    <button class="button success" onclick="toggleMockMode()">🎭 Toggle Mock Mode</button>
+                    <button class="button danger" onclick="emergencyStop()">🚨 Emergency Stop</button>
+                    <button class="button" onclick="simulateUsage()">🧪 Simulate Usage (Dev)</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentData = null;
+
+        async function loadUsageData() {
+            try {
+                const response = await fetch('/api/usage/report');
+                const data = await response.json();
+                
+                if (data.success) {
+                    currentData = data;
+                    updateDashboard(data.report);
+                    displayWarnings(data.warnings);
+                    document.getElementById('loading').style.display = 'none';
+                    document.getElementById('dashboard').style.display = 'block';
+                }
+            } catch (error) {
+                console.error('Error loading usage data:', error);
+                document.getElementById('loading').innerHTML = 
+                    '<div class="warning critical">Error loading usage data. Please refresh the page.</div>';
+            }
+        }
+
+        function updateDashboard(report) {
+            // Daily usage
+            document.getElementById('daily-calls').textContent = 
+                `${report.daily.calls} / ${report.daily.callLimit}`;
+            document.getElementById('daily-cost').textContent = 
+                `$${report.daily.cost.toFixed(4)} / $${report.daily.costLimit.toFixed(2)}`;
+            
+            // Progress bars
+            document.getElementById('calls-progress').style.width = `${report.daily.percentUsedCalls}%`;
+            document.getElementById('calls-progress').textContent = `${report.daily.percentUsedCalls}%`;
+            document.getElementById('cost-progress').style.width = `${report.daily.percentUsedCost}%`;
+            document.getElementById('cost-progress').textContent = `${report.daily.percentUsedCost}%`;
+            
+            // Color code progress bars
+            if (report.daily.percentUsedCost >= 90) {
+                document.getElementById('cost-progress').style.background = 'linear-gradient(90deg, #dc3545, #c82333)';
+            } else if (report.daily.percentUsedCost >= 75) {
+                document.getElementById('cost-progress').style.background = 'linear-gradient(90deg, #ffc107, #e0a800)';
+            }
+            
+            if (report.daily.percentUsedCalls >= 90) {
+                document.getElementById('calls-progress').style.background = 'linear-gradient(90deg, #dc3545, #c82333)';
+            } else if (report.daily.percentUsedCalls >= 75) {
+                document.getElementById('calls-progress').style.background = 'linear-gradient(90deg, #ffc107, #e0a800)';
+            }
+            
+            // Reset time
+            document.getElementById('reset-time').textContent = 
+                `${report.daily.hoursRemaining} hour${report.daily.hoursRemaining === 1 ? '' : 's'}`;
+            
+            // Total usage
+            document.getElementById('total-calls').textContent = report.total.calls;
+            document.getElementById('total-cost').textContent = `$${report.total.cost.toFixed(4)}`;
+            document.getElementById('first-call').textContent = 
+                report.total.firstCall ? new Date(report.total.firstCall).toLocaleString() : 'Never';
+            document.getElementById('last-call').textContent = 
+                report.total.lastCall ? new Date(report.total.lastCall).toLocaleString() : 'Never';
+            
+            // System status
+            if (report.circuitBreakerOpen) {
+                document.getElementById('api-status').innerHTML = 
+                    '<span class="status-indicator status-red"></span>Blocked';
+                document.getElementById('circuit-breaker').textContent = 'OPEN';
+                document.getElementById('circuit-breaker').style.color = '#dc3545';
+            } else {
+                document.getElementById('api-status').innerHTML = 
+                    '<span class="status-indicator status-green"></span>Active';
+                document.getElementById('circuit-breaker').textContent = 'Closed';
+                document.getElementById('circuit-breaker').style.color = '#28a745';
+            }
+            
+            document.getElementById('user-plan').textContent = 
+                report.plan.charAt(0).toUpperCase() + report.plan.slice(1);
+            
+            // Recent calls
+            if (report.recentCalls && report.recentCalls.length > 0) {
+                const tbody = document.getElementById('history-body');
+                tbody.innerHTML = report.recentCalls.map(call => `
+                    <tr>
+                        <td>${new Date(call.timestamp).toLocaleTimeString()}</td>
+                        <td>${call.service}</td>
+                        <td>${call.model}</td>
+                        <td>${call.tokens}</td>
+                        <td class="${call.cost > 0.10 ? 'high-cost' : 'cost'}">$${call.cost.toFixed(4)}</td>
+                    </tr>
+                `).join('');
+            }
+        }
+
+        function displayWarnings(warnings) {
+            const container = document.getElementById('warnings');
+            container.innerHTML = '';
+            
+            if (warnings && warnings.length > 0) {
+                warnings.forEach(warning => {
+                    const div = document.createElement('div');
+                    div.className = `warning ${warning.level}`;
+                    div.innerHTML = `
+                        <span>${warning.level === 'critical' ? '🚨' : warning.level === 'warning' ? '⚠️' : 'ℹ️'}</span>
+                        <span>${warning.message}</span>
+                    `;
+                    container.appendChild(div);
+                });
+            }
+        }
+
+        async function refreshData() {
+            await loadUsageData();
+        }
+
+        async function toggleMockMode() {
+            try {
+                const response = await fetch('/api/usage/configure', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ mockMode: true })
+                });
+                const data = await response.json();
+                if (data.success) {
+                    document.getElementById('mock-mode').textContent = 
+                        data.config.mockMode ? 'Enabled' : 'Disabled';
+                    alert('Mock mode ' + (data.config.mockMode ? 'enabled' : 'disabled'));
+                }
+            } catch (error) {
+                console.error('Error toggling mock mode:', error);
+                alert('Error toggling mock mode');
+            }
+        }
+
+        async function emergencyStop() {
+            if (!confirm('⚠️ This will immediately block ALL API calls. Are you sure?')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/usage/emergency-stop', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ reason: 'Manual emergency stop from dashboard' })
+                });
+                const data = await response.json();
+                if (data.success) {
+                    alert('🚨 Emergency stop activated! All API calls are now blocked.');
+                    await refreshData();
+                }
+            } catch (error) {
+                console.error('Error activating emergency stop:', error);
+                alert('Error activating emergency stop');
+            }
+        }
+
+        async function simulateUsage() {
+            if (window.location.hostname === 'localhost') {
+                try {
+                    const response = await fetch('/api/usage/simulate', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ calls: 5 })
+                    });
+                    const data = await response.json();
+                    if (data.success) {
+                        alert('Simulated 5 API calls');
+                        await refreshData();
+                    }
+                } catch (error) {
+                    console.error('Error simulating usage:', error);
+                    alert('Error simulating usage');
+                }
+            } else {
+                alert('Simulation only available in development mode');
+            }
+        }
+
+        // Load data on page load
+        loadUsageData();
+
+        // Auto-refresh every 30 seconds
+        setInterval(loadUsageData, 30000);
+    </script>
+</body>
+</html>

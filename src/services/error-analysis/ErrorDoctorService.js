@@ -14,7 +14,7 @@ class ErrorDoctorService {
         }) : null;
         
         // DISABLED: Direct Anthropic SDK usage to prevent API charges
-        // Use Claude Code CLI only to utilize Claude Code Max account
+        // Use Claude Code CLI only to utilize Claude Code Max Plan
         this.anthropic = null;
         
         this.logger = options.logger || console;
@@ -128,26 +128,34 @@ class ErrorDoctorService {
             
             let response;
             
-            // Prefer Claude for code analysis, fallback to OpenAI
-            if (this.anthropic) {
-                response = await this.anthropic.messages.create({
-                    model: 'claude-3-haiku-20240307',
-                    max_tokens: 1000,
-                    messages: [{
-                        role: 'user',
-                        content: analysisPrompt
-                    }]
-                });
-                
-                const analysis = this.parseAIResponse(response.content[0].text);
-                return {
-                    success: true,
-                    source: 'claude-ai',
-                    confidence: analysis.confidence,
-                    fixes: analysis.fixes,
-                    explanation: analysis.explanation
-                };
-            } else if (this.openai) {
+            // Use Claude Code CLI for code analysis, fallback to OpenAI
+            if (process.env.CLAUDE_CODE_OAUTH_TOKEN) {
+                try {
+                    const claudeCodeCommand = `echo "${analysisPrompt.replace(/"/g, '\\"')}" | claude --max-tokens 1000`;
+                    const { exec } = require('child_process');
+                    const { promisify } = require('util');
+                    const execAsync = promisify(exec);
+                    
+                    const { stdout } = await execAsync(claudeCodeCommand, { 
+                        timeout: 30000,
+                        env: { ...process.env }
+                    });
+                    
+                    const analysis = this.parseAIResponse(stdout);
+                    return {
+                        success: true,
+                        source: 'claude-code-cli',
+                        confidence: analysis.confidence,
+                        fixes: analysis.fixes,
+                        explanation: analysis.explanation
+                    };
+                } catch (cliError) {
+                    this.logger.warn('❌ Claude Code CLI failed for error analysis:', cliError.message);
+                    // Fall through to OpenAI if available
+                }
+            }
+            
+            if (this.openai) {
                 response = await this.openai.chat.completions.create({
                     model: 'gpt-3.5-turbo',
                     max_tokens: 1000,
@@ -174,7 +182,7 @@ class ErrorDoctorService {
                     error: 'No AI service available',
                     fixes: [{
                         title: 'AI Analysis Unavailable',
-                        description: 'Configure OPENAI_API_KEY or ANTHROPIC_API_KEY for AI-powered error analysis',
+                        description: 'Configure OPENAI_API_KEY or ensure Claude Code CLI is available for AI-powered error analysis',
                         command: null,
                         confidence: 'low'
                     }]

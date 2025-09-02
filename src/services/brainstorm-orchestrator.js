@@ -1,4 +1,5 @@
-const Anthropic = require('@anthropic-ai/sdk');
+// DISABLED: Using Claude Code OAuth token exclusively to prevent API billing
+// const Anthropic = require('@anthropic-ai/sdk');
 const ClaudeCodeExec = require('../integrations/claude-code-exec');
 
 class BrainstormOrchestrator {
@@ -138,24 +139,8 @@ Based on your expertise as ${persona.name}, what insights, suggestions, or consi
                 });
                 console.log(`[BrainstormOrchestrator] ✅ Claude Code CLI response for ${agentId}`);
             } catch (cliError) {
-                console.log(`[BrainstormOrchestrator] Claude Code CLI failed for ${agentId}, trying Anthropic SDK:`, cliError.message);
-                
-                // Fallback to Anthropic SDK
-                if (this.anthropic) {
-                    const response = await this.anthropic.messages.create({
-                        model: 'claude-3-5-sonnet-20241022',
-                        max_tokens: 300,
-                        temperature: 0.8,
-                        system: systemPrompt,
-                        messages: [
-                            { role: 'user', content: userPrompt }
-                        ]
-                    });
-                    responseText = response.content[0].text.trim();
-                    console.log(`[BrainstormOrchestrator] ✅ Anthropic SDK response for ${agentId}`);
-                } else {
-                    throw new Error('Both Claude Code CLI and Anthropic SDK failed');
-                }
+                console.log('❌ Claude Code CLI failed:', cliError.message);
+                throw new Error('Claude Code CLI unavailable - using Claude Code Max Plan exclusively');
             }
 
             return {
@@ -343,23 +328,8 @@ Keep it practical and actionable.`;
                 synthesis = await this.claudeCodeExec.executePrompt(synthesisPrompt);
                 console.log('[BrainstormOrchestrator] ✅ Claude Code CLI synthesis generated');
             } catch (cliError) {
-                console.log('[BrainstormOrchestrator] Claude Code CLI failed for synthesis, trying Anthropic SDK:', cliError.message);
-                
-                // Fallback to Anthropic SDK
-                if (this.anthropic) {
-                    const response = await this.anthropic.messages.create({
-                        model: 'claude-3-5-sonnet-20241022',
-                        max_tokens: 500,
-                        temperature: 0.7,
-                        messages: [
-                            { role: 'user', content: synthesisPrompt }
-                        ]
-                    });
-                    synthesis = response.content[0].text.trim();
-                    console.log('[BrainstormOrchestrator] ✅ Anthropic SDK synthesis generated');
-                } else {
-                    throw new Error('Both Claude Code CLI and Anthropic SDK failed for synthesis');
-                }
+                console.log('❌ Claude Code CLI failed:', cliError.message);
+                throw new Error('Claude Code CLI unavailable - using Claude Code Max Plan exclusively');
             }
 
             emitCallback('brainstorm:synthesis', {

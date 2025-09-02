@@ -193,7 +193,7 @@ function setupTerminalSocket(io) {
                         
                         if (result.matched && result.pattern && result.pattern.solution) {
                             // Found a matching pattern with solution!
-                            const suggestion = `\n\x1b[33m💡 Memory: This looks similar to a previous error.\x1b[0m\n` +
+                            const suggestion = '\n\x1b[33m💡 Memory: This looks similar to a previous error.\x1b[0m\n' +
                                             `\x1b[32mPrevious fix: ${result.pattern.solution.fix}\x1b[0m\n`;
                             
                             // Send suggestion to terminal

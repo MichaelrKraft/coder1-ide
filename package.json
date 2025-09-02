@@ -25,7 +25,11 @@
     "preload:skip": "SKIP_PRELOAD=true npm start",
     "preload:status": "curl -s http://localhost:3000/api/repository-admin/preload/status | jq",
     "preload:stop": "curl -X POST http://localhost:3000/api/repository-admin/preload/stop",
-    "preload:list": "curl -s http://localhost:3000/api/repository-admin/preload/list | jq"
+    "preload:list": "curl -s http://localhost:3000/api/repository-admin/preload/list | jq",
+    "monitor:terminal": "./scripts/terminal-monitor.sh check",
+    "monitor:recovery": "./scripts/terminal-monitor.sh recovery",
+    "monitor:report": "./scripts/terminal-monitor.sh report",
+    "monitor:watch": "./scripts/terminal-monitor.sh monitor"
   },
   "keywords": [
     "ai",

@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Add API Key</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #e0e0e0;
+        }
+        input {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            background: #2a2a2a;
+            border: 1px solid #444;
+            color: #e0e0e0;
+            border-radius: 4px;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        #output {
+            margin-top: 20px;
+            padding: 10px;
+            background: #2a2a2a;
+            border-radius: 4px;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <h1>Add Your Claude API Key</h1>
+    <p>Your account was created but the API key wasn't saved. Add it here:</p>
+    
+    <input type="password" id="apiKey" placeholder="sk-ant-api03-..." />
+    <button onclick="saveApiKey()">Save API Key</button>
+    
+    <div id="output"></div>
+
+    <script>
+        const output = document.getElementById('output');
+        
+        function log(msg) {
+            output.textContent += msg + '\n';
+        }
+
+        async function saveApiKey() {
+            const apiKey = document.getElementById('apiKey').value;
+            const token = localStorage.getItem('authToken');
+            
+            if (!apiKey) {
+                log('ERROR: Please enter your API key');
+                return;
+            }
+            
+            if (!token) {
+                log('ERROR: Not logged in');
+                return;
+            }
+            
+            log('Saving API key...');
+            
+            try {
+                const response = await fetch('http://localhost:4001/api/auth/api-key', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        apiKey: apiKey,
+                        provider: 'anthropic'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.success) {
+                    log('✅ API key saved successfully!');
+                    log('Now testing connection...');
+                    
+                    // Test the connection
+                    const testResponse = await fetch('http://localhost:4001/api/infinite/test-connection', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        }
+                    });
+                    
+                    const testData = await testResponse.json();
+                    log('Connection test: ' + JSON.stringify(testData));
+                    
+                    if (testData.success) {
+                        log('\n🎉 Success! You can now use the Infinite Loop feature.');
+                        log('Click here to go back to the IDE: http://localhost:4001/ide');
+                    }
+                } else {
+                    log('ERROR: ' + (data.error || 'Failed to save API key'));
+                }
+            } catch (error) {
+                log('ERROR: ' + error.message);
+            }
+        }
+    </script>
+</body>
+</html>

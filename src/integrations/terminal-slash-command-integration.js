@@ -85,28 +85,28 @@ class TerminalSlashCommandIntegration {
         }
         
         switch (action) {
-            case 'accept':
-                const slashCommand = await this.suggester.createSlashCommand(suggestion, customData);
-                this.activeSuggestions.delete(sessionId);
-                return { success: true, slashCommand };
+        case 'accept':
+            const slashCommand = await this.suggester.createSlashCommand(suggestion, customData);
+            this.activeSuggestions.delete(sessionId);
+            return { success: true, slashCommand };
                 
-            case 'decline':
-                this.activeSuggestions.delete(sessionId);
-                return { success: true, declined: true };
+        case 'decline':
+            this.activeSuggestions.delete(sessionId);
+            return { success: true, declined: true };
                 
-            case 'customize':
-                return { 
-                    success: true, 
-                    needsCustomization: true,
-                    suggestion,
-                    fields: [
-                        { name: 'customName', label: 'Slash command name', default: suggestion.suggestedName },
-                        { name: 'description', label: 'Description', default: `Quick access to: ${suggestion.originalCommand}` }
-                    ]
-                };
+        case 'customize':
+            return { 
+                success: true, 
+                needsCustomization: true,
+                suggestion,
+                fields: [
+                    { name: 'customName', label: 'Slash command name', default: suggestion.suggestedName },
+                    { name: 'description', label: 'Description', default: `Quick access to: ${suggestion.originalCommand}` }
+                ]
+            };
                 
-            default:
-                throw new Error(`Unknown action: ${action}`);
+        default:
+            throw new Error(`Unknown action: ${action}`);
         }
     }
     
@@ -139,7 +139,7 @@ class TerminalSlashCommandIntegration {
             return {
                 success: false,
                 error: error.message,
-                suggestion: `Type '/list' to see available slash commands`
+                suggestion: 'Type \'/list\' to see available slash commands'
             };
         }
     }
@@ -168,13 +168,13 @@ class TerminalSlashCommandIntegration {
         
         return [
             '',
-            `\x1b[33m🎯 SLASH COMMAND SUGGESTION\x1b[0m`,
+            '\x1b[33m🎯 SLASH COMMAND SUGGESTION\x1b[0m',
             `\x1b[2m${'─'.repeat(50)}\x1b[0m`,
             `Command: \x1b[36m${originalCommand}\x1b[0m`,
             `Usage: \x1b[33m${usageCount} times\x1b[0m in \x1b[33m${timeWindow} minutes\x1b[0m`,
             `Suggested: \x1b[32m${suggestedName}\x1b[0m`,
             '',
-            `\x1b[32m[Y]\x1b[0m Create  \x1b[31m[N]\x1b[0m Skip  \x1b[34m[C]\x1b[0m Customize`,
+            '\x1b[32m[Y]\x1b[0m Create  \x1b[31m[N]\x1b[0m Skip  \x1b[34m[C]\x1b[0m Customize',
             `\x1b[2m${'─'.repeat(50)}\x1b[0m`,
             ''
         ].join('\r\n');
@@ -229,18 +229,18 @@ class TerminalSlashCommandIntegration {
      */
     handleSystemSlashCommand(command) {
         switch (command) {
-            case '/list':
-            case '/slash':
-                return this.getSlashCommandList();
+        case '/list':
+        case '/slash':
+            return this.getSlashCommandList();
                 
-            case '/stats':
-                return this.getStatsForTerminal();
+        case '/stats':
+            return this.getStatsForTerminal();
                 
-            case '/help-slash':
-                return this.getHelpText();
+        case '/help-slash':
+            return this.getHelpText();
                 
-            default:
-                return null;
+        default:
+            return null;
         }
     }
     

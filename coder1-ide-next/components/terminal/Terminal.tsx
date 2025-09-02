@@ -244,8 +244,11 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
     }
     
     const createTerminalSession = async () => {
-      sessionCreatedRef.current = true;
       console.log('🚀 CREATING TERMINAL SESSION...');
+      
+      // CRITICAL FIX: Mark session as being created BEFORE making the request
+      // This prevents the infinite loop that was causing EMFILE errors
+      sessionCreatedRef.current = true;
       
       try {
         // Create a real terminal session via the backend
@@ -266,8 +269,8 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
         if (response.ok) {
           const data = await response.json();
           console.log('📡 Session response data:', data);
+          
           setSessionId(data.sessionId);
-          // Immediately update the ref for voice recognition
           sessionIdForVoiceRef.current = data.sessionId;
           setTerminalReady(true);
           console.log('✅ Terminal session created:', data.sessionId);

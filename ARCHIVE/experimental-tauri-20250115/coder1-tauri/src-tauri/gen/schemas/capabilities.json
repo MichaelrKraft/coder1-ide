@@ -1,0 +1,1 @@
+{"default":{"identifier":"default","description":"enables the default permissions","local":true,"windows":["main"],"permissions":["core:default","shell:allow-spawn","shell:allow-open","shell:allow-execute","shell:allow-kill","shell:default"]}}

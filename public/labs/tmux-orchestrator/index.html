@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tmux Agent Orchestrator Lab</title>
+    <link rel="stylesheet" href="/labs/tmux-orchestrator/orchestrator.css">
+    <style>
+        /* Terminal styling using xterm.js CSS patterns */
+        .terminal-container {
+            background: #1e1e1e;
+            border: 1px solid #333;
+            border-radius: 6px;
+            overflow: hidden;
+            height: 300px;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 12px;
+            position: relative;
+        }
+        
+        .terminal-header {
+            background: #2d2d2d;
+            color: #fff;
+            padding: 8px 12px;
+            font-size: 11px;
+            border-bottom: 1px solid #333;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .terminal-content {
+            padding: 8px;
+            color: #fff;
+            height: calc(100% - 32px);
+            overflow-y: auto;
+            white-space: pre-wrap;
+            font-family: inherit;
+        }
+        
+        .agent-status {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 6px;
+        }
+        
+        .status-idle { background: #ffd700; }
+        .status-working { background: #00ff00; }
+        .status-blocked { background: #ff4444; }
+        .status-offline { background: #666; }
+        
+        .grid-layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+        
+        .control-panel {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 20px;
+        }
+        
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 8px;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+        
+        .btn-primary { background: #007bff; color: white; }
+        .btn-success { background: #28a745; color: white; }
+        .btn-warning { background: #ffc107; color: #212529; }
+        .btn-danger { background: #dc3545; color: white; }
+        .btn-secondary { background: #6c757d; color: white; }
+        
+        .btn:hover { opacity: 0.9; }
+        .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+        
+        .status-dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        
+        .agent-card {
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            padding: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .agent-name {
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+        
+        .agent-role {
+            color: #6c757d;
+            font-size: 12px;
+            margin-bottom: 8px;
+        }
+        
+        .progress-bar {
+            background: #e9ecef;
+            border-radius: 4px;
+            height: 6px;
+            overflow: hidden;
+            margin: 8px 0;
+        }
+        
+        .progress-fill {
+            background: #007bff;
+            height: 100%;
+            transition: width 0.3s ease;
+        }
+        
+        .logs {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 12px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+        
+        .spec-input {
+            width: 100%;
+            height: 120px;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 8px;
+            font-family: monospace;
+            font-size: 12px;
+            resize: vertical;
+        }
+        
+        .emergency-stop {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+        
+        .checkpoint-timeline {
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            padding: 16px;
+            margin-bottom: 20px;
+        }
+        
+        .timeline-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 12px;
+            padding: 8px;
+            background: #f8f9fa;
+            border-radius: 4px;
+        }
+        
+        .timeline-time {
+            font-weight: bold;
+            margin-right: 12px;
+            min-width: 80px;
+        }
+        
+        .timeline-event {
+            flex: 1;
+        }
+        
+        .warning-banner {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 4px;
+            padding: 12px;
+            margin-bottom: 20px;
+            color: #856404;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🤖 Tmux Agent Orchestrator Lab</h1>
+        <div class="warning-banner">
+            <strong>⚠️ Experimental Feature:</strong> This is an isolated test environment for multi-agent orchestration. 
+            No changes affect the main Coder One IDE.
+        </div>
+        
+        <!-- Emergency Stop Button -->
+        <button class="btn btn-danger emergency-stop" onclick="emergencyStop()" id="emergencyBtn">
+            🛑 EMERGENCY STOP
+        </button>
+        
+        <!-- Control Panel -->
+        <div class="control-panel">
+            <h3>Orchestrator Control Panel</h3>
+            <div>
+                <button class="btn btn-primary" onclick="checkClaudeCodeCLI()" id="checkCliBtn">
+                    Check Claude Code CLI
+                </button>
+                <button class="btn btn-success" onclick="spawnAgentTeam()" id="spawnTeamBtn" disabled>
+                    Spawn Agent Team
+                </button>
+                <button class="btn btn-warning" onclick="pauseAllAgents()" id="pauseBtn" disabled>
+                    Pause All Agents
+                </button>
+                <button class="btn btn-secondary" onclick="showSessionInfo()" id="sessionBtn">
+                    Session Info
+                </button>
+            </div>
+            
+            <div style="margin-top: 12px;">
+                <label for="teamSelect">Team Type:</label>
+                <select id="teamSelect" style="margin-left: 8px; padding: 4px;">
+                    <option value="frontend-trio">Frontend Trio (PM + 2 Devs)</option>
+                    <option value="backend-squad">Backend Squad (PM + Dev + Tester)</option>
+                    <option value="fullstack-team">Full-Stack Team (Both)</option>
+                    <option value="debug-force">Debug Force (3 Specialists)</option>
+                </select>
+            </div>
+        </div>
+        
+        <!-- Agent Status Dashboard -->
+        <div class="status-dashboard" id="agentDashboard">
+            <!-- Agents will be dynamically populated here -->
+        </div>
+        
+        <!-- Checkpoint Timeline -->
+        <div class="checkpoint-timeline">
+            <h3>Development Timeline</h3>
+            <div id="timelineContainer">
+                <div class="timeline-item">
+                    <div class="timeline-time">00:00</div>
+                    <div class="timeline-event">Orchestrator initialized - waiting for team spawn</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Project Specification -->
+        <div class="control-panel">
+            <h3>Project Specification</h3>
+            <textarea class="spec-input" id="projectSpec" placeholder="Enter your project requirements here...
+Example:
+Build a React component library with:
+- Button component with 3 variants
+- Input component with validation
+- Modal component with animations
+- TypeScript support
+- Storybook documentation
+- Jest tests for all components">Build a simple React todo app with:
+- Add/remove tasks
+- Mark tasks complete
+- Local storage persistence
+- Clean modern UI
+- TypeScript
+- Tests</textarea>
+            <div style="margin-top: 8px;">
+                <button class="btn btn-primary" onclick="validateSpec()" id="validateBtn">
+                    Validate Spec
+                </button>
+                <button class="btn btn-success" onclick="distributeSpec()" id="distributeBtn" disabled>
+                    Distribute to Agents
+                </button>
+            </div>
+        </div>
+        
+        <!-- Agent Terminals Grid -->
+        <div class="grid-layout" id="terminalGrid">
+            <!-- Terminals will be dynamically created here -->
+        </div>
+        
+        <!-- System Logs -->
+        <div class="control-panel">
+            <h3>System Logs</h3>
+            <div class="logs" id="systemLogs">
+                [00:00:00] Tmux Orchestrator Lab initialized
+                [00:00:00] Waiting for Claude Code CLI check...
+            </div>
+        </div>
+    </div>
+    
+    <script src="/labs/tmux-orchestrator/orchestrator.js"></script>
+</body>
+</html>

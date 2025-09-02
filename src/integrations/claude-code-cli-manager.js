@@ -185,7 +185,7 @@ class ClaudeCodeCLIManager extends EventEmitter {
                     session.error = 'Claude Code CLI not installed';
                     session.endTime = Date.now();
                     
-                    this.activeSessions.delete(sessionId);
+                    this.activeSessions.delete(session.id);
                     this.sessionHistory.push(session);
                     this.metrics.sessionsFailed++;
                     

@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import Image from 'next/image';
 import TypewriterText from './TypewriterText';
+import { CanvasRevealEffect } from './ui/canvas-reveal-effect';
 
 export default function HeroSection() {
   const [logoAnimated, setLogoAnimated] = useState(false);
@@ -16,9 +17,23 @@ export default function HeroSection() {
   }, []);
 
   return (
-    <div className="hero-section relative flex flex-col items-center justify-center h-full w-full px-4 py-4 overflow-auto">
+    <div className="hero-section relative flex flex-col items-center justify-start h-full w-full px-4 pt-4 overflow-auto">
+      {/* Canvas Background Effect */}
+      <div className="absolute inset-0 z-0">
+        <CanvasRevealEffect
+          animationSpeed={3}
+          containerClassName="bg-black"
+          colors={[
+            [0, 217, 255], // Cyan color matching your theme
+            [147, 51, 234], // Purple color (replacing orange)
+          ]}
+          dotSize={3}
+          reverse={false}
+          showGradient={false}
+        />
+      </div>
       {/* Logo - responsive sizing with zoom-in from back animation */}
-      <div className="relative z-10 mb-2 mt-2">
+      <div className="relative z-10 -mb-2 mt-0">
         <div 
           className={`relative w-24 h-24 sm:w-32 sm:h-32 lg:w-44 lg:h-44 transition-all duration-1000 ease-out ${
             logoAnimated 
@@ -54,7 +69,7 @@ export default function HeroSection() {
 
       {/* Title with typewriter effect - responsive */}
       <h1 
-        className="relative z-10 shimmer-text mb-2 text-[clamp(1.5rem,5vw,3.5rem)] text-center"
+        className="relative z-10 shimmer-text -mt-3 -mb-1 text-[clamp(1.5rem,5vw,3.5rem)] text-center"
         style={{
           fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
           fontWeight: 800,
@@ -75,7 +90,7 @@ export default function HeroSection() {
 
       {/* Subtitle - responsive */}
       <p 
-        className="relative z-10 text-[clamp(0.875rem,2vw,1.125rem)] mb-3 text-center max-w-[90%] font-semibold px-2"
+        className="relative z-10 text-[clamp(0.875rem,2vw,1.125rem)] -mb-1 text-center max-w-[90%] font-semibold px-2"
         style={{
           background: 'linear-gradient(90deg, #FCD34D 0%, #FB923C 50%, #F97316 100%)',
           WebkitBackgroundClip: 'text',
@@ -87,9 +102,9 @@ export default function HeroSection() {
       </p>
 
       {/* Action buttons - responsive */}
-      <div className="relative z-10 flex flex-col gap-2 mb-3 w-full max-w-[min(90%,500px)] px-2">
+      <div className="relative z-10 flex flex-col gap-3 mt-3 w-full max-w-[min(90%,500px)] px-2">
         <button 
-          className="glass-button flex items-center gap-3 sm:gap-4 px-4 sm:px-6 py-3 sm:py-4 rounded-lg transition-all duration-300 w-full transform hover:translate-y-[-2px]"
+          className="glass-button flex items-center gap-3 sm:gap-4 px-4 sm:px-6 py-2 sm:py-3 rounded-lg transition-all duration-300 w-full transform hover:translate-y-[-2px]"
           style={{
             background: 'linear-gradient(135deg, rgba(125, 211, 252, 0.1) 0%, rgba(187, 154, 247, 0.1) 100%)',
           backdropFilter: 'blur(4px)',
@@ -119,7 +134,7 @@ export default function HeroSection() {
         </button>
 
         <button 
-          className="glass-button flex items-center gap-3 sm:gap-4 px-4 sm:px-6 py-3 sm:py-4 rounded-lg transition-all duration-300 w-full transform hover:translate-y-[-2px]"
+          className="glass-button flex items-center gap-3 sm:gap-4 px-4 sm:px-6 py-2 sm:py-3 rounded-lg transition-all duration-300 w-full transform hover:translate-y-[-2px]"
           style={{
             background: 'linear-gradient(135deg, rgba(125, 211, 252, 0.1) 0%, rgba(187, 154, 247, 0.1) 100%)',
           backdropFilter: 'blur(4px)',
@@ -149,7 +164,7 @@ export default function HeroSection() {
         </button>
 
         <button 
-          className="glass-button flex items-center gap-3 sm:gap-4 px-4 sm:px-6 py-3 sm:py-4 rounded-lg transition-all duration-300 w-full transform hover:translate-y-[-2px]"
+          className="glass-button flex items-center gap-3 sm:gap-4 px-4 sm:px-6 py-2 sm:py-3 rounded-lg transition-all duration-300 w-full transform hover:translate-y-[-2px]"
           style={{
             background: 'linear-gradient(135deg, rgba(125, 211, 252, 0.1) 0%, rgba(187, 154, 247, 0.1) 100%)',
           backdropFilter: 'blur(4px)',
@@ -180,7 +195,7 @@ export default function HeroSection() {
       </div>
 
       {/* Hint text - responsive positioning */}
-      <div className="relative z-10 mt-2 mb-4">
+      <div className="relative z-10 mt-4 mb-1">
         <p className="text-gray-500 text-[clamp(0.75rem,1.5vw,0.875rem)] italic text-center">
           Type claude in the terminal below to begin
         </p>

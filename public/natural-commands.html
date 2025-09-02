@@ -1,0 +1,933 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Natural Language Commands - Coder1 AI</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            /* Dark Theme Colors - Matching PRD Generator */
+            --bg-primary: #0a0a0a;
+            --bg-secondary: #1a1a1a;
+            --text-primary: #ffffff;
+            --text-secondary: #e5e5e5;
+            --text-muted: rgba(255, 255, 255, 0.7);
+            --glass-bg: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --accent-primary: #8b5cf6;
+            --accent-secondary: #06b6d4;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --error: #ef4444;
+            --info: #3b82f6;
+            --shadow: rgba(0, 0, 0, 0.3);
+            --gradient-1: #1a1a2e;
+            --gradient-2: #16213e;
+            --gradient-3: #0f0f23;
+            --orb-1: rgba(147, 51, 234, 0.3);
+            --orb-2: rgba(59, 130, 246, 0.3);
+            --orb-3: rgba(16, 185, 129, 0.3);
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            padding: 20px;
+            overflow-x: hidden;
+        }
+        
+        /* Animated Background - Matching PRD Generator */
+        .animated-background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            background: linear-gradient(45deg, var(--gradient-1), var(--gradient-2), var(--gradient-3));
+            animation: gradientShift 15s ease infinite;
+        }
+        
+        @keyframes gradientShift {
+            0%, 100% { background: linear-gradient(45deg, var(--gradient-1), var(--gradient-2), var(--gradient-3)); }
+            50% { background: linear-gradient(45deg, var(--gradient-2), var(--gradient-1), var(--gradient-3)); }
+        }
+        
+        .gradient-orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(40px);
+            animation: float 20s ease-in-out infinite;
+        }
+        
+        .orb-1 {
+            width: 300px;
+            height: 300px;
+            background: radial-gradient(circle, var(--orb-1), transparent);
+            top: 20%;
+            left: 10%;
+            animation-delay: 0s;
+        }
+        
+        .orb-2 {
+            width: 400px;
+            height: 400px;
+            background: radial-gradient(circle, var(--orb-2), transparent);
+            top: 60%;
+            right: 10%;
+            animation-delay: -7s;
+        }
+        
+        .orb-3 {
+            width: 250px;
+            height: 250px;
+            background: radial-gradient(circle, var(--orb-3), transparent);
+            bottom: 30%;
+            left: 50%;
+            animation-delay: -14s;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            33% { transform: translateY(-30px) rotate(120deg); }
+            66% { transform: translateY(15px) rotate(240deg); }
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 30px;
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            box-shadow: 0 20px 40px var(--shadow);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header p {
+            color: var(--text-muted);
+            font-size: 1.1rem;
+            margin-bottom: 20px;
+        }
+
+        .status {
+            display: inline-block;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        .status.online {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--success);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .status.offline {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--error);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .command-input {
+            margin-bottom: 30px;
+        }
+
+        .input-container {
+            position: relative;
+            margin-bottom: 15px;
+        }
+
+        .command-textarea {
+            width: 100%;
+            padding: 20px;
+            border: 1px solid var(--glass-border);
+            border-radius: 15px;
+            font-size: 1.1rem;
+            font-family: inherit;
+            resize: vertical;
+            min-height: 120px;
+            transition: all 0.3s ease;
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-primary);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+
+        .command-textarea:focus {
+            outline: none;
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.2);
+            background: rgba(255, 255, 255, 0.08);
+        }
+        
+        .command-textarea::placeholder {
+            color: var(--text-muted);
+        }
+
+        .suggestions {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid var(--glass-border);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+
+        .suggestions h3 {
+            color: var(--text-primary);
+            font-size: 1rem;
+            margin-bottom: 10px;
+        }
+
+        .suggestion-item {
+            display: block;
+            padding: 8px 12px;
+            margin: 5px 0;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--glass-border);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-decoration: none;
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+        }
+
+        .suggestion-item:hover {
+            background: var(--accent-primary);
+            color: white;
+            border-color: var(--accent-primary);
+            box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3);
+        }
+
+        .button-group {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 15px 25px;
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            color: white;
+            border-color: var(--accent-primary);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(139, 92, 246, 0.4);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-primary);
+            border-color: var(--glass-border);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: var(--accent-primary);
+        }
+
+        .results {
+            margin-top: 30px;
+        }
+
+        .result-card {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 5px 15px var(--shadow);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+
+        .result-header {
+            display: flex;
+            justify-content: between;
+            align-items: center;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .result-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .result-confidence {
+            padding: 4px 12px;
+            border-radius: 15px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .confidence-high {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--success);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .confidence-medium {
+            background: rgba(245, 158, 11, 0.1);
+            color: var(--warning);
+            border: 1px solid rgba(245, 158, 11, 0.3);
+        }
+
+        .confidence-low {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--error);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .result-content {
+            margin-bottom: 15px;
+        }
+
+        .result-description {
+            color: var(--text-secondary);
+            line-height: 1.6;
+            margin-bottom: 10px;
+        }
+
+        .result-details {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            padding: 15px;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 0.9rem;
+            border: 1px solid var(--glass-border);
+            overflow-x: auto;
+            color: var(--text-secondary);
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-muted);
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(255, 255, 255, 0.1);
+            border-top: 4px solid var(--accent-primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 15px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes slideIn {
+            0% { 
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            100% { 
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .result-card {
+            animation: slideIn 0.5s ease-out;
+        }
+
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(139, 92, 246, 0.7);
+            }
+            70% {
+                box-shadow: 0 0 0 10px rgba(139, 92, 246, 0);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(139, 92, 246, 0);
+            }
+        }
+
+        .success-pulse {
+            animation: pulse 2s infinite;
+        }
+
+        .error {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--error);
+            padding: 15px;
+            border-radius: 10px;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            margin-bottom: 20px;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+
+        .examples {
+            margin-bottom: 30px;
+        }
+
+        .examples h3 {
+            color: var(--text-primary);
+            font-size: 1.2rem;
+            margin-bottom: 15px;
+        }
+
+        .example-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 15px;
+        }
+
+        .example-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--glass-border);
+            border-radius: 10px;
+            padding: 15px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+
+        .example-card:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: var(--accent-primary);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(139, 92, 246, 0.2);
+        }
+
+        .example-text {
+            color: var(--text-primary);
+            font-weight: 500;
+            margin-bottom: 8px;
+        }
+
+        .example-description {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+                margin: 10px;
+            }
+
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .button-group {
+                flex-direction: column;
+            }
+
+            .btn {
+                padding: 12px 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Animated Background -->
+    <div class="animated-background">
+        <div class="gradient-orb orb-1"></div>
+        <div class="gradient-orb orb-2"></div>
+        <div class="gradient-orb orb-3"></div>
+    </div>
+    
+    <div class="container">
+        <div class="header">
+            <h1>🤖 Natural Language Commands</h1>
+            <p>Tell the AI what you want in plain English - it understands and executes complex development tasks</p>
+            <span id="status" class="status offline">Checking connection...</span>
+        </div>
+
+        <div class="examples">
+            <h3>Try these examples:</h3>
+            <div class="example-grid">
+                <div class="example-card" onclick="setCommand('run parallel agents to build a new user authentication system')">
+                    <div class="example-text">🤝 Parallel Agents</div>
+                    <div class="example-description">"run parallel agents to build a new user authentication system"</div>
+                </div>
+                <div class="example-card" onclick="setCommand('start hivemind coordination to optimize the database queries')">
+                    <div class="example-text">🧠 Hivemind</div>
+                    <div class="example-description">"start hivemind coordination to optimize the database queries"</div>
+                </div>
+                <div class="example-card" onclick="setCommand('create a new React component for user profiles')">
+                    <div class="example-text">⚛️ Create Component</div>
+                    <div class="example-description">"create a new React component for user profiles"</div>
+                </div>
+                <div class="example-card" onclick="setCommand('analyze the codebase for security vulnerabilities')">
+                    <div class="example-text">🔍 Code Analysis</div>
+                    <div class="example-description">"analyze the codebase for security vulnerabilities"</div>
+                </div>
+                <div class="example-card" onclick="setCommand('run tests for the authentication module')">
+                    <div class="example-text">🧪 Testing</div>
+                    <div class="example-description">"run tests for the authentication module"</div>
+                </div>
+                <div class="example-card" onclick="setCommand('explain how the memory system works')">
+                    <div class="example-text">❓ Help</div>
+                    <div class="example-description">"explain how the memory system works"</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="command-input">
+            <div class="input-container">
+                <textarea 
+                    id="commandInput" 
+                    class="command-textarea" 
+                    placeholder="Type your command in natural language... For example: 'run parallel agents to build a new feature' or 'create a React component for user dashboard'"
+                    oninput="getSuggestions()"
+                ></textarea>
+            </div>
+            
+            <div id="suggestions" class="suggestions" style="display: none;">
+                <h3>Suggestions:</h3>
+                <div id="suggestionsList"></div>
+            </div>
+
+            <div class="button-group">
+                <button class="btn btn-primary" onclick="parseCommand()">
+                    🧠 Parse Command
+                </button>
+                <button class="btn btn-primary" onclick="executeCommand()">
+                    ⚡ Execute Command
+                </button>
+                <button class="btn btn-secondary" onclick="clearResults()">
+                    🗑️ Clear Results
+                </button>
+            </div>
+        </div>
+
+        <div id="results" class="results"></div>
+    </div>
+
+    <script>
+        let currentParsedCommand = null;
+
+        // Check server status
+        async function checkStatus() {
+            try {
+                const response = await fetch('/health');
+                const data = await response.json();
+                const statusElement = document.getElementById('status');
+                
+                if (data.status === 'healthy') {
+                    statusElement.textContent = '🟢 AI System Online';
+                    statusElement.className = 'status online';
+                } else {
+                    statusElement.textContent = '🟡 AI System Starting';
+                    statusElement.className = 'status offline';
+                }
+            } catch (error) {
+                document.getElementById('status').textContent = '🔴 AI System Offline';
+                document.getElementById('status').className = 'status offline';
+            }
+        }
+
+        // Set command text
+        function setCommand(text) {
+            document.getElementById('commandInput').value = text;
+            getSuggestions();
+        }
+
+        // Get command suggestions
+        async function getSuggestions() {
+            const input = document.getElementById('commandInput').value;
+            const suggestionsDiv = document.getElementById('suggestions');
+            const suggestionsList = document.getElementById('suggestionsList');
+            
+            if (input.length < 3) {
+                suggestionsDiv.style.display = 'none';
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/commands/suggestions?input=${encodeURIComponent(input)}&limit=3`);
+                const data = await response.json();
+                
+                if (data.success && data.suggestions.length > 0) {
+                    suggestionsList.innerHTML = data.suggestions
+                        .map(s => `<div class="suggestion-item" onclick="setCommand('${s.text}')">${s.text}</div>`)
+                        .join('');
+                    suggestionsDiv.style.display = 'block';
+                } else {
+                    suggestionsDiv.style.display = 'none';
+                }
+            } catch (error) {
+                console.error('Failed to get suggestions:', error);
+                suggestionsDiv.style.display = 'none';
+            }
+        }
+
+        // Parse command
+        async function parseCommand() {
+            const command = document.getElementById('commandInput').value.trim();
+            if (!command) {
+                alert('Please enter a command');
+                return;
+            }
+
+            showLoading('Parsing your command...');
+
+            try {
+                const response = await fetch('/api/commands/parse', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ command })
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    currentParsedCommand = data.command;
+                    showParseResult(data);
+                } else {
+                    showError('Failed to parse command: ' + (data.error || 'Unknown error'));
+                }
+            } catch (error) {
+                showError('Network error: ' + error.message);
+            }
+        }
+
+        // Execute command
+        async function executeCommand() {
+            const command = document.getElementById('commandInput').value.trim();
+            if (!command) {
+                alert('Please enter a command');
+                return;
+            }
+
+            // Add visual feedback to button
+            const executeBtn = event.target || document.querySelector('.btn-primary:nth-child(2)');
+            const originalText = executeBtn.innerHTML;
+            executeBtn.innerHTML = '⏳ Executing...';
+            executeBtn.disabled = true;
+            executeBtn.classList.add('success-pulse');
+
+            showLoading('Executing your command...');
+
+            try {
+                const response = await fetch('/api/commands/do', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ command })
+                });
+
+                // Check if response is ok
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('Response error:', response.status, errorText);
+                    showError(`Server error (${response.status}): ${errorText}`);
+                    return;
+                }
+
+                const data = await response.json();
+                console.log('Execute response:', data); // Debug log
+                
+                if (data.success) {
+                    showExecuteResult(data);
+                    // Show success notification
+                    showSuccessNotification('Command executed successfully!');
+                } else {
+                    showError('Failed to execute command: ' + (data.error || 'Unknown error'));
+                }
+            } catch (error) {
+                console.error('Execute error:', error);
+                showError('Network error: ' + error.message);
+            } finally {
+                // Reset button state
+                if (executeBtn) {
+                    executeBtn.innerHTML = originalText;
+                    executeBtn.disabled = false;
+                    executeBtn.classList.remove('success-pulse');
+                }
+            }
+        }
+
+        // Show loading state
+        function showLoading(message) {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = `
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <div>${message}</div>
+                </div>
+            `;
+        }
+
+        // Show parse result
+        function showParseResult(data) {
+            const confidence = data.command.confidence;
+            const confidenceClass = confidence >= 0.8 ? 'confidence-high' : 
+                                   confidence >= 0.5 ? 'confidence-medium' : 'confidence-low';
+            const confidenceText = confidence >= 0.8 ? 'High Confidence' : 
+                                  confidence >= 0.5 ? 'Medium Confidence' : 'Low Confidence';
+
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = `
+                <div class="result-card">
+                    <div class="result-header">
+                        <div class="result-title">📝 Command Parsed</div>
+                        <div class="result-confidence ${confidenceClass}">${confidenceText} (${Math.round(confidence * 100)}%)</div>
+                    </div>
+                    <div class="result-content">
+                        <div class="result-description">
+                            <strong>Interpretation:</strong> ${data.command.userFriendlyDescription}
+                        </div>
+                        <div class="result-description">
+                            <strong>Category:</strong> ${data.command.category} → ${data.command.action}
+                        </div>
+                        <div class="result-description">
+                            <strong>Target:</strong> ${data.command.target}
+                        </div>
+                        ${data.command.context.techStack.length > 0 ? `
+                            <div class="result-description">
+                                <strong>Tech Stack Detected:</strong> ${data.command.context.techStack.join(', ')}
+                            </div>
+                        ` : ''}
+                        <div class="result-details">
+                            ${JSON.stringify(data.command, null, 2)}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Show execute result
+        function showExecuteResult(data) {
+            const confidence = data.parsedCommand.confidence;
+            const confidenceClass = confidence >= 0.8 ? 'confidence-high' : 
+                                   confidence >= 0.5 ? 'confidence-medium' : 'confidence-low';
+            const confidenceText = confidence >= 0.8 ? 'High Confidence' : 
+                                  confidence >= 0.5 ? 'Medium Confidence' : 'Low Confidence';
+
+            // Format the result based on type
+            let resultContent = '';
+            const result = data.result;
+            
+            if (result.type === 'agent_started') {
+                resultContent = `
+                    <div class="result-description" style="background: #e8f5e8; padding: 15px; border-radius: 8px; margin: 10px 0;">
+                        <h3 style="color: #2d8b2d; margin: 0 0 10px 0;">✅ ${result.mode.toUpperCase()} Agents Started</h3>
+                        <p style="margin: 5px 0;"><strong>Session ID:</strong> ${result.sessionId}</p>
+                        <p style="margin: 5px 0;">${result.message}</p>
+                        <p style="margin: 10px 0 0 0; font-style: italic; color: #666;">The agents are now working on your request. You can monitor their progress in the main interface.</p>
+                    </div>
+                `;
+            } else if (result.type === 'file_operation') {
+                resultContent = `
+                    <div class="result-description" style="background: #e8f0ff; padding: 15px; border-radius: 8px; margin: 10px 0;">
+                        <h3 style="color: #667eea; margin: 0 0 10px 0;">📄 File Operation</h3>
+                        <p style="margin: 5px 0;"><strong>Action:</strong> ${result.action}</p>
+                        <p style="margin: 5px 0;"><strong>Target:</strong> ${result.target}</p>
+                        ${result.result.enhanced_brief ? `
+                            <div style="margin-top: 10px; padding: 10px; background: #f8f9ff; border-radius: 5px;">
+                                <strong>Enhanced Brief:</strong>
+                                <p style="margin: 5px 0;">${result.result.enhanced_brief}</p>
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            } else if (result.type === 'help_response') {
+                resultContent = `
+                    <div class="result-description" style="background: #fff3cd; padding: 15px; border-radius: 8px; margin: 10px 0;">
+                        <h3 style="color: #856404; margin: 0 0 10px 0;">ℹ️ Help Information</h3>
+                        <p style="margin: 5px 0;"><strong>Topic:</strong> ${result.topic}</p>
+                        <div style="margin: 10px 0; line-height: 1.6;">${result.response}</div>
+                        ${result.availableTopics && result.availableTopics.length > 0 ? `
+                            <div style="margin: 15px 0 0 0; padding-top: 15px; border-top: 1px solid #ffeaa7;">
+                                <p style="margin: 0; font-size: 0.9em; color: #666;">
+                                    <strong>Other available help topics:</strong>
+                                </p>
+                                <p style="margin: 5px 0; font-size: 0.9em; color: #666;">
+                                    ${result.availableTopics.join(', ')}
+                                </p>
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            } else if (result.type === 'general_analysis') {
+                resultContent = `
+                    <div class="result-description" style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin: 10px 0;">
+                        <h3 style="color: #333; margin: 0 0 10px 0;">🔍 Analysis Complete</h3>
+                        ${result.result.enhanced_brief ? `
+                            <div style="margin-top: 10px;">
+                                <strong>Analysis Results:</strong>
+                                <p style="margin: 10px 0;">${result.result.enhanced_brief}</p>
+                            </div>
+                        ` : ''}
+                        ${result.result.questions && result.result.questions.length > 0 ? `
+                            <div style="margin-top: 15px;">
+                                <strong>Follow-up Questions:</strong>
+                                <ol style="margin: 10px 0 0 20px;">
+                                    ${result.result.questions.map(q => `<li style="margin: 5px 0;">${q}</li>`).join('')}
+                                </ol>
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            } else {
+                // Fallback for unknown result types
+                resultContent = `
+                    <div class="result-description" style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin: 10px 0;">
+                        <h3 style="color: #333; margin: 0 0 10px 0;">📋 Command Result</h3>
+                        <div class="result-details" style="margin-top: 10px;">
+                            ${JSON.stringify(result, null, 2)}
+                        </div>
+                    </div>
+                `;
+            }
+
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = `
+                <div class="result-card">
+                    <div class="result-header">
+                        <div class="result-title">⚡ Command Executed Successfully</div>
+                        <div class="result-confidence ${confidenceClass}">${confidenceText} (${Math.round(confidence * 100)}%)</div>
+                    </div>
+                    <div class="result-content">
+                        <div class="result-description">
+                            <strong>Your Command:</strong> "${data.originalCommand}"
+                        </div>
+                        <div class="result-description">
+                            <strong>AI Understanding:</strong> ${data.parsedCommand.userFriendlyDescription}
+                        </div>
+                        <div class="result-description" style="font-size: 0.9em; color: #666;">
+                            <strong>Processing Time:</strong> ${data.executionTime}ms
+                        </div>
+                        ${resultContent}
+                    </div>
+                </div>
+            `;
+        }
+
+        // Show error
+        function showError(message) {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = `
+                <div class="error">
+                    <strong>Error:</strong> ${message}
+                </div>
+            `;
+        }
+
+        // Clear results
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+            document.getElementById('commandInput').value = '';
+            document.getElementById('suggestions').style.display = 'none';
+            currentParsedCommand = null;
+        }
+
+        // Show success notification
+        function showSuccessNotification(message) {
+            // Create notification element
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: #4caf50;
+                color: white;
+                padding: 15px 25px;
+                border-radius: 10px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                font-weight: 600;
+                z-index: 1000;
+                animation: slideIn 0.3s ease-out;
+            `;
+            notification.textContent = message;
+            
+            document.body.appendChild(notification);
+            
+            // Remove after 3 seconds
+            setTimeout(() => {
+                notification.style.animation = 'slideOut 0.3s ease-out';
+                setTimeout(() => {
+                    document.body.removeChild(notification);
+                }, 300);
+            }, 3000);
+        }
+
+        // Initialize
+        checkStatus();
+        setInterval(checkStatus, 30000); // Check status every 30 seconds
+
+        // Hide suggestions when clicking outside
+        document.addEventListener('click', function(event) {
+            const suggestionsDiv = document.getElementById('suggestions');
+            const inputContainer = document.querySelector('.input-container');
+            
+            if (!inputContainer.contains(event.target)) {
+                suggestionsDiv.style.display = 'none';
+            }
+        });
+
+        // Enter key handling
+        document.getElementById('commandInput').addEventListener('keydown', function(event) {
+            if (event.key === 'Enter' && event.ctrlKey) {
+                executeCommand();
+            } else if (event.key === 'Enter' && event.shiftKey) {
+                parseCommand();
+            }
+        });
+    </script>
+</body>
+</html>

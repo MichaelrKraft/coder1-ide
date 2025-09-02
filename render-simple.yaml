@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: autonomous-vibe-interface
+    runtime: node
+    repo: https://github.com/michaelkraft/autonomous_vibe_interface
+    buildCommand: npm install
+    startCommand: node src/app.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000  # Render uses port 10000
+      - key: ANTHROPIC_API_KEY
+        sync: false  # Add in Render dashboard for security
+      - key: OPENAI_API_KEY
+        sync: false  # Add in Render dashboard for security

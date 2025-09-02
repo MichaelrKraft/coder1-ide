@@ -1,0 +1,60 @@
+[
+  {
+    "id": "12345678",
+    "name": "/gs",
+    "shortName": "gs",
+    "command": "git status",
+    "description": "Quick access to: git status",
+    "created": "2025-01-30T10:30:00.000Z",
+    "usageCount": 15,
+    "originalSuggestion": {
+      "id": "abc12345",
+      "originalCommand": "git status",
+      "usageCount": 5,
+      "timeWindow": 10
+    },
+    "parameters": [],
+    "tags": ["git", "vcs"]
+  },
+  {
+    "id": "87654321",
+    "name": "/gc",
+    "shortName": "gc",
+    "command": "git commit -m",
+    "description": "Quick git commit with message",
+    "created": "2025-01-30T11:15:00.000Z",
+    "usageCount": 8,
+    "originalSuggestion": {
+      "id": "def67890",
+      "originalCommand": "git commit -m \"update\"",
+      "usageCount": 6,
+      "timeWindow": 10
+    },
+    "parameters": [
+      {
+        "name": "message",
+        "pattern": "-m \"(.+?)\"",
+        "type": "string",
+        "placeholder": "{message}"
+      }
+    ],
+    "tags": ["git", "vcs"]
+  },
+  {
+    "id": "11223344",
+    "name": "/dev",
+    "shortName": "dev",
+    "command": "npm run dev",
+    "description": "Start development server",
+    "created": "2025-01-30T09:45:00.000Z",
+    "usageCount": 23,
+    "originalSuggestion": {
+      "id": "ghi11223",
+      "originalCommand": "npm run dev",
+      "usageCount": 7,
+      "timeWindow": 10
+    },
+    "parameters": [],
+    "tags": ["npm", "node", "build"]
+  }
+]

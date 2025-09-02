@@ -1,0 +1,13 @@
+{
+  "sessions": [],
+  "totalTokensAllTime": 0,
+  "totalCostAllTime": 0,
+  "intentDistribution": {},
+  "commonPatterns": [],
+  "efficiencyMetrics": {
+    "tokensPerFeature": 0,
+    "averageRequestSize": 0,
+    "patternSavings": 0
+  },
+  "lastUpdated": "2025-08-26T19:33:04.215Z"
+}

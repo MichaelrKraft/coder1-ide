@@ -27,12 +27,12 @@ class JournalExportService {
             const journalData = this.combineAndSortEntries(insights, outcomes);
             
             switch (format) {
-                case 'markdown':
-                    return this.formatAsMarkdown(journalData);
-                case 'json':
-                    return JSON.stringify(journalData, null, 2);
-                default:
-                    throw new Error(`Unsupported format: ${format}`);
+            case 'markdown':
+                return this.formatAsMarkdown(journalData);
+            case 'json':
+                return JSON.stringify(journalData, null, 2);
+            default:
+                throw new Error(`Unsupported format: ${format}`);
             }
         } catch (error) {
             this.logger.error('Failed to export journal:', error);
@@ -244,7 +244,7 @@ class JournalExportService {
         
         if (entry.metadata?.priority) {
             const priorityIcon = entry.metadata.priority === 'high' ? '🚨' : 
-                                entry.metadata.priority === 'medium' ? '⚠️' : 'ℹ️';
+                entry.metadata.priority === 'medium' ? '⚠️' : 'ℹ️';
             markdown += `  \n**Priority**: ${priorityIcon} ${entry.metadata.priority}`;
         }
         
@@ -259,9 +259,9 @@ class JournalExportService {
             if (entry.agentType === 'proactive-intelligence') {
                 return `AI Suggestion (${entry.metadata?.type || 'general'})`;
             } else if (entry.agentType === 'context-builder') {
-                return `Context Update`;
+                return 'Context Update';
             }
-            return `Agent Insight`;
+            return 'Agent Insight';
         } else if (entry.type === 'outcome') {
             return `Task ${entry.status || 'Update'}`;
         }

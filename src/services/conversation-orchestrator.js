@@ -12,7 +12,8 @@
 
 const DynamicPromptEngine = require('./dynamic-prompt-engine');
 const ClaudeCodeExec = require('../integrations/claude-code-exec');
-const Anthropic = require('@anthropic-ai/sdk');
+// DISABLED: Using Claude Code CLI exclusively to prevent API billing
+// const Anthropic = require('@anthropic-ai/sdk');
 
 class ConversationOrchestrator {
     constructor() {
@@ -34,10 +35,9 @@ class ConversationOrchestrator {
         // Use Claude Code CLI only to utilize Claude Code Max account
         this.anthropic = null;
 
-        // AI service health monitoring
+        // AI service health monitoring (Claude Code CLI only)
         this.serviceHealth = {
-            claudeCodeCli: { status: 'unknown', lastCheck: null, consecutiveFailures: 0 },
-            anthropicSdk: { status: 'unknown', lastCheck: null, consecutiveFailures: 0 }
+            claudeCodeCli: { status: 'unknown', lastCheck: null, consecutiveFailures: 0 }
         };
         
         // Initialize health checks
@@ -751,29 +751,8 @@ class ConversationOrchestrator {
                     console.log('[ConversationOrchestrator] ✅ Claude Code CLI orchestrator response generated');
                     return result;
                 } catch (cliError) {
-                    console.log('[ConversationOrchestrator] Claude Code CLI failed, trying Anthropic SDK:', cliError.message);
-                    
-                    // Fallback to Anthropic SDK
-                    if (this.anthropic) {
-                        const response = await this.withTimeout(
-                            this.anthropic.messages.create({
-                                model: 'claude-3-5-sonnet-20241022',
-                                max_tokens: 800, // Increased for richer responses
-                                temperature: 0.7,
-                                system: prompt,
-                                messages: [
-                                    { role: 'user', content: conversationContext }
-                                ]
-                            }),
-                            45000 // 45 second timeout for complex responses
-                        );
-                        
-                        const result = response.content[0].text.trim();
-                        console.log('[ConversationOrchestrator] ✅ Anthropic SDK orchestrator response generated');
-                        return result;
-                    } else {
-                        throw new Error('Both Claude Code CLI and Anthropic SDK unavailable');
-                    }
+                    console.log('[ConversationOrchestrator] ❌ Claude Code CLI failed:', cliError.message);
+                    throw new Error('Claude Code CLI unavailable - using Claude Code Max Plan exclusively');
                 }
             }, 2, 2000); // 2 retries with 2 second base delay
 
@@ -836,27 +815,8 @@ Provide your expert perspective on the user's project, building on other experts
                 
                 console.log(`[ConversationOrchestrator] ✅ Claude Code CLI response for ${expertType}`);
             } catch (cliError) {
-                console.log(`[ConversationOrchestrator] Claude Code CLI failed for ${expertType}, trying Anthropic SDK:`, cliError.message);
-                
-                // Fallback to Anthropic SDK
-                if (this.anthropic) {
-                    const response = await this.withTimeout(
-                        this.anthropic.messages.create({
-                            model: 'claude-3-5-sonnet-20241022',
-                            max_tokens: 300, // Reduced for faster response
-                            temperature: 0.8,
-                            system: collaborationPrompt.system,
-                            messages: [
-                                { role: 'user', content: expertContext }
-                            ]
-                        }),
-                        5000 // 5 second timeout for faster responses
-                    );
-                    responseText = response.content[0].text.trim();
-                    console.log(`[ConversationOrchestrator] ✅ Anthropic SDK response for ${expertType}`);
-                } else {
-                    throw new Error('Both Claude Code CLI and Anthropic SDK failed');
-                }
+                console.log(`[ConversationOrchestrator] ❌ Claude Code CLI failed for ${expertType}:`, cliError.message);
+                throw new Error('Claude Code CLI unavailable - using Claude Code Max Plan exclusively');
             }
 
             // Check if expert asked user a question
@@ -902,25 +862,8 @@ Respond naturally as the expert, acknowledging the user's input and building on 
                 
                 console.log(`[ConversationOrchestrator] ✅ Expert ${expertType} response to user generated`);
             } catch (cliError) {
-                console.log('[ConversationOrchestrator] Claude Code CLI failed for user response, trying Anthropic SDK:', cliError.message);
-                
-                if (this.anthropic) {
-                    const response = await this.withTimeout(
-                        this.anthropic.messages.create({
-                            model: 'claude-3-5-sonnet-20241022',
-                            max_tokens: 200,
-                            temperature: 0.7,
-                            messages: [
-                                { role: 'user', content: prompt }
-                            ]
-                        }),
-                        10000 // 10 second timeout
-                    );
-                    responseText = response.content[0].text.trim();
-                    console.log(`[ConversationOrchestrator] ✅ Anthropic SDK user response for ${expertType}`);
-                } else {
-                    throw new Error('Both Claude Code CLI and Anthropic SDK failed');
-                }
+                console.log('❌ Claude Code CLI failed:', cliError.message);
+                throw new Error('Claude Code CLI unavailable - using Claude Code Max Plan exclusively');
             }
 
             return {
@@ -1006,26 +949,8 @@ Respond naturally as the expert, acknowledging the user's input and building on 
                     
                     console.log(`[ConversationOrchestrator] ✅ Individual plan generated for ${expertType}`);
                 } catch (cliError) {
-                    console.log('[ConversationOrchestrator] Claude Code CLI failed for plan generation, trying Anthropic SDK');
-                    
-                    if (this.anthropic) {
-                        const response = await this.withTimeout(
-                            this.anthropic.messages.create({
-                                model: 'claude-3-5-sonnet-20241022',
-                                max_tokens: 1000,
-                                temperature: 0.6,
-                                system: planPrompt,
-                                messages: [
-                                    { role: 'user', content: 'Create your detailed implementation plan based on our collaboration.' }
-                                ]
-                            }),
-                            10000 // 10 second timeout
-                        );
-                        planContent = response.content[0].text.trim();
-                        console.log(`[ConversationOrchestrator] ✅ Anthropic SDK plan for ${expertType}`);
-                    } else {
-                        throw new Error('Both Claude Code CLI and Anthropic SDK failed');
-                    }
+                    console.log('❌ Claude Code CLI failed:', cliError.message);
+                    throw new Error('Claude Code CLI unavailable - using Claude Code Max Plan exclusively');
                 }
 
                 const expertPlan = {
@@ -1123,26 +1048,8 @@ Respond naturally as the expert, acknowledging the user's input and building on 
                 
                 console.log('[ConversationOrchestrator] ✅ Synthesis generated via Claude Code CLI');
             } catch (cliError) {
-                console.log('[ConversationOrchestrator] Claude Code CLI failed for synthesis, trying Anthropic SDK');
-                
-                if (this.anthropic) {
-                    const response = await this.withTimeout(
-                        this.anthropic.messages.create({
-                            model: 'claude-3-5-sonnet-20241022',
-                            max_tokens: 1500,
-                            temperature: 0.6,
-                            system: synthesisPrompt,
-                            messages: [
-                                { role: 'user', content: 'Create the unified synthesis and Claude Code prompt.' }
-                            ]
-                        }),
-                        10000 // 10 second timeout
-                    );
-                    synthesisContent = response.content[0].text.trim();
-                    console.log('[ConversationOrchestrator] ✅ Anthropic SDK synthesis generated');
-                } else {
-                    throw new Error('Both Claude Code CLI and Anthropic SDK failed');
-                }
+                console.log('❌ Claude Code CLI failed:', cliError.message);
+                throw new Error('Claude Code CLI unavailable - using Claude Code Max Plan exclusively');
             }
 
             session.synthesis = {
@@ -1996,9 +1903,9 @@ ${architectureSection}
 
 ### Expert Insights:
 ${Object.values(expertInsights).map(expert => {
-    const mainRec = expert.recommendations[0] || expert.name + ' recommends following best practices';
-    return `- **${expert.name}**: ${mainRec}`;
-}).join('\n')}
+        const mainRec = expert.recommendations[0] || expert.name + ' recommends following best practices';
+        return `- **${expert.name}**: ${mainRec}`;
+    }).join('\n')}
 
 ### Implementation Priorities:
 ${session.userContext.priorities.length > 0 ? session.userContext.priorities.map(p => `- ${p}`).join('\n') : '- Start with core functionality\n- Implement user authentication\n- Build data models'}
@@ -2261,7 +2168,7 @@ Provide your expert perspective on the user's project, building on other experts
             try {
                 return await this.streamAnthropicResponse(context, systemPrompt, agentName, session, emitCallback);
             } catch (error) {
-                console.log(`[ConversationOrchestrator] Anthropic streaming failed, trying non-streaming fallback:`, error.message);
+                console.log('[ConversationOrchestrator] Anthropic streaming failed, trying non-streaming fallback:', error.message);
             }
         }
 
@@ -2296,46 +2203,46 @@ Provide your expert perspective on the user's project, building on other experts
                 messages: [{ role: 'user', content: context }],
                 stream: true
             })
-            .then(stream => {
-                stream.on('text', (chunk) => {
-                    buffer += chunk;
-                    fullResponse += chunk;
+                .then(stream => {
+                    stream.on('text', (chunk) => {
+                        buffer += chunk;
+                        fullResponse += chunk;
                     
-                    // Emit chunks when buffer reaches threshold
-                    if (buffer.length >= this.streamingConfig.bufferSize) {
-                        emitCallback('conversation:stream-chunk', {
-                            sessionId: session.sessionId,
-                            agent: agentName,
-                            chunk: buffer,
-                            fullText: fullResponse,
-                            timestamp: Date.now()
-                        });
-                        buffer = '';
-                    }
-                });
+                        // Emit chunks when buffer reaches threshold
+                        if (buffer.length >= this.streamingConfig.bufferSize) {
+                            emitCallback('conversation:stream-chunk', {
+                                sessionId: session.sessionId,
+                                agent: agentName,
+                                chunk: buffer,
+                                fullText: fullResponse,
+                                timestamp: Date.now()
+                            });
+                            buffer = '';
+                        }
+                    });
 
-                stream.on('end', () => {
+                    stream.on('end', () => {
                     // Emit any remaining buffer
-                    if (buffer.length > 0) {
-                        emitCallback('conversation:stream-chunk', {
-                            sessionId: session.sessionId,
-                            agent: agentName,
-                            chunk: buffer,
-                            fullText: fullResponse,
-                            timestamp: Date.now()
-                        });
-                    }
+                        if (buffer.length > 0) {
+                            emitCallback('conversation:stream-chunk', {
+                                sessionId: session.sessionId,
+                                agent: agentName,
+                                chunk: buffer,
+                                fullText: fullResponse,
+                                timestamp: Date.now()
+                            });
+                        }
                     
-                    console.log(`[ConversationOrchestrator] ✅ Streaming complete for ${agentName}`);
-                    resolve(fullResponse.trim());
-                });
+                        console.log(`[ConversationOrchestrator] ✅ Streaming complete for ${agentName}`);
+                        resolve(fullResponse.trim());
+                    });
 
-                stream.on('error', (error) => {
-                    console.error(`[ConversationOrchestrator] Streaming error for ${agentName}:`, error);
-                    reject(error);
-                });
-            })
-            .catch(reject);
+                    stream.on('error', (error) => {
+                        console.error(`[ConversationOrchestrator] Streaming error for ${agentName}:`, error);
+                        reject(error);
+                    });
+                })
+                .catch(reject);
         });
     }
 
@@ -2379,15 +2286,14 @@ Provide your expert perspective on the user's project, building on other experts
 
     async checkServiceHealth() {
         const healthPromises = [
-            this.checkClaudeCodeCliHealth(),
-            this.checkAnthropicSdkHealth()
+            this.checkClaudeCodeCliHealth()
         ];
 
         await Promise.allSettled(healthPromises);
         
         console.log('[ConversationOrchestrator] 🏥 Health Status:', {
             claudeCodeCli: this.serviceHealth.claudeCodeCli.status,
-            anthropicSdk: this.serviceHealth.anthropicSdk.status,
+            
             timestamp: new Date().toISOString()
         });
     }
@@ -2420,72 +2326,26 @@ Provide your expert perspective on the user's project, building on other experts
         }
     }
 
-    async checkAnthropicSdkHealth() {
-        if (!this.anthropic) {
-            this.serviceHealth.anthropicSdk = {
-                status: 'unavailable',
-                lastCheck: new Date().toISOString(),
-                consecutiveFailures: 0,
-                reason: 'No API key configured'
-            };
-            return;
-        }
-
-        try {
-            const response = await this.withTimeout(
-                this.anthropic.messages.create({
-                    model: 'claude-3-5-sonnet-20241022',
-                    max_tokens: 10,
-                    messages: [{ role: 'user', content: 'Health check test' }]
-                }),
-                10000
-            );
-
-            const isHealthy = response && response.content && response.content[0];
-            
-            this.serviceHealth.anthropicSdk = {
-                status: isHealthy ? 'healthy' : 'degraded',
-                lastCheck: new Date().toISOString(),
-                consecutiveFailures: isHealthy ? 0 : this.serviceHealth.anthropicSdk.consecutiveFailures + 1,
-                lastResponse: response?.content?.[0]?.text?.substring(0, 100)
-            };
-
-        } catch (error) {
-            this.serviceHealth.anthropicSdk = {
-                status: 'unhealthy',
-                lastCheck: new Date().toISOString(),
-                consecutiveFailures: this.serviceHealth.anthropicSdk.consecutiveFailures + 1,
-                lastError: error.message
-            };
-        }
-    }
+    // // checkAnthropicSdkHealth() removed removed - using Claude Code CLI exclusively
 
     getHealthStatus() {
         return {
             ...this.serviceHealth,
             overallHealth: this.calculateOverallHealth(),
-            recommendedService: this.getRecommendedService()
+            recommendedService: 'claude-code-cli'
         };
     }
 
     calculateOverallHealth() {
         const claudeHealthy = this.serviceHealth.claudeCodeCli.status === 'healthy';
-        const anthropicHealthy = this.serviceHealth.anthropicSdk.status === 'healthy';
         
-        if (claudeHealthy && anthropicHealthy) return 'excellent';
-        if (claudeHealthy || anthropicHealthy) return 'good';
-        if (this.serviceHealth.claudeCodeCli.status === 'degraded' || 
-            this.serviceHealth.anthropicSdk.status === 'degraded') return 'degraded';
+        if (claudeHealthy) return 'excellent';
+        if (this.serviceHealth.claudeCodeCli.status === 'degraded') return 'degraded';
         return 'poor';
     }
 
     getRecommendedService() {
-        if (this.serviceHealth.claudeCodeCli.status === 'healthy') return 'claude-code-cli';
-        if (this.serviceHealth.anthropicSdk.status === 'healthy') return 'anthropic-sdk';
-        if (this.serviceHealth.claudeCodeCli.consecutiveFailures < this.serviceHealth.anthropicSdk.consecutiveFailures) {
-            return 'claude-code-cli';
-        }
-        return 'anthropic-sdk';
+        return 'claude-code-cli'; // Always use Claude Code CLI for Max Plan
     }
 
     // Cleanup old sessions

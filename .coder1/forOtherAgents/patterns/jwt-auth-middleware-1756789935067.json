@@ -1,0 +1,37 @@
+{
+  "id": "pattern-1756789935067-8e5wt5",
+  "label": "jwt-auth-middleware",
+  "description": "\"Express middleware for JWT token validation\"",
+  "type": "pattern",
+  "created": 1756789935067,
+  "pattern": {
+    "name": "jwt-auth-middleware",
+    "category": "general",
+    "files": [
+      "src/middleware/auth.js",
+      "src/utils/jwt.js",
+      "tests/auth.test.js"
+    ],
+    "codeSnippets": [
+      {
+        "file": "src/middleware/auth.js",
+        "content": "const jwt = require(\"jsonwebtoken\");..."
+      }
+    ],
+    "dependencies": [
+      "jsonwebtoken",
+      "bcryptjs"
+    ]
+  },
+  "usage": {
+    "whenToUse": "\"Express middleware for JWT token validation\"",
+    "howToImplement": [],
+    "variations": [],
+    "antipatterns": []
+  },
+  "agentInstructions": {
+    "implementationApproach": "",
+    "testingStrategy": "",
+    "commonMistakes": []
+  }
+}

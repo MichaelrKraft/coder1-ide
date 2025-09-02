@@ -1,0 +1,1344 @@
+<!-- 
+===============================================================================
+CANONICAL FILE - MODIFY THIS VERSION ONLY - VERSION 3
+===============================================================================
+File: hooks-v3.html
+Purpose: Claude Code Hooks Management Interface - Fixed Header Layout
+Status: PRODUCTION - Last updated: 2025-01-26
+Claude Agents: This is the OFFICIAL version - do not modify copies elsewhere
+===============================================================================
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>AI-Powered Hooks - Version 3</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #0a0a0a;
+            --bg-secondary: #1a1a1a;
+            --glass-bg: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --text-primary: #ffffff;
+            --text-secondary: #a0a0a0;
+            --accent-primary: #8b5cf6;
+            --accent-secondary: #06b6d4;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+        }
+
+        /* Back to IDE Button */
+        .back-to-ide-container {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 1000;
+        }
+
+        .back-to-ide-btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 20px;
+            background: rgba(10, 10, 10, 0.9);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--accent-primary);
+            border-radius: 8px;
+            color: var(--text-primary);
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 20px rgba(139, 92, 246, 0.2);
+        }
+
+        .back-to-ide-btn:hover {
+            background: rgba(139, 92, 246, 0.2);
+            transform: translateX(-3px);
+            box-shadow: 0 6px 25px rgba(139, 92, 246, 0.4);
+        }
+
+        /* Main Content */
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        /* Button Styles */
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 500;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(139, 92, 246, 0.4);
+        }
+
+        .btn-secondary {
+            background: var(--glass-bg);
+            color: var(--text-primary);
+            border: 1px solid var(--glass-border);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: var(--accent-primary);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(139, 92, 246, 0.3);
+        }
+
+        /* Purple Glow Effect for Action Section Buttons */
+        .action-section .btn-secondary::before {
+            content: '';
+            position: absolute;
+            inset: -2px;
+            padding: 2px;
+            border-radius: 10px;
+            background: linear-gradient(
+                45deg,
+                transparent,
+                #8b5cf6,
+                #a855f7,
+                transparent,
+                #8b5cf6,
+                #a855f7
+            );
+            background-size: 400% 100%;
+            animation: actionButtonGlow 3s linear infinite;
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: exclude;
+            mask-composite: exclude;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            z-index: -1;
+        }
+
+        .action-section .btn-secondary:hover::before {
+            opacity: 1;
+        }
+
+        .action-section .btn-secondary::after {
+            content: '';
+            position: absolute;
+            inset: -8px;
+            border-radius: 12px;
+            background: radial-gradient(
+                circle at center,
+                rgba(139, 92, 246, 0.4),
+                rgba(168, 85, 247, 0.2),
+                transparent 70%
+            );
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .action-section .btn-secondary:hover::after {
+            opacity: 1;
+        }
+
+        @keyframes actionButtonGlow {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* Action Section */
+        .action-section {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            padding-top: 1rem;
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 2rem;
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        .tab {
+            padding: 1rem 2rem;
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .tab.active {
+            color: var(--accent-primary);
+            border-bottom-color: var(--accent-primary);
+        }
+
+        .tab:hover {
+            color: var(--text-primary);
+        }
+
+        /* Hook Cards - 3D Enhanced */
+        .hook-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 1.5rem;
+            margin-top: 2rem;
+            perspective: 1500px;
+        }
+
+        /* 3D Floating Animation */
+        @keyframes floatHookCard {
+            0%, 100% { transform: translateY(0) translateZ(0); }
+            50% { transform: translateY(-8px) translateZ(8px); }
+        }
+
+        .hook-card {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: visible;
+            animation: floatHookCard 6s ease-in-out infinite;
+            transform-style: preserve-3d;
+            will-change: transform;
+            cursor: pointer;
+        }
+
+        /* Staggered Animation Delays */
+        .hook-card:nth-child(1) { animation-delay: 0s; }
+        .hook-card:nth-child(2) { animation-delay: 0.5s; }
+        .hook-card:nth-child(3) { animation-delay: 1s; }
+        .hook-card:nth-child(4) { animation-delay: 1.5s; }
+        .hook-card:nth-child(5) { animation-delay: 2s; }
+        .hook-card:nth-child(6) { animation-delay: 2.5s; }
+
+        /* Enhanced 3D Hover Effects */
+        .hook-card:hover {
+            border-color: var(--accent-primary);
+            box-shadow: 0 20px 40px rgba(139, 92, 246, 0.3);
+            transform: translateY(-5px) scale(1.02) translateZ(20px) !important;
+        }
+
+        /* Category-Specific Glow Effects */
+        .hook-card[data-type="hybrid"]::before {
+            content: '';
+            position: absolute;
+            inset: -2px;
+            padding: 2px;
+            border-radius: 14px;
+            background: linear-gradient(
+                45deg,
+                transparent,
+                #8b5cf6,
+                #06b6d4,
+                transparent,
+                #8b5cf6,
+                #06b6d4
+            );
+            background-size: 400% 100%;
+            animation: hybridGlow 3s linear infinite;
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: exclude;
+            mask-composite: exclude;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            z-index: -1;
+        }
+
+        .hook-card[data-type="hybrid"]:hover::before {
+            opacity: 1;
+        }
+
+        .hook-card[data-type="hybrid"]::after {
+            content: '';
+            position: absolute;
+            inset: -10px;
+            border-radius: 14px;
+            background: radial-gradient(
+                circle at var(--mouse-x, 50%) var(--mouse-y, 50%),
+                rgba(139, 92, 246, 0.3),
+                rgba(6, 182, 212, 0.2),
+                transparent 60%
+            );
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .hook-card[data-type="hybrid"]:hover::after {
+            opacity: 1;
+        }
+
+        .hook-card[data-type="ai"]::before {
+            content: '';
+            position: absolute;
+            inset: -2px;
+            padding: 2px;
+            border-radius: 14px;
+            background: linear-gradient(
+                45deg,
+                transparent,
+                #06b6d4,
+                #00ffff,
+                transparent,
+                #06b6d4
+            );
+            background-size: 400% 100%;
+            animation: aiGlow 4s linear infinite;
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: exclude;
+            mask-composite: exclude;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            z-index: -1;
+        }
+
+        .hook-card[data-type="ai"]:hover::before {
+            opacity: 1;
+        }
+
+        .hook-card[data-type="bash"]::before {
+            content: '';
+            position: absolute;
+            inset: -2px;
+            padding: 2px;
+            border-radius: 14px;
+            background: linear-gradient(
+                45deg,
+                transparent,
+                #8b5cf6,
+                #a855f7,
+                transparent,
+                #8b5cf6
+            );
+            background-size: 400% 100%;
+            animation: bashGlow 2.5s linear infinite;
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: exclude;
+            mask-composite: exclude;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            z-index: -1;
+        }
+
+        .hook-card[data-type="bash"]:hover::before {
+            opacity: 1;
+        }
+
+        /* Glow Animation Keyframes */
+        @keyframes hybridGlow {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        @keyframes aiGlow {
+            0% { background-position: 0% 50%; }
+            25% { background-position: 100% 50%; }
+            50% { background-position: 0% 50%; }
+            75% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        @keyframes bashGlow {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* Hero Section */
+        .hero-section {
+            position: relative;
+            padding: 40px 0 40px;
+            overflow: hidden;
+            background: #050505;
+            border-bottom: 1px solid rgba(139, 92, 246, 0.2);
+        }
+
+        /* Animated Gradient Mesh Background */
+        .hero-section::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle at 20% 50%, rgba(139, 92, 246, 0.15) 0%, transparent 50%),
+                        radial-gradient(circle at 80% 80%, rgba(6, 182, 212, 0.15) 0%, transparent 50%),
+                        radial-gradient(circle at 40% 20%, rgba(236, 72, 153, 0.1) 0%, transparent 50%),
+                        radial-gradient(circle at 90% 10%, rgba(59, 130, 246, 0.1) 0%, transparent 50%);
+            animation: meshAnimation 20s ease-in-out infinite;
+            z-index: 0;
+        }
+
+        @keyframes meshAnimation {
+            0%, 100% { transform: rotate(0deg) scale(1); }
+            25% { transform: rotate(45deg) scale(1.1); }
+            50% { transform: rotate(90deg) scale(1); }
+            75% { transform: rotate(135deg) scale(1.1); }
+        }
+
+        .hero-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+            position: relative;
+            z-index: 2;
+        }
+
+        /* Hero Header */
+        .hero-header {
+            text-align: center;
+            margin-bottom: 60px;
+            animation: fadeInUp 0.8s ease-out;
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(6, 182, 212, 0.2));
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            padding: 8px 20px;
+            border-radius: 30px;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--accent-primary);
+            margin-bottom: 20px;
+            backdrop-filter: blur(10px);
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+        }
+
+        .hero-title {
+            font-size: 56px;
+            font-weight: 800;
+            margin-bottom: 16px;
+            /* Enhanced cross-browser teal gradient text */
+            background: linear-gradient(135deg, #8b5cf6 0%, #06b6d4 50%, #ec4899 100%);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            color: transparent;
+            /* Fallback for browsers that don't support gradient text */
+            color: #06b6d4;
+            text-shadow: 0 0 20px rgba(6, 182, 212, 0.5);
+            line-height: 1.2;
+            letter-spacing: -1px;
+        }
+
+        .hero-subtitle {
+            font-size: 20px;
+            color: rgba(255, 255, 255, 0.7);
+            max-width: 600px;
+            margin: 0 auto 40px;
+            line-height: 1.6;
+        }
+
+        /* Floating Cards Grid */
+        .feature-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 30px;
+            margin-top: 60px;
+        }
+
+        .feature-card {
+            position: relative;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02));
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 32px;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            overflow: hidden;
+            animation: floatCard 6s ease-in-out infinite;
+            animation-delay: var(--delay);
+            transform-style: preserve-3d;
+            will-change: transform;
+        }
+
+        @keyframes floatCard {
+            0%, 100% { transform: translateY(0) translateZ(0); }
+            50% { transform: translateY(-10px) translateZ(10px); }
+        }
+
+        .feature-card:hover {
+            transform: translateY(-5px) scale(1.02) translateZ(20px);
+            border-color: rgba(139, 92, 246, 0.3);
+            box-shadow: 0 20px 40px rgba(139, 92, 246, 0.3),
+                        0 0 0 1px rgba(139, 92, 246, 0.2),
+                        inset 0 0 30px rgba(255, 255, 255, 0.03);
+        }
+
+        /* Hero card glow effect */
+        .hero-card-glow {
+            position: absolute;
+            inset: -2px;
+            border-radius: 20px;
+            opacity: 0;
+            transition: opacity 0.6s ease;
+            background: linear-gradient(135deg, 
+                rgba(139, 92, 246, 0.2),
+                rgba(6, 182, 212, 0.2));
+            filter: blur(15px);
+            z-index: -1;
+        }
+
+        .feature-card:hover .hero-card-glow {
+            opacity: 0.7;
+        }
+
+        /* Hero card light beams */
+        .hero-light-beams {
+            position: absolute;
+            inset: -1px;
+            border-radius: 20px;
+            overflow: hidden;
+            pointer-events: none;
+        }
+
+        .hero-beam {
+            position: absolute;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent);
+            filter: blur(2.5px);
+            opacity: 0;
+        }
+
+        .hero-beam-top {
+            top: 0;
+            left: 0;
+            height: 3px;
+            width: 60%;
+            animation: hero-beam-top 6s ease-in-out infinite;
+        }
+
+        .hero-beam-right {
+            top: 0;
+            right: 0;
+            width: 3px;
+            height: 60%;
+            background: linear-gradient(180deg, transparent, rgba(255,255,255,0.8), transparent);
+            animation: hero-beam-right 6s ease-in-out infinite;
+            animation-delay: 0.75s;
+        }
+
+        .hero-beam-bottom {
+            bottom: 0;
+            right: 0;
+            height: 3px;
+            width: 60%;
+            animation: hero-beam-bottom 6s ease-in-out infinite;
+            animation-delay: 1.5s;
+        }
+
+        .hero-beam-left {
+            bottom: 0;
+            left: 0;
+            width: 3px;
+            height: 60%;
+            background: linear-gradient(180deg, transparent, rgba(255,255,255,0.8), transparent);
+            animation: hero-beam-left 6s ease-in-out infinite;
+            animation-delay: 2.25s;
+        }
+
+        @keyframes hero-beam-top {
+            0%, 100% { left: -60%; opacity: 0; }
+            10% { opacity: 0.4; }
+            50% { left: 100%; opacity: 0.8; }
+            90% { opacity: 0.4; }
+        }
+
+        @keyframes hero-beam-right {
+            0%, 100% { top: -60%; opacity: 0; }
+            10% { opacity: 0.4; }
+            50% { top: 100%; opacity: 0.8; }
+            90% { opacity: 0.4; }
+        }
+
+        @keyframes hero-beam-bottom {
+            0%, 100% { right: -60%; opacity: 0; }
+            10% { opacity: 0.4; }
+            50% { right: 100%; opacity: 0.8; }
+            90% { opacity: 0.4; }
+        }
+
+        @keyframes hero-beam-left {
+            0%, 100% { bottom: -60%; opacity: 0; }
+            10% { opacity: 0.4; }
+            50% { bottom: 100%; opacity: 0.8; }
+            90% { opacity: 0.4; }
+        }
+
+        /* Hero corner glows */
+        .hero-corner-glow {
+            position: absolute;
+            border-radius: 50%;
+            pointer-events: none;
+        }
+
+        .hero-corner-tl {
+            top: 10px;
+            left: 10px;
+            width: 6px;
+            height: 6px;
+            background: rgba(255,255,255,0.5);
+            filter: blur(2px);
+            animation: hero-glow-pulse 2.5s ease-in-out infinite;
+        }
+
+        .hero-corner-tr {
+            top: 10px;
+            right: 10px;
+            width: 8px;
+            height: 8px;
+            background: rgba(139, 92, 246, 0.6);
+            filter: blur(3px);
+            animation: hero-glow-pulse 3s ease-in-out infinite;
+            animation-delay: 0.6s;
+        }
+
+        .hero-corner-br {
+            bottom: 10px;
+            right: 10px;
+            width: 8px;
+            height: 8px;
+            background: rgba(6, 182, 212, 0.6);
+            filter: blur(3px);
+            animation: hero-glow-pulse 2.8s ease-in-out infinite;
+            animation-delay: 1.2s;
+        }
+
+        .hero-corner-bl {
+            bottom: 10px;
+            left: 10px;
+            width: 6px;
+            height: 6px;
+            background: rgba(255,255,255,0.5);
+            filter: blur(2px);
+            animation: hero-glow-pulse 2.6s ease-in-out infinite;
+            animation-delay: 1.8s;
+        }
+
+        @keyframes hero-glow-pulse {
+            0%, 100% { opacity: 0.3; transform: scale(1); }
+            50% { opacity: 0.6; transform: scale(1.2); }
+        }
+
+        .feature-icon {
+            width: 56px;
+            height: 56px;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            margin-bottom: 20px;
+            box-shadow: 0 8px 20px rgba(139, 92, 246, 0.3);
+        }
+
+        .feature-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 12px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .feature-description {
+            color: rgba(255, 255, 255, 0.7);
+            line-height: 1.6;
+            font-size: 15px;
+            margin-bottom: 20px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .feature-stats {
+            display: flex;
+            gap: 20px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            position: relative;
+            z-index: 1;
+        }
+
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .stat-value {
+            font-size: 20px;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .hook-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .hook-name {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .hook-type {
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            text-transform: uppercase;
+        }
+
+        .hook-type.bash {
+            background: rgba(139, 92, 246, 0.2);
+            color: var(--accent-primary);
+        }
+
+        .hook-type.ai {
+            background: rgba(6, 182, 212, 0.2);
+            color: var(--accent-secondary);
+        }
+
+        .hook-type.hybrid {
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(6, 182, 212, 0.2));
+            color: var(--text-primary);
+        }
+
+        .hook-description {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            line-height: 1.6;
+            margin-bottom: 1rem;
+        }
+
+        .hook-stats {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .stat {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .stat-value {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--accent-primary);
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+        }
+
+        .hook-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .hook-actions button {
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 1px solid var(--glass-border);
+            background: var(--glass-bg);
+            color: var(--text-primary);
+        }
+
+        .hook-actions button:hover {
+            background: rgba(139, 92, 246, 0.1);
+            border-color: var(--accent-primary);
+        }
+
+        /* Comparison Section */
+        .comparison-section {
+            margin-top: 3rem;
+            padding: 2rem;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+        }
+
+        .comparison-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 2rem;
+            text-align: center;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2rem;
+        }
+
+        .comparison-card {
+            text-align: center;
+        }
+
+        .comparison-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            color: var(--accent-primary);
+        }
+
+        .comparison-label {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .comparison-value {
+            font-size: 2rem;
+            font-weight: bold;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .comparison-description {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin-top: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <!-- Back to IDE Button -->
+    <div class="back-to-ide-container">
+        <a href="http://localhost:3001/ide" class="back-to-ide-btn">
+            <i class="fas fa-arrow-left"></i>
+            Back to IDE
+        </a>
+    </div>
+
+    <!-- Hero Section -->
+    <div class="hero-section">
+        <div class="hero-container">
+            <div class="hero-header">
+                <div class="hero-badge">
+                    <span>⚡</span>
+                    <span>Automate Everything!</span>
+                </div>
+                <h1 class="hero-title">AI-Powered Hooks Revolution</h1>
+                <p class="hero-subtitle">Lightning-fast automation that transforms your development workflow with intelligent hybrid hooks</p>
+            </div>
+            
+            <div class="feature-cards">
+                <!-- Speed Card -->
+                <div class="feature-card" style="--delay: 0s;">
+                    <!-- Card glow effect -->
+                    <div class="hero-card-glow"></div>
+                    
+                    <!-- Light beams -->
+                    <div class="hero-light-beams">
+                        <div class="hero-beam hero-beam-top"></div>
+                        <div class="hero-beam hero-beam-right"></div>
+                        <div class="hero-beam hero-beam-bottom"></div>
+                        <div class="hero-beam hero-beam-left"></div>
+                        
+                        <!-- Corner glows -->
+                        <div class="hero-corner-glow hero-corner-tl"></div>
+                        <div class="hero-corner-glow hero-corner-tr"></div>
+                        <div class="hero-corner-glow hero-corner-br"></div>
+                        <div class="hero-corner-glow hero-corner-bl"></div>
+                    </div>
+                    
+                    <div class="feature-icon" style="position: relative; z-index: 1;">⚡</div>
+                    <h3 class="feature-title">Lightning Speed</h3>
+                    <p class="feature-description">Bash triggers execute in 30-60ms, with AI delegation only when complexity requires intelligence</p>
+                    <div class="feature-stats">
+                        <div class="stat-item">
+                            <span class="stat-value">50ms</span>
+                            <span class="stat-label">Avg Response</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-value">10x</span>
+                            <span class="stat-label">Faster</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Intelligence Card -->
+                <div class="feature-card" style="--delay: 0.2s;">
+                    <!-- Card glow effect -->
+                    <div class="hero-card-glow"></div>
+                    
+                    <!-- Light beams -->
+                    <div class="hero-light-beams">
+                        <div class="hero-beam hero-beam-top"></div>
+                        <div class="hero-beam hero-beam-right"></div>
+                        <div class="hero-beam hero-beam-bottom"></div>
+                        <div class="hero-beam hero-beam-left"></div>
+                        
+                        <!-- Corner glows -->
+                        <div class="hero-corner-glow hero-corner-tl"></div>
+                        <div class="hero-corner-glow hero-corner-tr"></div>
+                        <div class="hero-corner-glow hero-corner-br"></div>
+                        <div class="hero-corner-glow hero-corner-bl"></div>
+                    </div>
+                    
+                    <div class="feature-icon" style="position: relative; z-index: 1;">🧠</div>
+                    <h3 class="feature-title">Smart AI</h3>
+                    <p class="feature-description">25 specialized AI agents handle complex scenarios while bash handles simple operations efficiently</p>
+                    <div class="feature-stats">
+                        <div class="stat-item">
+                            <span class="stat-value">95%</span>
+                            <span class="stat-label">Accuracy</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-value">25</span>
+                            <span class="stat-label">AI Agents</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- ROI Card -->
+                <div class="feature-card" style="--delay: 0.4s;">
+                    <!-- Card glow effect -->
+                    <div class="hero-card-glow"></div>
+                    
+                    <!-- Light beams -->
+                    <div class="hero-light-beams">
+                        <div class="hero-beam hero-beam-top"></div>
+                        <div class="hero-beam hero-beam-right"></div>
+                        <div class="hero-beam hero-beam-bottom"></div>
+                        <div class="hero-beam hero-beam-left"></div>
+                        
+                        <!-- Corner glows -->
+                        <div class="hero-corner-glow hero-corner-tl"></div>
+                        <div class="hero-corner-glow hero-corner-tr"></div>
+                        <div class="hero-corner-glow hero-corner-br"></div>
+                        <div class="hero-corner-glow hero-corner-bl"></div>
+                    </div>
+                    
+                    <div class="feature-icon" style="position: relative; z-index: 1;">💰</div>
+                    <h3 class="feature-title">Cost Efficient</h3>
+                    <p class="feature-description">Reduce API costs by 90% with intelligent delegation - only use AI when complexity demands it</p>
+                    <div class="feature-stats">
+                        <div class="stat-item">
+                            <span class="stat-value">90%</span>
+                            <span class="stat-label">Cost Savings</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-value">Zero</span>
+                            <span class="stat-label">Setup</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="container">
+        <!-- Action Buttons -->
+        <div class="action-section">
+            <button class="btn btn-primary" onclick="autoSetupHooks()">
+                <i class="fas fa-magic"></i>
+                Auto Setup
+            </button>
+            <button class="btn btn-secondary" onclick="viewCurrentHooks()">
+                <i class="fas fa-list"></i>
+                View Current Hooks
+            </button>
+            <button class="btn btn-secondary" onclick="testHooks()">
+                <i class="fas fa-vial"></i>
+                Test Hooks
+            </button>
+            <button class="btn btn-secondary" onclick="viewMetrics()">
+                <i class="fas fa-chart-line"></i>
+                Performance Metrics
+            </button>
+        </div>
+
+        <!-- Tabs -->
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('all')">All Hooks</button>
+            <button class="tab" onclick="switchTab('bash')">Bash Hooks (Fast)</button>
+            <button class="tab" onclick="switchTab('ai')">AI Hooks (Smart)</button>
+            <button class="tab" onclick="switchTab('hybrid')">Hybrid Hooks (Best)</button>
+        </div>
+
+        <!-- Hook Grid -->
+        <div class="hook-grid" id="hookGrid">
+            <!-- Smart Commit Hook -->
+            <div class="hook-card" data-type="hybrid">
+                <div class="hook-header">
+                    <span class="hook-name">Smart Commit</span>
+                    <span class="hook-type hybrid">⚡ HYBRID</span>
+                </div>
+                <p class="hook-description">
+                    Instantly analyzes your code changes and generates perfect commit messages. Uses bash for small changes (50ms) and AI for complex commits.
+                </p>
+                <div class="hook-stats">
+                    <div class="stat">
+                        <span class="stat-value">50ms</span>
+                        <span class="stat-label">Avg Speed</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-value">95%</span>
+                        <span class="stat-label">Accuracy</span>
+                    </div>
+                </div>
+                <div class="hook-actions">
+                    <button onclick="enableHook('smart-commit')">Enable</button>
+                    <button onclick="configureHook('smart-commit')">Configure</button>
+                    <button onclick="testHook('smart-commit')">Test</button>
+                </div>
+            </div>
+
+            <!-- Error Debug Hook -->
+            <div class="hook-card" data-type="hybrid">
+                <div class="hook-header">
+                    <span class="hook-name">Error Debugger</span>
+                    <span class="hook-type hybrid">⚡ HYBRID</span>
+                </div>
+                <p class="hook-description">
+                    Catches errors as they happen and provides instant fixes. Simple errors fixed in 35ms, complex bugs analyzed by AI in 2-3 seconds.
+                </p>
+                <div class="hook-stats">
+                    <div class="stat">
+                        <span class="stat-value">35ms</span>
+                        <span class="stat-label">Quick Fix</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-value">89%</span>
+                        <span class="stat-label">Fix Rate</span>
+                    </div>
+                </div>
+                <div class="hook-actions">
+                    <button onclick="enableHook('error-debug')">Enable</button>
+                    <button onclick="configureHook('error-debug')">Configure</button>
+                    <button onclick="testHook('error-debug')">Test</button>
+                </div>
+            </div>
+
+            <!-- Test Runner Hook -->
+            <div class="hook-card" data-type="hybrid">
+                <div class="hook-header">
+                    <span class="hook-name">Smart Test Runner</span>
+                    <span class="hook-type hybrid">⚡ HYBRID</span>
+                </div>
+                <p class="hook-description">
+                    Automatically runs relevant tests when you save files. Instant detection (40ms) with AI-powered test generation for uncovered code.
+                </p>
+                <div class="hook-stats">
+                    <div class="stat">
+                        <span class="stat-value">40ms</span>
+                        <span class="stat-label">Detection</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-value">100%</span>
+                        <span class="stat-label">Coverage</span>
+                    </div>
+                </div>
+                <div class="hook-actions">
+                    <button onclick="enableHook('test-runner')">Enable</button>
+                    <button onclick="configureHook('test-runner')">Configure</button>
+                    <button onclick="testHook('test-runner')">Test</button>
+                </div>
+            </div>
+
+            <!-- Security Check Hook -->
+            <div class="hook-card" data-type="hybrid">
+                <div class="hook-header">
+                    <span class="hook-name">Security Scanner</span>
+                    <span class="hook-type hybrid">⚡ HYBRID</span>
+                </div>
+                <p class="hook-description">
+                    Scans your code for security vulnerabilities before commits. Quick pattern matching (30ms) with deep AI analysis when threats detected.
+                </p>
+                <div class="hook-stats">
+                    <div class="stat">
+                        <span class="stat-value">30ms</span>
+                        <span class="stat-label">Scan Time</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-value">99%</span>
+                        <span class="stat-label">Detection</span>
+                    </div>
+                </div>
+                <div class="hook-actions">
+                    <button onclick="enableHook('security-check')">Enable</button>
+                    <button onclick="configureHook('security-check')">Configure</button>
+                    <button onclick="testHook('security-check')">Test</button>
+                </div>
+            </div>
+
+            <!-- Performance Monitor Hook -->
+            <div class="hook-card" data-type="hybrid">
+                <div class="hook-header">
+                    <span class="hook-name">Performance Monitor</span>
+                    <span class="hook-type hybrid">⚡ HYBRID</span>
+                </div>
+                <p class="hook-description">
+                    Tracks your app's performance in real-time. Basic metrics in 60ms, with AI optimization suggestions when performance drops.
+                </p>
+                <div class="hook-stats">
+                    <div class="stat">
+                        <span class="stat-value">60ms</span>
+                        <span class="stat-label">Check Time</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-value">2x</span>
+                        <span class="stat-label">Speed Boost</span>
+                    </div>
+                </div>
+                <div class="hook-actions">
+                    <button onclick="enableHook('performance-check')">Enable</button>
+                    <button onclick="configureHook('performance-check')">Configure</button>
+                    <button onclick="testHook('performance-check')">Test</button>
+                </div>
+            </div>
+
+            <!-- Code Review Hook -->
+            <div class="hook-card" data-type="ai">
+                <div class="hook-header">
+                    <span class="hook-name">AI Code Reviewer</span>
+                    <span class="hook-type ai">AI</span>
+                </div>
+                <p class="hook-description">
+                    Get instant code reviews from AI before pushing. Catches bugs, suggests improvements, and ensures best practices.
+                </p>
+                <div class="hook-stats">
+                    <div class="stat">
+                        <span class="stat-value">3s</span>
+                        <span class="stat-label">Review Time</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-value">85%</span>
+                        <span class="stat-label">Bug Catch</span>
+                    </div>
+                </div>
+                <div class="hook-actions">
+                    <button onclick="enableHook('code-review')">Enable</button>
+                    <button onclick="configureHook('code-review')">Configure</button>
+                    <button onclick="testHook('code-review')">Test</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Comparison Section -->
+        <div class="comparison-section">
+            <h2 class="comparison-title">Why Hybrid Hooks Are Game-Changing</h2>
+            <div class="comparison-grid">
+                <div class="comparison-card">
+                    <i class="fas fa-bolt comparison-icon"></i>
+                    <div class="comparison-label">Traditional Hooks</div>
+                    <div class="comparison-value">500ms</div>
+                    <div class="comparison-description">Average execution time for standard git hooks</div>
+                </div>
+                <div class="comparison-card">
+                    <i class="fas fa-rocket comparison-icon"></i>
+                    <div class="comparison-label">Our Bash Hooks</div>
+                    <div class="comparison-value">50ms</div>
+                    <div class="comparison-description">10x faster with optimized bash scripts</div>
+                </div>
+                <div class="comparison-card">
+                    <i class="fas fa-brain comparison-icon"></i>
+                    <div class="comparison-label">Hybrid AI Mode</div>
+                    <div class="comparison-value">Best of Both</div>
+                    <div class="comparison-description">Instant for simple tasks, AI for complex ones</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Hook management functions
+        async function autoSetupHooks() {
+            console.log('Setting up hooks automatically...');
+            // Simulate setup process
+            const hooks = ['smart-commit', 'error-debug', 'test-runner', 'security-check', 'performance-check'];
+            for (const hook of hooks) {
+                await new Promise(resolve => setTimeout(resolve, 200));
+                console.log(`Enabled ${hook}`);
+            }
+            alert('All hooks have been set up successfully!');
+        }
+
+        function viewCurrentHooks() {
+            console.log('Viewing current hooks...');
+            // This would fetch and display current hooks
+        }
+
+        function testHooks() {
+            console.log('Testing all hooks...');
+            // This would run tests on all hooks
+        }
+
+        function viewMetrics() {
+            console.log('Viewing performance metrics...');
+            // This would show performance dashboard
+        }
+
+        function switchTab(type) {
+            // Update active tab
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            // Filter hooks
+            const cards = document.querySelectorAll('.hook-card');
+            cards.forEach(card => {
+                if (type === 'all' || card.dataset.type === type) {
+                    card.style.display = 'block';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        }
+
+        function enableHook(hookName) {
+            console.log(`Enabling ${hookName}...`);
+            alert(`${hookName} has been enabled!`);
+        }
+
+        function configureHook(hookName) {
+            console.log(`Configuring ${hookName}...`);
+            // This would open configuration modal
+        }
+
+        function testHook(hookName) {
+            console.log(`Testing ${hookName}...`);
+            // This would run a test of the hook
+            alert(`${hookName} test completed successfully!`);
+        }
+
+        // 3D Mouse Tracking for Hook Cards
+        function init3DEffects() {
+            console.log('Initializing 3D effects...');
+            const hookCards = document.querySelectorAll('.hook-card');
+            console.log('Found', hookCards.length, 'hook cards');
+            
+            hookCards.forEach((card, index) => {
+                console.log('Setting up 3D effects for card', index);
+                // Mouse move - 3D rotation effect
+                card.addEventListener('mousemove', (e) => {
+                    const rect = card.getBoundingClientRect();
+                    const centerX = rect.left + rect.width / 2;
+                    const centerY = rect.top + rect.height / 2;
+                    
+                    // Calculate mouse position relative to card center
+                    const mouseX = e.clientX - centerX;
+                    const mouseY = e.clientY - centerY;
+                    
+                    // Calculate rotation values (normalized to -12 to 12 degrees)
+                    const rotateX = (mouseY / (rect.height / 2)) * -12;
+                    const rotateY = (mouseX / (rect.width / 2)) * 12;
+                    
+                    // Apply 3D transform with mouse tracking
+                    card.style.transform = `perspective(1500px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) translateY(-5px) scale(1.02) translateZ(30px)`;
+                    
+                    // Update CSS custom properties for glow effect
+                    const x = ((e.clientX - rect.left) / rect.width) * 100;
+                    const y = ((e.clientY - rect.top) / rect.height) * 100;
+                    card.style.setProperty('--mouse-x', `${x}%`);
+                    card.style.setProperty('--mouse-y', `${y}%`);
+                });
+                
+                // Mouse leave - return to floating state
+                card.addEventListener('mouseleave', () => {
+                    card.style.transform = '';
+                    card.style.removeProperty('--mouse-x');
+                    card.style.removeProperty('--mouse-y');
+                });
+                
+                // Mouse enter - pause floating animation during interaction
+                card.addEventListener('mouseenter', () => {
+                    card.style.animationPlayState = 'paused';
+                });
+                
+                // Mouse leave - resume floating animation
+                card.addEventListener('mouseleave', () => {
+                    card.style.animationPlayState = 'running';
+                });
+            });
+        }
+
+        // Initialize 3D effects when page loads
+        document.addEventListener('DOMContentLoaded', init3DEffects);
+    </script>
+</body>
+</html>

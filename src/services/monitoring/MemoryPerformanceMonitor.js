@@ -240,29 +240,29 @@ class MemoryPerformanceMonitor extends EventEmitter {
         const timestamp = Date.now();
         
         switch (source) {
-            case 'vectorMemory':
-                if (metrics.embeddingsGenerated !== undefined) {
-                    this.currentMetrics.embedding.totalGenerated = metrics.embeddingsGenerated;
-                }
-                if (metrics.vectorSearches !== undefined) {
-                    this.currentMetrics.vectorSearch.totalSearches = metrics.vectorSearches;
-                }
-                if (metrics.queueSize !== undefined) {
-                    this.currentMetrics.embedding.queueLength = metrics.queueSize;
-                }
-                break;
+        case 'vectorMemory':
+            if (metrics.embeddingsGenerated !== undefined) {
+                this.currentMetrics.embedding.totalGenerated = metrics.embeddingsGenerated;
+            }
+            if (metrics.vectorSearches !== undefined) {
+                this.currentMetrics.vectorSearch.totalSearches = metrics.vectorSearches;
+            }
+            if (metrics.queueSize !== undefined) {
+                this.currentMetrics.embedding.queueLength = metrics.queueSize;
+            }
+            break;
                 
-            case 'workerPool':
-                if (metrics.poolSize !== undefined) {
-                    this.currentMetrics.workers.poolSize = metrics.poolSize;
-                }
-                if (metrics.busyWorkers !== undefined) {
-                    this.currentMetrics.workers.activeWorkers = metrics.busyWorkers;
-                }
-                if (metrics.workerUtilization !== undefined) {
-                    this.currentMetrics.workers.utilization = metrics.workerUtilization;
-                }
-                break;
+        case 'workerPool':
+            if (metrics.poolSize !== undefined) {
+                this.currentMetrics.workers.poolSize = metrics.poolSize;
+            }
+            if (metrics.busyWorkers !== undefined) {
+                this.currentMetrics.workers.activeWorkers = metrics.busyWorkers;
+            }
+            if (metrics.workerUtilization !== undefined) {
+                this.currentMetrics.workers.utilization = metrics.workerUtilization;
+            }
+            break;
         }
         
         this.currentMetrics.timestamp = timestamp;

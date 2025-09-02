@@ -1,0 +1,37 @@
+{
+  "id": "shared-1756789935070-otfxlz",
+  "label": "test-session",
+  "tags": [
+    "frontend",
+    "backend"
+  ],
+  "type": "session",
+  "created": 1756789935070,
+  "originalSessionId": "session-1756789935070",
+  "metadata": {
+    "duration": 0,
+    "totalAgents": 0,
+    "tasksCompleted": 0,
+    "summary": "Current session data"
+  },
+  "agents": {},
+  "keyLearnings": [],
+  "patterns": [],
+  "solutions": [],
+  "usageContext": {
+    "whenToUse": [
+      "When creating user interfaces"
+    ],
+    "applicableScenarios": [],
+    "prerequisites": [],
+    "estimatedTime": "1-2 hours"
+  },
+  "agentGuidance": {
+    "suggestedApproach": [
+      "Follow the agent work order from this session"
+    ],
+    "commonPitfalls": [],
+    "successMetrics": [],
+    "followUpTasks": []
+  }
+}

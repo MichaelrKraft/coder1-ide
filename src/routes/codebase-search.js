@@ -626,7 +626,7 @@ async function generateAIExplanation(prompt) {
         const anthropic = require('@anthropic-ai/sdk');
         
         if (!process.env.ANTHROPIC_API_KEY) {
-            return "AI explanations are not available. Please configure ANTHROPIC_API_KEY to enable intelligent code analysis.";
+            return 'AI explanations are not available. Please configure ANTHROPIC_API_KEY to enable intelligent code analysis.';
         }
         
         const client = new anthropic.Anthropic({
@@ -651,11 +651,11 @@ async function generateAIExplanation(prompt) {
         
         // Fallback to rule-based explanation
         if (prompt.includes('function')) {
-            return "This function performs operations based on its implementation. Consider reviewing the code structure, parameter usage, and return values to understand its purpose. AI-powered explanations require valid API configuration.";
+            return 'This function performs operations based on its implementation. Consider reviewing the code structure, parameter usage, and return values to understand its purpose. AI-powered explanations require valid API configuration.';
         } else if (prompt.includes('class')) {
-            return "This class encapsulates data and methods. Review its properties, methods, and inheritance relationships to understand its role in the codebase. AI-powered explanations require valid API configuration.";
+            return 'This class encapsulates data and methods. Review its properties, methods, and inheritance relationships to understand its role in the codebase. AI-powered explanations require valid API configuration.';
         } else {
-            return "Unable to provide detailed explanation without AI analysis. Please check your API configuration or review the code manually.";
+            return 'Unable to provide detailed explanation without AI analysis. Please check your API configuration or review the code manually.';
         }
     }
 }

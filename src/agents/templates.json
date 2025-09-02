@@ -1,0 +1,302 @@
+{
+  "workflows": {
+    "auth-full-stack": {
+      "name": "Full Stack Authentication System",
+      "description": "Complete authentication system with frontend and backend",
+      "agents": [
+        "backend-engineer",
+        "frontend-engineer", 
+        "qa-testing"
+      ],
+      "sequence": [
+        {
+          "step": 1,
+          "agent": "backend-engineer",
+          "task": "Create authentication API with JWT and user management",
+          "deliverables": ["auth routes", "user models", "JWT middleware"],
+          "dependencies": []
+        },
+        {
+          "step": 2,
+          "agent": "frontend-engineer",
+          "task": "Build login/register forms and protected route components",
+          "deliverables": ["auth components", "route guards", "auth context"],
+          "dependencies": ["step1"]
+        },
+        {
+          "step": 3,
+          "agent": "qa-testing",
+          "task": "Test authentication flows and security",
+          "deliverables": ["auth tests", "security tests"],
+          "dependencies": ["step1", "step2"]
+        }
+      ],
+      "outputFormat": "auth-system"
+    },
+    "crud-with-ui": {
+      "name": "CRUD Application with User Interface",
+      "description": "Complete CRUD operations with data management UI",
+      "agents": [
+        "backend-engineer",
+        "frontend-engineer",
+        "qa-testing"
+      ],
+      "sequence": [
+        {
+          "step": 1,
+          "agent": "backend-engineer",
+          "task": "Create CRUD API endpoints and database models",
+          "deliverables": ["CRUD routes", "data models", "validation"],
+          "dependencies": []
+        },
+        {
+          "step": 2,
+          "agent": "frontend-engineer",
+          "task": "Build data management interface with forms and lists",
+          "deliverables": ["data forms", "list views", "CRUD UI"],
+          "dependencies": ["step1"]
+        },
+        {
+          "step": 3,
+          "agent": "qa-testing",
+          "task": "Test all CRUD operations and UI interactions",
+          "deliverables": ["CRUD tests", "UI tests"],
+          "dependencies": ["step1", "step2"]
+        }
+      ],
+      "outputFormat": "crud-app"
+    },
+    "component-library": {
+      "name": "Component Library Development",
+      "description": "Reusable UI component library with documentation",
+      "agents": [
+        "frontend-engineer",
+        "qa-testing"
+      ],
+      "sequence": [
+        {
+          "step": 1,
+          "agent": "frontend-engineer",
+          "task": "Create reusable UI components with props and variants",
+          "deliverables": ["component library", "component docs", "storybook"],
+          "dependencies": []
+        },
+        {
+          "step": 2,
+          "agent": "qa-testing",
+          "task": "Test components across different scenarios and browsers",
+          "deliverables": ["component tests", "visual tests"],
+          "dependencies": ["step1"]
+        }
+      ],
+      "outputFormat": "component-lib"
+    },
+    "testing-suite": {
+      "name": "Comprehensive Testing Suite",
+      "description": "Complete testing setup with unit, integration, and e2e tests",
+      "agents": [
+        "qa-testing"
+      ],
+      "sequence": [
+        {
+          "step": 1,
+          "agent": "qa-testing",
+          "task": "Set up comprehensive testing framework and write test suites",
+          "deliverables": ["test setup", "unit tests", "integration tests", "e2e tests"],
+          "dependencies": []
+        }
+      ],
+      "outputFormat": "test-suite"
+    },
+    "performance-audit": {
+      "name": "Performance Optimization Audit",
+      "description": "Analyze and optimize application performance",
+      "agents": [
+        "frontend-engineer",
+        "backend-engineer",
+        "qa-testing"
+      ],
+      "sequence": [
+        {
+          "step": 1,
+          "agent": "qa-testing",
+          "task": "Perform performance analysis and identify bottlenecks",
+          "deliverables": ["performance report", "optimization recommendations"],
+          "dependencies": []
+        },
+        {
+          "step": 2,
+          "agent": "frontend-engineer",
+          "task": "Optimize frontend performance based on analysis",
+          "deliverables": ["frontend optimizations", "bundle optimization"],
+          "dependencies": ["step1"]
+        },
+        {
+          "step": 3,
+          "agent": "backend-engineer",
+          "task": "Optimize backend performance and database queries",
+          "deliverables": ["backend optimizations", "query optimization"],
+          "dependencies": ["step1"]
+        }
+      ],
+      "outputFormat": "performance-report"
+    },
+    "basic-web-app": {
+      "name": "Basic Web Application Development",
+      "description": "Standard web application development workflow",
+      "agents": [
+        "frontend-engineer",
+        "backend-engineer",
+        "qa-testing"
+      ],
+      "sequence": [
+        {
+          "step": 1,
+          "agent": "backend-engineer",
+          "task": "Create project structure and backend API",
+          "deliverables": ["package.json", "server.js", "api routes"],
+          "dependencies": []
+        },
+        {
+          "step": 2,
+          "agent": "frontend-engineer", 
+          "task": "Build React components and user interface",
+          "deliverables": ["React components", "styles", "client logic"],
+          "dependencies": ["step1"]
+        },
+        {
+          "step": 3,
+          "agent": "qa-testing",
+          "task": "Test application functionality and create test suite",
+          "deliverables": ["test files", "test reports", "bug fixes"],
+          "dependencies": ["step1", "step2"]
+        }
+      ],
+      "outputFormat": "full-stack-web-app"
+    },
+    "react-component": {
+      "name": "React Component Development",
+      "description": "Single React component development workflow", 
+      "agents": [
+        "frontend-engineer",
+        "qa-testing"
+      ],
+      "sequence": [
+        {
+          "step": 1,
+          "agent": "frontend-engineer",
+          "task": "Create React component with props and state management",
+          "deliverables": ["component.jsx", "styles.css", "props interface"],
+          "dependencies": []
+        },
+        {
+          "step": 2,
+          "agent": "qa-testing",
+          "task": "Test component functionality and edge cases",
+          "deliverables": ["test file", "test report"],
+          "dependencies": ["step1"]
+        }
+      ],
+      "outputFormat": "react-component"
+    },
+    "api-development": {
+      "name": "API Development Workflow",
+      "description": "Backend API development and testing",
+      "agents": [
+        "backend-engineer",
+        "qa-testing"
+      ],
+      "sequence": [
+        {
+          "step": 1,
+          "agent": "backend-engineer",
+          "task": "Create REST API with endpoints and data models",
+          "deliverables": ["API routes", "controllers", "models", "middleware"],
+          "dependencies": []
+        },
+        {
+          "step": 2,
+          "agent": "qa-testing",
+          "task": "Test API endpoints and data validation",
+          "deliverables": ["API tests", "test documentation"],
+          "dependencies": ["step1"]
+        }
+      ],
+      "outputFormat": "backend-api"
+    },
+    "dashboard-development": {
+      "name": "Dashboard Application Development",
+      "description": "Admin dashboard with data visualization",
+      "agents": [
+        "frontend-engineer",
+        "backend-engineer",
+        "qa-testing"
+      ],
+      "sequence": [
+        {
+          "step": 1,
+          "agent": "backend-engineer",
+          "task": "Create dashboard API with data endpoints",
+          "deliverables": ["dashboard API", "data models", "authentication"],
+          "dependencies": []
+        },
+        {
+          "step": 2,
+          "agent": "frontend-engineer",
+          "task": "Build dashboard UI with charts and data tables",
+          "deliverables": ["dashboard components", "charts", "data tables"],
+          "dependencies": ["step1"]
+        },
+        {
+          "step": 3,
+          "agent": "qa-testing",
+          "task": "Test dashboard functionality and user workflows",
+          "deliverables": ["integration tests", "user acceptance tests"],
+          "dependencies": ["step1", "step2"]
+        }
+      ],
+      "outputFormat": "dashboard-app"
+    }
+  },
+  "agentDefinitions": {
+    "frontend-engineer": {
+      "name": "Frontend Engineer",
+      "description": "Specializes in React, JavaScript, CSS, and user interface development",
+      "capabilities": [
+        "React component development",
+        "State management",
+        "CSS styling",
+        "JavaScript ES6+",
+        "User experience design",
+        "Responsive design"
+      ],
+      "tools": ["React", "JavaScript", "CSS", "HTML", "npm"]
+    },
+    "backend-engineer": {
+      "name": "Backend Engineer", 
+      "description": "Specializes in Node.js, Express, APIs, and server-side development",
+      "capabilities": [
+        "REST API development",
+        "Database design",
+        "Server configuration",
+        "Authentication & authorization",
+        "Data validation",
+        "Error handling"
+      ],
+      "tools": ["Node.js", "Express", "npm", "databases", "testing frameworks"]
+    },
+    "qa-testing": {
+      "name": "QA Testing Engineer",
+      "description": "Specializes in testing, quality assurance, and bug detection",
+      "capabilities": [
+        "Unit testing",
+        "Integration testing",
+        "End-to-end testing",
+        "Bug detection",
+        "Test planning",
+        "Quality assurance"
+      ],
+      "tools": ["Jest", "testing frameworks", "browsers", "testing tools"]
+    }
+  }
+}

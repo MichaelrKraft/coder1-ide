@@ -357,10 +357,16 @@ app.use('/api/vibe-hooks', require('./routes/vibe-hooks'));  // Vibe Hooks Patte
 app.use('/api/github', require('./routes/github-push'));  // Educational GitHub Push
 app.use('/api/github/cli', require('./routes/github-cli'));  // GitHub CLI integration (PRs, issues, workflows)
 app.use('/api/project-pipeline', require('./routes/project-pipeline'));  // Project Pipeline Management
+app.use('/api/checkpoints', require('./routes/checkpoints').router);  // Checkpoint Management System
+app.use('/api/dashboard', require('./routes/dashboard').router);  // Dashboard Metrics API
+app.use('/api/ai-coach', require('./routes/ai-coach').router);  // AI Coach Integration
 app.use('/api/repository', require('./routes/repository-intelligence'));  // Repository Intelligence for IDE
 app.use('/api/repository-admin', require('./routes/repository-admin'));  // Repository Admin endpoints
 app.use('/api/sessions', require('./routes/sessions'));  // Session and Checkpoint Management
 app.use('/api/ai-team', require('./routes/ai-team'));  // AI Team Management
+app.use('/api/containers', require('./routes/containers'));  // Container Management (Docker/tmux)
+app.use('/api/sandbox', require('./routes/sandbox'));  // Sandbox Environment Management
+app.use('/api/sharing', require('./routes/session-sharing'));  // Session Sharing System - Slash Commands
 
 // Terminal session status API for debugging timeout issues
 app.get('/api/terminal/sessions/status', (req, res) => {
@@ -1060,10 +1066,10 @@ app.get('/ai-consultation', (req, res) => {
     res.sendFile(path.join(__dirname, '../public/ai-consultation.html'));
 });
 
-// IDE route - redirect to new Next.js IDE on port 3002
+// IDE route - redirect to Next.js IDE running on port 3001  
 app.get(['/ide', '/ide/'], (req, res) => {
-    console.log('[IDE Route] Redirecting to new Next.js IDE on port 3002');
-    res.redirect('http://localhost:3002/ide');
+    console.log('[IDE Route] Redirecting to Next.js IDE on port 3001');
+    res.redirect('http://localhost:3001/ide');
 });
 
 // Logo routes removed - no longer needed after cleanup
@@ -1395,8 +1401,9 @@ async function initializeRepositoryPreloader() {
             return;
         }
         
-        const preloader = getRepositoryPreloader();
-        const initialized = await preloader.initialize();
+        // const preloader = getRepositoryPreloader();
+        // const initialized = await preloader.initialize();
+        const initialized = false; // Temporarily disabled
         
         if (!initialized) {
             console.warn('⚠️ [PRELOADER] Failed to initialize pre-loader');
@@ -1404,40 +1411,40 @@ async function initializeRepositoryPreloader() {
         }
         
         // Make preloader globally available for monitoring
-        global.repositoryPreloader = preloader;
+        // global.repositoryPreloader = preloader;
         
         // Wait before starting pre-load to let server stabilize
-        const delay = preloaderConfig.settings.preloadDelay || 30000;
-        console.log(`⏱️ [PRELOADER] Waiting ${delay/1000}s before starting pre-load...`);
+        // const delay = preloaderConfig.settings.preloadDelay || 30000;
+        // console.log(`⏱️ [PRELOADER] Waiting ${delay/1000}s before starting pre-load...`);
         
-        setTimeout(async () => {
-            console.log('🚀 [PRELOADER] Starting background repository pre-loading...');
+        // setTimeout(async () => {
+        //     console.log('🚀 [PRELOADER] Starting background repository pre-loading...');
             
-            // Use test repositories in development
-            const isDevelopment = process.env.NODE_ENV === 'development' || process.env.TEST_PRELOAD === 'true';
-            if (isDevelopment && preloaderConfig.testRepositories) {
-                preloader.preloadQueue = [...preloaderConfig.testRepositories];
-                console.log('🧪 [PRELOADER] Using test repository list (3 repos)');
-            }
+        //     // Use test repositories in development
+        //     const isDevelopment = process.env.NODE_ENV === 'development' || process.env.TEST_PRELOAD === 'true';
+        //     if (isDevelopment && preloaderConfig.testRepositories) {
+        //         preloader.preloadQueue = [...preloaderConfig.testRepositories];
+        //         console.log('🧪 [PRELOADER] Using test repository list (3 repos)');
+        //     }
             
-            // Start pre-loading in background (non-blocking)
-            preloader.startPreloading({
-                batchSize: isDevelopment ? 1 : 3,
-                maxConcurrent: isDevelopment ? 1 : 2,
-                delayBetweenBatches: isDevelopment ? 5000 : 15000
-            }).then(() => {
-                console.log('✅ [PRELOADER] Background pre-loading complete');
-            }).catch(error => {
-                console.error('❌ [PRELOADER] Background pre-loading failed:', error);
-            });
+        //     // Start pre-loading in background (non-blocking)
+        //     preloader.startPreloading({
+        //         batchSize: isDevelopment ? 1 : 3,
+        //         maxConcurrent: isDevelopment ? 1 : 2,
+        //         delayBetweenBatches: isDevelopment ? 5000 : 15000
+        //     }).then(() => {
+        //         console.log('✅ [PRELOADER] Background pre-loading complete');
+        //     }).catch(error => {
+        //         console.error('❌ [PRELOADER] Background pre-loading failed:', error);
+        //     });
             
-            // Set up event listeners for monitoring
-            preloader.on('preload:progress', (data) => {
-                const percent = Math.round((data.processed / data.total) * 100);
-                console.log(`📊 [PRELOADER] Progress: ${percent}% (${data.successful} successful, ${data.failed} failed)`);
-            });
+        //     // Set up event listeners for monitoring
+        //     // preloader.on('preload:progress', (data) => {
+        //         const percent = Math.round((data.processed / data.total) * 100);
+        //         console.log(`📊 [PRELOADER] Progress: ${percent}% (${data.successful} successful, ${data.failed} failed)`);
+        //     });
             
-        }, delay);
+        // }, delay);
         
     } catch (error) {
         console.error('❌ [PRELOADER] Failed to initialize repository pre-loader:', error);
@@ -1446,7 +1453,7 @@ async function initializeRepositoryPreloader() {
 }
 
 // Start server
-const PORT = process.env.PORT || 3000; // Main server runs on port 3000
+const PORT = process.env.PORT || 3002; // Main server runs on port 3002
 const HOST = '0.0.0.0'; // Important for Render
 
 server.listen(PORT, HOST, async () => {
@@ -1468,13 +1475,14 @@ server.listen(PORT, HOST, async () => {
     
     // Initialize Claude Code Usage Monitor Bridge (non-blocking)
     try {
-        const usageInitialized = await claudeUsageBridge.initialize();
-        if (usageInitialized) {
-            claudeUsageBridge.startWatching(5000); // Watch for changes every 5 seconds
-            console.log('📊 [USAGE-BRIDGE] Claude Code Usage Monitor integration active');
-        } else {
-            console.log('📊 [USAGE-BRIDGE] Claude Code Usage Monitor not detected - using mock data');
-        }
+        // const usageInitialized = await claudeUsageBridge.initialize();
+        // if (usageInitialized) {
+        //     claudeUsageBridge.startWatching(5000); // Watch for changes every 5 seconds
+        console.warn('⚠️ [USAGE-BRIDGE] Failed to initialize usage monitoring: claudeUsageBridge is not defined');
+        //     console.log('📊 [USAGE-BRIDGE] Claude Code Usage Monitor integration active');
+        // } else {
+        //     console.log('📊 [USAGE-BRIDGE] Claude Code Usage Monitor not detected - using mock data');
+        // }
     } catch (error) {
         console.warn('⚠️ [USAGE-BRIDGE] Failed to initialize usage monitoring:', error.message);
     }

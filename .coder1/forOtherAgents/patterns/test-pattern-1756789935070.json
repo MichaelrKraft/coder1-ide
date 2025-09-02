@@ -1,0 +1,25 @@
+{
+  "id": "pattern-1756789935070-t8xe1s",
+  "label": "test-pattern",
+  "description": "",
+  "type": "pattern",
+  "created": 1756789935070,
+  "pattern": {
+    "name": "test-pattern",
+    "category": "general",
+    "files": [],
+    "codeSnippets": [],
+    "dependencies": []
+  },
+  "usage": {
+    "whenToUse": "",
+    "howToImplement": [],
+    "variations": [],
+    "antipatterns": []
+  },
+  "agentInstructions": {
+    "implementationApproach": "",
+    "testingStrategy": "",
+    "commonMistakes": []
+  }
+}

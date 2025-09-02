@@ -1,0 +1,3103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>React Bits Component Browser</title>
+    <link rel="stylesheet" href="styles-streamlined.css?v=2.9">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/lucide@latest/font/lucide.css" rel="stylesheet">
+    <style>
+        .component-browser {
+            display: flex;
+            height: 100vh;
+            background: var(--bg-primary);
+            font-family: Inter, sans-serif;
+        }
+
+        .sidebar {
+            width: 320px;
+            background: var(--bg-secondary);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar-header {
+            padding: 20px;
+            border-bottom: 1px solid var(--border-color);
+            background: var(--bg-tertiary);
+        }
+
+        .sidebar-title {
+            color: var(--text-primary);
+            font-size: 18px;
+            font-weight: 600;
+            margin: 0 0 8px 0;
+        }
+
+        .sidebar-subtitle {
+            color: var(--text-secondary);
+            font-size: 14px;
+            margin: 0;
+        }
+
+        .search-container {
+            padding: 16px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 12px 16px;
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 14px;
+            transition: border-color 0.2s ease;
+            margin-bottom: 12px;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: var(--accent-primary);
+        }
+
+        .view-all-btn {
+            width: 100%;
+            padding: 10px 16px;
+            background: var(--accent-primary);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+
+        .view-all-btn:hover {
+            background: var(--accent-primary-dark);
+        }
+
+        .categories-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px 0;
+        }
+
+        .category-group {
+            margin-bottom: 8px;
+        }
+
+        .category-header {
+            display: flex;
+            align-items: center;
+            padding: 12px 20px;
+            color: var(--text-primary);
+            font-weight: 500;
+            font-size: 14px;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+
+        .category-header:hover {
+            background: var(--bg-hover);
+        }
+
+        .category-header.active {
+            background: var(--accent-primary);
+            color: white;
+        }
+
+        .category-icon {
+            margin-right: 12px;
+            font-size: 16px;
+        }
+
+        .category-count {
+            margin-left: auto;
+            background: var(--bg-tertiary);
+            color: var(--text-secondary);
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+        }
+
+        .component-list {
+            display: none;
+            padding-left: 20px;
+        }
+
+        .component-list.active {
+            display: block;
+        }
+
+        .component-item {
+            display: flex;
+            align-items: center;
+            padding: 8px 20px 8px 36px;
+            color: var(--text-secondary);
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .component-item:hover {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+        }
+
+        .component-item.selected {
+            background: var(--accent-primary-light);
+            color: var(--accent-primary);
+            font-weight: 500;
+        }
+
+        .main-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .main-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--border-color);
+            background: var(--bg-secondary);
+        }
+
+        .component-title {
+            color: var(--text-primary);
+            font-size: 24px;
+            font-weight: 600;
+            margin: 0 0 8px 0;
+        }
+
+        .component-description {
+            color: var(--text-secondary);
+            font-size: 16px;
+            margin: 0 0 16px 0;
+        }
+
+        .component-meta {
+            display: flex;
+            gap: 16px;
+            align-items: center;
+        }
+
+        .meta-tag {
+            background: var(--bg-tertiary);
+            color: var(--text-secondary);
+            padding: 4px 12px;
+            border-radius: 16px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .content-area {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .preview-panel {
+            flex: 1;
+            padding: 24px;
+            overflow-y: auto;
+            transition: width 0.3s ease;
+        }
+
+        .code-panel {
+            width: 40%;
+            background: var(--bg-code);
+            border-left: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            transition: width 0.3s ease;
+            position: relative;
+        }
+
+        .code-panel.collapsed {
+            width: 0;
+            overflow: hidden;
+        }
+
+        .code-panel.minimized {
+            width: 20%;
+        }
+
+        .preview-panel.expanded {
+            width: 100%;
+        }
+
+        .preview-panel.super-expanded {
+            width: 120%;
+            position: relative;
+            z-index: 5;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            margin-right: -20%;
+        }
+
+        .content-area:has(.preview-panel.super-expanded) {
+            overflow: visible;
+        }
+
+        .panel-toggle {
+            position: fixed;
+            top: 50%;
+            right: 15px;
+            transform: translateY(-50%);
+            background: var(--accent-primary);
+            color: white;
+            border: none;
+            width: 40px;
+            height: 80px;
+            border-radius: 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            z-index: 1000;
+            transition: all 0.3s ease;
+            font-weight: bold;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        .panel-toggle:hover {
+            background: var(--accent-primary-dark);
+            transform: translateY(-50%) scale(1.1);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+        }
+
+        /* State indicator */
+        .panel-state-indicator {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: var(--bg-tertiary);
+            color: var(--text-secondary);
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 10px;
+            font-weight: 500;
+            opacity: 0.7;
+            transition: opacity 0.3s ease;
+        }
+
+        .preview-panel:hover .panel-state-indicator {
+            opacity: 1;
+        }
+
+        .code-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border-color);
+            background: var(--bg-tertiary);
+            display: flex;
+            justify-content: between;
+            align-items: center;
+        }
+
+        .code-title {
+            color: var(--text-primary);
+            font-size: 14px;
+            font-weight: 500;
+            margin: 0;
+        }
+
+        .code-actions {
+            display: flex;
+            gap: 8px;
+            margin-left: auto;
+        }
+
+        .code-btn {
+            padding: 6px 12px;
+            background: var(--accent-primary);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+
+        .code-btn:hover {
+            background: var(--accent-primary-dark);
+        }
+
+        .code-btn.secondary {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+
+        .code-btn.secondary:hover {
+            background: var(--bg-hover);
+        }
+
+        .code-content {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .code-block {
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 16px;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 13px;
+            line-height: 1.5;
+            color: var(--text-primary);
+            overflow-x: auto;
+        }
+
+        .preview-container {
+            background: white;
+            border: 1px solid #e5e5e5;
+            border-radius: 8px;
+            padding: 32px;
+            margin-bottom: 24px;
+            min-height: 200px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            /* Ensure animations work */
+            animation-fill-mode: both;
+            animation-play-state: running;
+        }
+        
+        /* Ensure all animations work in preview container */
+        .preview-container * {
+            animation-play-state: running !important;
+        }
+        
+        /* Force animation inheritance and override any blocking CSS */
+        .preview-container {
+            isolation: auto !important;
+            contain: none !important;
+            transform-style: preserve-3d !important;
+        }
+
+        .customization-panel {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 24px;
+        }
+
+        .customization-title {
+            color: var(--text-primary);
+            font-size: 16px;
+            font-weight: 600;
+            margin: 0 0 16px 0;
+        }
+
+        .customization-group {
+            margin-bottom: 20px;
+        }
+
+        .customization-label {
+            color: var(--text-primary);
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        .customization-options {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .option-btn {
+            padding: 8px 16px;
+            background: var(--bg-tertiary);
+            color: var(--text-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .option-btn:hover {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+        }
+
+        .option-btn.active {
+            background: var(--accent-primary);
+            color: white;
+            border-color: var(--accent-primary);
+        }
+
+        .empty-state {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-secondary);
+            text-align: center;
+        }
+
+        .empty-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+
+        .loading-spinner {
+            border: 2px solid var(--bg-tertiary);
+            border-top: 2px solid var(--accent-primary);
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* CSS Variables for theming */
+        :root {
+            --bg-primary: #1a1b26;
+            --bg-secondary: #24283b;
+            --bg-tertiary: #414868;
+            --bg-hover: #565f89;
+            --bg-code: #16161e;
+            --border-color: #414868;
+            --text-primary: #c0caf5;
+            --text-secondary: #9aa5ce;
+            --accent-primary: #7aa2f7;
+            --accent-primary-light: rgba(122, 162, 247, 0.2);
+            --accent-primary-dark: #5a7fc7;
+        }
+
+        .light-theme {
+            --bg-primary: #ffffff;
+            --bg-secondary: #f8fafc;
+            --bg-tertiary: #e2e8f0;
+            --bg-hover: #f1f5f9;
+            --bg-code: #f8fafc;
+            --border-color: #e2e8f0;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --accent-primary: #3b82f6;
+            --accent-primary-light: rgba(59, 130, 246, 0.1);
+            --accent-primary-dark: #2563eb;
+        }
+    </style>
+</head>
+<body>
+    <div class="component-browser">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <h1 class="sidebar-title">React Bits</h1>
+                <p class="sidebar-subtitle">Component Library Browser</p>
+            </div>
+
+            <div class="search-container">
+                <input type="text" class="search-input" id="searchInput" placeholder="Search components...">
+                <button class="view-all-btn" id="viewAllBtn">View All Components</button>
+            </div>
+
+            <div class="categories-container" id="categoriesContainer">
+                <!-- Categories will be populated by JavaScript -->
+            </div>
+        </div>
+
+        <!-- Main Panel -->
+        <div class="main-panel">
+            <div class="main-header" id="mainHeader">
+                <div class="empty-state">
+                    <div class="empty-icon">🔍</div>
+                    <h2>Select a Component</h2>
+                    <p>Choose a component from the sidebar to view its preview and code</p>
+                </div>
+            </div>
+
+            <div class="content-area" id="contentArea">
+                <div class="preview-panel" id="previewPanel">
+                    <!-- Preview content will be populated by JavaScript -->
+                </div>
+                <div class="code-panel" id="codePanel">
+                    <!-- Code content will be populated by JavaScript -->
+                    <!-- Toggle button will be added dynamically -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class ComponentBrowser {
+            constructor() {
+                this.currentComponent = null;
+                this.currentCustomizations = {};
+                this.components = {};
+                this.categories = {};
+                this.allComponents = [];
+                this.panelState = 'normal'; // normal, minimized, collapsed, super-expanded
+                
+                // Rate limiting and caching
+                this.cache = new Map();
+                this.pendingRequests = new Map();
+                this.requestQueue = [];
+                this.isProcessingQueue = false;
+                this.lastRequestTime = 0;
+                this.minRequestInterval = 1000; // 1 second between requests
+                this.maxCacheAge = 5 * 60 * 1000; // 5 minutes cache
+                
+                this.initializeElements();
+                this.loadComponents();
+                this.bindEvents();
+            }
+
+            initializeElements() {
+                this.searchInput = document.getElementById('searchInput');
+                this.viewAllBtn = document.getElementById('viewAllBtn');
+                this.categoriesContainer = document.getElementById('categoriesContainer');
+                this.mainHeader = document.getElementById('mainHeader');
+                this.contentArea = document.getElementById('contentArea');
+                this.previewPanel = document.getElementById('previewPanel');
+                this.codePanel = document.getElementById('codePanel');
+                
+                // Initialize the toggle button
+                this.createInitialToggleButton();
+            }
+
+            // Throttled API request method with caching
+            async throttledApiRequest(message, cacheKey = null) {
+                // Check cache first
+                if (cacheKey && this.cache.has(cacheKey)) {
+                    const cached = this.cache.get(cacheKey);
+                    if (Date.now() - cached.timestamp < this.maxCacheAge) {
+                        console.log('Cache hit for:', cacheKey);
+                        return cached.data;
+                    } else {
+                        this.cache.delete(cacheKey);
+                    }
+                }
+
+                // Check if this exact request is already pending
+                if (this.pendingRequests.has(message)) {
+                    console.log('Request already pending:', message);
+                    return await this.pendingRequests.get(message);
+                }
+
+                // Create request promise
+                const requestPromise = this.makeThrottledRequest(message, cacheKey);
+                this.pendingRequests.set(message, requestPromise);
+
+                try {
+                    const result = await requestPromise;
+                    return result;
+                } finally {
+                    this.pendingRequests.delete(message);
+                }
+            }
+
+            async makeThrottledRequest(message, cacheKey) {
+                return new Promise((resolve, reject) => {
+                    this.requestQueue.push({ message, cacheKey, resolve, reject });
+                    this.processQueue();
+                });
+            }
+
+            async processQueue() {
+                if (this.isProcessingQueue || this.requestQueue.length === 0) {
+                    return;
+                }
+
+                this.isProcessingQueue = true;
+
+                while (this.requestQueue.length > 0) {
+                    const timeSinceLastRequest = Date.now() - this.lastRequestTime;
+                    if (timeSinceLastRequest < this.minRequestInterval) {
+                        await new Promise(resolve => setTimeout(resolve, this.minRequestInterval - timeSinceLastRequest));
+                    }
+
+                    const { message, cacheKey, resolve, reject } = this.requestQueue.shift();
+
+                    try {
+                        console.log('Making throttled API request:', message);
+                        this.lastRequestTime = Date.now();
+
+                        const response = await fetch('/api/magic/ui', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({ message })
+                        });
+
+                        if (response.status === 429) {
+                            this.showRateLimitError();
+                            throw new Error('Rate limit exceeded. Please wait before making more requests.');
+                        }
+
+                        const data = await response.json();
+
+                        // Cache successful responses
+                        if (cacheKey && data.success) {
+                            this.cache.set(cacheKey, {
+                                data: data,
+                                timestamp: Date.now()
+                            });
+                        }
+
+                        resolve(data);
+                    } catch (error) {
+                        console.error('API request failed:', error);
+                        reject(error);
+                    }
+                }
+
+                this.isProcessingQueue = false;
+            }
+
+            showRateLimitError() {
+                this.categoriesContainer.innerHTML = `
+                    <div style="padding: 40px 20px; text-align: center; color: var(--text-secondary);">
+                        <div style="font-size: 48px; margin-bottom: 16px;">⚠️</div>
+                        <h3 style="margin: 0 0 12px 0; color: var(--text-primary);">Rate Limit Exceeded</h3>
+                        <p style="margin: 0 0 16px 0; line-height: 1.5;">
+                            Too many requests have been made to the component library. 
+                            Please wait a moment before browsing components again.
+                        </p>
+                        <p style="margin: 0 0 20px 0; font-size: 14px; color: var(--text-secondary);">
+                            Maximum 100 requests per 15 minutes.
+                        </p>
+                        <button onclick="browser.retryWithCacheClear()" 
+                                style="padding: 12px 24px; background: var(--accent-primary); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px;">
+                            Try Again
+                        </button>
+                    </div>
+                `;
+            }
+
+            retryWithCacheClear() {
+                // Clear all caches and reset request queue
+                this.cache.clear();
+                this.pendingRequests.clear();
+                this.requestQueue = [];
+                this.lastRequestTime = 0;
+                
+                // Show loading state
+                this.categoriesContainer.innerHTML = `
+                    <div style="padding: 40px 20px; text-align: center; color: var(--text-secondary);">
+                        <div class="loading-spinner" style="margin: 0 auto 16px; width: 40px; height: 40px;"></div>
+                        <p>Refreshing component library...</p>
+                    </div>
+                `;
+                
+                // Reload components
+                this.loadComponents();
+            }
+
+            async loadComponents() {
+                try {
+                    // Load components from React Bits client using throttled API
+                    const data = await this.throttledApiRequest('/ui list', 'categories');
+                    console.log('Categories API response:', data);
+                    if (data.success) {
+                        // Convert categories array to object for easier access
+                        this.categories = {};
+                        data.categories.forEach(category => {
+                            this.categories[category.key] = category;
+                        });
+                        console.log('Processed categories:', this.categories);
+                        this.renderCategories();
+                    }
+                } catch (error) {
+                    console.error('Failed to load components:', error);
+                    this.renderError();
+                }
+            }
+
+            renderCategories() {
+                this.categoriesContainer.innerHTML = '';
+
+                Object.entries(this.categories).forEach(([categoryKey, category]) => {
+                    const categoryGroup = document.createElement('div');
+                    categoryGroup.className = 'category-group';
+
+                    const categoryHeader = document.createElement('div');
+                    categoryHeader.className = 'category-header';
+                    categoryHeader.dataset.category = categoryKey;
+                    categoryHeader.innerHTML = `
+                        <span class="category-icon">${category.icon}</span>
+                        <span>${category.name}</span>
+                        <span class="category-count">${category.count}</span>
+                    `;
+
+                    const componentList = document.createElement('div');
+                    componentList.className = 'component-list';
+                    componentList.dataset.category = categoryKey;
+
+                    categoryGroup.appendChild(categoryHeader);
+                    categoryGroup.appendChild(componentList);
+                    this.categoriesContainer.appendChild(categoryGroup);
+
+                    // Bind click event
+                    categoryHeader.addEventListener('click', () => {
+                        this.toggleCategory(categoryKey);
+                    });
+                });
+            }
+
+            async toggleCategory(categoryKey) {
+                const header = document.querySelector(`[data-category="${categoryKey}"]`);
+                const list = document.querySelector(`.component-list[data-category="${categoryKey}"]`);
+                
+                // Toggle active state
+                document.querySelectorAll('.category-header').forEach(h => h.classList.remove('active'));
+                document.querySelectorAll('.component-list').forEach(l => l.classList.remove('active'));
+                
+                header.classList.add('active');
+                list.classList.add('active');
+
+                // Load components for this category if not already loaded
+                if (list.children.length === 0) {
+                    await this.loadCategoryComponents(categoryKey, list);
+                }
+            }
+
+            async loadCategoryComponents(categoryKey, listElement) {
+                try {
+                    listElement.innerHTML = '<div class="loading-spinner"></div>';
+
+                    const cacheKey = `category-${categoryKey}`;
+                    const data = await this.throttledApiRequest(`/ui list ${categoryKey}`, cacheKey);
+                    console.log('Category components response:', data);
+                    
+                    if (data.success && data.category_results) {
+                        const components = data.category_results.components;
+                        
+                        listElement.innerHTML = '';
+                        components.forEach(component => {
+                            const componentItem = document.createElement('div');
+                            componentItem.className = 'component-item';
+                            componentItem.dataset.componentKey = component.key;
+                            componentItem.textContent = component.name;
+                            
+                            componentItem.addEventListener('click', () => {
+                                this.selectComponent(component.key);
+                            });
+                            
+                            listElement.appendChild(componentItem);
+                        });
+                        
+                        console.log(`Loaded ${components.length} components for category ${categoryKey}`);
+                    } else {
+                        console.error('Failed to load category components, response:', data);
+                        listElement.innerHTML = '<div style="padding: 8px; color: var(--text-secondary);">Failed to load</div>';
+                    }
+                } catch (error) {
+                    console.error('Failed to load category components:', error);
+                    listElement.innerHTML = '<div style="padding: 8px; color: var(--text-secondary);">Failed to load</div>';
+                }
+            }
+
+            async selectComponent(componentKey) {
+                try {
+                    // Update selection state
+                    document.querySelectorAll('.component-item').forEach(item => {
+                        item.classList.remove('selected');
+                    });
+                    document.querySelector(`[data-component-key="${componentKey}"]`).classList.add('selected');
+
+                    // Load component details using throttled API
+                    const cacheKey = `component-${componentKey}`;
+                    const data = await this.throttledApiRequest(`/ui info ${componentKey}`, cacheKey);
+                    if (data.success && data.component_info) {
+                        this.currentComponent = data.component_info;
+                        this.renderComponentDetails();
+                    }
+                } catch (error) {
+                    console.error('Failed to load component details:', error);
+                }
+            }
+
+            renderComponentDetails() {
+                const component = this.currentComponent;
+                
+                // Update header
+                this.mainHeader.innerHTML = `
+                    <h1 class="component-title">${component.name}</h1>
+                    <p class="component-description">${component.description}</p>
+                    <div class="component-meta">
+                        <span class="meta-tag">Category: ${component.category}</span>
+                        ${component.tags ? component.tags.map(tag => `<span class="meta-tag">${tag}</span>`).join('') : ''}
+                    </div>
+                `;
+
+                // Update preview panel
+                this.previewPanel.innerHTML = `
+                    ${this.renderCustomizationPanel()}
+                    <div class="preview-container" id="previewContainer">
+                        <p style="color: #666;">Click "Generate Preview" to see the component</p>
+                    </div>
+                `;
+
+                // Update code panel
+                this.updateCodePanel(component);
+
+                this.bindCustomizationEvents();
+                this.generatePreview();
+            }
+
+            renderCustomizationPanel() {
+                const component = this.currentComponent;
+                if (!component.variants) return '';
+
+                return `
+                    <div class="customization-panel">
+                        <h3 class="customization-title">Customize Component</h3>
+                        ${Object.entries(component.variants).map(([property, options]) => `
+                            <div class="customization-group">
+                                <label class="customization-label">${this.capitalize(property)}:</label>
+                                <div class="customization-options">
+                                    ${options.map(option => `
+                                        <button class="option-btn ${this.currentCustomizations[property] === option ? 'active' : ''}" 
+                                                data-property="${property}" 
+                                                data-value="${option}">
+                                            ${option}
+                                        </button>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        `).join('')}
+                        <button class="code-btn" onclick="browser.generatePreview()" style="margin-top: 16px;">
+                            Generate Preview
+                        </button>
+                    </div>
+                `;
+            }
+
+            bindCustomizationEvents() {
+                document.querySelectorAll('.option-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const property = e.target.dataset.property;
+                        const value = e.target.dataset.value;
+                        
+                        // Update customizations
+                        this.currentCustomizations[property] = value;
+                        
+                        // Update UI
+                        document.querySelectorAll(`[data-property="${property}"]`).forEach(b => b.classList.remove('active'));
+                        e.target.classList.add('active');
+                    });
+                });
+            }
+
+            async generatePreview() {
+                try {
+                    const customizationQuery = Object.entries(this.currentCustomizations)
+                        .map(([key, value]) => `${value} ${key}`)
+                        .join(' ');
+                    
+                    const message = `${this.currentComponent.key} ${customizationQuery}`.trim();
+                    
+                    const response = await fetch('/api/magic/ui', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ message })
+                    });
+
+                    const data = await response.json();
+                    
+                    // Handle different API response structures
+                    const componentData = data.component_info || data.component;
+                    
+                    if (data.success && componentData) {
+                        // Update code display
+                        document.getElementById('codeBlock').textContent = componentData.code || componentData.code_preview;
+                        
+                        // Update preview with component-specific content
+                        const previewContent = this.generateComponentPreview(componentData, this.currentCustomizations);
+                        const previewContainer = document.getElementById('previewContainer');
+                        
+                        console.log('Preview container found:', !!previewContainer);
+                        console.log('Generated preview content length:', previewContent.length);
+                        console.log('Preview content preview:', previewContent.substring(0, 200));
+                        
+                        if (previewContainer) {
+                            // First, inject any required CSS animations based on component type
+                            this.injectRequiredAnimations(componentData);
+                            
+                            // Debug: Check current styles in head
+                            const currentStyles = document.querySelectorAll('style[id*="-style"]');
+                            console.log('Current animation styles in head:', currentStyles.length);
+                            currentStyles.forEach(style => {
+                                console.log('Style ID:', style.id, 'Content preview:', style.textContent.substring(0, 100));
+                            });
+                            
+                            previewContainer.innerHTML = previewContent;
+                            console.log('Preview content set successfully');
+                            
+                            // Debug: Check if animations are actually in the preview
+                            const animatedElements = previewContainer.querySelectorAll('[style*="animation"]');
+                            console.log('Animated elements found:', animatedElements.length);
+                            animatedElements.forEach(el => {
+                                console.log('Element with animation:', el.tagName, 'Style:', el.style.animation);
+                                const computedStyle = window.getComputedStyle(el);
+                                console.log('Computed animation name:', computedStyle.animationName);
+                                console.log('Computed animation duration:', computedStyle.animationDuration);
+                                console.log('Computed animation iteration count:', computedStyle.animationIterationCount);
+                            });
+                        } else {
+                            console.error('Preview container not found!');
+                        }
+                        
+                        console.log('Generated preview for:', componentData.name, 'with customizations:', this.currentCustomizations);
+                    } else {
+                        console.error('Failed to generate preview - no component data:', data);
+                    }
+                } catch (error) {
+                    console.error('Failed to generate preview:', error);
+                }
+            }
+
+            copyCode() {
+                const code = document.getElementById('codeBlock').textContent;
+                navigator.clipboard.writeText(code).then(() => {
+                    // Could show a toast notification here
+                    console.log('Code copied to clipboard');
+                });
+            }
+
+            insertComponent() {
+                // In real implementation, would integrate with IDE
+                alert('Component insertion would integrate with the IDE terminal or file system');
+            }
+            
+            forceAnimationTest() {
+                console.log('=== FORCE ANIMATION TEST ===');
+                
+                // Check if animations are enabled in browser
+                const testDiv = document.createElement('div');
+                testDiv.style.animation = 'test 1s';
+                const animationsEnabled = testDiv.style.animation !== '';
+                console.log('Browser animations enabled:', animationsEnabled);
+                
+                // Check for reduced motion preference
+                const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+                console.log('Prefers reduced motion:', prefersReducedMotion);
+                
+                // Clear any existing styles
+                const existingStyles = document.querySelectorAll('style[id*="typewriter"]');
+                existingStyles.forEach(style => style.remove());
+                console.log('Cleared existing styles:', existingStyles.length);
+                
+                // Force inject the animation with maximum specificity
+                const animationId = 'typewriter-blink-ultra';
+                const style = document.createElement('style');
+                style.id = animationId + '-style-forced';
+                style.textContent = `
+                    @keyframes ${animationId} {
+                        0% { opacity: 1 !important; background-color: red !important; }
+                        25% { opacity: 0 !important; background-color: blue !important; }
+                        50% { opacity: 1 !important; background-color: green !important; }
+                        75% { opacity: 0 !important; background-color: yellow !important; }
+                        100% { opacity: 1 !important; background-color: red !important; }
+                    }
+                `;
+                document.head.appendChild(style);
+                console.log('Ultra animation CSS injected with background colors');
+                
+                // Force set preview content with extreme visibility
+                const previewContainer = document.getElementById('previewContainer');
+                if (previewContainer) {
+                    previewContainer.innerHTML = `
+                        <div style="display: flex; align-items: center; justify-content: center; padding: 40px; background: #f8fafc; border-radius: 8px;">
+                            <div style="font-size: 48px; font-weight: 900; color: #000; font-family: monospace; position: relative;">
+                                🚨 ULTRA TEST 🚨<span style="animation: ${animationId} 0.5s infinite !important; margin-left: 8px; color: black !important; font-weight: 900 !important; font-size: 60px !important; display: inline-block !important;">█</span>
+                            </div>
+                        </div>
+                    `;
+                    
+                    // Additional debugging
+                    setTimeout(() => {
+                        const animatedElements = previewContainer.querySelectorAll('[style*="animation"]');
+                        console.log('Ultra test - Animated elements:', animatedElements.length);
+                        animatedElements.forEach((el, index) => {
+                            const computedStyle = window.getComputedStyle(el);
+                            console.log(`Element ${index}:`, {
+                                animationName: computedStyle.animationName,
+                                animationDuration: computedStyle.animationDuration,
+                                animationIterationCount: computedStyle.animationIterationCount,
+                                animationPlayState: computedStyle.animationPlayState,
+                                opacity: computedStyle.opacity,
+                                display: computedStyle.display
+                            });
+                        });
+                        
+                        // Check if the CSS rule exists
+                        const styleSheets = Array.from(document.styleSheets);
+                        console.log('Available stylesheets:', styleSheets.length);
+                        styleSheets.forEach((sheet, i) => {
+                            try {
+                                const rules = Array.from(sheet.cssRules || sheet.rules || []);
+                                const animRules = rules.filter(rule => rule.name === animationId);
+                                if (animRules.length > 0) {
+                                    console.log(`Found animation rule in stylesheet ${i}:`, animRules[0]);
+                                }
+                            } catch (e) {
+                                console.log(`Cannot access stylesheet ${i}:`, e.message);
+                            }
+                        });
+                    }, 100);
+                }
+            }
+            
+            testOutsideContainer() {
+                console.log('=== TESTING OUTSIDE CONTAINER ===');
+                
+                // Create a floating test element outside the preview container
+                const testId = 'floating-animation-test';
+                
+                // Remove any existing test
+                const existing = document.getElementById(testId);
+                if (existing) existing.remove();
+                
+                // Inject CSS
+                const animationId = 'floating-test-animation';
+                const style = document.createElement('style');
+                style.id = animationId + '-style';
+                style.textContent = `
+                    @keyframes ${animationId} {
+                        0% { opacity: 1; transform: scale(1); background-color: red; }
+                        25% { opacity: 0.5; transform: scale(1.2); background-color: blue; }
+                        50% { opacity: 1; transform: scale(1); background-color: green; }
+                        75% { opacity: 0.5; transform: scale(0.8); background-color: yellow; }
+                        100% { opacity: 1; transform: scale(1); background-color: red; }
+                    }
+                `;
+                document.head.appendChild(style);
+                
+                // Create floating element
+                const floatingDiv = document.createElement('div');
+                floatingDiv.id = testId;
+                floatingDiv.innerHTML = 'FLOATING TEST';
+                floatingDiv.style.cssText = `
+                    position: fixed;
+                    top: 50px;
+                    right: 50px;
+                    z-index: 10000;
+                    background: red;
+                    color: white;
+                    padding: 20px;
+                    border-radius: 10px;
+                    font-size: 20px;
+                    font-weight: bold;
+                    animation: ${animationId} 1s infinite;
+                    border: 3px solid black;
+                `;
+                
+                document.body.appendChild(floatingDiv);
+                console.log('Floating test element added to body');
+                
+                // Auto-remove after 10 seconds
+                setTimeout(() => {
+                    if (document.getElementById(testId)) {
+                        document.getElementById(testId).remove();
+                        console.log('Floating test element removed');
+                    }
+                }, 10000);
+            }
+            
+            fixPreviewAnimation() {
+                console.log('=== FIXING PREVIEW ANIMATION ===');
+                
+                const previewContainer = document.getElementById('previewContainer');
+                if (!previewContainer) {
+                    console.log('Preview container not found');
+                    return;
+                }
+                
+                // Clear any existing animation styles
+                const existingStyles = document.querySelectorAll('style[id*="typewriter"], style[id*="blink"]');
+                existingStyles.forEach(style => style.remove());
+                
+                // Create REAL typewriter animation (text appears letter by letter)
+                const cursorBlinkId = 'cursor-blink-fix';
+                const typewriterId = 'typewriter-text-fix';
+                const style = document.createElement('style');
+                style.id = 'typewriter-fix-style';
+                style.textContent = `
+                    @keyframes ${cursorBlinkId} {
+                        0%, 50% { opacity: 1; }
+                        51%, 100% { opacity: 0; }
+                    }
+                    
+                    @keyframes ${typewriterId} {
+                        0% { width: 0; }
+                        100% { width: 100%; }
+                    }
+                    
+                    .typewriter-container {
+                        overflow: hidden;
+                        white-space: nowrap;
+                        border-right: 3px solid #3b82f6;
+                        animation: ${typewriterId} 3s steps(30) infinite, ${cursorBlinkId} 1s infinite;
+                        max-width: fit-content;
+                    }
+                `;
+                document.head.appendChild(style);
+                console.log('Real typewriter animation CSS injected');
+                
+                // Apply REAL typewriter effect to preview container
+                previewContainer.innerHTML = `
+                    <div style="display: flex; align-items: center; justify-content: center; padding: 40px; background: #f8fafc; border-radius: 8px;">
+                        <div style="font-size: 24px; font-weight: 600; color: #3b82f6; font-family: monospace;">
+                            <div class="typewriter-container">
+                                ✨ This text types itself! ✨
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                // Verify it worked
+                setTimeout(() => {
+                    const animatedElements = previewContainer.querySelectorAll('.typewriter-container');
+                    console.log('Real typewriter - Animated elements:', animatedElements.length);
+                    animatedElements.forEach(el => {
+                        const computedStyle = window.getComputedStyle(el);
+                        console.log('Real typewriter animation:', {
+                            name: computedStyle.animationName,
+                            duration: computedStyle.animationDuration,
+                            playState: computedStyle.animationPlayState
+                        });
+                    });
+                }, 100);
+            }
+
+            bindEvents() {
+                if (this.searchInput) {
+                    this.searchInput.addEventListener('input', (e) => {
+                        this.performSearch(e.target.value);
+                    });
+                }
+                
+                if (this.viewAllBtn) {
+                    this.viewAllBtn.addEventListener('click', () => {
+                        this.viewAllComponents();
+                    });
+                }
+                
+                if (this.toggleButton) {
+                    this.toggleButton.addEventListener('click', () => {
+                        this.toggleCodePanel();
+                    });
+                }
+
+                // Keyboard shortcuts
+                document.addEventListener('keydown', (e) => {
+                    // Ctrl/Cmd + E to toggle panel states
+                    if ((e.ctrlKey || e.metaKey) && e.key === 'e') {
+                        e.preventDefault();
+                        this.toggleCodePanel();
+                    }
+                    
+                    // Ctrl/Cmd + Shift + E to go directly to super-expanded
+                    if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'E') {
+                        e.preventDefault();
+                        this.panelState = 'super-expanded';
+                        this.applyPanelState();
+                    }
+                });
+            }
+
+            async performSearch(query) {
+                if (!query.trim()) {
+                    this.renderCategories();
+                    return;
+                }
+
+                try {
+                    const cacheKey = `search-${query.toLowerCase().replace(/\s+/g, '-')}`;
+                    const data = await this.throttledApiRequest(`/ui search ${query}`, cacheKey);
+                    this.renderSearchResults(data);
+                } catch (error) {
+                    console.error('Search failed:', error);
+                }
+            }
+
+            renderSearchResults(data) {
+                if (data.success && data.search_results) {
+                    const results = data.search_results.results || [];
+                    
+                    this.categoriesContainer.innerHTML = `
+                        <div class="category-group">
+                            <div class="category-header active">
+                                <span class="category-icon">🔍</span>
+                                <span>Search Results</span>
+                                <span class="category-count">${results.length}</span>
+                            </div>
+                            <div class="component-list active">
+                                ${results.map(component => `
+                                    <div class="component-item" data-component-key="${component.key}">
+                                        ${component.name}
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    `;
+
+                    // Bind events for search results
+                    document.querySelectorAll('.component-item').forEach(item => {
+                        item.addEventListener('click', () => {
+                            this.selectComponent(item.dataset.componentKey);
+                        });
+                    });
+                }
+            }
+
+            renderError() {
+                this.categoriesContainer.innerHTML = `
+                    <div style="padding: 20px; text-align: center; color: var(--text-secondary);">
+                        <p>Failed to load component library</p>
+                        <button onclick="browser.loadComponents()" style="margin-top: 8px; padding: 8px 16px; background: var(--accent-primary); color: white; border: none; border-radius: 4px; cursor: pointer;">
+                            Retry
+                        </button>
+                    </div>
+                `;
+            }
+
+            escapeHtml(text) {
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            }
+
+            capitalize(str) {
+                return str.charAt(0).toUpperCase() + str.slice(1);
+            }
+
+            generateDotsLoader(size, color) {
+                const sizeMap = { sm: '8px', md: '12px', lg: '16px' };
+                const colorMap = {
+                    blue: '#3b82f6', gray: '#6b7280', purple: '#8b5cf6', green: '#10b981'
+                };
+                const dotSize = sizeMap[size] || sizeMap.md;
+                const dotColor = colorMap[color] || colorMap.blue;
+                
+                return `
+                    <div style="display: flex; align-items: center; justify-content: center; padding: 40px; background: #f8fafc; border-radius: 8px;">
+                        <div style="display: flex; gap: 8px; align-items: center;">
+                            <div style="width: ${dotSize}; height: ${dotSize}; background: ${dotColor}; border-radius: 50%; animation: bounce 1.4s ease-in-out infinite both; animation-delay: -0.32s;"></div>
+                            <div style="width: ${dotSize}; height: ${dotSize}; background: ${dotColor}; border-radius: 50%; animation: bounce 1.4s ease-in-out infinite both; animation-delay: -0.16s;"></div>
+                            <div style="width: ${dotSize}; height: ${dotSize}; background: ${dotColor}; border-radius: 50%; animation: bounce 1.4s ease-in-out infinite both;"></div>
+                        </div>
+                        <style>
+                            @keyframes bounce {
+                                0%, 80%, 100% { transform: scale(0); }
+                                40% { transform: scale(1); }
+                            }
+                        </style>
+                    </div>
+                `;
+            }
+
+            generateSpinnerLoader(size, color) {
+                const sizeMap = { sm: '20px', md: '32px', lg: '48px' };
+                const colorMap = {
+                    blue: '#3b82f6', gray: '#6b7280', purple: '#8b5cf6', green: '#10b981'
+                };
+                const spinnerSize = sizeMap[size] || sizeMap.md;
+                const spinnerColor = colorMap[color] || colorMap.blue;
+                
+                return `
+                    <div style="display: flex; align-items: center; justify-content: center; padding: 40px; background: #f8fafc; border-radius: 8px;">
+                        <div style="width: ${spinnerSize}; height: ${spinnerSize}; border: 3px solid #e5e7eb; border-top: 3px solid ${spinnerColor}; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+                        <style>
+                            @keyframes spin {
+                                0% { transform: rotate(0deg); }
+                                100% { transform: rotate(360deg); }
+                            }
+                        </style>
+                    </div>
+                `;
+            }
+
+            generatePulseLoader(size, color) {
+                const sizeMap = { sm: '24px', md: '36px', lg: '48px' };
+                const colorMap = {
+                    blue: '#3b82f6', gray: '#6b7280', purple: '#8b5cf6', green: '#10b981'
+                };
+                const pulseSize = sizeMap[size] || sizeMap.md;
+                const pulseColor = colorMap[color] || colorMap.blue;
+                
+                return `
+                    <div style="display: flex; align-items: center; justify-content: center; padding: 40px; background: #f8fafc; border-radius: 8px;">
+                        <div style="width: ${pulseSize}; height: ${pulseSize}; background: ${pulseColor}; border-radius: 50%; animation: pulse 2s ease-in-out infinite;"></div>
+                        <style>
+                            @keyframes pulse {
+                                0% { transform: scale(0.8); opacity: 1; }
+                                50% { transform: scale(1.2); opacity: 0.5; }
+                                100% { transform: scale(0.8); opacity: 1; }
+                            }
+                        </style>
+                    </div>
+                `;
+            }
+
+            generateSkeletonLoader(size, color) {
+                const heightMap = { sm: '60px', md: '100px', lg: '140px' };
+                const height = heightMap[size] || heightMap.md;
+                
+                return `
+                    <div style="padding: 20px; background: #f8fafc; border-radius: 8px;">
+                        <div style="display: flex; flex-direction: column; gap: 12px;">
+                            <div style="height: 16px; background: linear-gradient(90deg, #e5e7eb 25%, #f3f4f6 50%, #e5e7eb 75%); border-radius: 4px; animation: shimmer 2s ease-in-out infinite; background-size: 200% 100%;"></div>
+                            <div style="height: ${height}; background: linear-gradient(90deg, #e5e7eb 25%, #f3f4f6 50%, #e5e7eb 75%); border-radius: 8px; animation: shimmer 2s ease-in-out infinite; background-size: 200% 100%;"></div>
+                            <div style="height: 12px; width: 60%; background: linear-gradient(90deg, #e5e7eb 25%, #f3f4f6 50%, #e5e7eb 75%); border-radius: 4px; animation: shimmer 2s ease-in-out infinite; background-size: 200% 100%;"></div>
+                        </div>
+                        <style>
+                            @keyframes shimmer {
+                                0% { background-position: -200% 0; }
+                                100% { background-position: 200% 0; }
+                            }
+                        </style>
+                    </div>
+                `;
+            }
+
+            generateGlowButton(size, color, style) {
+                const sizeMap = { sm: '8px 16px', md: '12px 24px', lg: '16px 32px' };
+                const colorMap = {
+                    blue: '#3b82f6', gray: '#6b7280', purple: '#8b5cf6', green: '#10b981'
+                };
+                const padding = sizeMap[size] || sizeMap.md;
+                const btnColor = colorMap[color] || colorMap.blue;
+                
+                return `
+                    <div style="display: flex; align-items: center; justify-content: center; padding: 40px; background: #1a1b26; border-radius: 8px;">
+                        <button style="padding: ${padding}; background: ${btnColor}; color: white; border: none; border-radius: 8px; font-weight: 500; cursor: pointer; position: relative; overflow: hidden; box-shadow: 0 0 20px ${btnColor}60; transition: all 0.3s ease;">
+                            ✨ Glow Button
+                        </button>
+                    </div>
+                `;
+            }
+
+            generateRippleButton(size, color, style) {
+                const sizeMap = { sm: '8px 16px', md: '12px 24px', lg: '16px 32px' };
+                const colorMap = {
+                    blue: '#3b82f6', gray: '#6b7280', purple: '#8b5cf6', green: '#10b981'
+                };
+                const padding = sizeMap[size] || sizeMap.md;
+                const btnColor = colorMap[color] || colorMap.blue;
+                
+                return `
+                    <div style="display: flex; align-items: center; justify-content: center; padding: 40px; background: #f8fafc; border-radius: 8px;">
+                        <button style="padding: ${padding}; background: ${btnColor}; color: white; border: none; border-radius: 8px; font-weight: 500; cursor: pointer; position: relative; overflow: hidden; transform: scale(1); transition: transform 0.2s ease;">
+                            🌊 Ripple Effect
+                        </button>
+                    </div>
+                `;
+            }
+
+            generateMagneticButton(size, color, style) {
+                const sizeMap = { sm: '8px 16px', md: '12px 24px', lg: '16px 32px' };
+                const colorMap = {
+                    blue: '#3b82f6', gray: '#6b7280', purple: '#8b5cf6', green: '#10b981'
+                };
+                const styleMap = {
+                    minimal: 'background: #000; color: white; border: 2px solid #000;',
+                    gradient: 'background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none;',
+                    outlined: 'background: transparent; color: #000; border: 2px solid #000;'
+                };
+                const padding = sizeMap[size] || sizeMap.md;
+                const btnColor = colorMap[color] || colorMap.blue;
+                const btnStyle = styleMap[style] || styleMap.gradient;
+                
+                return `
+                    <div style="display: flex; align-items: center; justify-content: center; padding: 40px; background: #f8fafc; border-radius: 8px;">
+                        <button style="padding: ${padding}; ${btnStyle} border-radius: 8px; font-weight: 500; cursor: pointer; position: relative; transform: translate(0px, 0px); transition: transform 0.3s ease;" 
+                                onmousemove="this.style.transform = 'translate(' + (event.offsetX - this.offsetWidth/2) * 0.3 + 'px, ' + (event.offsetY - this.offsetHeight/2) * 0.3 + 'px)'"
+                                onmouseleave="this.style.transform = 'translate(0px, 0px)'">
+                            🧲 Magnetic Button
+                        </button>
+                    </div>
+                `;
+            }
+
+            generateGradientButton(size, color, style) {
+                const sizeMap = { sm: '8px 16px', md: '12px 24px', lg: '16px 32px' };
+                const gradientMap = {
+                    blue: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    gray: 'linear-gradient(135deg, #6b7280 0%, #4b5563 100%)',
+                    purple: 'linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%)',
+                    green: 'linear-gradient(135deg, #10b981 0%, #059669 100%)'
+                };
+                const padding = sizeMap[size] || sizeMap.md;
+                const gradient = gradientMap[color] || gradientMap.blue;
+                
+                return `
+                    <div style="display: flex; align-items: center; justify-content: center; padding: 40px; background: #f8fafc; border-radius: 8px;">
+                        <button style="padding: ${padding}; background: ${gradient}; color: white; border: none; border-radius: 8px; font-weight: 500; cursor: pointer; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2); transition: transform 0.2s ease;">
+                            🌈 Gradient
+                        </button>
+                    </div>
+                `;
+            }
+
+            generateMinimalButton(size, color, style) {
+                const sizeMap = { sm: '6px 12px', md: '10px 20px', lg: '14px 28px' };
+                const colorMap = {
+                    blue: '#3b82f6', gray: '#6b7280', purple: '#8b5cf6', green: '#10b981'
+                };
+                const padding = sizeMap[size] || sizeMap.md;
+                const btnColor = colorMap[color] || colorMap.blue;
+                
+                return `
+                    <div style="display: flex; align-items: center; justify-content: center; padding: 40px; background: #f8fafc; border-radius: 8px;">
+                        <button style="padding: ${padding}; background: transparent; color: ${btnColor}; border: 1px solid ${btnColor}; border-radius: 6px; font-weight: 500; cursor: pointer; transition: all 0.2s ease;">
+                            Minimal
+                        </button>
+                    </div>
+                `;
+            }
+
+            generateIconButton(size, color, style) {
+                const sizeMap = { sm: '32px', md: '40px', lg: '48px' };
+                const colorMap = {
+                    blue: '#3b82f6', gray: '#6b7280', purple: '#8b5cf6', green: '#10b981'
+                };
+                const btnSize = sizeMap[size] || sizeMap.md;
+                const btnColor = colorMap[color] || colorMap.blue;
+                
+                return `
+                    <div style="display: flex; align-items: center; justify-content: center; padding: 40px; background: #f8fafc; border-radius: 8px;">
+                        <button style="width: ${btnSize}; height: ${btnSize}; background: ${btnColor}; color: white; border: none; border-radius: 50%; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15); transition: transform 0.2s ease;">
+                            ⚡
+                        </button>
+                    </div>
+                `;
+            }
+
+            generateModernCard(size, style) {
+                const heightMap = { sm: '200px', md: '250px', lg: '300px' };
+                const height = heightMap[size] || heightMap.md;
+                
+                return `
+                    <div style="background: #f8fafc; padding: 20px; border-radius: 8px;">
+                        <div style="background: white; border-radius: 12px; padding: 24px; height: ${height}; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1); display: flex; flex-direction: column; gap: 16px;">
+                            <div style="width: 60px; height: 60px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; display: flex; align-items: center; justify-content: center; color: white; font-size: 24px;">🎨</div>
+                            <div>
+                                <h3 style="margin: 0 0 8px 0; color: #1f2937; font-size: 18px; font-weight: 600;">Modern Card</h3>
+                                <p style="margin: 0; color: #6b7280; font-size: 14px; line-height: 1.5;">Beautiful card component with modern design and subtle shadows.</p>
+                            </div>
+                            <div style="margin-top: auto;">
+                                <div style="padding: 8px 16px; background: #f3f4f6; border-radius: 6px; color: #6b7280; font-size: 12px; font-weight: 500; display: inline-block;">Card Feature</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            generatePricingCard(size, style) {
+                return `
+                    <div style="background: #f8fafc; padding: 20px; border-radius: 8px;">
+                        <div style="background: white; border-radius: 12px; padding: 32px; text-align: center; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1); position: relative; overflow: hidden;">
+                            <div style="position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, #667eea, #764ba2);"></div>
+                            <h3 style="margin: 0 0 8px 0; color: #1f2937; font-size: 20px; font-weight: 600;">Pro Plan</h3>
+                            <div style="margin: 16px 0;">
+                                <span style="font-size: 36px; font-weight: 700; color: #1f2937;">$29</span>
+                                <span style="color: #6b7280;">/month</span>
+                            </div>
+                            <ul style="list-style: none; padding: 0; margin: 24px 0; text-align: left;">
+                                <li style="padding: 8px 0; color: #4b5563; display: flex; align-items: center; gap: 8px;"><span style="color: #10b981;">✓</span> Unlimited projects</li>
+                                <li style="padding: 8px 0; color: #4b5563; display: flex; align-items: center; gap: 8px;"><span style="color: #10b981;">✓</span> Priority support</li>
+                                <li style="padding: 8px 0; color: #4b5563; display: flex; align-items: center; gap: 8px;"><span style="color: #10b981;">✓</span> Advanced features</li>
+                            </ul>
+                            <button style="width: 100%; padding: 12px; background: #667eea; color: white; border: none; border-radius: 8px; font-weight: 500; cursor: pointer;">Choose Plan</button>
+                        </div>
+                    </div>
+                `;
+            }
+
+            generateProfileCard(size, style) {
+                return `
+                    <div style="background: #f8fafc; padding: 20px; border-radius: 8px;">
+                        <div style="background: white; border-radius: 12px; padding: 24px; text-align: center; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);">
+                            <div style="width: 80px; height: 80px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 50%; margin: 0 auto 16px; display: flex; align-items: center; justify-content: center; color: white; font-size: 24px;">👤</div>
+                            <h3 style="margin: 0 0 4px 0; color: #1f2937; font-size: 18px; font-weight: 600;">Alex Johnson</h3>
+                            <p style="margin: 0 0 16px 0; color: #6b7280; font-size: 14px;">Senior Designer</p>
+                            <div style="display: flex; gap: 8px; justify-content: center;">
+                                <div style="width: 32px; height: 32px; background: #f3f4f6; border-radius: 6px; display: flex; align-items: center; justify-content: center; cursor: pointer;">🐦</div>
+                                <div style="width: 32px; height: 32px; background: #f3f4f6; border-radius: 6px; display: flex; align-items: center; justify-content: center; cursor: pointer;">💼</div>
+                                <div style="width: 32px; height: 32px; background: #f3f4f6; border-radius: 6px; display: flex; align-items: center; justify-content: center; cursor: pointer;">📧</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            generateTestimonialCard(size, style) {
+                return `
+                    <div style="background: #f8fafc; padding: 20px; border-radius: 8px;">
+                        <div style="background: white; border-radius: 12px; padding: 24px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1); position: relative;">
+                            <div style="font-size: 32px; color: #d1d5db; margin-bottom: 16px;">"</div>
+                            <p style="margin: 0 0 20px 0; color: #4b5563; font-style: italic; line-height: 1.6;">This product has completely transformed our workflow. The team loves it!</p>
+                            <div style="display: flex; align-items: center; gap: 12px;">
+                                <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #10b981 0%, #059669 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 16px;">👩</div>
+                                <div>
+                                    <div style="font-weight: 600; color: #1f2937; font-size: 14px;">Sarah Chen</div>
+                                    <div style="color: #6b7280; font-size: 12px;">Product Manager</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            generateSplitButton(size, color, style) {
+                const sizeMap = { sm: '8px 16px', md: '12px 24px', lg: '16px 32px' };
+                const colorMap = {
+                    blue: '#3b82f6', gray: '#6b7280', purple: '#8b5cf6', green: '#10b981'
+                };
+                const padding = sizeMap[size] || sizeMap.md;
+                const btnColor = colorMap[color] || colorMap.blue;
+                
+                return `
+                    <div style="display: flex; align-items: center; justify-content: center; padding: 40px; background: #f8fafc; border-radius: 8px;">
+                        <div style="display: flex; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);">
+                            <button style="padding: ${padding}; background: ${btnColor}; color: white; border: none; font-weight: 500; cursor: pointer;">
+                                Save
+                            </button>
+                            <button style="padding: 12px; background: ${btnColor}; color: white; border: none; border-left: 1px solid rgba(255,255,255,0.2); cursor: pointer; display: flex; align-items: center;">
+                                ▼
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }
+
+            generateGlassCard(size, style) {
+                return `
+                    <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; border-radius: 8px;">
+                        <div style="background: rgba(255, 255, 255, 0.25); backdrop-filter: blur(10px); border-radius: 12px; padding: 24px; border: 1px solid rgba(255, 255, 255, 0.18);">
+                            <h3 style="margin: 0 0 12px 0; color: white; font-size: 18px; font-weight: 600;">Glass Card</h3>
+                            <p style="margin: 0; color: rgba(255, 255, 255, 0.8); font-size: 14px; line-height: 1.5;">Beautiful glassmorphism effect with backdrop blur and transparency.</p>
+                            <div style="margin-top: 16px; padding: 8px 16px; background: rgba(255, 255, 255, 0.2); border-radius: 6px; color: white; font-size: 12px; font-weight: 500; display: inline-block;">Glass Effect</div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            generate3DHoverCard(size, style) {
+                return `
+                    <div style="background: #f8fafc; padding: 20px; border-radius: 8px; perspective: 1000px;">
+                        <div style="background: white; border-radius: 12px; padding: 24px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1); transform: rotateX(5deg) rotateY(-5deg); transition: transform 0.3s ease;">
+                            <div style="width: 60px; height: 60px; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); border-radius: 12px; display: flex; align-items: center; justify-content: center; color: white; font-size: 24px; margin-bottom: 16px;">🎯</div>
+                            <h3 style="margin: 0 0 8px 0; color: #1f2937; font-size: 18px; font-weight: 600;">3D Hover Card</h3>
+                            <p style="margin: 0; color: #6b7280; font-size: 14px; line-height: 1.5;">Interactive card with 3D transform effects on hover.</p>
+                        </div>
+                    </div>
+                `;
+            }
+
+            generateNeonCard(size, style) {
+                return `
+                    <div style="background: #0a0a0a; padding: 20px; border-radius: 8px;">
+                        <div style="background: #1a1a1a; border-radius: 12px; padding: 24px; border: 2px solid #00ffff; box-shadow: 0 0 20px #00ffff40, inset 0 0 20px #00ffff10;">
+                            <h3 style="margin: 0 0 12px 0; color: #00ffff; font-size: 18px; font-weight: 600; text-shadow: 0 0 10px #00ffff;">Neon Card</h3>
+                            <p style="margin: 0; color: #ffffff; font-size: 14px; line-height: 1.5;">Cyberpunk-style card with glowing neon effects.</p>
+                            <div style="margin-top: 16px; padding: 8px 16px; background: transparent; border: 1px solid #00ffff; border-radius: 6px; color: #00ffff; font-size: 12px; font-weight: 500; display: inline-block; box-shadow: 0 0 10px #00ffff40;">Neon Style</div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            injectRequiredAnimations(component) {
+                const componentKey = component.key || 
+                                   component.metadata?.componentType || 
+                                   component.name?.toLowerCase().replace(/\s+/g, '-') ||
+                                   'unknown';
+                
+                console.log('Injecting animations for component:', componentKey);
+                
+                // Inject animations based on component type
+                switch(componentKey) {
+                    case 'text-typewriter':
+                    case 'typewriter-text':
+                        this.injectTypewriterAnimation();
+                        break;
+                    case 'text-glitch':
+                    case 'glitch-text':
+                        this.injectGlitchAnimation();
+                        break;
+                    case 'text-rainbow':
+                        this.injectRainbowAnimation();
+                        break;
+                    case 'text-wave':
+                        this.injectWaveAnimation();
+                        break;
+                    case 'text-reveal':
+                        this.injectRevealAnimation();
+                        break;
+                    case 'text-floating':
+                    case 'floating-text':
+                        this.injectFloatingAnimation();
+                        break;
+                }
+            }
+            
+            injectTypewriterAnimation() {
+                const animationId = 'typewriter-blink';
+                
+                // Clear any existing typewriter styles first
+                const existingStyles = document.querySelectorAll('style[id*="typewriter"]');
+                existingStyles.forEach(style => style.remove());
+                
+                console.log('Injecting typewriter animation CSS...');
+                const style = document.createElement('style');
+                style.id = animationId + '-style';
+                style.textContent = `
+                    @keyframes ${animationId} {
+                        0%, 50% { opacity: 1 !important; }
+                        51%, 100% { opacity: 0 !important; }
+                    }
+                `;
+                document.head.appendChild(style);
+                console.log('Typewriter animation CSS injected successfully with !important');
+                
+                // Verify the CSS was added correctly
+                const addedStyle = document.getElementById(animationId + '-style');
+                console.log('Verifying CSS:', addedStyle ? 'Found' : 'Not found');
+                if (addedStyle) {
+                    console.log('CSS content:', addedStyle.textContent);
+                }
+            }
+            
+            injectGlitchAnimation() {
+                const animationId = 'glitch-effect';
+                if (!document.getElementById(animationId + '-style')) {
+                    const style = document.createElement('style');
+                    style.id = animationId + '-style';
+                    style.textContent = `
+                        @keyframes ${animationId} {
+                            0%, 100% { transform: translate(0); }
+                            20% { transform: translate(-2px, 2px); }
+                            40% { transform: translate(-2px, -2px); }
+                            60% { transform: translate(2px, 2px); }
+                            80% { transform: translate(2px, -2px); }
+                        }
+                    `;
+                    document.head.appendChild(style);
+                }
+            }
+            
+            injectRainbowAnimation() {
+                const animationId = 'rainbow-effect';
+                if (!document.getElementById(animationId + '-style')) {
+                    const style = document.createElement('style');
+                    style.id = animationId + '-style';
+                    style.textContent = `
+                        @keyframes ${animationId} {
+                            0%, 100% { background-position: 0% 50%; }
+                            50% { background-position: 100% 50%; }
+                        }
+                    `;
+                    document.head.appendChild(style);
+                }
+            }
+            
+            injectWaveAnimation() {
+                const animationId = 'wave-effect';
+                if (!document.getElementById(animationId + '-style')) {
+                    const style = document.createElement('style');
+                    style.id = animationId + '-style';
+                    style.textContent = `
+                        @keyframes ${animationId} {
+                            0%, 100% { transform: translateY(0px); }
+                            50% { transform: translateY(-15px); }
+                        }
+                    `;
+                    document.head.appendChild(style);
+                }
+            }
+            
+            injectRevealAnimation() {
+                const animationId = 'reveal-effect';
+                if (!document.getElementById(animationId + '-style')) {
+                    const style = document.createElement('style');
+                    style.id = animationId + '-style';
+                    style.textContent = `
+                        @keyframes ${animationId} {
+                            0% { width: 0; }
+                            50% { width: 100%; }
+                            100% { width: 0; }
+                        }
+                    `;
+                    document.head.appendChild(style);
+                }
+            }
+            
+            injectFloatingAnimation() {
+                const animationId = 'float-effect';
+                if (!document.getElementById(animationId + '-style')) {
+                    const style = document.createElement('style');
+                    style.id = animationId + '-style';
+                    style.textContent = `
+                        @keyframes ${animationId} {
+                            0%, 100% { transform: translateY(0px); }
+                            50% { transform: translateY(-10px); }
+                        }
+                    `;
+                    document.head.appendChild(style);
+                }
+            }
+
+            generateTypewriterText(size, color) {
+                console.log('generateTypewriterText called with:', { size, color });
+                const colorMap = {
+                    blue: '#3b82f6', gray: '#6b7280', purple: '#8b5cf6', green: '#10b981'
+                };
+                const textColor = colorMap[color] || colorMap.blue;
+                console.log('Resolved text color:', textColor);
+                
+                // Use static animation name that matches the injected CSS
+                const animationId = 'typewriter-blink';
+                
+                const html = `<div style="display: flex; align-items: center; justify-content: center; padding: 40px; background: #f8fafc; border-radius: 8px;">
+                        <div style="font-size: 24px; font-weight: 600; color: ${textColor}; font-family: monospace; position: relative;">
+                            ✨ Typewriter Effect ✨<span style="animation: ${animationId} 1s infinite !important; margin-left: 4px; color: ${textColor}; font-weight: bold;">|</span>
+                        </div>
+                    </div>`;
+                console.log('Generated typewriter HTML:', html);
+                return html;
+            }
+
+            generateGlitchText(size, color) {
+                // Use static animation name that matches the injected CSS
+                const animationId = 'glitch-effect';
+                
+                return `
+                    <div style="display: flex; align-items: center; justify-content: center; padding: 40px; background: #0a0a0a; border-radius: 8px;">
+                        <div style="font-size: 32px; font-weight: 700; color: #00ff00; font-family: monospace; position: relative; animation: ${animationId} 2s infinite;">
+                            ⚡ GLITCH EFFECT ⚡
+                        </div>
+                    </div>
+                `;
+            }
+
+            generateTextReveal(size, color) {
+                const colorMap = {
+                    blue: '#3b82f6', gray: '#6b7280', purple: '#8b5cf6', green: '#10b981'
+                };
+                const textColor = colorMap[color] || colorMap.blue;
+                // Use static animation name that matches the injected CSS
+                const animationId = 'reveal-effect';
+                
+                return `
+                    <div style="display: flex; align-items: center; justify-content: center; padding: 40px; background: #f8fafc; border-radius: 8px;">
+                        <div style="font-size: 24px; font-weight: 600; color: ${textColor}; overflow: hidden; position: relative; animation: ${animationId} 3s ease-in-out infinite;">
+                            Text Reveal Effect
+                        </div>
+                    </div>
+                `;
+            }
+
+            generateFloatingText(size, color) {
+                const colorMap = {
+                    blue: '#3b82f6', gray: '#6b7280', purple: '#8b5cf6', green: '#10b981'
+                };
+                const textColor = colorMap[color] || colorMap.blue;
+                // Use static animation name that matches the injected CSS
+                const animationId = 'float-effect';
+                
+                return `
+                    <div style="display: flex; align-items: center; justify-content: center; padding: 40px; background: #f8fafc; border-radius: 8px;">
+                        <div style="font-size: 24px; font-weight: 600; color: ${textColor}; animation: ${animationId} 3s ease-in-out infinite;">
+                            ✨ Floating Text ✨
+                        </div>
+                    </div>
+                `;
+            }
+
+            generateRainbowText(size, color) {
+                // Use static animation name that matches the injected CSS
+                const animationId = 'rainbow-effect';
+                
+                return `
+                    <div style="display: flex; align-items: center; justify-content: center; padding: 40px; background: #f8fafc; border-radius: 8px;">
+                        <div style="font-size: 32px; font-weight: 700; background: linear-gradient(45deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #9400d3); background-size: 400% 400%; -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; animation: ${animationId} 2s ease-in-out infinite;">
+                            🌈 Rainbow Text 🌈
+                        </div>
+                    </div>
+                `;
+            }
+
+            generateWaveText(size, color) {
+                const colorMap = {
+                    blue: '#3b82f6', gray: '#6b7280', purple: '#8b5cf6', green: '#10b981'
+                };
+                const textColor = colorMap[color] || colorMap.blue;
+                // Use static animation name that matches the injected CSS
+                const animationId = 'wave-effect';
+                
+                return `
+                    <div style="display: flex; align-items: center; justify-content: center; padding: 40px; background: #f8fafc; border-radius: 8px;">
+                        <div style="font-size: 28px; font-weight: 600; color: ${textColor}; display: flex; gap: 2px;">
+                            <span style="animation: ${animationId} 1.5s ease-in-out 0s infinite;">🌊</span>
+                            <span style="animation: ${animationId} 1.5s ease-in-out 0.1s infinite;">W</span>
+                            <span style="animation: ${animationId} 1.5s ease-in-out 0.2s infinite;">a</span>
+                            <span style="animation: ${animationId} 1.5s ease-in-out 0.3s infinite;">v</span>
+                            <span style="animation: ${animationId} 1.5s ease-in-out 0.4s infinite;">e</span>
+                            <span style="animation: ${animationId} 1.5s ease-in-out 0.5s infinite;">&nbsp;</span>
+                            <span style="animation: ${animationId} 1.5s ease-in-out 0.6s infinite;">T</span>
+                            <span style="animation: ${animationId} 1.5s ease-in-out 0.7s infinite;">e</span>
+                            <span style="animation: ${animationId} 1.5s ease-in-out 0.8s infinite;">x</span>
+                            <span style="animation: ${animationId} 1.5s ease-in-out 0.9s infinite;">t</span>
+                            <span style="animation: ${animationId} 1.5s ease-in-out 1.0s infinite;">🌊</span>
+                        </div>
+                    </div>
+                `;
+            }
+
+            // === BACKGROUND COMPONENT GENERATORS ===
+
+            generateLinearGradientBackground(customizations) {
+                const direction = customizations.direction || 'to-right';
+                const scheme = customizations.scheme || 'purple-blue';
+                
+                const gradientSchemes = {
+                    'purple-blue': 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    'pink-orange': 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+                    'green-blue': 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+                    'red-yellow': 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
+                    'dark-purple': 'linear-gradient(135deg, #2d1b69 0%, #11998e 100%)'
+                };
+                
+                return `
+                    <div style="
+                        width: 100%;
+                        height: 200px;
+                        background: ${gradientSchemes[scheme]};
+                        border-radius: 12px;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        position: relative;
+                        overflow: hidden;
+                    ">
+                        <div style="
+                            color: white;
+                            font-size: 18px;
+                            font-weight: 600;
+                            text-align: center;
+                            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+                            z-index: 2;
+                        ">
+                            Linear Gradient Background<br>
+                            <small style="font-size: 14px; opacity: 0.9;">${scheme.replace('-', ' ')} • ${direction.replace('-', ' ')}</small>
+                        </div>
+                    </div>
+                `;
+            }
+
+            generateRadialGradientBackground(customizations) {
+                const size = customizations.size || 'circle';
+                const position = customizations.position || 'center';
+                const scheme = customizations.scheme || 'cosmic';
+                
+                const gradientSchemes = {
+                    'cosmic': 'radial-gradient(circle at center, #2d1b69 0%, #11998e 50%, #0f172a 100%)',
+                    'sunset': 'radial-gradient(circle at center, #fa709a 0%, #fee140 50%, #f97316 100%)',
+                    'ocean': 'radial-gradient(circle at center, #4facfe 0%, #00f2fe 50%, #0891b2 100%)',
+                    'forest': 'radial-gradient(circle at center, #34d399 0%, #10b981 50%, #065f46 100%)',
+                    'fire': 'radial-gradient(circle at center, #fbbf24 0%, #f59e0b 50%, #dc2626 100%)'
+                };
+                
+                return `
+                    <div style="
+                        width: 100%;
+                        height: 200px;
+                        background: ${gradientSchemes[scheme]};
+                        border-radius: 12px;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        position: relative;
+                    ">
+                        <div style="
+                            color: white;
+                            font-size: 18px;
+                            font-weight: 600;
+                            text-align: center;
+                            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+                        ">
+                            Radial Gradient Background<br>
+                            <small style="font-size: 14px; opacity: 0.9;">${scheme} • ${size} • ${position}</small>
+                        </div>
+                    </div>
+                `;
+            }
+
+            generateAnimatedParticlesBackground(customizations) {
+                const density = customizations.density || 'medium';
+                const color = customizations.color || 'blue';
+                const speed = customizations.speed || 'medium';
+                
+                const densityMap = { low: 15, medium: 25, high: 40 };
+                const colorMap = { blue: '#3b82f6', purple: '#8b5cf6', pink: '#ec4899', green: '#10b981', white: '#ffffff' };
+                const speedMap = { slow: '6s', medium: '4s', fast: '2s' };
+                
+                const particleCount = densityMap[density];
+                const particleColor = colorMap[color];
+                const animationSpeed = speedMap[speed];
+                
+                const particles = Array.from({ length: particleCount }, (_, i) => `
+                    <div class="particle-${i}" style="
+                        position: absolute;
+                        left: ${Math.random() * 100}%;
+                        top: ${Math.random() * 100}%;
+                        width: ${Math.random() * 3 + 1}px;
+                        height: ${Math.random() * 3 + 1}px;
+                        background: ${particleColor};
+                        border-radius: 50%;
+                        opacity: 0.6;
+                        animation: particles-float ${animationSpeed} ease-in-out infinite alternate;
+                        animation-delay: ${Math.random() * 2}s;
+                    "></div>
+                `).join('');
+                
+                return `
+                    <div style="
+                        width: 100%;
+                        height: 200px;
+                        background: linear-gradient(135deg, #0f0f23 0%, #1a1a3e 100%);
+                        position: relative;
+                        overflow: hidden;
+                        border-radius: 12px;
+                    ">
+                        ${particles}
+                        <div style="
+                            position: absolute;
+                            top: 50%;
+                            left: 50%;
+                            transform: translate(-50%, -50%);
+                            color: white;
+                            font-size: 18px;
+                            font-weight: 600;
+                            text-align: center;
+                            z-index: 10;
+                        ">
+                            Animated Particles<br>
+                            <small style="font-size: 14px; opacity: 0.8;">${density} density • ${color} • ${speed}</small>
+                        </div>
+                    </div>
+                `;
+            }
+
+            generateAnimatedWavesBackground(customizations) {
+                const style = customizations.style || 'gentle';
+                const color = customizations.color || 'blue';
+                const layers = customizations.layers || 'single';
+                
+                const colorMap = {
+                    blue: ['#3b82f6', '#1d4ed8', '#1e40af'],
+                    purple: ['#8b5cf6', '#7c3aed', '#6d28d9'],
+                    green: ['#10b981', '#059669', '#047857'],
+                    pink: ['#ec4899', '#db2777', '#be185d'],
+                    orange: ['#f97316', '#ea580c', '#dc2626']
+                };
+                
+                const layerMap = { single: 1, double: 2, triple: 3 };
+                const colors = colorMap[color];
+                const layerCount = layerMap[layers];
+                
+                const waveLayers = Array.from({ length: layerCount }, (_, i) => `
+                    <div class="wave-layer-${i}" style="
+                        position: absolute;
+                        bottom: ${i * 15}px;
+                        left: 0;
+                        width: 200%;
+                        height: 60px;
+                        background: ${colors[i % colors.length]};
+                        opacity: ${0.4 + (i * 0.2)};
+                        clip-path: polygon(
+                            0% 100%,
+                            ${Array.from({ length: 21 }, (_, j) => `${j * 5}% ${60 + Math.sin(j * 0.3) * 15}%`).join(', ')},
+                            100% 100%
+                        );
+                        animation: waves-flow ${4 + i}s ease-in-out infinite;
+                    "></div>
+                `).join('');
+                
+                return `
+                    <div style="
+                        width: 100%;
+                        height: 200px;
+                        background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+                        position: relative;
+                        overflow: hidden;
+                        border-radius: 12px;
+                    ">
+                        ${waveLayers}
+                        <div style="
+                            position: absolute;
+                            top: 30%;
+                            left: 50%;
+                            transform: translate(-50%, -50%);
+                            color: white;
+                            font-size: 18px;
+                            font-weight: 600;
+                            text-align: center;
+                            z-index: 10;
+                        ">
+                            Animated Waves<br>
+                            <small style="font-size: 14px; opacity: 0.8;">${style} • ${color} • ${layers}</small>
+                        </div>
+                    </div>
+                `;
+            }
+
+            generateDotsPatternBackground(customizations) {
+                const size = customizations.size || 'medium';
+                const spacing = customizations.spacing || 'normal';
+                const color = customizations.color || 'light';
+                
+                const sizeMap = { small: '2px', medium: '4px', large: '6px' };
+                const spacingMap = { tight: '15px', normal: '25px', wide: '40px' };
+                const colorMap = {
+                    light: 'rgba(255, 255, 255, 0.2)',
+                    medium: 'rgba(255, 255, 255, 0.4)',
+                    dark: 'rgba(0, 0, 0, 0.2)'
+                };
+                
+                const dotSize = sizeMap[size];
+                const dotSpacing = spacingMap[spacing];
+                const dotColor = colorMap[color];
+                
+                return `
+                    <div style="
+                        width: 100%;
+                        height: 200px;
+                        background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+                        background-image: radial-gradient(${dotSize} ${dotSize}, ${dotColor} 50%, transparent 50%);
+                        background-size: ${dotSpacing} ${dotSpacing};
+                        border-radius: 12px;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        position: relative;
+                    ">
+                        <div style="
+                            color: white;
+                            font-size: 18px;
+                            font-weight: 600;
+                            text-align: center;
+                            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+                        ">
+                            Dots Pattern Background<br>
+                            <small style="font-size: 14px; opacity: 0.8;">${size} dots • ${spacing} spacing • ${color}</small>
+                        </div>
+                    </div>
+                `;
+            }
+
+            generateGridPatternBackground(customizations) {
+                const size = customizations.size || 'medium';
+                const thickness = customizations.thickness || 'thin';
+                const color = customizations.color || 'light';
+                
+                const sizeMap = { small: '15px', medium: '30px', large: '60px' };
+                const thicknessMap = { thin: '1px', medium: '2px', thick: '3px' };
+                const colorMap = {
+                    light: 'rgba(255, 255, 255, 0.2)',
+                    medium: 'rgba(255, 255, 255, 0.4)',
+                    dark: 'rgba(0, 0, 0, 0.2)'
+                };
+                
+                const gridSize = sizeMap[size];
+                const lineThickness = thicknessMap[thickness];
+                const lineColor = colorMap[color];
+                
+                return `
+                    <div style="
+                        width: 100%;
+                        height: 200px;
+                        background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+                        background-image: 
+                            linear-gradient(${lineColor} ${lineThickness}, transparent ${lineThickness}),
+                            linear-gradient(90deg, ${lineColor} ${lineThickness}, transparent ${lineThickness});
+                        background-size: ${gridSize} ${gridSize};
+                        border-radius: 12px;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        position: relative;
+                    ">
+                        <div style="
+                            color: white;
+                            font-size: 18px;
+                            font-weight: 600;
+                            text-align: center;
+                            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+                        ">
+                            Grid Pattern Background<br>
+                            <small style="font-size: 14px; opacity: 0.8;">${size} grid • ${thickness} lines • ${color}</small>
+                        </div>
+                    </div>
+                `;
+            }
+
+            generateGeometricAnimatedBackground(customizations) {
+                const shapes = customizations.shapes || 'circles';
+                const count = customizations.count || 'normal';
+                const colors = customizations.colors || 'monochrome';
+                
+                const countMap = { few: 8, normal: 15, many: 25 };
+                const colorMaps = {
+                    monochrome: ['#ffffff'],
+                    rainbow: ['#ff0000', '#ff8000', '#ffff00', '#00ff00', '#0080ff', '#8000ff'],
+                    warm: ['#ff6b6b', '#ffa726', '#ffee58', '#ff8a65'],
+                    cool: ['#42a5f5', '#26c6da', '#66bb6a', '#ab47bc']
+                };
+                
+                const shapeCount = countMap[count];
+                const shapeColors = colorMaps[colors];
+                
+                const geometricShapes = Array.from({ length: shapeCount }, (_, i) => {
+                    const shapeColor = shapeColors[i % shapeColors.length];
+                    const shapeStyle = shapes === 'circles' ? 'border-radius: 50%;' : 
+                                     shapes === 'squares' ? 'border-radius: 0;' : 
+                                     'clip-path: polygon(50% 0%, 0% 100%, 100% 100%);';
+                    
+                    return `
+                        <div class="geometric-shape-${i}" style="
+                            position: absolute;
+                            left: ${Math.random() * 90}%;
+                            top: ${Math.random() * 90}%;
+                            width: ${Math.random() * 20 + 10}px;
+                            height: ${Math.random() * 20 + 10}px;
+                            background: ${shapeColor};
+                            opacity: 0.3;
+                            ${shapeStyle}
+                            animation: geometric-float ${Math.random() * 4 + 3}s ease-in-out infinite;
+                            animation-delay: ${Math.random() * 2}s;
+                        "></div>
+                    `;
+                }).join('');
+                
+                return `
+                    <div style="
+                        width: 100%;
+                        height: 200px;
+                        background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+                        position: relative;
+                        overflow: hidden;
+                        border-radius: 12px;
+                    ">
+                        ${geometricShapes}
+                        <div style="
+                            position: absolute;
+                            top: 50%;
+                            left: 50%;
+                            transform: translate(-50%, -50%);
+                            color: white;
+                            font-size: 18px;
+                            font-weight: 600;
+                            text-align: center;
+                            z-index: 10;
+                        ">
+                            Animated Geometric Shapes<br>
+                            <small style="font-size: 14px; opacity: 0.8;">${shapes} • ${count} • ${colors}</small>
+                        </div>
+                    </div>
+                `;
+            }
+
+            generateImageOverlayBackground(customizations) {
+                const overlay = customizations.overlay || 'dark';
+                const blur = customizations.blur || 'light';
+                const tint = customizations.tint || 'none';
+                
+                const overlayColors = {
+                    dark: 'rgba(0, 0, 0, 0.5)',
+                    light: 'rgba(255, 255, 255, 0.5)',
+                    colored: 'rgba(99, 102, 241, 0.3)'
+                };
+                
+                const blurLevels = {
+                    none: '0px',
+                    light: '2px',
+                    medium: '5px',
+                    heavy: '10px'
+                };
+                
+                return `
+                    <div style="
+                        width: 100%;
+                        height: 200px;
+                        background: url('data:image/svg+xml,<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 400 200\"><defs><linearGradient id=\"bg\" x1=\"0%\" y1=\"0%\" x2=\"100%\" y2=\"100%\"><stop offset=\"0%\" stop-color=\"%234facfe\"/><stop offset=\"100%\" stop-color=\"%2300f2fe\"/></linearGradient></defs><rect width=\"400\" height=\"200\" fill=\"url(%23bg)\"/><circle cx=\"100\" cy=\"60\" r=\"25\" fill=\"%23ffffff\" opacity=\"0.3\"/><circle cx=\"320\" cy=\"140\" r=\"35\" fill=\"%23ffffff\" opacity=\"0.2\"/><rect x=\"200\" y=\"80\" width=\"40\" height=\"40\" fill=\"%23ffffff\" opacity=\"0.25\" rx=\"5\"/></svg>');
+                        background-size: cover;
+                        background-position: center;
+                        filter: blur(${blurLevels[blur]});
+                        border-radius: 12px;
+                        position: relative;
+                        overflow: hidden;
+                    ">
+                        <div style="
+                            position: absolute;
+                            inset: 0;
+                            background: ${overlayColors[overlay]};
+                        "></div>
+                        <div style="
+                            position: absolute;
+                            top: 50%;
+                            left: 50%;
+                            transform: translate(-50%, -50%);
+                            color: white;
+                            font-size: 18px;
+                            font-weight: 600;
+                            text-align: center;
+                            z-index: 10;
+                        ">
+                            Image Overlay Background<br>
+                            <small style="font-size: 14px; opacity: 0.8;">${overlay} overlay • ${blur} blur • ${tint} tint</small>
+                        </div>
+                    </div>
+                `;
+            }
+
+            generateBlobAnimatedBackground(customizations) {
+                const count = customizations.count || 'single';
+                const size = customizations.size || 'medium';
+                const colors = customizations.colors || 'purple';
+                
+                const countMap = { single: 1, double: 2, triple: 3 };
+                const colorMaps = {
+                    purple: ['#8b5cf6', '#a855f7', '#9333ea'],
+                    blue: ['#3b82f6', '#2563eb', '#1d4ed8'],
+                    pink: ['#ec4899', '#db2777', '#be185d'],
+                    green: ['#10b981', '#059669', '#047857'],
+                    gradient: ['linear-gradient(45deg, #8b5cf6, #3b82f6)', 'linear-gradient(45deg, #ec4899, #f97316)']
+                };
+                
+                const blobCount = countMap[count];
+                const blobColors = colorMaps[colors];
+                
+                const blobs = Array.from({ length: blobCount }, (_, i) => `
+                    <div class="blob-${i}" style="
+                        position: absolute;
+                        left: ${20 + (i * 25)}%;
+                        top: ${20 + (i * 20)}%;
+                        width: ${Math.random() * 80 + 60}px;
+                        height: ${Math.random() * 80 + 60}px;
+                        background: ${blobColors[i % blobColors.length]};
+                        opacity: 0.4;
+                        border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%;
+                        filter: blur(1px);
+                        animation: blob-morph ${Math.random() * 6 + 8}s ease-in-out infinite;
+                        animation-delay: ${i * 2}s;
+                    "></div>
+                `).join('');
+                
+                return `
+                    <div style="
+                        width: 100%;
+                        height: 200px;
+                        background: radial-gradient(ellipse at center, #1e1b4b 0%, #0f0f23 100%);
+                        position: relative;
+                        overflow: hidden;
+                        border-radius: 12px;
+                    ">
+                        ${blobs}
+                        <div style="
+                            position: absolute;
+                            top: 50%;
+                            left: 50%;
+                            transform: translate(-50%, -50%);
+                            color: white;
+                            font-size: 18px;
+                            font-weight: 600;
+                            text-align: center;
+                            z-index: 10;
+                        ">
+                            Animated Blob Background<br>
+                            <small style="font-size: 14px; opacity: 0.8;">${count} blob(s) • ${size} • ${colors}</small>
+                        </div>
+                    </div>
+                `;
+            }
+
+            generateCircuitPatternBackground(customizations) {
+                const density = customizations.density || 'normal';
+                const color = customizations.color || 'green';
+                const animation = customizations.animation || 'pulse';
+                
+                const colorMap = {
+                    green: '#00ff00',
+                    blue: '#00bfff',
+                    purple: '#8a2be2',
+                    orange: '#ff8c00',
+                    white: '#ffffff'
+                };
+                
+                const circuitColor = colorMap[color];
+                const animationClass = `circuit-${animation}`;
+                
+                return `
+                    <div style="
+                        width: 100%;
+                        height: 200px;
+                        background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
+                        position: relative;
+                        border-radius: 12px;
+                        overflow: hidden;
+                    ">
+                        <svg style="
+                            position: absolute;
+                            inset: 0;
+                            width: 100%;
+                            height: 100%;
+                            opacity: 0.6;
+                        " viewBox="0 0 400 200">
+                            <g class="${animationClass}" style="animation: ${animationClass} 3s ease-in-out infinite;">
+                                <rect x="50" y="30" width="30" height="2" fill="${circuitColor}"/>
+                                <rect x="78" y="30" width="2" height="30" fill="${circuitColor}"/>
+                                <circle cx="90" cy="45" r="4" fill="${circuitColor}"/>
+                                <rect x="150" y="80" width="40" height="2" fill="${circuitColor}"/>
+                                <rect x="188" y="80" width="2" height="20" fill="${circuitColor}"/>
+                                <rect x="250" y="120" width="25" height="2" fill="${circuitColor}"/>
+                                <circle cx="285" cy="135" r="3" fill="${circuitColor}"/>
+                                <rect x="320" y="60" width="2" height="25" fill="${circuitColor}"/>
+                                <rect x="100" y="150" width="35" height="2" fill="${circuitColor}"/>
+                            </g>
+                        </svg>
+                        <div style="
+                            position: absolute;
+                            top: 50%;
+                            left: 50%;
+                            transform: translate(-50%, -50%);
+                            color: white;
+                            font-size: 18px;
+                            font-weight: 600;
+                            text-align: center;
+                            z-index: 10;
+                        ">
+                            Circuit Pattern Background<br>
+                            <small style="font-size: 14px; opacity: 0.8;">${density} density • ${color} • ${animation}</small>
+                        </div>
+                    </div>
+                `;
+            }
+
+            generateNoiseTextureBackground(customizations) {
+                const intensity = customizations.intensity || 'medium';
+                const color = customizations.color || 'white';
+                const scale = customizations.scale || 'medium';
+                
+                const intensityMap = { light: 0.1, medium: 0.2, heavy: 0.4 };
+                const colorMap = { white: '#ffffff', black: '#000000', colored: '#6366f1' };
+                const scaleMap = { fine: '30px', medium: '60px', coarse: '120px' };
+                
+                const noiseIntensity = intensityMap[intensity];
+                const noiseColor = colorMap[color];
+                const noiseScale = scaleMap[scale];
+                
+                return `
+                    <div style="
+                        width: 100%;
+                        height: 200px;
+                        background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+                        background-image: 
+                            radial-gradient(circle at 25% 25%, ${noiseColor}${Math.floor(noiseIntensity * 255).toString(16)} ${noiseIntensity * 100}%, transparent 70%),
+                            radial-gradient(circle at 75% 25%, ${noiseColor}${Math.floor(noiseIntensity * 255).toString(16)} ${noiseIntensity * 100}%, transparent 70%),
+                            radial-gradient(circle at 25% 75%, ${noiseColor}${Math.floor(noiseIntensity * 255).toString(16)} ${noiseIntensity * 100}%, transparent 70%),
+                            radial-gradient(circle at 75% 75%, ${noiseColor}${Math.floor(noiseIntensity * 255).toString(16)} ${noiseIntensity * 100}%, transparent 70%);
+                        background-size: ${noiseScale};
+                        border-radius: 12px;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        position: relative;
+                    ">
+                        <div style="
+                            color: white;
+                            font-size: 18px;
+                            font-weight: 600;
+                            text-align: center;
+                            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+                        ">
+                            Noise Texture Background<br>
+                            <small style="font-size: 14px; opacity: 0.8;">${intensity} intensity • ${color} • ${scale}</small>
+                        </div>
+                    </div>
+                `;
+            }
+
+            generateVideoBackground(customizations) {
+                const overlay = customizations.overlay || 'dark';
+                const controls = customizations.controls || 'hidden';
+                
+                const overlayStyles = {
+                    none: 'transparent',
+                    dark: 'rgba(0, 0, 0, 0.4)',
+                    light: 'rgba(255, 255, 255, 0.4)',
+                    gradient: 'linear-gradient(45deg, rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.1))'
+                };
+                
+                return `
+                    <div style="
+                        width: 100%;
+                        height: 200px;
+                        background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+                        position: relative;
+                        border-radius: 12px;
+                        overflow: hidden;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                    ">
+                        <div style="
+                            position: absolute;
+                            inset: 0;
+                            background: url('data:image/svg+xml,<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 400 200\"><defs><pattern id=\"video\" patternUnits=\"userSpaceOnUse\" width=\"20\" height=\"20\"><rect width=\"20\" height=\"20\" fill=\"%23374151\"/><rect x=\"0\" y=\"0\" width=\"10\" height=\"10\" fill=\"%23475569\"/><rect x=\"10\" y=\"10\" width=\"10\" height=\"10\" fill=\"%23475569\"/></pattern></defs><rect width=\"400\" height=\"200\" fill=\"url(%23video)\" opacity=\"0.3\"/><circle cx=\"200\" cy=\"100\" r=\"30\" fill=\"%23ffffff\" opacity=\"0.8\"/><polygon points=\"190,85 190,115 215,100\" fill=\"%23000000\"/></svg>');
+                            background-size: cover;
+                            background-position: center;
+                        "></div>
+                        <div style="
+                            position: absolute;
+                            inset: 0;
+                            background: ${overlayStyles[overlay]};
+                        "></div>
+                        <div style="
+                            position: relative;
+                            color: white;
+                            font-size: 18px;
+                            font-weight: 600;
+                            text-align: center;
+                            z-index: 10;
+                        ">
+                            Video Background<br>
+                            <small style="font-size: 14px; opacity: 0.8;">${overlay} overlay • ${controls} controls</small>
+                        </div>
+                    </div>
+                `;
+            }
+
+            generateComponentPreview(component, customizations) {
+                console.log('RAW COMPONENT DATA:', component);
+                console.log('Component keys:', Object.keys(component));
+                console.log('Component.key value:', component.key);
+                console.log('Component.name value:', component.name);
+                
+                // Handle different component data structures
+                let componentKey = component.key || 
+                                 component.metadata?.componentType || 
+                                 component.name?.toLowerCase().replace(/\s+/g, '-') ||
+                                 'unknown';
+                
+                // Special handling for common component patterns
+                if (componentKey === 'unknown' && component.name) {
+                    const name = component.name.toLowerCase();
+                    if (name.includes('magnetic') && name.includes('button')) {
+                        componentKey = 'button-magnetic';
+                    }
+                }
+                
+                // Additional fallback for name-based detection
+                if (componentKey !== 'button-magnetic' && component.name) {
+                    const name = component.name.toLowerCase();
+                    if (name === 'magnetic button') {
+                        componentKey = 'button-magnetic';
+                    }
+                }
+                
+                console.log('Final component key used:', componentKey);
+                console.log('Component name:', component.name || component.metadata?.componentType);
+                console.log('Available customizations:', customizations);
+                
+                // Get customization values
+                const size = customizations.size || 'md';
+                const color = customizations.color || 'blue';
+                const style = customizations.style || 'minimal';
+                
+                console.log('Customization values:', { size, color, style });
+                
+                // Component-specific preview content using the working animation method
+                const previews = {
+                    // === LAYOUT COMPONENTS ===
+                    'hero-video-background': `
+                        <div style="position: relative; background: linear-gradient(135deg, #1e3a8a 0%, #7c3aed 100%); border-radius: 12px; overflow: hidden; min-height: 200px; display: flex; align-items: center; justify-content: center;">
+                            <div style="position: absolute; inset: 0; background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="%23000" opacity="0.3"/><circle cx="50" cy="50" r="15" fill="%23fff" opacity="0.8"/><polygon points="45,42 45,58 58,50" fill="%23000"/></svg>'); background-size: 60px; background-position: center; background-repeat: no-repeat;"></div>
+                            <div style="position: relative; text-align: center; color: white; z-index: 2;">
+                                <h1 style="font-size: 2rem; font-weight: bold; margin: 0 0 0.5rem 0;">Hero with Video</h1>
+                                <p style="font-size: 1rem; opacity: 0.9; margin: 0;">Fullscreen video background</p>
+                            </div>
+                        </div>
+                    `,
+                    'modern-hero-section': `
+                        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; padding: 3rem 2rem; text-align: center; color: white;">
+                            <h1 style="font-size: 2.5rem; font-weight: bold; margin: 0 0 1rem 0;">Modern Hero</h1>
+                            <p style="font-size: 1.2rem; opacity: 0.9; margin: 0 0 2rem 0;">Beautiful hero section with gradient</p>
+                            <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+                                <div style="background: rgba(255,255,255,0.2); padding: 0.75rem 1.5rem; border-radius: 50px; backdrop-filter: blur(10px);">Get Started</div>
+                                <div style="border: 2px solid rgba(255,255,255,0.3); padding: 0.75rem 1.5rem; border-radius: 50px;">Learn More</div>
+                            </div>
+                        </div>
+                    `,
+                    'split-hero-section': `
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; border-radius: 12px; overflow: hidden; min-height: 200px;">
+                            <div style="background: #1f2937; padding: 2rem; display: flex; flex-direction: column; justify-content: center; color: white;">
+                                <h2 style="font-size: 1.8rem; font-weight: bold; margin: 0 0 1rem 0;">Split Hero</h2>
+                                <p style="opacity: 0.8; margin: 0;">Content on left, image on right</p>
+                            </div>
+                            <div style="background: linear-gradient(45deg, #3b82f6, #8b5cf6); display: flex; align-items: center; justify-content: center; color: white; font-size: 3rem;">🖼️</div>
+                        </div>
+                    `,
+                    'masonry-grid': `
+                        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; padding: 1rem; background: #f8fafc; border-radius: 8px;">
+                            <div style="background: #3b82f6; height: 60px; border-radius: 6px;"></div>
+                            <div style="background: #ef4444; height: 40px; border-radius: 6px;"></div>
+                            <div style="background: #10b981; height: 80px; border-radius: 6px;"></div>
+                            <div style="background: #f59e0b; height: 50px; border-radius: 6px;"></div>
+                            <div style="background: #8b5cf6; height: 70px; border-radius: 6px;"></div>
+                            <div style="background: #06b6d4; height: 45px; border-radius: 6px;"></div>
+                        </div>
+                    `,
+                    'responsive-container': `
+                        <div style="background: #f8fafc; border-radius: 8px; padding: 1rem;">
+                            <div style="max-width: 400px; margin: 0 auto; background: white; border-radius: 6px; padding: 1.5rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                                <div style="height: 4px; background: linear-gradient(90deg, #3b82f6, #8b5cf6); border-radius: 2px; margin-bottom: 1rem;"></div>
+                                <h3 style="font-size: 1.2rem; font-weight: 600; margin: 0 0 0.5rem 0;">Responsive Container</h3>
+                                <p style="color: #6b7280; margin: 0; font-size: 0.9rem;">Adapts to screen size</p>
+                            </div>
+                        </div>
+                    `,
+                    'flexible-layout': `
+                        <div style="display: flex; gap: 0.5rem; padding: 1rem; background: #f8fafc; border-radius: 8px;">
+                            <div style="flex: 1; background: #3b82f6; height: 60px; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: white; font-size: 0.8rem;">Flex 1</div>
+                            <div style="flex: 2; background: #ef4444; height: 60px; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: white; font-size: 0.8rem;">Flex 2</div>
+                            <div style="flex: 1; background: #10b981; height: 60px; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: white; font-size: 0.8rem;">Flex 1</div>
+                        </div>
+                    `,
+
+                    // === NAVIGATION COMPONENTS ===
+                    'floating-navigation': `
+                        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; border-radius: 8px;">
+                            <div style="background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); border-radius: 50px; padding: 12px 24px; display: flex; gap: 16px; align-items: center; justify-content: center;">
+                                <span style="color: white; font-weight: 500;">Home</span>
+                                <span style="color: rgba(255,255,255,0.7);">About</span>
+                                <span style="color: rgba(255,255,255,0.7);">Services</span>
+                                <span style="color: rgba(255,255,255,0.7);">Contact</span>
+                            </div>
+                        </div>
+                    `,
+                    'animated-sidebar': `
+                        <div style="display: flex; height: 200px; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                            <div style="width: 80px; background: #2d3748; color: white; padding: 16px 8px; display: flex; flex-direction: column; gap: 12px;">
+                                <div style="width: 32px; height: 32px; background: #4299e1; border-radius: 6px; display: flex; align-items: center; justify-content: center;">📊</div>
+                                <div style="width: 32px; height: 32px; background: rgba(255,255,255,0.1); border-radius: 6px; display: flex; align-items: center; justify-content: center;">⚙️</div>
+                                <div style="width: 32px; height: 32px; background: rgba(255,255,255,0.1); border-radius: 6px; display: flex; align-items: center; justify-content: center;">👤</div>
+                            </div>
+                            <div style="flex: 1; background: #f7fafc; padding: 16px;">
+                                <div style="height: 100%; background: white; border-radius: 6px; padding: 16px; display: flex; align-items: center; justify-content: center; color: #666;">
+                                    Main Content Area
+                                </div>
+                            </div>
+                        </div>
+                    `,
+                    'animated-breadcrumbs': `
+                        <div style="background: #f8fafc; padding: 20px; border-radius: 8px;">
+                            <div style="display: flex; align-items: center; gap: 8px; color: #4a5568;">
+                                <span style="color: #4299e1; font-weight: 500;">Home</span>
+                                <span style="color: #a0aec0;">→</span>
+                                <span style="color: #4299e1;">Products</span>
+                                <span style="color: #a0aec0;">→</span>
+                                <span style="color: #2d3748; font-weight: 500;">Electronics</span>
+                            </div>
+                        </div>
+                    `,
+
+                    // === LOADER COMPONENTS ===
+                    'loader-dots': this.generateDotsLoader(size, color),
+                    'animated-dots-loader': this.generateDotsLoader(size, color), // fallback
+                    'loader-spinner': this.generateSpinnerLoader(size, color),
+                    'spinner-loader': this.generateSpinnerLoader(size, color), // fallback
+                    'loader-pulse': this.generatePulseLoader(size, color),
+                    'pulse-loader': this.generatePulseLoader(size, color), // fallback
+                    'loader-skeleton': this.generateSkeletonLoader(size, color),
+                    'skeleton-loader': this.generateSkeletonLoader(size, color), // fallback
+
+                    // === BUTTON COMPONENTS ===
+                    'button-animated': this.generateGlowButton(size, color, style),
+                    'animated-button': this.generateGlowButton(size, color, style), // fallback
+                    'button-glow': this.generateGlowButton(size, color, style),
+                    'glow-button': this.generateGlowButton(size, color, style), // fallback
+                    'button-ripple': this.generateRippleButton(size, color, style),
+                    'ripple-button': this.generateRippleButton(size, color, style), // fallback
+                    'button-magnetic': this.generateMagneticButton(size, color, style),
+                    'magnetic-button': this.generateMagneticButton(size, color, style), // fallback
+                    'button-split': this.generateSplitButton(size, color, style),
+                    'split-button': this.generateSplitButton(size, color, style), // fallback
+
+                    // === CARD COMPONENTS ===
+                    'card-modern': this.generateModernCard(size, style),
+                    'card-pricing': this.generatePricingCard(size, style),
+                    'card-profile': this.generateProfileCard(size, style),
+                    'card-testimonial': this.generateTestimonialCard(size, style),
+                    'glass-card': this.generateGlassCard(size, style),
+                    '3d-hover-card': this.generate3DHoverCard(size, style),
+                    'neon-card': this.generateNeonCard(size, style),
+                    'pricing-card': this.generatePricingCard(size, style),
+
+                    // === FORM COMPONENTS ===
+                    'form-modern': `
+                        <div style="background: white; padding: 24px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); max-width: 400px;">
+                            <h3 style="font-size: 1.5rem; font-weight: 600; margin: 0 0 1.5rem 0; color: #1f2937;">Contact Form</h3>
+                            <div style="margin-bottom: 1rem;">
+                                <label style="display: block; font-size: 0.9rem; font-weight: 500; color: #374151; margin-bottom: 0.5rem;">Name</label>
+                                <div style="border: 2px solid #e5e7eb; border-radius: 8px; padding: 12px; background: #f9fafb;">John Doe</div>
+                            </div>
+                            <div style="margin-bottom: 1rem;">
+                                <label style="display: block; font-size: 0.9rem; font-weight: 500; color: #374151; margin-bottom: 0.5rem;">Email</label>
+                                <div style="border: 2px solid #3b82f6; border-radius: 8px; padding: 12px; background: white; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);">john@example.com</div>
+                            </div>
+                            <div style="margin-bottom: 1.5rem;">
+                                <label style="display: block; font-size: 0.9rem; font-weight: 500; color: #374151; margin-bottom: 0.5rem;">Message</label>
+                                <div style="border: 2px solid #e5e7eb; border-radius: 8px; padding: 12px; background: #f9fafb; min-height: 80px;">Your message here...</div>
+                            </div>
+                            <button style="width: 100%; background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); color: white; border: none; padding: 12px; border-radius: 8px; font-weight: 500; cursor: pointer;">Send Message</button>
+                        </div>
+                    `,
+                    'form-floating-labels': `
+                        <div style="background: #f8fafc; padding: 24px; border-radius: 12px; max-width: 400px;">
+                            <h3 style="font-size: 1.5rem; font-weight: 600; margin: 0 0 1.5rem 0; color: #1f2937;">Floating Labels</h3>
+                            <div style="position: relative; margin-bottom: 1.5rem;">
+                                <div style="border: 1px solid #d1d5db; border-radius: 8px; padding: 16px 12px 8px 12px; background: white;">john@example.com</div>
+                                <label style="position: absolute; top: 8px; left: 12px; font-size: 0.75rem; color: #6b7280; font-weight: 500;">Email Address</label>
+                            </div>
+                            <div style="position: relative; margin-bottom: 1.5rem;">
+                                <div style="border: 2px solid #3b82f6; border-radius: 8px; padding: 16px 12px 8px 12px; background: white;">••••••••</div>
+                                <label style="position: absolute; top: 8px; left: 12px; font-size: 0.75rem; color: #3b82f6; font-weight: 500;">Password</label>
+                            </div>
+                            <button style="width: 100%; background: #3b82f6; color: white; border: none; padding: 14px; border-radius: 8px; font-weight: 500;">Sign In</button>
+                        </div>
+                    `,
+                    'form-validation': `
+                        <div style="background: white; padding: 24px; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); max-width: 400px;">
+                            <h3 style="font-size: 1.5rem; font-weight: 600; margin: 0 0 1.5rem 0; color: #1f2937;">Validation Form</h3>
+                            <div style="margin-bottom: 1rem;">
+                                <label style="display: block; font-size: 0.9rem; font-weight: 500; color: #374151; margin-bottom: 0.5rem;">Username</label>
+                                <div style="border: 2px solid #10b981; border-radius: 8px; padding: 12px; background: white;">username123</div>
+                                <div style="display: flex; align-items: center; gap: 0.5rem; margin-top: 0.5rem;">
+                                    <span style="color: #10b981; font-size: 0.8rem;">✓</span>
+                                    <span style="color: #10b981; font-size: 0.8rem;">Valid username</span>
+                                </div>
+                            </div>
+                            <div style="margin-bottom: 1rem;">
+                                <label style="display: block; font-size: 0.9rem; font-weight: 500; color: #374151; margin-bottom: 0.5rem;">Email</label>
+                                <div style="border: 2px solid #ef4444; border-radius: 8px; padding: 12px; background: #fef2f2;">invalid-email</div>
+                                <div style="display: flex; align-items: center; gap: 0.5rem; margin-top: 0.5rem;">
+                                    <span style="color: #ef4444; font-size: 0.8rem;">✗</span>
+                                    <span style="color: #ef4444; font-size: 0.8rem;">Please enter a valid email</span>
+                                </div>
+                            </div>
+                            <button style="width: 100%; background: #e5e7eb; color: #9ca3af; border: none; padding: 12px; border-radius: 8px; font-weight: 500; cursor: not-allowed;">Create Account</button>
+                        </div>
+                    `,
+
+                    // === MODAL COMPONENTS ===
+                    'modal-simple': `
+                        <div style="background: rgba(0,0,0,0.5); padding: 40px; border-radius: 8px; display: flex; align-items: center; justify-content: center; min-height: 200px;">
+                            <div style="background: white; border-radius: 12px; padding: 24px; max-width: 400px; width: 100%; box-shadow: 0 20px 25px rgba(0,0,0,0.1);">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                                    <h3 style="font-size: 1.25rem; font-weight: 600; margin: 0; color: #1f2937;">Modal Title</h3>
+                                    <span style="color: #6b7280; font-size: 1.5rem; cursor: pointer;">×</span>
+                                </div>
+                                <p style="color: #6b7280; margin: 0 0 20px 0; line-height: 1.5;">This is a simple modal dialog with clean design and smooth animations.</p>
+                                <div style="display: flex; gap: 12px; justify-content: flex-end;">
+                                    <button style="padding: 8px 16px; border: 1px solid #d1d5db; border-radius: 6px; background: white; color: #374151; cursor: pointer;">Cancel</button>
+                                    <button style="padding: 8px 16px; border: none; border-radius: 6px; background: #3b82f6; color: white; cursor: pointer;">Confirm</button>
+                                </div>
+                            </div>
+                        </div>
+                    `,
+                    'modal-confirmation': `
+                        <div style="background: rgba(239, 68, 68, 0.1); padding: 40px; border-radius: 8px; display: flex; align-items: center; justify-content: center; min-height: 200px;">
+                            <div style="background: white; border-radius: 12px; padding: 24px; max-width: 400px; width: 100%; box-shadow: 0 20px 25px rgba(0,0,0,0.15);">
+                                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
+                                    <div style="width: 40px; height: 40px; background: #fef2f2; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                                        <span style="color: #ef4444; font-size: 1.25rem;">⚠️</span>
+                                    </div>
+                                    <h3 style="font-size: 1.25rem; font-weight: 600; margin: 0; color: #1f2937;">Delete Item</h3>
+                                </div>
+                                <p style="color: #6b7280; margin: 0 0 20px 0; line-height: 1.5;">Are you sure you want to delete this item? This action cannot be undone.</p>
+                                <div style="display: flex; gap: 12px; justify-content: flex-end;">
+                                    <button style="padding: 8px 16px; border: 1px solid #d1d5db; border-radius: 6px; background: white; color: #374151; cursor: pointer;">Cancel</button>
+                                    <button style="padding: 8px 16px; border: none; border-radius: 6px; background: #ef4444; color: white; cursor: pointer;">Delete</button>
+                                </div>
+                            </div>
+                        </div>
+                    `,
+
+                    // === DATA DISPLAY COMPONENTS ===
+                    'table-modern': `
+                        <div style="background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
+                            <div style="background: #f8fafc; padding: 16px; border-bottom: 1px solid #e5e7eb;">
+                                <h3 style="font-size: 1.25rem; font-weight: 600; margin: 0; color: #1f2937;">User Data</h3>
+                            </div>
+                            <div style="overflow-x: auto;">
+                                <table style="width: 100%; border-collapse: collapse;">
+                                    <thead style="background: #f9fafb;">
+                                        <tr>
+                                            <th style="padding: 12px 16px; text-align: left; font-weight: 500; color: #374151; border-bottom: 1px solid #e5e7eb;">Name</th>
+                                            <th style="padding: 12px 16px; text-align: left; font-weight: 500; color: #374151; border-bottom: 1px solid #e5e7eb;">Status</th>
+                                            <th style="padding: 12px 16px; text-align: left; font-weight: 500; color: #374151; border-bottom: 1px solid #e5e7eb;">Role</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td style="padding: 12px 16px; border-bottom: 1px solid #f3f4f6;">John Doe</td>
+                                            <td style="padding: 12px 16px; border-bottom: 1px solid #f3f4f6;"><span style="background: #dcfce7; color: #166534; padding: 4px 8px; border-radius: 12px; font-size: 0.8rem;">Active</span></td>
+                                            <td style="padding: 12px 16px; border-bottom: 1px solid #f3f4f6;">Admin</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="padding: 12px 16px; border-bottom: 1px solid #f3f4f6;">Jane Smith</td>
+                                            <td style="padding: 12px 16px; border-bottom: 1px solid #f3f4f6;"><span style="background: #fed7d7; color: #c53030; padding: 4px 8px; border-radius: 12px; font-size: 0.8rem;">Inactive</span></td>
+                                            <td style="padding: 12px 16px; border-bottom: 1px solid #f3f4f6;">User</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    `,
+                    'stats-grid': `
+                        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; padding: 16px; background: #f8fafc; border-radius: 8px;">
+                            <div style="background: white; padding: 20px; border-radius: 8px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                                <div style="font-size: 2rem; font-weight: bold; color: #3b82f6; margin-bottom: 4px;">1,234</div>
+                                <div style="font-size: 0.9rem; color: #6b7280;">Total Users</div>
+                            </div>
+                            <div style="background: white; padding: 20px; border-radius: 8px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                                <div style="font-size: 2rem; font-weight: bold; color: #10b981; margin-bottom: 4px;">89%</div>
+                                <div style="font-size: 0.9rem; color: #6b7280;">Success Rate</div>
+                            </div>
+                            <div style="background: white; padding: 20px; border-radius: 8px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                                <div style="font-size: 2rem; font-weight: bold; color: #f59e0b; margin-bottom: 4px;">567</div>
+                                <div style="font-size: 0.9rem; color: #6b7280;">Orders</div>
+                            </div>
+                            <div style="background: white; padding: 20px; border-radius: 8px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                                <div style="font-size: 2rem; font-weight: bold; color: #ef4444; margin-bottom: 4px;">$12.5k</div>
+                                <div style="font-size: 0.9rem; color: #6b7280;">Revenue</div>
+                            </div>
+                        </div>
+                    `,
+
+                    // === ANIMATION COMPONENTS ===
+                    'text-typewriter': this.generateTypewriterText(size, color),
+                    'typewriter-text': this.generateTypewriterText(size, color), // fallback
+                    'text-glitch': this.generateGlitchText(size, color),
+                    'glitch-text': this.generateGlitchText(size, color), // fallback
+                    'text-rainbow': this.generateRainbowText(size, color),
+                    'text-wave': this.generateWaveText(size, color),
+                    'text-reveal': this.generateTextReveal(size, color),
+                    'floating-text': this.generateFloatingText(size, color),
+                    'text-floating': this.generateFloatingText(size, color), // fallback
+
+                    // === BACKGROUND COMPONENTS ===
+                    'background-gradient-linear': this.generateLinearGradientBackground(customizations),
+                    'background-gradient-radial': this.generateRadialGradientBackground(customizations),
+                    'background-animated-particles': this.generateAnimatedParticlesBackground(customizations),
+                    'background-animated-waves': this.generateAnimatedWavesBackground(customizations),
+                    'background-pattern-dots': this.generateDotsPatternBackground(customizations),
+                    'background-pattern-grid': this.generateGridPatternBackground(customizations),
+                    'background-geometric-animated': this.generateGeometricAnimatedBackground(customizations),
+                    'background-image-overlay': this.generateImageOverlayBackground(customizations),
+                    'background-blob-animated': this.generateBlobAnimatedBackground(customizations),
+                    'background-circuit-pattern': this.generateCircuitPatternBackground(customizations),
+                    'background-noise-texture': this.generateNoiseTextureBackground(customizations),
+                    'background-video': this.generateVideoBackground(customizations)
+                };
+
+                // Get component name from different possible sources
+                const componentName = component.name || 
+                                    component.metadata?.name ||
+                                    component.metadata?.componentType ||
+                                    componentKey;
+                
+                // Default preview for unknown components
+                const defaultPreview = `
+                    <div style="color: #666; text-align: center; padding: 40px;">
+                        <div style="font-size: 48px; margin-bottom: 16px;">🧩</div>
+                        <p><strong>${componentName}</strong></p>
+                        <p style="font-size: 14px; color: #999; margin-top: 8px;">
+                            ${component.explanation || component.description || 'Interactive component preview'}
+                        </p>
+                        <p style="font-size: 12px; margin-top: 12px; color: #999;">
+                            Component key: "${componentKey}"<br>
+                            Customizations: ${Object.keys(customizations).length > 0 ? JSON.stringify(customizations) : 'None'}
+                        </p>
+                    </div>
+                `;
+
+                // Check if we have a preview for this component
+                const hasPreview = !!previews[componentKey];
+                console.log('Checking preview mapping for key:', componentKey);
+                console.log('Preview found:', hasPreview);
+                console.log('Available preview keys:', Object.keys(previews).filter(k => k.startsWith('text-') || k.startsWith('loader-') || k.startsWith('button-')));
+                
+                const result = previews[componentKey] || defaultPreview;
+                
+                if (hasPreview) {
+                    console.log('✅ Using custom preview for:', componentKey);
+                } else {
+                    console.log('❌ Using default preview for:', componentKey, '- preview not found');
+                }
+                
+                console.log('Final result length:', result.length);
+                console.log('Result preview:', result.substring(0, 200) + '...');
+                return result;
+            }
+
+            async viewAllComponents() {
+                try {
+                    // Check if we already have cached all components
+                    if (this.cache.has('all-components')) {
+                        const cached = this.cache.get('all-components');
+                        if (Date.now() - cached.timestamp < this.maxCacheAge) {
+                            this.allComponents = cached.data;
+                            this.renderAllComponents();
+                            return;
+                        }
+                    }
+
+                    // Load categories first using throttled API
+                    const data = await this.throttledApiRequest('/ui list', 'categories');
+                    console.log('View All Components API response:', data);
+                    
+                    if (data.success && data.categories) {
+                        // Get all components from all categories using throttled requests
+                        this.allComponents = [];
+                        
+                        // Process categories sequentially with throttling
+                        for (const category of data.categories) {
+                            const categoryKey = category.key;
+                            const cacheKey = `category-${categoryKey}`;
+                            
+                            try {
+                                const categoryData = await this.throttledApiRequest(`/ui list ${categoryKey}`, cacheKey);
+                                if (categoryData.success && categoryData.category_results) {
+                                    this.allComponents.push(...categoryData.category_results.components.map(comp => ({
+                                        ...comp,
+                                        category: categoryKey
+                                    })));
+                                }
+                            } catch (error) {
+                                console.warn(`Failed to load category ${categoryKey}:`, error);
+                            }
+                        }
+
+                        // Cache the complete list
+                        this.cache.set('all-components', {
+                            data: this.allComponents,
+                            timestamp: Date.now()
+                        });
+
+                        this.renderAllComponents();
+                    }
+                } catch (error) {
+                    console.error('Failed to load all components:', error);
+                }
+            }
+
+            renderAllComponents() {
+                this.categoriesContainer.innerHTML = `
+                    <div class="category-group">
+                        <div class="category-header active">
+                            <span class="category-icon">📚</span>
+                            <span>All Components</span>
+                            <span class="category-count">${this.allComponents.length}</span>
+                        </div>
+                        <div class="component-list active">
+                            ${this.allComponents.map(component => `
+                                <div class="component-item" data-component-key="${component.key}">
+                                    <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                                        <span>${component.name}</span>
+                                        <span style="font-size: 10px; opacity: 0.7; background: var(--bg-tertiary); padding: 2px 6px; border-radius: 10px;">
+                                            ${component.category}
+                                        </span>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+
+                // Bind events for all component items
+                document.querySelectorAll('.component-item').forEach(item => {
+                    item.addEventListener('click', () => {
+                        this.selectComponent(item.dataset.componentKey);
+                    });
+                });
+            }
+
+            toggleCodePanel() {
+                // Cycle through states: normal -> minimized -> collapsed -> super-expanded -> normal
+                const states = ['normal', 'minimized', 'collapsed', 'super-expanded'];
+                const currentIndex = states.indexOf(this.panelState);
+                const nextIndex = (currentIndex + 1) % states.length;
+                const oldState = this.panelState;
+                this.panelState = states[nextIndex];
+                
+                // Debug logging
+                console.log(`Panel state changed from ${oldState} to ${this.panelState}`);
+                console.log('Preview panel element:', this.previewPanel);
+                console.log('Code panel element:', this.codePanel);
+                
+                this.applyPanelState();
+            }
+
+            applyPanelState() {
+                console.log(`Applying panel state: ${this.panelState}`);
+                
+                // Remove all state classes
+                this.codePanel.classList.remove('collapsed', 'minimized');
+                this.previewPanel.classList.remove('expanded', 'super-expanded');
+                
+                console.log('Classes removed. Current classes:');
+                console.log('- Code panel classes:', this.codePanel.className);
+                console.log('- Preview panel classes:', this.previewPanel.className);
+                
+                // Apply current state
+                switch (this.panelState) {
+                    case 'minimized':
+                        this.codePanel.classList.add('minimized');
+                        console.log('Applied minimized state to code panel');
+                        break;
+                    case 'collapsed':
+                        this.codePanel.classList.add('collapsed');
+                        this.previewPanel.classList.add('expanded');
+                        console.log('Applied collapsed state to code panel and expanded to preview');
+                        break;
+                    case 'super-expanded':
+                        this.codePanel.classList.add('collapsed');
+                        this.previewPanel.classList.add('super-expanded');
+                        console.log('Applied super-expanded state');
+                        break;
+                    default: // normal
+                        console.log('Applied normal state (no additional classes)');
+                        break;
+                }
+                
+                console.log('Final classes:');
+                console.log('- Code panel classes:', this.codePanel.className);
+                console.log('- Preview panel classes:', this.previewPanel.className);
+                
+                // Update state indicator
+                this.updateStateIndicator();
+                
+                // Update the toggle button
+                this.updatePanelToggle();
+            }
+
+            updateStateIndicator() {
+                // Remove existing indicator
+                const existingIndicator = this.previewPanel.querySelector('.panel-state-indicator');
+                if (existingIndicator) {
+                    existingIndicator.remove();
+                }
+                
+                // Add state indicator if not in normal state
+                if (this.panelState !== 'normal') {
+                    const indicator = document.createElement('div');
+                    indicator.className = 'panel-state-indicator';
+                    
+                    const stateLabels = {
+                        'minimized': 'Code Minimized',
+                        'collapsed': 'Preview Expanded',
+                        'super-expanded': 'Preview Super Expanded'
+                    };
+                    
+                    indicator.textContent = stateLabels[this.panelState];
+                    this.previewPanel.appendChild(indicator);
+                }
+            }
+
+            updateCodePanel(component) {
+                this.codePanel.innerHTML = `
+                    <div class="code-header">
+                        <h3 class="code-title">Component Code</h3>
+                        <div class="code-actions">
+                            <button class="code-btn secondary" onclick="browser.copyCode()">Copy</button>
+                            <button class="code-btn" onclick="browser.insertComponent()">Insert</button>
+                        </div>
+                    </div>
+                    <div class="code-content">
+                        <div class="code-block" id="codeBlock">
+                            ${this.escapeHtml(component.code || '// Component code will appear here')}
+                        </div>
+                    </div>
+                `;
+                
+                // Add the toggle button
+                this.updatePanelToggle();
+            }
+
+            createInitialToggleButton() {
+                // Create the initial toggle button
+                const toggleButton = document.createElement('button');
+                toggleButton.className = 'panel-toggle';
+                toggleButton.innerHTML = '⬅';
+                toggleButton.title = 'Toggle panel states';
+                toggleButton.onclick = () => this.toggleCodePanel();
+                
+                // Add to main container so it's always visible
+                document.body.appendChild(toggleButton);
+                
+                // Store reference for updates
+                this.toggleButton = toggleButton;
+                
+                // Debug: Add console log and visual indicator
+                console.log('Toggle button created and added to body');
+                toggleButton.style.backgroundColor = '#ff0000'; // Temporary red background for visibility
+            }
+
+            updatePanelToggle() {
+                // Use the stored reference to the toggle button
+                if (!this.toggleButton) {
+                    this.createInitialToggleButton();
+                    return;
+                }
+                
+                // Update existing button based on current state
+                const stateConfig = {
+                    'normal': { icon: '⬅', tooltip: 'Minimize code panel' },
+                    'minimized': { icon: '◀', tooltip: 'Collapse code panel' },
+                    'collapsed': { icon: '⬅⬅', tooltip: 'Super expand preview' },
+                    'super-expanded': { icon: '➡', tooltip: 'Reset to normal view' }
+                };
+                
+                const config = stateConfig[this.panelState];
+                this.toggleButton.innerHTML = config.icon;
+                this.toggleButton.title = config.tooltip;
+                
+                console.log(`Toggle button updated to: ${config.icon} (${this.panelState})`);
+            }
+        }
+
+        // Initialize component browser
+        const browser = new ComponentBrowser();
+    </script>
+</body>
+</html>

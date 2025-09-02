@@ -1,0 +1,29 @@
+# Ignore large directories
+coder1-tauri/
+coder1-ide/coder1-ide-source/
+test-pty/
+ARCHIVE/
+
+# Ignore development files
+*.log
+*.sh
+test-*.js
+test-*.html
+terminal-server*.js
+terminal-client.html
+simple-*.html
+standalone-ide.html
+
+# Ignore git files
+.git/
+.gitignore
+
+# Ignore node modules (Vercel will install them)
+node_modules/
+
+# Keep only production files
+!public/
+!src/
+!package.json
+!package-lock.json
+!coder1-ide/ide-build/

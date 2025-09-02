@@ -1,0 +1,3073 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Magic UI Component Studio - CoderOne</title>
+    <meta name="cache-bust" content="1755892655555">
+    <!-- AI-POWERED COMPONENT STUDIO - Version 2.1 - FRESH SERVER -->
+    
+    <style>
+        :root {
+            --bg-primary: #0a0a0a;
+            --bg-secondary: #1a1a1a;
+            --text-primary: #ffffff;
+            --text-secondary: #e5e5e5;
+            --text-muted: rgba(255, 255, 255, 0.6);
+            --glass-bg: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --glass-hover: rgba(255, 255, 255, 0.08);
+            --accent-purple: #8b5cf6;
+            --accent-cyan: #06b6d4;
+            --accent-gradient: linear-gradient(135deg, #8b5cf6, #06b6d4);
+            --success: #10b981;
+            --warning: #f59e0b;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Grid Background Pattern */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: 
+                linear-gradient(rgba(139, 92, 246, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(139, 92, 246, 0.03) 1px, transparent 1px);
+            background-size: 50px 50px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* Container */
+        .container {
+            position: relative;
+            z-index: 1;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* Header */
+        .header {
+            padding: 5px 0;  /* Minimal padding for tight fit */
+            border-bottom: 1px solid var(--glass-border);
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            height: 100px;  /* Fixed height: 90px logo + 10px padding */
+        }
+
+        .header-content {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            align-items: center;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 20px;
+            height: 100%;  /* Fill the header height */
+        }
+
+        .logo-section {
+            display: flex;
+            align-items: center;
+        }
+
+        .logo {
+            height: 90px;  /* 60px * 1.5 = 90px */
+            width: auto;
+        }
+
+        /* Title styling moved inline for consistency with dashboard */
+
+        .header-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            color: var(--text-primary);
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn:hover {
+            background: var(--glass-hover);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(139, 92, 246, 0.2);
+        }
+
+        .btn-primary {
+            background: var(--accent-gradient);
+            border: none;
+        }
+
+        .btn-primary:hover {
+            box-shadow: 0 4px 20px rgba(139, 92, 246, 0.4);
+        }
+
+        /* Hero Section */
+        .hero {
+            padding: 60px 0 30px;  /* Reduced bottom padding to create consistent spacing */
+            text-align: center;
+        }
+
+        .hero-card {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 40px;
+            max-width: 800px;
+            margin: 0 auto;
+            backdrop-filter: blur(10px);
+        }
+
+        .hero h1 {
+            font-size: 48px;
+            font-weight: 700;
+            margin-bottom: 16px;
+            background: var(--accent-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero-subtitle {
+            font-size: 20px;
+            color: var(--text-secondary);
+            margin-bottom: 30px;
+        }
+
+        .hero-actions {
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .quick-action {
+            padding: 12px 24px;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 14px;
+        }
+
+        .quick-action:hover {
+            background: var(--glass-hover);
+            border-color: var(--accent-purple);
+            transform: translateY(-2px);
+        }
+
+        /* Main Layout */
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 500px;
+            gap: 30px;
+            padding: 30px 0 40px;  /* Reduced top padding to match spacing above */
+            min-height: 600px;
+        }
+
+        /* Component Gallery */
+        .gallery-section {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 30px;
+            backdrop-filter: blur(10px);
+        }
+
+        .search-bar {
+            position: relative;
+            margin-bottom: 30px;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 14px 20px 14px 48px;
+            background: var(--bg-primary);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            color: var(--text-primary);
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: var(--accent-purple);
+            box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+        }
+
+        .component-categories {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+        }
+
+        .category-chip {
+            padding: 8px 16px;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 14px;
+        }
+
+        .category-chip.active {
+            background: var(--accent-gradient);
+            border-color: transparent;
+            color: white;
+        }
+
+        .category-chip:hover {
+            border-color: var(--accent-purple);
+        }
+
+        .component-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 20px;
+        }
+
+        .component-card {
+            background: var(--bg-primary);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: visible;
+        }
+        
+        /* Interactive hint badge */
+        .component-card::after {
+            content: '✨ Click to customize with AI';
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: linear-gradient(135deg, var(--accent-purple), var(--accent-cyan));
+            color: white;
+            font-size: 10px;
+            padding: 3px 8px;
+            border-radius: 12px;
+            opacity: 0;
+            transform: scale(0.9);
+            transition: all 0.3s ease;
+            font-weight: 600;
+            box-shadow: 0 2px 8px rgba(139, 92, 246, 0.3);
+            animation: pulse-hint 2s ease-in-out infinite;
+            z-index: 10;
+            pointer-events: none;
+        }
+        
+        @keyframes pulse-hint {
+            0%, 100% { opacity: 0.7; transform: scale(0.95); }
+            50% { opacity: 0.9; transform: scale(1); }
+        }
+        
+        /* Show hint on first few cards initially */
+        .component-card:nth-child(1)::after,
+        .component-card:nth-child(2)::after,
+        .component-card:nth-child(3)::after {
+            opacity: 0.7;
+        }
+
+        .component-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: var(--accent-gradient);
+            transform: scaleX(0);
+            transition: transform 0.3s ease;
+        }
+
+        .component-card:hover {
+            transform: translateY(-4px);
+            border-color: var(--accent-purple);
+            box-shadow: 0 8px 24px rgba(139, 92, 246, 0.15);
+        }
+        
+        .component-card:hover::after {
+            opacity: 1 !important;
+            transform: scale(1.05);
+        }
+
+        .component-card:hover::before {
+            transform: scaleX(1);
+        }
+
+        .component-preview {
+            height: 120px;
+            background: var(--glass-bg);
+            border-radius: 8px;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+        }
+
+        .component-name {
+            font-weight: 600;
+            margin-bottom: 4px;
+            color: var(--text-primary);
+        }
+
+        .component-description {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        /* Preview Panel */
+        .preview-panel {
+            position: sticky;
+            top: 100px;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 30px;
+            backdrop-filter: blur(10px);
+            height: fit-content;
+        }
+
+        .preview-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .preview-title {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .view-toggle {
+            display: flex;
+            gap: 8px;
+        }
+
+        .toggle-btn {
+            padding: 6px 12px;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 6px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.3s ease;
+        }
+
+        .toggle-btn.active {
+            background: var(--accent-purple);
+            border-color: transparent;
+            color: white;
+        }
+
+        .preview-area {
+            background: var(--bg-primary);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 30px;
+            min-height: 350px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 24px;
+        }
+
+        .preview-placeholder {
+            color: var(--text-muted);
+            text-align: center;
+        }
+
+        .properties-section {
+            space-y: 16px;
+        }
+
+        .property-group {
+            margin-bottom: 16px;
+        }
+
+        .property-label {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .property-select {
+            width: 100%;
+            padding: 10px;
+            background: var(--bg-primary);
+            border: 1px solid var(--glass-border);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        .property-select:focus {
+            outline: none;
+            border-color: var(--accent-purple);
+        }
+
+        /* Enhanced Property Editor Styles */
+        .property-section {
+            margin-bottom: 12px;
+            border: 1px solid var(--glass-border);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .property-section-header {
+            background: var(--glass-bg);
+            padding: 12px 16px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 600;
+            font-size: 14px;
+            color: var(--text-primary);
+            transition: all 0.2s ease;
+        }
+
+        .property-section-header:hover {
+            background: var(--glass-hover);
+        }
+
+        .property-section-content {
+            padding: 12px 16px;
+            border-top: 1px solid var(--glass-border);
+            display: block;
+        }
+
+        .property-section-content.collapsed {
+            display: none;
+        }
+
+        .property-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .property-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .property-label-enhanced {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-bottom: 0;
+            flex: 1;
+            min-width: 120px;
+        }
+
+        .property-input {
+            flex: 1;
+            max-width: 140px;
+            margin-left: 12px;
+        }
+
+        .color-input-group {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            flex: 1;
+            max-width: 140px;
+            margin-left: 12px;
+        }
+
+        .color-picker {
+            width: 36px;
+            height: 32px;
+            border: 1px solid var(--glass-border);
+            border-radius: 4px;
+            cursor: pointer;
+            background: var(--glass-bg);
+        }
+
+        .color-text {
+            flex: 1;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 4px;
+            padding: 6px 8px;
+            color: var(--text-primary);
+            font-size: 12px;
+            font-family: monospace;
+        }
+
+        .chevron {
+            transition: transform 0.2s ease;
+            color: var(--text-muted);
+        }
+
+        .chevron.rotated {
+            transform: rotate(180deg);
+        }
+
+        /* AI Generation Bar */
+        .ai-bar {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 24px;  /* Reduced from 30px to 24px (20% reduction) */
+            backdrop-filter: blur(10px);
+            max-width: 800px;
+            margin: 0 auto 30px;  /* Reduced to match hero spacing */
+            position: relative;
+        }
+        
+        .ai-input-row {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 16px;  /* Reduced from 20px to 16px (20% reduction) */
+        }
+
+        .ai-input {
+            flex: 1;
+            padding: 12px;
+            background: var(--bg-primary);
+            border: 1px solid var(--glass-border);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 14px;
+        }
+
+        .ai-input:focus {
+            outline: none;
+            border-color: var(--accent-purple);
+        }
+
+        .ai-input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .ai-generate-btn {
+            padding: 12px 24px;
+            background: var(--accent-gradient);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+        }
+
+        .ai-generate-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 20px rgba(139, 92, 246, 0.4);
+        }
+
+        /* Quick Suggestions */
+        .suggestions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .suggestion-chip {
+            padding: 6px 12px;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            color: var(--text-secondary);
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .suggestion-chip:hover {
+            border-color: var(--accent-cyan);
+            color: var(--accent-cyan);
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+            
+            .preview-panel {
+                position: relative;
+                top: 0;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 36px;
+            }
+            
+            .component-grid {
+                grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            }
+            
+            .header-content {
+                flex-direction: column;
+                gap: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <div class="logo-section">
+                <img src="/Claude Coder1 Logo.png?v=blue-pink-2025" 
+                     alt="CoderOne" 
+                     class="logo"
+                     onerror="console.error('Logo failed to load:', this.src); this.style.display='none';">
+            </div>
+            <div style="position: absolute; left: 50%; transform: translateX(-50%); text-align: center;">
+                <h1 style="font-size: 32px; margin-bottom: 5px; font-weight: 600;">
+                    Magic UI Component Studio
+                </h1>
+                <p style="font-size: 14px; color: var(--text-secondary); margin: 0;">
+                    Create stunning React components with AI assistance
+                </p>
+            </div>
+            <div class="header-actions">
+                <button class="btn btn-primary" onclick="generateWithAI()">
+                    ✨ Generate
+                </button>
+                <button class="btn" onclick="exportComponent()">
+                    📦 Export
+                </button>
+                <a href="http://localhost:3001/ide" class="btn">
+                    ← Back to IDE
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="container">
+            <div class="hero-card">
+                <h1>Build Beautiful Components</h1>
+                <p class="hero-subtitle">
+                    Create stunning React components with AI assistance. Browse our gallery or describe what you need.
+                </p>
+                <div class="hero-actions">
+                    <button class="quick-action" onclick="quickStart('button')">
+                        🎯 Create Button
+                    </button>
+                    <button class="quick-action" onclick="quickStart('form')">
+                        📝 Build Form
+                    </button>
+                    <button class="quick-action" onclick="quickStart('card')">
+                        🃏 Design Card
+                    </button>
+                    <button class="quick-action" onclick="quickStart('nav')">
+                        🧭 Make Navigation
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- AI Generation Bar -->
+    <div class="container">
+        <div class="ai-bar">
+            <div class="ai-input-row">
+                <input 
+                    type="text" 
+                    class="ai-input" 
+                    id="aiInput"
+                    placeholder="Describe the component you want to create..."
+                    onkeypress="if(event.key === 'Enter') generateWithAI()"
+                >
+                <button class="ai-generate-btn" onclick="generateWithAI()">
+                    Generate ✨
+                </button>
+            </div>
+            <div class="suggestions">
+                <span class="suggestion-chip" onclick="setSuggestion('modern login form with validation')">Login Form</span>
+                <span class="suggestion-chip" onclick="setSuggestion('animated loading spinner')">Loading Spinner</span>
+                <span class="suggestion-chip" onclick="setSuggestion('responsive image gallery')">Gallery</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <main class="container">
+        <div class="main-content">
+            <!-- Component Gallery -->
+            <section class="gallery-section">
+                <div class="search-bar">
+                    <span class="search-icon">🔍</span>
+                    <input 
+                        type="text" 
+                        class="search-input" 
+                        placeholder="Search components... (⌘K)"
+                        onkeyup="filterComponents(this.value)"
+                    >
+                </div>
+
+                <div class="component-categories">
+                    <button class="category-chip active" onclick="filterCategory('all')">All</button>
+                    <button class="category-chip" onclick="filterCategory('buttons')">Buttons</button>
+                    <button class="category-chip" onclick="filterCategory('forms')">Forms</button>
+                    <button class="category-chip" onclick="filterCategory('cards')">Cards</button>
+                    <button class="category-chip" onclick="filterCategory('navigation')">Navigation</button>
+                    <button class="category-chip" onclick="filterCategory('data')">Data Display</button>
+                </div>
+
+                <div class="component-grid" id="componentGrid">
+                    <!-- Button Components -->
+                    <div class="component-card" data-category="buttons" onclick="selectComponent('primary-button')">
+                        <div class="component-preview">🔵</div>
+                        <div class="component-name">Primary Button</div>
+                        <div class="component-description">Main action button</div>
+                    </div>
+
+                    <div class="component-card" data-category="buttons" onclick="selectComponent('gradient-button')">
+                        <div class="component-preview">🌈</div>
+                        <div class="component-name">Gradient Button</div>
+                        <div class="component-description">Eye-catching gradient</div>
+                    </div>
+
+                    <div class="component-card" data-category="buttons" onclick="selectComponent('icon-button')">
+                        <div class="component-preview">⭐</div>
+                        <div class="component-name">Icon Button</div>
+                        <div class="component-description">Button with icon</div>
+                    </div>
+
+                    <div class="component-card" data-category="buttons" onclick="selectComponent('gradient-hero')">
+                        <div class="component-preview">🌈</div>
+                        <div class="component-name">Gradient Hero</div>
+                        <div class="component-description">Hero section with gradient</div>
+                    </div>
+
+                    <!-- Form Components -->
+                    <div class="component-card" data-category="forms" onclick="selectComponent('input-field')">
+                        <div class="component-preview">📝</div>
+                        <div class="component-name">Input Field</div>
+                        <div class="component-description">Text input with label</div>
+                    </div>
+
+                    <div class="component-card" data-category="forms" onclick="selectComponent('select-dropdown')">
+                        <div class="component-preview">📋</div>
+                        <div class="component-name">Select Dropdown</div>
+                        <div class="component-description">Dropdown selector</div>
+                    </div>
+
+                    <div class="component-card" data-category="forms" onclick="selectComponent('checkbox')">
+                        <div class="component-preview">☑️</div>
+                        <div class="component-name">Checkbox</div>
+                        <div class="component-description">Multi-select option</div>
+                    </div>
+
+                    <!-- Card Components -->
+                    <div class="component-card" data-category="cards" onclick="selectComponent('product-card')">
+                        <div class="component-preview">🛍️</div>
+                        <div class="component-name">Product Card</div>
+                        <div class="component-description">E-commerce card</div>
+                    </div>
+
+                    <div class="component-card" data-category="cards" onclick="selectComponent('profile-card')">
+                        <div class="component-preview">👤</div>
+                        <div class="component-name">Profile Card</div>
+                        <div class="component-description">User profile display</div>
+                    </div>
+
+                    <div class="component-card" data-category="cards" onclick="selectComponent('stats-card')">
+                        <div class="component-preview">📊</div>
+                        <div class="component-name">Stats Card</div>
+                        <div class="component-description">Data metrics card</div>
+                    </div>
+
+                    <!-- Navigation Components -->
+                    <div class="component-card" data-category="navigation" onclick="selectComponent('navbar')">
+                        <div class="component-preview">🗂️</div>
+                        <div class="component-name">Navigation Bar</div>
+                        <div class="component-description">Top navigation</div>
+                    </div>
+
+                    <div class="component-card" data-category="navigation" onclick="selectComponent('sidebar')">
+                        <div class="component-preview">📑</div>
+                        <div class="component-name">Sidebar</div>
+                        <div class="component-description">Side navigation</div>
+                    </div>
+
+                    <div class="component-card" data-category="navigation" onclick="selectComponent('breadcrumb')">
+                        <div class="component-preview">🥖</div>
+                        <div class="component-name">Breadcrumb</div>
+                        <div class="component-description">Path navigation</div>
+                    </div>
+
+                    <!-- Gradient Background Components -->
+                    <div class="component-card" data-category="backgrounds" onclick="selectComponent('animated-gradient')">
+                        <div class="component-preview">🌊</div>
+                        <div class="component-name">Animated Gradient</div>
+                        <div class="component-description">Moving gradient background</div>
+                    </div>
+
+                    <div class="component-card" data-category="backgrounds" onclick="selectComponent('mesh-gradient')">
+                        <div class="component-preview">🎨</div>
+                        <div class="component-name">Mesh Gradient</div>
+                        <div class="component-description">Complex mesh gradients</div>
+                    </div>
+
+                    <div class="component-card" data-category="backgrounds" onclick="selectComponent('aurora-gradient')">
+                        <div class="component-preview">🌌</div>
+                        <div class="component-name">Aurora Gradient</div>
+                        <div class="component-description">Northern lights effect</div>
+                    </div>
+
+                    <div class="component-card" data-category="backgrounds" onclick="selectComponent('radial-gradient')">
+                        <div class="component-preview">⭕</div>
+                        <div class="component-name">Radial Gradient</div>
+                        <div class="component-description">Circular gradient patterns</div>
+                    </div>
+
+                    <div class="component-card" data-category="backgrounds" onclick="selectComponent('wave-gradient')">
+                        <div class="component-preview">〰️</div>
+                        <div class="component-name">Wave Gradient</div>
+                        <div class="component-description">Wavy gradient animation</div>
+                    </div>
+
+                    <div class="component-card" data-category="backgrounds" onclick="selectComponent('glassmorphism-bg')">
+                        <div class="component-preview">🔮</div>
+                        <div class="component-name">Glassmorphism</div>
+                        <div class="component-description">Frosted glass effect</div>
+                    </div>
+
+                    <div class="component-card" data-category="backgrounds" onclick="selectComponent('particle-gradient')">
+                        <div class="component-preview">✨</div>
+                        <div class="component-name">Particle Gradient</div>
+                        <div class="component-description">Animated particles</div>
+                    </div>
+
+                    <div class="component-card" data-category="backgrounds" onclick="selectComponent('blob-gradient')">
+                        <div class="component-preview">🫧</div>
+                        <div class="component-name">Blob Gradient</div>
+                        <div class="component-description">Organic blob shapes</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Preview Panel -->
+            <aside class="preview-panel">
+                <div class="preview-header">
+                    <h3 class="preview-title">Live Preview</h3>
+                    <div class="view-toggle">
+                        <button class="toggle-btn active" onclick="toggleView('preview')">Preview</button>
+                        <button class="toggle-btn" onclick="toggleView('code')">Code</button>
+                    </div>
+                </div>
+
+                <div class="preview-area" id="previewArea">
+                    <div class="preview-placeholder">
+                        <p>Select a component to preview</p>
+                        <p style="font-size: 12px; margin-top: 8px;">or describe what you need below</p>
+                    </div>
+                </div>
+
+                <div class="properties-section" id="propertiesSection">
+                    <div style="text-align: center; color: var(--text-muted); padding: 20px;">
+                        Select a component to customize its properties
+                    </div>
+                </div>
+
+                <div style="margin-top: 24px;">
+                    <button class="btn" style="width: 100%;" onclick="copyCode()">
+                        📋 Copy Code
+                    </button>
+                </div>
+            </aside>
+        </div>
+    </main>
+
+    <script>
+        // Component selection
+        let selectedComponent = null;
+        let currentView = 'preview';
+
+        // AI Generation State
+        let aiGenerationState = {
+            isGenerating: false,
+            currentVariations: [],
+            selectedVariation: null,
+            generationProgress: { status: 'idle', message: '' }
+        };
+
+        // Store current property values for gradient hero
+        let gradientHeroProps = {
+            title: 'Build Something Amazing',
+            subtitle: 'Create beautiful components with our drag-and-drop interface. No code required.',
+            buttonText: 'Get Started',
+            gradientStartColor: '#667eea',
+            gradientEndColor: '#764ba2',
+            gradientDirection: '135deg',
+            titleSize: '48px',
+            titleWeight: '700',
+            subtitleSize: '18px',
+            paddingVertical: '80px',
+            paddingHorizontal: '40px',
+            titleMarginBottom: '16px',
+            subtitleMarginBottom: '32px',
+            textAlign: 'center',
+            borderRadius: '16px',
+            subtitleMaxWidth: '600px',
+            buttonBackground: '#ffffff',
+            buttonColor: '#764ba2',
+            buttonPadding: '12px 24px',
+            buttonBorderRadius: '8px',
+            buttonFontSize: '16px',
+            buttonFontWeight: '600'
+        };
+
+        function selectComponent(componentId) {
+            selectedComponent = componentId;
+            window.currentSelectedComponent = componentId; // Track globally for variation application
+            const previewArea = document.getElementById('previewArea');
+            const propertiesSection = document.getElementById('propertiesSection');
+            
+            // Unique preview for each component
+            const componentPreviews = {
+                'primary-button': `
+                    <button style="padding: 14px 32px; background: var(--accent-purple); color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; transition: all 0.3s ease;">
+                        Primary Button
+                    </button>
+                `,
+                'gradient-button': `
+                    <button style="padding: 14px 32px; background: var(--accent-gradient); color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3);">
+                        Gradient Button
+                    </button>
+                `,
+                'icon-button': `
+                    <button style="padding: 14px 32px; background: var(--glass-bg); color: white; border: 1px solid var(--glass-border); border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; transition: all 0.3s ease; display: inline-flex; align-items: center; gap: 8px;">
+                        <span style="font-size: 20px;">⭐</span> Icon Button
+                    </button>
+                `,
+                'input-field': `
+                    <div style="width: 300px;">
+                        <label style="display: block; margin-bottom: 8px; color: var(--text-secondary); font-size: 14px;">Email Address</label>
+                        <input type="email" placeholder="Enter your email" style="width: 100%; padding: 12px; background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 8px; color: var(--text-primary); font-size: 14px;">
+                    </div>
+                `,
+                'select-dropdown': `
+                    <div style="width: 300px;">
+                        <label style="display: block; margin-bottom: 8px; color: var(--text-secondary); font-size: 14px;">Select Option</label>
+                        <select style="width: 100%; padding: 12px; background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 8px; color: var(--text-primary); font-size: 14px; cursor: pointer;">
+                            <option>Option 1</option>
+                            <option>Option 2</option>
+                            <option>Option 3</option>
+                        </select>
+                    </div>
+                `,
+                'checkbox': `
+                    <div style="display: flex; flex-direction: column; gap: 12px;">
+                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                            <input type="checkbox" checked style="width: 20px; height: 20px; accent-color: var(--accent-purple);">
+                            <span style="color: var(--text-secondary);">Accept terms and conditions</span>
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                            <input type="checkbox" style="width: 20px; height: 20px; accent-color: var(--accent-purple);">
+                            <span style="color: var(--text-secondary);">Subscribe to newsletter</span>
+                        </label>
+                    </div>
+                `,
+                'product-card': `
+                    <div style="width: 280px; background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 12px; overflow: hidden;">
+                        <div style="height: 160px; background: linear-gradient(135deg, var(--accent-purple), var(--accent-cyan)); display: flex; align-items: center; justify-content: center; font-size: 48px;">🛍️</div>
+                        <div style="padding: 20px;">
+                            <h3 style="margin-bottom: 8px; color: var(--text-primary);">Product Name</h3>
+                            <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 16px;">Amazing product description here</p>
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <span style="font-size: 24px; font-weight: 600; color: var(--accent-purple);">$99</span>
+                                <button style="padding: 8px 16px; background: var(--accent-gradient); border: none; border-radius: 6px; color: white; cursor: pointer;">Add to Cart</button>
+                            </div>
+                        </div>
+                    </div>
+                `,
+                'profile-card': `
+                    <div style="width: 280px; background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 12px; padding: 24px; text-align: center;">
+                        <div style="width: 80px; height: 80px; background: var(--accent-gradient); border-radius: 50%; margin: 0 auto 16px; display: flex; align-items: center; justify-content: center; font-size: 36px;">👤</div>
+                        <h3 style="color: var(--text-primary); margin-bottom: 4px;">John Doe</h3>
+                        <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 16px;">Senior Developer</p>
+                        <div style="display: flex; gap: 8px; justify-content: center;">
+                            <button style="padding: 6px 12px; background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 6px; color: var(--text-secondary); font-size: 12px; cursor: pointer;">Message</button>
+                            <button style="padding: 6px 12px; background: var(--accent-purple); border: none; border-radius: 6px; color: white; font-size: 12px; cursor: pointer;">Follow</button>
+                        </div>
+                    </div>
+                `,
+                'stats-card': `
+                    <div style="width: 280px; background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 12px; padding: 24px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                            <span style="color: var(--text-muted); font-size: 14px;">Total Revenue</span>
+                            <span style="font-size: 24px;">📊</span>
+                        </div>
+                        <div style="font-size: 32px; font-weight: 700; color: var(--text-primary); margin-bottom: 8px;">$45,231</div>
+                        <div style="display: flex; align-items: center; gap: 4px;">
+                            <span style="color: var(--success); font-size: 14px;">↑ 12.5%</span>
+                            <span style="color: var(--text-muted); font-size: 12px;">from last month</span>
+                        </div>
+                    </div>
+                `,
+                'navbar': `
+                    <nav style="width: 100%; background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 8px; padding: 12px 24px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div style="display: flex; gap: 24px; align-items: center;">
+                                <span style="font-weight: 600; color: var(--text-primary);">Logo</span>
+                                <a href="#" style="color: var(--text-secondary); text-decoration: none;">Home</a>
+                                <a href="#" style="color: var(--text-secondary); text-decoration: none;">Products</a>
+                                <a href="#" style="color: var(--text-secondary); text-decoration: none;">About</a>
+                            </div>
+                            <button style="padding: 8px 16px; background: var(--accent-gradient); border: none; border-radius: 6px; color: white; cursor: pointer;">Sign In</button>
+                        </div>
+                    </nav>
+                `,
+                'sidebar': `
+                    <div style="width: 240px; background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 12px; padding: 20px;">
+                        <div style="margin-bottom: 24px;">
+                            <h3 style="color: var(--text-primary); margin-bottom: 16px;">Navigation</h3>
+                            <div style="display: flex; flex-direction: column; gap: 8px;">
+                                <a href="#" style="padding: 10px; background: var(--accent-purple); color: white; text-decoration: none; border-radius: 6px;">📊 Dashboard</a>
+                                <a href="#" style="padding: 10px; color: var(--text-secondary); text-decoration: none; border-radius: 6px;">👥 Users</a>
+                                <a href="#" style="padding: 10px; color: var(--text-secondary); text-decoration: none; border-radius: 6px;">📝 Projects</a>
+                                <a href="#" style="padding: 10px; color: var(--text-secondary); text-decoration: none; border-radius: 6px;">⚙️ Settings</a>
+                            </div>
+                        </div>
+                    </div>
+                `,
+                'breadcrumb': `
+                    <nav style="padding: 12px; background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 8px;">
+                        <ol style="display: flex; align-items: center; gap: 8px; list-style: none; margin: 0; padding: 0;">
+                            <li><a href="#" style="color: var(--text-secondary); text-decoration: none;">Home</a></li>
+                            <li style="color: var(--text-muted);">›</li>
+                            <li><a href="#" style="color: var(--text-secondary); text-decoration: none;">Products</a></li>
+                            <li style="color: var(--text-muted);">›</li>
+                            <li><a href="#" style="color: var(--text-secondary); text-decoration: none;">Electronics</a></li>
+                            <li style="color: var(--text-muted);">›</li>
+                            <li style="color: var(--accent-purple);">Headphones</li>
+                        </ol>
+                    </nav>
+                `,
+                'gradient-hero': `
+                    <div id="gradientHeroPreview" style="
+                        padding: 80px 40px;
+                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                        border-radius: 16px;
+                        text-align: center;
+                        color: white;
+                        width: 100%;
+                        max-width: 600px;
+                    ">
+                        <h1 style="
+                            font-size: 48px;
+                            font-weight: 700;
+                            margin-bottom: 16px;
+                            line-height: 1.1;
+                        " id="heroTitle">Build Something Amazing</h1>
+                        <p style="
+                            font-size: 18px;
+                            opacity: 0.9;
+                            margin-bottom: 32px;
+                            max-width: 600px;
+                            margin-left: auto;
+                            margin-right: auto;
+                        " id="heroSubtitle">Create beautiful components with our drag-and-drop interface. No code required.</p>
+                        <button style="
+                            background: white;
+                            color: #764ba2;
+                            padding: 12px 24px;
+                            border: none;
+                            border-radius: 8px;
+                            font-size: 16px;
+                            font-weight: 600;
+                            cursor: pointer;
+                            transition: all 0.3s ease;
+                        " id="heroButton">Get Started</button>
+                    </div>
+                `,
+                'animated-gradient': `
+                    <div style="width: 100%; height: 300px; position: relative; overflow: hidden; border-radius: 12px;">
+                        <div style="position: absolute; width: 200%; height: 200%; top: -50%; left: -50%; 
+                                    background: linear-gradient(45deg, #667eea, #764ba2, #f093fb, #f5576c, #4facfe, #00f2fe, #667eea);
+                                    background-size: 400% 400%;
+                                    animation: gradientShift 8s ease infinite;">
+                        </div>
+                        <div style="position: relative; z-index: 1; color: white; text-align: center; padding: 60px 20px;">
+                            <h2 style="font-size: 32px; margin-bottom: 16px;">Animated Gradient</h2>
+                            <p>Smooth color transitions</p>
+                        </div>
+                        <style>
+                            @keyframes gradientShift {
+                                0% { background-position: 0% 50%; }
+                                50% { background-position: 100% 50%; }
+                                100% { background-position: 0% 50%; }
+                            }
+                        </style>
+                    </div>
+                `,
+                'mesh-gradient': `
+                    <div style="width: 100%; height: 300px; position: relative; border-radius: 12px; overflow: hidden;
+                                background: 
+                                    radial-gradient(circle at 20% 50%, rgba(120, 119, 198, 0.3), transparent 50%),
+                                    radial-gradient(circle at 80% 80%, rgba(255, 119, 198, 0.3), transparent 50%),
+                                    radial-gradient(circle at 40% 20%, rgba(255, 219, 112, 0.3), transparent 50%),
+                                    radial-gradient(circle at 80% 20%, rgba(120, 219, 255, 0.3), transparent 50%),
+                                    linear-gradient(180deg, #0a0a0a, #1a1a1a);">
+                        <div style="position: relative; z-index: 1; color: white; text-align: center; padding: 60px 20px;">
+                            <h2 style="font-size: 32px; margin-bottom: 16px;">Mesh Gradient</h2>
+                            <p>Complex layered gradients</p>
+                        </div>
+                    </div>
+                `,
+                'aurora-gradient': `
+                    <div style="width: 100%; height: 300px; position: relative; border-radius: 12px; overflow: hidden; background: #0a0a0a;">
+                        <div style="position: absolute; width: 200%; height: 100%; top: 0; left: -50%;
+                                    background: linear-gradient(60deg, transparent, rgba(120, 255, 214, 0.2), transparent),
+                                               linear-gradient(120deg, transparent, rgba(255, 120, 255, 0.2), transparent),
+                                               linear-gradient(180deg, transparent, rgba(120, 180, 255, 0.2), transparent);
+                                    animation: aurora 6s ease-in-out infinite;">
+                        </div>
+                        <div style="position: relative; z-index: 1; color: white; text-align: center; padding: 60px 20px;">
+                            <h2 style="font-size: 32px; margin-bottom: 16px;">Aurora Effect</h2>
+                            <p>Northern lights animation</p>
+                        </div>
+                        <style>
+                            @keyframes aurora {
+                                0%, 100% { transform: translateX(0); opacity: 1; }
+                                50% { transform: translateX(25%); opacity: 0.8; }
+                            }
+                        </style>
+                    </div>
+                `,
+                'radial-gradient': `
+                    <div style="width: 100%; height: 300px; position: relative; border-radius: 12px;
+                                background: radial-gradient(circle at center, #667eea 0%, #764ba2 25%, #f093fb 50%, transparent 70%),
+                                           radial-gradient(circle at 20% 80%, #f5576c 0%, transparent 50%),
+                                           radial-gradient(circle at 80% 20%, #4facfe 0%, transparent 50%),
+                                           radial-gradient(circle at 80% 80%, #00f2fe 0%, transparent 50%),
+                                           #0a0a0a;">
+                        <div style="position: relative; z-index: 1; color: white; text-align: center; padding: 60px 20px;">
+                            <h2 style="font-size: 32px; margin-bottom: 16px;">Radial Gradient</h2>
+                            <p>Circular color patterns</p>
+                        </div>
+                    </div>
+                `,
+                'wave-gradient': `
+                    <div style="width: 100%; height: 300px; position: relative; border-radius: 12px; overflow: hidden; background: linear-gradient(180deg, #667eea, #764ba2);">
+                        <svg style="position: absolute; bottom: 0; width: 100%; height: 150px;" viewBox="0 0 1200 150" preserveAspectRatio="none">
+                            <path d="M0,50 Q300,0 600,50 T1200,50 L1200,150 L0,150 Z" 
+                                  fill="rgba(255,255,255,0.1)" 
+                                  style="animation: wave 4s ease-in-out infinite;">
+                            </path>
+                            <path d="M0,80 Q300,30 600,80 T1200,80 L1200,150 L0,150 Z" 
+                                  fill="rgba(255,255,255,0.05)" 
+                                  style="animation: wave 4s ease-in-out infinite; animation-delay: 1s;">
+                            </path>
+                        </svg>
+                        <div style="position: relative; z-index: 1; color: white; text-align: center; padding: 60px 20px;">
+                            <h2 style="font-size: 32px; margin-bottom: 16px;">Wave Gradient</h2>
+                            <p>Animated wave patterns</p>
+                        </div>
+                        <style>
+                            @keyframes wave {
+                                0%, 100% { transform: translateY(0); }
+                                50% { transform: translateY(-20px); }
+                            }
+                        </style>
+                    </div>
+                `,
+                'glassmorphism-bg': `
+                    <div style="width: 100%; height: 300px; position: relative; border-radius: 12px; overflow: hidden;
+                                background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05)),
+                                           linear-gradient(180deg, #667eea, #764ba2);">
+                        <div style="position: absolute; top: 20px; left: 20px; right: 20px; bottom: 20px;
+                                    background: rgba(255, 255, 255, 0.1);
+                                    backdrop-filter: blur(10px);
+                                    border-radius: 12px;
+                                    border: 1px solid rgba(255, 255, 255, 0.2);">
+                            <div style="padding: 40px; color: white; text-align: center;">
+                                <h2 style="font-size: 32px; margin-bottom: 16px;">Glassmorphism</h2>
+                                <p>Frosted glass effect</p>
+                            </div>
+                        </div>
+                    </div>
+                `,
+                'particle-gradient': `
+                    <div style="width: 100%; height: 300px; position: relative; border-radius: 12px; overflow: hidden;
+                                background: linear-gradient(180deg, #667eea, #764ba2);">
+                        ${Array(15).fill(0).map((_, i) => `
+                            <div style="position: absolute; width: 4px; height: 4px; background: white; border-radius: 50%;
+                                        top: ${Math.random() * 100}%; left: ${Math.random() * 100}%;
+                                        opacity: ${0.3 + Math.random() * 0.7};
+                                        animation: float ${3 + Math.random() * 4}s ease-in-out infinite;
+                                        animation-delay: ${Math.random() * 2}s;">
+                            </div>
+                        `).join('')}
+                        <div style="position: relative; z-index: 1; color: white; text-align: center; padding: 60px 20px;">
+                            <h2 style="font-size: 32px; margin-bottom: 16px;">Particle Effect</h2>
+                            <p>Floating particles</p>
+                        </div>
+                        <style>
+                            @keyframes float {
+                                0%, 100% { transform: translateY(0) translateX(0); }
+                                33% { transform: translateY(-30px) translateX(10px); }
+                                66% { transform: translateY(20px) translateX(-10px); }
+                            }
+                        </style>
+                    </div>
+                `,
+                'blob-gradient': `
+                    <div style="width: 100%; height: 300px; position: relative; border-radius: 12px; overflow: hidden; background: #0a0a0a;">
+                        <div style="position: absolute; width: 300px; height: 300px; top: -50px; left: -50px;
+                                    background: radial-gradient(circle, rgba(102, 126, 234, 0.4), transparent);
+                                    border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%;
+                                    animation: blob 8s ease-in-out infinite;">
+                        </div>
+                        <div style="position: absolute; width: 300px; height: 300px; bottom: -50px; right: -50px;
+                                    background: radial-gradient(circle, rgba(118, 75, 162, 0.4), transparent);
+                                    border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%;
+                                    animation: blob 8s ease-in-out infinite; animation-delay: 2s;">
+                        </div>
+                        <div style="position: absolute; width: 300px; height: 300px; top: 50%; left: 50%;
+                                    transform: translate(-50%, -50%);
+                                    background: radial-gradient(circle, rgba(240, 147, 251, 0.4), transparent);
+                                    border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%;
+                                    animation: blob 8s ease-in-out infinite; animation-delay: 4s;">
+                        </div>
+                        <div style="position: relative; z-index: 1; color: white; text-align: center; padding: 60px 20px;">
+                            <h2 style="font-size: 32px; margin-bottom: 16px;">Blob Gradient</h2>
+                            <p>Organic shapes</p>
+                        </div>
+                        <style>
+                            @keyframes blob {
+                                0%, 100% { border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%; transform: rotate(0deg) scale(1); }
+                                33% { border-radius: 70% 30% 50% 50% / 30% 30% 70% 70%; transform: rotate(120deg) scale(1.1); }
+                                66% { border-radius: 30% 70% 40% 60% / 50% 60% 40% 50%; transform: rotate(240deg) scale(0.9); }
+                            }
+                        </style>
+                    </div>
+                `
+            };
+            
+            // Update preview with unique component
+            previewArea.innerHTML = `
+                <div style="padding: 20px;">
+                    <h3 style="color: var(--text-primary); margin-bottom: 20px; font-size: 18px; font-weight: 600;">
+                        Component Preview
+                    </h3>
+                    <div style="
+                        background: var(--glass-bg);
+                        border: 1px solid var(--glass-border);
+                        border-radius: 12px;
+                        padding: 40px;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        min-height: 200px;
+                    ">
+                        ${componentPreviews[componentId] || `
+                            <div style="text-align: center;">
+                                <p style="color: var(--text-muted);">Preview not available</p>
+                            </div>
+                        `}
+                    </div>
+                </div>
+            `;
+            
+            // Also initialize the component state for live preview
+            if (!window.componentStates) {
+                window.componentStates = {};
+            }
+            window.componentStates[componentId] = getDefaultComponentState(componentId);
+
+            // Update properties section based on selected component
+            // Generate AI variations for ALL components
+            const componentPrompts = {
+                'primary-button': 'modern primary button with hover effects and customizable properties',
+                'gradient-button': 'gradient button with animated effects and color transitions',
+                'icon-button': 'icon button with svg icons and hover animations',
+                'gradient-hero': 'gradient hero section with customizable properties',
+                'input-field': 'modern input field with validation states and labels',
+                'select-dropdown': 'custom select dropdown with search and multi-select options',
+                'checkbox': 'custom checkbox with animated checkmark and label',
+                'product-card': 'e-commerce product card with image, price, and actions',
+                'profile-card': 'user profile card with avatar and social links',
+                'stats-card': 'statistics card with metrics and charts',
+                'navigation-bar': 'responsive navigation bar with mobile menu',
+                'sidebar': 'collapsible sidebar navigation with icons',
+                'breadcrumb': 'breadcrumb navigation with customizable separators',
+                'animated-gradient': 'animated gradient background with smooth color transitions and movement',
+                'mesh-gradient': 'complex mesh gradient with multiple color layers and blend modes',
+                'aurora-gradient': 'aurora borealis northern lights effect with flowing animations',
+                'radial-gradient': 'radial gradient patterns with circular color distributions',
+                'wave-gradient': 'animated wave gradient with svg wave patterns',
+                'glassmorphism-bg': 'glassmorphism frosted glass effect with blur and transparency',
+                'particle-gradient': 'gradient background with floating animated particles',
+                'blob-gradient': 'organic blob shapes with morphing animations'
+            };
+
+            // Get the prompt for this component
+            const componentPrompt = componentPrompts[componentId] || `${componentId.replace('-', ' ')} component with customizable properties`;
+            
+            // Trigger AI generation for the selected component
+            generateAIVariations(componentPrompt);
+            
+            // Show enhanced properties for all components
+            showEnhancedComponentProperties(componentId);
+
+            // Highlight selected card
+            document.querySelectorAll('.component-card').forEach(card => {
+                card.style.borderColor = 'var(--glass-border)';
+            });
+            event.currentTarget.style.borderColor = 'var(--accent-purple)';
+        }
+
+        // AI Generation Functions
+        async function generateAIVariations(prompt, count = 3) {
+            aiGenerationState.isGenerating = true;
+            updateGenerationProgress('generating', `🎨 Generating ${count} AI variations...`);
+            
+            try {
+                const response = await fetch('/api/magic/generate-variations', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        prompt: prompt,
+                        count: count,
+                        searchQuery: prompt,
+                        currentFile: '/components/NewComponent.tsx'
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`AI service error: ${response.status}`);
+                }
+
+                const data = await response.json();
+                
+                if (data.success && data.variations) {
+                    aiGenerationState.currentVariations = data.variations;
+                    aiGenerationState.selectedVariation = data.variations[0]; // Select first variation
+                    updateGenerationProgress('complete', `✨ Generated ${data.variations.length} variations!`);
+                    displayVariations(data.variations);
+                } else {
+                    throw new Error('No variations generated');
+                }
+            } catch (error) {
+                console.error('AI generation failed:', error);
+                updateGenerationProgress('error', `❌ Generation failed: ${error.message}`);
+                // Fallback to static preview
+                showStaticGradientHero();
+            } finally {
+                aiGenerationState.isGenerating = false;
+            }
+        }
+
+        function updateGenerationProgress(status, message) {
+            aiGenerationState.generationProgress = { status, message };
+            
+            // Update status in properties panel
+            const statusElement = document.getElementById('statusMessage');
+            const statusContainer = document.getElementById('aiGenerationStatus');
+            const regenerateButton = document.getElementById('regenerateButton');
+            
+            // Create enhanced loading overlay
+            let loadingOverlay = document.getElementById('ai-loading-overlay');
+            if (!loadingOverlay && status === 'generating') {
+                loadingOverlay = document.createElement('div');
+                loadingOverlay.id = 'ai-loading-overlay';
+                loadingOverlay.innerHTML = `
+                    <style>
+                        #ai-loading-overlay {
+                            position: fixed;
+                            top: 50%;
+                            left: 50%;
+                            transform: translate(-50%, -50%);
+                            background: var(--glass-bg);
+                            backdrop-filter: blur(10px);
+                            border: 1px solid var(--glass-border);
+                            border-radius: 16px;
+                            padding: 32px;
+                            z-index: 1000;
+                            min-width: 320px;
+                            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+                        }
+                        
+                        .loading-spinner {
+                            width: 60px;
+                            height: 60px;
+                            margin: 0 auto 20px;
+                            border: 3px solid var(--glass-border);
+                            border-top: 3px solid var(--accent-purple);
+                            border-radius: 50%;
+                            animation: spin 1s linear infinite;
+                        }
+                        
+                        .loading-text {
+                            text-align: center;
+                            color: var(--text-primary);
+                            font-size: 16px;
+                            font-weight: 500;
+                            margin-bottom: 12px;
+                        }
+                        
+                        .loading-subtext {
+                            text-align: center;
+                            color: var(--text-muted);
+                            font-size: 14px;
+                        }
+                        
+                        .loading-progress-bar {
+                            width: 100%;
+                            height: 4px;
+                            background: var(--glass-border);
+                            border-radius: 2px;
+                            margin-top: 20px;
+                            overflow: hidden;
+                        }
+                        
+                        .loading-progress-fill {
+                            height: 100%;
+                            background: var(--accent-gradient);
+                            border-radius: 2px;
+                            animation: progress 3s ease-in-out infinite;
+                        }
+                        
+                        @keyframes progress {
+                            0% { width: 0%; }
+                            50% { width: 70%; }
+                            100% { width: 90%; }
+                        }
+                    </style>
+                    <div class="loading-spinner"></div>
+                    <div class="loading-text">Creating AI Variations</div>
+                    <div class="loading-subtext">This may take up to 30 seconds...</div>
+                    <div class="loading-progress-bar">
+                        <div class="loading-progress-fill"></div>
+                    </div>
+                `;
+                document.body.appendChild(loadingOverlay);
+            }
+            
+            if (loadingOverlay) {
+                if (status === 'generating') {
+                    loadingOverlay.style.display = 'block';
+                } else {
+                    setTimeout(() => {
+                        if (loadingOverlay) {
+                            loadingOverlay.style.display = 'none';
+                        }
+                    }, 500);
+                }
+            }
+            
+            if (statusElement && statusContainer) {
+                statusElement.textContent = message;
+                statusContainer.style.display = 'block';
+                
+                if (status === 'generating' && regenerateButton) {
+                    regenerateButton.disabled = true;
+                    regenerateButton.style.opacity = '0.6';
+                    regenerateButton.style.cursor = 'not-allowed';
+                } else if (regenerateButton) {
+                    regenerateButton.disabled = false;
+                    regenerateButton.style.opacity = '1';
+                    regenerateButton.style.cursor = 'pointer';
+                }
+            }
+            
+            // Don't overwrite the preview area during generation - keep the component preview visible
+            // The loading overlay created above already handles the "generating" state visually
+            // Only update preview area if there's an error
+            if (status === 'error') {
+                const previewArea = document.getElementById('previewArea');
+                previewArea.innerHTML = `
+                    <div style="text-align: center; padding: 40px; color: var(--text-muted);">
+                        <p style="font-size: 24px; margin-bottom: 8px;">⚠️</p>
+                        <p>${message}</p>
+                        <button onclick="generateAIVariations('gradient hero section with customizable properties')" 
+                                style="margin-top: 16px; padding: 8px 16px; background: var(--accent-purple); color: white; border: none; border-radius: 6px; cursor: pointer;">
+                            Try Again
+                        </button>
+                    </div>
+                `;
+            }
+        }
+
+        function displayVariations(variations) {
+            const previewArea = document.getElementById('previewArea');
+            
+            // Create variation selection UI
+            let variationsHTML = `
+                <div style="margin-bottom: 20px;">
+                    <h3 style="color: var(--text-primary); margin-bottom: 12px; font-size: 16px; font-weight: 600;">
+                        ✨ AI Generated Variations (${variations.length})
+                    </h3>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 12px; margin-bottom: 20px;">
+            `;
+            
+            variations.forEach((variation, index) => {
+                const isSelected = aiGenerationState.selectedVariation?.id === variation.id;
+                variationsHTML += `
+                    <button onclick="selectVariation(${variation.id})" 
+                            style="padding: 8px 12px; border: 2px solid ${isSelected ? 'var(--accent-purple)' : 'var(--glass-border)'}; 
+                                   background: ${isSelected ? 'var(--accent-purple)' : 'var(--glass-bg)'}; 
+                                   color: ${isSelected ? 'white' : 'var(--text-primary)'}; border-radius: 8px; 
+                                   cursor: pointer; font-size: 12px; font-weight: 500; transition: all 0.2s ease;"
+                            onmouseover="this.style.borderColor='var(--accent-purple)'"
+                            onmouseout="this.style.borderColor='${isSelected ? 'var(--accent-purple)' : 'var(--glass-border)'}'">
+                        Variation ${index + 1}
+                        <br><span style="font-size: 10px; opacity: 0.8;">${variation.metadata?.source || 'AI'}</span>
+                    </button>
+                `;
+            });
+            
+            variationsHTML += `
+                    </div>
+                    <button onclick="generateAIVariations('gradient hero section with customizable properties')" 
+                            style="padding: 6px 12px; background: var(--glass-bg); border: 1px solid var(--glass-border); 
+                                   color: var(--text-primary); border-radius: 6px; cursor: pointer; font-size: 12px;">
+                        🔄 Regenerate Variations
+                    </button>
+                </div>
+            `;
+            
+            // Add current variation preview
+            if (aiGenerationState.selectedVariation) {
+                variationsHTML += `
+                    <div id="selectedVariationPreview">
+                        ${renderVariationPreview(aiGenerationState.selectedVariation)}
+                    </div>
+                `;
+            }
+            
+            // Find or create variations container
+            let variationsContainer = document.getElementById('variations-container');
+            if (!variationsContainer) {
+                variationsContainer = document.createElement('div');
+                variationsContainer.id = 'variations-container';
+                variationsContainer.style.marginTop = '20px';
+                previewArea.parentNode.insertBefore(variationsContainer, previewArea.nextSibling);
+            }
+            
+            // Update only the variations container, not the preview area
+            variationsContainer.innerHTML = variationsHTML;
+        }
+
+        function selectVariation(variationId) {
+            const variation = aiGenerationState.currentVariations.find(v => v.id === variationId);
+            if (variation) {
+                aiGenerationState.selectedVariation = variation;
+                
+                // Update the variation selection buttons
+                displayVariations(aiGenerationState.currentVariations);
+                
+                // Apply the variation to the current component
+                applyVariationToComponent(variation);
+                
+                // Show success feedback
+                showVariationAppliedFeedback(variation);
+            }
+        }
+        
+        function applyVariationToComponent(variation) {
+            // Get the current component ID
+            const currentComponentId = window.currentSelectedComponent || 'primary-button';
+            
+            // Parse the variation code to extract properties
+            const extractedProps = parseVariationCode(variation.code, currentComponentId);
+            
+            // Apply the extracted properties to the live preview
+            if (extractedProps && window.componentStates) {
+                window.componentStates[currentComponentId] = { ...window.componentStates[currentComponentId], ...extractedProps };
+                renderComponentPreview(currentComponentId, window.componentStates[currentComponentId]);
+            }
+            
+            // If it's Gradient Hero, use the legacy system
+            if (currentComponentId === 'gradient-hero') {
+                extractPropertiesFromVariation(variation);
+            }
+        }
+        
+        function parseVariationCode(code, componentType) {
+            const props = {};
+            
+            // Extract text content
+            const textMatch = code.match(/(?:children|text|label)[=:]\s*["']([^"']+)["']/);
+            if (textMatch) {
+                if (!props.appearance) props.appearance = {};
+                props.appearance.text = textMatch[1];
+            }
+            
+            // Extract colors
+            const colorMatches = code.matchAll(/(?:background|color|bg)[=:]\s*["']([^"']+)["']/g);
+            for (const match of colorMatches) {
+                if (!props.colors) props.colors = {};
+                if (match[0].includes('background') || match[0].includes('bg')) {
+                    props.colors.background = match[1];
+                } else {
+                    props.colors.textColor = match[1];
+                }
+            }
+            
+            // Extract sizes
+            const sizeMatch = code.match(/size[=:]\s*["']([^"']+)["']/);
+            if (sizeMatch) {
+                if (!props.appearance) props.appearance = {};
+                props.appearance.size = sizeMatch[1];
+            }
+            
+            // Extract padding/spacing
+            const paddingMatch = code.match(/padding[=:]\s*["']([^"']+)["']/);
+            if (paddingMatch) {
+                if (!props.spacing) props.spacing = {};
+                const paddingValue = parseInt(paddingMatch[1]);
+                if (!isNaN(paddingValue)) {
+                    props.spacing.paddingVertical = paddingValue;
+                    props.spacing.paddingHorizontal = paddingValue * 2;
+                }
+            }
+            
+            return props;
+        }
+        
+        function showVariationAppliedFeedback(variation) {
+            // Create a toast notification
+            let toast = document.getElementById('variation-toast');
+            if (!toast) {
+                toast = document.createElement('div');
+                toast.id = 'variation-toast';
+                toast.style.cssText = `
+                    position: fixed;
+                    bottom: 20px;
+                    right: 20px;
+                    background: var(--accent-gradient);
+                    color: white;
+                    padding: 12px 20px;
+                    border-radius: 8px;
+                    font-size: 14px;
+                    font-weight: 500;
+                    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+                    transform: translateY(100px);
+                    opacity: 0;
+                    transition: all 0.3s ease;
+                    z-index: 1001;
+                `;
+                document.body.appendChild(toast);
+            }
+            
+            toast.innerHTML = `✨ Applied Variation ${aiGenerationState.currentVariations.indexOf(variation) + 1}`;
+            
+            // Animate in
+            setTimeout(() => {
+                toast.style.transform = 'translateY(0)';
+                toast.style.opacity = '1';
+            }, 10);
+            
+            // Animate out after 2 seconds
+            setTimeout(() => {
+                toast.style.transform = 'translateY(100px)';
+                toast.style.opacity = '0';
+            }, 2000);
+        }
+
+        function renderVariationPreview(variation) {
+            // For now, render a code preview. Later we can render the actual component
+            return `
+                <div style="background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 12px; padding: 20px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                        <h4 style="color: var(--text-primary); font-size: 14px; font-weight: 600; margin: 0;">
+                            ${variation.name} Preview
+                        </h4>
+                        <span style="background: var(--accent-purple); color: white; padding: 2px 8px; border-radius: 12px; font-size: 10px; font-weight: 500;">
+                            ${variation.metadata?.source || 'AI Generated'}
+                        </span>
+                    </div>
+                    <div style="background: var(--bg-primary); border-radius: 8px; padding: 16px; border: 1px solid var(--glass-border); margin-bottom: 12px;">
+                        <div style="color: var(--text-muted); font-family: monospace; font-size: 12px; max-height: 200px; overflow-y: auto;">
+                            ${escapeHtml(variation.code.substring(0, 500))}${variation.code.length > 500 ? '...' : ''}
+                        </div>
+                    </div>
+                    <p style="color: var(--text-secondary); font-size: 12px; margin-bottom: 8px;">
+                        ${variation.explanation}
+                    </p>
+                    ${variation.metadata?.quality ? `<p style="color: var(--text-muted); font-size: 11px;">Quality: ${variation.metadata.quality}</p>` : ''}
+                </div>
+            `;
+        }
+
+        function extractPropertiesFromVariation(variation) {
+            // Parse the generated code to extract properties and update the properties panel
+            // This is a simplified version - we can enhance this later
+            const code = variation.code;
+            
+            // Try to extract gradient colors
+            const gradientMatch = code.match(/from-(\w+)-(\d+).*?to-(\w+)-(\d+)/);
+            if (gradientMatch) {
+                // Convert Tailwind colors to hex (simplified)
+                gradientHeroProps.gradientStartColor = tailwindToHex(gradientMatch[1], gradientMatch[2]);
+                gradientHeroProps.gradientEndColor = tailwindToHex(gradientMatch[3], gradientMatch[4]);
+            }
+            
+            // Extract title from the code if possible
+            const titleMatch = code.match(/title["\s]*[:=]["\s]*["']([^"']+)["']/);
+            if (titleMatch) {
+                gradientHeroProps.title = titleMatch[1];
+            }
+            
+            // Update the properties panel to reflect the extracted values
+            showGradientHeroProperties();
+        }
+
+        function tailwindToHex(color, shade) {
+            // Simplified Tailwind to hex conversion
+            const colors = {
+                purple: { '500': '#8b5cf6', '600': '#7c3aed' },
+                blue: { '500': '#3b82f6', '600': '#2563eb' },
+                pink: { '500': '#ec4899', '600': '#db2777' },
+                red: { '500': '#ef4444', '600': '#dc2626' },
+                green: { '500': '#10b981', '600': '#059669' },
+                yellow: { '500': '#f59e0b', '600': '#d97706' },
+                indigo: { '500': '#6366f1', '600': '#4f46e5' }
+            };
+            return colors[color]?.[shade] || '#667eea';
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function showStaticGradientHero() {
+            // Fallback to static preview when AI generation fails
+            const previewArea = document.getElementById('previewArea');
+            previewArea.innerHTML = `
+                <div id="gradientHeroPreview" style="
+                    padding: ${gradientHeroProps.paddingVertical} ${gradientHeroProps.paddingHorizontal};
+                    background: linear-gradient(${gradientHeroProps.gradientDirection}, ${gradientHeroProps.gradientStartColor} 0%, ${gradientHeroProps.gradientEndColor} 100%);
+                    border-radius: ${gradientHeroProps.borderRadius};
+                    text-align: ${gradientHeroProps.textAlign};
+                    color: white;
+                    width: 100%;
+                    max-width: 600px;
+                ">
+                    <h1 style="
+                        font-size: ${gradientHeroProps.titleSize};
+                        font-weight: ${gradientHeroProps.titleWeight};
+                        margin-bottom: ${gradientHeroProps.titleMarginBottom};
+                        line-height: 1.1;
+                    " id="heroTitle">${gradientHeroProps.title}</h1>
+                    <p style="
+                        font-size: ${gradientHeroProps.subtitleSize};
+                        opacity: 0.9;
+                        margin-bottom: ${gradientHeroProps.subtitleMarginBottom};
+                        max-width: ${gradientHeroProps.subtitleMaxWidth};
+                        margin-left: auto;
+                        margin-right: auto;
+                    " id="heroSubtitle">${gradientHeroProps.subtitle}</p>
+                    <button style="
+                        background: ${gradientHeroProps.buttonBackground};
+                        color: ${gradientHeroProps.buttonColor};
+                        padding: ${gradientHeroProps.buttonPadding};
+                        border: none;
+                        border-radius: ${gradientHeroProps.buttonBorderRadius};
+                        font-size: ${gradientHeroProps.buttonFontSize};
+                        font-weight: ${gradientHeroProps.buttonFontWeight};
+                        cursor: pointer;
+                        transition: all 0.3s ease;
+                    " id="heroButton">${gradientHeroProps.buttonText}</button>
+                </div>
+            `;
+        }
+
+        // Show enhanced properties for Gradient Hero
+        function showGradientHeroProperties() {
+            const propertiesSection = document.getElementById('propertiesSection');
+            propertiesSection.innerHTML = `
+                <!-- AI Generation Controls -->
+                <div class="property-section">
+                    <div class="property-section-header" onclick="togglePropertySection(this)">
+                        <span>🤖 AI Generation</span>
+                        <span class="chevron">▼</span>
+                    </div>
+                    <div class="property-section-content">
+                        <div class="property-row">
+                            <label class="property-label-enhanced">AI Service</label>
+                            <select class="property-select property-input" onchange="updateAIService(this.value)">
+                                <option value="enhanced-claude">Enhanced Claude</option>
+                                <option value="enhanced-openai">Enhanced OpenAI</option>
+                                <option value="purecode">PureCode.ai</option>
+                                <option value="react-bits">React Bits Library</option>
+                            </select>
+                        </div>
+                        <div class="property-row">
+                            <label class="property-label-enhanced">Theme Style</label>
+                            <select class="property-select property-input" onchange="updateThemeStyle(this.value)">
+                                <option value="gradient">Gradient</option>
+                                <option value="minimal">Minimal</option>
+                                <option value="glassmorphism">Glassmorphism</option>
+                                <option value="neumorphism">Neumorphism</option>
+                                <option value="bold">Bold</option>
+                            </select>
+                        </div>
+                        <div class="property-row">
+                            <label class="property-label-enhanced">Variations Count</label>
+                            <select class="property-select property-input" onchange="updateVariationCount(this.value)">
+                                <option value="3">3 Variations</option>
+                                <option value="5">5 Variations</option>
+                                <option value="2">2 Variations</option>
+                            </select>
+                        </div>
+                        <div class="property-row">
+                            <button onclick="regenerateWithSettings()" 
+                                    style="width: 100%; padding: 8px 12px; background: var(--accent-purple); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500;"
+                                    id="regenerateButton">
+                                ✨ Regenerate with Settings
+                            </button>
+                        </div>
+                        <div class="property-row" id="aiGenerationStatus" style="display: none;">
+                            <div style="padding: 8px 12px; background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 6px; font-size: 12px;">
+                                <span id="statusMessage">Ready</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Content Section -->
+                <div class="property-section">
+                    <div class="property-section-header" onclick="togglePropertySection(this)">
+                        <span>Content</span>
+                        <span class="chevron">▼</span>
+                    </div>
+                    <div class="property-section-content">
+                        <div class="property-row">
+                            <label class="property-label-enhanced">Title</label>
+                            <input type="text" class="property-select property-input" value="${gradientHeroProps.title}" onchange="updateGradientHeroProp('title', this.value)">
+                        </div>
+                        <div class="property-row">
+                            <label class="property-label-enhanced">Subtitle</label>
+                            <input type="text" class="property-select property-input" value="${gradientHeroProps.subtitle}" onchange="updateGradientHeroProp('subtitle', this.value)">
+                        </div>
+                        <div class="property-row">
+                            <label class="property-label-enhanced">Button Text</label>
+                            <input type="text" class="property-select property-input" value="${gradientHeroProps.buttonText}" onchange="updateGradientHeroProp('buttonText', this.value)">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Gradient Section -->
+                <div class="property-section">
+                    <div class="property-section-header" onclick="togglePropertySection(this)">
+                        <span>Gradient</span>
+                        <span class="chevron">▼</span>
+                    </div>
+                    <div class="property-section-content">
+                        <div class="property-row">
+                            <label class="property-label-enhanced">Start Color</label>
+                            <div class="color-input-group">
+                                <input type="color" class="color-picker" value="${gradientHeroProps.gradientStartColor}" onchange="updateGradientHeroProp('gradientStartColor', this.value)">
+                                <input type="text" class="color-text" value="${gradientHeroProps.gradientStartColor}" onchange="updateGradientHeroProp('gradientStartColor', this.value)">
+                            </div>
+                        </div>
+                        <div class="property-row">
+                            <label class="property-label-enhanced">End Color</label>
+                            <div class="color-input-group">
+                                <input type="color" class="color-picker" value="${gradientHeroProps.gradientEndColor}" onchange="updateGradientHeroProp('gradientEndColor', this.value)">
+                                <input type="text" class="color-text" value="${gradientHeroProps.gradientEndColor}" onchange="updateGradientHeroProp('gradientEndColor', this.value)">
+                            </div>
+                        </div>
+                        <div class="property-row">
+                            <label class="property-label-enhanced">Direction</label>
+                            <select class="property-select property-input" onchange="updateGradientHeroProp('gradientDirection', this.value)">
+                                <option value="0deg" ${gradientHeroProps.gradientDirection === '0deg' ? 'selected' : ''}>0° (Up)</option>
+                                <option value="45deg" ${gradientHeroProps.gradientDirection === '45deg' ? 'selected' : ''}>45°</option>
+                                <option value="90deg" ${gradientHeroProps.gradientDirection === '90deg' ? 'selected' : ''}>90° (Right)</option>
+                                <option value="135deg" ${gradientHeroProps.gradientDirection === '135deg' ? 'selected' : ''}>135°</option>
+                                <option value="180deg" ${gradientHeroProps.gradientDirection === '180deg' ? 'selected' : ''}>180° (Down)</option>
+                                <option value="225deg" ${gradientHeroProps.gradientDirection === '225deg' ? 'selected' : ''}>225°</option>
+                                <option value="270deg" ${gradientHeroProps.gradientDirection === '270deg' ? 'selected' : ''}>270° (Left)</option>
+                                <option value="315deg" ${gradientHeroProps.gradientDirection === '315deg' ? 'selected' : ''}>315°</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Typography Section -->
+                <div class="property-section">
+                    <div class="property-section-header" onclick="togglePropertySection(this)">
+                        <span>Typography</span>
+                        <span class="chevron">▼</span>
+                    </div>
+                    <div class="property-section-content">
+                        <div class="property-row">
+                            <label class="property-label-enhanced">Title Size</label>
+                            <select class="property-select property-input" onchange="updateGradientHeroProp('titleSize', this.value)">
+                                <option value="32px" ${gradientHeroProps.titleSize === '32px' ? 'selected' : ''}>32px</option>
+                                <option value="40px" ${gradientHeroProps.titleSize === '40px' ? 'selected' : ''}>40px</option>
+                                <option value="48px" ${gradientHeroProps.titleSize === '48px' ? 'selected' : ''}>48px</option>
+                                <option value="56px" ${gradientHeroProps.titleSize === '56px' ? 'selected' : ''}>56px</option>
+                                <option value="64px" ${gradientHeroProps.titleSize === '64px' ? 'selected' : ''}>64px</option>
+                            </select>
+                        </div>
+                        <div class="property-row">
+                            <label class="property-label-enhanced">Title Weight</label>
+                            <select class="property-select property-input" onchange="updateGradientHeroProp('titleWeight', this.value)">
+                                <option value="400" ${gradientHeroProps.titleWeight === '400' ? 'selected' : ''}>400 (Normal)</option>
+                                <option value="500" ${gradientHeroProps.titleWeight === '500' ? 'selected' : ''}>500 (Medium)</option>
+                                <option value="600" ${gradientHeroProps.titleWeight === '600' ? 'selected' : ''}>600 (Semibold)</option>
+                                <option value="700" ${gradientHeroProps.titleWeight === '700' ? 'selected' : ''}>700 (Bold)</option>
+                                <option value="800" ${gradientHeroProps.titleWeight === '800' ? 'selected' : ''}>800 (Extra Bold)</option>
+                            </select>
+                        </div>
+                        <div class="property-row">
+                            <label class="property-label-enhanced">Subtitle Size</label>
+                            <select class="property-select property-input" onchange="updateGradientHeroProp('subtitleSize', this.value)">
+                                <option value="14px" ${gradientHeroProps.subtitleSize === '14px' ? 'selected' : ''}>14px</option>
+                                <option value="16px" ${gradientHeroProps.subtitleSize === '16px' ? 'selected' : ''}>16px</option>
+                                <option value="18px" ${gradientHeroProps.subtitleSize === '18px' ? 'selected' : ''}>18px</option>
+                                <option value="20px" ${gradientHeroProps.subtitleSize === '20px' ? 'selected' : ''}>20px</option>
+                                <option value="24px" ${gradientHeroProps.subtitleSize === '24px' ? 'selected' : ''}>24px</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Spacing Section -->
+                <div class="property-section">
+                    <div class="property-section-header" onclick="togglePropertySection(this)">
+                        <span>Spacing</span>
+                        <span class="chevron">▼</span>
+                    </div>
+                    <div class="property-section-content">
+                        <div class="property-row">
+                            <label class="property-label-enhanced">Vertical Padding</label>
+                            <select class="property-select property-input" onchange="updateGradientHeroProp('paddingVertical', this.value)">
+                                <option value="40px" ${gradientHeroProps.paddingVertical === '40px' ? 'selected' : ''}>40px</option>
+                                <option value="60px" ${gradientHeroProps.paddingVertical === '60px' ? 'selected' : ''}>60px</option>
+                                <option value="80px" ${gradientHeroProps.paddingVertical === '80px' ? 'selected' : ''}>80px</option>
+                                <option value="100px" ${gradientHeroProps.paddingVertical === '100px' ? 'selected' : ''}>100px</option>
+                                <option value="120px" ${gradientHeroProps.paddingVertical === '120px' ? 'selected' : ''}>120px</option>
+                            </select>
+                        </div>
+                        <div class="property-row">
+                            <label class="property-label-enhanced">Horizontal Padding</label>
+                            <select class="property-select property-input" onchange="updateGradientHeroProp('paddingHorizontal', this.value)">
+                                <option value="20px" ${gradientHeroProps.paddingHorizontal === '20px' ? 'selected' : ''}>20px</option>
+                                <option value="40px" ${gradientHeroProps.paddingHorizontal === '40px' ? 'selected' : ''}>40px</option>
+                                <option value="60px" ${gradientHeroProps.paddingHorizontal === '60px' ? 'selected' : ''}>60px</option>
+                                <option value="80px" ${gradientHeroProps.paddingHorizontal === '80px' ? 'selected' : ''}>80px</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Layout Section -->
+                <div class="property-section">
+                    <div class="property-section-header" onclick="togglePropertySection(this)">
+                        <span>Layout</span>
+                        <span class="chevron">▼</span>
+                    </div>
+                    <div class="property-section-content">
+                        <div class="property-row">
+                            <label class="property-label-enhanced">Text Align</label>
+                            <select class="property-select property-input" onchange="updateGradientHeroProp('textAlign', this.value)">
+                                <option value="left" ${gradientHeroProps.textAlign === 'left' ? 'selected' : ''}>Left</option>
+                                <option value="center" ${gradientHeroProps.textAlign === 'center' ? 'selected' : ''}>Center</option>
+                                <option value="right" ${gradientHeroProps.textAlign === 'right' ? 'selected' : ''}>Right</option>
+                            </select>
+                        </div>
+                        <div class="property-row">
+                            <label class="property-label-enhanced">Border Radius</label>
+                            <select class="property-select property-input" onchange="updateGradientHeroProp('borderRadius', this.value)">
+                                <option value="0px" ${gradientHeroProps.borderRadius === '0px' ? 'selected' : ''}>0px</option>
+                                <option value="8px" ${gradientHeroProps.borderRadius === '8px' ? 'selected' : ''}>8px</option>
+                                <option value="12px" ${gradientHeroProps.borderRadius === '12px' ? 'selected' : ''}>12px</option>
+                                <option value="16px" ${gradientHeroProps.borderRadius === '16px' ? 'selected' : ''}>16px</option>
+                                <option value="20px" ${gradientHeroProps.borderRadius === '20px' ? 'selected' : ''}>20px</option>
+                                <option value="24px" ${gradientHeroProps.borderRadius === '24px' ? 'selected' : ''}>24px</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Button Section -->
+                <div class="property-section">
+                    <div class="property-section-header" onclick="togglePropertySection(this)">
+                        <span>Button</span>
+                        <span class="chevron">▼</span>
+                    </div>
+                    <div class="property-section-content">
+                        <div class="property-row">
+                            <label class="property-label-enhanced">Background</label>
+                            <div class="color-input-group">
+                                <input type="color" class="color-picker" value="${gradientHeroProps.buttonBackground}" onchange="updateGradientHeroProp('buttonBackground', this.value)">
+                                <input type="text" class="color-text" value="${gradientHeroProps.buttonBackground}" onchange="updateGradientHeroProp('buttonBackground', this.value)">
+                            </div>
+                        </div>
+                        <div class="property-row">
+                            <label class="property-label-enhanced">Text Color</label>
+                            <div class="color-input-group">
+                                <input type="color" class="color-picker" value="${gradientHeroProps.buttonColor}" onchange="updateGradientHeroProp('buttonColor', this.value)">
+                                <input type="text" class="color-text" value="${gradientHeroProps.buttonColor}" onchange="updateGradientHeroProp('buttonColor', this.value)">
+                            </div>
+                        </div>
+                        <div class="property-row">
+                            <label class="property-label-enhanced">Border Radius</label>
+                            <select class="property-select property-input" onchange="updateGradientHeroProp('buttonBorderRadius', this.value)">
+                                <option value="4px" ${gradientHeroProps.buttonBorderRadius === '4px' ? 'selected' : ''}>4px</option>
+                                <option value="6px" ${gradientHeroProps.buttonBorderRadius === '6px' ? 'selected' : ''}>6px</option>
+                                <option value="8px" ${gradientHeroProps.buttonBorderRadius === '8px' ? 'selected' : ''}>8px</option>
+                                <option value="12px" ${gradientHeroProps.buttonBorderRadius === '12px' ? 'selected' : ''}>12px</option>
+                                <option value="16px" ${gradientHeroProps.buttonBorderRadius === '16px' ? 'selected' : ''}>16px</option>
+                                <option value="999px" ${gradientHeroProps.buttonBorderRadius === '999px' ? 'selected' : ''}>999px (Pill)</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // AI Generation Settings
+        let aiSettings = {
+            service: 'enhanced-claude',
+            theme: 'gradient',
+            variationCount: 3
+        };
+
+        function updateAIService(service) {
+            aiSettings.service = service;
+            console.log('AI Service updated to:', service);
+        }
+
+        function updateThemeStyle(theme) {
+            aiSettings.theme = theme;
+            console.log('Theme updated to:', theme);
+        }
+
+        function updateVariationCount(count) {
+            aiSettings.variationCount = parseInt(count);
+            console.log('Variation count updated to:', count);
+        }
+
+        async function regenerateWithSettings() {
+            const prompt = buildEnhancedPrompt();
+            await generateAIVariations(prompt, aiSettings.variationCount);
+        }
+
+        function buildEnhancedPrompt() {
+            let basePrompt = 'gradient hero section with customizable properties';
+            
+            // Add theme-specific enhancements
+            switch (aiSettings.theme) {
+                case 'minimal':
+                    basePrompt += ' with minimal clean design';
+                    break;
+                case 'glassmorphism':
+                    basePrompt += ' with glass morphism effects and blur';
+                    break;
+                case 'neumorphism':
+                    basePrompt += ' with soft neumorphic shadows';
+                    break;
+                case 'bold':
+                    basePrompt += ' with bold vibrant colors and strong contrast';
+                    break;
+                default:
+                    basePrompt += ' with modern gradient design';
+            }
+            
+            // Add current property context
+            basePrompt += ` Title: "${gradientHeroProps.title}", Subtitle: "${gradientHeroProps.subtitle}", Button: "${gradientHeroProps.buttonText}"`;
+            
+            return basePrompt;
+        }
+
+        // Toggle property section collapse
+        function togglePropertySection(header) {
+            const content = header.nextElementSibling;
+            const chevron = header.querySelector('.chevron');
+            
+            content.classList.toggle('collapsed');
+            chevron.classList.toggle('rotated');
+        }
+
+        // Update gradient hero property and refresh preview
+        function updateGradientHeroProp(property, value) {
+            gradientHeroProps[property] = value;
+            
+            // If we have AI variations, update the current variation or regenerate
+            if (aiGenerationState.currentVariations.length > 0) {
+                // For now, just update the preview. Later we can implement smart regeneration
+                updateGradientHeroPreview();
+            } else {
+                updateGradientHeroPreview();
+            }
+        }
+
+        // Update the gradient hero preview with current properties
+        function updateGradientHeroPreview() {
+            // If we have AI variations, update the selected variation preview
+            if (aiGenerationState.currentVariations.length > 0) {
+                const previewElement = document.getElementById('selectedVariationPreview');
+                if (previewElement) {
+                    previewElement.innerHTML = renderVariationPreview(aiGenerationState.selectedVariation);
+                }
+            } else {
+                // Show static preview
+                showStaticGradientHero();
+            }
+        }
+
+        // Filter components
+        function filterComponents(searchTerm) {
+            const cards = document.querySelectorAll('.component-card');
+            cards.forEach(card => {
+                const name = card.querySelector('.component-name').textContent.toLowerCase();
+                const description = card.querySelector('.component-description').textContent.toLowerCase();
+                if (name.includes(searchTerm.toLowerCase()) || description.includes(searchTerm.toLowerCase())) {
+                    card.style.display = 'block';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        }
+
+        // Filter by category
+        function filterCategory(category) {
+            const cards = document.querySelectorAll('.component-card');
+            const chips = document.querySelectorAll('.category-chip');
+            
+            // Update active chip
+            chips.forEach(chip => chip.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            // Filter cards
+            cards.forEach(card => {
+                if (category === 'all' || card.dataset.category === category) {
+                    card.style.display = 'block';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        }
+
+        // Toggle view
+        function toggleView(view) {
+            currentView = view;
+            const buttons = document.querySelectorAll('.toggle-btn');
+            buttons.forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            const previewArea = document.getElementById('previewArea');
+            if (view === 'code' && selectedComponent) {
+                previewArea.innerHTML = `
+                    <pre style="color: var(--text-secondary); font-size: 12px; overflow: auto;">
+import React from 'react';
+
+const ${selectedComponent.replace('-', '')} = () => {
+    return (
+        <button className="btn">
+            Click me
+        </button>
+    );
+};
+
+export default ${selectedComponent.replace('-', '')};
+                    </pre>
+                `;
+            }
+        }
+
+        // Quick start actions
+        function quickStart(type) {
+            document.getElementById('aiInput').value = `Create a modern ${type} component`;
+            generateWithAI();
+        }
+
+        // Set suggestion
+        function setSuggestion(text) {
+            document.getElementById('aiInput').value = text;
+        }
+
+        // Generate with AI
+        function generateWithAI() {
+            const input = document.getElementById('aiInput').value;
+            if (input) {
+                console.log('Generating component:', input);
+                // Show loading state
+                document.getElementById('previewArea').innerHTML = `
+                    <div style="text-align: center;">
+                        <div style="font-size: 32px; margin-bottom: 16px;">✨</div>
+                        <p>Generating component...</p>
+                        <p style="font-size: 12px; color: var(--text-muted); margin-top: 8px;">"${input}"</p>
+                    </div>
+                `;
+            }
+        }
+
+        // Export component
+        function exportComponent() {
+            if (selectedComponent) {
+                console.log('Exporting:', selectedComponent);
+                alert('Component exported successfully!');
+            } else {
+                alert('Please select a component first');
+            }
+        }
+
+        // Copy code
+        function copyCode() {
+            if (selectedComponent) {
+                let code = '';
+                
+                if (selectedComponent === 'gradient-hero') {
+                    // If we have an AI-generated variation, use that code
+                    if (aiGenerationState.selectedVariation) {
+                        code = aiGenerationState.selectedVariation.code;
+                    } else {
+                        // Fallback to generating React component code with current properties
+                        const componentName = 'GradientHero';
+                    code = `import React from 'react';
+
+const ${componentName} = ({
+  title = "${gradientHeroProps.title}",
+  subtitle = "${gradientHeroProps.subtitle}",
+  buttonText = "${gradientHeroProps.buttonText}",
+  gradientStartColor = "${gradientHeroProps.gradientStartColor}",
+  gradientEndColor = "${gradientHeroProps.gradientEndColor}",
+  gradientDirection = "${gradientHeroProps.gradientDirection}",
+  titleSize = "${gradientHeroProps.titleSize}",
+  titleWeight = "${gradientHeroProps.titleWeight}",
+  subtitleSize = "${gradientHeroProps.subtitleSize}",
+  paddingVertical = "${gradientHeroProps.paddingVertical}",
+  paddingHorizontal = "${gradientHeroProps.paddingHorizontal}",
+  textAlign = "${gradientHeroProps.textAlign}",
+  borderRadius = "${gradientHeroProps.borderRadius}",
+  buttonBackground = "${gradientHeroProps.buttonBackground}",
+  buttonColor = "${gradientHeroProps.buttonColor}",
+  buttonBorderRadius = "${gradientHeroProps.buttonBorderRadius}"
+}) => {
+  return (
+    <div style={{
+      padding: \`\${paddingVertical} \${paddingHorizontal}\`,
+      background: \`linear-gradient(\${gradientDirection}, \${gradientStartColor} 0%, \${gradientEndColor} 100%)\`,
+      borderRadius: borderRadius,
+      textAlign: textAlign,
+      color: 'white',
+      width: '100%',
+      maxWidth: '600px'
+    }}>
+      <h1 style={{
+        fontSize: titleSize,
+        fontWeight: titleWeight,
+        marginBottom: '${gradientHeroProps.titleMarginBottom}',
+        lineHeight: '1.1'
+      }}>
+        {title}
+      </h1>
+      <p style={{
+        fontSize: subtitleSize,
+        opacity: '0.9',
+        marginBottom: '${gradientHeroProps.subtitleMarginBottom}',
+        maxWidth: '${gradientHeroProps.subtitleMaxWidth}',
+        marginLeft: 'auto',
+        marginRight: 'auto'
+      }}>
+        {subtitle}
+      </p>
+      <button style={{
+        background: buttonBackground,
+        color: buttonColor,
+        padding: '${gradientHeroProps.buttonPadding}',
+        border: 'none',
+        borderRadius: buttonBorderRadius,
+        fontSize: '${gradientHeroProps.buttonFontSize}',
+        fontWeight: '${gradientHeroProps.buttonFontWeight}',
+        cursor: 'pointer',
+        transition: 'all 0.3s ease'
+      }}>
+        {buttonText}
+      </button>
+    </div>
+  );
+};
+
+export default ${componentName};`;
+                    }
+                } else {
+                    // Generate basic component code for other components
+                    const componentName = selectedComponent.split('-').map(word => 
+                        word.charAt(0).toUpperCase() + word.slice(1)
+                    ).join('');
+                    
+                    code = `import React from 'react';
+
+const ${componentName} = () => {
+  return (
+    <div className="${selectedComponent}">
+      {/* ${componentName} component */}
+    </div>
+  );
+};
+
+export default ${componentName};`;
+                }
+                
+                navigator.clipboard.writeText(code).then(() => {
+                    event.target.textContent = '✅ Copied!';
+                    setTimeout(() => {
+                        event.target.textContent = '📋 Copy Code';
+                    }, 2000);
+                }).catch(() => {
+                    // Fallback for older browsers
+                    event.target.textContent = '❌ Copy failed';
+                    setTimeout(() => {
+                        event.target.textContent = '📋 Copy Code';
+                    }, 2000);
+                });
+            } else {
+                alert('Please select a component first');
+            }
+        }
+
+        // Update property functions
+        function updateVariant(value) {
+            console.log('Variant updated:', value);
+        }
+
+        function updateSize(value) {
+            console.log('Size updated:', value);
+        }
+
+        function updateTheme(value) {
+            console.log('Theme updated:', value);
+        }
+
+        // Show enhanced properties for all component types
+        function showEnhancedComponentProperties(componentId) {
+            const propertiesSection = document.getElementById('propertiesSection');
+            
+            // Define property configurations for each component type
+            const componentProperties = {
+                'primary-button': {
+                    title: 'Primary Button Properties',
+                    properties: {
+                        appearance: {
+                            text: { type: 'text', default: 'Click Me', label: 'Button Text' },
+                            size: { type: 'select', options: ['small', 'medium', 'large', 'extra-large'], default: 'medium' },
+                            variant: { type: 'select', options: ['solid', 'outline', 'ghost', 'link'], default: 'solid' },
+                            disabled: { type: 'checkbox', default: false }
+                        },
+                        colors: {
+                            background: { type: 'color', default: '#6366f1' },
+                            textColor: { type: 'color', default: '#ffffff' },
+                            hoverBackground: { type: 'color', default: '#4f46e5' }
+                        },
+                        spacing: {
+                            paddingVertical: { type: 'range', min: 8, max: 24, default: 12 },
+                            paddingHorizontal: { type: 'range', min: 16, max: 48, default: 24 },
+                            borderRadius: { type: 'range', min: 0, max: 24, default: 8 }
+                        }
+                    }
+                },
+                'gradient-button': {
+                    title: 'Gradient Button Properties',
+                    properties: {
+                        appearance: {
+                            text: { type: 'text', default: 'Gradient Button', label: 'Button Text' },
+                            size: { type: 'select', options: ['small', 'medium', 'large', 'extra-large'], default: 'medium' },
+                            animation: { type: 'select', options: ['none', 'pulse', 'glow', 'slide'], default: 'glow' }
+                        },
+                        gradient: {
+                            startColor: { type: 'color', default: '#667eea' },
+                            endColor: { type: 'color', default: '#764ba2' },
+                            direction: { type: 'select', options: ['0deg', '45deg', '90deg', '135deg', '180deg'], default: '135deg' }
+                        },
+                        effects: {
+                            boxShadow: { type: 'checkbox', default: true, label: 'Drop Shadow' },
+                            hoverScale: { type: 'range', min: 1, max: 1.2, step: 0.05, default: 1.05 },
+                            borderRadius: { type: 'range', min: 0, max: 50, default: 8 }
+                        }
+                    }
+                },
+                'icon-button': {
+                    title: 'Icon Button Properties',
+                    properties: {
+                        appearance: {
+                            icon: { type: 'select', options: ['⭐', '❤️', '🔥', '⚡', '✨', '🚀'], default: '⭐' },
+                            text: { type: 'text', default: 'Icon Button' },
+                            iconPosition: { type: 'select', options: ['left', 'right', 'top', 'bottom'], default: 'left' }
+                        },
+                        styling: {
+                            size: { type: 'select', options: ['small', 'medium', 'large'], default: 'medium' },
+                            background: { type: 'color', default: '#1a1a2e' },
+                            iconColor: { type: 'color', default: '#ffd700' }
+                        }
+                    }
+                },
+                'input-field': {
+                    title: 'Input Field Properties',
+                    properties: {
+                        field: {
+                            label: { type: 'text', default: 'Email Address' },
+                            placeholder: { type: 'text', default: 'Enter your email' },
+                            type: { type: 'select', options: ['text', 'email', 'password', 'number', 'tel'], default: 'email' },
+                            required: { type: 'checkbox', default: false }
+                        },
+                        styling: {
+                            width: { type: 'select', options: ['full', '300px', '400px', '500px'], default: '300px' },
+                            borderStyle: { type: 'select', options: ['solid', 'rounded', 'underline'], default: 'solid' },
+                            borderColor: { type: 'color', default: '#374151' }
+                        },
+                        validation: {
+                            showError: { type: 'checkbox', default: false },
+                            errorMessage: { type: 'text', default: 'Please enter a valid email' }
+                        }
+                    }
+                },
+                'select-dropdown': {
+                    title: 'Select Dropdown Properties',
+                    properties: {
+                        field: {
+                            label: { type: 'text', default: 'Select Option' },
+                            options: { type: 'text', default: 'Option 1,Option 2,Option 3', label: 'Options (comma-separated)' },
+                            defaultValue: { type: 'text', default: 'Option 1' }
+                        },
+                        features: {
+                            searchable: { type: 'checkbox', default: false },
+                            multiSelect: { type: 'checkbox', default: false },
+                            clearable: { type: 'checkbox', default: true }
+                        }
+                    }
+                },
+                'checkbox': {
+                    title: 'Checkbox Properties',
+                    properties: {
+                        field: {
+                            label: { type: 'text', default: 'Accept terms and conditions' },
+                            checked: { type: 'checkbox', default: false },
+                            indeterminate: { type: 'checkbox', default: false }
+                        },
+                        styling: {
+                            size: { type: 'select', options: ['small', 'medium', 'large'], default: 'medium' },
+                            color: { type: 'color', default: '#8b5cf6' },
+                            shape: { type: 'select', options: ['square', 'rounded'], default: 'square' }
+                        }
+                    }
+                },
+                'product-card': {
+                    title: 'Product Card Properties',
+                    properties: {
+                        content: {
+                            productName: { type: 'text', default: 'Product Name' },
+                            description: { type: 'text', default: 'Amazing product description here' },
+                            price: { type: 'text', default: '$99' },
+                            badge: { type: 'text', default: 'NEW' }
+                        },
+                        image: {
+                            showImage: { type: 'checkbox', default: true },
+                            imageHeight: { type: 'range', min: 120, max: 240, default: 160 }
+                        },
+                        actions: {
+                            buttonText: { type: 'text', default: 'Add to Cart' },
+                            showWishlist: { type: 'checkbox', default: true },
+                            showQuickView: { type: 'checkbox', default: false }
+                        }
+                    }
+                },
+                'profile-card': {
+                    title: 'Profile Card Properties',
+                    properties: {
+                        user: {
+                            name: { type: 'text', default: 'John Doe' },
+                            role: { type: 'text', default: 'Senior Developer' },
+                            avatar: { type: 'select', options: ['👤', '👨‍💻', '👩‍💻', '🧑‍💼', '👨‍🎨'], default: '👤' }
+                        },
+                        actions: {
+                            showMessage: { type: 'checkbox', default: true },
+                            showFollow: { type: 'checkbox', default: true },
+                            showShare: { type: 'checkbox', default: false }
+                        },
+                        social: {
+                            showSocial: { type: 'checkbox', default: false },
+                            twitter: { type: 'text', default: '@johndoe' },
+                            github: { type: 'text', default: 'johndoe' }
+                        }
+                    }
+                },
+                'stats-card': {
+                    title: 'Statistics Card Properties',
+                    properties: {
+                        data: {
+                            title: { type: 'text', default: 'Total Revenue' },
+                            value: { type: 'text', default: '$45,231' },
+                            change: { type: 'text', default: '+12.5%' },
+                            period: { type: 'text', default: 'from last month' }
+                        },
+                        appearance: {
+                            icon: { type: 'select', options: ['📊', '💰', '👥', '📈', '🎯'], default: '📊' },
+                            trend: { type: 'select', options: ['up', 'down', 'neutral'], default: 'up' },
+                            trendColor: { type: 'color', default: '#10b981' }
+                        }
+                    }
+                },
+                'navbar': {
+                    title: 'Navigation Bar Properties',
+                    properties: {
+                        brand: {
+                            logo: { type: 'text', default: 'Logo' },
+                            showLogo: { type: 'checkbox', default: true }
+                        },
+                        navigation: {
+                            items: { type: 'text', default: 'Home,Products,About,Contact', label: 'Nav Items (comma-separated)' },
+                            alignment: { type: 'select', options: ['left', 'center', 'right'], default: 'left' }
+                        },
+                        actions: {
+                            showSignIn: { type: 'checkbox', default: true },
+                            showSearch: { type: 'checkbox', default: false },
+                            sticky: { type: 'checkbox', default: false }
+                        }
+                    }
+                },
+                'sidebar': {
+                    title: 'Sidebar Properties',
+                    properties: {
+                        layout: {
+                            width: { type: 'select', options: ['200px', '240px', '280px', '320px'], default: '240px' },
+                            position: { type: 'select', options: ['left', 'right'], default: 'left' },
+                            collapsible: { type: 'checkbox', default: true }
+                        },
+                        navigation: {
+                            items: { type: 'text', default: 'Dashboard,Users,Projects,Settings', label: 'Menu Items (comma-separated)' },
+                            activeItem: { type: 'text', default: 'Dashboard' }
+                        },
+                        styling: {
+                            background: { type: 'color', default: '#1a1a2e' },
+                            activeColor: { type: 'color', default: '#8b5cf6' }
+                        }
+                    }
+                },
+                'breadcrumb': {
+                    title: 'Breadcrumb Properties',
+                    properties: {
+                        navigation: {
+                            items: { type: 'text', default: 'Home,Products,Electronics,Headphones', label: 'Path (comma-separated)' },
+                            separator: { type: 'select', options: ['›', '/', '→', '•'], default: '›' }
+                        },
+                        styling: {
+                            linkColor: { type: 'color', default: '#6b7280' },
+                            activeColor: { type: 'color', default: '#8b5cf6' }
+                        }
+                    }
+                },
+                'gradient-hero': {
+                    // Keep the existing gradient-hero properties
+                    title: 'Gradient Hero Properties',
+                    useExisting: true // Flag to use existing implementation
+                }
+            };
+
+            // Check if this is gradient-hero (already has implementation)
+            if (componentId === 'gradient-hero') {
+                // The existing implementation is already called from selectComponent
+                return;
+            }
+
+            // Get the configuration for this component
+            const config = componentProperties[componentId];
+            if (!config) {
+                propertiesSection.innerHTML = `
+                    <div style="text-align: center; color: var(--text-muted); padding: 20px;">
+                        Properties for this component are coming soon
+                    </div>
+                `;
+                return;
+            }
+
+            // Generate the properties HTML
+            let propertiesHTML = `
+                <div style="padding: 20px;">
+                    <h3 style="color: var(--text-primary); margin-bottom: 20px; font-size: 16px;">${config.title}</h3>
+            `;
+
+            // Generate sections for each property group
+            for (const [sectionName, properties] of Object.entries(config.properties)) {
+                propertiesHTML += `
+                    <div class="property-section">
+                        <div class="property-section-header" onclick="togglePropertySection(this)">
+                            <span>${sectionName.charAt(0).toUpperCase() + sectionName.slice(1)}</span>
+                            <span class="chevron">▼</span>
+                        </div>
+                        <div class="property-section-content">
+                `;
+
+                // Generate controls for each property
+                for (const [propName, propConfig] of Object.entries(properties)) {
+                    const label = propConfig.label || propName.replace(/([A-Z])/g, ' $1').trim();
+                    
+                    propertiesHTML += `<div class="property-row">`;
+                    propertiesHTML += `<label class="property-label-enhanced">${label}</label>`;
+
+                    switch (propConfig.type) {
+                        case 'text':
+                            propertiesHTML += `
+                                <input type="text" class="property-input" 
+                                    value="${propConfig.default}" 
+                                    onchange="updateComponentProperty('${componentId}', '${sectionName}', '${propName}', this.value)">
+                            `;
+                            break;
+                        case 'select':
+                            propertiesHTML += `
+                                <select class="property-select property-input" 
+                                    onchange="updateComponentProperty('${componentId}', '${sectionName}', '${propName}', this.value)">
+                                    ${propConfig.options.map(opt => 
+                                        `<option value="${opt}" ${opt === propConfig.default ? 'selected' : ''}>${opt}</option>`
+                                    ).join('')}
+                                </select>
+                            `;
+                            break;
+                        case 'color':
+                            propertiesHTML += `
+                                <div class="color-input-group">
+                                    <input type="color" class="color-picker" 
+                                        value="${propConfig.default}" 
+                                        onchange="updateComponentProperty('${componentId}', '${sectionName}', '${propName}', this.value)">
+                                    <input type="text" class="color-text" 
+                                        value="${propConfig.default}" 
+                                        onchange="updateComponentProperty('${componentId}', '${sectionName}', '${propName}', this.value)">
+                                </div>
+                            `;
+                            break;
+                        case 'checkbox':
+                            propertiesHTML += `
+                                <label class="checkbox-label">
+                                    <input type="checkbox" 
+                                        ${propConfig.default ? 'checked' : ''} 
+                                        onchange="updateComponentProperty('${componentId}', '${sectionName}', '${propName}', this.checked)">
+                                    <span class="checkbox-custom"></span>
+                                </label>
+                            `;
+                            break;
+                        case 'range':
+                            const min = propConfig.min || 0;
+                            const max = propConfig.max || 100;
+                            const step = propConfig.step || 1;
+                            propertiesHTML += `
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <input type="range" class="property-range" 
+                                        min="${min}" max="${max}" step="${step}"
+                                        value="${propConfig.default}" 
+                                        onchange="updateComponentProperty('${componentId}', '${sectionName}', '${propName}', this.value)">
+                                    <span style="min-width: 40px; text-align: right; color: var(--text-secondary);">${propConfig.default}</span>
+                                </div>
+                            `;
+                            break;
+                    }
+
+                    propertiesHTML += `</div>`;
+                }
+
+                propertiesHTML += `
+                        </div>
+                    </div>
+                `;
+            }
+
+            propertiesHTML += `</div>`;
+            propertiesSection.innerHTML = propertiesHTML;
+        }
+
+        // Update component property and refresh preview
+        function updateComponentProperty(componentId, section, property, value) {
+            console.log(`Updating ${componentId} - ${section}.${property}:`, value);
+            
+            // Here you would update the preview based on the property changes
+            // For now, just log the change
+            
+            // Trigger a preview update
+            updateComponentPreview(componentId, section, property, value);
+        }
+
+        // Update the component preview based on property changes
+        function updateComponentPreview(componentId, section, property, value) {
+            console.log('Preview update triggered for:', componentId, section, property, value);
+            
+            // Get the preview container
+            const previewContainer = document.querySelector('.component-preview-live');
+            if (!previewContainer) {
+                // Create preview container if it doesn't exist
+                const propertiesSection = document.getElementById('propertiesSection');
+                if (propertiesSection) {
+                    const previewHTML = `
+                        <div class="component-preview-live" style="
+                            background: var(--glass-bg);
+                            border: 1px solid var(--glass-border);
+                            border-radius: 12px;
+                            padding: 40px;
+                            margin: 20px;
+                            min-height: 200px;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                        ">
+                            <div id="live-component-preview"></div>
+                        </div>
+                    `;
+                    propertiesSection.insertAdjacentHTML('afterbegin', previewHTML);
+                }
+            }
+            
+            // Get or initialize component state
+            if (!window.componentStates) {
+                window.componentStates = {};
+            }
+            
+            if (!window.componentStates[componentId]) {
+                window.componentStates[componentId] = getDefaultComponentState(componentId);
+            }
+            
+            // Update the state
+            if (!window.componentStates[componentId][section]) {
+                window.componentStates[componentId][section] = {};
+            }
+            window.componentStates[componentId][section][property] = value;
+            
+            // Render the updated component
+            renderComponentPreview(componentId, window.componentStates[componentId]);
+        }
+        
+        // Get default state for a component
+        function getDefaultComponentState(componentId) {
+            const defaults = {
+                'primary-button': {
+                    appearance: { text: 'Click Me', size: 'medium', variant: 'solid', disabled: false },
+                    colors: { background: '#6366f1', textColor: '#ffffff', hoverBackground: '#4f46e5' },
+                    spacing: { paddingVertical: 12, paddingHorizontal: 24, borderRadius: 8 }
+                },
+                'gradient-button': {
+                    appearance: { text: 'Gradient Button', size: 'medium', animation: 'glow' },
+                    gradient: { startColor: '#667eea', endColor: '#764ba2', direction: '135deg' },
+                    spacing: { paddingVertical: 12, paddingHorizontal: 24, borderRadius: 8 }
+                },
+                'icon-button': {
+                    appearance: { text: 'Icon Button', icon: '⭐', iconPosition: 'left', size: 'medium' },
+                    colors: { background: '#6366f1', textColor: '#ffffff', iconColor: '#fbbf24' },
+                    spacing: { paddingVertical: 10, paddingHorizontal: 20, borderRadius: 8, iconGap: 8 }
+                },
+                'input-field': {
+                    appearance: { label: 'Email Address', placeholder: 'Enter your email', type: 'email', required: false },
+                    colors: { borderColor: '#d1d5db', focusBorderColor: '#6366f1', labelColor: '#4b5563' },
+                    spacing: { padding: 10, borderRadius: 6, labelGap: 8 }
+                },
+                'select-dropdown': {
+                    appearance: { label: 'Select Option', placeholder: 'Choose one...', options: 'Option 1,Option 2,Option 3' },
+                    colors: { borderColor: '#d1d5db', focusBorderColor: '#6366f1', backgroundColor: '#ffffff' },
+                    spacing: { padding: 10, borderRadius: 6 }
+                },
+                'checkbox': {
+                    appearance: { label: 'I agree to terms', checked: false, disabled: false },
+                    colors: { checkColor: '#6366f1', borderColor: '#d1d5db', labelColor: '#374151' },
+                    spacing: { size: 20, gap: 8 }
+                },
+                'product-card': {
+                    content: { title: 'Product Name', price: '$99.99', description: 'Amazing product description' },
+                    image: { url: 'https://via.placeholder.com/300x200', alt: 'Product Image' },
+                    actions: { buttonText: 'Add to Cart', showWishlist: true }
+                },
+                'profile-card': {
+                    content: { name: 'John Doe', role: 'Software Engineer', bio: 'Passionate about coding' },
+                    avatar: { url: 'https://via.placeholder.com/100', size: 100 },
+                    social: { showGithub: true, showLinkedIn: true, showTwitter: true }
+                },
+                'stats-card': {
+                    content: { title: 'Total Revenue', value: '$12,345', change: '+12.5%', trend: 'up' },
+                    appearance: { icon: '📈', showTrend: true },
+                    colors: { iconColor: '#10b981', trendUpColor: '#10b981', trendDownColor: '#ef4444' }
+                },
+                'navbar': {
+                    content: { brand: 'MyApp', items: 'Home,About,Services,Contact' },
+                    appearance: { sticky: true, transparent: false, showSearch: true },
+                    actions: { ctaText: 'Get Started', showCta: true }
+                },
+                'sidebar': {
+                    content: { title: 'Navigation', items: 'Dashboard,Analytics,Users,Settings' },
+                    appearance: { collapsed: false, showIcons: true },
+                    colors: { background: '#1f2937', textColor: '#e5e7eb', activeColor: '#6366f1' }
+                },
+                'breadcrumb': {
+                    content: { items: 'Home,Category,Product', separator: '/' },
+                    appearance: { showHome: true, showCurrent: true },
+                    colors: { linkColor: '#6366f1', textColor: '#6b7280', separatorColor: '#9ca3af' }
+                }
+            };
+            
+            return defaults[componentId] || {};
+        }
+        
+        // Render the component preview
+        function renderComponentPreview(componentId, state) {
+            const previewElement = document.getElementById('live-component-preview');
+            if (!previewElement) return;
+            
+            let previewHTML = '';
+            
+            switch (componentId) {
+                case 'primary-button':
+                    const btnSize = getSizeStyles(state.appearance?.size || 'medium');
+                    previewHTML = `
+                        <button style="
+                            background: ${state.colors?.background || '#6366f1'};
+                            color: ${state.colors?.textColor || '#ffffff'};
+                            padding: ${state.spacing?.paddingVertical || 12}px ${state.spacing?.paddingHorizontal || 24}px;
+                            border-radius: ${state.spacing?.borderRadius || 8}px;
+                            border: ${state.appearance?.variant === 'outline' ? `2px solid ${state.colors?.background}` : 'none'};
+                            background: ${state.appearance?.variant === 'outline' || state.appearance?.variant === 'ghost' ? 'transparent' : state.colors?.background};
+                            color: ${state.appearance?.variant === 'outline' || state.appearance?.variant === 'ghost' ? state.colors?.background : state.colors?.textColor};
+                            font-size: ${btnSize.fontSize};
+                            font-weight: 600;
+                            cursor: ${state.appearance?.disabled ? 'not-allowed' : 'pointer'};
+                            opacity: ${state.appearance?.disabled ? 0.5 : 1};
+                            transition: all 0.2s;
+                        " 
+                        onmouseover="this.style.background='${state.colors?.hoverBackground || '#4f46e5'}'; this.style.color='${state.colors?.textColor || '#ffffff'}';"
+                        onmouseout="this.style.background='${state.appearance?.variant === 'outline' || state.appearance?.variant === 'ghost' ? 'transparent' : state.colors?.background}'; this.style.color='${state.appearance?.variant === 'outline' || state.appearance?.variant === 'ghost' ? state.colors?.background : state.colors?.textColor}';"
+                        ${state.appearance?.disabled ? 'disabled' : ''}>
+                            ${state.appearance?.text || 'Click Me'}
+                        </button>
+                    `;
+                    break;
+                    
+                case 'gradient-button':
+                    const gradSize = getSizeStyles(state.appearance?.size || 'medium');
+                    const animation = state.appearance?.animation === 'pulse' ? 'pulse 2s infinite' : 
+                                     state.appearance?.animation === 'glow' ? 'glow 2s ease-in-out infinite' : 'none';
+                    previewHTML = `
+                        <button style="
+                            background: linear-gradient(${state.gradient?.direction || '135deg'}, ${state.gradient?.startColor || '#667eea'}, ${state.gradient?.endColor || '#764ba2'});
+                            color: white;
+                            padding: ${state.spacing?.paddingVertical || 12}px ${state.spacing?.paddingHorizontal || 24}px;
+                            border-radius: ${state.spacing?.borderRadius || 8}px;
+                            border: none;
+                            font-size: ${gradSize.fontSize};
+                            font-weight: 600;
+                            cursor: pointer;
+                            animation: ${animation};
+                            transition: transform 0.2s;
+                        "
+                        onmouseover="this.style.transform='scale(1.05)';"
+                        onmouseout="this.style.transform='scale(1)';">
+                            ${state.appearance?.text || 'Gradient Button'}
+                        </button>
+                        <style>
+                            @keyframes pulse {
+                                0% { box-shadow: 0 0 0 0 rgba(102, 126, 234, 0.7); }
+                                70% { box-shadow: 0 0 0 10px rgba(102, 126, 234, 0); }
+                                100% { box-shadow: 0 0 0 0 rgba(102, 126, 234, 0); }
+                            }
+                            @keyframes glow {
+                                0%, 100% { box-shadow: 0 0 20px rgba(102, 126, 234, 0.5); }
+                                50% { box-shadow: 0 0 30px rgba(102, 126, 234, 0.8); }
+                            }
+                        </style>
+                    `;
+                    break;
+                    
+                case 'product-card':
+                    previewHTML = `
+                        <div style="
+                            background: white;
+                            border-radius: 12px;
+                            overflow: hidden;
+                            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+                            width: 280px;
+                        ">
+                            <img src="${state.image?.url || 'https://via.placeholder.com/300x200'}" 
+                                 alt="${state.image?.alt || 'Product'}"
+                                 style="width: 100%; height: 200px; object-fit: cover;">
+                            <div style="padding: 16px;">
+                                <h3 style="margin: 0 0 8px 0; font-size: 18px; color: #1f2937;">
+                                    ${state.content?.title || 'Product Name'}
+                                </h3>
+                                <p style="margin: 0 0 12px 0; color: #6b7280; font-size: 14px;">
+                                    ${state.content?.description || 'Product description'}
+                                </p>
+                                <div style="display: flex; justify-content: space-between; align-items: center;">
+                                    <span style="font-size: 24px; font-weight: bold; color: #6366f1;">
+                                        ${state.content?.price || '$99.99'}
+                                    </span>
+                                    <button style="
+                                        background: #6366f1;
+                                        color: white;
+                                        border: none;
+                                        padding: 8px 16px;
+                                        border-radius: 6px;
+                                        cursor: pointer;
+                                        font-weight: 500;
+                                    ">
+                                        ${state.actions?.buttonText || 'Add to Cart'}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    break;
+                    
+                case 'navbar':
+                    const navItems = (state.content?.items || 'Home,About,Services,Contact').split(',');
+                    previewHTML = `
+                        <nav style="
+                            background: ${state.appearance?.transparent ? 'transparent' : '#ffffff'};
+                            border-bottom: 1px solid #e5e7eb;
+                            padding: 16px 24px;
+                            display: flex;
+                            justify-content: space-between;
+                            align-items: center;
+                            width: 100%;
+                        ">
+                            <div style="display: flex; align-items: center; gap: 32px;">
+                                <div style="font-size: 20px; font-weight: bold; color: #1f2937;">
+                                    ${state.content?.brand || 'MyApp'}
+                                </div>
+                                <div style="display: flex; gap: 24px;">
+                                    ${navItems.map(item => `
+                                        <a href="#" style="color: #4b5563; text-decoration: none; hover: color: #6366f1;">
+                                            ${item.trim()}
+                                        </a>
+                                    `).join('')}
+                                </div>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 16px;">
+                                ${state.appearance?.showSearch ? `
+                                    <input type="search" placeholder="Search..." style="
+                                        padding: 6px 12px;
+                                        border: 1px solid #d1d5db;
+                                        border-radius: 6px;
+                                        outline: none;
+                                    ">
+                                ` : ''}
+                                ${state.actions?.showCta ? `
+                                    <button style="
+                                        background: #6366f1;
+                                        color: white;
+                                        border: none;
+                                        padding: 8px 16px;
+                                        border-radius: 6px;
+                                        cursor: pointer;
+                                        font-weight: 500;
+                                    ">
+                                        ${state.actions?.ctaText || 'Get Started'}
+                                    </button>
+                                ` : ''}
+                            </div>
+                        </nav>
+                    `;
+                    break;
+                    
+                case 'input-field':
+                    previewHTML = `
+                        <div style="display: flex; flex-direction: column; gap: ${state.spacing?.labelGap || 8}px; width: 300px;">
+                            <label style="color: ${state.colors?.labelColor || '#4b5563'}; font-size: 14px; font-weight: 500;">
+                                ${state.appearance?.label || 'Email Address'}
+                                ${state.appearance?.required ? '<span style="color: #ef4444;">*</span>' : ''}
+                            </label>
+                            <input 
+                                type="${state.appearance?.type || 'email'}"
+                                placeholder="${state.appearance?.placeholder || 'Enter your email'}"
+                                style="
+                                    padding: ${state.spacing?.padding || 10}px;
+                                    border: 1px solid ${state.colors?.borderColor || '#d1d5db'};
+                                    border-radius: ${state.spacing?.borderRadius || 6}px;
+                                    outline: none;
+                                    transition: border-color 0.2s;
+                                "
+                                onfocus="this.style.borderColor='${state.colors?.focusBorderColor || '#6366f1'}';"
+                                onblur="this.style.borderColor='${state.colors?.borderColor || '#d1d5db'}';"
+                            >
+                        </div>
+                    `;
+                    break;
+                    
+                default:
+                    previewHTML = `
+                        <div style="color: #6b7280; font-style: italic;">
+                            Live preview for ${componentId} coming soon...
+                        </div>
+                    `;
+            }
+            
+            previewElement.innerHTML = previewHTML;
+        }
+        
+        // Helper function to get size styles
+        function getSizeStyles(size) {
+            const sizes = {
+                'small': { fontSize: '14px', padding: '8px 16px' },
+                'medium': { fontSize: '16px', padding: '12px 24px' },
+                'large': { fontSize: '18px', padding: '16px 32px' },
+                'extra-large': { fontSize: '20px', padding: '20px 40px' }
+            };
+            return sizes[size] || sizes['medium'];
+        }
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+                e.preventDefault();
+                document.querySelector('.search-input').focus();
+            }
+        });
+    </script>
+</body>
+</html>

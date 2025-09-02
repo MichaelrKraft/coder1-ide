@@ -777,8 +777,17 @@ function setupTerminalWebSocket(io) {
                         }
                         
                         // Clear the line in bash and show a new prompt
-                        // Send Ctrl+C to cancel any pending command in bash
-                        session.process.write('\x03');
+                        // Only send Ctrl+C for commands that might need interruption
+                        // Don't interrupt help and informational commands
+                        const isInfoCommand = currentClean.includes('help') || 
+                                           currentClean.includes('status') || 
+                                           currentClean.includes('list') || 
+                                           currentClean.includes('show');
+                        
+                        if (!isInfoCommand) {
+                            // Send Ctrl+C to cancel any pending command in bash
+                            session.process.write('\x03');
+                        }
                         
                         // Important: Return early to prevent sending enter to PTY
                         return;

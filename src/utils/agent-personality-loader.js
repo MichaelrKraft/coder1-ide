@@ -8,11 +8,18 @@
 const fs = require('fs').promises;
 const path = require('path');
 const yaml = require('js-yaml');
+const { AgentSessionMemory } = require('../services/agent-session-memory');
 
 class AgentPersonalityLoader {
-    constructor() {
+    constructor(options = {}) {
         this.agentsDir = path.join(process.cwd(), '.claude', 'agents');
         this.loadedPersonalities = new Map();
+        
+        // Initialize session memory for cross-session continuity
+        this.sessionMemory = options.sessionMemory || new AgentSessionMemory();
+        this.enableSessionContinuity = options.enableSessionContinuity !== false;
+        
+        console.log(`🧠 Agent Personality Loader initialized ${this.enableSessionContinuity ? 'with' : 'without'} session continuity`);
     }
 
     /**
@@ -245,6 +252,156 @@ class AgentPersonalityLoader {
      */
     getPersonality(agentType) {
         return this.loadedPersonalities.get(agentType) || this.getDefaultPersonalities().get(agentType);
+    }
+
+    /**
+     * Load personality with session continuity context
+     */
+    async loadPersonalityWithContext(agentType, projectId = 'default') {
+        try {
+            // Load base personality
+            const basePersonality = await this.loadPersonality(agentType);
+            
+            // If session continuity is disabled, return base personality
+            if (!this.enableSessionContinuity) {
+                return basePersonality;
+            }
+
+            // Get session continuity context
+            const continuityContext = await this.sessionMemory.getAgentResumptionContext(agentType, projectId);
+            
+            // Enhance personality with session context
+            const enhancedPersonality = {
+                ...basePersonality,
+                sessionContext: {
+                    resumptionPrompt: continuityContext.resumptionPrompt,
+                    continuityScore: continuityContext.continuityScore,
+                    suggestedActions: continuityContext.suggestedActions,
+                    previousSessions: continuityContext.previousSessions.slice(0, 3), // Last 3 sessions
+                    collaboratorUpdates: continuityContext.collaboratorWork.slice(0, 5), // Last 5 updates
+                    projectState: continuityContext.projectState,
+                    sessionId: continuityContext.sessionId
+                },
+                enhancedInstructions: this.generateEnhancedInstructions(
+                    basePersonality,
+                    continuityContext
+                )
+            };
+
+            console.log(`🔄 Loaded ${agentType} with session continuity (score: ${continuityContext.continuityScore})`);
+            
+            return enhancedPersonality;
+        } catch (error) {
+            console.error(`Error loading personality with context for ${agentType}:`, error);
+            // Fallback to base personality
+            return await this.loadPersonality(agentType);
+        }
+    }
+
+    /**
+     * Generate enhanced instructions that include session continuity
+     */
+    generateEnhancedInstructions(basePersonality, continuityContext) {
+        let instructions = basePersonality.description || '';
+        
+        // Add session continuity instructions if we have context
+        if (continuityContext.continuityScore > 0.3) {
+            instructions += `\n\nSESSION CONTINUITY INSTRUCTIONS:`;
+            instructions += `\n- You are continuing from a previous session (continuity score: ${continuityContext.continuityScore})`;
+            
+            if (continuityContext.previousSessions.length > 0) {
+                const lastSession = continuityContext.previousSessions[0];
+                instructions += `\n- Your last work: ${lastSession.work.workCompleted.slice(0, 3).join(', ')}`;
+                
+                if (lastSession.work.currentState) {
+                    instructions += `\n- Current state: ${lastSession.work.currentState}`;
+                }
+                
+                if (lastSession.work.nextSteps.length > 0) {
+                    instructions += `\n- Planned next steps: ${lastSession.work.nextSteps.slice(0, 3).join(', ')}`;
+                }
+            }
+            
+            if (continuityContext.collaboratorWork.length > 0) {
+                instructions += `\n- Collaborator updates since your last session:`;
+                for (const update of continuityContext.collaboratorWork.slice(0, 3)) {
+                    instructions += `\n  - ${update.agentId}: ${update.work.workCompleted.slice(0, 2).join(', ')}`;
+                    if (update.relevantNotes) {
+                        instructions += `\n    Note for you: ${update.relevantNotes}`;
+                    }
+                }
+            }
+            
+            if (continuityContext.suggestedActions.length > 0) {
+                instructions += `\n- Suggested actions for this session:`;
+                for (const action of continuityContext.suggestedActions.slice(0, 3)) {
+                    instructions += `\n  - [${action.priority}] ${action.action}`;
+                }
+            }
+            
+            instructions += `\n\nAlways acknowledge the continuity context in your responses and build upon previous work.`;
+        } else {
+            instructions += `\n\nSESSION CONTINUITY: Starting fresh - no significant previous context available.`;
+        }
+        
+        return instructions;
+    }
+
+    /**
+     * Record agent work completion for session continuity
+     */
+    async recordAgentWorkCompletion(agentType, workData) {
+        if (!this.enableSessionContinuity) {
+            return;
+        }
+
+        try {
+            await this.sessionMemory.recordAgentWork(agentType, workData);
+            console.log(`📝 Recorded work completion for ${agentType}`);
+        } catch (error) {
+            console.error(`Error recording work completion for ${agentType}:`, error);
+            // Don't throw - this is non-critical
+        }
+    }
+
+    /**
+     * Finalize session for all agents
+     */
+    async finalizeSession(sessionSummary = {}) {
+        if (!this.enableSessionContinuity) {
+            return;
+        }
+
+        try {
+            const sessionData = await this.sessionMemory.finalizeSession(sessionSummary);
+            console.log(`✅ Session finalized: ${sessionData.id}`);
+            return sessionData;
+        } catch (error) {
+            console.error('Error finalizing session:', error);
+            // Don't throw - this is non-critical
+        }
+    }
+
+    /**
+     * Get current session info
+     */
+    getCurrentSessionInfo() {
+        if (!this.enableSessionContinuity) {
+            return null;
+        }
+        
+        return this.sessionMemory.getCurrentSessionInfo();
+    }
+
+    /**
+     * Update project context
+     */
+    updateProjectContext(updates) {
+        if (!this.enableSessionContinuity) {
+            return;
+        }
+        
+        this.sessionMemory.updateProjectContext(updates);
     }
 }
 

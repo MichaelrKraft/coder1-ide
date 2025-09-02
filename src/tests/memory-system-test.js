@@ -141,7 +141,7 @@ class MemorySystemTest {
             } else {
                 // This might be expected if no similar patterns exist yet
                 this.recordResult('error-pattern-retrieval', true, 'No similar patterns found (expected)');
-                console.log(`  ℹ️  No similar patterns found (expected for new patterns)`);
+                console.log('  ℹ️  No similar patterns found (expected for new patterns)');
             }
             
         } catch (error) {
@@ -258,7 +258,7 @@ class MemorySystemTest {
             
             if (metrics && metrics.current && typeof metrics.current.timestamp === 'number') {
                 this.recordResult('performance-monitoring', true, 'Metrics collection working');
-                console.log(`  ✅ Performance monitoring active`);
+                console.log('  ✅ Performance monitoring active');
                 console.log(`    Total embeddings: ${metrics.current.embedding.totalGenerated}`);
                 console.log(`    Total searches: ${metrics.current.vectorSearch.totalSearches}`);
                 console.log(`    Worker pool: ${metrics.current.workers.poolSize} workers`);
@@ -310,12 +310,12 @@ class MemorySystemTest {
             if (relevantSolutions.length > 0) {
                 this.recordResult('end-to-end-workflow', true, 
                     `Complete workflow: ${relevantSolutions.length} solutions found`);
-                console.log(`  ✅ End-to-end workflow successful`);
+                console.log('  ✅ End-to-end workflow successful');
                 console.log(`    Found ${relevantSolutions.length} relevant solutions`);
             } else {
                 this.recordResult('end-to-end-workflow', true, 
                     'Workflow complete but no relevant solutions (expected for new patterns)');
-                console.log(`  ℹ️  Workflow complete, building solution database...`);
+                console.log('  ℹ️  Workflow complete, building solution database...');
             }
             
         } catch (error) {

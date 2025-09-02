@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Homepage Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #fff;
+        }
+        .test-item {
+            margin: 10px 0;
+            padding: 10px;
+            background: #2a2a2a;
+            border-radius: 5px;
+        }
+        .success { color: #00ff00; }
+        .error { color: #ff0000; }
+    </style>
+</head>
+<body>
+    <h1>Coder1 Homepage Test</h1>
+    
+    <div class="test-item">
+        <h3>CSS Test</h3>
+        <p id="css-test">Testing CSS loading...</p>
+    </div>
+    
+    <div class="test-item">
+        <h3>JavaScript Test</h3>
+        <p id="js-test">Testing JavaScript loading...</p>
+        <button onclick="testFunction()">Test Button</button>
+    </div>
+    
+    <div class="test-item">
+        <h3>Resource Links</h3>
+        <a href="/" target="_blank">Homepage</a> | 
+        <a href="/styles-streamlined.css" target="_blank">CSS File</a> | 
+        <a href="/script-streamlined.js" target="_blank">JS File</a>
+    </div>
+    
+    <div class="test-item">
+        <h3>Homepage Frame Test</h3>
+        <iframe src="/" width="100%" height="400" style="border: 1px solid #555;"></iframe>
+    </div>
+
+    <script>
+        function testFunction() {
+            document.getElementById('js-test').innerHTML = '<span class="success">✅ JavaScript is working!</span>';
+        }
+        
+        // Test CSS loading
+        const testElement = document.createElement('div');
+        testElement.style.cssText = 'color: var(--accent-blue, #7aa2f7);';
+        document.body.appendChild(testElement);
+        
+        if (getComputedStyle(testElement).color === 'rgb(122, 162, 247)') {
+            document.getElementById('css-test').innerHTML = '<span class="success">✅ CSS variables working</span>';
+        } else {
+            document.getElementById('css-test').innerHTML = '<span class="error">❌ CSS variables not working</span>';
+        }
+        
+        document.body.removeChild(testElement);
+        
+        // Test main page loading
+        setTimeout(() => {
+            console.log('Testing main page in iframe...');
+        }, 1000);
+    </script>
+</body>
+</html>

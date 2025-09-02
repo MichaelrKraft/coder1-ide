@@ -113,37 +113,37 @@ const worker = new EmbeddingWorker();
 parentPort.on('message', async (message) => {
     try {
         switch (message.type) {
-            case 'generate':
-                const result = await worker.generateEmbedding(message.text);
-                parentPort.postMessage({
-                    type: 'result',
-                    id: message.id,
-                    ...result
-                });
-                break;
+        case 'generate':
+            const result = await worker.generateEmbedding(message.text);
+            parentPort.postMessage({
+                type: 'result',
+                id: message.id,
+                ...result
+            });
+            break;
                 
-            case 'batch':
-                const batchResult = await worker.processBatch(message.items);
-                parentPort.postMessage({
-                    type: 'batch_result',
-                    id: message.id,
-                    ...batchResult
-                });
-                break;
+        case 'batch':
+            const batchResult = await worker.processBatch(message.items);
+            parentPort.postMessage({
+                type: 'batch_result',
+                id: message.id,
+                ...batchResult
+            });
+            break;
                 
-            case 'health':
-                parentPort.postMessage({
-                    type: 'health_response',
-                    isReady: worker.isReady,
-                    model: worker.model
-                });
-                break;
+        case 'health':
+            parentPort.postMessage({
+                type: 'health_response',
+                isReady: worker.isReady,
+                model: worker.model
+            });
+            break;
                 
-            default:
-                parentPort.postMessage({
-                    type: 'error',
-                    error: `Unknown message type: ${message.type}`
-                });
+        default:
+            parentPort.postMessage({
+                type: 'error',
+                error: `Unknown message type: ${message.type}`
+            });
         }
     } catch (error) {
         parentPort.postMessage({
