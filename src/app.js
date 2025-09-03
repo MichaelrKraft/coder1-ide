@@ -47,6 +47,55 @@ const { rateLimit, anthropicRateLimit, openaiRateLimit, socketConnectionLimit } 
 const { router: terminalRouter, setupTerminalSocket } = require('./routes/terminal-safe');
 const LicenseManager = require('./licensing/license-manager');
 
+// 🚨 CRITICAL PORT VALIDATION SYSTEM - PREVENTS TERMINAL SESSION LOSS
+// This validation prevents the recurring issue where PORT=3001 npm run dev 
+// is run from the main directory, causing Express backend to conflict with Next.js
+console.log('🔍 Validating port configuration...');
+
+const EXPECTED_EXPRESS_PORT = 3000;
+const EXPECTED_NEXTJS_PORT = 3001;
+const PORT_ENV = process.env.PORT;
+
+// Check if someone is trying to run Express backend on port 3001 (Next.js port)
+if (PORT_ENV === '3001' || PORT_ENV === 3001) {
+    console.error('❌ CRITICAL ERROR: Express backend cannot run on port 3001!');
+    console.error('');
+    console.error('🚨 ROOT CAUSE: This is the #1 cause of terminal session loss');
+    console.error('');
+    console.error('✅ CORRECT STARTUP:');
+    console.error('   1. Express Backend (Main Directory): PORT=3000 npm run dev');
+    console.error('   2. Next.js Frontend: cd coder1-ide-next && npm run dev (uses port 3001)');
+    console.error('');
+    console.error('❌ WRONG (What you just tried):');
+    console.error('   - PORT=3001 npm run dev  ← This breaks everything!');
+    console.error('');
+    console.error('🔧 TO FIX: Run this command instead:');
+    console.error('   PORT=3000 npm run dev');
+    console.error('');
+    console.error('📚 Port Assignment:');
+    console.error('   - Express Backend: 3000 (APIs, WebSocket, Terminal)');
+    console.error('   - Next.js Frontend: 3001 (IDE Interface)');
+    console.error('');
+    process.exit(1);
+}
+
+// Warn if no PORT is set, but allow default fallback
+if (!PORT_ENV) {
+    console.log('⚠️  No PORT environment variable set');
+    console.log(`🔧 Using default Express backend port: ${EXPECTED_EXPRESS_PORT}`);
+}
+
+// Log the correct configuration
+const finalPort = PORT_ENV || EXPECTED_EXPRESS_PORT;
+console.log(`✅ Port validation passed: Express backend will run on port ${finalPort}`);
+
+// Additional validation for common mistakes
+if (finalPort == EXPECTED_NEXTJS_PORT) {
+    console.error('❌ CRITICAL ERROR: Port conflict detected!');
+    console.error(`Express backend cannot run on port ${EXPECTED_NEXTJS_PORT} (Next.js port)`);
+    process.exit(1);
+}
+
 const app = express();
 const server = http.createServer(app);
 const licenseManager = new LicenseManager();
@@ -63,17 +112,19 @@ const io = socketIO(server, {
 // Apply rate limiting to Socket.IO connections
 io.use(socketConnectionLimit);
 
-// CORS configuration to allow Next.js IDE (localhost:3002) to access Express backend (localhost:3000)
+// CORS configuration to allow Next.js IDE (localhost:3001) to access Express backend (localhost:3002)
 app.use(cors({
     origin: [
-        'http://localhost:3002',  // Next.js IDE
-        'http://localhost:3000',  // Express backend (same-origin)
+        'http://localhost:3001',  // Next.js IDE (actual port)
+        'http://localhost:3002',  // Express backend (same-origin)  
+        'http://localhost:3000',  // Alternative port
+        'http://127.0.0.1:3001',  // Alternative localhost format
         'http://127.0.0.1:3002',  // Alternative localhost format
         'http://127.0.0.1:3000'   // Alternative localhost format
     ],
     credentials: true,  // Allow cookies/auth if needed
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'x-user-id']
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -421,6 +472,11 @@ app.use('/api/mcp-prompts', require('./routes/mcp-prompts'));  // MCP Ambient Pr
 app.use('/api', require('./routes/prettier-config'));
 // Remove duplicate terminal-rest route - using terminal-rest-api.js instead
 // app.use('/api/terminal-rest', require('./routes/terminal-rest'));
+
+// Temporary test routes for error handling verification
+if (process.env.NODE_ENV === 'development') {
+  app.use('/api/test-errors', require('./routes/test-errors'));
+}
 
 // EXPERIMENTAL: Tmux Orchestrator Lab (isolated test environment)
 app.use('/api/experimental', require('./routes/experimental/orchestrator'));
@@ -884,7 +940,46 @@ app.get('/docs-manager', (req, res) => {
             </div>
             
             <div id="addDocForm">
-                <h3 style="margin-bottom: 15px;">Add Documentation from URL</h3>
+                <h3 style="margin-bottom: 15px;">Add Documentation</h3>
+                
+                <!-- Drag and Drop Area -->
+                <div id="dropZone" style="
+                    border: 2px dashed #8b5cf6;
+                    border-radius: 12px;
+                    padding: 40px;
+                    text-align: center;
+                    background: rgba(139, 92, 246, 0.05);
+                    margin-bottom: 20px;
+                    transition: all 0.3s ease;
+                    cursor: pointer;
+                " ondragover="handleDragOver(event)" 
+                   ondragleave="handleDragLeave(event)"
+                   ondrop="handleDrop(event)"
+                   onclick="document.getElementById('fileInput').click()">
+                    <div style="pointer-events: none;">
+                        <div style="font-size: 48px; margin-bottom: 10px;">📄</div>
+                        <p style="color: #8b5cf6; font-weight: 600; margin-bottom: 5px;">
+                            Drag & Drop files here
+                        </p>
+                        <p style="color: #666; font-size: 14px;">
+                            or click to browse
+                        </p>
+                        <p style="color: #666; font-size: 12px; margin-top: 10px;">
+                            Supported: PDF, MD, TXT, HTML files
+                        </p>
+                    </div>
+                    <input type="file" id="fileInput" style="display: none;" 
+                           accept=".pdf,.md,.txt,.html" 
+                           onchange="handleFileSelect(this.files)">
+                </div>
+                
+                <!-- OR Divider -->
+                <div style="text-align: center; margin: 20px 0; color: #666;">
+                    <span style="background: #141414; padding: 0 15px;">OR</span>
+                </div>
+                
+                <!-- URL Input -->
+                <h4 style="margin-bottom: 10px; color: #8b5cf6;">Add from URL</h4>
                 <input type="url" id="docUrl" placeholder="Enter documentation URL...">
                 <input type="text" id="docCategory" placeholder="Category (optional)">
                 <button class="btn" onclick="addDocumentation()">Add Documentation</button>
@@ -894,7 +989,7 @@ app.get('/docs-manager', (req, res) => {
         <div class="section">
             <h2>Search Documentation</h2>
             <div class="search-box">
-                <input type="text" id="searchQuery" placeholder="Search your documentation..." onkeypress="if(event.key==='Enter') performSearch()">
+                <input type="text" id="searchQuery" placeholder="Search docs... (leave empty to show all)" onkeypress="if(event.key==='Enter') performSearch()">
             </div>
             <div id="searchResults"></div>
         </div>
@@ -1006,8 +1101,39 @@ app.get('/docs-manager', (req, res) => {
         
         async function performSearch() {
             const query = document.getElementById('searchQuery').value;
-            if (!query) return;
+            const resultsEl = document.getElementById('searchResults');
             
+            // If no query, show all documents
+            if (!query) {
+                try {
+                    const response = await fetch('/api/docs/list');
+                    const data = await response.json();
+                    
+                    if (data.docs && data.docs.length > 0) {
+                        resultsEl.innerHTML = '<h3>All Documents (' + data.docs.length + '):</h3>' + 
+                            data.docs.map(doc => \`
+                                <div class="doc-item">
+                                    <div>
+                                        <strong>\${doc.name || doc.title}</strong>
+                                        <br>
+                                        <small style="color: #06b6d4;">Words: \${doc.wordCount || 0}</small>
+                                        <br>
+                                        <small style="color: #a0a0a0;">\${doc.url}</small>
+                                        <br>
+                                        <p style="margin-top: 10px; color: #a0a0a0;">\${doc.description || 'No description available'}</p>
+                                    </div>
+                                </div>
+                            \`).join('');
+                    } else {
+                        resultsEl.innerHTML = '<p style="color: #666;">No documents stored. Add some documentation to get started!</p>';
+                    }
+                } catch (error) {
+                    resultsEl.innerHTML = '<p style="color: #ef4444;">Failed to load documents</p>';
+                }
+                return;
+            }
+            
+            // If query exists, perform search
             try {
                 const response = await fetch('/api/docs/search', {
                     method: 'POST',
@@ -1016,7 +1142,6 @@ app.get('/docs-manager', (req, res) => {
                 });
                 
                 const results = await response.json();
-                const resultsEl = document.getElementById('searchResults');
                 
                 if (results.chunks && results.chunks.length > 0) {
                     resultsEl.innerHTML = '<h3>Search Results:</h3>' + results.chunks.map(chunk => \`
@@ -1034,7 +1159,7 @@ app.get('/docs-manager', (req, res) => {
                     resultsEl.innerHTML = '<p style="color: #666;">No results found</p>';
                 }
             } catch (error) {
-                document.getElementById('searchResults').innerHTML = '<p style="color: #ef4444;">Search failed</p>';
+                resultsEl.innerHTML = '<p style="color: #ef4444;">Search failed</p>';
             }
         }
         
@@ -1044,6 +1169,84 @@ app.get('/docs-manager', (req, res) => {
         
         function refreshList() {
             loadDocumentationList();
+        }
+        
+        // Drag and Drop handlers
+        function handleDragOver(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            e.currentTarget.style.background = 'rgba(139, 92, 246, 0.1)';
+            e.currentTarget.style.borderColor = '#06b6d4';
+        }
+        
+        function handleDragLeave(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            e.currentTarget.style.background = 'rgba(139, 92, 246, 0.05)';
+            e.currentTarget.style.borderColor = '#8b5cf6';
+        }
+        
+        function handleDrop(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            e.currentTarget.style.background = 'rgba(139, 92, 246, 0.05)';
+            e.currentTarget.style.borderColor = '#8b5cf6';
+            
+            const files = e.dataTransfer.files;
+            handleFileSelect(files);
+        }
+        
+        async function handleFileSelect(files) {
+            if (files.length === 0) return;
+            
+            const file = files[0];
+            const allowedTypes = ['.pdf', '.md', '.txt', '.html'];
+            const fileExtension = '.' + file.name.split('.').pop().toLowerCase();
+            
+            if (!allowedTypes.includes(fileExtension)) {
+                alert('Please upload a PDF, Markdown, Text, or HTML file.');
+                return;
+            }
+            
+            // Show loading state
+            const dropZone = document.getElementById('dropZone');
+            const originalContent = dropZone.innerHTML;
+            dropZone.innerHTML = '<div style="padding: 20px; color: #8b5cf6;"><div style="font-size: 24px; margin-bottom: 10px;">⏳</div>Processing file...</div>';
+            
+            try {
+                // Create FormData for file upload
+                const formData = new FormData();
+                formData.append('files', file); // Note: 'files' not 'file' to match server expectation
+                
+                // Upload file to server
+                const response = await fetch('/api/docs/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Failed to upload file');
+                }
+                
+                const result = await response.json();
+                
+                // Reset drop zone
+                dropZone.innerHTML = originalContent;
+                
+                // Show success message
+                alert(\`✅ Successfully added: \${file.name}\`);
+                
+                // Refresh the document list
+                loadDocumentationList();
+                
+                // Hide the form
+                toggleAddForm();
+                
+            } catch (error) {
+                console.error('File upload error:', error);
+                dropZone.innerHTML = originalContent;
+                alert(\`❌ Failed to upload file: \${error.message}\`);
+            }
         }
         
         async function checkHealth() {
@@ -1452,8 +1655,8 @@ async function initializeRepositoryPreloader() {
     }
 }
 
-// Start server
-const PORT = process.env.PORT || 3002; // Main server runs on port 3002
+// Start server - Use validated port from startup validation
+const PORT = finalPort; // Port validated at startup (3000 by default)
 const HOST = '0.0.0.0'; // Important for Render
 
 server.listen(PORT, HOST, async () => {
@@ -1559,6 +1762,11 @@ const gracefulShutdown = async (signal) => {
 process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
 process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 process.on('SIGUSR2', () => gracefulShutdown('SIGUSR2'));  // PM2 reload signal
+
+// Setup comprehensive error handling middleware
+// This MUST be added after all routes are defined
+const { setupErrorHandling } = require('./middleware/error-handler');
+setupErrorHandling(app);
 
 // Handle uncaught exceptions
 process.on('uncaughtException', (error) => {
