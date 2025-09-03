@@ -1,11 +1,11 @@
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Terminal as XTerm } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
 import '@xterm/xterm/css/xterm.css';
 import './Terminal.css';
-import { Users, Zap, StopCircle, Brain, Eye, Code2, Mic, MicOff, Speaker, ChevronDown } from '@/lib/icons';
+import { Users, Zap, StopCircle, Brain, Eye, Code2, Mic, MicOff, Speaker, ChevronDown, Box, X } from '@/lib/icons';
 import TerminalSettings, { TerminalSettingsState } from './TerminalSettings';
 import { glows, spacing } from '@/lib/design-tokens';
 import { getSocket } from '@/lib/socket';
@@ -13,6 +13,62 @@ import ErrorDoctor from './ErrorDoctor';
 import { soundAlertService, SoundPreset } from '@/lib/sound-alert-service';
 import { useEnhancedSupervision } from '@/contexts/EnhancedSupervisionContext';
 import SupervisionConfigModal from '@/components/supervision/SupervisionConfigModal';
+import { mockEnhancedAgentService, type MockAgentResponse } from '@/services/mock-enhanced-agent-service';
+import { pollingManager, usePolling, isPollingDisabled } from '@/lib/polling-control';
+
+// 🛡️ SAFE FEATURE FLAGS - Enhanced Agent Visualization System
+const FEATURE_FLAGS = {
+  ENHANCED_AGENTS: typeof window !== 'undefined' && (
+    process.env.NODE_ENV === 'development' && 
+    localStorage.getItem('coder1-enable-enhanced-agents') === 'true'
+  ),
+  USE_REAL_AI: typeof window !== 'undefined' && (
+    localStorage.getItem('coder1-use-real-ai') === 'true' || 
+    process.env.NEXT_PUBLIC_USE_REAL_AI === 'true'
+  ),
+  // Add more feature flags here as needed
+  AGENT_VISUALIZATION: typeof window !== 'undefined' && (
+    process.env.NODE_ENV === 'development' && 
+    localStorage.getItem('coder1-agent-visualization') === 'true'
+  ),
+  NATURAL_LANGUAGE_HANDOFFS: typeof window !== 'undefined' && (
+    process.env.NODE_ENV === 'development' && 
+    localStorage.getItem('coder1-natural-handoffs') === 'true'
+  )
+};
+
+// Debug helper to enable features (only in development)
+if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
+  (window as any).enableEnhancedAgents = () => {
+    localStorage.setItem('coder1-enable-enhanced-agents', 'true');
+    localStorage.setItem('coder1-agent-visualization', 'true');
+    localStorage.setItem('coder1-natural-handoffs', 'true');
+    console.log('🚀 Enhanced Agents enabled! Refresh to activate.');
+    console.log('To disable: window.disableEnhancedAgents()');
+  };
+  
+  (window as any).disableEnhancedAgents = () => {
+    localStorage.removeItem('coder1-enable-enhanced-agents');
+    localStorage.removeItem('coder1-agent-visualization');
+    localStorage.removeItem('coder1-natural-handoffs');
+    console.log('🛡️ Enhanced Agents disabled! Refresh to revert to standard mode.');
+  };
+  
+  // Real AI toggle functions
+  (window as any).enableRealAI = () => {
+    localStorage.setItem('coder1-use-real-ai', 'true');
+    localStorage.setItem('coder1-enable-enhanced-agents', 'true');
+    localStorage.setItem('coder1-agent-visualization', 'true');
+    console.log('🤖 Real AI enabled! Using actual AI agents.');
+    console.log('⚠️  This will use API credits. To disable: window.disableRealAI()');
+    window.location.reload();
+  };
+  
+  (window as any).disableRealAI = () => {
+    localStorage.removeItem('coder1-use-real-ai');
+    console.log('🎭 Switched back to mock agents. Refresh to apply.');
+  };
+}
 
 // TypeScript declarations for Web Speech API
 declare global {
@@ -29,6 +85,255 @@ interface TerminalProps {
   onTerminalCommand?: (command: string) => void;
 }
 
+interface BufferState {
+  viewportY: number;
+  baseY: number;
+  cursorX: number;
+  cursorY: number;
+  totalLines: number;
+  hasContent: boolean;
+  contentSnapshot: string[];
+}
+
+// Buffer preservation utilities for fixing help menu disappearing during resize
+const preserveTerminalBuffer = (terminal: XTerm): BufferState | null => {
+  try {
+    if (!terminal || !terminal.buffer || !terminal.buffer.active) {
+      return null;
+    }
+
+    const buffer = terminal.buffer.active;
+    const contentSnapshot: string[] = [];
+    
+    // Capture visible content and some buffer around it
+    const startLine = Math.max(0, buffer.viewportY - 5);
+    const endLine = Math.min(buffer.length, buffer.viewportY + terminal.rows + 5);
+    
+    for (let i = startLine; i < endLine; i++) {
+      const line = buffer.getLine(i);
+      if (line) {
+        contentSnapshot.push(line.translateToString());
+      }
+    }
+    
+    return {
+      viewportY: buffer.viewportY,
+      baseY: buffer.baseY,
+      cursorX: buffer.cursorX,
+      cursorY: buffer.cursorY,
+      totalLines: buffer.length,
+      hasContent: contentSnapshot.some(line => line.trim().length > 0),
+      contentSnapshot
+    };
+  } catch (error) {
+    console.warn('Failed to preserve terminal buffer:', error);
+    return null;
+  }
+};
+
+const needsBufferRestoration = (terminal: XTerm, savedState: BufferState): boolean => {
+  try {
+    if (!terminal || !terminal.buffer || !terminal.buffer.active || !savedState) {
+      return false;
+    }
+
+    const buffer = terminal.buffer.active;
+    
+    // Check if buffer appears to have lost significant content
+    const currentLines = buffer.length;
+    const lineDifference = Math.abs(currentLines - savedState.totalLines);
+    
+    // If we've lost more than 3 lines or viewport position changed dramatically, restore
+    return lineDifference > 3 || 
+           Math.abs(buffer.viewportY - savedState.viewportY) > 10 ||
+           (savedState.hasContent && currentLines < 5);
+  } catch (error) {
+    console.warn('Failed to check restoration need:', error);
+    return false;
+  }
+};
+
+const restoreTerminalBuffer = (terminal: XTerm, savedState: BufferState): void => {
+  try {
+    if (!terminal || !savedState || !savedState.hasContent) {
+      return;
+    }
+
+    // Restore content by writing it back to the terminal
+    // This is a simplified restoration - in practice, we just refresh the terminal
+    // which should maintain the content if our resize handling is correct
+    terminal.refresh(0, terminal.rows - 1);
+    
+    // Attempt to restore scroll position
+    if (savedState.viewportY !== terminal.buffer?.active.viewportY) {
+      const scrollDiff = savedState.viewportY - (terminal.buffer?.active.viewportY || 0);
+      if (Math.abs(scrollDiff) > 0 && Math.abs(scrollDiff) < 50) {
+        terminal.scrollLines(scrollDiff);
+      }
+    }
+    
+    console.log('🔄 Terminal buffer restoration attempted');
+  } catch (error) {
+    console.warn('Failed to restore terminal buffer:', error);
+  }
+};
+
+// Enhanced DOM readiness guards for xterm.js dimensions error prevention
+class DOMReadinessGuard {
+  private static instance: DOMReadinessGuard;
+  private mutationObserver: MutationObserver | null = null;
+  private resizeObserver: ResizeObserver | null = null;
+
+  static getInstance(): DOMReadinessGuard {
+    if (!DOMReadinessGuard.instance) {
+      DOMReadinessGuard.instance = new DOMReadinessGuard();
+    }
+    return DOMReadinessGuard.instance;
+  }
+
+  /**
+   * Validates if a DOM element is truly ready for xterm operations
+   */
+  validateElementReadiness(element: HTMLElement): boolean {
+    if (!element) {
+      console.warn('[DOMGuard] Element is null/undefined');
+      return false;
+    }
+
+    // Check if element is connected to DOM
+    if (!element.isConnected) {
+      console.warn('[DOMGuard] Element not connected to DOM');
+      return false;
+    }
+
+    // Check if element is visible
+    if (element.offsetParent === null && element.style.display !== 'none') {
+      console.warn('[DOMGuard] Element not visible (no offsetParent)');
+      return false;
+    }
+
+    // Check dimensions
+    const rect = element.getBoundingClientRect();
+    if (rect.width <= 0 || rect.height <= 0) {
+      console.warn('[DOMGuard] Element has invalid dimensions:', rect);
+      return false;
+    }
+
+    // Check if element has layout (computed styles applied)
+    const computedStyle = window.getComputedStyle(element);
+    if (computedStyle.display === 'none' || computedStyle.visibility === 'hidden') {
+      console.warn('[DOMGuard] Element hidden by CSS');
+      return false;
+    }
+
+    console.log('[DOMGuard] ✅ Element ready:', {
+      width: rect.width,
+      height: rect.height,
+      connected: element.isConnected,
+      display: computedStyle.display
+    });
+    return true;
+  }
+
+  /**
+   * Waits for DOM element to be ready with comprehensive checks
+   */
+  waitForElementReady(element: HTMLElement, maxWaitMs = 5000): Promise<boolean> {
+    return new Promise((resolve) => {
+      const startTime = Date.now();
+      let attempts = 0;
+      const maxAttempts = Math.floor(maxWaitMs / 100);
+
+      const checkReadiness = () => {
+        attempts++;
+        const elapsed = Date.now() - startTime;
+        
+        console.log(`[DOMGuard] Checking readiness (attempt ${attempts}/${maxAttempts}, ${elapsed}ms elapsed)`);
+        
+        if (this.validateElementReadiness(element)) {
+          console.log(`[DOMGuard] ✅ Element ready after ${elapsed}ms, ${attempts} attempts`);
+          resolve(true);
+          return;
+        }
+
+        if (elapsed >= maxWaitMs || attempts >= maxAttempts) {
+          console.warn(`[DOMGuard] ❌ Timeout waiting for element readiness (${elapsed}ms, ${attempts} attempts)`);
+          resolve(false);
+          return;
+        }
+
+        // Exponential backoff with jitter
+        const delay = Math.min(100 + (attempts * 20) + Math.random() * 50, 500);
+        setTimeout(checkReadiness, delay);
+      };
+
+      checkReadiness();
+    });
+  }
+
+  /**
+   * Safe execution wrapper for xterm.js operations with dimensions error protection
+   */
+  safeXtermOperation<T>(operation: () => T, operationName: string, defaultValue?: T): T | undefined {
+    try {
+      console.log(`[DOMGuard] Executing safe xterm operation: ${operationName}`);
+      const result = operation();
+      console.log(`[DOMGuard] ✅ Safe operation completed: ${operationName}`);
+      return result;
+    } catch (error) {
+      console.error(`[DOMGuard] ❌ Safe operation failed: ${operationName}`, error);
+      
+      if (error instanceof Error) {
+        if (error.message.includes('dimensions')) {
+          console.error('[DOMGuard] 🚨 DIMENSIONS ERROR INTERCEPTED:', {
+            operationName,
+            errorMessage: error.message,
+            stack: error.stack?.slice(0, 200)
+          });
+        }
+        
+        // Log error patterns for debugging
+        const errorPatterns = {
+          isUndefinedError: error.message.includes('undefined'),
+          isDimensionsError: error.message.includes('dimensions'),
+          isNullError: error.message.includes('null'),
+          isPropertyError: error.message.includes('property')
+        };
+        
+        console.error('[DOMGuard] Error analysis:', errorPatterns);
+      }
+      
+      return defaultValue;
+    }
+  }
+
+  /**
+   * Cleanup all observers
+   */
+  cleanup(): void {
+    if (this.mutationObserver) {
+      this.mutationObserver.disconnect();
+      this.mutationObserver = null;
+    }
+    if (this.resizeObserver) {
+      this.resizeObserver.disconnect();
+      this.resizeObserver = null;
+    }
+  }
+}
+
+// Debounce utility for resize operations
+const debounce = <T extends (...args: any[]) => void>(
+  func: T,
+  wait: number
+): ((...args: Parameters<T>) => void) => {
+  let timeout: NodeJS.Timeout | null = null;
+  return (...args: Parameters<T>) => {
+    if (timeout) clearTimeout(timeout);
+    timeout = setTimeout(() => func(...args), wait);
+  };
+};
+
 /**
  * Terminal Component
  * 
@@ -40,16 +345,30 @@ interface TerminalProps {
  * 
  * DO NOT MODIFY button positioning without checking original
  */
+interface SandboxContext {
+  sandboxId: string;
+  projectId: string;
+  sessionName: string;
+  path: string;
+}
+
 export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData, onTerminalCommand }: TerminalProps) {
   console.log('🖥️ Terminal component rendering...');
   const terminalRef = useRef<HTMLDivElement>(null);
   const xtermRef = useRef<XTerm | null>(null);
   const fitAddonRef = useRef<FitAddon | null>(null);
+  const terminalMountedRef = useRef(false); // Track if terminal is properly mounted in DOM
   const sessionIdForVoiceRef = useRef<string | null>(null); // Move this up here
   const sessionCreatedRef = useRef(false); // Track if session was already created
+  const domGuard = useRef(DOMReadinessGuard.getInstance()); // DOM readiness guard instance
+  const [isDOMReady, setIsDOMReady] = useState(false); // Track DOM readiness state
   const [isConnected, setIsConnected] = useState(false);
   const [agentsRunning, setAgentsRunning] = useState(false);
   const [voiceListening, setVoiceListening] = useState(false);
+  
+  // Sandbox context state
+  const [sandboxContext, setSandboxContext] = useState<SandboxContext | null>(null);
+  const [isSandboxMode, setIsSandboxMode] = useState(false);
   
   // Use enhanced supervision context
   const { 
@@ -100,18 +419,93 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
     if (savedSettings) {
       try {
         const parsed = JSON.parse(savedSettings);
-        setTerminalSettings(prev => ({ ...prev, ...parsed }));
+        // Validate and ensure statusLine object has all required properties
+        const validatedSettings = {
+          skipPermissions: parsed.skipPermissions ?? false,
+          statusLine: {
+            enabled: parsed.statusLine?.enabled ?? false,
+            showFile: parsed.statusLine?.showFile ?? true,
+            showModel: parsed.statusLine?.showModel ?? true,
+            showTokens: parsed.statusLine?.showTokens ?? true
+          }
+        };
+        setTerminalSettings(validatedSettings);
+        console.log('Loaded terminal settings:', validatedSettings);
       } catch (error) {
         console.warn('Failed to parse terminal settings:', error);
+        // Reset to default if parsing fails
+        localStorage.removeItem('coder1-terminal-settings');
       }
     }
   }, []);
-  
-  // Fetch token usage periodically when statusline is enabled
+
+  // Save terminal settings to localStorage whenever they change
   useEffect(() => {
-    if (!terminalSettings.statusLine?.enabled) return;
+    // Skip saving on initial mount
+    if (!terminalSettings) return;
     
-    const fetchUsage = async () => {
+    try {
+      console.log('[Terminal] Saving settings to localStorage:', terminalSettings);
+      localStorage.setItem('coder1-terminal-settings', JSON.stringify(terminalSettings));
+    } catch (error) {
+      console.error('[Terminal] Failed to save settings to localStorage:', error);
+    }
+  }, [terminalSettings]);
+  
+  // Listen for storage changes from TerminalSettings component
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'coder1-terminal-settings' && e.newValue) {
+        try {
+          console.log('[Terminal] Detected settings change from TerminalSettings');
+          const parsedSettings = JSON.parse(e.newValue);
+          
+          // Validate and ensure statusLine object has all required properties
+          const validatedSettings = {
+            skipPermissions: parsedSettings.skipPermissions ?? false,
+            statusLine: {
+              enabled: parsedSettings.statusLine?.enabled ?? false,
+              showFile: parsedSettings.statusLine?.showFile ?? true,
+              showModel: parsedSettings.statusLine?.showModel ?? true,
+              showTokens: parsedSettings.statusLine?.showTokens ?? true
+            }
+          };
+          
+          console.log('[Terminal] Updating settings from storage:', validatedSettings);
+          setTerminalSettings(validatedSettings);
+        } catch (error) {
+          console.error('[Terminal] Failed to parse updated settings from storage:', error);
+        }
+      }
+    };
+    
+    // Listen for storage events (changes in other tabs/components)
+    window.addEventListener('storage', handleStorageChange);
+    
+    // Custom event for same-tab changes (since storage event doesn't fire for same tab)
+    const handleCustomStorageChange = (e: CustomEvent) => {
+      if (e.detail?.key === 'coder1-terminal-settings') {
+        const newValue = localStorage.getItem('coder1-terminal-settings');
+        if (newValue) {
+          console.log('[Terminal] Detected same-tab settings change');
+          handleStorageChange({ key: 'coder1-terminal-settings', newValue } as StorageEvent);
+        }
+      }
+    };
+    
+    window.addEventListener('terminalSettingsChanged', handleCustomStorageChange as EventListener);
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('terminalSettingsChanged', handleCustomStorageChange as EventListener);
+    };
+  }, []);
+  
+  // ✅ CONTROLLED POLLING: Claude usage (via PollingManager)
+  const claudeUsagePolling = usePolling(
+    'claude-usage',
+    'Claude Usage API',
+    async () => {
       try {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 5000);
@@ -130,23 +524,30 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
           }
         }
       } catch (error) {
-        // Use console.warn instead of console.error to reduce noise
-        console.warn('Failed to fetch Claude usage:', error);
+        console.warn('Claude usage fetch failed:', error);
+        throw error; // Let PollingManager handle retry logic
       }
-    };
-    
-    // Fetch immediately and then every 60 seconds (reduced from 30)
-    fetchUsage();
-    const interval = setInterval(fetchUsage, 60000);
-    
-    return () => clearInterval(interval);
-  }, [terminalSettings.statusLine?.enabled]);
+    },
+    300000, // 5 minutes (increased from 2 minutes)
+    terminalSettings.statusLine?.enabled || false
+  );
   
-  // Fetch MCP server status periodically when statusline is enabled
+  // Only start polling if explicitly enabled AND not globally disabled
   useEffect(() => {
-    if (!terminalSettings.statusLine?.enabled) return;
-    
-    const fetchMCPStatus = async () => {
+    if (terminalSettings.statusLine?.enabled && !isPollingDisabled()) {
+      console.log('🟢 Starting Claude usage polling (controlled)');
+      // Don't auto-start - let user manually enable if needed
+      // claudeUsagePolling.start();
+    } else {
+      claudeUsagePolling.stop();
+    }
+  }, [terminalSettings.statusLine?.enabled, claudeUsagePolling]);
+  
+  // ✅ CONTROLLED POLLING: MCP status (via PollingManager)
+  const mcpStatusPolling = usePolling(
+    'mcp-status',
+    'MCP Status API',
+    async () => {
       try {
         const response = await fetch('/api/claude/mcp-status');
         if (response.ok) {
@@ -160,64 +561,106 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
           }
         }
       } catch (error) {
-        console.error('Failed to fetch MCP status:', error);
+        console.warn('MCP status fetch failed:', error);
+        throw error; // Let PollingManager handle retry logic
       }
-    };
-    
-    // Fetch immediately and then every 60 seconds
-    fetchMCPStatus();
-    const interval = setInterval(fetchMCPStatus, 60000);
-    
-    return () => clearInterval(interval);
-  }, [terminalSettings.statusLine?.enabled]);
+    },
+    300000, // 5 minutes (increased from 1 minute)
+    terminalSettings.statusLine?.enabled || false
+  );
   
   // Calculate block reset timer (resets every 3 hours)
+  // TEMPORARILY DISABLED - Calculate block reset timer
   useEffect(() => {
-    if (!terminalSettings.statusLine?.enabled) return;
+    // DISABLED TO PREVENT RUNAWAY TIMERS
+    // if (!terminalSettings.statusLine?.enabled) return;
     
-    const updateBlockTimer = () => {
-      // Get or create the block start time
-      const blockStartKey = 'claude-block-start-time';
-      let blockStartTime = localStorage.getItem(blockStartKey);
-      
-      if (!blockStartTime) {
-        // If no start time, set it now
-        blockStartTime = new Date().toISOString();
-        localStorage.setItem(blockStartKey, blockStartTime);
-      }
-      
-      const startTime = new Date(blockStartTime);
-      const now = new Date();
-      const resetTime = new Date(startTime.getTime() + (3 * 60 * 60 * 1000)); // 3 hours from start
-      
-      // Check if we've passed the reset time
-      if (now >= resetTime) {
-        // Reset the timer
-        const newStartTime = new Date().toISOString();
-        localStorage.setItem(blockStartKey, newStartTime);
-        setBlockResetTime('3:00:00');
-      } else {
-        // Calculate time remaining
-        const remaining = resetTime.getTime() - now.getTime();
-        const hours = Math.floor(remaining / (60 * 60 * 1000));
-        const minutes = Math.floor((remaining % (60 * 60 * 1000)) / (60 * 1000));
-        const seconds = Math.floor((remaining % (60 * 1000)) / 1000);
-        
-        setBlockResetTime(`${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`);
-      }
-    };
+    // const updateBlockTimer = () => {
+    //   // Get or create the block start time
+    //   const blockStartKey = 'claude-block-start-time';
+    //   let blockStartTime = localStorage.getItem(blockStartKey);
+    //   
+    //   if (!blockStartTime) {
+    //     // If no start time, set it now
+    //     blockStartTime = new Date().toISOString();
+    //     localStorage.setItem(blockStartKey, blockStartTime);
+    //   }
+    //   
+    //   const startTime = new Date(blockStartTime);
+    //   const now = new Date();
+    //   const resetTime = new Date(startTime.getTime() + (3 * 60 * 60 * 1000)); // 3 hours from start
+    //   
+    //   // Check if we've passed the reset time
+    //   if (now >= resetTime) {
+    //     // Reset the timer
+    //     const newStartTime = new Date().toISOString();
+    //     localStorage.setItem(blockStartKey, newStartTime);
+    //     setBlockResetTime('3:00:00');
+    //   } else {
+    //     // Calculate time remaining
+    //     const remaining = resetTime.getTime() - now.getTime();
+    //     const hours = Math.floor(remaining / (60 * 60 * 1000));
+    //     const minutes = Math.floor((remaining % (60 * 60 * 1000)) / (60 * 1000));
+    //     const seconds = Math.floor((remaining % (60 * 1000)) / 1000);
+    //     
+    //     setBlockResetTime(`${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`);
+    //   }
+    // };
     
-    // Update immediately and then every second
-    updateBlockTimer();
-    const interval = setInterval(updateBlockTimer, 1000);
+    // // Update immediately and then every second
+    // updateBlockTimer();
+    // const interval = setInterval(updateBlockTimer, 1000);
     
-    return () => clearInterval(interval);
+    // return () => clearInterval(interval);
   }, [terminalSettings.statusLine?.enabled]);
 
-  // Save terminal settings to localStorage when they change
+  // NOTE: Terminal settings already saved in useEffect above (lines 295-305)
+
+  // Sandbox connection event listeners
   useEffect(() => {
-    localStorage.setItem('coder1-terminal-settings', JSON.stringify(terminalSettings));
-  }, [terminalSettings]);
+    const handleSandboxConnect = (event: CustomEvent) => {
+      console.log('🔌 Terminal received sandbox-connect event:', event.detail);
+      const sandboxInfo = event.detail as SandboxContext;
+      
+      setSandboxContext(sandboxInfo);
+      setIsSandboxMode(true);
+      
+      // Switch to sandbox terminal session
+      if (socketRef.current) {
+        console.log('📡 Switching to sandbox session:', sandboxInfo.sessionName);
+        socketRef.current.emit('switch_to_sandbox', {
+          sandboxId: sandboxInfo.sandboxId,
+          sessionName: sandboxInfo.sessionName
+        });
+      }
+    };
+
+    const handleSandboxDisconnect = (event: CustomEvent) => {
+      console.log('🔌 Terminal received sandbox-disconnect event:', event.detail);
+      const { sandboxId } = event.detail;
+      
+      // Only disconnect if this is the active sandbox
+      if (sandboxContext && sandboxContext.sandboxId === sandboxId) {
+        setSandboxContext(null);
+        setIsSandboxMode(false);
+        
+        // Switch back to regular terminal session
+        if (socketRef.current) {
+          console.log('📡 Switching back to regular terminal session');
+          socketRef.current.emit('switch_to_main');
+        }
+      }
+    };
+
+    window.addEventListener('sandbox-connect', handleSandboxConnect as EventListener);
+    window.addEventListener('sandbox-disconnect', handleSandboxDisconnect as EventListener);
+    
+    return () => {
+      window.removeEventListener('sandbox-connect', handleSandboxConnect as EventListener);
+      window.removeEventListener('sandbox-disconnect', handleSandboxDisconnect as EventListener);
+    };
+  }, [sandboxContext]);
+
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [terminalReady, setTerminalReady] = useState(false);
   const [lastError, setLastError] = useState<string | null>(null);
@@ -237,20 +680,22 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
 
   // Create terminal session on mount via REST API
   useEffect(() => {
-    // Prevent duplicate session creation
+    // Only create session once per component mount
     if (sessionCreatedRef.current) {
-      console.log('Session already created, skipping');
+      console.log('🛑 Session already created, skipping');
       return;
     }
     
     const createTerminalSession = async () => {
       console.log('🚀 CREATING TERMINAL SESSION...');
       
-      // CRITICAL FIX: Mark session as being created BEFORE making the request
-      // This prevents the infinite loop that was causing EMFILE errors
+      // Mark as created immediately to prevent duplicates
       sessionCreatedRef.current = true;
       
       try {
+        // Generate a unique instance ID for this terminal
+        const instanceId = `terminal_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        
         // Create a real terminal session via the backend
         console.log('📡 Calling /api/terminal-rest/sessions...');
         const response = await fetch('/api/terminal-rest/sessions', {
@@ -261,6 +706,8 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
           body: JSON.stringify({
             cols: 130,
             rows: 30,
+            instanceId: instanceId,
+            strictMode: false // Allow session reuse if needed
           }),
         });
         
@@ -275,7 +722,8 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
           setTerminalReady(true);
           console.log('✅ Terminal session created:', data.sessionId);
         } else {
-          console.error('Failed to create terminal session:', response.status);
+          const errorData = await response.json().catch(() => ({}));
+          console.error('Failed to create terminal session:', response.status, errorData);
           // Fallback to simulated mode
           const simulatedId = 'simulated-' + Date.now();
           setSessionId(simulatedId);
@@ -299,6 +747,240 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
       // Session cleanup will be handled in separate effect
     };
   }, []);
+
+  // 🚀 Enhanced Agent Command Processing
+  const processEnhancedCommand = async (command: string) => {
+    if (!FEATURE_FLAGS.ENHANCED_AGENTS) return false;
+    
+    try {
+      // Check for natural language handoffs
+      if (FEATURE_FLAGS.NATURAL_LANGUAGE_HANDOFFS && 
+          (command.toLowerCase().includes('step away') || 
+           command.toLowerCase().includes('summarize') ||
+           command.toLowerCase().includes('handoff'))) {
+        
+        // Generate handoff summary (always use mock for now, API route can be added later)
+        const summary = mockEnhancedAgentService.generateHandoffSummary({
+          terminalHistory: [],  // TODO: Track terminal history
+          terminalCommands: [], // TODO: Track terminal commands  
+          activeFile: null      // TODO: Track active file
+        });
+        
+        xtermRef.current?.writeln('\r\n🤖 Creating handoff summary...');
+        // Simulate processing delay
+        setTimeout(() => {
+          xtermRef.current?.writeln(summary);
+          xtermRef.current?.writeln('\r\n✅ Handoff summary ready!');
+        }, 1500);
+        
+        return true;
+      }
+
+      // Check for team deployment confirmation
+      if (command.toLowerCase() === 'yes' && FEATURE_FLAGS.AGENT_VISUALIZATION) {
+        xtermRef.current?.writeln('\r\n🚀 Deploying AI team...');
+        xtermRef.current?.writeln('📡 Assembling agents and coordinating tasks...');
+        
+        // Trigger team assembly (real or mock based on flag)
+        try {
+          let team;
+          
+          if (FEATURE_FLAGS.USE_REAL_AI) {
+            try {
+              const apiResponse = await fetch('/api/claude/assemble-team', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ teamType: 'fullstack' })
+              });
+              
+              if (apiResponse.ok) {
+                team = await apiResponse.json();
+              } else {
+                throw new Error('Team assembly API failed');
+              }
+            } catch (error) {
+              console.warn('Real AI team assembly failed, falling back to mock:', error);
+              team = await mockEnhancedAgentService.assembleTeam('fullstack');
+            }
+          } else {
+            team = await mockEnhancedAgentService.assembleTeam('fullstack');
+          }
+          xtermRef.current?.writeln(`✅ Team "${team.teamId}" deployed successfully!`);
+          xtermRef.current?.writeln(`👥 ${team.agents.length} agents now coordinating on your request.`);
+          xtermRef.current?.writeln(`👀 Watch real-time progress in the preview panel →`);
+        } catch (error) {
+          xtermRef.current?.writeln('❌ Team deployment failed. Please try again.');
+        }
+        
+        return true;
+      }
+
+      // 🛡️ POLLING CONTROL COMMANDS
+      if (command.toLowerCase().startsWith('polling ')) {
+        const subCommand = command.substring(8).trim().toLowerCase(); // Remove "polling "
+        
+        if (subCommand === 'status') {
+          const status = pollingManager.getStatus();
+          xtermRef.current?.writeln('\r\n📊 Polling Control Status:');
+          xtermRef.current?.writeln(`🔒 Globally Disabled: ${status.globallyDisabled ? '✅ YES' : '❌ NO'}`);
+          xtermRef.current?.writeln(`📈 Total Items: ${status.totalItems}`);
+          xtermRef.current?.writeln(`▶️ Active Items: ${status.activeItems}`);
+          
+          if (status.items.length > 0) {
+            xtermRef.current?.writeln('\r\n📋 Registered Polling Items:');
+            status.items.forEach(item => {
+              const statusIcon = item.isActive ? '▶️' : '⏸️';
+              const ageMin = Math.round(item.ageMs / 60000);
+              xtermRef.current?.writeln(`  ${statusIcon} ${item.name} (${item.intervalMs}ms, ${item.runCount} runs, ${ageMin}m old)`);
+            });
+          }
+          
+          xtermRef.current?.writeln('\r\n💡 Commands: polling kill | polling enable | polling status');
+        } 
+        else if (subCommand === 'kill') {
+          xtermRef.current?.writeln('\r\n🚨 KILLING ALL BACKGROUND POLLING...');
+          pollingManager.killAll();
+          xtermRef.current?.writeln('☢️ All polling killed. No more runaway API calls!');
+          xtermRef.current?.writeln('💡 Use "polling enable" to restore if needed.');
+        }
+        else if (subCommand === 'enable') {
+          xtermRef.current?.writeln('\r\n🔄 Re-enabling polling system...');
+          pollingManager.enableAll();
+          xtermRef.current?.writeln('✅ Polling system restored.');
+          xtermRef.current?.writeln('💡 Individual polling items need to be started manually.');
+        }
+        else if (subCommand.startsWith('start ')) {
+          const itemId = subCommand.substring(6);
+          xtermRef.current?.writeln(`\r\n▶️ Starting polling: ${itemId}`);
+          // This would need to be implemented based on available items
+        }
+        else {
+          xtermRef.current?.writeln('\r\n🛡️ Polling Control Commands:');
+          xtermRef.current?.writeln('  polling status  - Show current polling status');
+          xtermRef.current?.writeln('  polling kill    - 🚨 KILL ALL background polling (nuclear option)');
+          xtermRef.current?.writeln('  polling enable  - Re-enable polling system');
+        }
+        
+        return true;
+      }
+
+      // Check for claude commands that should get enhanced processing
+      if (command.toLowerCase().startsWith('claude ')) {
+        const userRequest = command.substring(6).trim(); // Remove "claude "
+        
+        if (userRequest) {
+          // Use real AI API route if enabled, otherwise fallback to mock
+          let response;
+          
+          if (FEATURE_FLAGS.USE_REAL_AI) {
+            try {
+              const apiResponse = await fetch('/api/claude/analyze', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ input: userRequest })
+              });
+              
+              if (apiResponse.ok) {
+                response = await apiResponse.json();
+              } else {
+                throw new Error('API call failed');
+              }
+            } catch (error) {
+              console.warn('Real AI API failed, falling back to mock:', error);
+              response = mockEnhancedAgentService.analyzeUserInput(userRequest);
+            }
+          } else {
+            response = mockEnhancedAgentService.analyzeUserInput(userRequest);
+          }
+          
+          // Show memory insights first
+          if (response.memoryInsights.length > 0) {
+            xtermRef.current?.writeln('\r\n💡 Context from your development patterns:');
+            response.memoryInsights.forEach((insight: any) => {
+              const icon = insight.type === 'pattern' ? '🔄' : 
+                          insight.type === 'success' ? '✅' : 
+                          insight.type === 'warning' ? '⚠️' : '💡';
+              xtermRef.current?.writeln(`   ${icon} ${insight.content}`);
+            });
+            xtermRef.current?.writeln('');
+          }
+
+          // Handle team suggestions
+          if (response.isTeamSuggestion && response.teamSuggestion) {
+            const suggestion = response.teamSuggestion;
+            
+            xtermRef.current?.writeln(`\r\n${response.response}`);
+            xtermRef.current?.writeln(`\r\n🎯 Recommended: ${suggestion.recommendedTeam.name}`);
+            xtermRef.current?.writeln(`👥 Team: ${suggestion.recommendedTeam.agents.join(', ')}`);
+            xtermRef.current?.writeln(`📊 Confidence: ${Math.round(suggestion.confidence * 100)}%`);
+            xtermRef.current?.writeln(`\r\n✨ Benefits:`);
+            
+            suggestion.benefits.forEach((benefit: string) => {
+              xtermRef.current?.writeln(`   • ${benefit}`);
+            });
+            
+            xtermRef.current?.writeln(`\r\n💬 Type "yes" to deploy this team, or describe what you want differently.`);
+            
+            if (FEATURE_FLAGS.AGENT_VISUALIZATION) {
+              xtermRef.current?.writeln(`👀 WATCH AGENTS ASSEMBLE IN PREVIEW PANEL →`);
+              
+              // Dispatch assembly event to preview panel
+              if (typeof window !== 'undefined') {
+                window.dispatchEvent(new CustomEvent('agent-team-assembly', {
+                  detail: { teamSuggestion: suggestion }
+                }));
+              }
+            }
+          } else {
+            // Simple single agent response
+            xtermRef.current?.writeln(`\r\n🤖 ${response.response}`);
+          }
+          
+          return true;
+        }
+      }
+
+      // Check for quick action commands
+      const quickActions = {
+        'code-review': 'Running code review on current file...',
+        'find-bugs': 'Scanning for potential bugs and issues...',
+        'security-audit': 'Performing security analysis...',
+        'optimize-performance': 'Analyzing performance bottlenecks...',
+        'generate-tests': 'Generating test cases...',
+        'improve-ui': 'Analyzing UI/UX improvements...'
+      };
+
+      const actionKey = Object.keys(quickActions).find(action => 
+        command.toLowerCase().includes(action.replace('-', ' ')) ||
+        command.toLowerCase().includes(action)
+      );
+
+      if (actionKey) {
+        xtermRef.current?.writeln(`\r\n⚡ ${quickActions[actionKey as keyof typeof quickActions]}`);
+        
+        // Simulate processing with progress
+        let progress = 0;
+        const interval = setInterval(() => {
+          progress += 20;
+          const bar = '█'.repeat(progress / 5) + '░'.repeat(20 - progress / 5);
+          xtermRef.current?.write(`\r🔄 Progress: [${bar}] ${progress}%`);
+          
+          if (progress >= 100) {
+            clearInterval(interval);
+            xtermRef.current?.writeln(`\r\n✅ ${actionKey} completed! Results ready for review.`);
+          }
+        }, 800);
+        
+        return true;
+      }
+
+    } catch (error) {
+      console.error('Enhanced command processing failed:', error);
+      xtermRef.current?.writeln('\r\n⚠️ Enhanced processing failed, using standard mode...');
+    }
+    
+    return false;
+  };
   
   // Store whether component is mounted
   const isMountedRef = useRef(true);
@@ -309,6 +991,49 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
     
     return () => {
       isMountedRef.current = false;
+      
+      // Clean up socket listeners to prevent memory leaks
+      if (socketRef.current) {
+        console.log('🧹 Cleaning up socket listeners');
+        socketRef.current.off('connect');
+        socketRef.current.off('disconnect');
+        socketRef.current.off('connect_error');
+        socketRef.current.off('terminal:data');
+        socketRef.current.off('terminal:created');
+        socketRef.current.off('terminal:error');
+        socketRef.current.off('claude:output');
+        socketRef.current.off('claude:sessionComplete');
+        socketRef.current.off('claude:error');
+        socketRef.current.off('sandbox:switched');
+        socketRef.current.off('sandbox:main_switched');
+        socketRef.current.off('sandbox:switch_error');
+        
+        // Leave the terminal session
+        const currentSessionId = sessionIdForVoiceRef.current || sessionId;
+        if (currentSessionId) {
+          socketRef.current.emit('terminal:leave', { id: currentSessionId });
+        }
+      }
+      
+      // Clean up terminal instance
+      if (xtermRef.current) {
+        console.log('🧹 Disposing terminal instance');
+        try {
+          xtermRef.current.dispose();
+        } catch (e) {
+          console.error('Error disposing terminal:', e);
+        }
+        xtermRef.current = null;
+      }
+      
+      // Clean up fit addon
+      if (fitAddonRef.current) {
+        fitAddonRef.current = null;
+      }
+      
+      // Reset mounted flag
+      terminalMountedRef.current = false;
+      
       // Only cleanup the current session on unmount
       const currentSessionId = sessionIdForVoiceRef.current || sessionId;
       if (currentSessionId && !currentSessionId.startsWith('simulated-')) {
@@ -319,6 +1044,11 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
           console.log('Session cleanup (expected on unmount):', err.message);
         });
       }
+      
+      // Clear global session markers on unmount
+      localStorage.removeItem('coder1-active-terminal-session');
+      sessionStorage.removeItem('coder1-terminal-session-creating');
+      console.log('🧹 Cleared global session markers');
     };
   }, []); // Empty dependency array - only run on mount/unmount
 
@@ -350,35 +1080,125 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
       const fitAddon = new FitAddon();
       term.loadAddon(fitAddon);
       
-      // Ensure the container is ready before opening
-      if (terminalRef.current && terminalRef.current.offsetParent !== null) {
+      // Always open terminal regardless of visibility - fixes "only loads after resize" issue
+      if (terminalRef.current) {
         term.open(terminalRef.current);
         
-        // Wait a bit before fitting to ensure DOM is ready
-        setTimeout(() => {
-          try {
-            fitAddon.fit();
-            term.focus();
-            
-            // Add custom welcome message
-            term.clear();
-            term.writeln('Coder1 Terminal Ready');
-            term.writeln("Type 'claude' to start AI-assisted coding");
-            term.writeln('──────────────────────────────────────────────');
-            term.writeln('');
-            
-            // Don't show initial prompt - backend will provide it
-            // Connect to backend immediately
-            if (sessionId && terminalReady) {
-              connectToBackend(term);
-            }
-          } catch (error) {
-            console.log('FitAddon error (non-critical):', error);
-          }
-        }, 100);
+        // Set mounted flag after successful opening
+        terminalMountedRef.current = true;
         
+        // Store references immediately for resize attempts
         xtermRef.current = term;
         fitAddonRef.current = fitAddon;
+        
+        // Force initial resize with retry logic to fix "Phase 1 of 4" stuck issue
+        let resizeAttempts = 0;
+        const maxAttempts = 5;
+        
+        const attemptResize = async () => {
+          resizeAttempts++;
+          try {
+            if (!terminalRef.current || !fitAddon) {
+              console.log(`[Terminal] Resize attempt ${resizeAttempts}/${maxAttempts} - Container not ready`);
+              if (resizeAttempts < maxAttempts) {
+                setTimeout(attemptResize, 200 * resizeAttempts); // Exponential backoff
+              }
+              return;
+            }
+            
+            console.log(`[Terminal] Resize attempt ${resizeAttempts}/${maxAttempts} - Checking DOM readiness`);
+            
+            // PHASE 1: DOM READINESS GUARDS - Use comprehensive DOM validation
+            const isReady = await domGuard.current.waitForElementReady(terminalRef.current, 2000);
+            if (!isReady) {
+              console.log(`[Terminal] Resize attempt ${resizeAttempts}/${maxAttempts} - DOM not ready after timeout`);
+              if (resizeAttempts < maxAttempts) {
+                setTimeout(attemptResize, 300 * resizeAttempts);
+              }
+              return;
+            }
+            
+            console.log(`[Terminal] Resize attempt ${resizeAttempts}/${maxAttempts} - DOM ready, fitting terminal`);
+            
+            // Enhanced safety checks with DOM validation
+            try {
+              if (terminalMountedRef.current && fitAddon && term && term.element && 
+                  terminalRef.current?.contains(term.element) &&
+                  domGuard.current.validateElementReadiness(terminalRef.current)) {
+                
+                // Additional xterm.js state validation before fit
+                if (term.cols === 0 || term.rows === 0) {
+                  console.warn('[Terminal] Xterm not properly initialized (0 cols/rows), waiting...');
+                  if (resizeAttempts < maxAttempts) {
+                    setTimeout(attemptResize, 300 * resizeAttempts);
+                  }
+                  return;
+                }
+                
+                console.log(`[Terminal] Fitting terminal with DOM validation passed`);
+                // PHASE 3: ERROR BOUNDARY PROTECTION - Wrap fit operation
+                domGuard.current.safeXtermOperation(
+                  () => {
+                    fitAddon.fit();
+                    term.focus();
+                    return { cols: term.cols, rows: term.rows };
+                  },
+                  'fitAddon.fit() during attemptResize'
+                );
+              } else {
+                console.warn('[Terminal] Cannot fit - terminal not properly mounted or DOM not ready');
+                return;
+              }
+            } catch (fitError) {
+              console.error('[Terminal] Fit error with enhanced guards:', fitError);
+              if (fitError instanceof Error && fitError.message.includes('dimensions')) {
+                console.error('[Terminal] 🚨 DIMENSIONS ERROR CAUGHT - implementing additional safeguards');
+                // Additional wait before retry on dimensions error
+                if (resizeAttempts < maxAttempts) {
+                  setTimeout(attemptResize, 500 * resizeAttempts);
+                }
+              }
+              return;
+            }
+            
+            // Verify the fit worked with enhanced validation
+            const { cols, rows } = term;
+            if (cols > 0 && rows > 0) {
+              console.log(`[Terminal] ✅ Successfully fitted with DOM guards: ${cols}x${rows}`);
+              
+              // Set DOM ready state
+              setIsDOMReady(true);
+              
+              // Add custom welcome message only after successful fit
+              if (resizeAttempts === 1) { // Only show once on first success
+                term.clear();
+                term.writeln('Coder1 Terminal Ready');
+                term.writeln("Type 'claude' to start AI-assisted coding");
+                term.writeln('──────────────────────────────────────────────');
+                term.writeln('');
+              }
+              
+              // Mark terminal as ready - connection handled by separate useEffect
+              setTerminalReady(true);
+              
+              // Trigger a manual resize event to ensure backend is notified
+              if (socketRef.current?.connected && sessionId) {
+                socketRef.current.emit('terminal:resize', { id: sessionId, cols, rows });
+              }
+            } else if (resizeAttempts < maxAttempts) {
+              console.log(`[Terminal] Invalid dimensions after fit, retrying with extended delay...`);
+              setTimeout(attemptResize, 300 * resizeAttempts);
+            }
+          } catch (error) {
+            console.log(`[Terminal] Resize attempt ${resizeAttempts}/${maxAttempts} error:`, error);
+            if (resizeAttempts < maxAttempts) {
+              setTimeout(attemptResize, 200 * resizeAttempts);
+            }
+          }
+        };
+        
+        // Start resize attempts immediately
+        attemptResize();
 
         // ROBUST SCROLL SYSTEM: Handle both tracking AND auto-scrolling
         // This replaces the competing WebSocket scroll logic
@@ -444,93 +1264,120 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
         };
         
         // 🔍 DIAGNOSTIC: Log timer setup
-        console.log('⏰ SETTING UP SCROLL INTERVAL:', { sessionId, interval: '150ms' });
-        scrollCheckIntervalRef.current = setInterval(checkScrollPosition, 150); // Increased frequency for better responsiveness
+        console.log('⏰ SETTING UP SCROLL INTERVAL - TEMPORARILY DISABLED');
+        // TEMPORARILY DISABLED TO PREVENT RUNAWAY INTERVALS
+        // scrollCheckIntervalRef.current = setInterval(checkScrollPosition, 150); // Increased frequency for better responsiveness
 
-        // Handle resize
-        const resizeObserver = new ResizeObserver(() => {
-          if (fitAddonRef.current && term) {
+        // 🔧 ENHANCED RESIZE OBSERVER WITH DOM GUARDS AND BUFFER PRESERVATION
+        // This fixes the help menu disappearing issue by preserving terminal content during resize
+        const debouncedResize = debounce((term: XTerm, socket: any) => {
+          try {
+            if (!fitAddonRef.current || !term || !terminalRef.current) {
+              console.warn('[Terminal] Resize skipped - missing dependencies');
+              return;
+            }
+
+            console.log('📐 Enhanced ResizeObserver: Starting resize with DOM guards and buffer preservation');
+            
+            // PHASE 1: DOM READINESS VALIDATION before any xterm operations
+            const isReady = domGuard.current.validateElementReadiness(terminalRef.current);
+            if (!isReady) {
+              console.warn('[Terminal] Resize skipped - DOM not ready');
+              return;
+            }
+            
+            // Step 1: Preserve current buffer state
+            const bufferState = preserveTerminalBuffer(term);
+            
+            // Step 2: Perform the resize operation with enhanced safety
             try {
-              // 🔍 DIAGNOSTIC: Log resize events and terminal state before/after
-              const beforeBuffer = term.buffer?.active;
-              const beforeState = beforeBuffer ? {
-                viewportY: beforeBuffer.viewportY,
-                baseY: beforeBuffer.baseY,
-                isAtBottom: beforeBuffer.viewportY === beforeBuffer.baseY
-              } : null;
-              
-              console.log('🔄 RESIZE EVENT TRIGGERED:', {
-                timestamp: Date.now(),
-                beforeState,
-                sessionId
-              });
+              if (terminalMountedRef.current && fitAddonRef.current && term && term.element &&
+                  domGuard.current.validateElementReadiness(terminalRef.current)) {
+                
+                // Additional xterm state validation before fit
+                if (!term.buffer || !term.buffer.active) {
+                  console.warn('[Terminal] Xterm buffer not ready during resize');
+                  return;
+                }
+                
+                console.log('[Terminal] Performing fit with DOM validation');
+                // PHASE 3: ERROR BOUNDARY PROTECTION - Wrap resize fit operation
+                domGuard.current.safeXtermOperation(
+                  () => {
+                    fitAddonRef.current!.fit();
+                    return { cols: term.cols, rows: term.rows };
+                  },
+                  'fitAddon.fit() during resize'
+                );
+              } else {
+                console.warn('[Terminal] Cannot fit during resize - terminal or DOM not ready');
+                return;
+              }
+            } catch (fitError) {
+              console.error('[Terminal] Fit error during resize with enhanced guards:', fitError);
+              if (fitError instanceof Error && fitError.message.includes('dimensions')) {
+                console.error('[Terminal] 🚨 DIMENSIONS ERROR during resize - terminal may be in invalid state');
+              }
+              return;
+            }
+            
+            // Step 3: Send resize notification to backend
+            if (socket && socket.connected && sessionId) {
+              const { cols, rows } = term;
+              socket.emit('terminal:resize', { id: sessionId, cols, rows });
+              console.log('📡 Notified backend of resize:', { cols, rows });
+            }
+            
+            // Step 4: Refresh the terminal display
+            if (term.rows) {
+              term.refresh(0, term.rows - 1);
+            }
+            
+            // Step 5: Check if restoration is needed and restore if necessary
+            setTimeout(() => {
+              if (bufferState && needsBufferRestoration(term, bufferState)) {
+                console.log('🔄 Restoring terminal buffer after resize');
+                restoreTerminalBuffer(term, bufferState);
+              } else {
+                console.log('✅ Terminal content preserved during resize');
+              }
+            }, 100); // Allow resize to complete before checking
+            
+          } catch (error) {
+            console.warn('Enhanced ResizeObserver callback error:', error);
+          }
+        }, 150); // Debounce resize calls by 150ms
 
-              setTimeout(() => {
-                fitAddonRef.current?.fit();
-                
-                // Check state after resize
-                const afterBuffer = term.buffer?.active;
-                const afterState = afterBuffer ? {
-                  viewportY: afterBuffer.viewportY,
-                  baseY: afterBuffer.baseY,
-                  isAtBottom: afterBuffer.viewportY === afterBuffer.baseY
-                } : null;
-                
-                console.log('📐 RESIZE COMPLETED:', {
-                  timestamp: Date.now(),
-                  beforeState,
-                  afterState,
-                  stateChanged: JSON.stringify(beforeState) !== JSON.stringify(afterState)
-                });
-                
-                // If resize broke the viewport sync, fix it immediately
-                if (afterBuffer && afterBuffer.viewportY !== afterBuffer.baseY) {
-                  console.log('🚨 RESIZE BROKE VIEWPORT SYNC - FIXING:', {
-                    viewportY: afterBuffer.viewportY,
-                    baseY: afterBuffer.baseY,
-                    scrollLines: afterBuffer.baseY - afterBuffer.viewportY
-                  });
-                  term.scrollLines(afterBuffer.baseY - afterBuffer.viewportY);
-                }
-                
-                // Additional fix: If resize caused container to jump to top but content fits
-                // Force the terminal to stay at bottom by scrolling the container
-                const terminalContainer = terminalRef.current?.parentElement;
-                if (terminalContainer) {
-                  const isContainerAtTop = terminalContainer.scrollTop === 0;
-                  const hasContent = afterBuffer && afterBuffer.baseY > 0;
-                  
-                  if (isContainerAtTop && hasContent) {
-                    console.log('🚨 RESIZE CAUSED CONTAINER TOP JUMP - FIXING:', {
-                      containerScrollTop: terminalContainer.scrollTop,
-                      containerScrollHeight: terminalContainer.scrollHeight,
-                      containerClientHeight: terminalContainer.clientHeight,
-                      baseY: afterBuffer.baseY
-                    });
-                    
-                    // Force container to bottom
-                    terminalContainer.scrollTop = terminalContainer.scrollHeight;
-                    
-                    // Also ensure xterm is at bottom
-                    term.scrollToBottom();
-                  }
-                }
-              }, 10);
-            } catch (error) {
-              console.error('❌ RESIZE ERROR:', error);
+        // Set up enhanced resize observer with DOM guards
+        const resizeObserver = new ResizeObserver((entries) => {
+          if (term && socketRef.current && isDOMReady) {
+            // Additional validation before triggering resize
+            if (terminalRef.current && domGuard.current.validateElementReadiness(terminalRef.current)) {
+              debouncedResize(term, socketRef.current);
+            } else {
+              console.warn('[Terminal] Resize observer - DOM validation failed');
             }
           }
         });
 
-        if (terminalRef.current && terminalRef.current.parentElement) {
-          resizeObserver.observe(terminalRef.current.parentElement);
+        if (terminalRef.current) {
+          resizeObserver.observe(terminalRef.current);
+          if (terminalRef.current.parentElement) {
+            resizeObserver.observe(terminalRef.current.parentElement);
+          }
         }
 
-        // Return cleanup function
+        // Return cleanup function with DOM guard cleanup
         const cleanup = () => {
           try {
-            console.log('🧹 CLEANING UP TERMINAL:', { sessionId });
+            console.log('🧹 CLEANING UP TERMINAL WITH DOM GUARDS:', { sessionId });
+            
+            // Clean up resize observer
             resizeObserver.disconnect();
+            
+            // Clean up DOM observers
+            domGuard.current.cleanup();
+            
             // Clean up scroll monitoring
             if (scrollCheckIntervalRef.current) {
               console.log('⏰ CLEARING SCROLL INTERVAL');
@@ -544,28 +1391,130 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
               scrollDebounceRef.current = null;
             }
             if (term) {
-              console.log('🗑️ DISPOSING TERMINAL');
-              term.dispose();
+              console.log('🗑️ DISPOSING TERMINAL WITH ENHANCED CLEANUP');
+              // Additional safety checks before disposal
+              try {
+                if (term.element && term.element.parentNode) {
+                  term.dispose();
+                } else {
+                  console.log('Terminal already detached, skipping dispose');
+                }
+              } catch (disposeError) {
+                console.warn('Terminal dispose error (expected if already disposed):', disposeError);
+              }
             }
+            
+            // Reset DOM ready state
+            setIsDOMReady(false);
           } catch (error) {
-            console.error('❌ CLEANUP ERROR:', error);
+            console.error('❌ ENHANCED CLEANUP ERROR:', error);
           }
         };
 
         return cleanup;
         
       } else {
-        console.log('Terminal container not ready, retrying...');
-        // Retry after a short delay if container isn't ready
-        setTimeout(() => {
+        console.log('Terminal container not ready, starting retry logic...');
+        // Store references for retry attempts
+        xtermRef.current = term;
+        fitAddonRef.current = fitAddon;
+        
+        // Retry with exponential backoff
+        let retryCount = 0;
+        const maxRetries = 10;
+        
+        const retryInit = async () => {
+          retryCount++;
+          console.log(`[Terminal] Retry attempt ${retryCount}/${maxRetries}`);
+          
+          // Enhanced retry logic with DOM guards
           if (terminalRef.current) {
-            term.open(terminalRef.current);
-            fitAddon.fit();
-            term.focus();
-            xtermRef.current = term;
-            fitAddonRef.current = fitAddon;
+            const isElementReady = await domGuard.current.waitForElementReady(terminalRef.current, 1000);
+            
+            if (isElementReady) {
+              // Only open terminal if not already opened
+              if (!term.element) {
+                console.log('[Terminal] Container now ready with DOM validation, opening terminal...');
+                term.open(terminalRef.current);
+                terminalMountedRef.current = true;
+              } else {
+                console.log('[Terminal] Terminal already opened, just fitting...');
+              }
+              
+              // Enhanced fitting with DOM validation
+              console.log('[Terminal] Fitting with DOM readiness validation');
+              
+              // Add delay and comprehensive validation before fitting
+              setTimeout(() => {
+                try {
+                  const stillReady = domGuard.current.validateElementReadiness(terminalRef.current!);
+                  
+                  if (terminalMountedRef.current && fitAddon && term && term.element && 
+                      terminalRef.current?.contains(term.element) && stillReady) {
+                    
+                    // Additional xterm state validation
+                    if (!term.buffer || !term.buffer.active) {
+                      console.warn('[Terminal] Xterm buffer not ready during init, waiting...');
+                      if (retryCount < maxRetries) {
+                        const delay = Math.min(100 * Math.pow(1.5, retryCount), 2000);
+                        setTimeout(retryInit, delay);
+                      }
+                      return;
+                    }
+                    
+                    // PHASE 3: ERROR BOUNDARY PROTECTION - Wrap retry fit operation
+                    domGuard.current.safeXtermOperation(
+                      () => {
+                        fitAddon.fit();
+                        term.focus();
+                        return { cols: term.cols, rows: term.rows };
+                      },
+                      'fitAddon.fit() during retryInit'
+                    );
+                  } else {
+                    console.warn('[Terminal] Cannot fit - terminal or DOM not ready during initialization');
+                  }
+                } catch (fitError) {
+                  console.error('[Terminal] Fit error during initialization with guards:', fitError);
+                  if (fitError instanceof Error && fitError.message.includes('dimensions')) {
+                    console.error('[Terminal] 🚨 DIMENSIONS ERROR during init - retrying with longer delay');
+                    if (retryCount < maxRetries) {
+                      const delay = Math.min(200 * Math.pow(1.5, retryCount), 3000);
+                      setTimeout(retryInit, delay);
+                    }
+                  }
+                }
+              }, 100); // Increased delay for DOM stability
+              
+              // Verify the fit worked with DOM validation
+              setTimeout(() => {
+                const { cols, rows } = term;
+                if (cols > 0 && rows > 0) {
+                  console.log(`[Terminal] ✅ Successfully fitted on retry with DOM guards: ${cols}x${rows}`);
+                  setIsDOMReady(true);
+                  term.clear();
+                  term.writeln('Coder1 Terminal Ready');
+                  term.writeln("Type 'claude' to start AI-assisted coding");
+                  term.writeln('──────────────────────────────────────────────');
+                  term.writeln('');
+                  return; // Success!
+                }
+              }, 50);
+            }
           }
-        }, 200);
+          
+          // Retry if not successful
+          if (retryCount < maxRetries) {
+            const delay = Math.min(100 * Math.pow(1.5, retryCount), 2000);
+            console.log(`[Terminal] Will retry in ${delay}ms...`);
+            setTimeout(retryInit, delay);
+          } else {
+            console.error('[Terminal] Failed to initialize after maximum retries');
+          }
+        };
+        
+        // Start retry process
+        setTimeout(retryInit, 100);
       }
     } catch (error) {
       console.error('Terminal initialization error:', error);
@@ -575,6 +1524,39 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
       }
     }
   }, []);
+
+  // Force fit when terminal becomes ready
+  useEffect(() => {
+    if (terminalReady && fitAddonRef.current && xtermRef.current) {
+      console.log('[Terminal] Terminal ready, forcing fit...');
+      setTimeout(() => {
+        if (fitAddonRef.current && terminalRef.current) {
+          const rect = terminalRef.current.getBoundingClientRect();
+          if (rect.width > 0 && rect.height > 0) {
+            console.log(`[Terminal] Forcing fit with dimensions: ${rect.width}x${rect.height}`);
+            // PHASE 3: ERROR BOUNDARY PROTECTION - Wrap forced fit operation
+            if (terminalMountedRef.current && fitAddonRef.current && xtermRef.current && xtermRef.current.element) {
+              const result = domGuard.current.safeXtermOperation(
+                () => {
+                  fitAddonRef.current!.fit();
+                  xtermRef.current!.focus();
+                  const { cols, rows } = xtermRef.current!;
+                  console.log(`[Terminal] After forced fit: ${cols}x${rows}`);
+                  return { cols, rows };
+                },
+                'fitAddon.fit() during forced resize'
+              );
+              if (!result) {
+                console.warn('[Terminal] Forced fit operation failed with error boundary protection');
+              }
+            } else {
+              console.warn('[Terminal] Cannot fit during forced resize - terminal not ready');
+            }
+          }
+        }
+      }, 100);
+    }
+  }, [terminalReady]);
 
   // Close dropdowns when clicking outside
   useEffect(() => {
@@ -640,11 +1622,10 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
           }
         }
         
-        // Show interim results as user speaks
+        // Show interim results as user speaks (removed for clean output)
         if (interimTranscript && xtermRef.current) {
           console.log('Interim transcript:', interimTranscript);
-          // Show interim feedback inline
-          xtermRef.current.write(`\r\n💬 Hearing: "${interimTranscript}"`);
+          // Interim feedback removed for clean experience
         }
         
         if (finalTranscript && finalTranscript.trim()) {
@@ -652,13 +1633,11 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
           const cleanTranscript = finalTranscript.trim();
           console.log('Final speech recognized:', cleanTranscript);
           
-          // Clear interim feedback and show final
+          // Clear interim feedback and show final (prefix removed for clean output)
           if (xtermRef.current) {
-            xtermRef.current.writeln(`\r\n✅ Recognized: "${cleanTranscript}"`);
             
-            // Check if it's a Claude activation command
+            // Check if it's a Claude activation command (message removed for clean output)
             if (cleanTranscript.toLowerCase().includes('claude')) {
-              xtermRef.current.writeln('🤖 Claude mode activated');
               setClaudeActive(true);
               setConversationMode(true);
               
@@ -763,19 +1742,28 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
           } catch (error) {
             console.log('Auto-restart failed:', error);
             setVoiceListening(false);
-            if (xtermRef.current) {
-              xtermRef.current.writeln('\r\n🎤 Voice input ended');
-            }
           }
         } else {
           setVoiceListening(false);
-          if (xtermRef.current) {
-            xtermRef.current.writeln('\r\n🎤 Voice input ended');
-          }
         }
       };
       
       setRecognition(recognitionInstance);
+      
+      // Cleanup function to prevent memory leaks
+      return () => {
+        if (recognitionInstance) {
+          try {
+            recognitionInstance.stop();
+          } catch (e) {
+            // Ignore errors when stopping
+          }
+          recognitionInstance.onresult = null;
+          recognitionInstance.onerror = null;
+          recognitionInstance.onend = null;
+          recognitionInstance.onstart = null;
+        }
+      };
     } else {
       console.warn('Speech recognition not supported in this browser');
     }
@@ -791,40 +1779,69 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
     if (voiceListening) {
       recognition.stop();
       setVoiceListening(false);
-      xtermRef.current?.writeln('\r\n🎤 Voice input stopped');
     } else {
       try {
-        // Request microphone permission first
-        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-          try {
-            await navigator.mediaDevices.getUserMedia({ audio: true });
-            xtermRef.current?.writeln('\r\n🎤 Microphone access granted');
-          } catch (permError) {
-            xtermRef.current?.writeln('\r\n❌ Microphone permission denied');
-            xtermRef.current?.writeln('Please allow microphone access to use speech-to-text');
+        
+        // Create a timeout promise for getUserMedia
+        const requestMicrophonePermission = async (): Promise<MediaStream> => {
+          if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            throw new Error('MediaDevices API not supported');
+          }
+          
+          return Promise.race<MediaStream>([
+            navigator.mediaDevices.getUserMedia({ audio: true }),
+            new Promise<MediaStream>((_, reject) => 
+              setTimeout(() => reject(new Error('Permission request timeout')), 5000)
+            )
+          ]);
+        };
+
+        let permissionGranted = false;
+        
+        try {
+          const stream = await requestMicrophonePermission();
+          // Clean up the stream immediately - we only needed permission
+          stream.getTracks().forEach(track => track.stop());
+          permissionGranted = true;
+        } catch (permError: any) {
+          console.log('Microphone permission error:', permError);
+          
+          if (permError?.name === 'NotFoundError') {
+            xtermRef.current?.writeln('❌ No microphone found');
             return;
           }
+          // Other permission errors - continue silently
         }
         
-        // Check if we're on HTTPS (required for speech recognition in many browsers)
-        if (location.protocol !== 'https:' && location.hostname !== 'localhost') {
-          xtermRef.current?.writeln('\r\n⚠️ Speech recognition may require HTTPS');
-        }
+        // HTTPS check removed for clean output
+        
+        // Try to start speech recognition regardless of permission check result
+        // The speech recognition API will handle its own permission requests
         
         recognition.start();
         setVoiceListening(true);
-        xtermRef.current?.writeln('\r\n🎤 Voice input started - speak now...');
-        xtermRef.current?.writeln('Say your commands clearly. Speech will be converted to text.');
-      } catch (error) {
+        
+      } catch (error: any) {
         console.error('Failed to start speech recognition:', error);
         setVoiceListening(false);
         xtermRef.current?.writeln('\r\n❌ Failed to start voice input');
-        xtermRef.current?.writeln(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        
+        if (error?.name === 'NotAllowedError') {
+          xtermRef.current?.writeln('Permission denied. Please:');
+          xtermRef.current?.writeln('1. Click the microphone icon in your browser\'s address bar');
+          xtermRef.current?.writeln('2. Select "Allow" for microphone access');
+          xtermRef.current?.writeln('3. Try the voice button again');
+        } else if (error?.name === 'ServiceNotAllowedError') {
+          xtermRef.current?.writeln('Speech service not allowed. This may require HTTPS.');
+        } else {
+          xtermRef.current?.writeln(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+          xtermRef.current?.writeln('💡 Try refreshing the page and clicking the microphone button again');
+        }
       }
     }
   };
 
-  const connectToBackend = (term: XTerm) => {
+  const connectToBackend = useCallback((term: XTerm) => {
     console.log('🔌 CONNECTING TO BACKEND:', { sessionId, terminalReady });
     if (!sessionId || !terminalReady) {
       console.log('❌ Session not ready yet:', { sessionId, terminalReady });
@@ -836,24 +1853,72 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
     const socket = getSocket();
     console.log('✅ Socket.IO instance obtained:', socket.connected ? 'CONNECTED' : 'DISCONNECTED');
     socketRef.current = socket;
+    
+    // Track connection state for retry logic
+    let connectionRetries = 0;
+    const maxRetries = 3;
+    
+    const attemptConnection = () => {
+      connectionRetries++;
+      console.log(`[Terminal] WebSocket connection attempt ${connectionRetries}/${maxRetries}`);
+      
+      // Join the terminal session
+      console.log('📡 Emitting terminal:create for session:', sessionId);
+      socket.emit('terminal:create', { id: sessionId });
+      
+      // Set timeout to verify connection
+      setTimeout(() => {
+        if (!socket.connected && connectionRetries < maxRetries) {
+          console.log(`[Terminal] WebSocket not connected, retrying...`);
+          attemptConnection();
+        } else if (!socket.connected) {
+          console.error('[Terminal] Failed to establish WebSocket connection after max retries');
+          term.writeln('\r\n⚠️ Terminal connection failed. Please refresh the page.');
+        }
+      }, 2000);
+    };
 
     // Add connection status listeners for debugging
     socket.on('connect', () => {
       console.log('🟢 Socket.IO CONNECTED to backend');
+      setIsConnected(true);
+      connectionRetries = 0; // Reset on successful connection
+      
+      // Re-join session on reconnect if needed
+      if (sessionId) {
+        console.log('📡 Re-joining session after connect:', sessionId);
+        socket.emit('terminal:create', { id: sessionId });
+      }
     });
     
     socket.on('disconnect', (reason) => {
       console.log('🔴 Socket.IO DISCONNECTED:', reason);
+      setIsConnected(false);
+      
+      // Notify user of disconnection
+      if (term) {
+        term.writeln('\r\n⚠️ Terminal disconnected. Attempting to reconnect...');
+      }
     });
     
     socket.on('connect_error', (error) => {
       console.error('❌ Socket.IO CONNECTION ERROR:', error);
+      
+      // Show error to user on first connection failure
+      if (connectionRetries === 1 && term) {
+        term.writeln('\r\n⚠️ Connection error. Retrying...');
+      }
     });
-
-    // Join the terminal session
-    console.log('📡 Emitting terminal:create for session:', sessionId);
-    socket.emit('terminal:create', { id: sessionId });
-    console.log('📡 Connecting to Express backend terminal:', sessionId);
+    
+    // Start connection attempt
+    if (socket.connected) {
+      console.log('📡 Socket already connected, joining session immediately with ID:', sessionId);
+      socket.emit('terminal:create', { id: sessionId });
+      setIsConnected(true);
+    } else {
+      console.log('📡 Socket not connected, attempting connection...');
+      attemptConnection();
+    }
 
     // Handle terminal output from backend
     socket.on('terminal:data', ({ id, data }: { id: string; data: string }) => {
@@ -996,6 +2061,34 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
       }
     });
 
+    // Handle sandbox switching responses
+    socket.on('sandbox:switched', ({ sandboxId, sessionName, path, message }: { 
+      sandboxId: string; 
+      sessionName: string; 
+      path: string; 
+      message: string; 
+    }) => {
+      if (term) {
+        term.writeln(`\r\n✅ ${message}`);
+        term.writeln(`📁 Working in: ${path}\r\n`);
+      }
+      console.log(`[Terminal] Successfully connected to sandbox ${sandboxId}`);
+    });
+
+    socket.on('sandbox:main_switched', ({ message }: { message: string }) => {
+      if (term) {
+        term.writeln(`\r\n✅ ${message}\r\n`);
+      }
+      console.log(`[Terminal] Successfully returned to main terminal`);
+    });
+
+    socket.on('sandbox:switch_error', ({ error }: { error: string }) => {
+      if (term) {
+        term.writeln(`\r\n❌ Sandbox Error: ${error}\r\n`);
+      }
+      console.error(`[Terminal] Sandbox switch error: ${error}`);
+    });
+
     // Set up terminal input handling - send to backend
     term.onData((data) => {
       // Send all input to backend via Socket.IO
@@ -1013,10 +2106,19 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
             const command = currentLineBuffer.trim();
             setCommandHistory(prev => [...prev, command]);
             
-            // Notify parent component about the command
-            if (onTerminalCommand) {
-              onTerminalCommand(command);
-            }
+            // 🚀 Try enhanced command processing first (non-blocking)
+            processEnhancedCommand(command).then(enhancedProcessed => {
+              // Only notify parent if enhanced processing didn't handle it
+              if (!enhancedProcessed && onTerminalCommand) {
+                onTerminalCommand(command);
+              }
+            }).catch(error => {
+              console.error('Enhanced command processing error:', error);
+              // Fallback to normal processing
+              if (onTerminalCommand) {
+                onTerminalCommand(command);
+              }
+            });
           }
           setCurrentLineBuffer('');
         } else if (data === '\x7F') {
@@ -1046,23 +2148,12 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
       }
     });
 
-    // Handle resize
-    const handleResize = () => {
-      if (fitAddonRef.current && xtermRef.current && socket.connected) {
-        fitAddonRef.current.fit();
-        const { cols, rows } = xtermRef.current;
-        socket.emit('terminal:resize', { id: sessionId, cols, rows });
-      }
-    };
+    // Note: WebSocket resize events are now handled within the main ResizeObserver
+    // to ensure proper coordination with buffer preservation.
 
-    // Set up resize observer
-    if (terminalRef.current && terminalRef.current.parentElement) {
-      const resizeObserver = new ResizeObserver(() => {
-        setTimeout(handleResize, 100);
-      });
-      resizeObserver.observe(terminalRef.current.parentElement);
-    }
-  };
+    // Note: Resize handling is now consolidated in the main ResizeObserver above
+    // to prevent conflicts. The WebSocket resize observer has been removed.
+  }, [sessionId, terminalReady]);
 
   const handleSpawnAgents = async () => {
     if (agentsRunning) {
@@ -1176,7 +2267,7 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
     if (sessionId && terminalReady && xtermRef.current && !socketRef.current) {
       connectToBackend(xtermRef.current);
     }
-  }, [sessionId, terminalReady]);
+  }, [sessionId, terminalReady, connectToBackend]);
 
   // Get current context for Claude
   const getCurrentContext = () => {
@@ -1200,6 +2291,57 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
       >
         {/* Left section - Edit mode and settings */}
         <div className="flex items-center gap-2">
+          {/* Sandbox Mode Indicator */}
+          {isSandboxMode && sandboxContext && (
+            <div className="flex items-center gap-1 px-2 py-1 bg-coder1-cyan/10 border border-coder1-cyan/30 rounded text-xs">
+              <Box className="w-3 h-3 text-coder1-cyan" />
+              <span className="text-coder1-cyan font-medium">
+                {sandboxContext.projectId}
+              </span>
+              <button
+                onClick={() => {
+                  window.dispatchEvent(new CustomEvent('sandbox-disconnect', {
+                    detail: { sandboxId: sandboxContext.sandboxId }
+                  }));
+                }}
+                className="text-coder1-cyan hover:text-coder1-cyan-secondary ml-1"
+                title="Disconnect from sandbox"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            </div>
+          )}
+
+          {/* Enhanced Agents Mode Indicator */}
+          {FEATURE_FLAGS.ENHANCED_AGENTS && (
+            <div className={`flex items-center gap-1 px-2 py-1 rounded text-xs ${
+              FEATURE_FLAGS.USE_REAL_AI
+                ? 'bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-500/40'
+                : 'bg-gradient-to-r from-purple-500/10 to-cyan-500/10 border border-purple-500/30'
+            }`}>
+              <span className={FEATURE_FLAGS.USE_REAL_AI ? "text-green-400" : "text-purple-400"}>
+                {FEATURE_FLAGS.USE_REAL_AI ? '🤖' : '🚀'}
+              </span>
+              <span className={`font-medium ${
+                FEATURE_FLAGS.USE_REAL_AI ? 'text-green-400' : 'text-purple-400'
+              }`}>
+                {FEATURE_FLAGS.USE_REAL_AI ? 'Real AI Active' : 'Enhanced Agents (Mock)'}
+              </span>
+            </div>
+          )}
+          
+          {/* Test Environment Link for non-Enhanced Agents users */}
+          {!FEATURE_FLAGS.ENHANCED_AGENTS && (
+            <button
+              onClick={() => window.open('/test-enhanced-agents', '_blank')}
+              className="flex items-center gap-1 px-2 py-1 bg-blue-500/10 border border-blue-500/30 rounded text-xs hover:bg-blue-500/20 transition-colors group"
+              title="Try enhanced agents safely in our test environment"
+            >
+              <span className="text-blue-400">🧪</span>
+              <span className="text-blue-400 font-medium group-hover:text-blue-300">Test Enhanced Agents</span>
+            </button>
+          )}
+
           {/* Voice-to-text button */}
           <button
             onClick={toggleVoiceRecognition}

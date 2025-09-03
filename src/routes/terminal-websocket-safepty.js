@@ -14,9 +14,9 @@ class SafePTYManager {
     constructor() {
         this.sessions = new Map();
         this.sessionCount = 0;
-        this.maxSessions = 10; // Increased max sessions
+        this.maxSessions = 50; // Increased to 50 sessions for development
         this.lastSessionCreation = 0;
-        this.minSessionInterval = 50; // Reduced to 50ms rate limit for auto-creation
+        this.minSessionInterval = 10; // Reduced to 10ms to prevent blocking initial terminal creation
         this.telemetry = {
             sessionsCreated: 0,
             sessionsDestroyed: 0,
@@ -79,7 +79,10 @@ class SafePTYManager {
             console.log(`[SafePTYManager] Creating session: ${sessionId}`);
             console.log(`[SafePTYManager] Shell: ${shell}, CWD: ${cwd}`);
             
-            const ptyProcess = pty.spawn(shell, ['-l'], {
+            // Fix shell arguments - use empty array for bash to prevent immediate exit
+            const shellArgs = process.platform === 'win32' ? [] : [];
+            
+            const ptyProcess = pty.spawn(shell, shellArgs, {
                 name: 'xterm-256color',
                 cols: options.cols || 80,
                 rows: options.rows || 24,
@@ -317,7 +320,32 @@ function setupTerminalWebSocket(io) {
         // Handle terminal creation requests
         socket.on('terminal:create', (options = {}) => {
             try {
-                const session = safeptyManager.createSession(socket.id, options);
+                const requestedSessionId = options.id;
+                
+                // Check if session already exists
+                if (requestedSessionId && safeptyManager.getSession(requestedSessionId)) {
+                    const existingSession = safeptyManager.getSession(requestedSessionId);
+                    console.log(`[SafePTYManager] Session ${requestedSessionId} already exists, reusing existing session`);
+                    
+                    // Update socket association
+                    existingSession.socketId = socket.id;
+                    
+                    // Send confirmation with existing session
+                    socket.emit('terminal:created', {
+                        id: existingSession.id,
+                        pid: existingSession.process.pid
+                    });
+                    return;
+                }
+                
+                // Pass the frontend's requested session ID through options
+                const sessionOptions = {
+                    ...options,
+                    id: requestedSessionId // Frontend session ID will be preserved
+                };
+                console.log(`[SafePTYManager] Creating new terminal session with requested ID: ${requestedSessionId || 'auto-generated'}`);
+                
+                const session = safeptyManager.createSession(socket.id, sessionOptions);
                 
                 // Send success response
                 socket.emit('terminal:created', {
@@ -346,31 +374,40 @@ function setupTerminalWebSocket(io) {
                     socket.emit('terminal:data', outputData);
                     socket.emit('terminal:output', outputData);
                     
-                    // ERROR DOCTOR: Detect errors in terminal output
-                    const errorPatterns = [
-                        /error:/i,
-                        /exception:/i,
-                        /cannot find module/i,
-                        /unexpected token/i,
-                        /reference.*?is not defined/i,
-                        /type.*?error/i,
-                        /permission denied/i,
-                        /enoent/i,
-                        /address already in use/i,
-                        /command not found/i,
-                        /failed to/i,
-                        /syntax.*?error/i
+                    // ERROR DOCTOR: Detect CRITICAL errors only (made more conservative)
+                    const criticalErrorPatterns = [
+                        /Error: EADDRINUSE.*address already in use/i,
+                        /CRITICAL ERROR/i,
+                        /FATAL ERROR/i,
+                        /Uncaught Exception/i,
+                        /Cannot find module.*at require/i,  // More specific module errors
+                        /SyntaxError.*Unexpected token/i    // More specific syntax errors
                     ];
                     
-                    // Check if data contains error patterns (but exclude Claude's normal output)
-                    const isClaudeNormalOutput = data.includes('Saving session') || 
-                                               data.includes('Claude Code CLI') || 
-                                               data.includes('interrupt)') ||
-                                               data.includes('Germinating') ||
-                                               data.includes('Smooshing');
+                    // Expanded exclusions for normal output that shouldn't trigger Error Doctor
+                    const isNormalOutput = data.includes('Saving session') || 
+                                         data.includes('Claude Code CLI') || 
+                                         data.includes('interrupt)') ||
+                                         data.includes('Germinating') ||
+                                         data.includes('Smooshing') ||
+                                         data.includes('Failed to load agents') ||  // Normal startup message
+                                         data.includes('[38;2;') ||                  // ANSI color codes (normal terminal output)
+                                         data.includes('⏺') ||                       // Claude symbols
+                                         data.includes('Error Doctor') ||            // Don't analyze Error Doctor logs
+                                         data.length < 10 ||                         // Very short outputs are likely not errors
+                                         /^\s*[⏺✅❌🔍🎯]\s/.test(data);            // Emoji prefixed logs
                     
-                    if (!isClaudeNormalOutput && errorPatterns.some(pattern => pattern.test(data))) {
-                        console.log('🔍 Error Doctor: Error detected in terminal output');
+                    // Rate limit error detection to prevent spam (max 1 per 30 seconds per session)
+                    const now = Date.now();
+                    const lastErrorCheck = session.lastErrorDoctorCheck || 0;
+                    const errorCheckCooldown = 30000; // 30 seconds
+                    
+                    if (!isNormalOutput && 
+                        criticalErrorPatterns.some(pattern => pattern.test(data)) &&
+                        (now - lastErrorCheck) > errorCheckCooldown) {
+                        
+                        console.log('🔍 Error Doctor: Critical error detected in terminal output');
+                        session.lastErrorDoctorCheck = now;
                         
                         // Trigger error analysis (non-blocking)
                         setTimeout(async () => {
@@ -432,7 +469,13 @@ function setupTerminalWebSocket(io) {
                     if (data.includes('Claude Code CLI') || data.includes('⏺')) {
                         session.claudeActive = true;
                         session.claudePromptDetected = false;
-                        console.log('[Supervision] Claude detected as active process');
+                        
+                        // Rate limit supervision logging to prevent spam
+                        const now = Date.now();
+                        if (!session.lastSupervisionLog || now - session.lastSupervisionLog > 5000) { // 5 second rate limit
+                            console.log('[Supervision] Claude detected as active process');
+                            session.lastSupervisionLog = now;
+                        }
                     }
                     
                     // Capture Claude output for dashboard analytics
@@ -634,8 +677,12 @@ function setupTerminalWebSocket(io) {
                 session.socketId = socket.id;
                 session.supervisionAdapter = null;
                 
-                // Handle terminal exit
-                session.process.onExit((exitCode, signal) => {
+                // Handle terminal exit - onExit receives an object with exitCode and signal
+                session.process.onExit((exitInfo) => {
+                    // Extract exitCode and signal from the exitInfo object
+                    const exitCode = exitInfo?.exitCode ?? exitInfo;
+                    const signal = exitInfo?.signal ?? null;
+                    
                     console.log(`[SafePTYManager] Session ${session.id} exited: code=${exitCode}, signal=${signal}`);
                     
                     // Clean up ClaudeInputHandler for this session
@@ -661,6 +708,12 @@ function setupTerminalWebSocket(io) {
         const handleTerminalInput = async ({ id, data, thinkingMode }) => {
             console.log('🔵 [Backend] terminal:data received:', { id, data: data?.substring(0, 50), thinkingMode });
             const session = safeptyManager.getSession(id);
+            
+            // DEBUG: Log session lookup details
+            if (!session) {
+                console.log(`❌ [DEBUG] Session ${id} not found. Available sessions:`, Array.from(safeptyManager.sessions.keys()));
+                console.log(`❌ [DEBUG] Socket ID: ${socket.id}`);
+            }
             
             // Update activity timestamp on any user input
             if (session) {
@@ -1914,6 +1967,126 @@ function setupTerminalWebSocket(io) {
                 socket.emit('conversation:error', { 
                     error: 'Failed to export conversation', 
                     sessionId 
+                });
+            }
+        });
+        
+        // Handle sandbox terminal switching events
+        socket.on('switch_to_sandbox', async ({ sandboxId, sessionName }) => {
+            console.log(`[SafePTYManager] Switching terminal to sandbox: ${sandboxId}`);
+            
+            try {
+                // Get the current terminal session for this socket
+                let currentSession = null;
+                for (const [id, session] of safeptyManager.sessions) {
+                    if (session.socketId === socket.id) {
+                        currentSession = session;
+                        break;
+                    }
+                }
+                
+                if (!currentSession) {
+                    socket.emit('sandbox:switch_error', { 
+                        error: 'No active terminal session found' 
+                    });
+                    return;
+                }
+                
+                // Import enhanced tmux service
+                const { enhancedTmuxService } = require('../services/enhanced-tmux-service');
+                
+                // Get sandbox details
+                const sandbox = await enhancedTmuxService.getSandbox(sandboxId);
+                if (!sandbox) {
+                    socket.emit('sandbox:switch_error', { 
+                        error: `Sandbox ${sandboxId} not found` 
+                    });
+                    return;
+                }
+                
+                // Switch terminal to sandbox tmux session by sending tmux attach command
+                const attachCommand = `tmux attach-session -t "${sessionName}"\n`;
+                
+                // Send the attach command to the current terminal
+                if (currentSession.process) {
+                    currentSession.process.write(attachCommand);
+                    
+                    // Mark session as sandbox mode
+                    currentSession.sandboxMode = true;
+                    currentSession.sandboxId = sandboxId;
+                    currentSession.sandboxPath = sandbox.path;
+                    currentSession.originalWorkDir = process.cwd();
+                    
+                    // Send success response
+                    socket.emit('sandbox:switched', { 
+                        sandboxId,
+                        sessionName,
+                        path: sandbox.path,
+                        message: `Connected to sandbox ${sandboxId}` 
+                    });
+                    
+                    console.log(`[SafePTYManager] Successfully switched to sandbox ${sandboxId}`);
+                } else {
+                    socket.emit('sandbox:switch_error', { 
+                        error: 'Terminal process not available' 
+                    });
+                }
+                
+            } catch (error) {
+                console.error(`[SafePTYManager] Error switching to sandbox:`, error);
+                socket.emit('sandbox:switch_error', { 
+                    error: `Failed to switch to sandbox: ${error.message}` 
+                });
+            }
+        });
+        
+        socket.on('switch_to_main', async () => {
+            console.log(`[SafePTYManager] Switching terminal back to main`);
+            
+            try {
+                // Get the current terminal session for this socket
+                let currentSession = null;
+                for (const [id, session] of safeptyManager.sessions) {
+                    if (session.socketId === socket.id) {
+                        currentSession = session;
+                        break;
+                    }
+                }
+                
+                if (!currentSession) {
+                    socket.emit('sandbox:switch_error', { 
+                        error: 'No active terminal session found' 
+                    });
+                    return;
+                }
+                
+                // Exit from tmux session (detach)
+                const detachCommand = 'exit\n';
+                
+                if (currentSession.process) {
+                    currentSession.process.write(detachCommand);
+                    
+                    // Clear sandbox mode
+                    currentSession.sandboxMode = false;
+                    currentSession.sandboxId = null;
+                    currentSession.sandboxPath = null;
+                    
+                    // Send success response
+                    socket.emit('sandbox:main_switched', { 
+                        message: 'Disconnected from sandbox and returned to main terminal' 
+                    });
+                    
+                    console.log(`[SafePTYManager] Successfully switched back to main terminal`);
+                } else {
+                    socket.emit('sandbox:switch_error', { 
+                        error: 'Terminal process not available' 
+                    });
+                }
+                
+            } catch (error) {
+                console.error(`[SafePTYManager] Error switching to main:`, error);
+                socket.emit('sandbox:switch_error', { 
+                    error: `Failed to switch to main: ${error.message}` 
                 });
             }
         });
