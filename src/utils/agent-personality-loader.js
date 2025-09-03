@@ -306,7 +306,7 @@ class AgentPersonalityLoader {
         
         // Add session continuity instructions if we have context
         if (continuityContext.continuityScore > 0.3) {
-            instructions += `\n\nSESSION CONTINUITY INSTRUCTIONS:`;
+            instructions += '\n\nSESSION CONTINUITY INSTRUCTIONS:';
             instructions += `\n- You are continuing from a previous session (continuity score: ${continuityContext.continuityScore})`;
             
             if (continuityContext.previousSessions.length > 0) {
@@ -323,7 +323,7 @@ class AgentPersonalityLoader {
             }
             
             if (continuityContext.collaboratorWork.length > 0) {
-                instructions += `\n- Collaborator updates since your last session:`;
+                instructions += '\n- Collaborator updates since your last session:';
                 for (const update of continuityContext.collaboratorWork.slice(0, 3)) {
                     instructions += `\n  - ${update.agentId}: ${update.work.workCompleted.slice(0, 2).join(', ')}`;
                     if (update.relevantNotes) {
@@ -333,15 +333,15 @@ class AgentPersonalityLoader {
             }
             
             if (continuityContext.suggestedActions.length > 0) {
-                instructions += `\n- Suggested actions for this session:`;
+                instructions += '\n- Suggested actions for this session:';
                 for (const action of continuityContext.suggestedActions.slice(0, 3)) {
                     instructions += `\n  - [${action.priority}] ${action.action}`;
                 }
             }
             
-            instructions += `\n\nAlways acknowledge the continuity context in your responses and build upon previous work.`;
+            instructions += '\n\nAlways acknowledge the continuity context in your responses and build upon previous work.';
         } else {
-            instructions += `\n\nSESSION CONTINUITY: Starting fresh - no significant previous context available.`;
+            instructions += '\n\nSESSION CONTINUITY: Starting fresh - no significant previous context available.';
         }
         
         return instructions;

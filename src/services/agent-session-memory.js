@@ -196,12 +196,12 @@ class AgentSessionMemory extends EventEmitter {
      * Generate resumption prompt for agent
      */
     generateResumptionPrompt(agentId, agentHistory, collaboratorUpdates, projectState) {
-        let prompt = `\n=== SESSION RESUMPTION CONTEXT ===\n\n`;
+        let prompt = '\n=== SESSION RESUMPTION CONTEXT ===\n\n';
 
         // Add agent's previous work
         if (agentHistory.length > 0) {
             const lastSession = agentHistory[0];
-            prompt += `YOUR PREVIOUS WORK:\n`;
+            prompt += 'YOUR PREVIOUS WORK:\n';
             prompt += `- Last session: ${new Date(lastSession.timestamp).toLocaleString()}\n`;
             prompt += `- Work completed: ${lastSession.work.workCompleted.join(', ')}\n`;
             prompt += `- Current state: ${lastSession.work.currentState}\n`;
@@ -210,34 +210,34 @@ class AgentSessionMemory extends EventEmitter {
             if (lastSession.work.blockers.length > 0) {
                 prompt += `- Previous blockers: ${lastSession.work.blockers.join(', ')}\n`;
             }
-            prompt += `\n`;
+            prompt += '\n';
         }
 
         // Add collaborator updates
         if (collaboratorUpdates.length > 0) {
-            prompt += `COLLABORATOR UPDATES (since your last session):\n`;
+            prompt += 'COLLABORATOR UPDATES (since your last session):\n';
             for (const update of collaboratorUpdates.slice(0, 3)) {
                 prompt += `- ${update.agentId}: ${update.work.workCompleted.join(', ')}\n`;
                 if (update.relevantNotes) {
                     prompt += `  → Note for you: ${update.relevantNotes}\n`;
                 }
             }
-            prompt += `\n`;
+            prompt += '\n';
         }
 
         // Add project state
         if (projectState.phase) {
-            prompt += `PROJECT CONTEXT:\n`;
+            prompt += 'PROJECT CONTEXT:\n';
             prompt += `- Current phase: ${projectState.phase}\n`;
             prompt += `- Overall completion: ${projectState.completionLevel}%\n`;
             if (projectState.lastActiveFile) {
                 prompt += `- Last active file: ${projectState.lastActiveFile}\n`;
             }
-            prompt += `\n`;
+            prompt += '\n';
         }
 
-        prompt += `Continue from where you left off, taking into account the collaborator updates above.\n`;
-        prompt += `=== END RESUMPTION CONTEXT ===\n`;
+        prompt += 'Continue from where you left off, taking into account the collaborator updates above.\n';
+        prompt += '=== END RESUMPTION CONTEXT ===\n';
 
         return prompt;
     }
@@ -486,7 +486,7 @@ class AgentSessionMemory extends EventEmitter {
             previousSessions: [],
             collaboratorWork: [],
             projectState: { phase: 'development', completionLevel: 0 },
-            resumptionPrompt: `Starting fresh session. No previous context available.`,
+            resumptionPrompt: 'Starting fresh session. No previous context available.',
             suggestedActions: [
                 {
                     type: 'fresh_start',

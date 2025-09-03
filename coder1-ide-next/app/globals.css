@@ -31,6 +31,18 @@
   --text-primary: #ffffff;
   --text-secondary: #a0a0a0;
   --text-muted: #6b7280;
+  
+  /* Z-Index Design System */
+  --z-base: 1;
+  --z-elevated: 10;
+  --z-dropdown: 1000;
+  --z-tooltip: 1100;
+  --z-sticky: 1200;
+  --z-overlay: 1300;
+  --z-modal-backdrop: 1400;
+  --z-modal-content: 1410;
+  --z-toast: 1500;
+  --z-debug: 9999;
 }
 
 * {
@@ -143,4 +155,20 @@ body {
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   animation: text-shimmer 3s linear infinite;
+}
+
+/* Hide scrollbars for overflow containers */
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Emergency recovery debug styles */
+.debug-ui-issue {
+  outline: 2px solid red !important;
+  background: rgba(255, 0, 0, 0.1) !important;
 }

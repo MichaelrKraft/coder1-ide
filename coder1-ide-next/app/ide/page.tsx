@@ -14,16 +14,20 @@ import { EnhancedSupervisionProvider } from '@/contexts/EnhancedSupervisionConte
 import AboutModal from '@/components/AboutModal';
 import KeyboardShortcutsModal from '@/components/KeyboardShortcutsModal';
 import SettingsModal from '@/components/SettingsModal';
-import type { IDEFile } from '@/types';
+import EnhancedAgentsOnboarding from '@/components/onboarding/EnhancedAgentsOnboarding';
+import type { IDEFile, FileType } from '@/types';
+import { logger } from '@/lib/logger';
 
 // Dynamic imports for heavy components with optimized lazy loading
 const MonacoEditor = dynamic(() => import('@/components/editor/LazyMonacoEditor'), {
   ssr: false
 });
 
-const Terminal = dynamic(() => import('@/components/terminal/LazyTerminal'), {
+const Terminal = dynamic(() => import('@/components/terminal/Terminal'), {
   ssr: false,
-  loading: () => <div className="h-full flex items-center justify-center">Loading Terminal...</div>
+  loading: () => <div className="h-full flex items-center justify-center">
+    <div className="text-text-muted">Initializing Terminal...</div>
+  </div>
 });
 
 export default function IDEPage() {
@@ -42,11 +46,90 @@ export default function IDEPage() {
   const [showAboutModal, setShowAboutModal] = useState(false);
   const [showKeyboardShortcutsModal, setShowKeyboardShortcutsModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
   
   // Session tracking for Session Summary feature
   const [openFiles, setOpenFiles] = useState<IDEFile[]>([]);
   const [terminalHistory, setTerminalHistory] = useState<string>('');
   const [terminalCommands, setTerminalCommands] = useState<string[]>([]);
+
+  // Add swipe navigation prevention for MacBook trackpad
+  React.useEffect(() => {
+    let isActive = false;
+    
+    // Prevent horizontal swipe navigation
+    const preventSwipeNavigation = (e: WheelEvent) => {
+      // Check if it's a horizontal swipe (trackpad gesture)
+      if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) {
+        e.preventDefault();
+        return false;
+      }
+    };
+    
+    // Prevent touch-based swipe navigation
+    const preventTouchSwipe = (e: TouchEvent) => {
+      // If more than one finger, likely a gesture
+      if (e.touches.length > 1) {
+        e.preventDefault();
+        return false;
+      }
+    };
+    
+    // Add warning before leaving page if terminal is active
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (showTerminal && terminalHistory.length > 0) {
+        const message = 'You have an active terminal session. Are you sure you want to leave?';
+        e.preventDefault();
+        e.returnValue = message;
+        return message;
+      }
+    };
+    
+    // Activate protection
+    const activateProtection = () => {
+      if (!isActive) {
+        window.addEventListener('wheel', preventSwipeNavigation, { passive: false });
+        window.addEventListener('touchstart', preventTouchSwipe, { passive: false });
+        window.addEventListener('beforeunload', handleBeforeUnload);
+        isActive = true;
+        logger.debug('🛡️ Swipe navigation protection activated');
+      }
+    };
+    
+    // Activate immediately
+    activateProtection();
+    
+    // Show toast notification that protection is active (only once on mount)
+    setToast('🛡️ Trackpad swipe protection enabled');
+    
+    return () => {
+      window.removeEventListener('wheel', preventSwipeNavigation);
+      window.removeEventListener('touchstart', preventTouchSwipe);
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      isActive = false;
+    };
+  }, [showTerminal, terminalHistory.length]);
+
+  // Check for first-time users and show onboarding
+  React.useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const hasSeenOnboarding = localStorage.getItem('coder1-onboarding-seen');
+      if (!hasSeenOnboarding) {
+        // Show onboarding after a short delay to let the page load
+        const timer = setTimeout(() => {
+          setShowOnboarding(true);
+        }, 1500);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, []);
+
+  const handleOnboardingClose = () => {
+    setShowOnboarding(false);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('coder1-onboarding-seen', 'true');
+    }
+  };
 
   // Add keyboard shortcuts
   React.useEffect(() => {
@@ -115,7 +198,7 @@ export default function IDEPage() {
 
   // Menu handlers
   const handleNewFile = () => {
-    console.log('New file');
+    logger.debug('New file');
     const newFileName = 'untitled.tsx';
     setActiveFile(newFileName);
     setEditorContent('// New file\n');
@@ -142,17 +225,122 @@ export default function IDEPage() {
   };
 
   const handleOpenFile = () => {
-    console.log('Open file dialog');
-    // Would open file dialog
-    showToast('Open file dialog (not implemented)');
+    logger.debug('Opening file dialog');
+    
+    // Create a hidden file input element
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.accept = '.txt,.js,.jsx,.ts,.tsx,.css,.html,.json,.md,.py,.java,.cpp,.c,.h,.php,.rb,.go,.rs,.vue,.svelte,.xml,.yaml,.yml';
+    fileInput.style.display = 'none';
+    
+    // Handle file selection
+    fileInput.onchange = async (event) => {
+      const file = (event.target as HTMLInputElement).files?.[0];
+      if (file) {
+        try {
+          // Read file content
+          const content = await file.text();
+          
+          // Determine file language based on extension
+          const extension = file.name.split('.').pop()?.toLowerCase();
+          let language = 'text';
+          
+          const languageMap: { [key: string]: string } = {
+            'js': 'javascript',
+            'jsx': 'javascript',
+            'ts': 'typescript',
+            'tsx': 'typescript',
+            'css': 'css',
+            'html': 'html',
+            'json': 'json',
+            'md': 'markdown',
+            'py': 'python',
+            'java': 'java',
+            'cpp': 'cpp',
+            'c': 'c',
+            'h': 'c',
+            'php': 'php',
+            'rb': 'ruby',
+            'go': 'go',
+            'rs': 'rust',
+            'vue': 'vue',
+            'xml': 'xml',
+            'yaml': 'yaml',
+            'yml': 'yaml'
+          };
+          
+          if (extension && languageMap[extension]) {
+            language = languageMap[extension];
+          }
+          
+          // Update editor state
+          setActiveFile(file.name);
+          setEditorContent(content);
+          setShowHero(false); // Hide hero when file is opened
+          
+          // Map language to FileType
+          const getFileType = (lang: string): FileType => {
+            const typeMap: Record<string, FileType> = {
+              'javascript': 'javascript',
+              'typescript': 'typescript',
+              'json': 'json',
+              'css': 'css',
+              'html': 'html',
+              'markdown': 'markdown',
+              'text': 'text'
+            };
+            return typeMap[lang] || 'unknown';
+          };
+          
+          // Create new IDEFile object
+          const newFile: IDEFile = {
+            id: `file_${Date.now()}`,
+            path: file.name,
+            name: file.name,
+            content: content,
+            isDirty: false,
+            isOpen: true,
+            language: language,
+            type: getFileType(language),
+            lastModified: new Date(file.lastModified)
+          };
+          
+          // Add to openFiles if not already there
+          setOpenFiles(prev => {
+            const existing = prev.find(f => f.path === file.name);
+            if (existing) {
+              // Update existing file
+              return prev.map(f => f.path === file.name ? newFile : f);
+            } else {
+              // Add new file
+              return [...prev, newFile];
+            }
+          });
+          
+          showToast(`Opened ${file.name} (${(file.size / 1024).toFixed(1)}KB)`);
+          logger.debug('File opened successfully:', file.name);
+          
+        } catch (error) {
+          logger.error('Error reading file:', error);
+          showToast('Error reading file');
+        }
+      }
+      
+      // Cleanup
+      document.body.removeChild(fileInput);
+    };
+    
+    // Add to DOM and trigger click
+    document.body.appendChild(fileInput);
+    fileInput.click();
   };
 
   const handleSave = () => {
-    console.log('Save file:', activeFile);
+    logger.debug('Save file:', activeFile);
     if (activeFile) {
       // Save to localStorage for demo
       localStorage.setItem(`file_${activeFile}`, editorContent);
-      console.log('File saved to localStorage');
+      logger.debug('File saved to localStorage');
       showToast(`Saved ${activeFile}`);
     } else {
       showToast('No file to save');
@@ -164,7 +352,7 @@ export default function IDEPage() {
     if (fileName) {
       setActiveFile(fileName);
       localStorage.setItem(`file_${fileName}`, editorContent);
-      console.log('File saved as:', fileName);
+      logger.debug('File saved as:', fileName);
       showToast(`Saved as ${fileName}`);
     }
   };
@@ -191,7 +379,7 @@ export default function IDEPage() {
   
   const handleStop = () => {
     // In a real implementation, this would stop running processes
-    console.log('Stopping execution...');
+    logger.debug('Stopping execution...');
     showToast('Execution stopped');
   };
   
@@ -229,7 +417,7 @@ export default function IDEPage() {
     try {
       const text = await navigator.clipboard.readText();
       // In a real editor, we would insert the text at cursor position
-      console.log('Pasting:', text);
+      logger.debug('Pasting:', text);
       showToast('Pasted from clipboard');
     } catch (err) {
       showToast('Failed to paste - clipboard access denied');
@@ -253,17 +441,17 @@ export default function IDEPage() {
 
   const handleToggleOutput = () => {
     setShowOutput(!showOutput);
-    console.log('Toggle output panel');
+    logger.debug('Toggle output panel');
   };
 
   const handleRunCode = () => {
-    console.log('Running code:', activeFile);
+    logger.debug('Running code:', activeFile);
     // Would execute code in terminal
     showToast(activeFile ? `Running ${activeFile}...` : 'No file to run');
   };
 
   const handleDebug = () => {
-    console.log('Debug mode:', activeFile);
+    logger.debug('Debug mode:', activeFile);
     showToast(activeFile ? `Debugging ${activeFile}...` : 'No file to debug');
   };
 
@@ -286,12 +474,12 @@ export default function IDEPage() {
 
   const handleFind = () => {
     // Trigger Monaco editor find
-    console.log('Find in editor');
+    logger.debug('Find in editor');
   };
 
   const handleReplace = () => {
     // Trigger Monaco editor replace
-    console.log('Replace in editor');
+    logger.debug('Replace in editor');
   };
 
   // Handle file selection from explorer
@@ -490,6 +678,11 @@ export default function IDEPage() {
         onClose={() => setShowSettingsModal(false)}
         fontSize={fontSize}
         onFontSizeChange={setFontSize}
+      />
+      
+      <EnhancedAgentsOnboarding
+        isVisible={showOnboarding}
+        onClose={handleOnboardingClose}
       />
       </div>
     </EnhancedSupervisionProvider>

@@ -160,6 +160,12 @@ class AgentExecutionStore extends EventEmitter {
     
     // Update performance metrics
     async updateMetrics(execution) {
+        // Ensure metrics are initialized before updating
+        if (!this.metrics || !this.metrics.overall) {
+            // Silently skip update if metrics not yet initialized
+            return;
+        }
+        
         // Update overall metrics
         this.metrics.overall.totalExecutions++;
         

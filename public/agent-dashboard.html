@@ -387,135 +387,10 @@ Claude Agents: This is the OFFICIAL version - do not modify copies elsewhere
             font-size: 1.1rem;
         }
 
-        /* Task Queue Panel / Kanban Board */
+        /* Task Queue Panel */
         .task-queue {
             grid-column: 1;
             grid-row: 3;
-        }
-
-        /* Kanban Board Styles (Evolution Enhancement) */
-        .kanban-container {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 1rem;
-            height: 400px;
-            overflow-x: auto;
-        }
-
-        .kanban-column {
-            background: var(--glass-bg);
-            border: 1px solid var(--glass-border);
-            border-radius: 0.5rem;
-            display: flex;
-            flex-direction: column;
-            min-width: 250px;
-        }
-
-        .kanban-column-header {
-            padding: 0.75rem;
-            border-bottom: 1px solid var(--glass-border);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: var(--bg-tertiary);
-        }
-
-        .column-title {
-            font-weight: 600;
-            color: var(--text-primary);
-        }
-
-        .column-count {
-            background: var(--accent-primary);
-            color: white;
-            padding: 0.25rem 0.5rem;
-            border-radius: 1rem;
-            font-size: 0.75rem;
-            font-weight: 600;
-        }
-
-        .kanban-column-content {
-            flex: 1;
-            padding: 0.5rem;
-            overflow-y: auto;
-            min-height: 100px;
-        }
-
-        .kanban-column-content.drag-over {
-            background: rgba(139, 92, 246, 0.1);
-            border: 2px dashed var(--accent-primary);
-        }
-
-        .kanban-task {
-            background: var(--bg-secondary);
-            border: 1px solid var(--glass-border);
-            border-radius: 0.5rem;
-            padding: 0.75rem;
-            margin-bottom: 0.5rem;
-            cursor: move;
-            transition: all 0.3s ease;
-            position: relative;
-        }
-
-        .kanban-task:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
-            border-color: var(--accent-primary);
-        }
-
-        .kanban-task.dragging {
-            opacity: 0.5;
-            transform: rotate(5deg);
-        }
-
-        .kanban-task .task-content {
-            margin-left: 0.5rem;
-        }
-
-        .kanban-task .task-title {
-            color: var(--text-primary);
-            font-weight: 500;
-            margin-bottom: 0.5rem;
-        }
-
-        .kanban-task .task-meta {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 0.85rem;
-            color: var(--text-muted);
-        }
-
-        .kanban-task .task-agent {
-            display: flex;
-            align-items: center;
-            gap: 0.25rem;
-        }
-
-        .kanban-task .task-progress {
-            margin-top: 0.5rem;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .kanban-task .progress-bar {
-            flex: 1;
-            height: 4px;
-            background: var(--bg-tertiary);
-            border-radius: 2px;
-            overflow: hidden;
-        }
-
-        .kanban-task .progress-fill {
-            height: 100%;
-            background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));
-            transition: width 0.3s ease;
-        }
-
-        .kanban-task .progress-text {
-            font-size: 0.75rem;
-            color: var(--text-muted);
         }
 
         .task-item {
@@ -846,8 +721,6 @@ Claude Agents: This is the OFFICIAL version - do not modify copies elsewhere
             animation: pulse 2s infinite;
         }
     </style>
-    <!-- Socket.io for real-time task events from terminal -->
-    <script src="/socket.io/socket.io.js"></script>
 </head>
 <body>
     <!-- Header -->
@@ -1136,105 +1009,51 @@ Claude Agents: This is the OFFICIAL version - do not modify copies elsewhere
             </div>
         </div>
 
-        <!-- Kanban Task Board (Evolution Enhancement) -->
-        <div class="dashboard-card task-queue kanban-board">
+        <!-- Task Queue -->
+        <div class="dashboard-card task-queue">
             <div class="card-header">
                 <div class="card-title">
-                    <i class="fas fa-columns"></i>
-                    Kanban Task Board
+                    <i class="fas fa-tasks"></i>
+                    Task Queue
                 </div>
-                <div class="card-subtitle">Drag tasks between columns to update status</div>
-                <button onclick="addNewTask()" style="background: var(--accent-primary); color: white; border: none; padding: 0.5rem 1rem; border-radius: 0.5rem; cursor: pointer;">
-                    <i class="fas fa-plus"></i> New Task
-                </button>
+                <div class="card-subtitle">Pending and in-progress tasks</div>
             </div>
             <div class="card-content">
-                <div class="kanban-container" id="kanbanBoard">
-                    <!-- Backlog Column -->
-                    <div class="kanban-column" data-column="backlog">
-                        <div class="kanban-column-header">
-                            <span class="column-title">📋 Backlog</span>
-                            <span class="column-count">2</span>
+                <div class="task-list" id="taskList">
+                    <div class="task-item">
+                        <div class="task-priority priority-high"></div>
+                        <div class="task-details">
+                            <div class="task-title">Implement JWT authentication</div>
+                            <div class="task-agent">Assigned to: Backend Specialist</div>
                         </div>
-                        <div class="kanban-column-content" ondrop="handleDrop(event, 'backlog')" ondragover="handleDragOver(event)">
-                            <div class="kanban-task" draggable="true" ondragstart="handleDragStart(event)" data-task-id="task-3">
-                                <div class="task-priority priority-low"></div>
-                                <div class="task-content">
-                                    <div class="task-title">Optimize database queries</div>
-                                    <div class="task-meta">
-                                        <span class="task-agent">🤖 Performance Optimizer</span>
-                                        <span class="task-time">2h est</span>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="kanban-task" draggable="true" ondragstart="handleDragStart(event)" data-task-id="task-4">
-                                <div class="task-priority priority-medium"></div>
-                                <div class="task-content">
-                                    <div class="task-title">Write unit tests for auth module</div>
-                                    <div class="task-meta">
-                                        <span class="task-agent">🧪 Test Engineer</span>
-                                        <span class="task-time">3h est</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                        <div class="task-status">In Progress</div>
                     </div>
                     
-                    <!-- In Progress Column -->
-                    <div class="kanban-column" data-column="in-progress">
-                        <div class="kanban-column-header">
-                            <span class="column-title">🚀 In Progress</span>
-                            <span class="column-count">1</span>
+                    <div class="task-item">
+                        <div class="task-priority priority-medium"></div>
+                        <div class="task-details">
+                            <div class="task-title">Create user registration form</div>
+                            <div class="task-agent">Assigned to: Frontend Specialist</div>
                         </div>
-                        <div class="kanban-column-content" ondrop="handleDrop(event, 'in-progress')" ondragover="handleDragOver(event)">
-                            <div class="kanban-task" draggable="true" ondragstart="handleDragStart(event)" data-task-id="task-1">
-                                <div class="task-priority priority-high"></div>
-                                <div class="task-content">
-                                    <div class="task-title">Implement JWT authentication</div>
-                                    <div class="task-meta">
-                                        <span class="task-agent">⚙️ Backend Specialist</span>
-                                        <span class="task-time">4h est</span>
-                                    </div>
-                                    <div class="task-progress">
-                                        <div class="progress-bar">
-                                            <div class="progress-fill" style="width: 60%;"></div>
-                                        </div>
-                                        <span class="progress-text">60%</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                        <div class="task-status">Queued</div>
                     </div>
-                    
-                    <!-- Review Column -->
-                    <div class="kanban-column" data-column="review">
-                        <div class="kanban-column-header">
-                            <span class="column-title">👀 Review</span>
-                            <span class="column-count">1</span>
+
+                    <div class="task-item">
+                        <div class="task-priority priority-low"></div>
+                        <div class="task-details">
+                            <div class="task-title">Optimize database queries</div>
+                            <div class="task-agent">Assigned to: Performance Optimizer</div>
                         </div>
-                        <div class="kanban-column-content" ondrop="handleDrop(event, 'review')" ondragover="handleDragOver(event)">
-                            <div class="kanban-task" draggable="true" ondragstart="handleDragStart(event)" data-task-id="task-2">
-                                <div class="task-priority priority-medium"></div>
-                                <div class="task-content">
-                                    <div class="task-title">Create user registration form</div>
-                                    <div class="task-meta">
-                                        <span class="task-agent">🎨 Frontend Specialist</span>
-                                        <span class="task-time">2h est</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                        <div class="task-status">Waiting</div>
                     </div>
-                    
-                    <!-- Complete Column -->
-                    <div class="kanban-column" data-column="complete">
-                        <div class="kanban-column-header">
-                            <span class="column-title">✅ Complete</span>
-                            <span class="column-count">0</span>
+
+                    <div class="task-item">
+                        <div class="task-priority priority-medium"></div>
+                        <div class="task-details">
+                            <div class="task-title">Write unit tests for auth module</div>
+                            <div class="task-agent">Assigned to: Test Engineer</div>
                         </div>
-                        <div class="kanban-column-content" ondrop="handleDrop(event, 'complete')" ondragover="handleDragOver(event)">
-                            <!-- Completed tasks will appear here -->
-                        </div>
+                        <div class="task-status">Queued</div>
                     </div>
                 </div>
             </div>
@@ -1606,431 +1425,6 @@ Claude Agents: This is the OFFICIAL version - do not modify copies elsewhere
     <!-- Scripts -->
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <script>
-        // ==========================================
-        // KANBAN BOARD FUNCTIONALITY (Evolution Enhancement)
-        // ==========================================
-        
-        let draggedTask = null;
-        let taskIdCounter = 5; // Starting from 5 since we have 4 demo tasks
-        
-        // Drag and Drop Handlers
-        function handleDragStart(e) {
-            draggedTask = e.target;
-            e.target.classList.add('dragging');
-            e.dataTransfer.effectAllowed = 'move';
-            e.dataTransfer.setData('text/html', e.target.innerHTML);
-        }
-        
-        function handleDragOver(e) {
-            if (e.preventDefault) {
-                e.preventDefault();
-            }
-            e.dataTransfer.dropEffect = 'move';
-            
-            const column = e.currentTarget;
-            if (column.classList.contains('kanban-column-content')) {
-                column.classList.add('drag-over');
-            }
-            return false;
-        }
-        
-        function handleDrop(e, columnName) {
-            if (e.stopPropagation) {
-                e.stopPropagation();
-            }
-            
-            const column = e.currentTarget;
-            column.classList.remove('drag-over');
-            
-            if (draggedTask && draggedTask !== e.target) {
-                // Move task to new column
-                column.appendChild(draggedTask);
-                draggedTask.classList.remove('dragging');
-                
-                // Update task counts
-                updateColumnCounts();
-                
-                // Broadcast task movement via WebSocket
-                broadcastTaskMovement(draggedTask.dataset.taskId, columnName);
-                
-                // If moved to complete, add completion animation
-                if (columnName === 'complete') {
-                    celebrateCompletion(draggedTask);
-                }
-            }
-            
-            draggedTask = null;
-            return false;
-        }
-        
-        // Update column counts
-        function updateColumnCounts() {
-            document.querySelectorAll('.kanban-column').forEach(column => {
-                const count = column.querySelector('.kanban-column-content').children.length;
-                column.querySelector('.column-count').textContent = count;
-            });
-        }
-        
-        // Add new task
-        function addNewTask() {
-            const taskTitle = prompt('Enter task title:');
-            if (!taskTitle) return;
-            
-            const taskAgent = prompt('Assign to agent (e.g., Backend Specialist):') || 'Auto-assign';
-            const taskPriority = prompt('Priority (low/medium/high):') || 'medium';
-            
-            const taskId = `task-${taskIdCounter++}`;
-            const taskHtml = `
-                <div class="kanban-task" draggable="true" ondragstart="handleDragStart(event)" data-task-id="${taskId}">
-                    <div class="task-priority priority-${taskPriority}"></div>
-                    <div class="task-content">
-                        <div class="task-title">${taskTitle}</div>
-                        <div class="task-meta">
-                            <span class="task-agent">🤖 ${taskAgent}</span>
-                            <span class="task-time">Est. TBD</span>
-                        </div>
-                    </div>
-                </div>
-            `;
-            
-            // Add to backlog
-            const backlogColumn = document.querySelector('[data-column="backlog"] .kanban-column-content');
-            backlogColumn.insertAdjacentHTML('beforeend', taskHtml);
-            
-            // Add drag end listener
-            const newTask = backlogColumn.lastElementChild;
-            newTask.addEventListener('dragend', function(e) {
-                e.target.classList.remove('dragging');
-                document.querySelectorAll('.kanban-column-content').forEach(col => {
-                    col.classList.remove('drag-over');
-                });
-            });
-            
-            updateColumnCounts();
-            broadcastTaskCreation(taskId, taskTitle, taskAgent, taskPriority);
-        }
-        
-        // Celebrate task completion
-        function celebrateCompletion(taskElement) {
-            taskElement.style.animation = 'pulse 0.5s ease';
-            setTimeout(() => {
-                taskElement.style.animation = '';
-            }, 500);
-        }
-        
-        // WebSocket broadcasting
-        function broadcastTaskMovement(taskId, newColumn) {
-            if (typeof ws !== 'undefined' && ws.readyState === WebSocket.OPEN) {
-                ws.send(JSON.stringify({
-                    type: 'task-moved',
-                    taskId: taskId,
-                    column: newColumn,
-                    timestamp: new Date().toISOString()
-                }));
-            }
-        }
-        
-        function broadcastTaskCreation(taskId, title, agent, priority) {
-            if (typeof ws !== 'undefined' && ws.readyState === WebSocket.OPEN) {
-                ws.send(JSON.stringify({
-                    type: 'task-created',
-                    taskId: taskId,
-                    title: title,
-                    agent: agent,
-                    priority: priority,
-                    timestamp: new Date().toISOString()
-                }));
-            }
-        }
-        
-        // Add pulse animation
-        const style = document.createElement('style');
-        style.textContent = `
-            @keyframes pulse {
-                0% { transform: scale(1); }
-                50% { transform: scale(1.05); background: rgba(139, 92, 246, 0.2); }
-                100% { transform: scale(1); }
-            }
-        `;
-        document.head.appendChild(style);
-        
-        // Initialize drag end listeners on page load
-        document.addEventListener('DOMContentLoaded', function() {
-            document.querySelectorAll('.kanban-task').forEach(task => {
-                task.addEventListener('dragend', function(e) {
-                    e.target.classList.remove('dragging');
-                    document.querySelectorAll('.kanban-column-content').forEach(col => {
-                        col.classList.remove('drag-over');
-                    });
-                });
-            });
-        });
-        
-        // ==========================================
-        // END KANBAN BOARD FUNCTIONALITY
-        // ==========================================
-        
-        // ==========================================
-        // TERMINAL-TASK BRIDGE INTEGRATION
-        // ==========================================
-        
-        // Initialize Socket.io connection for task events
-        let taskSocket = null;
-        
-        function initializeTaskBridge() {
-            console.log('🌉 Initializing Terminal-Task Bridge connection...');
-            
-            // Connect to Socket.io server
-            taskSocket = io('/', {
-                transports: ['websocket'],
-                reconnection: true,
-                reconnectionDelay: 1000,
-                reconnectionAttempts: 5
-            });
-            
-            // Connection events
-            taskSocket.on('connect', () => {
-                console.log('✅ Connected to Task Bridge');
-                showNotification('Terminal-Task Bridge connected', 'success');
-            });
-            
-            taskSocket.on('disconnect', () => {
-                console.log('❌ Disconnected from Task Bridge');
-            });
-            
-            // Listen for task creation events from terminal errors
-            taskSocket.on('task:created', (event) => {
-                console.log('📋 New task from terminal:', event);
-                handleTerminalTask(event.task);
-            });
-            
-            // Listen for task updates
-            taskSocket.on('task:updated', (event) => {
-                console.log('✏️ Task updated:', event);
-                updateExistingTask(event.taskId, event.status, event.resolution);
-            });
-        }
-        
-        // Handle new tasks from terminal errors
-        function handleTerminalTask(task) {
-            // Create task element
-            const taskElement = document.createElement('div');
-            taskElement.className = 'kanban-task';
-            taskElement.draggable = true;
-            taskElement.dataset.taskId = task.id;
-            taskElement.dataset.priority = task.priority;
-            taskElement.dataset.source = 'terminal';
-            
-            // Add priority indicator
-            const priorityClass = task.priority === 'high' ? 'priority-high' : 
-                                 task.priority === 'low' ? 'priority-low' : 'priority-medium';
-            
-            taskElement.innerHTML = `
-                <div class="task-header">
-                    <span class="task-priority ${priorityClass}">●</span>
-                    <span class="task-title">${task.title}</span>
-                    <span class="task-source" title="Generated from terminal">🖥️</span>
-                </div>
-                <div class="task-meta">
-                    <span class="task-type">${task.type || 'error'}</span>
-                    ${task.autoFixAvailable ? '<span class="task-autofix" title="Auto-fix available">⚡</span>' : ''}
-                </div>
-                ${task.suggestedFix ? `
-                    <div class="task-fix">
-                        <strong>Fix:</strong> ${task.suggestedFix.primary.title}
-                        ${task.suggestedFix.primary.command ? 
-                            `<button onclick="applyTerminalFix('${task.id}', '${encodeURIComponent(task.suggestedFix.primary.command)}')" 
-                                    class="apply-fix-btn" title="Apply fix in terminal">
-                                Apply Fix ⚡
-                            </button>` : ''}
-                    </div>
-                ` : ''}
-                <div class="task-tags">
-                    ${task.tags ? task.tags.map(tag => `<span class="task-tag">${tag}</span>`).join('') : ''}
-                </div>
-            `;
-            
-            // Add drag event listeners
-            taskElement.addEventListener('dragstart', handleDragStart);
-            taskElement.addEventListener('dragend', function(e) {
-                e.target.classList.remove('dragging');
-                document.querySelectorAll('.kanban-column-content').forEach(col => {
-                    col.classList.remove('drag-over');
-                });
-            });
-            
-            // Add to backlog column
-            const backlogColumn = document.querySelector('.kanban-column[data-column="backlog"] .kanban-column-content');
-            if (backlogColumn) {
-                backlogColumn.appendChild(taskElement);
-                updateColumnCounts();
-                
-                // Show notification
-                showNotification(`New task from terminal: ${task.title}`, 'info');
-                
-                // Highlight the new task
-                taskElement.classList.add('task-new');
-                setTimeout(() => taskElement.classList.remove('task-new'), 3000);
-            }
-        }
-        
-        // Apply terminal fix
-        function applyTerminalFix(taskId, encodedCommand) {
-            const command = decodeURIComponent(encodedCommand);
-            
-            if (confirm(`Apply this fix in terminal?\n\n${command}`)) {
-                taskSocket.emit('task:apply-fix', {
-                    taskId: taskId,
-                    command: command
-                });
-                
-                showNotification('Fix command sent to terminal', 'success');
-                
-                // Move task to in-progress
-                const taskElement = document.querySelector(`[data-task-id="${taskId}"]`);
-                if (taskElement) {
-                    const inProgressColumn = document.querySelector('.kanban-column[data-column="in-progress"] .kanban-column-content');
-                    if (inProgressColumn) {
-                        inProgressColumn.appendChild(taskElement);
-                        updateColumnCounts();
-                    }
-                }
-            }
-        }
-        
-        // Update existing task status
-        function updateExistingTask(taskId, status, resolution) {
-            const taskElement = document.querySelector(`[data-task-id="${taskId}"]`);
-            if (!taskElement) return;
-            
-            // Determine target column based on status
-            let targetColumn;
-            switch(status) {
-                case 'resolved':
-                case 'completed':
-                    targetColumn = 'complete';
-                    break;
-                case 'in-progress':
-                    targetColumn = 'in-progress';
-                    break;
-                case 'review':
-                    targetColumn = 'review';
-                    break;
-                default:
-                    return;
-            }
-            
-            // Move to target column
-            const column = document.querySelector(`.kanban-column[data-column="${targetColumn}"] .kanban-column-content`);
-            if (column) {
-                column.appendChild(taskElement);
-                updateColumnCounts();
-                
-                // Add resolution note if provided
-                if (resolution) {
-                    const resolutionDiv = document.createElement('div');
-                    resolutionDiv.className = 'task-resolution';
-                    resolutionDiv.innerHTML = `✅ ${resolution}`;
-                    taskElement.appendChild(resolutionDiv);
-                }
-                
-                // Highlight the update
-                taskElement.classList.add('task-updated');
-                setTimeout(() => taskElement.classList.remove('task-updated'), 3000);
-            }
-        }
-        
-        // Initialize Task Bridge on page load
-        document.addEventListener('DOMContentLoaded', function() {
-            setTimeout(() => {
-                initializeTaskBridge();
-            }, 1000); // Slight delay to ensure Socket.io is loaded
-        });
-        
-        // Add styles for terminal tasks
-        const terminalTaskStyles = document.createElement('style');
-        terminalTaskStyles.textContent = `
-            .task-source {
-                float: right;
-                font-size: 1rem;
-            }
-            .task-type {
-                background: var(--secondary);
-                color: var(--text);
-                padding: 0.125rem 0.5rem;
-                border-radius: 0.25rem;
-                font-size: 0.75rem;
-            }
-            .task-autofix {
-                background: var(--warning);
-                color: var(--bg);
-                padding: 0.125rem 0.5rem;
-                border-radius: 0.25rem;
-                font-size: 0.75rem;
-                margin-left: 0.5rem;
-            }
-            .task-fix {
-                margin-top: 0.5rem;
-                padding: 0.5rem;
-                background: rgba(46, 213, 115, 0.1);
-                border-radius: 0.25rem;
-                font-size: 0.875rem;
-            }
-            .apply-fix-btn {
-                margin-left: 0.5rem;
-                padding: 0.25rem 0.5rem;
-                background: var(--success);
-                color: white;
-                border: none;
-                border-radius: 0.25rem;
-                cursor: pointer;
-                font-size: 0.75rem;
-            }
-            .apply-fix-btn:hover {
-                opacity: 0.8;
-            }
-            .task-tags {
-                margin-top: 0.5rem;
-                display: flex;
-                flex-wrap: wrap;
-                gap: 0.25rem;
-            }
-            .task-tag {
-                background: var(--secondary);
-                color: var(--text);
-                padding: 0.125rem 0.375rem;
-                border-radius: 0.25rem;
-                font-size: 0.7rem;
-            }
-            .task-new {
-                animation: highlight-new 3s ease;
-            }
-            .task-updated {
-                animation: highlight-update 3s ease;
-            }
-            .task-resolution {
-                margin-top: 0.5rem;
-                padding: 0.5rem;
-                background: rgba(46, 213, 115, 0.2);
-                border-radius: 0.25rem;
-                font-size: 0.875rem;
-                color: var(--success);
-            }
-            @keyframes highlight-new {
-                0%, 100% { background: var(--surface); }
-                50% { background: rgba(52, 211, 153, 0.2); }
-            }
-            @keyframes highlight-update {
-                0%, 100% { background: var(--surface); }
-                50% { background: rgba(96, 165, 250, 0.2); }
-            }
-        `;
-        document.head.appendChild(terminalTaskStyles);
-        
-        // ==========================================
-        // END TERMINAL-TASK BRIDGE INTEGRATION
-        // ==========================================
-        
         // Dashboard JavaScript
         class AgentDashboard {
             constructor() {
@@ -2137,35 +1531,47 @@ Claude Agents: This is the OFFICIAL version - do not modify copies elsewhere
 
             async loadInitialData() {
                 try {
+                    console.log('🔄 Loading dashboard data from APIs...');
+                    
                     // Load agents
                     const agentsResponse = await fetch('/api/agents/status');
+                    console.log('📡 Agents API response:', agentsResponse.status);
                     if (agentsResponse.ok) {
                         const agentsData = await agentsResponse.json();
+                        console.log('✅ Agents data:', agentsData);
                         this.renderAgents(agentsData.agents || []);
                     }
 
                     // Load metrics
                     const metricsResponse = await fetch('/api/agents/metrics');
+                    console.log('📡 Metrics API response:', metricsResponse.status);
                     if (metricsResponse.ok) {
                         const metricsData = await metricsResponse.json();
+                        console.log('✅ Metrics data:', metricsData);
                         this.updateMetrics(metricsData);
                     }
 
                     // Load tasks
                     const tasksResponse = await fetch('/api/agents/tasks');
+                    console.log('📡 Tasks API response:', tasksResponse.status);
                     if (tasksResponse.ok) {
                         const tasksData = await tasksResponse.json();
+                        console.log('✅ Tasks data:', tasksData);
                         this.updateTasks(tasksData.tasks || []);
                     }
 
                     // Load coordination graph
                     const coordResponse = await fetch('/api/agents/coordination');
+                    console.log('📡 Coordination API response:', coordResponse.status);
                     if (coordResponse.ok) {
                         const coordData = await coordResponse.json();
+                        console.log('✅ Coordination data:', coordData);
                         this.updateCoordinationGraph(coordData);
                     }
+                    
+                    console.log('✨ Dashboard data loaded successfully!');
                 } catch (error) {
-                    console.error('Failed to load initial data:', error);
+                    console.error('❌ Failed to load initial data:', error);
                     this.showDemoData();
                 }
             }
@@ -2233,17 +1639,39 @@ Claude Agents: This is the OFFICIAL version - do not modify copies elsewhere
             }
 
             updateMetrics(metrics) {
+                console.log('📊 Updating metrics:', metrics);
+                
                 if (metrics.activeAgents !== undefined) {
                     document.getElementById('activeAgentsCount').textContent = metrics.activeAgents;
                 }
                 if (metrics.avgResponseTime !== undefined) {
-                    document.getElementById('avgResponseTime').textContent = metrics.avgResponseTime + 's';
+                    // Handle both number and string formats
+                    const time = typeof metrics.avgResponseTime === 'number' 
+                        ? metrics.avgResponseTime + 's' 
+                        : metrics.avgResponseTime;
+                    document.getElementById('avgResponseTime').textContent = time;
                 }
                 if (metrics.successRate !== undefined) {
                     document.getElementById('successRate').textContent = metrics.successRate + '%';
                 }
                 if (metrics.queueLength !== undefined) {
                     document.getElementById('queueLength').textContent = metrics.queueLength;
+                }
+                
+                // Update total tasks if provided
+                if (metrics.totalTasks !== undefined) {
+                    const totalTasksElem = document.getElementById('totalTasks');
+                    if (totalTasksElem) {
+                        totalTasksElem.textContent = metrics.totalTasks;
+                    }
+                }
+                
+                // Update efficiency if provided
+                if (metrics.efficiency !== undefined) {
+                    const efficiencyElem = document.getElementById('efficiency');
+                    if (efficiencyElem) {
+                        efficiencyElem.textContent = metrics.efficiency + '%';
+                    }
                 }
             }
 

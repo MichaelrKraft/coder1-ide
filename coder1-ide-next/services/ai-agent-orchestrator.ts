@@ -8,6 +8,8 @@ import fs from 'fs';
 import path from 'path';
 import { claudeAPI, ClaudeMessage, ClaudeResponse } from './claude-api';
 import type { AIProjectContext } from '@/types/session';
+import { enhancedMemoryContext, type MemoryContext, type RAGQuery } from './enhanced-memory-context';
+import { logger } from '../lib/logger';
 
 export interface AgentDefinition {
   name: string;
@@ -88,7 +90,7 @@ class AIAgentOrchestrator {
   private outputDirectory: string;
 
   constructor() {
-    this.agentsPath = path.join(process.cwd(), '.coder1', 'agents');
+    this.agentsPath = path.join(process.cwd(), '..', '.coder1', 'agents');
     this.outputDirectory = path.join(process.cwd(), 'generated');
     this.loadAgentDefinitions();
     this.loadWorkflowTemplates();
@@ -109,9 +111,9 @@ class AIAgentOrchestrator {
         this.agentDefinitions.set(agentId, agentData);
       }
 
-      console.log(`✅ Loaded ${this.agentDefinitions.size} agent definitions`);
+      logger.debug(`✅ Loaded ${this.agentDefinitions.size} agent definitions`);
     } catch (error) {
-      console.error('❌ Error loading agent definitions:', error);
+      logger.error('❌ Error loading agent definitions:', error);
     }
   }
 
@@ -127,9 +129,9 @@ class AIAgentOrchestrator {
         this.workflowTemplates.set(workflowId, workflow as WorkflowTemplate);
       }
 
-      console.log(`✅ Loaded ${this.workflowTemplates.size} workflow templates`);
+      logger.debug(`✅ Loaded ${this.workflowTemplates.size} workflow templates`);
     } catch (error) {
-      console.error('❌ Error loading workflow templates:', error);
+      logger.error('❌ Error loading workflow templates:', error);
     }
   }
 
@@ -230,16 +232,16 @@ class AIAgentOrchestrator {
       throw new Error(`❌ Workflow '${workflowId}' not found`);
     }
 
-    console.log(`🚀 Spawning AI team for: ${requirement}`);
-    console.log(`📋 Using workflow: ${workflow.name}`);
-    console.log(`👥 Agents needed: ${workflow.agents.join(', ')}`);
+    logger.debug(`🚀 Spawning AI team for: ${requirement}`);
+    logger.debug(`📋 Using workflow: ${workflow.name}`);
+    logger.debug(`👥 Agents needed: ${workflow.agents.join(', ')}`);
 
     // Create agent sessions based on workflow
     const agents: AgentSession[] = [];
     for (const agentId of workflow.agents) {
       const agentDef = this.agentDefinitions.get(agentId);
       if (!agentDef) {
-        console.warn(`⚠️ Agent definition not found: ${agentId}`);
+        logger.warn(`⚠️ Agent definition not found: ${agentId}`);
         continue;
       }
 
@@ -292,7 +294,7 @@ class AIAgentOrchestrator {
     if (!workflow) return;
 
     team.status = 'planning';
-    console.log(`📋 Executing workflow: ${workflow.name}`);
+    logger.debug(`📋 Executing workflow: ${workflow.name}`);
 
     try {
       // Execute workflow steps in sequence
@@ -306,7 +308,7 @@ class AIAgentOrchestrator {
         );
 
         if (unmetDependencies.length > 0) {
-          console.log(`⏸️ Agent ${agent.agentName} waiting for dependencies: ${unmetDependencies.join(', ')}`);
+          logger.debug(`⏸️ Agent ${agent.agentName} waiting for dependencies: ${unmetDependencies.join(', ')}`);
           agent.status = 'waiting';
           continue;
         }
@@ -316,11 +318,11 @@ class AIAgentOrchestrator {
       }
 
       team.status = 'completed';
-      console.log(`✅ Team ${teamId} completed workflow`);
+      logger.debug(`✅ Team ${teamId} completed workflow`);
 
     } catch (error) {
       team.status = 'error';
-      console.error(`❌ Team ${teamId} workflow failed:`, error);
+      logger.error(`❌ Team ${teamId} workflow failed:`, error);
     }
   }
 
@@ -337,11 +339,11 @@ class AIAgentOrchestrator {
 
     agent.status = 'thinking';
     agent.currentTask = step.task;
-    console.log(`🤖 ${agent.agentName} starting: ${step.task}`);
+    logger.debug(`🤖 ${agent.agentName} starting: ${step.task}`);
 
     try {
       // Prepare context for agent
-      const context = this.buildAgentContext(team, agent, step);
+      const context = await this.buildAgentContext(team, agent, step);
       
       // Create specialized prompt for agent
       const prompt = this.buildAgentPrompt(agentDef, team.context, step, context);
@@ -363,20 +365,20 @@ class AIAgentOrchestrator {
       agent.status = 'completed';
       agent.progress = 100;
 
-      console.log(`✅ ${agent.agentName} completed: ${step.task}`);
-      console.log(`📁 Generated ${files.length} files`);
+      logger.debug(`✅ ${agent.agentName} completed: ${step.task}`);
+      logger.debug(`📁 Generated ${files.length} files`);
 
     } catch (error) {
       agent.status = 'error';
       agent.output.push(`❌ Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
-      console.error(`❌ ${agent.agentName} failed:`, error);
+      logger.error(`❌ ${agent.agentName} failed:`, error);
     }
   }
 
   /**
    * Build agent context from team state and dependencies
    */
-  private buildAgentContext(team: TeamSession, agent: AgentSession, step: WorkflowStep): string {
+  private async buildAgentContext(team: TeamSession, agent: AgentSession, step: WorkflowStep): Promise<string> {
     const contextParts = [
       `Project Requirement: ${team.context.requirement}`,
       `Project Type: ${team.context.projectType}`,
@@ -385,9 +387,84 @@ class AIAgentOrchestrator {
       ''
     ];
 
-    // Add memory context if available
-    if (team.context.memoryContext) {
-      contextParts.push('Memory Context:', team.context.memoryContext, '');
+    // Get enhanced memory context using RAG system
+    try {
+      const ragQuery: RAGQuery = {
+        projectType: team.context.projectType,
+        framework: team.context.framework,
+        features: team.context.features,
+        agentType: agent.agentId,
+        taskDescription: step.task,
+        timeframe: 'last_30_days',
+        limit: 3
+      };
+
+      const memoryContext = await enhancedMemoryContext.getMemoryContext(ragQuery);
+      
+      // Add session history context
+      if (memoryContext.sessionHistory.length > 0) {
+        contextParts.push('## Recent Project History');
+        memoryContext.sessionHistory.forEach((session, index) => {
+          contextParts.push(`### Session ${index + 1} (${session.timestamp.toLocaleDateString()})`);
+          
+          if (session.terminal.length > 0) {
+            contextParts.push(`Commands: ${session.terminal.slice(0, 3).join(', ')}`);
+          }
+          
+          if (session.fileChanges.length > 0) {
+            contextParts.push(`Files: ${session.fileChanges.slice(0, 3).join(', ')}`);
+          }
+          
+          // Extract key learnings from session content
+          const keyLines = session.content.split('\n')
+            .filter(line => line.includes('##') || line.includes('**') || line.includes('Issue:') || line.includes('Fix:'))
+            .slice(0, 2);
+          
+          if (keyLines.length > 0) {
+            contextParts.push(`Key Points: ${keyLines.join(' | ')}`);
+          }
+          
+          contextParts.push('');
+        });
+      }
+
+      // Add relevant patterns and insights
+      if (memoryContext.relevantPatterns.length > 0) {
+        contextParts.push('## Your Established Patterns');
+        memoryContext.relevantPatterns.forEach(pattern => {
+          contextParts.push(`- ${pattern.content} (used ${pattern.usageCount} times)`);
+        });
+        contextParts.push('');
+      }
+
+      // Add successful approaches
+      if (memoryContext.successfulApproaches.length > 0) {
+        contextParts.push('## Proven Approaches That Worked');
+        memoryContext.successfulApproaches.forEach(approach => {
+          const duration = approach.timeTaken ? ` (${Math.round(approach.timeTaken / 1000 / 60)}min)` : '';
+          contextParts.push(`- ${approach.taskDescription}: ${approach.approachUsed}${duration}`);
+          if (approach.filesModified.length > 0) {
+            contextParts.push(`  Files: ${approach.filesModified.slice(0, 3).join(', ')}`);
+          }
+        });
+        contextParts.push('');
+      }
+
+      // Add common issues to avoid
+      if (memoryContext.commonIssues.length > 0) {
+        contextParts.push('## Known Issues to Avoid');
+        memoryContext.commonIssues.forEach(issue => {
+          contextParts.push(`- ${issue.content}`);
+        });
+        contextParts.push('');
+      }
+
+    } catch (error) {
+      logger.warn('⚠️ Could not load enhanced memory context:', error);
+      // Fallback to basic memory context
+      if (team.context.memoryContext) {
+        contextParts.push('Memory Context:', team.context.memoryContext, '');
+      }
     }
 
     // Add completed work from other agents
@@ -396,13 +473,15 @@ class AIAgentOrchestrator {
       .map(a => `${a.agentName}: ${a.files.map(f => f.path).join(', ')}`);
 
     if (completedWork.length > 0) {
-      contextParts.push('Completed Work:', ...completedWork, '');
+      contextParts.push('## Current Session Progress');
+      contextParts.push(...completedWork, '');
     }
 
     // Add current task context
     contextParts.push(
-      `Current Task: ${step.task}`,
-      `Expected Deliverables: ${step.deliverables.join(', ')}`,
+      '## Current Assignment',
+      `Task: ${step.task}`,
+      `Deliverables: ${step.deliverables.join(', ')}`,
       `Dependencies: ${step.dependencies.join(', ')}`
     );
 
@@ -553,9 +632,9 @@ Respond with clear file paths and complete file contents in code blocks.`;
       // Write file
       fs.writeFileSync(fullPath, file.content, 'utf-8');
       
-      console.log(`📁 Generated: ${file.path}`);
+      logger.debug(`📁 Generated: ${file.path}`);
     } catch (error) {
-      console.error(`❌ Failed to write file ${file.path}:`, error);
+      logger.error(`❌ Failed to write file ${file.path}:`, error);
     }
   }
 
@@ -568,7 +647,7 @@ Respond with clear file paths and complete file contents in code blocks.`;
       // For now, return basic context
       return `Previous project patterns and best practices for similar requirements`;
     } catch (error) {
-      console.warn('⚠️ Memory context unavailable:', error);
+      logger.warn('⚠️ Memory context unavailable:', error);
       return '';
     }
   }
@@ -598,7 +677,7 @@ Respond with clear file paths and complete file contents in code blocks.`;
 
     try {
       // Process agent input with context
-      const context = this.buildAgentContext(team, agent, {
+      const context = await this.buildAgentContext(team, agent, {
         agent: agentId,
         task: agent.currentTask,
         dependencies: agent.dependencies,
@@ -612,7 +691,7 @@ Respond with clear file paths and complete file contents in code blocks.`;
       
       return true;
     } catch (error) {
-      console.error(`❌ Failed to send input to ${agentId}:`, error);
+      logger.error(`❌ Failed to send input to ${agentId}:`, error);
       return false;
     }
   }
@@ -621,7 +700,7 @@ Respond with clear file paths and complete file contents in code blocks.`;
    * Emergency stop - clean up all active teams
    */
   emergencyStop(): void {
-    console.log(`🚨 Emergency stop - cleaning up ${this.activeTeams.size} teams`);
+    logger.debug(`🚨 Emergency stop - cleaning up ${this.activeTeams.size} teams`);
     this.activeTeams.clear();
   }
 }

@@ -372,7 +372,7 @@ Claude Agents: This is the OFFICIAL version - do not modify copies elsewhere
         <div class="coder1-section coder1-card-3d">
             <h2><i class="fas fa-search"></i> AI-Powered Search</h2>
             <div class="coder1-search-section">
-                <input type="text" id="searchQuery" class="coder1-input" placeholder="Ask anything about your documentation...">
+                <input type="text" id="searchQuery" class="coder1-input" placeholder="Search docs... (leave empty to show all)">
                 <button class="coder1-btn coder1-search-button" onclick="performSearch()">
                     <i class="fas fa-robot"></i> AI Search
                 </button>
@@ -485,9 +485,41 @@ Claude Agents: This is the OFFICIAL version - do not modify copies elsewhere
         
         async function performSearch() {
             const query = document.getElementById('searchQuery').value;
-            if (!query) return;
-            
             const resultsDiv = document.getElementById('searchResults');
+            
+            // If no query, show all documents
+            if (!query) {
+                resultsDiv.innerHTML = '<div style="text-align: center; padding: var(--spacing-lg); color: var(--text-secondary);"><i class="fas fa-spinner fa-spin"></i> Loading all documents...</div>';
+                
+                try {
+                    const response = await fetch('/api/docs/list');
+                    const data = await response.json();
+                    
+                    if (data.docs && data.docs.length > 0) {
+                        resultsDiv.innerHTML = '<div style="margin-bottom: var(--spacing-md); color: var(--text-secondary);">Showing all ' + data.docs.length + ' document(s):</div>' + 
+                            data.docs.map(doc => `
+                                <div style="background: var(--glass-bg); padding: var(--spacing-md); border-radius: var(--border-radius-md); margin-bottom: var(--spacing-sm); border: var(--glass-border);">
+                                    <strong style="color: var(--accent-primary);">${doc.name || doc.title}</strong>
+                                    <p style="color: var(--text-secondary); margin: var(--spacing-xs) 0;">${doc.description || 'No description available'}</p>
+                                    <small style="color: var(--text-muted);">${doc.url}</small>
+                                    <div style="margin-top: var(--spacing-sm);">
+                                        <small style="color: var(--text-muted);">Words: ${doc.wordCount || 0} | Added: ${new Date(doc.addedAt).toLocaleDateString()}</small>
+                                    </div>
+                                    <button class="coder1-btn" style="margin-top: var(--spacing-sm);" onclick="deleteDoc('${doc.id}', '${(doc.name || doc.title).replace(/'/g, "\\'")}')">
+                                        <i class="fas fa-trash"></i> Delete
+                                    </button>
+                                </div>
+                            `).join('');
+                    } else {
+                        resultsDiv.innerHTML = '<div style="color: var(--text-secondary); text-align: center; padding: var(--spacing-lg);">No documents in the system. Add some documentation to get started!</div>';
+                    }
+                } catch (error) {
+                    resultsDiv.innerHTML = '<div style="color: var(--error); text-align: center; padding: var(--spacing-lg);">Error loading documents: ' + error.message + '</div>';
+                }
+                return;
+            }
+            
+            // If query exists, perform search
             resultsDiv.innerHTML = '<div style="text-align: center; padding: var(--spacing-lg); color: var(--text-secondary);"><i class="fas fa-spinner fa-spin"></i> Searching...</div>';
             
             try {

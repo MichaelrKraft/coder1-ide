@@ -7,15 +7,17 @@
 
 'use client';
 
-import React, { useEffect, useState } from 'react';
-import { Compass, X, ChevronUp, ChevronDown, Plus, Terminal, Grid, FileText, Code, Sparkles, BookOpen, Command as CommandIcon, Container, Box } from 'lucide-react';
+import React, { useEffect, useState, useCallback } from 'react';
+import { Compass, X, ChevronUp, ChevronDown, Plus, Terminal, Grid, FileText, Code, Sparkles, BookOpen, Command as CommandIcon, Users } from 'lucide-react';
 import WcyganCommandsSection from '../WcyganCommandsSection';
-import ContainerPanel from '../containers/ContainerPanel';
 import SandboxPanel from '../sandbox/SandboxPanel';
 import { useUIStore } from '@/stores/useUIStore';
 import { glows } from '@/lib/design-tokens';
-import { clientFeatures } from '@/lib/config';
+import { clientFeatures, clientConfig } from '@/lib/config';
+import { useTerminal } from '@/lib/hooks/useTerminal';
 import type { Command } from '@/types';
+import type { WcyganCommand } from '@/lib/wcygan-commands';
+import { logger } from '@/lib/logger';
 
 export default function DiscoverPanel() {
   const {
@@ -32,7 +34,10 @@ export default function DiscoverPanel() {
   const { isOpen, commandInput, customCommands, showAddForm, newCommand } = discoverPanel;
   
   // Tab state for switching between command sections
-  const [activeTab, setActiveTab] = useState<'wcygan' | 'basic' | 'containers' | 'sandbox'>('wcygan');
+  const [activeTab, setActiveTab] = useState<'wcygan' | 'basic' | 'agents'>('wcygan');
+  
+  // Terminal integration
+  const { isConnected, executeCommand, writeToTerminal } = useTerminal();
 
   // Handle keyboard shortcuts
   useEffect(() => {
@@ -56,7 +61,7 @@ export default function DiscoverPanel() {
 
   // Execute slash command
   const executeSlashCommand = (command: string) => {
-    console.log('Executing command:', command);
+    logger.debug('Executing command:', command);
     addToast({
       message: `Executing: /${command}`,
       type: 'info'
@@ -99,6 +104,54 @@ export default function DiscoverPanel() {
     clearNewCommand();
     toggleAddCommandForm();
   };
+
+  // Handle wcygan command execution
+  const handleWcyganCommandExecute = useCallback((command: WcyganCommand, mode: 'template' | 'agent' | 'hybrid') => {
+    if (!isConnected) {
+      addToast({
+        message: '⚠️ Terminal not connected. Please wait...',
+        type: 'error'
+      });
+      return;
+    }
+
+    if (mode === 'template') {
+      // Insert the template directly into the terminal
+      const template = command.template.replace('$ARGUMENTS', '<your arguments here>');
+      writeToTerminal(template);
+      
+      addToast({
+        message: `✅ Inserted ${command.name} template into terminal`,
+        type: 'success'
+      });
+      
+      // Close the discover panel to focus on terminal
+      toggleDiscoverPanel();
+    } else if (mode === 'agent') {
+      // Execute with AI assistance (prefix with claude)
+      const aiCommand = `claude ${command.slashCommand} <describe what you need>`;
+      writeToTerminal(aiCommand);
+      
+      addToast({
+        message: `🤖 Ready for AI-assisted ${command.name}`,
+        type: 'info'
+      });
+      
+      // Close the discover panel to focus on terminal
+      toggleDiscoverPanel();
+    } else if (mode === 'hybrid') {
+      // Hybrid mode - could use both template and AI
+      const hybridCommand = `${command.template.replace('$ARGUMENTS', '')} # Use with AI assistance`;
+      writeToTerminal(hybridCommand);
+      
+      addToast({
+        message: `⚡ Hybrid mode for ${command.name}`,
+        type: 'info'
+      });
+      
+      toggleDiscoverPanel();
+    }
+  }, [isConnected, writeToTerminal, addToast, toggleDiscoverPanel]);
 
   return (
     <>
@@ -166,7 +219,7 @@ export default function DiscoverPanel() {
                 }`}
               >
                 <BookOpen className="w-3 h-3" />
-                Wcygan Commands
+                Special Commands
               </button>
               <button
                 onClick={() => setActiveTab('basic')}
@@ -180,25 +233,14 @@ export default function DiscoverPanel() {
                 Basic Commands
               </button>
               <button
-                onClick={() => setActiveTab('containers')}
+                onClick={() => setActiveTab('agents')}
                 className={`flex items-center gap-2 px-4 py-2 text-xs font-medium transition-colors ${
-                  activeTab === 'containers'
+                  activeTab === 'agents'
                     ? 'text-coder1-cyan border-b-2 border-coder1-cyan bg-bg-tertiary'
                     : 'text-text-muted hover:text-text-secondary'
                 }`}
               >
-                <Container className="w-3 h-3" />
-                Containers
-              </button>
-              <button
-                onClick={() => setActiveTab('sandbox')}
-                className={`flex items-center gap-2 px-4 py-2 text-xs font-medium transition-colors ${
-                  activeTab === 'sandbox'
-                    ? 'text-coder1-cyan border-b-2 border-coder1-cyan bg-bg-tertiary'
-                    : 'text-text-muted hover:text-text-secondary'
-                }`}
-              >
-                <Box className="w-3 h-3" />
+                <Users className="w-3 h-3" />
                 Sandbox
               </button>
             </div>
@@ -206,10 +248,11 @@ export default function DiscoverPanel() {
             {/* Tab Content */}
             <div className="flex-1 overflow-hidden">
               {activeTab === 'wcygan' ? (
-                <WcyganCommandsSection />
-              ) : activeTab === 'containers' ? (
-                <ContainerPanel />
-              ) : activeTab === 'sandbox' ? (
+                <WcyganCommandsSection 
+                  onCommandExecute={handleWcyganCommandExecute}
+                  onAddToast={addToast}
+                />
+              ) : activeTab === 'agents' ? (
                 <SandboxPanel />
               ) : (
                 <div className="p-3 h-full overflow-y-auto">
@@ -372,7 +415,7 @@ export default function DiscoverPanel() {
             </div>
             <div className="flex-1 overflow-y-auto px-3 pb-3 space-y-2">
               <a 
-                href="http://localhost:3001/component-studio" 
+                href={`${clientConfig.expressBackendUrl}/component-studio`}
                 className="flex items-center gap-2 p-2 rounded border border-border-default hover:border-coder1-cyan hover:bg-bg-tertiary transition-all group block"
               >
                 <Grid className="w-4 h-4 text-text-muted group-hover:text-coder1-cyan" />
@@ -380,7 +423,7 @@ export default function DiscoverPanel() {
               </a>
               
               <a 
-                href="http://localhost:3001/templates-hub" 
+                href={`${clientConfig.expressBackendUrl}/templates-hub`}
                 className="flex items-center gap-2 p-2 rounded border border-border-default hover:border-coder1-cyan hover:bg-bg-tertiary transition-all group block"
               >
                 <FileText className="w-4 h-4 text-text-muted group-hover:text-coder1-cyan" />
@@ -388,7 +431,7 @@ export default function DiscoverPanel() {
               </a>
               
               <a 
-                href="http://localhost:3001/hooks" 
+                href={`${clientConfig.expressBackendUrl}/hooks`}
                 className="flex items-center gap-2 p-2 rounded border border-border-default hover:border-coder1-cyan hover:bg-bg-tertiary transition-all group block"
               >
                 <Code className="w-4 h-4 text-text-muted group-hover:text-coder1-cyan" />
@@ -396,7 +439,7 @@ export default function DiscoverPanel() {
               </a>
               
               <a 
-                href="http://localhost:3001/workflow-dashboard" 
+                href={`${clientConfig.expressBackendUrl}/workflow-dashboard`}
                 className="flex items-center gap-2 p-2 rounded border border-border-default hover:border-coder1-cyan hover:bg-bg-tertiary transition-all group block"
               >
                 <Sparkles className="w-4 h-4 text-green-400 group-hover:text-green-300" />
@@ -404,7 +447,7 @@ export default function DiscoverPanel() {
               </a>
               
               <a 
-                href="http://localhost:3001/" 
+                href={`${clientConfig.expressBackendUrl}/orchestrator`}
                 className="flex items-center gap-2 p-2 rounded border border-border-default hover:border-coder1-cyan hover:bg-bg-tertiary transition-all group block"
               >
                 <FileText className="w-4 h-4 text-purple-400 group-hover:text-purple-300" />

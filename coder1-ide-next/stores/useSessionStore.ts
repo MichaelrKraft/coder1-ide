@@ -6,6 +6,7 @@
 import { create } from 'zustand';
 import { devtools, persist } from 'zustand/middleware';
 import { 
+import { logger } from '@/lib/logger';
   SessionData,
   SessionMetadata, 
   SessionCheckpoint,
@@ -300,7 +301,7 @@ export const useSessionStore = create<SessionStore>()(
               } : null
             }), false, 'loadCheckpoint');
           } catch (error) {
-            console.error('Failed to load checkpoint:', error);
+            logger.error('Failed to load checkpoint:', error);
           }
         },
         
@@ -585,7 +586,7 @@ export const useSessionStore = create<SessionStore>()(
         loadSessionHistory: () => {
           // This would typically load from a persistent store or API
           // For now, we'll use the existing sessionHistory
-          console.log('Loading session history...');
+          logger.debug('Loading session history...');
         },
         
         clearSessionHistory: () => {

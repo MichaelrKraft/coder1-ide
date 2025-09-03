@@ -260,7 +260,7 @@ Agents can now reference this solution when facing similar problems.
         if (items.length === 0) {
             return filters.length > 0 
                 ? `📝 No shared items found matching filters: ${filters.join(', ')}`
-                : `📝 No shared items found. Use /share-session, /share-pattern, or /share-solution to create some!`;
+                : '📝 No shared items found. Use /share-session, /share-pattern, or /share-solution to create some!';
         }
 
         let response = `📚 Shared Items${filters.length > 0 ? ` (filtered by: ${filters.join(', ')})` : ''}:\n\n`;
@@ -275,14 +275,14 @@ Agents can now reference this solution when facing similar problems.
             if (item.tags && item.tags.length > 0) {
                 response += `   Tags: ${item.tags.join(', ')}\n`;
             }
-            response += `\n`;
+            response += '\n';
         });
 
         if (items.length > 10) {
             response += `... and ${items.length - 10} more items\n`;
         }
 
-        response += `\n💡 Use /load-shared <id> to load a specific item`;
+        response += '\n💡 Use /load-shared <id> to load a specific item';
 
         return response;
     }
@@ -295,23 +295,23 @@ Agents can now reference this solution when facing similar problems.
         response += `Created: ${new Date(item.created).toLocaleDateString()}\n\n`;
 
         if (item.contextualInsights && item.contextualInsights.length > 0) {
-            response += `🧠 Key Insights:\n`;
+            response += '🧠 Key Insights:\n';
             item.contextualInsights.forEach(insight => {
                 response += `• ${insight}\n`;
             });
-            response += `\n`;
+            response += '\n';
         }
 
         if (item.actionableSteps && item.actionableSteps.length > 0) {
-            response += `⚡ Actionable Steps:\n`;
+            response += '⚡ Actionable Steps:\n';
             item.actionableSteps.slice(0, 5).forEach((step, i) => {
                 response += `${i + 1}. ${step}\n`;
             });
-            response += `\n`;
+            response += '\n';
         }
 
         if (item.usageInstructions && item.usageInstructions.length > 0) {
-            response += `📋 Usage Instructions:\n`;
+            response += '📋 Usage Instructions:\n';
             item.usageInstructions.forEach(instruction => {
                 response += `• ${instruction}\n`;
             });

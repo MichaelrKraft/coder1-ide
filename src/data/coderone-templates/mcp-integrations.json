@@ -77,7 +77,7 @@
       "name": "Supabase MCP",
       "description": "Instant backend infrastructure - database, auth, storage, and realtime features.",
       "tags": ["Backend", "Database", "Auth", "Storage"],
-      "installCommand": "coderone install supabase-mcp",
+      "installCommand": "Install",
       "stats": {
         "rating": 4.8,
         "downloads": 4500,
@@ -103,7 +103,7 @@
       "name": "Vercel MCP",
       "description": "Deploy and manage applications - serverless functions, edge config, and instant deployments.",
       "tags": ["Deployment", "Hosting", "Serverless", "CI/CD"],
-      "installCommand": "coderone install vercel-mcp",
+      "installCommand": "Install",
       "stats": {
         "rating": 4.7,
         "downloads": 3800,
@@ -128,7 +128,7 @@
       "name": "Coder1 Intelligence MCP",
       "description": "Repository analysis and pattern extraction - learn from any codebase instantly.",
       "tags": ["AI", "Analysis", "Patterns", "Learning"],
-      "installCommand": "coderone install coder1-intelligence",
+      "installCommand": "Install",
       "stats": {
         "rating": 4.9,
         "downloads": 2100,
@@ -151,7 +151,7 @@
       "name": "Sequential Thinking MCP",
       "description": "Step-by-step reasoning for complex problems - break down and solve systematically.",
       "tags": ["Reasoning", "Problem Solving", "AI", "Logic"],
-      "installCommand": "coderone install sequential-thinking",
+      "installCommand": "Install",
       "stats": {
         "rating": 4.8,
         "downloads": 3200,
@@ -174,7 +174,7 @@
       "name": "Ref MCP",
       "description": "Smart reference management - organize and access documentation, code snippets, and resources.",
       "tags": ["Documentation", "References", "Knowledge", "Organization"],
-      "installCommand": "coderone install ref-mcp",
+      "installCommand": "Install",
       "stats": {
         "rating": 4.6,
         "downloads": 2800,
@@ -197,7 +197,7 @@
       "name": "mcp-crawl4ai-rag",
       "description": "Advanced web crawling with RAG - extract and process web content for AI context.",
       "tags": ["Web Crawling", "RAG", "AI", "Content"],
-      "installCommand": "coderone install crawl4ai-rag",
+      "installCommand": "Install",
       "stats": {
         "rating": 4.7,
         "downloads": 1900,
@@ -220,7 +220,7 @@
       "name": "n8n MCP",
       "description": "Workflow automation platform - connect any API, automate tasks, build complex workflows.",
       "tags": ["Automation", "Workflows", "Integration", "API"],
-      "installCommand": "coderone install n8n-mcp",
+      "installCommand": "Install",
       "stats": {
         "rating": 4.8,
         "downloads": 3400,

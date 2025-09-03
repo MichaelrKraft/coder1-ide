@@ -54,8 +54,10 @@ export default function HomePage() {
             />
           </Link>
 
-          <Link
-            href="/agent-dashboard"
+          <a
+            href="http://localhost:3000/agent-dashboard.html"
+            target="_blank"
+            rel="noopener noreferrer"
             className="group relative p-8 bg-bg-secondary border border-border-default rounded-lg hover:border-orange-400 transition-all duration-300"
           >
             <div className="flex flex-col items-center text-center">
@@ -67,7 +69,7 @@ export default function HomePage() {
               className="absolute inset-0 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
               style={{ boxShadow: glows.orange.medium }}
             />
-          </Link>
+          </a>
         </div>
 
         {/* Recent Activity */}

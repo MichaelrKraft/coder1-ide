@@ -1,13 +1,55 @@
 import { NextRequest, NextResponse } from 'next/server';
 import fs from 'fs/promises';
 import path from 'path';
+import { getApiUrl } from '@/lib/api-config';
+import { logger } from '@/lib/logger';
 
-const EXPRESS_BACKEND_URL = 'http://localhost:3000';
+const EXPRESS_BACKEND_URL = getApiUrl();
+
+// Request deduplication and cooldown management
+const lastRequestTime = new Map<string, number>();
+const activeRequests = new Map<string, boolean>();
+const COOLDOWN_MS = 5000; // 5 seconds between requests
+const MAX_SUMMARY_FILES = 10; // Keep only last 10 summaries
 
 export async function POST(request: NextRequest) {
+  let requestKey: string = 'default';
+  
   try {
     const requestData = await request.json();
     let { sessionId, sessionData, prompt, includeTerminalHistory, includeFileChanges, includeCommits } = requestData;
+    
+    // Create a unique request key for deduplication
+    requestKey = sessionId || 'default';
+    
+    // Check if there's an active request for this session
+    if (activeRequests.get(requestKey)) {
+      logger.debug(`[Session Summary] Duplicate request blocked for session: ${requestKey}`);
+      return NextResponse.json({ 
+        success: false,
+        error: 'Request already in progress',
+        message: 'A summary is already being generated for this session'
+      }, { status: 429 });
+    }
+    
+    // Check cooldown period
+    const lastRequest = lastRequestTime.get(requestKey) || 0;
+    const timeSinceLastRequest = Date.now() - lastRequest;
+    
+    if (timeSinceLastRequest < COOLDOWN_MS) {
+      const remainingTime = Math.ceil((COOLDOWN_MS - timeSinceLastRequest) / 1000);
+      logger.debug(`[Session Summary] Cooldown active for session: ${requestKey}, ${remainingTime}s remaining`);
+      return NextResponse.json({ 
+        success: false,
+        error: 'Too many requests',
+        message: `Please wait ${remainingTime} seconds before requesting another summary`,
+        retryAfter: remainingTime
+      }, { status: 429 });
+    }
+    
+    // Mark request as active
+    activeRequests.set(requestKey, true);
+    lastRequestTime.set(requestKey, Date.now());
     
     // If we received the enhanced sessionData and prompt from SessionSummaryService, use those
     if (sessionData && prompt) {
@@ -83,7 +125,7 @@ Remember: BE EXHAUSTIVELY DETAILED. The next agent should know EVERYTHING about 
         backendSuccess = true;
       }
     } catch (error) {
-      console.log('Backend session summary failed, using fallback');
+      logger.debug('Backend session summary failed, using fallback');
     }
     
     // If backend fails, generate a basic summary locally
@@ -145,6 +187,37 @@ This session involved development work on the CoderOne IDE project. The session 
     const summaryFile = path.join(summariesDir, `summary-${Date.now()}.md`);
     await fs.writeFile(summaryFile, result.summary || 'No summary generated');
     
+    // Clean up old summary files to prevent accumulation
+    try {
+      const files = await fs.readdir(summariesDir);
+      const summaryFiles = files
+        .filter(f => f.startsWith('summary-') && f.endsWith('.md'))
+        .map(f => ({ 
+          name: f, 
+          path: path.join(summariesDir, f),
+          time: parseInt(f.replace('summary-', '').replace('.md', '')) || 0
+        }))
+        .sort((a, b) => b.time - a.time);
+      
+      // Delete files beyond MAX_SUMMARY_FILES
+      if (summaryFiles.length > MAX_SUMMARY_FILES) {
+        const filesToDelete = summaryFiles.slice(MAX_SUMMARY_FILES);
+        for (const file of filesToDelete) {
+          try {
+            await fs.unlink(file.path);
+            logger.debug(`[Session Summary] Cleaned up old summary: ${file.name}`);
+          } catch (e) {
+            // Ignore cleanup errors
+          }
+        }
+      }
+    } catch (cleanupError) {
+      logger.debug('[Session Summary] Cleanup error:', cleanupError);
+    }
+    
+    // Mark request as completed
+    activeRequests.delete(requestKey);
+    
     return NextResponse.json({ 
       success: true,
       summary: result.summary,
@@ -152,7 +225,11 @@ This session involved development work on the CoderOne IDE project. The session 
       metadata: result.metadata
     });
   } catch (error) {
-    console.error('Failed to generate session summary:', error);
+    logger.error('Failed to generate session summary:', error);
+    
+    // Clean up active request on error
+    activeRequests.delete(requestKey);
+    
     return NextResponse.json(
       { error: 'Failed to generate session summary' },
       { status: 500 }

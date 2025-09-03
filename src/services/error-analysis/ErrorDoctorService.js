@@ -9,9 +9,9 @@ const { OpenAI } = require('openai');
 
 class ErrorDoctorService {
     constructor(options = {}) {
-        this.openai = process.env.OPENAI_API_KEY ? new OpenAI({
-            apiKey: process.env.OPENAI_API_KEY
-        }) : null;
+        // DISABLED: OpenAI fallback not needed with Claude Code Max subscription
+        // Use Claude Code CLI exclusively to avoid API key errors
+        this.openai = null;
         
         // DISABLED: Direct Anthropic SDK usage to prevent API charges
         // Use Claude Code CLI only to utilize Claude Code Max Plan
@@ -131,7 +131,7 @@ class ErrorDoctorService {
             // Use Claude Code CLI for code analysis, fallback to OpenAI
             if (process.env.CLAUDE_CODE_OAUTH_TOKEN) {
                 try {
-                    const claudeCodeCommand = `echo "${analysisPrompt.replace(/"/g, '\\"')}" | claude --max-tokens 1000`;
+                    const claudeCodeCommand = `echo "${analysisPrompt.replace(/"/g, '\\"')}" | claude`;
                     const { exec } = require('child_process');
                     const { promisify } = require('util');
                     const execAsync = promisify(exec);

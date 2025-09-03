@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Sparkles, ArrowRight, Code, Users, Database, Zap, Package } from 'lucide-react';
 import { claudeService } from '@/lib/claude-service';
 import { glows } from '@/lib/design-tokens';
+import { logger } from '@/lib/logger';
 
 const questions = [
   {
@@ -71,7 +72,7 @@ export default function AIConsultationPage() {
         // Redirect to IDE with agents auto-spawned
         router.push('/ide?autoSpawn=true');
       } catch (error) {
-        console.error('Consultation processing failed:', error);
+        logger.error('Consultation processing failed:', error);
         setIsProcessing(false);
       }
     }

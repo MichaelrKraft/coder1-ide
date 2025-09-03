@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { logger } from '@/lib/logger';
 
 const EXPRESS_BACKEND_URL = 'http://localhost:3000';
 
@@ -19,7 +20,7 @@ export async function POST(
     
     if (!response.ok) {
       const error = await response.text();
-      console.error('Failed to restore checkpoint:', error);
+      logger.error('Failed to restore checkpoint:', error);
       return NextResponse.json(
         { error: 'Failed to restore checkpoint' },
         { status: response.status }
@@ -29,7 +30,7 @@ export async function POST(
     const data = await response.json();
     return NextResponse.json(data);
   } catch (error) {
-    console.error('Restore checkpoint API error:', error);
+    logger.error('Restore checkpoint API error:', error);
     return NextResponse.json(
       { error: 'Failed to restore checkpoint' },
       { status: 500 }

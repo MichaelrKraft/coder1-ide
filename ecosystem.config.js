@@ -8,7 +8,7 @@ module.exports = {
     // Running on port 3001 will cause conflicts with Next.js frontend
     
     // Memory management
-    max_memory_restart: '1G',
+    max_memory_restart: '2G',
     
     // Restart behavior
     autorestart: true,
@@ -62,14 +62,14 @@ module.exports = {
     shutdown_with_message: false,
     
     // Advanced options with port validation
-    node_args: '--max-old-space-size=1024',
+    node_args: '--max-old-space-size=2048',
     
     // Monitoring and recovery
     pmx: true,
     automation: false,  // Disable keymetrics
     
     // Custom restart conditions
-    max_memory_restart: '1G',
+    max_memory_restart: '2G',
     
     // Port conflict prevention
     increment_var: 'PORT_SUFFIX',  // Don't auto-increment PORT

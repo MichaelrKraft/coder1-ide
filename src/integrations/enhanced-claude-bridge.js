@@ -87,8 +87,14 @@ class EnhancedClaudeCodeButtonBridge extends ClaudeCodeButtonBridge {
         this.conversationManager = new ConversationThreadManager();
         this.memorySystem = MemorySystem.getInstance();
         
-        // Initialize vector memory for RAG
-        this.vectorMemory = VectorMemoryEnhancer.getInstance();
+        // Initialize vector memory for RAG (temporarily disabled to prevent ChromaDB issues)
+        try {
+            this.vectorMemory = process.env.DISABLE_VECTOR_MEMORY !== 'true' ? 
+                VectorMemoryEnhancer.getInstance() : null;
+        } catch (error) {
+            console.warn('VectorMemoryEnhancer disabled due to ChromaDB issues:', error.message);
+            this.vectorMemory = null;
+        }
         
         // Initialize proactive intelligence
         this.proactiveIntelligence = new ProactiveIntelligence({

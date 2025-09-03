@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { claudeAPI } from '@/services/claude-api';
+import { logger } from '@/lib/logger';
 
 export async function POST(request: NextRequest) {
   try {
@@ -26,7 +27,7 @@ export async function POST(request: NextRequest) {
     }
 
   } catch (error) {
-    console.error('Claude API route error:', error);
+    logger.error('Claude API route error:', error);
     
     return NextResponse.json(
       { 

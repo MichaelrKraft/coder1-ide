@@ -5,6 +5,8 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { ChevronDown, Home, Grid, FileText, Code, Sparkles, BookOpen, SettingsIcon, Info, HelpCircle, Keyboard, AlertCircle } from '@/lib/icons';
 import { glows } from '@/lib/design-tokens';
+import { zIndexClasses } from '@/lib/z-index';
+import { logger } from '@/lib/logger';
 
 interface MenuItem {
   label?: string;
@@ -87,46 +89,46 @@ export default function MenuBar({
   // Menu configuration with actual actions
   const menuConfig: MenuConfig = {
     File: [
-      { label: 'New File', action: onNewFile || (() => console.log('New File')), shortcut: 'Ctrl+N' },
-      { label: 'Open File...', action: onOpenFile || (() => console.log('Open File')), shortcut: 'Ctrl+O' },
+      { label: 'New File', action: onNewFile || (() => logger.debug('New File')), shortcut: 'Ctrl+N' },
+      { label: 'Open File...', action: onOpenFile || (() => logger.debug('Open File')), shortcut: 'Ctrl+O' },
       { separator: true },
-      { label: 'Save', action: onSave || (() => console.log('Save')), shortcut: 'Ctrl+S' },
-      { label: 'Save As...', action: onSaveAs || (() => console.log('Save As')), shortcut: 'Ctrl+Shift+S' },
+      { label: 'Save', action: onSave || (() => logger.debug('Save')), shortcut: 'Ctrl+S' },
+      { label: 'Save As...', action: onSaveAs || (() => logger.debug('Save As')), shortcut: 'Ctrl+Shift+S' },
       { separator: true },
-      { label: 'Close Editor', action: onCloseFile || (() => console.log('Close editor')), shortcut: 'Ctrl+W' },
-      { label: 'Exit', action: onExit || (() => console.log('Exit')) }
+      { label: 'Close Editor', action: onCloseFile || (() => logger.debug('Close editor')), shortcut: 'Ctrl+W' },
+      { label: 'Exit', action: onExit || (() => logger.debug('Exit')) }
     ],
     Edit: [
       { label: 'Undo', action: () => document.execCommand('undo'), shortcut: 'Ctrl+Z' },
       { label: 'Redo', action: () => document.execCommand('redo'), shortcut: 'Ctrl+Y' },
       { separator: true },
-      { label: 'Cut', action: onCut || (() => console.log('Cut')), shortcut: 'Ctrl+X' },
-      { label: 'Copy', action: onCopy || (() => console.log('Copy')), shortcut: 'Ctrl+C' },
-      { label: 'Paste', action: onPaste || (() => console.log('Paste')), shortcut: 'Ctrl+V' },
+      { label: 'Cut', action: onCut || (() => logger.debug('Cut')), shortcut: 'Ctrl+X' },
+      { label: 'Copy', action: onCopy || (() => logger.debug('Copy')), shortcut: 'Ctrl+C' },
+      { label: 'Paste', action: onPaste || (() => logger.debug('Paste')), shortcut: 'Ctrl+V' },
       { separator: true },
-      { label: 'Find', action: onFind || (() => console.log('Find')), shortcut: 'Ctrl+F' },
-      { label: 'Replace', action: onReplace || (() => console.log('Replace')), shortcut: 'Ctrl+H' }
+      { label: 'Find', action: onFind || (() => logger.debug('Find')), shortcut: 'Ctrl+F' },
+      { label: 'Replace', action: onReplace || (() => logger.debug('Replace')), shortcut: 'Ctrl+H' }
     ],
     View: [
-      { label: 'Explorer', action: onToggleExplorer || (() => console.log('Toggle Explorer')), shortcut: 'Ctrl+Shift+E' },
-      { label: 'Terminal', action: onToggleTerminal || (() => console.log('Toggle Terminal')), shortcut: 'Ctrl+`' },
-      { label: 'Output', action: onToggleOutput || (() => console.log('Toggle Output')), shortcut: 'Ctrl+Shift+U' },
+      { label: 'Explorer', action: onToggleExplorer || (() => logger.debug('Toggle Explorer')), shortcut: 'Ctrl+Shift+E' },
+      { label: 'Terminal', action: onToggleTerminal || (() => logger.debug('Toggle Terminal')), shortcut: 'Ctrl+`' },
+      { label: 'Output', action: onToggleOutput || (() => logger.debug('Toggle Output')), shortcut: 'Ctrl+Shift+U' },
       { separator: true },
-      { label: 'Zoom In', action: onZoomIn || (() => console.log('Zoom In')), shortcut: 'Ctrl+=' },
-      { label: 'Zoom Out', action: onZoomOut || (() => console.log('Zoom Out')), shortcut: 'Ctrl+-' },
-      { label: 'Reset Zoom', action: onResetZoom || (() => console.log('Reset Zoom')), shortcut: 'Ctrl+0' }
+      { label: 'Zoom In', action: onZoomIn || (() => logger.debug('Zoom In')), shortcut: 'Ctrl+=' },
+      { label: 'Zoom Out', action: onZoomOut || (() => logger.debug('Zoom Out')), shortcut: 'Ctrl+-' },
+      { label: 'Reset Zoom', action: onResetZoom || (() => logger.debug('Reset Zoom')), shortcut: 'Ctrl+0' }
     ],
     Run: [
-      { label: 'Run Code', action: onRunCode || (() => console.log('Run Code')), shortcut: 'F5' },
-      { label: 'Debug', action: onDebug || (() => console.log('Debug')), shortcut: 'F9' },
+      { label: 'Run Code', action: onRunCode || (() => logger.debug('Run Code')), shortcut: 'F5' },
+      { label: 'Debug', action: onDebug || (() => logger.debug('Debug')), shortcut: 'F9' },
       { separator: true },
-      { label: 'Stop', action: onStop || (() => console.log('Stop')), shortcut: 'Shift+F5' }
+      { label: 'Stop', action: onStop || (() => logger.debug('Stop')), shortcut: 'Shift+F5' }
     ],
     Help: [
       { label: 'About Coder1', action: onShowAbout || (() => alert('Coder1 IDE v2.0.0\nBuilt for Claude Code and vibe coders')), shortcut: '' },
-      { label: 'Documentation', action: () => window.open('http://localhost:3000/documentation', '_blank'), shortcut: '' },
+      { label: 'Documentation', action: () => window.open('http://localhost:3001/documentation', '_blank'), shortcut: '' },
       { separator: true },
-      { label: 'Keyboard Shortcuts', action: onShowKeyboardShortcuts || (() => console.log('Shortcuts')), shortcut: 'Ctrl+K Ctrl+S' },
+      { label: 'Keyboard Shortcuts', action: onShowKeyboardShortcuts || (() => logger.debug('Shortcuts')), shortcut: 'Ctrl+K Ctrl+S' },
       { label: 'Report Issue', action: () => window.open('https://github.com/michaelkraft/autonomous_vibe_interface/issues', '_blank') }
     ]
   };
@@ -160,10 +162,10 @@ export default function MenuBar({
 
   // Menu items with proper routing to Express backend pages
   const menuItems = [
-    { icon: Home, label: 'Home page', href: '/', emoji: '🏠' },
-    { icon: Grid, label: 'AI dashboard', href: 'http://localhost:3001/vibe-dashboard', emoji: '🤖' },
-    { icon: Code, label: 'Agent dashboard', href: 'http://localhost:3001/agent-dashboard', emoji: '👥' },
-    { icon: FileText, label: 'Documentation', href: 'http://localhost:3001/documentation', emoji: '📚' },
+    { icon: Home, label: 'Home page', href: 'http://localhost:3000/', emoji: '🏠' },
+    { icon: Grid, label: 'AI dashboard', href: 'http://localhost:3000/vibe-dashboard', emoji: '🤖' },
+    { icon: Code, label: 'Agent Dashboard', href: 'http://localhost:3000/agent-dashboard.html', emoji: '🤖' },
+    { icon: FileText, label: 'Documentation', href: 'http://localhost:3000/documentation', emoji: '📚' },
     { icon: SettingsIcon, label: 'Settings', href: '#', onClick: () => onShowSettings?.(), emoji: '⚙️' },
   ];
 
@@ -226,7 +228,7 @@ export default function MenuBar({
               {menuName}
             </button>
             {activeMenu === menuName && (
-              <div className="absolute top-full left-0 mt-1 min-w-[200px] bg-bg-secondary border border-border-default rounded-md shadow-lg z-50 py-1">
+              <div className={`absolute top-full left-0 mt-1 min-w-[200px] bg-bg-secondary border border-border-default rounded-md shadow-lg ${zIndexClasses.dropdown} py-1`}>
                 {menuConfig[menuName].map((item, index) => (
                   item.separator ? (
                     <div key={`sep-${index}`} className="h-px bg-border-default my-1" />
@@ -312,7 +314,7 @@ export default function MenuBar({
 
         {/* Dropdown */}
         {isMenuOpen && (
-          <div className="absolute right-0 mt-2 w-56 bg-bg-secondary border border-border-default rounded-lg shadow-2xl overflow-hidden z-50">
+          <div className={`absolute right-0 mt-2 w-56 bg-bg-secondary border border-border-default rounded-lg shadow-2xl overflow-hidden ${zIndexClasses.dropdown}`}>
             <div className="py-1">
               {menuItems.map((item) => {
                 const Icon = item.icon;

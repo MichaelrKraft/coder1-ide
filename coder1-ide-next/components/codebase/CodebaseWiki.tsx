@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { logger } from '@/lib/logger';
 
 interface SearchResult {
     functions: Array<{
@@ -130,7 +131,7 @@ const CodebaseWiki: React.FC = () => {
                 setError(data.error || 'Failed to load stats');
             }
         } catch (err) {
-            console.error('Failed to load codebase stats:', err);
+            logger.error('Failed to load codebase stats:', err);
             setError('Failed to connect to codebase service');
         }
     };
@@ -145,7 +146,7 @@ const CodebaseWiki: React.FC = () => {
                 setShowSuggestions(data.suggestions.length > 0);
             }
         } catch (err) {
-            console.error('Failed to fetch suggestions:', err);
+            logger.error('Failed to fetch suggestions:', err);
         }
     };
 
@@ -170,7 +171,7 @@ const CodebaseWiki: React.FC = () => {
                 setError(data.error || 'Search failed');
             }
         } catch (err) {
-            console.error('Search failed:', err);
+            logger.error('Search failed:', err);
             setError('Failed to search codebase');
         } finally {
             setLoading(false);
@@ -208,7 +209,7 @@ const CodebaseWiki: React.FC = () => {
                 setIndexing(false);
             }
         } catch (err) {
-            console.error('Failed to trigger indexing:', err);
+            logger.error('Failed to trigger indexing:', err);
             setError('Failed to start codebase indexing');
             setIndexing(false);
         }
@@ -222,7 +223,7 @@ const CodebaseWiki: React.FC = () => {
 
     const openInEditor = (filePath: string, line?: number) => {
         // This would integrate with the parent IDE to open files
-        console.log('Opening file:', filePath, 'at line:', line);
+        logger.debug('Opening file:', filePath, 'at line:', line);
         // TODO: Integrate with IDE file opening mechanism
     };
 

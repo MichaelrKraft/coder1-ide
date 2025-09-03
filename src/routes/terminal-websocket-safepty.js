@@ -2033,7 +2033,7 @@ function setupTerminalWebSocket(io) {
                 }
                 
             } catch (error) {
-                console.error(`[SafePTYManager] Error switching to sandbox:`, error);
+                console.error('[SafePTYManager] Error switching to sandbox:', error);
                 socket.emit('sandbox:switch_error', { 
                     error: `Failed to switch to sandbox: ${error.message}` 
                 });
@@ -2041,7 +2041,7 @@ function setupTerminalWebSocket(io) {
         });
         
         socket.on('switch_to_main', async () => {
-            console.log(`[SafePTYManager] Switching terminal back to main`);
+            console.log('[SafePTYManager] Switching terminal back to main');
             
             try {
                 // Get the current terminal session for this socket
@@ -2076,7 +2076,7 @@ function setupTerminalWebSocket(io) {
                         message: 'Disconnected from sandbox and returned to main terminal' 
                     });
                     
-                    console.log(`[SafePTYManager] Successfully switched back to main terminal`);
+                    console.log('[SafePTYManager] Successfully switched back to main terminal');
                 } else {
                     socket.emit('sandbox:switch_error', { 
                         error: 'Terminal process not available' 
@@ -2084,7 +2084,7 @@ function setupTerminalWebSocket(io) {
                 }
                 
             } catch (error) {
-                console.error(`[SafePTYManager] Error switching to main:`, error);
+                console.error('[SafePTYManager] Error switching to main:', error);
                 socket.emit('sandbox:switch_error', { 
                     error: `Failed to switch to main: ${error.message}` 
                 });

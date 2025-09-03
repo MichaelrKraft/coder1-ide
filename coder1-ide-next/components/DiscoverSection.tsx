@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Compass, ChevronUp, ChevronDown, Grid, FileText, Code, Sparkles, Terminal, Plus } from 'lucide-react';
+import { logger } from '@/lib/logger';
 
 export default function DiscoverSection() {
   const [isExpanded, setIsExpanded] = useState(true);
@@ -12,12 +13,12 @@ export default function DiscoverSection() {
   // Debug function to reset panel state
   const resetPanel = () => {
     setIsExpanded(true);
-    console.log('Discover panel reset to expanded state');
+    logger.debug('Discover panel reset to expanded state');
   };
 
   // Handle panel toggle with debugging
   const handleToggle = () => {
-    console.log('Discover panel toggle:', isExpanded ? 'collapsing' : 'expanding');
+    logger.debug('Discover panel toggle:', isExpanded ? 'collapsing' : 'expanding');
     setIsExpanded(prev => !prev);
   };
 
@@ -65,7 +66,7 @@ export default function DiscoverSection() {
 
   const executeSlashCommand = (command: string) => {
     // Send command to terminal or Claude Code
-    console.log('Executing command:', command);
+    logger.debug('Executing command:', command);
     // This would integrate with the Terminal component
   };
 

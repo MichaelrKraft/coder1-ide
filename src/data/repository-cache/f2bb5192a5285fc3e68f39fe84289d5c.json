@@ -2,7 +2,7 @@
   "repoId": "f2bb5192a5285fc3e68f39fe84289d5c",
   "url": "https://github.com/bmad-code-org/BMAD-METHOD",
   "name": "bmad-code-org/BMAD-METHOD",
-  "analyzedAt": "2025-08-25T21:50:03.148Z",
+  "analyzedAt": "2025-09-02T13:44:59.035Z",
   "metadata": {
     "description": "",
     "language": "",
@@ -57,6 +57,6 @@
     "fileCount": 0,
     "patternCount": 5,
     "suggestionCount": 0,
-    "analysisTime": 1756158603149
+    "analysisTime": 1756820699035
   }
 }

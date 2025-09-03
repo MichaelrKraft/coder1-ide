@@ -7,10 +7,12 @@
 
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Check, Download, Save, Loader2, FileText } from 'lucide-react';
 import { useSessionSummary } from '@/lib/hooks/useSessionSummary';
 import { useUIStore } from '@/stores/useUIStore';
+import { useModalStack } from '@/lib/hooks/useModalStack';
+import { zIndexClasses } from '@/lib/z-index';
 import type { IDEFile } from '@/types';
 
 interface StatusBarModalsProps {
@@ -33,6 +35,7 @@ export default function StatusBarModals({
   const [exportFormat, setExportFormat] = useState<'markdown' | 'json' | 'html' | 'all'>('markdown');
   
   const { closeModal, addToast } = useUIStore();
+  const { pushModal, popModal } = useModalStack();
   
   const {
     isGenerating,
@@ -53,12 +56,21 @@ export default function StatusBarModals({
   // Handle modal close
   const handleCloseModal = () => {
     closeModal('sessionSummary');
+    popModal('sessionSummary'); // Remove from modal stack
     setCopySuccess(false);
     setActiveTab('summary');
   };
 
-  // Start generation on mount if not already generated
-  React.useEffect(() => {
+  // Register modal with stack and start generation on mount
+  useEffect(() => {
+    const zIndex = pushModal({
+      id: 'sessionSummary',
+      onClose: handleCloseModal,
+      closeOnEscape: true,
+      closeOnBackdrop: true
+    });
+    
+    // Only generate summary once when modal opens
     if (!hasGenerated && !isGenerating) {
       generateSummary({
         openFiles,
@@ -67,7 +79,19 @@ export default function StatusBarModals({
         terminalCommands
       });
     }
-  }, []);
+
+    // Cleanup on unmount
+    return () => {
+      popModal('sessionSummary');
+    };
+  }, []); // Empty dependency array - only run once on mount
+
+  // Handle backdrop click
+  const handleBackdropClick = (e: React.MouseEvent) => {
+    if (e.target === e.currentTarget) {
+      handleCloseModal();
+    }
+  };
 
   // Handle copy to clipboard
   const handleCopyToClipboard = async () => {
@@ -122,8 +146,14 @@ export default function StatusBarModals({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-bg-secondary border border-border-default rounded-lg w-full max-w-4xl max-h-[80vh] flex flex-col">
+    <div 
+      className={`fixed inset-0 bg-black/50 backdrop-blur-sm ${zIndexClasses.modalBackdrop} flex items-center justify-center p-4`}
+      onClick={handleBackdropClick}
+    >
+      <div 
+        className={`bg-bg-secondary border border-border-default rounded-lg w-full max-w-4xl max-h-[80vh] flex flex-col ${zIndexClasses.modalContent}`}
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Modal Header */}
         <div className="flex items-center justify-between p-4 border-b border-border-default">
           <h2 className="text-lg font-semibold text-text-primary">Session Summary</h2>

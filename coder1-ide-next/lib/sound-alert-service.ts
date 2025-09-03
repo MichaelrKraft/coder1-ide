@@ -1,3 +1,5 @@
+import { logger } from './logger';
+
 /**
  * Sound Alert Service
  * 
@@ -36,7 +38,7 @@ export class SoundAlertService {
         this.audioContext = new AudioContextClass();
       }
     } catch (error) {
-      console.warn('🔇 SoundAlertService: Failed to initialize audio context:', error);
+      logger.warn('🔇 SoundAlertService: Failed to initialize audio context:', error);
       this.audioContext = null;
     }
   }
@@ -56,7 +58,7 @@ export class SoundAlertService {
         this.selectedPreset = savedPreset as SoundPreset;
       }
     } catch (error) {
-      console.warn('🔇 SoundAlertService: Failed to load user preferences:', error);
+      logger.warn('🔇 SoundAlertService: Failed to load user preferences:', error);
       this.isEnabled = true; // Default to enabled
       this.selectedPreset = 'gentle'; // Default preset
     }
@@ -70,7 +72,7 @@ export class SoundAlertService {
       localStorage.setItem('soundAlertsEnabled', JSON.stringify(this.isEnabled));
       localStorage.setItem('soundAlertPreset', this.selectedPreset);
     } catch (error) {
-      console.warn('🔇 SoundAlertService: Failed to save user preferences:', error);
+      logger.warn('🔇 SoundAlertService: Failed to save user preferences:', error);
     }
   }
 
@@ -151,9 +153,9 @@ export class SoundAlertService {
       oscillator.start(currentTime);
       oscillator.stop(currentTime + duration);
 
-      console.log('🔊 SoundAlertService: Played alert sound');
+      logger.debug('🔊 SoundAlertService: Played alert sound');
     } catch (error) {
-      console.warn('🔇 SoundAlertService: Failed to play sound:', error);
+      logger.warn('🔇 SoundAlertService: Failed to play sound:', error);
     }
   }
 

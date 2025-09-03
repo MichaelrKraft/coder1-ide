@@ -200,6 +200,110 @@ router.get('/check-mcp', async (req, res) => {
 });
 
 /**
+ * GET /api/templates/check-system
+ * Check system dependencies for MCP installation
+ */
+router.get('/check-system', async (req, res) => {
+    const { spawn } = require('child_process');
+    const os = require('os');
+    
+    try {
+        const checks = {
+            node: false,
+            npm: false,
+            npx: false,
+            mcpConfigExists: false,
+            platform: os.platform(),
+            homeDir: os.homedir()
+        };
+        
+        // Check Node.js
+        try {
+            await new Promise((resolve, reject) => {
+                const nodeProcess = spawn('node', ['--version'], { stdio: 'pipe' });
+                nodeProcess.on('close', (code) => {
+                    checks.node = code === 0;
+                    resolve();
+                });
+                nodeProcess.on('error', () => {
+                    checks.node = false;
+                    resolve();
+                });
+            });
+        } catch (error) {
+            checks.node = false;
+        }
+        
+        // Check npm
+        try {
+            await new Promise((resolve, reject) => {
+                const npmProcess = spawn('npm', ['--version'], { stdio: 'pipe' });
+                npmProcess.on('close', (code) => {
+                    checks.npm = code === 0;
+                    resolve();
+                });
+                npmProcess.on('error', () => {
+                    checks.npm = false;
+                    resolve();
+                });
+            });
+        } catch (error) {
+            checks.npm = false;
+        }
+        
+        // Check npx
+        try {
+            await new Promise((resolve, reject) => {
+                const npxProcess = spawn('npx', ['--version'], { stdio: 'pipe' });
+                npxProcess.on('close', (code) => {
+                    checks.npx = code === 0;
+                    resolve();
+                });
+                npxProcess.on('error', () => {
+                    checks.npx = false;
+                    resolve();
+                });
+            });
+        } catch (error) {
+            checks.npx = false;
+        }
+        
+        // Check if ~/.mcp.json exists
+        const mcpConfigPath = path.join(os.homedir(), '.mcp.json');
+        try {
+            await fs.access(mcpConfigPath);
+            checks.mcpConfigExists = true;
+        } catch (error) {
+            checks.mcpConfigExists = false;
+        }
+        
+        const allGood = checks.node && checks.npm && checks.npx;
+        
+        res.json({
+            success: true,
+            checks,
+            ready: allGood,
+            warnings: !allGood ? [
+                !checks.node && 'Node.js not found',
+                !checks.npm && 'npm not found', 
+                !checks.npx && 'npx not found'
+            ].filter(Boolean) : [],
+            recommendations: !allGood ? [
+                'Please install Node.js from https://nodejs.org/',
+                'Ensure npm and npx are in your PATH'
+            ] : []
+        });
+        
+    } catch (error) {
+        console.error('Error checking system:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to check system dependencies'
+        });
+    }
+});
+
+/**
  * GET /api/templates/:id
  * Get a specific template by ID
  */
@@ -392,10 +496,11 @@ router.get('/recommended', async (req, res) => {
 
 /**
  * POST /api/templates/install-mcp
- * Install an MCP by adding it to ~/.mcp.json
+ * Install an MCP by adding it to ~/.mcp.json and installing dependencies
  */
 router.post('/install-mcp', async (req, res) => {
     const os = require('os');
+    const { spawn } = require('child_process');
     const homedir = os.homedir();
     const mcpConfigPath = path.join(homedir, '.mcp.json');
     
@@ -434,6 +539,74 @@ router.post('/install-mcp', async (req, res) => {
             });
         }
 
+        // Check for environment variables that need to be set
+        const needsEnvVars = [];
+        if (config.env) {
+            Object.entries(config.env).forEach(([key, value]) => {
+                if (typeof value === 'string' && value.startsWith('YOUR_')) {
+                    needsEnvVars.push(key);
+                }
+            });
+        }
+
+        if (needsEnvVars.length > 0) {
+            return res.json({
+                success: false,
+                needsConfiguration: true,
+                message: `MCP "${mcpId}" requires configuration of environment variables: ${needsEnvVars.join(', ')}`,
+                requiredEnvVars: needsEnvVars,
+                instructions: 'Please obtain the required API keys and configure them in your environment before installing this MCP.'
+            });
+        }
+
+        // For npx-based installations, try to install the package first
+        if (config.command === 'npx' && config.args && config.args.length > 0) {
+            const packageName = config.args.find(arg => arg.startsWith('@') || arg.includes('/'));
+            if (packageName && !packageName.startsWith('-')) {
+                try {
+                    console.log(`Installing package ${packageName}...`);
+                    
+                    // Install the package globally to ensure it's available
+                    await new Promise((resolve, reject) => {
+                        const installProcess = spawn('npm', ['install', '-g', packageName], { 
+                            stdio: ['pipe', 'pipe', 'pipe'] 
+                        });
+                        
+                        let stdout = '';
+                        let stderr = '';
+                        
+                        installProcess.stdout.on('data', (data) => {
+                            stdout += data.toString();
+                        });
+                        
+                        installProcess.stderr.on('data', (data) => {
+                            stderr += data.toString();
+                        });
+                        
+                        installProcess.on('close', (code) => {
+                            if (code === 0) {
+                                console.log(`Successfully installed ${packageName}`);
+                                resolve();
+                            } else {
+                                console.error(`Failed to install ${packageName}:`, stderr);
+                                // Don't fail the entire installation if global install fails
+                                resolve();
+                            }
+                        });
+                        
+                        installProcess.on('error', (error) => {
+                            console.error(`Error installing ${packageName}:`, error);
+                            // Don't fail the entire installation if global install fails
+                            resolve();
+                        });
+                    });
+                } catch (error) {
+                    console.error('Error during package installation:', error);
+                    // Continue with MCP configuration even if package install fails
+                }
+            }
+        }
+
         // Add new MCP configuration
         mcpConfig.mcpServers[mcpId] = config;
 
@@ -447,7 +620,8 @@ router.post('/install-mcp', async (req, res) => {
         res.json({
             success: true,
             message: `MCP "${mcpId}" installed successfully`,
-            requiresRestart: true
+            requiresRestart: true,
+            instructions: 'Please restart Claude Code CLI to use the new MCP server.'
         });
 
     } catch (error) {

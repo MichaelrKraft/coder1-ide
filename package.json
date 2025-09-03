@@ -4,8 +4,8 @@
   "description": "An autonomous vibe coding agent that transforms natural language into code using AI",
   "main": "src/app.js",
   "scripts": {
-    "start": "node --max-old-space-size=512 --expose-gc src/app.js",
-    "dev": "nodemon --max-old-space-size=512 --expose-gc src/app.js",
+    "start": "node --max-old-space-size=2048 --expose-gc src/app.js",
+    "dev": "nodemon --max-old-space-size=2048 --expose-gc src/app.js",
     "deploy": "./deploy.sh",
     "build:all": "cd coder1-ide-next && npm run build",
     "verify:deployment": "curl -f http://localhost:3000/ide || echo 'Deployment verification failed'",

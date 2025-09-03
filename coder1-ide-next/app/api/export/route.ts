@@ -3,6 +3,8 @@ import { exec } from 'child_process';
 import { promisify } from 'util';
 import fs from 'fs/promises';
 import path from 'path';
+import { getBackendUrl } from '@/lib/api-config';
+import { logger } from '@/lib/logger';
 
 const execAsync = promisify(exec);
 
@@ -10,7 +12,7 @@ export async function POST(request: NextRequest) {
   try {
     const { format, includeNodeModules, includeGitHistory, sessionId } = await request.json();
     
-    const EXPRESS_BACKEND_URL = 'http://localhost:3000';
+    const EXPRESS_BACKEND_URL = getBackendUrl();
     
     // If sessionId provided, export session data from Express backend
     if (sessionId) {
@@ -32,7 +34,7 @@ export async function POST(request: NextRequest) {
           });
         }
       } catch (error) {
-        console.error('Failed to export session data:', error);
+        logger.error('Failed to export session data:', error);
       }
     }
     
@@ -50,19 +52,21 @@ export async function POST(request: NextRequest) {
     }
     
     // Build exclude flags for zip command
-    let excludeFlags = '--exclude=*.zip --exclude=.git --exclude=.next --exclude=exports';
+    let excludeFlags = '--exclude=*.zip --exclude=.git --exclude=.next --exclude=exports --exclude=.DS_Store';
     if (!includeNodeModules) {
-      excludeFlags += ' --exclude=node_modules';
+      excludeFlags += ' --exclude=node_modules/* --exclude=node_modules';
     }
     if (!includeGitHistory) {
-      excludeFlags += ' --exclude=.git';
+      excludeFlags += ' --exclude=.git/* --exclude=.git';
     }
     
-    // Create zip file
+    // Create zip file with increased buffer limit
     const zipCommand = `cd ${projectDir} && zip -r ${exportFile} . ${excludeFlags}`;
     
     try {
-      await execAsync(zipCommand);
+      await execAsync(zipCommand, { 
+        maxBuffer: 50 * 1024 * 1024 // 50MB buffer limit
+      });
       
       // Read the zip file
       const fileBuffer = await fs.readFile(exportFile);
@@ -78,11 +82,11 @@ export async function POST(request: NextRequest) {
         }
       });
     } catch (error) {
-      console.error('Failed to create zip:', error);
+      logger.error('Failed to create zip:', error);
       throw error;
     }
   } catch (error) {
-    console.error('Failed to export project:', error);
+    logger.error('Failed to export project:', error);
     return NextResponse.json(
       { error: 'Failed to export project' },
       { status: 500 }

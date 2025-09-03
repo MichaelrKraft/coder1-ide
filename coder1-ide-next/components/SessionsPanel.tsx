@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Clock, Play, Pause, Save, FileText, DollarSign, RefreshCw } from 'lucide-react';
 import { useSession } from '@/contexts/SessionContext';
+import { logger } from '@/lib/logger';
 
 interface Session {
   id: string;
@@ -33,31 +34,52 @@ export default function SessionsPanel() {
   const loadSessions = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/sessions');
-      const data = await response.json();
+      logger.debug('📋 Loading sessions from API...');
       
-      if (data.success) {
+      const response = await fetch('/api/sessions');
+      
+      if (!response.ok) {
+        logger.error(`Failed to fetch sessions: ${response.status} ${response.statusText}`);
+        const errorText = await response.text();
+        logger.error('Error details:', errorText);
+        return;
+      }
+      
+      const data = await response.json();
+      logger.debug('📊 Sessions API response:', data);
+      
+      if (data.success || data.sessions) {
+        // Some APIs return success flag, others just return sessions array
+        const sessionsList = data.sessions || data;
+        
         // Refresh sessions via context
         await refreshSessions();
         
         // Check for active session from localStorage
         const currentSessionId = localStorage.getItem('currentSessionId');
-        if (currentSessionId) {
-          const activeSession = data.sessions.find((s: Session) => s.id === currentSessionId);
+        if (currentSessionId && Array.isArray(sessionsList)) {
+          const activeSession = sessionsList.find((s: Session) => s.id === currentSessionId);
           if (activeSession) {
+            logger.debug('✅ Found active session:', activeSession.name);
             switchSession(activeSession);
             loadCheckpoints(activeSession.id);
           }
-        } else if (data.sessions.length > 0) {
+        } else if (Array.isArray(sessionsList) && sessionsList.length > 0) {
           // Use most recent session as current
-          const mostRecent = data.sessions[0];
+          const mostRecent = sessionsList[0];
+          logger.debug('📌 Using most recent session:', mostRecent.name);
           switchSession(mostRecent);
           localStorage.setItem('currentSessionId', mostRecent.id);
           loadCheckpoints(mostRecent.id);
+        } else {
+          logger.debug('ℹ️ No sessions found');
         }
+      } else {
+        logger.warn('⚠️ Unexpected response format:', data);
       }
     } catch (error) {
-      console.error('Failed to load sessions:', error);
+      logger.error('❌ Failed to load sessions:', error);
+      // Show user-friendly message but don't crash the component
     } finally {
       setLoading(false);
     }
@@ -66,14 +88,24 @@ export default function SessionsPanel() {
   // Load checkpoints for a session
   const loadCheckpoints = async (sessionId: string) => {
     try {
+      logger.debug(`📍 Loading checkpoints for session: ${sessionId}`);
       const response = await fetch(`/api/checkpoint?sessionId=${sessionId}`);
-      const data = await response.json();
       
-      if (data.success) {
+      if (!response.ok) {
+        logger.error(`Failed to fetch checkpoints: ${response.status} ${response.statusText}`);
+        return;
+      }
+      
+      const data = await response.json();
+      logger.debug('✅ Checkpoints loaded:', data);
+      
+      if (data.success || data.checkpoints) {
         setCheckpoints(data.checkpoints || []);
       }
     } catch (error) {
-      console.error('Failed to load checkpoints:', error);
+      logger.error('❌ Failed to load checkpoints:', error);
+      // Don't crash, just show empty checkpoints
+      setCheckpoints([]);
     }
   };
   
@@ -126,7 +158,7 @@ export default function SessionsPanel() {
         }
       }
     } catch (error) {
-      console.error('Failed to create session:', error);
+      logger.error('Failed to create session:', error);
     }
   };
 
@@ -164,7 +196,7 @@ export default function SessionsPanel() {
             loadCheckpoints(session.id);
             
             // Notify user
-            console.log('✅ Session restored:', session.name);
+            logger.debug('✅ Session restored:', session.name);
             
             // Trigger a page reload to fully restore the IDE state
             window.location.reload();
@@ -174,10 +206,10 @@ export default function SessionsPanel() {
         // No checkpoints, just switch to this session
         switchSession(session);
         localStorage.setItem('currentSessionId', session.id);
-        console.log('📄 Switched to session (no checkpoints):', session.name);
+        logger.debug('📄 Switched to session (no checkpoints):', session.name);
       }
     } catch (error) {
-      console.error('Failed to restore session:', error);
+      logger.error('Failed to restore session:', error);
     }
   };
   

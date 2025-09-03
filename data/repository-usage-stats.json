@@ -1,7 +1,98 @@
 {
   "version": "1.0",
-  "lastUpdated": "2025-08-29T04:33:29.918Z",
+  "lastUpdated": "2025-09-03T15:50:14.017Z",
   "repositories": [
+    {
+      "url": "https://github.com/michaelkraft/autonomous_vibe_interface",
+      "firstSeen": 1756913788786,
+      "lastUsed": 1756914608185,
+      "analysisCount": 1,
+      "queryCount": 4,
+      "totalInteractions": 5,
+      "score": 40,
+      "metadata": {
+        "timestamp": 1756913788786,
+        "source": "manual"
+      }
+    },
+    {
+      "url": "https://github.com/florinpop17/app-ideas",
+      "firstSeen": 1756912277974,
+      "lastUsed": 1756914608186,
+      "analysisCount": 1,
+      "queryCount": 6,
+      "totalInteractions": 7,
+      "score": 54,
+      "metadata": {
+        "timestamp": 1756912277974,
+        "source": "manual"
+      }
+    },
+    {
+      "url": "https://github.com/ChrisRoyse/610ClaudeSubagents",
+      "firstSeen": 1756855329870,
+      "lastUsed": 1756914608185,
+      "analysisCount": 1,
+      "queryCount": 8,
+      "totalInteractions": 9,
+      "score": 68,
+      "metadata": {
+        "timestamp": 1756855329870,
+        "source": "manual"
+      }
+    },
+    {
+      "url": "https://github.com/Mintplex-Labs/anything-llm",
+      "firstSeen": 1756855721818,
+      "lastUsed": 1756914608185,
+      "analysisCount": 1,
+      "queryCount": 7,
+      "totalInteractions": 8,
+      "score": 61,
+      "metadata": {
+        "timestamp": 1756855721817,
+        "source": "manual"
+      }
+    },
+    {
+      "url": "[200~https://github.com/superbasicstudio/claude-conductor?tab=readme-ov-file#what-it-does[201~",
+      "firstSeen": 1756910585770,
+      "lastUsed": 1756914608185,
+      "analysisCount": 1,
+      "queryCount": 6,
+      "totalInteractions": 7,
+      "score": 54,
+      "metadata": {
+        "timestamp": 1756910585770,
+        "source": "manual"
+      }
+    },
+    {
+      "url": "https://github.com/MichaelrKraft/coder1-ide",
+      "firstSeen": 1756823619267,
+      "lastUsed": 1756855780783,
+      "analysisCount": 1,
+      "queryCount": 6,
+      "totalInteractions": 7,
+      "score": 52,
+      "metadata": {
+        "timestamp": 1756823619267,
+        "source": "manual"
+      }
+    },
+    {
+      "url": "https://github.com/bmad-code-org/BMAD-METHOD",
+      "firstSeen": 1756236949340,
+      "lastUsed": 1756855780783,
+      "analysisCount": 5,
+      "queryCount": 7,
+      "totalInteractions": 12,
+      "score": 105,
+      "metadata": {
+        "timestamp": 1756240498749,
+        "source": "manual"
+      }
+    },
     {
       "url": "https://github.com/coleam00/Archon",
       "firstSeen": 1756441289931,
@@ -9,7 +100,7 @@
       "analysisCount": 1,
       "queryCount": 3,
       "totalInteractions": 4,
-      "score": 33,
+      "score": 25,
       "metadata": {
         "timestamp": 1756441289930,
         "source": "manual"
@@ -22,7 +113,7 @@
       "analysisCount": 1,
       "queryCount": 1,
       "totalInteractions": 2,
-      "score": 18,
+      "score": 13,
       "metadata": {
         "timestamp": 1756330694857,
         "source": "manual"
@@ -35,7 +126,7 @@
       "analysisCount": 1,
       "queryCount": 3,
       "totalInteractions": 4,
-      "score": 31,
+      "score": 23,
       "metadata": {
         "timestamp": 1756325009997,
         "source": "manual"
@@ -48,7 +139,7 @@
       "analysisCount": 1,
       "queryCount": 2,
       "totalInteractions": 3,
-      "score": 24,
+      "score": 18,
       "metadata": {
         "timestamp": 1756236814249,
         "source": "manual"
@@ -61,7 +152,7 @@
       "analysisCount": 1,
       "queryCount": 2,
       "totalInteractions": 3,
-      "score": 24,
+      "score": 18,
       "metadata": {
         "timestamp": 1756236814250,
         "source": "manual"
@@ -74,7 +165,7 @@
       "analysisCount": 1,
       "queryCount": 2,
       "totalInteractions": 3,
-      "score": 24,
+      "score": 18,
       "metadata": {
         "timestamp": 1756236814250,
         "source": "manual"
@@ -87,7 +178,7 @@
       "analysisCount": 7,
       "queryCount": 2,
       "totalInteractions": 9,
-      "score": 91,
+      "score": 69,
       "metadata": {
         "timestamp": 1756240691700,
         "source": "manual"
@@ -100,7 +191,7 @@
       "analysisCount": 7,
       "queryCount": 2,
       "totalInteractions": 9,
-      "score": 91,
+      "score": 69,
       "metadata": {
         "timestamp": 1756240691700,
         "source": "manual"
@@ -113,7 +204,7 @@
       "analysisCount": 7,
       "queryCount": 2,
       "totalInteractions": 9,
-      "score": 91,
+      "score": 69,
       "metadata": {
         "timestamp": 1756240691700,
         "source": "manual"
@@ -126,7 +217,7 @@
       "analysisCount": 7,
       "queryCount": 2,
       "totalInteractions": 9,
-      "score": 91,
+      "score": 69,
       "metadata": {
         "timestamp": 1756240706706,
         "source": "manual"
@@ -139,7 +230,7 @@
       "analysisCount": 7,
       "queryCount": 2,
       "totalInteractions": 9,
-      "score": 91,
+      "score": 69,
       "metadata": {
         "timestamp": 1756240706707,
         "source": "manual"
@@ -152,7 +243,7 @@
       "analysisCount": 7,
       "queryCount": 2,
       "totalInteractions": 9,
-      "score": 91,
+      "score": 69,
       "metadata": {
         "timestamp": 1756240706707,
         "source": "manual"
@@ -165,7 +256,7 @@
       "analysisCount": 7,
       "queryCount": 2,
       "totalInteractions": 9,
-      "score": 91,
+      "score": 69,
       "metadata": {
         "timestamp": 1756240721712,
         "source": "manual"
@@ -178,7 +269,7 @@
       "analysisCount": 7,
       "queryCount": 2,
       "totalInteractions": 9,
-      "score": 91,
+      "score": 69,
       "metadata": {
         "timestamp": 1756240721713,
         "source": "manual"
@@ -191,7 +282,7 @@
       "analysisCount": 7,
       "queryCount": 2,
       "totalInteractions": 9,
-      "score": 91,
+      "score": 69,
       "metadata": {
         "timestamp": 1756240721713,
         "source": "manual"
@@ -204,7 +295,7 @@
       "analysisCount": 6,
       "queryCount": 2,
       "totalInteractions": 8,
-      "score": 80,
+      "score": 61,
       "metadata": {
         "timestamp": 1756240453726,
         "source": "manual"
@@ -217,7 +308,7 @@
       "analysisCount": 6,
       "queryCount": 2,
       "totalInteractions": 8,
-      "score": 80,
+      "score": 61,
       "metadata": {
         "timestamp": 1756240453728,
         "source": "manual"
@@ -230,7 +321,7 @@
       "analysisCount": 6,
       "queryCount": 2,
       "totalInteractions": 8,
-      "score": 80,
+      "score": 61,
       "metadata": {
         "timestamp": 1756240453728,
         "source": "manual"
@@ -243,7 +334,7 @@
       "analysisCount": 6,
       "queryCount": 0,
       "totalInteractions": 6,
-      "score": 64,
+      "score": 48,
       "metadata": {
         "timestamp": 1756240468732,
         "source": "manual"
@@ -256,7 +347,7 @@
       "analysisCount": 6,
       "queryCount": 2,
       "totalInteractions": 8,
-      "score": 80,
+      "score": 61,
       "metadata": {
         "timestamp": 1756240468732,
         "source": "manual"
@@ -269,7 +360,7 @@
       "analysisCount": 6,
       "queryCount": 0,
       "totalInteractions": 6,
-      "score": 64,
+      "score": 48,
       "metadata": {
         "timestamp": 1756240468732,
         "source": "manual"
@@ -282,7 +373,7 @@
       "analysisCount": 5,
       "queryCount": 2,
       "totalInteractions": 7,
-      "score": 69,
+      "score": 52,
       "metadata": {
         "timestamp": 1756240483737,
         "source": "manual"
@@ -295,7 +386,7 @@
       "analysisCount": 5,
       "queryCount": 2,
       "totalInteractions": 7,
-      "score": 69,
+      "score": 52,
       "metadata": {
         "timestamp": 1756240483737,
         "source": "manual"
@@ -308,7 +399,7 @@
       "analysisCount": 5,
       "queryCount": 0,
       "totalInteractions": 5,
-      "score": 53,
+      "score": 40,
       "metadata": {
         "timestamp": 1756240483738,
         "source": "manual"
@@ -321,22 +412,9 @@
       "analysisCount": 5,
       "queryCount": 2,
       "totalInteractions": 7,
-      "score": 69,
+      "score": 52,
       "metadata": {
         "timestamp": 1756240498747,
-        "source": "manual"
-      }
-    },
-    {
-      "url": "https://github.com/bmad-code-org/BMAD-METHOD",
-      "firstSeen": 1756236949340,
-      "lastUsed": 1756240498749,
-      "analysisCount": 5,
-      "queryCount": 0,
-      "totalInteractions": 5,
-      "score": 53,
-      "metadata": {
-        "timestamp": 1756240498749,
         "source": "manual"
       }
     }

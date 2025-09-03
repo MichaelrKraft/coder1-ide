@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { logger } from '@/lib/logger';
 
 export async function GET() {
   // This would normally render the current file being edited
@@ -121,7 +122,7 @@ export async function GET() {
         // Listen for messages from parent window for live updates
         window.addEventListener('message', (event) => {
           if (event.data.type === 'preview-update') {
-            console.log('Preview update received:', event.data);
+            logger.debug('Preview update received:', event.data);
           }
         });
         

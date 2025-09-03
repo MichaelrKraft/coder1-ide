@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getBackendUrl } from '@/lib/api-config';
+import { logger } from '@/lib/logger';
 
-const EXPRESS_BACKEND_URL = 'http://localhost:3000';
+const EXPRESS_BACKEND_URL = getBackendUrl();
 
 export async function POST(request: NextRequest) {
   try {
@@ -57,7 +59,7 @@ export async function POST(request: NextRequest) {
     
     if (!response.ok) {
       const error = await response.text();
-      console.error('Checkpoint creation failed:', error);
+      logger.error('Checkpoint creation failed:', error);
       return NextResponse.json(
         { error: 'Failed to create checkpoint' },
         { status: response.status }
@@ -71,7 +73,7 @@ export async function POST(request: NextRequest) {
     });
     
   } catch (error) {
-    console.error('Checkpoint API error:', error);
+    logger.error('Checkpoint API error:', error);
     return NextResponse.json(
       { error: 'Failed to create checkpoint' },
       { status: 500 }
@@ -116,7 +118,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(result);
     
   } catch (error) {
-    console.error('Checkpoint fetch error:', error);
+    logger.error('Checkpoint fetch error:', error);
     return NextResponse.json(
       { error: 'Failed to fetch checkpoints' },
       { status: 500 }

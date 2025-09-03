@@ -98,6 +98,15 @@ if (finalPort == EXPECTED_NEXTJS_PORT) {
 
 const app = express();
 const server = http.createServer(app);
+
+// Track connections for graceful shutdown
+server.on('connection', (connection) => {
+    activeResources.connections.add(connection);
+    connection.on('close', () => {
+        activeResources.connections.delete(connection);
+    });
+});
+
 const licenseManager = new LicenseManager();
 const io = socketIO(server, {
     cors: {
@@ -475,7 +484,7 @@ app.use('/api', require('./routes/prettier-config'));
 
 // Temporary test routes for error handling verification
 if (process.env.NODE_ENV === 'development') {
-  app.use('/api/test-errors', require('./routes/test-errors'));
+    app.use('/api/test-errors', require('./routes/test-errors'));
 }
 
 // EXPERIMENTAL: Tmux Orchestrator Lab (isolated test environment)
@@ -1705,16 +1714,32 @@ const activeResources = {
 const gracefulShutdown = async (signal) => {
     console.log(`\n${signal} received, shutting down gracefully...`);
     
-    // Stop accepting new connections
-    server.close(() => {
-        console.log('Server closed');
+    // Stop accepting new connections and wait for proper closure
+    const serverClosePromise = new Promise((resolve) => {
+        server.close(() => {
+            console.log('Server closed');
+            resolve();
+        });
     });
     
-    // Clean up WebSocket connections
-    if (io) {
-        io.close(() => {
-            console.log('WebSocket server closed');
-        });
+    // Clean up WebSocket connections and wait for proper closure
+    const ioClosePromise = new Promise((resolve) => {
+        if (io) {
+            io.close(() => {
+                console.log('WebSocket server closed');
+                resolve();
+            });
+        } else {
+            resolve();
+        }
+    });
+    
+    // Wait for server and WebSocket to close properly
+    try {
+        await Promise.all([serverClosePromise, ioClosePromise]);
+        console.log('Network services stopped gracefully');
+    } catch (error) {
+        console.error('Error closing network services:', error);
     }
     
     // Clean up PTY sessions
@@ -1746,8 +1771,22 @@ const gracefulShutdown = async (signal) => {
         }
     }
     
+    // Force close any remaining connections
+    if (activeResources.connections.size > 0) {
+        console.log(`Closing ${activeResources.connections.size} remaining connections...`);
+        activeResources.connections.forEach(connection => {
+            try {
+                connection.destroy();
+            } catch (error) {
+                console.error('Error destroying connection:', error);
+            }
+        });
+        activeResources.connections.clear();
+    }
+    
     // Clear all timers
     activeResources.timers.forEach(timer => clearInterval(timer));
+    activeResources.timers.clear();
     
     // Force exit after 10 seconds
     setTimeout(() => {

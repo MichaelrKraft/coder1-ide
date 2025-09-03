@@ -8,6 +8,7 @@
 
 import { useState, useCallback } from 'react';
 import { sessionSummaryService } from '@/services/SessionSummaryService';
+import { logger } from '../logger';
 
 interface SessionSummaryState {
   isGenerating: boolean;
@@ -140,7 +141,7 @@ export const useSessionSummary = () => {
       await navigator.clipboard.writeText(textToCopy);
       return true;
     } catch (error) {
-      console.error('Failed to copy to clipboard:', error);
+      logger.error('Failed to copy to clipboard:', error);
       return false;
     }
   }, [state.summary]);
@@ -164,7 +165,7 @@ export const useSessionSummary = () => {
 
       return result.success;
     } catch (error) {
-      console.error('Export failed:', error);
+      logger.error('Export failed:', error);
       return false;
     }
   }, [state.summary]);
@@ -193,14 +194,14 @@ export const useSessionSummary = () => {
       const data = await response.json();
       
       if (response.ok) {
-        console.log('✅ Session stored in Documentation Intelligence:', data.doc?.name);
+        logger.debug('✅ Session stored in Documentation Intelligence:', data.doc?.name);
         return true;
       } else {
-        console.error('Failed to store session:', data.error);
+        logger.error('Failed to store session:', data.error);
         return false;
       }
     } catch (error) {
-      console.error('Error storing session in docs:', error);
+      logger.error('Error storing session in docs:', error);
       return false;
     }
   }, [state.summary]);

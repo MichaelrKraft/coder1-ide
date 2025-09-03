@@ -1,3 +1,5 @@
+import { logger } from '../lib/logger';
+
 /**
  * Claude API Service for Terminal Integration
  * Handles all Claude Code API interactions
@@ -98,7 +100,7 @@ class ClaudeAPIService {
       return claudeResponse;
 
     } catch (error) {
-      console.error('Claude API error:', error);
+      logger.error('Claude API error:', error);
       throw error;
     }
   }

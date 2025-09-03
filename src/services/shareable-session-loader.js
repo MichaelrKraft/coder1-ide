@@ -296,13 +296,13 @@ class ShareableSessionLoader {
         }
 
         if (item.type === 'session') {
-            prompt += `\nSESSION SUMMARY:\n`;
+            prompt += '\nSESSION SUMMARY:\n';
             prompt += `- ${item.metadata?.totalAgents || 0} agents collaborated\n`;
             prompt += `- ${item.metadata?.tasksCompleted || 0} tasks completed\n`;
             prompt += `- Duration: ${this.formatDuration(item.metadata?.duration)}\n`;
             
             if (item.agentGuidance?.suggestedApproach) {
-                prompt += `\nSUGGESTED APPROACH:\n`;
+                prompt += '\nSUGGESTED APPROACH:\n';
                 item.agentGuidance.suggestedApproach.forEach((step, i) => {
                     prompt += `${i + 1}. ${step}\n`;
                 });
@@ -310,7 +310,7 @@ class ShareableSessionLoader {
         }
 
         if (item.type === 'pattern') {
-            prompt += `\nPATTERN DETAILS:\n`;
+            prompt += '\nPATTERN DETAILS:\n';
             prompt += `- Category: ${item.pattern?.category || 'general'}\n`;
             prompt += `- Files: ${item.pattern?.files?.length || 0}\n`;
             prompt += `- When to use: ${item.usage?.whenToUse || item.description}\n`;
@@ -319,7 +319,7 @@ class ShareableSessionLoader {
         if (item.type === 'solution') {
             prompt += `\nSOLUTION FOR: ${item.problem?.description || 'Problem not specified'}\n`;
             if (item.solution?.steps && item.solution.steps.length > 0) {
-                prompt += `SOLUTION STEPS:\n`;
+                prompt += 'SOLUTION STEPS:\n';
                 item.solution.steps.slice(0, 3).forEach((step, i) => {
                     prompt += `${i + 1}. ${step}\n`;
                 });
@@ -327,7 +327,7 @@ class ShareableSessionLoader {
         }
 
         if (item.contextualInsights && item.contextualInsights.length > 0) {
-            prompt += `\nINSIGHTS:\n`;
+            prompt += '\nINSIGHTS:\n';
             item.contextualInsights.forEach(insight => {
                 prompt += `- ${insight}\n`;
             });
@@ -340,7 +340,7 @@ class ShareableSessionLoader {
      * Combine multiple learning prompts into agent context
      */
     combineLearningPrompts(prompts, agentType, context) {
-        let combinedPrompt = `🧠 SHARED KNOWLEDGE AVAILABLE:\n\n`;
+        let combinedPrompt = '🧠 SHARED KNOWLEDGE AVAILABLE:\n\n';
         combinedPrompt += `Based on previous sessions by other agents, here's relevant knowledge for your ${agentType} work:\n\n`;
 
         prompts.forEach((prompt, i) => {
@@ -348,15 +348,15 @@ class ShareableSessionLoader {
             combinedPrompt += `${prompt}\n\n`;
         });
 
-        combinedPrompt += `💡 USE THIS KNOWLEDGE:\n`;
-        combinedPrompt += `- Build upon the approaches and patterns shown above\n`;
-        combinedPrompt += `- Learn from the successes and pitfalls mentioned\n`;
-        combinedPrompt += `- Consider how these examples apply to your current task\n`;
-        combinedPrompt += `- Reference specific shared items when explaining your approach\n\n`;
+        combinedPrompt += '💡 USE THIS KNOWLEDGE:\n';
+        combinedPrompt += '- Build upon the approaches and patterns shown above\n';
+        combinedPrompt += '- Learn from the successes and pitfalls mentioned\n';
+        combinedPrompt += '- Consider how these examples apply to your current task\n';
+        combinedPrompt += '- Reference specific shared items when explaining your approach\n\n';
 
         if (context.task) {
             combinedPrompt += `Your current task: ${context.task}\n`;
-            combinedPrompt += `Apply the above shared knowledge to accomplish this task effectively.\n\n`;
+            combinedPrompt += 'Apply the above shared knowledge to accomplish this task effectively.\n\n';
         }
 
         return combinedPrompt;

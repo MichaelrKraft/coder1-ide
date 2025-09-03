@@ -8,13 +8,14 @@
 'use client';
 
 import React from 'react';
-import { Save, Clock, Download, FileText, BookOpen, Loader2 } from '@/lib/icons';
+import { Save, Clock, FileText, BookOpen, Loader2 } from '@/lib/icons';
 import StatusBarModals from './StatusBarModals';
 import { useIDEStore } from '@/stores/useIDEStore';
 import { useSessionStore } from '@/stores/useSessionStore';
 import { useUIStore } from '@/stores/useUIStore';
 import { glows } from '@/lib/design-tokens';
 import type { IDEFile } from '@/types';
+import { logger } from '@/lib/logger';
 
 interface StatusBarActionsProps {
   activeFile?: string | null;
@@ -94,12 +95,12 @@ const StatusBarActions = React.memo(function StatusBarActions({
           message: '✅ Checkpoint saved successfully',
           type: 'success'
         });
-        console.log('✅ Checkpoint saved at:', new Date().toLocaleTimeString());
+        logger.debug('✅ Checkpoint saved at:', new Date().toLocaleTimeString());
       } else {
         throw new Error('Failed to save checkpoint');
       }
     } catch (error) {
-      console.error('Failed to save checkpoint:', error);
+      logger.error('Failed to save checkpoint:', error);
       addToast({
         message: '⚠️ Failed to save checkpoint',
         type: 'error'
@@ -113,7 +114,7 @@ const StatusBarActions = React.memo(function StatusBarActions({
       const data = await response.json();
       
       if (response.ok) {
-        console.log('📊 Timeline data:', data);
+        logger.debug('📊 Timeline data:', data);
         window.open(`/timeline?sessionId=${sessionId}`, '_blank');
         addToast({
           message: '📊 Opening timeline view',
@@ -123,7 +124,7 @@ const StatusBarActions = React.memo(function StatusBarActions({
         throw new Error('Failed to fetch timeline');
       }
     } catch (error) {
-      console.error('Failed to fetch timeline:', error);
+      logger.error('Failed to fetch timeline:', error);
       addToast({
         message: '⚠️ Failed to load timeline',
         type: 'error'
@@ -131,57 +132,20 @@ const StatusBarActions = React.memo(function StatusBarActions({
     }
   };
 
-  const handleExport = async () => {
-    try {
-      const response = await fetch('/api/export', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          sessionId,
-          format: 'zip',
-          includeNodeModules: false,
-          includeGitHistory: true
-        })
-      });
-      
-      if (response.ok) {
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `export-${sessionId}-${Date.now()}.zip`;
-        a.click();
-        window.URL.revokeObjectURL(url);
-        addToast({
-          message: '📦 Export completed successfully',
-          type: 'success'
-        });
-        console.log('📦 Project exported successfully');
-      } else {
-        throw new Error('Failed to export');
-      }
-    } catch (error) {
-      console.error('Failed to export project:', error);
-      addToast({
-        message: '⚠️ Failed to export project',
-        type: 'error'
-      });
-    }
-  };
 
   const handleSessionSummary = () => {
     openModal('sessionSummary');
   };
 
   const handleDocs = () => {
-    window.open('http://localhost:3001/docs-manager', '_blank');
+    window.open('http://localhost:3000/documentation', '_blank');
   };
 
   const isLoadingState = (state: string) => loading === state;
 
   return (
     <>
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1 overflow-x-auto max-w-full hide-scrollbar">
         {/* CheckPoint Button */}
         <div className="p-[1px] rounded-md" style={{background: 'linear-gradient(135deg, #6366f1, #8b5cf6)'}}>
           <button
@@ -220,31 +184,13 @@ const StatusBarActions = React.memo(function StatusBarActions({
           </button>
         </div>
 
-        {/* Export Button */}
-        <div className="p-[1px] rounded-md" style={{background: 'linear-gradient(135deg, #6366f1, #8b5cf6)'}}>
-          <button
-            onClick={handleExport}
-            disabled={isLoadingState('export')}
-            className="flex items-center gap-1.5 px-4 py-1.5 text-sm font-medium text-text-secondary hover:text-text-primary rounded transition-all duration-200 disabled:opacity-50 bg-bg-secondary w-full"
-            onMouseEnter={(e) => applyHoverEffect(e, isLoadingState('export'))}
-            onMouseLeave={removeHoverEffect}
-            title="Export your project"
-          >
-            {isLoadingState('export') ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <Download className="w-4 h-4" />
-            )}
-            <span>Export</span>
-          </button>
-        </div>
 
         {/* Session Summary Button */}
-        <div className="p-[1px] rounded-md" style={{background: 'linear-gradient(135deg, #6366f1, #8b5cf6)'}}>
+        <div className="p-[1px] rounded-md flex-shrink-0" style={{background: 'linear-gradient(135deg, #6366f1, #8b5cf6)'}}>
           <button
             onClick={handleSessionSummary}
             disabled={isLoadingState('session')}
-            className="flex items-center gap-1.5 px-4 py-1.5 text-sm font-medium text-text-secondary hover:text-text-primary rounded transition-all duration-200 disabled:opacity-50 bg-bg-secondary w-full"
+            className="flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-text-secondary hover:text-text-primary rounded transition-all duration-200 disabled:opacity-50 bg-bg-secondary whitespace-nowrap min-w-fit"
             onMouseEnter={(e) => applyHoverEffect(e, isLoadingState('session'))}
             onMouseLeave={removeHoverEffect}
             title="Generate AI session summary"
@@ -254,18 +200,19 @@ const StatusBarActions = React.memo(function StatusBarActions({
             ) : (
               <FileText className="w-4 h-4" />
             )}
-            <span>Session Summary</span>
+            <span>Summary</span>
           </button>
         </div>
 
         {/* Docs Button */}
-        <div className="p-[1px] rounded-md" style={{background: 'linear-gradient(135deg, #6366f1, #8b5cf6)'}}>
+        <div className="p-[1px] rounded-md flex-shrink-0" style={{background: 'linear-gradient(135deg, #6366f1, #8b5cf6)'}}>
           <button
             onClick={handleDocs}
-            className="flex items-center gap-1.5 px-4 py-1.5 text-sm font-medium text-text-secondary hover:text-text-primary rounded transition-all duration-200 bg-bg-secondary w-full"
+            className="flex items-center gap-1.5 px-4 py-1.5 text-sm font-medium text-text-secondary hover:text-text-primary rounded transition-all duration-200 bg-bg-secondary whitespace-nowrap min-w-fit"
             onMouseEnter={(e) => applyHoverEffect(e, false)}
             onMouseLeave={removeHoverEffect}
             title="Open documentation"
+            style={{ zIndex: 1200 }} // Ensure it's above overlays
           >
             <BookOpen className="w-4 h-4" />
             <span>Docs</span>

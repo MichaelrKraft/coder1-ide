@@ -318,6 +318,46 @@ if (process.env.NODE_ENV === 'development') {
 // API Routes
 
 /**
+ * POST /api/agents/spawn
+ * Spawns a new agent with specified role and task
+ */
+router.post('/spawn', (req, res) => {
+    try {
+        const { role = 'generic', task = null, status = 'idle' } = req.body;
+        
+        const agentId = `${role}-${Date.now()}`;
+        const agentData = {
+            id: agentId,
+            role,
+            status,
+            task,
+            currentTask: task
+        };
+        
+        // Emit spawn event
+        agentObserver.emit('agent-spawn', agentData);
+        
+        res.json({
+            success: true,
+            agent: {
+                id: agentId,
+                role,
+                status,
+                currentTask: task,
+                spawnTime: new Date()
+            }
+        });
+    } catch (error) {
+        console.error('Error spawning agent:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to spawn agent',
+            message: error.message
+        });
+    }
+});
+
+/**
  * GET /api/agents/status
  * Returns current status of all active agents
  */

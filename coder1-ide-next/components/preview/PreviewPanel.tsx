@@ -4,6 +4,9 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { BookOpen, Users, Eye, X } from '@/lib/icons';
 import { colors, glows } from '@/lib/design-tokens';
 import CodebaseWiki from '@/components/codebase/CodebaseWiki';
+import { mockEnhancedAgentService, type MockTeamData, type MockAgent } from '@/services/mock-enhanced-agent-service';
+import AgentAssemblyVisualization from '@/components/agents/AgentAssemblyVisualization';
+import { logger } from '@/lib/logger';
 
 type PreviewMode = 'dashboard' | 'wiki' | 'preview' | 'terminal';
 
@@ -13,26 +16,26 @@ interface PreviewPanelProps {
   isPreviewable?: boolean;
 }
 
-interface Agent {
-  id: string;
-  name: string;
-  role: string;
-  status: 'idle' | 'thinking' | 'working' | 'completed' | 'error';
-  progress: number;
-  currentTask: string;
-  completedTasks: string[];
+// Debug helper - same as Terminal component
+if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
+  (window as any).enableEnhancedAgents = () => {
+    localStorage.setItem('coder1-enable-enhanced-agents', 'true');
+    localStorage.setItem('coder1-agent-visualization', 'true');
+    localStorage.setItem('coder1-natural-handoffs', 'true');
+    window.location.reload();
+  };
+  
+  (window as any).disableEnhancedAgents = () => {
+    localStorage.removeItem('coder1-enable-enhanced-agents');
+    localStorage.removeItem('coder1-agent-visualization');
+    localStorage.removeItem('coder1-natural-handoffs');
+    window.location.reload();
+  };
 }
 
-interface TeamData {
-  teamId: string;
-  status: string;
-  agents: Agent[];
-  progress: {
-    overall: number;
-  };
-  generatedFiles: number;
-  requirement: string;
-}
+// Use types from mock service
+type Agent = MockAgent;
+type TeamData = MockTeamData;
 
 /**
  * Preview Panel with Multiple Modes - REAL AI INTEGRATION
@@ -50,6 +53,109 @@ const PreviewPanel = React.memo(function PreviewPanel({
   const [isLoading, setIsLoading] = useState(false);
   const [teamData, setTeamData] = useState<TeamData | null>(null);
   const [error, setError] = useState<string | null>(null);
+  
+  // Feature flags - same as Terminal component
+  const [enhancedAgentsEnabled, setEnhancedAgentsEnabled] = useState(false);
+  
+  // Agent assembly state
+  const [isAssembling, setIsAssembling] = useState(false);
+  const [currentTeamSuggestion, setCurrentTeamSuggestion] = useState<any>(null);
+  
+  const fetchTeamData = useCallback(async () => {
+    if (!enhancedAgentsEnabled) {
+      setTeamData(null);
+      setIsLoading(false);
+      return;
+    }
+    
+    const isFirstLoad = !teamData && !error;
+    
+    try {
+      if (isFirstLoad) {
+        setIsLoading(true);
+        setError(null);
+      }
+      
+      // Use mock service when enhanced agents are enabled
+      const mockTeam = mockEnhancedAgentService.getTeamStatus('demo-team');
+      
+      if (mockTeam) {
+        setError(null);
+        setTeamData(mockTeam);
+      } else {
+        if (isFirstLoad || error) {
+          setTeamData(null);
+          setError(null);
+        }
+      }
+    } catch (err) {
+      logger.error('Failed to fetch team data:', err);
+      if (!teamData) {
+        setError('Enhanced agents service error');
+        setTeamData(null);
+      }
+    } finally {
+      if (isFirstLoad) {
+        setIsLoading(false);
+      }
+    }
+  }, [teamData, error, enhancedAgentsEnabled]);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const isEnabled = process.env.NODE_ENV === 'development' && 
+                       localStorage.getItem('coder1-enable-enhanced-agents') === 'true';
+      setEnhancedAgentsEnabled(isEnabled);
+    }
+  }, []);
+  
+  // Listen for team assembly events from terminal
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const handleTeamAssembly = (event: CustomEvent) => {
+        const { teamSuggestion } = event.detail;
+        setCurrentTeamSuggestion(teamSuggestion);
+        setIsAssembling(true);
+        setMode('dashboard'); // Switch to dashboard to show assembly
+      };
+      
+      const handleAssemblyComplete = () => {
+        setIsAssembling(false);
+        // The fetchTeamData effect will handle the refresh
+      };
+      
+      // Listen for real-time agent updates from WebSocket
+      const handleAgentUpdate = (event: Event) => {
+        const customEvent = event as CustomEvent;
+        const data = customEvent.detail;
+        
+        // Update agent status in real-time
+        if (data.type === 'agent-status') {
+          setTeamData(prev => {
+            if (!prev) return prev;
+            return {
+              ...prev,
+              agents: prev.agents.map(agent => 
+                agent.id === data.agentId 
+                  ? { ...agent, status: data.status, currentTask: data.task }
+                  : agent
+              )
+            };
+          });
+        }
+      };
+      
+      window.addEventListener('agent-team-assembly', handleTeamAssembly as EventListener);
+      window.addEventListener('agent-assembly-complete', handleAssemblyComplete);
+      window.addEventListener('agent-update', handleAgentUpdate as EventListener);
+      
+      return () => {
+        window.removeEventListener('agent-team-assembly', handleTeamAssembly as EventListener);
+        window.removeEventListener('agent-assembly-complete', handleAssemblyComplete);
+        window.removeEventListener('agent-update', handleAgentUpdate as EventListener);
+      };
+    }
+  }, []);
 
   // Auto-switch based on context
   useEffect(() => {
@@ -60,67 +166,14 @@ const PreviewPanel = React.memo(function PreviewPanel({
     }
   }, [agentsActive, fileOpen, isPreviewable]);
 
-  const fetchTeamData = useCallback(async () => {
-    // Don't show loading spinner during polling updates to prevent blinking
-    const isFirstLoad = !teamData && !error;
-    
-    try {
-      if (isFirstLoad) {
-        setIsLoading(true);
-        setError(null);
-      }
-      
-      // Call the Next.js API route which proxies to Express backend
-      const teamsResponse = await fetch('/api/ai-team/');
-      const teamsData = await teamsResponse.json();
-      
-      if (teamsData.success && teamsData.teams.length > 0) {
-        // Get the most recent active team
-        const activeTeam = teamsData.teams[0];
-        
-        // Get detailed status for this team
-        const statusResponse = await fetch(`/api/ai-team/${activeTeam.teamId}/status`);
-        const statusData = await statusResponse.json();
-        
-        if (statusData.success) {
-          // Batch state updates to prevent blinking
-          setError(null);
-          setTeamData(statusData.team);
-        } else {
-          if (isFirstLoad) setError('Failed to fetch team status');
-        }
-      } else {
-        // Only clear team data if this is the first load or there was an error
-        if (isFirstLoad || error) {
-          setTeamData(null);
-          setError(null);
-        }
-      }
-    } catch (err) {
-      console.error('Failed to fetch team data:', err);
-      // Only show connection error on first load to prevent blinking
-      if (!teamData) {
-        setError('Connection error - using offline mode');
-        setTeamData(null);
-      }
-    } finally {
-      if (isFirstLoad) {
-        setIsLoading(false);
-      }
-    }
-  }, [teamData, error]);
-
-  // Fetch real team data when dashboard is active
+  // Fetch team data when dashboard is active
   useEffect(() => {
     let interval: NodeJS.Timeout | undefined;
     
-    if (mode === 'dashboard') {
-      // TEMPORARILY DISABLED: AI team polling causing timeouts
-      // TODO: Fix Express backend /api/ai-team endpoint performance
-      // fetchTeamData();
-      // interval = setInterval(fetchTeamData, 5000);
-      
-      // For now, just set mock data to prevent loading spinner
+    if (mode === 'dashboard' && enhancedAgentsEnabled) {
+      fetchTeamData();
+      interval = setInterval(fetchTeamData, 3000); // Update every 3 seconds for demo
+    } else if (mode === 'dashboard' && !enhancedAgentsEnabled) {
       setTeamData(null);
       setIsLoading(false);
     }
@@ -128,28 +181,57 @@ const PreviewPanel = React.memo(function PreviewPanel({
     return () => {
       if (interval) clearInterval(interval);
     };
-  }, [mode, fetchTeamData]);
+  }, [mode, fetchTeamData, enhancedAgentsEnabled]);
 
   const renderTabButton = useCallback((
     tabMode: PreviewMode,
     icon: React.ReactNode,
     label: string
-  ) => (
-    <button
-      onClick={() => setMode(tabMode)}
-      className={`
-        flex items-center gap-2 px-3 py-2 text-sm font-medium
-        transition-all duration-200 border-b-2
-        ${mode === tabMode 
-          ? 'text-coder1-cyan border-coder1-cyan' 
-          : 'text-text-secondary border-transparent hover:text-text-primary hover:border-border-hover'
-        }
-      `}
-    >
-      {icon}
-      <span>{label}</span>
-    </button>
-  ), [mode]);
+  ) => {
+    // Special handling for Agent Dashboard - link to beautiful dashboard
+    if (tabMode === 'dashboard') {
+      return (
+        <a
+          href="http://localhost:3000/agent-dashboard.html"
+          target="_blank"
+          rel="noopener noreferrer"
+          className={`
+            flex items-center gap-2 px-3 py-2 text-sm font-medium
+            transition-all duration-200 border-b-2
+            ${mode === tabMode 
+              ? 'text-coder1-cyan border-coder1-cyan' 
+              : 'text-text-secondary border-transparent hover:text-text-primary hover:border-border-hover'
+            }
+          `}
+          title="Open Agent Dashboard in new tab"
+        >
+          {icon}
+          <span>{label}</span>
+          <svg className="w-3 h-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+          </svg>
+        </a>
+      );
+    }
+    
+    // Regular button for other tabs
+    return (
+      <button
+        onClick={() => setMode(tabMode)}
+        className={`
+          flex items-center gap-2 px-3 py-2 text-sm font-medium
+          transition-all duration-200 border-b-2
+          ${mode === tabMode 
+            ? 'text-coder1-cyan border-coder1-cyan' 
+            : 'text-text-secondary border-transparent hover:text-text-primary hover:border-border-hover'
+          }
+        `}
+      >
+        {icon}
+        <span>{label}</span>
+      </button>
+    );
+  }, [mode]);
 
   return (
     <div className="h-full flex flex-col bg-bg-secondary border border-coder1-cyan/50 shadow-glow-cyan">
@@ -206,16 +288,36 @@ const PreviewPanel = React.memo(function PreviewPanel({
                   </div>
                 )}
                 
-                {teamData ? (
-                  <div className="space-y-4">
-                    {/* Team Overview - Clickable to navigate to full dashboard */}
-                    <div 
-                      className="glass-card p-4 rounded-lg border border-border-default hover:border-coder1-cyan/70 transition-all duration-200 cursor-pointer hover:shadow-lg hover:shadow-coder1-cyan/20"
-                      onClick={() => {
-                        // Navigate to full agent dashboard
-                        window.open('/agent-dashboard', '_blank');
+                {!enhancedAgentsEnabled && (
+                  <div className="mb-4 p-3 bg-yellow-900/20 border border-yellow-500/20 rounded-lg text-yellow-400 text-sm">
+                    🔒 Enhanced agents disabled. Open browser console and run <code className="bg-black/30 px-1 rounded">enableEnhancedAgents()</code> to activate.
+                  </div>
+                )}
+
+                {/* Agent Assembly Visualization - Shows during team assembly */}
+                {isAssembling && currentTeamSuggestion && (
+                  <div className="mb-6">
+                    <AgentAssemblyVisualization
+                      isAssembling={isAssembling}
+                      teamSuggestion={currentTeamSuggestion}
+                      onAssemblyComplete={() => {
+                        window.dispatchEvent(new CustomEvent('agent-assembly-complete'));
                       }}
-                      title="Click to open full Agent Dashboard"
+                    />
+                  </div>
+                )}
+
+                {teamData && !isAssembling ? (
+                  <div className="space-y-4">
+                    {/* Terminal Connection Status */}
+                    <div className="mb-4 p-3 bg-green-900/20 border border-green-500/20 rounded-lg text-green-400 text-sm">
+                      🔗 Connected to terminal • Enhanced agent processing active
+                    </div>
+                    
+                    {/* Team Overview - Embedded dashboard content */}
+                    <div 
+                      className="glass-card p-4 rounded-lg border border-border-default hover:border-coder1-cyan/70 transition-all duration-200"
+                      title="AI Team Dashboard - Live Status"
                     >
                       <div className="flex items-center justify-between mb-3">
                         <h3 className="text-sm font-semibold text-coder1-cyan">
@@ -267,27 +369,45 @@ const PreviewPanel = React.memo(function PreviewPanel({
                       </div>
                     </div>
                   </div>
+                ) : enhancedAgentsEnabled ? (
+                  <div className="h-full flex flex-col items-center justify-center text-center">
+                    <div className="mb-4">
+                      <Users className="w-16 h-16 text-text-muted mx-auto mb-2" />
+                      <h3 className="text-lg font-semibold text-text-primary mb-2">
+                        Ready for AI Team Assembly
+                      </h3>
+                      <p className="text-text-muted text-sm max-w-xs mb-4">
+                        Type complex commands in the terminal to trigger team suggestions:
+                      </p>
+                      
+                      <div className="space-y-2 text-left bg-bg-tertiary p-3 rounded-lg text-xs font-mono">
+                        <div className="text-coder1-cyan">$ claude build a dashboard</div>
+                        <div className="text-coder1-cyan">$ claude create a full app</div>
+                        <div className="text-coder1-cyan">$ claude develop a system</div>
+                      </div>
+                      
+                      <p className="text-text-muted text-xs mt-3 max-w-xs">
+                        Simple requests get single agent responses. Complex requests trigger team suggestions.
+                      </p>
+                    </div>
+                  </div>
                 ) : (
                   <div className="h-full flex flex-col items-center justify-center text-center">
                     <div className="mb-4">
                       <Users className="w-16 h-16 text-text-muted mx-auto mb-2" />
                       <h3 className="text-lg font-semibold text-text-primary mb-2">
-                        No AI Team Active
+                        Enhanced Agents Disabled
                       </h3>
-                      <p className="text-text-muted text-sm max-w-xs">
-                        Start a new AI development team to see real-time agent status here.
+                      <p className="text-text-muted text-sm max-w-xs mb-4">
+                        Enable enhanced agents to see AI team coordination and agent assembly.
                       </p>
+                      
+                      <div className="space-y-2 text-left bg-bg-tertiary p-3 rounded-lg text-xs">
+                        <div className="text-green-400">1. Open browser console (F12)</div>
+                        <div className="text-green-400">2. Run: enableEnhancedAgents()</div>
+                        <div className="text-green-400">3. Page will reload with features enabled</div>
+                      </div>
                     </div>
-                    
-                    <button 
-                      className="px-4 py-2 bg-coder1-cyan hover:bg-coder1-cyan/80 text-black font-medium rounded-lg transition-colors"
-                      onClick={() => {
-                        // Navigate to team creation - could emit event or use router
-                        window.dispatchEvent(new CustomEvent('navigate-to-team-creation'));
-                      }}
-                    >
-                      Spawn AI Team
-                    </button>
                   </div>
                 )}
               </div>

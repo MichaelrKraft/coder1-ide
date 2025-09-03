@@ -14,6 +14,7 @@ import DiscoverPanel from './DiscoverPanel';
 import { useIDEStore } from '@/stores/useIDEStore';
 import { useSessionStore } from '@/stores/useSessionStore';
 import { useUIStore } from '@/stores/useUIStore';
+import { pollingManager } from '@/lib/polling-manager';
 import type { IDEFile } from '@/types';
 
 interface StatusBarCoreProps {
@@ -50,61 +51,32 @@ export default function StatusBarCore({
   const actuallyConnected = isConnected || connections.terminal;
   const supervisionActive = supervision.isActive;
 
-  // Fetch git information using simple API
-  const fetchGitInfo = async () => {
-    try {
-      setGitInfo(prev => ({ ...prev, isLoading: true }));
-      
-      // Use our simple git status API with timeout
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 5000);
-      
-      const response = await fetch('/api/git/status', {
-        signal: controller.signal
-      });
-      
-      clearTimeout(timeoutId);
-      
-      if (response.ok) {
-        const gitData = await response.json();
-        
-        setGitInfo({
-          branch: gitData.branch,
-          modifiedCount: gitData.totalChanges || 0,
-          isLoading: false
-        });
-      } else {
-        // If status fails, try just branch with timeout
-        const branchController = new AbortController();
-        const branchTimeoutId = setTimeout(() => branchController.abort(), 3000);
-        
-        const branchResponse = await fetch('/api/git/branch', {
-          signal: branchController.signal
-        });
-        
-        clearTimeout(branchTimeoutId);
-        if (branchResponse.ok) {
-          const branchData = await branchResponse.json();
-          setGitInfo({
-            branch: branchData.branch,
-            modifiedCount: 0,
-            isLoading: false
-          });
-        } else {
-          setGitInfo(prev => ({ ...prev, isLoading: false }));
-        }
-      }
-    } catch (error) {
-      console.warn('Git info fetch failed:', error);
-      setGitInfo(prev => ({ ...prev, isLoading: false }));
-    }
-  };
-
-  // Fetch git info on mount and periodically
+  // Setup git status polling using centralized polling manager
   useEffect(() => {
-    fetchGitInfo();
-    const interval = setInterval(fetchGitInfo, 60000); // Update every 60 seconds (reduced from 30)
-    return () => clearInterval(interval);
+    // Register git status polling with the centralized manager
+    pollingManager.register({
+      id: 'git-status',
+      url: '/api/git/status',
+      interval: 60000,           // Poll every 60 seconds
+      timeout: 5000,             // 5 second timeout
+      maxFailures: 3,            // Open circuit after 3 failures
+      backoffMultiplier: 2,      // Double interval on failure
+      maxBackoff: 300000         // Max 5 minute backoff
+    });
+
+    // Subscribe to git status updates
+    const unsubscribe = pollingManager.subscribe('git-status', (gitData) => {
+      setGitInfo({
+        branch: gitData.branch || null,
+        modifiedCount: gitData.totalChanges || 0,
+        isLoading: false
+      });
+    });
+
+    // Cleanup subscription on unmount
+    return () => {
+      unsubscribe();
+    };
   }, []);
   
   return (

@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import path from 'path';
 import fs from 'fs/promises';
+import { getBackendUrl } from '@/lib/api-config';
+import { logger } from '@/lib/logger';
 
-const EXPRESS_BACKEND_URL = 'http://localhost:3000';
+const EXPRESS_BACKEND_URL = getBackendUrl();
 
 // In-memory timeline storage (in production, use a database)
 let timeline: TimelineEvent[] = [];
@@ -89,7 +91,7 @@ export async function GET(request: NextRequest) {
       total: allCheckpoints.length
     });
   } catch (error) {
-    console.error('Failed to fetch timeline:', error);
+    logger.error('Failed to fetch timeline:', error);
     return NextResponse.json(
       { error: 'Failed to fetch timeline' },
       { status: 500 }
@@ -127,7 +129,7 @@ export async function POST(request: NextRequest) {
       event: timelineEvent
     });
   } catch (error) {
-    console.error('Failed to add timeline event:', error);
+    logger.error('Failed to add timeline event:', error);
     return NextResponse.json(
       { error: 'Failed to add timeline event' },
       { status: 500 }

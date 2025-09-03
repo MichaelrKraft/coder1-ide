@@ -2,10 +2,14 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Save, Clock, Download, FileText, BookOpen, GitBranch, Check, Loader2, X, Eye, Compass, Grid, Code, Sparkles, Terminal, Plus, ChevronUp, ChevronDown } from 'lucide-react';
+import { Save, Clock, Download, FileText, BookOpen, GitBranch, Check, Loader2, X, Eye, Compass, Grid, Code, Sparkles, Terminal, Plus, ChevronUp, ChevronDown, Shield, Play, Pause, AlertTriangle } from 'lucide-react';
 import { glows } from '@/lib/design-tokens';
 import { useSessionSummary } from '@/lib/hooks/useSessionSummary';
 import { useEnhancedSupervision } from '@/contexts/EnhancedSupervisionContext';
+import { useWalkAwaySupervision } from '@/lib/hooks/useWalkAwaySupervision';
+import WalkAwayReportModal from '@/components/supervision/WalkAwayReportModal';
+import SupervisionAlerts from '@/components/supervision/SupervisionAlerts';
+import { logger } from '@/lib/logger';
 
 interface StatusBarProps {
   activeFile?: string | null;
@@ -62,6 +66,28 @@ export default function StatusBar({
   
   // Get supervision state from context
   const { isSupervisionActive, supervisionStatus, lastSupervisionCheck } = useEnhancedSupervision();
+  
+  // Walk-away supervision hook
+  const {
+    activeSession,
+    isSessionActive,
+    isSessionPaused,
+    lastReport,
+    currentIssues,
+    alerts,
+    showReportModal,
+    setShowReportModal,
+    hasCriticalIssues,
+    criticalIssueCount,
+    startSession,
+    endSession,
+    pauseSession,
+    resumeSession,
+    trackFileChange,
+    trackTerminalCommand,
+    trackError,
+    dismissAlert
+  } = useWalkAwaySupervision();
 
   // Initialize sessionId on mount
   useEffect(() => {
@@ -132,9 +158,9 @@ export default function StatusBar({
 
         const now = new Date();
         setLastCheckpoint(now);
-        console.log('🕐 Auto-checkpoint saved at:', now.toLocaleTimeString());
+        logger.debug('🕐 Auto-checkpoint saved at:', now.toLocaleTimeString());
       } catch (error) {
-        console.error('Auto-checkpoint failed:', error);
+        logger.error('Auto-checkpoint failed:', error);
       }
     };
 
@@ -187,12 +213,12 @@ export default function StatusBar({
         }
         setLastCheckpoint(now);
         showToast('✅ Checkpoint saved successfully');
-        console.log('✅ Checkpoint saved at:', now.toLocaleTimeString());
+        logger.debug('✅ Checkpoint saved at:', now.toLocaleTimeString());
       } else {
         throw new Error('Failed to save checkpoint');
       }
     } catch (error) {
-      console.error('Failed to save checkpoint:', error);
+      logger.error('Failed to save checkpoint:', error);
       showToast('⚠️ Failed to save checkpoint');
     }
     
@@ -208,7 +234,7 @@ export default function StatusBar({
       const data = await response.json();
       
       if (response.ok) {
-        console.log('📊 Timeline data:', data);
+        logger.debug('📊 Timeline data:', data);
         // Open timeline page with sessionId
         window.open(`/timeline?sessionId=${sessionId}`, '_blank');
         showToast('📊 Opening timeline view');
@@ -216,7 +242,7 @@ export default function StatusBar({
         throw new Error('Failed to fetch timeline');
       }
     } catch (error) {
-      console.error('Failed to fetch timeline:', error);
+      logger.error('Failed to fetch timeline:', error);
       showToast('⚠️ Failed to load timeline');
     }
     
@@ -248,12 +274,12 @@ export default function StatusBar({
         a.click();
         window.URL.revokeObjectURL(url);
         showToast('📦 Export completed successfully');
-        console.log('📦 Project exported successfully');
+        logger.debug('📦 Project exported successfully');
       } else {
         throw new Error('Failed to export');
       }
     } catch (error) {
-      console.error('Failed to export project:', error);
+      logger.error('Failed to export project:', error);
       showToast('⚠️ Failed to export project');
     }
     
@@ -375,7 +401,7 @@ export default function StatusBar({
   };
 
   const executeSlashCommand = (command: string) => {
-    console.log('Executing command:', command);
+    logger.debug('Executing command:', command);
     // This would integrate with the Terminal component
     showToast(`Executing: /${command}`);
   };
@@ -425,6 +451,67 @@ export default function StatusBar({
             <span className="font-medium">Supervision Active</span>
           </div>
         )}
+        
+        {/* Walk-Away Supervision Button */}
+        <button
+          onClick={async () => {
+            if (!isSessionActive) {
+              const task = prompt("Enter the task for Claude Code to work on:");
+              if (task) {
+                try {
+                  await startSession(task);
+                  showToast("Walk-Away Supervision started!");
+                } catch (error) {
+                  showToast("Failed to start supervision session");
+                }
+              }
+            } else if (isSessionPaused) {
+              await resumeSession();
+              showToast("Walk-Away Supervision resumed");
+            } else {
+              const report = await endSession();
+              showToast("Walk-Away Supervision ended");
+            }
+          }}
+          className={`flex items-center gap-1.5 px-2 py-1 text-xs font-medium rounded transition-all duration-200 ${
+            isSessionActive 
+              ? isSessionPaused
+                ? 'text-yellow-400 bg-yellow-500/10 hover:bg-yellow-500/20 border border-yellow-500/30'
+                : 'text-cyan-400 bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30'
+              : 'text-gray-400 hover:text-white hover:bg-white/10 border border-gray-600/30 hover:border-white/30'
+          }`}
+          title={
+            isSessionActive 
+              ? isSessionPaused 
+                ? "Resume Walk-Away Session"
+                : "End Walk-Away Session" 
+              : "Start Walk-Away Supervision"
+          }
+        >
+          <Shield className="w-3 h-3" />
+          {isSessionActive ? (
+            isSessionPaused ? (
+              <>
+                <Play className="w-3 h-3" />
+                <span>Resume</span>
+              </>
+            ) : (
+              <>
+                <span>End Session</span>
+                {hasCriticalIssues && (
+                  <AlertTriangle className="w-3 h-3 text-red-400 animate-pulse" />
+                )}
+              </>
+            )
+          ) : (
+            <span>Walk-Away</span>
+          )}
+          {criticalIssueCount > 0 && (
+            <span className="bg-red-500 text-white text-xs rounded-full px-1 py-0.5 min-w-[16px] h-4 flex items-center justify-center leading-none">
+              {criticalIssueCount}
+            </span>
+          )}
+        </button>
         
         {activeFile && (
           <div className="flex items-center gap-1">
@@ -963,6 +1050,32 @@ export default function StatusBar({
         </div>
       </div>
     )}
+
+    {/* Walk-Away Supervision Alerts */}
+    <SupervisionAlerts
+      alerts={alerts}
+      criticalIssues={currentIssues}
+      onDismissAlert={dismissAlert}
+      onPauseSession={pauseSession}
+      onResumeSession={resumeSession}
+      onReviewIssue={(issue) => {
+        // Could open a detailed issue view
+        logger.debug('Review issue:', issue);
+        showToast(`Issue: ${issue.title}`);
+      }}
+      isSessionPaused={isSessionPaused}
+    />
+
+    {/* Walk-Away Report Modal */}
+    <WalkAwayReportModal
+      report={lastReport}
+      isOpen={showReportModal}
+      onClose={() => setShowReportModal(false)}
+      onDismissIssue={(issueId) => {
+        // Remove issue from current issues
+        logger.debug('Dismiss issue:', issueId);
+      }}
+    />
     </>
   );
 }

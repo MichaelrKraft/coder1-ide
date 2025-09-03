@@ -2217,9 +2217,15 @@ export const Button: React.FC<ButtonProps> = ({
             });
         }
 
+        // Global variable to store current template data for installation
+        let currentTemplateData = null;
+
         function openModal(templateId) {
             const template = templates.find(t => t.id === templateId);
             if (!template) return;
+
+            // Store template data globally for install function
+            currentTemplateData = template;
 
             document.getElementById('modalCategory').textContent = template.category;
             document.getElementById('modalName').textContent = template.name;
@@ -2372,24 +2378,61 @@ export const Button: React.FC<ButtonProps> = ({
             const originalContent = btn.innerHTML;
             const originalBackground = btn.style.background;
             
-            // Get the current template name
+            // Get the current template data
             const templateName = document.getElementById('modalName').textContent;
             const command = document.getElementById('installCommand').textContent;
             
+            // Find the template data to get mcpConfig
+            const currentTemplate = currentTemplateData;
+            if (!currentTemplate || !currentTemplate.mcpConfig) {
+                console.error('No MCP configuration found for template');
+                showNotification('Error: No MCP configuration found for this template', 'error');
+                return;
+            }
+            
             console.log('Installing template:', templateName);
-            console.log('Command:', command);
-            console.log('Button element:', btn);
+            console.log('MCP ID:', currentTemplate.id);
+            console.log('MCP Config:', currentTemplate.mcpConfig);
             
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Installing...';
             btn.disabled = true;
             
-            // Simulate installation process
-            setTimeout(() => {
-                btn.innerHTML = '<i class="fas fa-check"></i> Installed Successfully';
-                btn.style.background = 'var(--success)';
-                
-                // Show success notification
-                showNotification(`Template "${templateName}" installed successfully!`);
+            // Make actual API call to install MCP
+            fetch('/api/templates/install-mcp', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    mcpId: currentTemplate.id,
+                    config: currentTemplate.mcpConfig
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    if (data.alreadyInstalled) {
+                        btn.innerHTML = '<i class="fas fa-check"></i> Already Installed';
+                        btn.style.background = 'var(--info)';
+                        showNotification(`MCP "${templateName}" is already installed!`, 'info');
+                    } else {
+                        btn.innerHTML = '<i class="fas fa-check"></i> Installed Successfully';
+                        btn.style.background = 'var(--success)';
+                        let message = `MCP "${templateName}" installed successfully!`;
+                        if (data.instructions) {
+                            message += '\n' + data.instructions;
+                        }
+                        showNotification(message, 'success');
+                    }
+                } else if (data.needsConfiguration) {
+                    btn.innerHTML = '<i class="fas fa-cog"></i> Needs Configuration';
+                    btn.style.background = 'var(--warning)';
+                    showNotification(`Configuration Required: ${data.message}\n${data.instructions}`, 'warning');
+                } else {
+                    btn.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Failed';
+                    btn.style.background = 'var(--error)';
+                    showNotification(`Installation failed: ${data.message || data.error}`, 'error');
+                }
                 
                 setTimeout(() => {
                     closeModal();
@@ -2397,8 +2440,22 @@ export const Button: React.FC<ButtonProps> = ({
                     btn.innerHTML = originalContent;
                     btn.style.background = originalBackground;
                     btn.disabled = false;
-                }, 1500);
-            }, 2000);
+                }, 2500);
+            })
+            .catch(error => {
+                console.error('Error installing MCP:', error);
+                btn.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Error';
+                btn.style.background = 'var(--error)';
+                showNotification(`Installation failed: ${error.message}`, 'error');
+                
+                setTimeout(() => {
+                    closeModal();
+                    // Reset button state
+                    btn.innerHTML = originalContent;
+                    btn.style.background = originalBackground;
+                    btn.disabled = false;
+                }, 2500);
+            });
         }
 
         window.viewDocs = function(event) {
