@@ -36,6 +36,59 @@ git push origin master
 - All Phase 1 refactoring completed and successfully pushed to GitHub
 - Repository now clean, fast, and ready for collaborative development
 
+## 🚨 **CRITICAL: PREVENT TERMINAL SESSION LOSS - READ THIS FIRST**
+
+**⚠️ ATTENTION ALL CLAUDE AGENTS: This is the #1 recurring issue that destroys terminal sessions**
+
+### 🔥 THE PROBLEM THAT KEEPS HAPPENING
+Agents keep running `PORT=3001 npm run dev` from the main directory, causing:
+1. Express backend starts on port 3001 (WRONG!)
+2. Conflicts with Next.js frontend (should be on 3001)
+3. Backend crashes repeatedly
+4. Terminal sessions die → "session not found" errors
+5. Cycle repeats endlessly
+
+### ✅ CORRECT STARTUP (MEMORIZE THIS)
+```bash
+# 1. Express Backend (Main Directory) - MUST be port 3000
+PORT=3000 npm run dev        # OR just: npm run dev (defaults to 3000)
+
+# 2. Next.js Frontend (Separate Terminal)
+cd coder1-ide-next
+npm run dev                  # Automatically uses port 3001
+```
+
+### 🚨 **AUTOMATIC PROTECTION SYSTEMS IMPLEMENTED**
+1. **Port Validation in app.js**: Fails fast if PORT=3001 is attempted
+2. **Unified Startup Script**: `./start-dev.sh` handles both services correctly
+3. **PM2 Configuration**: Hardened with port validation
+4. **Recovery System**: `./scripts/port-recovery.sh` detects and fixes conflicts
+
+### 🛠️ **AGENT COMMANDS - USE THESE INSTEAD**
+```bash
+# ✅ SAFE: Start both services correctly
+npm run start:dev            # Uses unified startup script
+# OR
+./start-dev.sh               # Direct script execution
+
+# ✅ SAFE: Stop both services
+npm run stop:dev
+# OR  
+./stop-dev.sh
+
+# 🔧 RECOVERY: If things are broken
+./scripts/port-recovery.sh   # Auto-detects and fixes conflicts
+```
+
+### ❌ **NEVER DO THIS (BREAKS EVERYTHING)**
+```bash
+PORT=3001 npm run dev        # ← This is what keeps breaking terminals!
+```
+
+### 📊 **Port Assignment (MEMORIZE)**
+- **Port 3000**: Express Backend (APIs, WebSocket, Terminal sessions)
+- **Port 3001**: Next.js Frontend (IDE Interface)
+
 **Recent Updates**:
 - **September 2, 2025**: Added animated canvas background effect to HeroSection
   - Integrated `CanvasRevealEffect` with animated dot matrix using Three.js and @react-three/fiber
@@ -54,6 +107,43 @@ git push origin master
 **🚨 FIRST PRIORITY: Before ANY IDE work, check `/CURRENT_IDE_STATUS.md` for correct IDE location**
 
 **🚨 CRITICAL: Before working on this project, read `/MASTER_CONTEXT.md` completely**
+
+## 🚨 **CRITICAL PORT CONFIGURATION FOR ALL AI AGENTS**
+
+**IMPORTANT**: This is the **#1 cause of "menu items don't work" issues**. Always verify these ports:
+
+| Service | Port | URL | Purpose |
+|---------|------|-----|---------|
+| **Express Backend** | **3000** | `http://localhost:3000` | API endpoints, WebSockets, terminal |
+| **Next.js Frontend** | **3001** | `http://localhost:3001` | IDE interface, React app |
+
+### 🔧 **Correct Startup Sequence**
+```bash
+# 1. Start Express Backend (FIRST)
+cd /Users/michaelkraft/autonomous_vibe_interface
+PORT=3000 npm run dev  # Starts on port 3000
+
+# 2. Start Next.js Frontend (SECOND) - new terminal
+cd coder1-ide-next  
+PORT=3001 npm run dev  # Starts on port 3001
+```
+
+### ⚠️ **Common Port Issues & Solutions**
+
+**StatusBar buttons not working?**
+- ✅ **Check**: Express backend running on port 3000
+- ❌ **Problem**: Next.js trying to call wrong port for APIs
+
+**"Disconnected" in terminal?**
+- ✅ **Check**: WebSocket connecting to port 3000
+- ❌ **Problem**: Frontend connecting to wrong backend port
+
+### 📋 **Configuration Files Must Match**
+- `.env` → `PORT=3000` (Express backend)
+- `coder1-ide-next/.env.local` → `EXPRESS_BACKEND_URL=http://localhost:3000`
+- `coder1-ide-next/lib/api-config.ts` → Uses `getBackendUrl()` pointing to 3000
+
+**✅ CURRENT**: All configuration files now match the actual running servers!
 
 **🆕 NEW (Jan 29, 2025)**: Claude Conductor features added - see `CLAUDE_CONDUCTOR_FEATURES.md` for:
 - Template System for cross-agent workflows

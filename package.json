@@ -29,7 +29,18 @@
     "monitor:terminal": "./scripts/terminal-monitor.sh check",
     "monitor:recovery": "./scripts/terminal-monitor.sh recovery",
     "monitor:report": "./scripts/terminal-monitor.sh report",
-    "monitor:watch": "./scripts/terminal-monitor.sh monitor"
+    "monitor:watch": "./scripts/terminal-monitor.sh monitor",
+    "validate:ports": "node scripts/validate-ports.js",
+    "start:safe": "node scripts/startup-sequence.js",
+    "dev:safe": "node scripts/startup-sequence.js",
+    "start:dev": "./start-dev.sh",
+    "stop:dev": "./stop-dev.sh",
+    "dev:unified": "./start-dev.sh",
+    "health:check": "./scripts/health-monitor.sh check",
+    "health:monitor": "./scripts/health-monitor.sh monitor",
+    "health:status": "./scripts/health-monitor.sh status",
+    "health:recovery": "./scripts/health-monitor.sh recovery",
+    "port:recovery": "./scripts/port-recovery.sh"
   },
   "keywords": [
     "ai",
@@ -48,6 +59,7 @@
     "@anthropic-ai/sdk": "^0.59.0",
     "@babel/parser": "^7.28.3",
     "@babel/traverse": "^7.28.3",
+    "@chroma-core/default-embed": "^0.1.8",
     "@xenova/transformers": "^2.17.2",
     "@xterm/addon-fit": "^0.10.0",
     "@xterm/xterm": "^5.5.0",
