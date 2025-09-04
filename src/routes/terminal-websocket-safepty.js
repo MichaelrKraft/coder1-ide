@@ -24,7 +24,14 @@ class SafePTYManager {
             errors: 0
         };
         
-        console.log('[SafePTYManager] Initialized with rate limiting and session management');
+        // Context Folders integration
+        this.contextBatch = [];
+        this.contextFlushTimer = null;
+        this.contextFlushInterval = 2000; // Flush every 2 seconds (faster for testing)
+        this.contextApiUrl = 'http://localhost:3001/api/context/capture'; // Next.js API
+        this.contextEnabled = true; // Feature flag for easy disable
+        
+        console.log('[SafePTYManager] Initialized with rate limiting, session management, and Context Folders integration');
     }
     
     // Rate limiting to prevent PTY exhaustion
@@ -165,6 +172,74 @@ class SafePTYManager {
             maxSessions: this.maxSessions,
             rateLimitEffectiveness: this.telemetry.rateLimitHits / (this.telemetry.sessionsCreated + this.telemetry.rateLimitHits)
         };
+    }
+    
+    // Context Folders: Add terminal data to batch
+    addToContextBatch(sessionId, type, content, metadata = {}) {
+        if (!this.contextEnabled) return;
+        
+        try {
+            const chunk = {
+                timestamp: Date.now(),
+                type: type, // 'terminal_input', 'terminal_output', 'command', 'error'
+                content: content,
+                sessionId: sessionId,
+                fileContext: metadata.files || [],
+                commandContext: metadata.command || '',
+                metadata: metadata
+            };
+            
+            this.contextBatch.push(chunk);
+            console.log(`[Context] Added to batch: ${type} - "${content.substring(0, 50)}..." (batch size: ${this.contextBatch.length})`);
+            
+            // Schedule flush if not already scheduled
+            if (!this.contextFlushTimer) {
+                this.contextFlushTimer = setTimeout(() => this.flushContextBatch(), this.contextFlushInterval);
+                console.log(`[Context] Flush scheduled for ${this.contextFlushInterval}ms`);
+            }
+        } catch (error) {
+            console.error('[Context] Error adding to batch:', error);
+        }
+    }
+    
+    // Context Folders: Flush batch to Context API
+    async flushContextBatch() {
+        console.log(`[Context] Flush triggered - enabled: ${this.contextEnabled}, batch size: ${this.contextBatch.length}`);
+        
+        if (!this.contextEnabled || this.contextBatch.length === 0) {
+            this.contextFlushTimer = null;
+            console.log(`[Context] Flush aborted - no data to send`);
+            return;
+        }
+        
+        const batchToSend = this.contextBatch.splice(0); // Clear batch
+        this.contextFlushTimer = null;
+        console.log(`[Context] Sending ${batchToSend.length} chunks to ${this.contextApiUrl}`);
+        
+        try {
+            const response = await fetch(this.contextApiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ chunks: batchToSend })
+            });
+            
+            if (response.ok) {
+                const result = await response.json();
+                console.log(`[Context] Flushed ${batchToSend.length} chunks, processed ${result.processed} conversations`);
+            } else {
+                console.error('[Context] Failed to flush batch:', response.status);
+                // Re-add failed batch for retry (with limit to prevent memory leak)
+                if (this.contextBatch.length < 1000) {
+                    this.contextBatch.unshift(...batchToSend);
+                }
+            }
+        } catch (error) {
+            console.error('[Context] Error flushing batch:', error);
+            // Re-add failed batch for retry (with limit)
+            if (this.contextBatch.length < 1000) {
+                this.contextBatch.unshift(...batchToSend);
+            }
+        }
     }
     
     // Cleanup disconnected sessions based on inactivity
@@ -345,6 +420,22 @@ function setupTerminalWebSocket(io) {
                     };
                     socket.emit('terminal:data', outputData);
                     socket.emit('terminal:output', outputData);
+                    
+                    // Context Folders: Capture terminal output with enhanced metadata
+                    // Detect if this is Claude output based on context
+                    const outputType = session.claudeActive ? 'claude_output' : 'terminal_output';
+                    
+                    safeptyManager.addToContextBatch(
+                        session.id,
+                        outputType,
+                        data,
+                        {
+                            claudeActive: session.claudeActive || false,
+                            aiTeamActive: session.aiTeamActive || false,
+                            sessionType: session.claudeActive ? 'claude' : 
+                                       session.aiTeamActive ? 'ai-team' : 'terminal'
+                        }
+                    );
                     
                     // ERROR DOCTOR: Detect errors in terminal output
                     const errorPatterns = [
@@ -723,6 +814,43 @@ function setupTerminalWebSocket(io) {
                 // Check if we have a complete command (ended with enter/return)
                 if (data.includes('\r') || data.includes('\n')) {
                     console.log(`[CODER1-DEBUG] Complete command detected: "${currentClean}"`);
+                    
+                    // Context Folders: Capture user command with enhanced metadata
+                    if (currentClean && currentClean.trim()) {
+                        const cleanCmd = currentClean.trim();
+                        const lowerCmd = cleanCmd.toLowerCase();
+                        
+                        // Detect if this is a Claude command with multiple patterns
+                        const isClaudeCommand = 
+                            lowerCmd.startsWith('claude ') ||
+                            lowerCmd === 'claude' ||
+                            lowerCmd.startsWith('claude-code') ||
+                            lowerCmd.startsWith('cld ') ||
+                            lowerCmd === 'cld' ||
+                            lowerCmd.startsWith('cc ') ||
+                            lowerCmd === 'cc' ||
+                            lowerCmd.includes('claude');
+                        
+                        // Mark session as Claude active if Claude is detected
+                        if (isClaudeCommand && !session.claudeActive) {
+                            session.claudeActive = true;
+                            console.log(`[Context] Claude session detected: "${cleanCmd}"`);
+                        }
+                        
+                        safeptyManager.addToContextBatch(
+                            session.id,
+                            'terminal_input',
+                            currentClean,
+                            {
+                                command: cleanCmd,
+                                claudeActive: session.claudeActive || false,
+                                aiTeamActive: session.aiTeamActive || false,
+                                isClaudeCommand: isClaudeCommand,
+                                sessionType: isClaudeCommand ? 'claude' : 
+                                           session.aiTeamActive ? 'ai-team' : 'terminal'
+                            }
+                        );
+                    }
                     
                     // Clear the buffer for next command
                     session.commandBuffer = '';

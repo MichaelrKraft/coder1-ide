@@ -1,0 +1,15 @@
+{
+  "name": "project-team-1757001157613",
+  "version": "1.0.0",
+  "description": "Build a todo list app with React and TypeScript",
+  "scripts": {
+    "start": "node server/server.js",
+    "dev": "nodemon server/server.js",
+    "test": "jest"
+  },
+  "dependencies": {
+    "express": "^4.18.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  }
+}

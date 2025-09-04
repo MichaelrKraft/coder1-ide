@@ -6,6 +6,13 @@
 
 const fs = require('fs');
 const path = require('path');
+const { promisify } = require('util');
+const pLimit = require('p-limit').default || require('p-limit');
+const writeFile = promisify(fs.writeFile);
+const mkdir = promisify(fs.mkdir);
+
+// Import Claude API for real code generation
+const { ClaudeCodeAPI } = require('../integrations/claude-code-api');
 
 class AIAgentOrchestrator {
   constructor() {
@@ -14,6 +21,19 @@ class AIAgentOrchestrator {
     this.activeTeams = new Map();
     this.agentsPath = path.join(process.cwd(), '.coder1', 'agents');
     this.outputDirectory = path.join(process.cwd(), 'generated');
+    
+    // Initialize Claude API for real code generation
+    this.claudeAPI = null;
+    if (process.env.ANTHROPIC_API_KEY) {
+      this.claudeAPI = new ClaudeCodeAPI(process.env.ANTHROPIC_API_KEY, {
+        logger: console,
+        timeout: 60000 // 60 second timeout for code generation
+      });
+      console.log('✅ AI Agent Orchestrator: Claude API initialized for real code generation');
+    } else {
+      console.warn('⚠️ AI Agent Orchestrator: No ANTHROPIC_API_KEY found, will use simulation mode');
+    }
+    
     this.loadAgentDefinitions();
     this.loadWorkflowTemplates();
   }
@@ -241,17 +261,26 @@ class AIAgentOrchestrator {
 
     console.log(`🔄 Starting streaming workflow for team ${teamId}`);
 
-    // Phase 1: Planning (0-15%)
-    setTimeout(() => this.updateTeamPhase(teamId, 'planning', 'Analyzing requirements and planning architecture'), 1000);
-    
-    // Phase 2: Initialize agents (15-25%)
-    setTimeout(() => this.startAgentInitialization(teamId, workflow), 3000);
-    
-    // Phase 3: Execute workflow steps (25-90%)
-    setTimeout(() => this.executeWorkflowSteps(teamId, workflow), 8000);
-    
-    // Phase 4: Integration & finalization (90-100%)
-    setTimeout(() => this.finalizeWorkflow(teamId), 25000);
+    try {
+      // Phase 1: Planning (0-15%)
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      this.updateTeamPhase(teamId, 'planning', 'Analyzing requirements and planning architecture');
+      
+      // Phase 2: Initialize agents (15-25%)
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      this.startAgentInitialization(teamId, workflow);
+      
+      // Phase 3: Execute workflow steps (25-90%) - WAIT for completion
+      await new Promise(resolve => setTimeout(resolve, 5000));
+      await this.executeWorkflowSteps(teamId, workflow); // await the async function
+      
+      // Phase 4: Integration & finalization (90-100%) - only after agents complete
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      await this.finalizeWorkflow(teamId);
+    } catch (error) {
+      console.error(`❌ Workflow execution failed for team ${teamId}:`, error);
+      team.status = 'error';
+    }
   }
 
   /**
@@ -285,25 +314,152 @@ class AIAgentOrchestrator {
   }
 
   /**
-   * Execute workflow steps with streaming progress
+   * Execute workflow steps with streaming progress and deliverable passing
    */
-  executeWorkflowSteps(teamId, workflow) {
+  async executeWorkflowSteps(teamId, workflow) {
     const team = this.activeTeams.get(teamId);
     if (!team) return;
 
     team.status = 'executing';
+    team.sharedDeliverables = {}; // Store deliverables to pass between agents
     
-    // Create realistic task progression for each agent
-    team.agents.forEach((agent, index) => {
-      const workflowStep = workflow.sequence[index % workflow.sequence.length];
-      this.simulateAgentWork(agent, workflowStep, index);
+    // Create rate limiter - max 2 concurrent API calls to avoid rate limiting
+    const limit = pLimit(2);
+    
+    // Create promises for each agent with rate limiting
+    const agentPromises = workflow.sequence.map((workflowStep, index) => {
+      const agent = team.agents.find(a => a.agentId === workflowStep.agent);
+      
+      if (!agent) {
+        console.warn(`⚠️ No agent found for ${workflowStep.agent}`);
+        return Promise.resolve();
+      }
+
+      // Return a limited promise
+      return limit(async () => {
+        // Pass previous deliverables as context
+        agent.dependencies = team.sharedDeliverables;
+        
+        // Execute agent work
+        await this.simulateAgentWork(agent, workflowStep, index);
+        
+        // Store deliverables for next agent
+        if (agent.deliverables && agent.deliverables.length > 0) {
+          team.sharedDeliverables[agent.agentId] = agent.deliverables;
+          console.log(`📦 Stored ${agent.agentName} deliverables for downstream agents`);
+        }
+      });
     });
+    
+    // Execute all agents with rate limiting
+    await Promise.all(agentPromises);
   }
 
   /**
-   * Simulate realistic agent work with streaming progress updates
+   * Execute agent work with real Claude API code generation
    */
-  simulateAgentWork(agent, workflowStep, agentIndex) {
+  async simulateAgentWork(agent, workflowStep, agentIndex) {
+    // Use real API if available, otherwise fall back to simulation
+    if (this.claudeAPI && this.agentDefinitions.has(agent.agentId)) {
+      await this.executeRealAgentWork(agent, workflowStep, agentIndex);
+    } else {
+      // Fallback to simulation if no API or agent definition
+      this.executeSimulatedWork(agent, workflowStep, agentIndex);
+    }
+  }
+
+  /**
+   * Execute real agent work using Claude API
+   */
+  async executeRealAgentWork(agent, workflowStep, agentIndex) {
+    const agentDef = this.agentDefinitions.get(agent.agentId);
+    if (!agentDef) {
+      console.warn(`⚠️ No agent definition found for ${agent.agentId}`);
+      return this.executeSimulatedWork(agent, workflowStep, agentIndex);
+    }
+
+    try {
+      agent.status = 'thinking';
+      agent.currentTask = 'Analyzing requirements';
+      agent.progress = 25;
+
+      // Get the appropriate task template
+      const taskTemplate = agentDef.taskTemplates?.[workflowStep.task] || 
+                          agentDef.taskTemplates?.['default'] ||
+                          `Implement ${workflowStep.task} for {requirement}`;
+
+      // Replace template variables
+      const team = Array.from(this.activeTeams.values()).find(t => 
+        t.agents.some(a => a === agent)
+      );
+      const prompt = taskTemplate.replace('{requirement}', team?.projectRequirement || 'the project');
+
+      // Build context from dependencies
+      let dependencyContext = '';
+      if (agent.dependencies && Object.keys(agent.dependencies).length > 0) {
+        dependencyContext = '\n\nPrevious agent deliverables available:\n';
+        for (const [agentId, deliverables] of Object.entries(agent.dependencies)) {
+          const latestDeliverable = deliverables[deliverables.length - 1];
+          if (latestDeliverable && latestDeliverable.content) {
+            // Include a summary of the previous deliverable (limit to 500 chars)
+            const contentPreview = latestDeliverable.content.substring(0, 500);
+            dependencyContext += `\n${agentId} provided:\n\`\`\`\n${contentPreview}...\n\`\`\`\n`;
+          }
+        }
+      }
+
+      // Add system prompt and context
+      const fullPrompt = `${agentDef.systemPrompt}\n\n${prompt}${dependencyContext}\n\nProvide complete, working code with comments.`;
+
+      agent.status = 'working';
+      agent.currentTask = 'Generating code';
+      agent.progress = 50;
+
+      console.log(`🤖 ${agent.agentName}: Calling Claude API for real code generation...`);
+
+      // Call Claude API for real code generation
+      const response = await this.claudeAPI.sendMessage(fullPrompt, {
+        maxTokens: agentDef.maxTokens || 2000,
+        temperature: agentDef.temperature || 0.3
+      });
+
+      agent.progress = 75;
+      agent.currentTask = 'Processing response';
+
+      // Store generated code
+      if (response) {
+        agent.deliverables = agent.deliverables || [];
+        agent.deliverables.push({
+          type: 'code',
+          content: response,
+          task: workflowStep.task,
+          timestamp: new Date()
+        });
+
+        // Save to file if specified
+        if (workflowStep.outputs) {
+          await this.saveAgentDeliverable(agent, response, workflowStep);
+        }
+
+        agent.status = 'completed';
+        agent.currentTask = 'Code generation complete';
+        agent.progress = 100;
+        
+        console.log(`✅ ${agent.agentName}: Successfully generated code (${response.length} characters)`);
+      }
+    } catch (error) {
+      console.error(`❌ ${agent.agentName}: API call failed:`, error.message);
+      agent.status = 'error';
+      agent.currentTask = `Error: ${error.message}`;
+      // Fall back to simulation on error
+      this.executeSimulatedWork(agent, workflowStep, agentIndex);
+    }
+  }
+
+  /**
+   * Fallback simulation when API is not available
+   */
+  executeSimulatedWork(agent, workflowStep, agentIndex) {
     const taskSteps = this.generateTaskSteps(agent.agentId, workflowStep);
     let currentStep = 0;
     
@@ -312,9 +468,9 @@ class AIAgentOrchestrator {
         const step = taskSteps[currentStep];
         agent.status = 'working';
         agent.currentTask = step.description;
-        agent.progress = Math.min(25 + (currentStep / taskSteps.length) * 65, 90); // Progress from 25% to 90%
+        agent.progress = Math.min(25 + (currentStep / taskSteps.length) * 65, 90);
         
-        console.log(`⚡ ${agent.agentName}: ${step.description} (${agent.progress}%)`);
+        console.log(`⚡ ${agent.agentName} (simulated): ${step.description} (${agent.progress}%)`);
         currentStep++;
       } else {
         clearInterval(progressInterval);
@@ -322,7 +478,32 @@ class AIAgentOrchestrator {
         agent.currentTask = 'Finalizing deliverables';
         agent.progress = 90;
       }
-    }, 1500 + Math.random() * 1000); // Random intervals between 1.5-2.5s for realism
+    }, 1500 + Math.random() * 1000);
+  }
+
+  /**
+   * Save agent deliverable to file
+   */
+  async saveAgentDeliverable(agent, content, workflowStep) {
+    try {
+      // Ensure output directory exists
+      if (!fs.existsSync(this.outputDirectory)) {
+        await mkdir(this.outputDirectory, { recursive: true });
+      }
+
+      // Generate filename based on agent and task
+      const filename = `${agent.agentId}_${workflowStep.task}_${Date.now()}.js`;
+      const filepath = path.join(this.outputDirectory, filename);
+
+      await writeFile(filepath, content, 'utf-8');
+      console.log(`💾 Saved ${agent.agentName} deliverable to: ${filename}`);
+
+      // Store file reference
+      agent.generatedFiles = agent.generatedFiles || [];
+      agent.generatedFiles.push(filepath);
+    } catch (error) {
+      console.error(`❌ Failed to save deliverable:`, error.message);
+    }
   }
 
   /**
@@ -386,6 +567,96 @@ class AIAgentOrchestrator {
   }
 
   /**
+   * Parse generated code to extract individual files
+   */
+  parseGeneratedCode(content, agentId) {
+    const files = [];
+    
+    // Look for file markers in various formats
+    // Matches: // File: name.js, /* File: name.js */, // name.js, etc.
+    const fileMarkers = [
+      /\/\/\s*File:\s*([^\n]+)/gi,           // // File: filename.js
+      /\/\*\s*File:\s*([^\*]+)\*\//gi,       // /* File: filename.js */
+      /\/\/\s*(\w+\.\w+)/gi,                 // // filename.js
+      /```(?:javascript|js|typescript|tsx?)\s+([^\n]+)/gi,  // ```javascript filename.js
+      /(?:export|import|class|function|const)\s+(?:default\s+)?(\w+)/gi  // Try to extract component names - added g flag
+    ];
+    
+    // Try to split by file markers
+    let foundFiles = false;
+    for (const pattern of fileMarkers) {
+      const matches = content.matchAll(pattern);
+      for (const match of matches) {
+        foundFiles = true;
+        break;
+      }
+      if (foundFiles) break;
+    }
+    
+    // If we found file markers, split the content
+    if (foundFiles) {
+      // Split by any of the file patterns
+      const splitPattern = /(?:\/\/\s*File:\s*[^\n]+|\/\*\s*File:\s*[^\*]+\*\/|\/\/\s*\w+\.\w+)/gi;
+      const parts = content.split(splitPattern);
+      const fileNames = content.match(splitPattern) || [];
+      
+      for (let i = 0; i < fileNames.length; i++) {
+        const filename = fileNames[i].replace(/^[\/\*\s]+|[\*\/\s]+$/g, '').replace(/^File:\s*/i, '').trim();
+        const code = parts[i + 1]?.trim();
+        if (filename && code) {
+          files.push({ 
+            name: filename, 
+            content: code 
+          });
+        }
+      }
+    }
+    
+    // If no file markers found, try to intelligently split based on content
+    if (files.length === 0) {
+      // For backend code, look for server/API patterns
+      if (agentId === 'backend-engineer') {
+        // Check if it's an Express server
+        if (content.includes('express()') || content.includes('app.listen')) {
+          files.push({ name: 'server.js', content });
+        } else if (content.includes('router.') || content.includes('Router()')) {
+          files.push({ name: 'routes.js', content });
+        } else {
+          files.push({ name: 'api.js', content });
+        }
+      }
+      // For frontend code, look for React patterns
+      else if (agentId === 'frontend-engineer') {
+        // Try to extract React components
+        const componentMatches = content.match(/(?:function|const)\s+(\w+)\s*(?:\(|=)/g);
+        if (componentMatches && componentMatches.length > 1) {
+          // Multiple components, try to split
+          const components = content.split(/(?=(?:function|const)\s+\w+\s*(?:\(|=))/);
+          components.forEach((comp, idx) => {
+            if (comp.trim()) {
+              const nameMatch = comp.match(/(?:function|const)\s+(\w+)/);
+              const name = nameMatch ? `${nameMatch[1]}.tsx` : `component${idx}.tsx`;
+              files.push({ name, content: comp.trim() });
+            }
+          });
+        } else {
+          files.push({ name: 'App.tsx', content });
+        }
+      }
+      // For QA code
+      else if (agentId === 'qa-testing') {
+        files.push({ name: 'test.spec.js', content });
+      }
+      // Default fallback
+      else {
+        files.push({ name: `${agentId}-output.js`, content });
+      }
+    }
+    
+    return files;
+  }
+
+  /**
    * Generate real project files based on workflow and write to disk
    */
   async generateProjectFiles(team) {
@@ -403,17 +674,121 @@ class AIAgentOrchestrator {
         fs.mkdirSync(projectDir, { recursive: true });
       }
 
-      if (team.context.projectType === 'crud-application') {
-        // Generate React Todo App files
-        await this.writeProjectFile(projectDir, 'src/App.tsx', this.generateReactAppContent(team), 'component', 'frontend-engineer', files);
-        await this.writeProjectFile(projectDir, 'src/components/TodoList.tsx', this.generateTodoListContent(team), 'component', 'frontend-engineer', files);
-        await this.writeProjectFile(projectDir, 'src/components/TodoItem.tsx', this.generateTodoItemContent(team), 'component', 'frontend-engineer', files);
-        await this.writeProjectFile(projectDir, 'src/hooks/useTodos.ts', this.generateTodoHookContent(team), 'service', 'frontend-engineer', files);
-        await this.writeProjectFile(projectDir, 'src/api/todos.ts', this.generateTodoApiContent(team), 'service', 'backend-engineer', files);
-        await this.writeProjectFile(projectDir, 'server/server.js', this.generateServerContent(team), 'service', 'backend-engineer', files);
-        await this.writeProjectFile(projectDir, 'package.json', this.generatePackageJsonContent(team), 'config', 'backend-engineer', files);
-        await this.writeProjectFile(projectDir, 'README.md', this.generateReadmeContent(team), 'documentation', 'qa-testing', files);
-        await this.writeProjectFile(projectDir, 'src/App.test.tsx', this.generateTestContent(team), 'test', 'qa-testing', files);
+      // Use real generated code from agents instead of templates
+      if (team.sharedDeliverables && Object.keys(team.sharedDeliverables).length > 0) {
+        console.log('📝 Using real generated code from AI agents...');
+        console.log('📦 Available deliverables:', Object.keys(team.sharedDeliverables));
+        
+        // Process backend engineer code
+        if (team.sharedDeliverables['backend-engineer']) {
+          const backendDeliverables = team.sharedDeliverables['backend-engineer'];
+          console.log(`🔧 Backend deliverables count: ${backendDeliverables.length}`);
+          
+          for (const deliverable of backendDeliverables) {
+            if (deliverable.content) {
+              console.log(`📄 Processing backend deliverable, content length: ${deliverable.content.length}`);
+              const parsedFiles = this.parseGeneratedCode(deliverable.content, 'backend-engineer');
+              console.log(`🗂️ Parsed ${parsedFiles.length} files from backend code`);
+              
+              for (const file of parsedFiles) {
+                const filepath = file.name.includes('/') ? file.name : `server/${file.name}`;
+                console.log(`💾 Writing file: ${filepath}`);
+                await this.writeProjectFile(projectDir, filepath, file.content, 'backend', 'backend-engineer', files);
+              }
+            } else {
+              console.log('⚠️ Backend deliverable has no content');
+            }
+          }
+        }
+        
+        // Process frontend engineer code
+        if (team.sharedDeliverables['frontend-engineer']) {
+          const frontendDeliverables = team.sharedDeliverables['frontend-engineer'];
+          console.log(`🎨 Frontend deliverables count: ${frontendDeliverables.length}`);
+          
+          for (const deliverable of frontendDeliverables) {
+            if (deliverable.content) {
+              console.log(`📄 Processing frontend deliverable, content length: ${deliverable.content.length}`);
+              const parsedFiles = this.parseGeneratedCode(deliverable.content, 'frontend-engineer');
+              console.log(`🗂️ Parsed ${parsedFiles.length} files from frontend code`);
+              
+              for (const file of parsedFiles) {
+                const filepath = file.name.includes('/') ? file.name : `src/${file.name}`;
+                console.log(`💾 Writing file: ${filepath}`);
+                await this.writeProjectFile(projectDir, filepath, file.content, 'frontend', 'frontend-engineer', files);
+              }
+            } else {
+              console.log('⚠️ Frontend deliverable has no content');
+            }
+          }
+        }
+        
+        // Process QA testing code
+        if (team.sharedDeliverables['qa-testing']) {
+          const qaDeliverables = team.sharedDeliverables['qa-testing'];
+          console.log(`🧪 QA deliverables count: ${qaDeliverables.length}`);
+          
+          for (const deliverable of qaDeliverables) {
+            if (deliverable.content) {
+              console.log(`📄 Processing QA deliverable, content length: ${deliverable.content.length}`);
+              const parsedFiles = this.parseGeneratedCode(deliverable.content, 'qa-testing');
+              console.log(`🗂️ Parsed ${parsedFiles.length} files from QA code`);
+              
+              for (const file of parsedFiles) {
+                const filepath = file.name.includes('/') ? file.name : `tests/${file.name}`;
+                console.log(`💾 Writing file: ${filepath}`);
+                await this.writeProjectFile(projectDir, filepath, file.content, 'test', 'qa-testing', files);
+              }
+            } else {
+              console.log('⚠️ QA deliverable has no content');
+            }
+          }
+        }
+        
+        console.log(`✅ Total files generated: ${files.length}`);
+        if (files.length > 0) {
+          console.log('📁 Files written to:', projectDir);
+        }
+        
+        // Process any other agents
+        for (const [agentId, deliverables] of Object.entries(team.sharedDeliverables)) {
+          if (!['backend-engineer', 'frontend-engineer', 'qa-testing'].includes(agentId)) {
+            for (const deliverable of deliverables) {
+              if (deliverable.content) {
+                const parsedFiles = this.parseGeneratedCode(deliverable.content, agentId);
+                for (const file of parsedFiles) {
+                  await this.writeProjectFile(projectDir, file.name, file.content, 'generated', agentId, files);
+                }
+              }
+            }
+          }
+        }
+        
+        // Add a package.json if not generated
+        if (!files.some(f => f.path.includes('package.json'))) {
+          const packageJson = {
+            name: `project-${team.teamId}`,
+            version: "1.0.0",
+            description: team.projectRequirement || "AI-generated project",
+            scripts: {
+              start: "node server/server.js",
+              dev: "nodemon server/server.js",
+              test: "jest"
+            },
+            dependencies: {
+              express: "^4.18.0",
+              react: "^18.2.0",
+              "react-dom": "^18.2.0"
+            }
+          };
+          await this.writeProjectFile(projectDir, 'package.json', JSON.stringify(packageJson, null, 2), 'config', 'system', files);
+        }
+      } else {
+        console.log('⚠️ No deliverables found, generating default template files...');
+        // Fallback to template generation if no deliverables
+        if (team.context.projectType === 'crud-application') {
+          await this.writeProjectFile(projectDir, 'README.md', `# ${team.projectRequirement}\n\nAI-generated project`, 'documentation', 'system', files);
+        }
       }
 
       console.log(`📁 Generated ${files.length} files in ${projectDir}`);

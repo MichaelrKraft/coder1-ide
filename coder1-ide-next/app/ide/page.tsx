@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import ThreePanelLayout from '@/components/layout/ThreePanelLayout';
 import PreviewPanel from '@/components/preview/PreviewPanel';
@@ -107,6 +107,64 @@ export default function IDEPage() {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []); // Note: Handler functions are stable and don't need to be dependencies
+
+  // Auto-initialize Context system on IDE startup
+  React.useEffect(() => {
+    const initializeContext = async () => {
+      try {
+        console.log('🧠 Initializing Context Folders system...');
+        
+        // Initialize the Context system
+        const initResponse = await fetch('http://localhost:3001/api/context/init', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            projectPath: '/Users/michaelkraft/autonomous_vibe_interface',
+            autoStart: true  // Enable file watcher
+          })
+        });
+        
+        if (!initResponse.ok) {
+          throw new Error(`Context init failed: ${initResponse.status}`);
+        }
+        
+        const initData = await initResponse.json();
+        console.log('✅ Context system initialized:', initData);
+        
+        // Store the session ID returned from init
+        if (initData.stats?.currentSession) {
+          localStorage.setItem('contextSessionId', initData.stats.currentSession);
+          console.log('✅ Context session active:', initData.stats.currentSession);
+        }
+        
+        // Log stats from initialization
+        console.log('📊 Context stats:', {
+          sessions: initData.stats?.totalSessions || 0,
+          conversations: initData.stats?.totalConversations || 0,
+          patterns: initData.stats?.totalPatterns || 0,
+          fileWatcher: initData.fileWatcherActive ? 'active' : 'inactive'
+        });
+        
+        showToast('Context Folders initialized - Your sessions are now being saved!');
+      } catch (error) {
+        console.error('❌ Failed to initialize Context system:', error);
+        showToast('Context Folders unavailable - Sessions will not be saved');
+      }
+    };
+    
+    // Initialize Context system
+    initializeContext();
+    
+    // Cleanup on unmount
+    return () => {
+      const sessionId = localStorage.getItem('contextSessionId');
+      if (sessionId) {
+        // Log session ending (no endpoint needed as sessions auto-expire)
+        console.log('🔚 Context session ending:', sessionId);
+        localStorage.removeItem('contextSessionId');
+      }
+    };
+  }, []);
 
   // Helper to show toast
   const showToast = (message: string) => {

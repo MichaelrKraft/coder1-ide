@@ -8,7 +8,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Eye, GitBranch, FileText } from 'lucide-react';
+import { Eye, GitBranch, FileText, Brain } from 'lucide-react';
 import StatusBarActions from './StatusBarActions';
 import DiscoverPanel from './DiscoverPanel';
 import { useIDEStore } from '@/stores/useIDEStore';
@@ -44,6 +44,19 @@ export default function StatusBarCore({
   }>({
     branch: null,
     modifiedCount: 0,
+    isLoading: false
+  });
+  
+  // Context Folders state management
+  const [contextStats, setContextStats] = useState<{
+    totalSessions: number;
+    totalMemories: number;
+    isActive: boolean;
+    isLoading: boolean;
+  }>({
+    totalSessions: 0,
+    totalMemories: 0,
+    isActive: false,
     isLoading: false
   });
   
@@ -100,10 +113,44 @@ export default function StatusBarCore({
     }
   };
 
+  // Fetch Context Folders statistics
+  const fetchContextStats = async () => {
+    try {
+      setContextStats(prev => ({ ...prev, isLoading: true }));
+      
+      const response = await fetch('http://localhost:3001/api/context/stats', {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      
+      if (response.ok) {
+        const stats = await response.json();
+        setContextStats({
+          totalSessions: stats.totalSessions || 0,
+          totalMemories: stats.totalConversations || 0,
+          isActive: stats.isLearning || stats.totalSessions > 0,
+          isLoading: false
+        });
+      } else {
+        setContextStats(prev => ({ ...prev, isLoading: false }));
+      }
+    } catch (error) {
+      console.warn('Context stats fetch failed:', error);
+      setContextStats(prev => ({ ...prev, isLoading: false }));
+    }
+  };
+
   // Fetch git info on mount and periodically
   useEffect(() => {
     fetchGitInfo();
     const interval = setInterval(fetchGitInfo, 60000); // Update every 60 seconds (reduced from 30)
+    return () => clearInterval(interval);
+  }, []);
+  
+  // Fetch Context stats on mount and periodically
+  useEffect(() => {
+    fetchContextStats();
+    const interval = setInterval(fetchContextStats, 10000); // Update every 10 seconds
     return () => clearInterval(interval);
   }, []);
   
@@ -142,6 +189,25 @@ export default function StatusBarCore({
 
         {/* Right section - Status info */}
         <div className="flex items-center gap-4 text-sm text-text-muted">
+          {/* Context Folders Information */}
+          {contextStats.isActive && (
+            <div 
+              className="flex items-center gap-1" 
+              title={`Context Folders: ${contextStats.totalSessions} sessions, ${contextStats.totalMemories} memories`}
+            >
+              <Brain className={`w-3 h-3 ${contextStats.totalMemories > 0 ? 'text-purple-400' : 'text-text-muted'}`} />
+              <span className={contextStats.totalMemories > 0 ? 'text-purple-400' : 'text-text-secondary'}>
+                {contextStats.totalMemories} memories
+              </span>
+              {contextStats.totalSessions > 0 && (
+                <div className="flex items-center gap-1">
+                  <span className="text-text-muted">•</span>
+                  <span className="text-text-secondary">{contextStats.totalSessions} sessions</span>
+                </div>
+              )}
+            </div>
+          )}
+          
           {/* Git Information */}
           {gitInfo.branch && (
             <div className="flex items-center gap-1" title={`Git branch: ${gitInfo.branch}${gitInfo.modifiedCount > 0 ? ` • ${gitInfo.modifiedCount} modified` : ''}`}>

@@ -1,0 +1,15 @@
+[
+  {
+    "id": "exec-1757004410912",
+    "agentType": "test-agent",
+    "task": "test task",
+    "command": "test command",
+    "status": "completed",
+    "startTime": "2025-09-04T16:46:50.912Z",
+    "duration": 1000,
+    "success": true,
+    "cost": 0.01,
+    "tokensUsed": 0,
+    "metadata": {}
+  }
+]

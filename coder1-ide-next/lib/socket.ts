@@ -9,7 +9,7 @@ export const getSocket = (): Socket => {
     console.log(`🔌 CREATING SOCKET CONNECTION (attempt ${connectionAttempts})`);
     
     // Connect to the Express backend using environment variable
-    const backendUrl = process.env.NEXT_PUBLIC_EXPRESS_BACKEND_URL || 'http://localhost:3001';
+    const backendUrl = process.env.NEXT_PUBLIC_EXPRESS_BACKEND_URL || 'http://localhost:3000';
     console.log(`🎯 CONNECTING TO: ${backendUrl}`);
     
     socket = io(backendUrl, {

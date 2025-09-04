@@ -1,0 +1,317 @@
+{
+  "version": "1.0.0",
+  "description": "Agent template definitions for cross-referencing and workflow orchestration",
+  "lastUpdated": "2025-01-29",
+  "templateCategories": {
+    "authentication": {
+      "name": "Authentication & Security",
+      "description": "User authentication, authorization, and security workflows",
+      "agents": ["frontend-engineer", "backend-engineer", "security-analyst"],
+      "patterns": ["jwt-auth", "oauth-flow", "session-management", "password-security"]
+    },
+    "crud-operations": {
+      "name": "CRUD & Database Operations", 
+      "description": "Create, Read, Update, Delete operations with database integration",
+      "agents": ["backend-engineer", "frontend-engineer", "qa-testing"],
+      "patterns": ["rest-api", "database-schema", "form-handling", "data-validation"]
+    },
+    "ui-components": {
+      "name": "UI Component Development",
+      "description": "Reusable user interface components and design systems",
+      "agents": ["frontend-engineer", "ux-designer"],
+      "patterns": ["component-library", "responsive-design", "accessibility", "theming"]
+    },
+    "testing-workflows": {
+      "name": "Testing & Quality Assurance",
+      "description": "Testing strategies, automation, and quality assurance processes",
+      "agents": ["qa-testing", "frontend-engineer", "backend-engineer"],
+      "patterns": ["unit-testing", "integration-testing", "e2e-testing", "test-automation"]
+    },
+    "deployment": {
+      "name": "Deployment & DevOps",
+      "description": "Application deployment, infrastructure, and operational workflows",
+      "agents": ["devops-engineer", "backend-engineer", "security-analyst"],
+      "patterns": ["ci-cd", "containerization", "cloud-deployment", "monitoring"]
+    },
+    "performance": {
+      "name": "Performance Optimization",
+      "description": "Application performance, optimization, and monitoring",
+      "agents": ["frontend-engineer", "backend-engineer", "architecture"],
+      "patterns": ["code-splitting", "database-optimization", "caching", "profiling"]
+    }
+  },
+  "workflows": {
+    "auth-full-stack": {
+      "name": "Full-Stack Authentication",
+      "description": "Complete user authentication system with frontend and backend",
+      "category": "authentication",
+      "agents": ["frontend-engineer", "backend-engineer", "security-analyst"],
+      "sequence": [
+        {
+          "agent": "security-analyst",
+          "task": "Review security requirements and recommend authentication strategy",
+          "dependencies": [],
+          "deliverables": ["security-requirements", "auth-strategy"]
+        },
+        {
+          "agent": "backend-engineer", 
+          "task": "Implement authentication API endpoints and middleware",
+          "dependencies": ["security-requirements"],
+          "deliverables": ["auth-api", "jwt-middleware", "password-hashing"]
+        },
+        {
+          "agent": "frontend-engineer",
+          "task": "Create authentication UI components and forms",
+          "dependencies": ["auth-api"],
+          "deliverables": ["login-form", "signup-form", "auth-context", "route-protection"]
+        }
+      ],
+      "commonIssues": [
+        "CORS configuration for authentication endpoints",
+        "Secure token storage in browser",
+        "Password validation and strength requirements",
+        "Session timeout and refresh token handling"
+      ],
+      "bestPractices": [
+        "Use secure HTTP-only cookies for refresh tokens",
+        "Implement proper password hashing (bcrypt/argon2)",
+        "Add rate limiting to authentication endpoints",
+        "Include CSRF protection for form submissions"
+      ]
+    },
+    "crud-with-ui": {
+      "name": "CRUD Operations with UI",
+      "description": "Complete CRUD implementation with user interface",
+      "category": "crud-operations",
+      "agents": ["backend-engineer", "frontend-engineer", "qa-testing"],
+      "sequence": [
+        {
+          "agent": "backend-engineer",
+          "task": "Design database schema and implement API endpoints",
+          "dependencies": [],
+          "deliverables": ["database-schema", "rest-endpoints", "validation-middleware"]
+        },
+        {
+          "agent": "frontend-engineer",
+          "task": "Create UI components for data management",
+          "dependencies": ["rest-endpoints"],
+          "deliverables": ["data-table", "form-components", "modal-dialogs", "api-integration"]
+        },
+        {
+          "agent": "qa-testing",
+          "task": "Develop test suite for CRUD operations",
+          "dependencies": ["rest-endpoints", "data-table"],
+          "deliverables": ["api-tests", "ui-tests", "validation-tests"]
+        }
+      ],
+      "commonIssues": [
+        "Database constraint violations and error handling",
+        "Form validation synchronization between frontend/backend", 
+        "Optimistic updates and error rollback",
+        "Pagination and search performance"
+      ],
+      "bestPractices": [
+        "Implement database transactions for complex operations",
+        "Use consistent error response format across endpoints",
+        "Add input sanitization and SQL injection prevention",
+        "Implement proper loading states and error boundaries"
+      ]
+    },
+    "component-library": {
+      "name": "Design System & Component Library",
+      "description": "Reusable UI component library with design system",
+      "category": "ui-components", 
+      "agents": ["frontend-engineer", "ux-designer"],
+      "sequence": [
+        {
+          "agent": "ux-designer",
+          "task": "Define design system tokens and component specifications",
+          "dependencies": [],
+          "deliverables": ["design-tokens", "component-specs", "interaction-patterns"]
+        },
+        {
+          "agent": "frontend-engineer",
+          "task": "Implement component library with TypeScript and testing",
+          "dependencies": ["design-tokens", "component-specs"],
+          "deliverables": ["component-library", "storybook-docs", "component-tests", "design-tokens-code"]
+        }
+      ],
+      "commonIssues": [
+        "Maintaining design consistency across components",
+        "Component API design and prop validation",
+        "Theme customization and CSS-in-JS performance",
+        "Documentation and component discovery"
+      ],
+      "bestPractices": [
+        "Use design tokens for consistent spacing and colors",
+        "Implement compound components for complex UI patterns",
+        "Include accessibility attributes by default",
+        "Create comprehensive Storybook documentation"
+      ]
+    },
+    "testing-suite": {
+      "name": "Comprehensive Testing Implementation",
+      "description": "Full testing strategy with unit, integration, and E2E tests",
+      "category": "testing-workflows",
+      "agents": ["qa-testing", "frontend-engineer", "backend-engineer"],
+      "sequence": [
+        {
+          "agent": "qa-testing",
+          "task": "Define testing strategy and framework selection",
+          "dependencies": [],
+          "deliverables": ["testing-strategy", "framework-recommendations", "test-patterns"]
+        },
+        {
+          "agent": "backend-engineer",
+          "task": "Implement API and database testing",
+          "dependencies": ["testing-strategy"],
+          "deliverables": ["api-tests", "database-tests", "integration-tests", "test-fixtures"]
+        },
+        {
+          "agent": "frontend-engineer",
+          "task": "Create component and UI testing suite",
+          "dependencies": ["testing-strategy"],
+          "deliverables": ["component-tests", "user-interaction-tests", "visual-regression-tests"]
+        }
+      ],
+      "commonIssues": [
+        "Test environment setup and data management",
+        "Mocking external dependencies and API calls",
+        "Test flakiness and timing issues",
+        "Test coverage vs. development speed balance"
+      ],
+      "bestPractices": [
+        "Follow testing pyramid (unit > integration > E2E)",
+        "Use test-driven development for critical functionality",
+        "Implement continuous integration test automation",
+        "Create realistic test data and user scenarios"
+      ]
+    },
+    "performance-audit": {
+      "name": "Performance Analysis & Optimization",
+      "description": "Comprehensive performance review and optimization",
+      "category": "performance",
+      "agents": ["architecture", "frontend-engineer", "backend-engineer"],
+      "sequence": [
+        {
+          "agent": "architecture",
+          "task": "Analyze system architecture and identify bottlenecks",
+          "dependencies": [],
+          "deliverables": ["performance-audit", "bottleneck-analysis", "optimization-roadmap"]
+        },
+        {
+          "agent": "frontend-engineer",
+          "task": "Optimize client-side performance and rendering",
+          "dependencies": ["performance-audit"],
+          "deliverables": ["bundle-optimization", "rendering-improvements", "image-optimization", "caching-strategy"]
+        },
+        {
+          "agent": "backend-engineer",
+          "task": "Optimize server performance and database queries",
+          "dependencies": ["performance-audit"],
+          "deliverables": ["query-optimization", "caching-implementation", "api-improvements", "scaling-strategy"]
+        }
+      ],
+      "commonIssues": [
+        "Bundle size and code splitting optimization",
+        "Database N+1 query problems",
+        "Memory leaks and resource cleanup",
+        "Third-party dependency performance impact"
+      ],
+      "bestPractices": [
+        "Implement performance monitoring and alerting",
+        "Use progressive loading and skeleton screens",
+        "Optimize database indexes and query patterns",
+        "Implement proper caching at multiple levels"
+      ]
+    },
+    "basic-web-app": {
+      "name": "Basic Web Application Development",
+      "description": "Standard web application development workflow for React components and apps",
+      "category": "crud-operations",
+      "agents": ["frontend-engineer", "backend-engineer", "qa-testing"],
+      "sequence": [
+        {
+          "agent": "backend-engineer",
+          "task": "Create project structure and backend API endpoints",
+          "dependencies": [],
+          "deliverables": ["project-setup", "api-routes", "server-configuration"]
+        },
+        {
+          "agent": "frontend-engineer", 
+          "task": "Build React components and user interface",
+          "dependencies": ["project-setup"],
+          "deliverables": ["react-components", "styles", "client-logic", "state-management"]
+        },
+        {
+          "agent": "qa-testing",
+          "task": "Test application functionality and create test suite",
+          "dependencies": ["react-components", "api-routes"],
+          "deliverables": ["test-files", "test-reports", "bug-fixes"]
+        }
+      ],
+      "commonIssues": [
+        "Component state management complexity",
+        "API integration and error handling",
+        "Styling and responsive design challenges",
+        "Performance optimization needs"
+      ],
+      "bestPractices": [
+        "Use proper React hooks and state management",
+        "Implement error boundaries and loading states",
+        "Follow component composition patterns",
+        "Write comprehensive tests for critical flows"
+      ]
+    }
+  },
+  "agentCrossReferences": {
+    "frontend-engineer": {
+      "collaboratesWith": ["backend-engineer", "ux-designer", "qa-testing"],
+      "handoffTo": ["qa-testing", "security-analyst"],
+      "dependsOn": ["backend-engineer", "ux-designer"],
+      "expertise": ["react", "typescript", "css", "performance", "accessibility"]
+    },
+    "backend-engineer": {
+      "collaboratesWith": ["frontend-engineer", "devops-engineer", "architecture"],
+      "handoffTo": ["frontend-engineer", "qa-testing", "devops-engineer"],
+      "dependsOn": ["architecture"],
+      "expertise": ["api-design", "database", "security", "performance", "testing"]
+    },
+    "security-analyst": {
+      "collaboratesWith": ["backend-engineer", "devops-engineer", "frontend-engineer"],
+      "handoffTo": ["qa-testing"],
+      "dependsOn": [],
+      "expertise": ["vulnerability-assessment", "secure-coding", "authentication", "encryption"]
+    },
+    "qa-testing": {
+      "collaboratesWith": ["frontend-engineer", "backend-engineer"],
+      "handoffTo": ["devops-engineer"],
+      "dependsOn": ["frontend-engineer", "backend-engineer"],
+      "expertise": ["test-automation", "quality-assurance", "user-testing", "performance-testing"]
+    },
+    "ux-designer": {
+      "collaboratesWith": ["frontend-engineer", "product-manager"],
+      "handoffTo": ["frontend-engineer"],
+      "dependsOn": ["product-manager"],
+      "expertise": ["user-research", "design-systems", "accessibility", "prototyping"]
+    },
+    "devops-engineer": {
+      "collaboratesWith": ["backend-engineer", "security-analyst"],
+      "handoffTo": [],
+      "dependsOn": ["backend-engineer", "qa-testing"],
+      "expertise": ["ci-cd", "containerization", "cloud-infrastructure", "monitoring"]
+    },
+    "architecture": {
+      "collaboratesWith": ["backend-engineer", "frontend-engineer", "devops-engineer"],
+      "handoffTo": ["backend-engineer", "frontend-engineer"],
+      "dependsOn": ["product-manager"],
+      "expertise": ["system-design", "scalability", "performance", "security-architecture"]
+    },
+    "product-manager": {
+      "collaboratesWith": ["ux-designer", "architecture"],
+      "handoffTo": ["ux-designer", "architecture"],
+      "dependsOn": [],
+      "expertise": ["requirements-gathering", "user-stories", "prioritization", "stakeholder-management"]
+    }
+  }
+}

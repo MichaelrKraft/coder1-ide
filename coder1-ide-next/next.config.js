@@ -2,7 +2,7 @@
 const nextConfig = {
   reactStrictMode: true,
   webpack: (config, { isServer }) => {
-    // Monaco Editor fix
+    // Monaco Editor fix and client-side externals
     if (!isServer) {
       config.resolve.fallback = {
         ...config.resolve.fallback,
@@ -10,7 +10,38 @@ const nextConfig = {
         path: false,
         crypto: false,
       };
+      
+      // Prevent bundling of native modules on client side
+      config.externals = [...(config.externals || []), 
+        'chokidar',
+        'fsevents',
+        'better-sqlite3'
+      ];
     }
+    
+    // Handle native modules for Context system
+    if (isServer) {
+      config.externals = [...(config.externals || []), 
+        'better-sqlite3',
+        'chokidar',
+        'fsevents'
+      ];
+    }
+    
+    // Ignore binary modules
+    config.module = {
+      ...config.module,
+      rules: [
+        ...(config.module?.rules || []),
+        {
+          test: /\.node$/,
+          use: 'node-loader'
+        }
+      ]
+    };
+    
     return config;
   },
 }
+
+module.exports = nextConfig;

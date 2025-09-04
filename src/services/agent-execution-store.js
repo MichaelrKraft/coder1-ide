@@ -16,7 +16,15 @@ class AgentExecutionStore extends EventEmitter {
         this.configFile = path.join(this.storePath, 'agent-configs.json');
         
         this.history = [];
-        this.metrics = {};
+        this.metrics = {
+            byAgent: {},
+            overall: {
+                totalExecutions: 0,
+                successRate: 0,
+                avgDuration: 0,
+                totalCost: 0
+            }
+        };
         this.configs = {};
         
         this.maxHistorySize = options.maxHistorySize || 1000;
@@ -160,6 +168,16 @@ class AgentExecutionStore extends EventEmitter {
     
     // Update performance metrics
     async updateMetrics(execution) {
+        // Ensure metrics structure exists (safety check)
+        if (!this.metrics.overall) {
+            this.metrics.overall = {
+                totalExecutions: 0,
+                successRate: 0,
+                avgDuration: 0,
+                totalCost: 0
+            };
+        }
+        
         // Update overall metrics
         this.metrics.overall.totalExecutions++;
         

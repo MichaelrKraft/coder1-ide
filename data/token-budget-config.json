@@ -1,0 +1,11 @@
+{
+  "activePlan": "starter",
+  "customLimits": {},
+  "projectAllocations": {},
+  "warningThresholds": {
+    "daily": 0.8,
+    "monthly": 0.9,
+    "project": 0.75
+  },
+  "smartAllocation": true
+}

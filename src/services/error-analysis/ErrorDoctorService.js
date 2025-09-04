@@ -58,6 +58,12 @@ class ErrorDoctorService {
                 stackTrace
             } = errorData;
 
+            // Filter out ANSI escape sequences and terminal control characters
+            if (!errorText || errorText.includes('\x1b[') || errorText.includes('[2K[1A') || 
+                errorText.match(/^\[?\d+[A-Z]\[/) || errorText.match(/^-+$/)) {
+                return null; // Ignore terminal control sequences and divider lines
+            }
+
             this.logger.log('🔍 Error Doctor: Analyzing error:', errorText.substring(0, 100) + '...');
 
             // First try common error patterns for instant fixes

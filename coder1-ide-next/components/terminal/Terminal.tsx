@@ -993,6 +993,24 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
       }
     });
 
+    // Handle AI Team progress updates
+    socket.on('ai-team:progress', (data: any) => {
+      if (term && data.agent) {
+        // Clear current line and write progress update
+        term.write('\r\x1b[K'); // Clear current line
+        term.writeln(`[${data.agent.name}] ${data.agent.currentTask} (${data.agent.progress}%)`);
+        term.write('$ '); // Restore prompt
+      }
+    });
+
+    // Handle AI Team completion
+    socket.on('ai-team:complete', (data: any) => {
+      if (term) {
+        term.writeln(`\r\n✅ AI Team completed! Generated ${data.filesCount || 0} files`);
+        term.write('$ ');
+      }
+    });
+
     // Set up terminal input handling - send to backend
     term.onData((data) => {
       // Send all input to backend via Socket.IO
@@ -1099,6 +1117,13 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
         const sessionId = localStorage.getItem('currentSessionId') || `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
         localStorage.setItem('currentSessionId', sessionId);
         
+        // Get what user is currently typing, or fall back to last command
+        const currentInput = currentLineBuffer.trim();
+        const lastCommand = commandHistory.length > 0 ? commandHistory[commandHistory.length - 1] : '';
+        const requirement = currentInput || lastCommand || 'Build a web application';
+        
+        console.log('🎯 AI Team requirement:', { currentInput, lastCommand, final: requirement });
+        
         // Spawn AI team via backend API
         const spawnResponse = await fetch('/api/ai-team/spawn', {
           method: 'POST',
@@ -1106,7 +1131,8 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
           body: JSON.stringify({
             sessionId,
             projectType: 'web-app',
-            complexity: 'medium'
+            complexity: 'medium',
+            requirement: requirement
           })
         });
         
@@ -1115,15 +1141,20 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
         }
         
         const spawnResult = await spawnResponse.json();
+        console.log('🎯 AI Team spawn result:', spawnResult);
         
         if (spawnResult.success) {
+          console.log('✅ Writing to terminal, xtermRef.current:', xtermRef.current);
           xtermRef.current?.writeln(`✅ Team spawned: ${spawnResult.teamId.slice(-8)}`);
           xtermRef.current?.writeln(`👥 ${spawnResult.agents.length} AI agents initialized:`);
           
           // List each agent with their expertise
           spawnResult.agents.forEach((agent: any, index: number) => {
-            const expertise = agent.expertise.slice(0, 2).join(', ');
-            xtermRef.current?.writeln(`   ${index + 1}. ${agent.name} - ${expertise}`);
+            // Check if expertise exists and is an array, otherwise use role or fallback
+            const expertiseText = agent.expertise && Array.isArray(agent.expertise) 
+              ? agent.expertise.slice(0, 2).join(', ')
+              : agent.role || 'AI Agent';
+            xtermRef.current?.writeln(`   ${index + 1}. ${agent.name} - ${expertiseText}`);
           });
           
           // Start the team working

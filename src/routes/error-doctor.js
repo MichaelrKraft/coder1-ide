@@ -87,14 +87,34 @@ router.post('/analyze', checkFeatureFlag, async (req, res) => {
             }
         }
 
-        // Add metadata
-        analysisResult.metadata = {
-            timestamp: new Date().toISOString(),
-            analysisTime: Date.now(),
-            errorLength: errorText.length,
-            contextProvided: !!errorContext,
-            vibeCoachTracked: !!vibeCoach
-        };
+        // Add metadata (only if analysisResult is not null)
+        if (analysisResult) {
+            analysisResult.metadata = {
+                timestamp: new Date().toISOString(),
+                analysisTime: Date.now(),
+                errorLength: errorText.length,
+                contextProvided: !!errorContext,
+                vibeCoachTracked: !!vibeCoach
+            };
+        }
+
+        // Handle null analysisResult
+        if (!analysisResult) {
+            console.warn('⚠️ Error analysis returned null - no analysis available');
+            return res.json({
+                success: false,
+                error: 'No analysis available',
+                message: 'Error Doctor could not analyze this error',
+                fixes: [],
+                metadata: {
+                    timestamp: new Date().toISOString(),
+                    analysisTime: Date.now(),
+                    errorLength: errorText.length,
+                    contextProvided: !!errorContext,
+                    vibeCoachTracked: !!vibeCoach
+                }
+            });
+        }
 
         console.log('✅ Error analysis completed:', {
             success: analysisResult.success,
@@ -160,6 +180,22 @@ router.post('/apply-fix', checkFeatureFlag, async (req, res) => {
             } catch (coachError) {
                 console.warn('⚠️ Failed to track error resolution with VibeCoach:', coachError.message);
             }
+        }
+
+        // Handle null result
+        if (!result) {
+            console.warn('⚠️ Fix application returned null - fix could not be applied');
+            return res.json({
+                success: false,
+                error: 'Fix application failed',
+                message: 'Error Doctor could not apply the fix',
+                metadata: {
+                    timestamp: new Date().toISOString(),
+                    fixId,
+                    type,
+                    vibeCoachTracked: !!vibeCoach
+                }
+            });
         }
 
         // Add metadata

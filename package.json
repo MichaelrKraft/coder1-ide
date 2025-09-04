@@ -47,6 +47,7 @@
     "axios": "^1.10.0",
     "bcryptjs": "^3.0.2",
     "cheerio": "^1.0.0-rc.12",
+    "chokidar": "^4.0.3",
     "chromadb": "^3.0.14",
     "cors": "^2.8.5",
     "crypto-js": "^4.2.0",
@@ -67,6 +68,7 @@
     "node-pty": "^0.10.1",
     "nodemailer": "^7.0.5",
     "openai": "^5.10.1",
+    "p-limit": "^7.1.1",
     "pdf-parse": "^1.1.1",
     "session-file-store": "^1.5.0",
     "sharp": "^0.33.0",
@@ -80,6 +82,7 @@
   "devDependencies": {
     "@playwright/test": "^1.55.0",
     "eslint": "^9.34.0",
+    "node-loader": "^2.1.0",
     "nodemon": "^3.1.10"
   },
   "engines": {

@@ -1,0 +1,17 @@
+{
+  "byAgent": {
+    "test-agent": {
+      "executions": 1,
+      "successRate": 100,
+      "avgDuration": 1000,
+      "totalCost": 0.01,
+      "lastUsed": "2025-09-04T16:46:50.912Z"
+    }
+  },
+  "overall": {
+    "totalExecutions": 1,
+    "successRate": 100,
+    "avgDuration": 1000,
+    "totalCost": 0.01
+  }
+}
