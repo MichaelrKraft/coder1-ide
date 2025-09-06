@@ -1096,6 +1096,20 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
         if (onAgentsSpawn) {
           onAgentsSpawn();
         }
+        
+        // Update the AITeamDashboard in PreviewPanel
+        if (typeof window !== 'undefined' && (window as any).updateAITeamDashboard) {
+          (window as any).updateAITeamDashboard({
+            teamId: data.teamId,
+            status: data.status || 'active',
+            agents: data.agents || [],
+            progress: { overall: 0 },
+            generatedFiles: 0,
+            requirement: requirement,
+            workflow: data.workflow,
+            executionType: data.executionType
+          });
+        }
       } else {
         throw new Error(data.error || 'Failed to spawn AI team');
       }
