@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-
-const EXPRESS_BACKEND_URL = 'http://localhost:3000';
+import path from 'path';
+import fs from 'fs/promises';
 
 export async function POST(
   request: NextRequest,
@@ -9,25 +9,28 @@ export async function POST(
   try {
     const { sessionId, checkpointId } = params;
     
-    const response = await fetch(
-      `${EXPRESS_BACKEND_URL}/api/sessions/${sessionId}/checkpoints/${checkpointId}/restore`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
-      }
-    );
+    // Read checkpoint data from local storage
+    const dataDir = path.join(process.cwd(), 'data');
+    const checkpointsDir = path.join(dataDir, 'sessions', sessionId, 'checkpoints');
+    const checkpointFile = path.join(checkpointsDir, `${checkpointId}.json`);
     
-    if (!response.ok) {
-      const error = await response.text();
-      console.error('Failed to restore checkpoint:', error);
+    try {
+      const checkpointData = JSON.parse(await fs.readFile(checkpointFile, 'utf8'));
+      
+      return NextResponse.json({
+        success: true,
+        checkpoint: checkpointData,
+        message: 'Checkpoint data retrieved for restoration'
+      });
+      
+    } catch (error) {
+      console.error('Checkpoint file not found:', checkpointFile);
       return NextResponse.json(
-        { error: 'Failed to restore checkpoint' },
-        { status: response.status }
+        { error: 'Checkpoint not found' },
+        { status: 404 }
       );
     }
     
-    const data = await response.json();
-    return NextResponse.json(data);
   } catch (error) {
     console.error('Restore checkpoint API error:', error);
     return NextResponse.json(

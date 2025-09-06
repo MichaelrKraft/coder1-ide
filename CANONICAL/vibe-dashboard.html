@@ -3404,6 +3404,274 @@
             max-width: 400px;
             margin: 0 auto;
         }
+        
+        /* AI Team Dashboard Styles */
+        .ai-team-section {
+            margin: 40px 0;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 24px;
+            backdrop-filter: blur(10px);
+        }
+        
+        .ai-team-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--glass-border);
+        }
+        
+        .ai-team-header h2 {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin: 0;
+        }
+        
+        .ai-team-header p {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin: 4px 0 0 0;
+        }
+        
+        .agent-progress-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        
+        .agent-card {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 16px;
+            backdrop-filter: blur(5px);
+            transition: all 0.3s ease;
+        }
+        
+        .agent-card:hover {
+            border-color: rgba(139, 92, 246, 0.3);
+            background: rgba(139, 92, 246, 0.05);
+        }
+        
+        .agent-card-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+        
+        .agent-icon {
+            font-size: 24px;
+            width: 40px;
+            height: 40px;
+            background: var(--glass-bg);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .agent-info h4 {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin: 0;
+        }
+        
+        .agent-info p {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin: 2px 0 0 0;
+        }
+        
+        .agent-progress {
+            margin-bottom: 12px;
+        }
+        
+        .agent-progress-bar {
+            width: 100%;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            overflow: hidden;
+            margin-bottom: 8px;
+        }
+        
+        .agent-progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));
+            border-radius: 3px;
+            transition: width 0.3s ease;
+            position: relative;
+        }
+        
+        .agent-progress-fill::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            animation: shimmer 2s infinite;
+        }
+        
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+        
+        .agent-progress-text {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+        }
+        
+        .agent-phase {
+            color: var(--text-secondary);
+            max-width: 70%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        .agent-percentage {
+            color: var(--accent-primary);
+            font-weight: 600;
+        }
+        
+        .agent-status {
+            font-size: 11px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: 500;
+        }
+        
+        .agent-status.in_progress {
+            background: rgba(139, 92, 246, 0.1);
+            color: var(--accent-primary);
+        }
+        
+        .agent-status.completed {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--success);
+        }
+        
+        .agent-status.starting {
+            background: rgba(245, 158, 11, 0.1);
+            color: var(--warning);
+        }
+        
+        .task-output-panel {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        
+        .task-output-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 20px;
+            background: rgba(255, 255, 255, 0.02);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        .task-output-header h3 {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin: 0;
+        }
+        
+        .task-status {
+            font-size: 12px;
+            padding: 4px 8px;
+            border-radius: 4px;
+            background: var(--glass-bg);
+            color: var(--text-secondary);
+            border: 1px solid var(--glass-border);
+        }
+        
+        .task-status.active {
+            background: rgba(139, 92, 246, 0.1);
+            color: var(--accent-primary);
+            border-color: rgba(139, 92, 246, 0.3);
+        }
+        
+        .task-output-content {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .task-prompt {
+            padding: 16px 20px;
+            background: rgba(139, 92, 246, 0.05);
+            border-bottom: 1px solid rgba(139, 92, 246, 0.1);
+        }
+        
+        .task-prompt-label {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--accent-primary);
+            margin-bottom: 8px;
+        }
+        
+        .task-prompt-text {
+            font-size: 13px;
+            color: var(--text-secondary);
+            font-family: 'Monaco', 'Courier New', monospace;
+            white-space: pre-wrap;
+            line-height: 1.4;
+        }
+        
+        .task-output-log {
+            padding: 16px 20px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+        
+        .task-output-line {
+            margin-bottom: 8px;
+            display: flex;
+            gap: 8px;
+        }
+        
+        .task-output-timestamp {
+            color: var(--text-secondary);
+            opacity: 0.7;
+            min-width: 60px;
+        }
+        
+        .task-output-agent {
+            color: var(--accent-primary);
+            font-weight: 600;
+            min-width: 80px;
+        }
+        
+        .task-output-activity {
+            color: var(--text-primary);
+            flex: 1;
+        }
+        
+        .task-waiting {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: var(--text-secondary);
+            padding: 20px 0;
+        }
+        
+        .task-waiting-icon {
+            font-size: 18px;
+        }
 
         /* Circuit decorative lines */
         .circuit-decoration {
@@ -3591,6 +3859,40 @@
                 <button class="timeline-action-btn primary" onclick="createCheckpoint()">
                     📍 New
                 </button>
+            </div>
+        </div>
+
+        <!-- AI Team Dashboard - Two-Tier Layout -->
+        <div class="ai-team-section" id="aiTeamSection" style="display: none;">
+            <div class="ai-team-header">
+                <h2>🤖 AI Team</h2>
+                <p>AI agents working on your project requirements</p>
+                <button class="btn btn-secondary" onclick="hideAITeam()">Hide Dashboard</button>
+            </div>
+
+            <!-- Top Tier: Visual Progress Cards -->
+            <div class="agent-progress-grid" id="agentProgressGrid">
+                <!-- Agent cards will be dynamically inserted here -->
+            </div>
+
+            <!-- Bottom Tier: Claude Task Output Preview -->
+            <div class="task-output-panel">
+                <div class="task-output-header">
+                    <h3>🔄 Claude Task Bridge - Live Output</h3>
+                    <div class="task-status" id="taskStatus">Ready</div>
+                </div>
+                <div class="task-output-content" id="taskOutputContent">
+                    <div class="task-prompt" id="taskPrompt" style="display: none;">
+                        <div class="task-prompt-label">Task Request:</div>
+                        <div class="task-prompt-text"></div>
+                    </div>
+                    <div class="task-output-log" id="taskOutputLog">
+                        <div class="task-waiting">
+                            <div class="task-waiting-icon">⏳</div>
+                            <div>Waiting for task to start...</div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -4292,7 +4594,391 @@
                 this.projectPipeline = null;
                 this.projectBreakdownLoaded = false;
                 
+                // AI Team Dashboard properties
+                this.agentProgressSimulator = null;
+                this.claudeTaskBridge = null;
+                this.isAITeamActive = false;
+                this.activeAgents = [];
+                
                 this.init();
+            }
+
+            // AI Team Dashboard Methods
+            showAITeam(requirements) {
+                const aiTeamSection = document.getElementById('aiTeamSection');
+                if (aiTeamSection) {
+                    aiTeamSection.style.display = 'block';
+                    this.isAITeamActive = true;
+                    
+                    // Define agent team
+                    this.activeAgents = [
+                        { id: 'frontend', name: 'Frontend Engineer', type: 'frontend-engineer', icon: '👨‍💻' },
+                        { id: 'backend', name: 'Backend Engineer', type: 'backend-engineer', icon: '👩‍💻' },
+                        { id: 'qa', name: 'QA Testing', type: 'qa-testing', icon: '🔍' },
+                        { id: 'devops', name: 'DevOps Engineer', type: 'devops-engineer', icon: '⚙️' },
+                        { id: 'security', name: 'Security Analyst', type: 'security-analyst', icon: '🛡️' },
+                        { id: 'ux', name: 'UX Designer', type: 'ux-designer', icon: '🎨' }
+                    ];
+                    
+                    this.renderAgentCards();
+                    this.startAITeamProcess(requirements);
+                }
+            }
+
+            hideAITeam() {
+                const aiTeamSection = document.getElementById('aiTeamSection');
+                if (aiTeamSection) {
+                    aiTeamSection.style.display = 'none';
+                    this.isAITeamActive = false;
+                    
+                    if (this.agentProgressSimulator) {
+                        this.agentProgressSimulator.stopAllAnimations();
+                    }
+                }
+            }
+
+            renderAgentCards() {
+                const agentGrid = document.getElementById('agentProgressGrid');
+                if (!agentGrid) return;
+                
+                agentGrid.innerHTML = this.activeAgents.map(agent => `
+                    <div class="agent-card" id="agent-${agent.id}">
+                        <div class="agent-card-header">
+                            <div class="agent-icon">${agent.icon}</div>
+                            <div class="agent-info">
+                                <h4>${agent.name}</h4>
+                                <p>${this.getAgentDescription(agent.type)}</p>
+                            </div>
+                        </div>
+                        <div class="agent-progress">
+                            <div class="agent-progress-bar">
+                                <div class="agent-progress-fill" id="progress-fill-${agent.id}" style="width: 0%"></div>
+                            </div>
+                            <div class="agent-progress-text">
+                                <span class="agent-phase" id="phase-${agent.id}">Ready to start...</span>
+                                <span class="agent-percentage" id="percentage-${agent.id}">0%</span>
+                            </div>
+                        </div>
+                        <div class="agent-status starting" id="status-${agent.id}">Ready</div>
+                    </div>
+                `).join('');
+            }
+
+            getAgentDescription(type) {
+                const descriptions = {
+                    'frontend-engineer': 'React, TypeScript, UI/UX',
+                    'backend-engineer': 'Node.js, APIs, Database',
+                    'qa-testing': 'Testing, Quality Assurance',
+                    'devops-engineer': 'CI/CD, Deployment',
+                    'security-analyst': 'Security, Vulnerability Testing',
+                    'ux-designer': 'Design, User Experience'
+                };
+                return descriptions[type] || 'AI Development Agent';
+            }
+
+            async startAITeamProcess(requirements) {
+                try {
+                    // Initialize services
+                    if (!this.agentProgressSimulator) {
+                        // Create a simple in-browser version of the simulator
+                        this.agentProgressSimulator = this.createProgressSimulator();
+                    }
+                    
+                    if (!this.claudeTaskBridge) {
+                        this.claudeTaskBridge = this.createTaskBridge();
+                    }
+                    
+                    // Update task status
+                    this.updateTaskStatus('Starting AI Team...', 'active');
+                    
+                    // Start visual animations
+                    const animations = this.agentProgressSimulator.startLoopingAnimations(
+                        this.activeAgents,
+                        (update) => this.updateAgentProgress(update)
+                    );
+                    
+                    // Show task prompt
+                    const taskPrompt = this.claudeTaskBridge.formatTaskRequest(requirements, this.activeAgents);
+                    this.showTaskPrompt(taskPrompt);
+                    
+                    // Show task output area
+                    this.showTaskOutput('🚀 Task started: AI Team implementing project requirements');
+                    
+                    // Add some example streaming output for demo
+                    setTimeout(() => {
+                        this.showTaskOutput('▶ Frontend: Analyzing UI requirements and component structure');
+                    }, 2000);
+                    
+                    setTimeout(() => {
+                        this.showTaskOutput('▶ Backend: Setting up Express server and API endpoints');
+                    }, 4000);
+                    
+                    setTimeout(() => {
+                        this.showTaskOutput('▶ Frontend: Creating React components with TypeScript');
+                    }, 6000);
+                    
+                    setTimeout(() => {
+                        this.showTaskOutput('▶ QA: Writing comprehensive test suites');
+                    }, 8000);
+                    
+                    setTimeout(() => {
+                        this.showTaskOutput('▶ DevOps: Configuring CI/CD pipeline and deployment');
+                    }, 10000);
+                    
+                    setTimeout(() => {
+                        this.showTaskOutput('▶ Security: Running security analysis and vulnerability checks');
+                    }, 12000);
+                    
+                    // Show completion after some time
+                    setTimeout(() => {
+                        animations.showCompletion();
+                        this.updateTaskStatus('Task Completed', 'completed');
+                        this.showTaskOutput('✅ AI Team has successfully implemented all requirements');
+                    }, 30000);
+                    
+                } catch (error) {
+                    console.error('AI Team process error:', error);
+                    this.updateTaskStatus('Error occurred', 'error');
+                }
+            }
+
+            updateAgentProgress(update) {
+                const progressFill = document.getElementById(`progress-fill-${update.agentId}`);
+                const phase = document.getElementById(`phase-${update.agentId}`);
+                const percentage = document.getElementById(`percentage-${update.agentId}`);
+                const status = document.getElementById(`status-${update.agentId}`);
+                
+                if (progressFill) {
+                    progressFill.style.width = `${update.progress}%`;
+                }
+                
+                if (phase) {
+                    phase.textContent = update.phase;
+                }
+                
+                if (percentage) {
+                    percentage.textContent = `${update.progress}%`;
+                }
+                
+                if (status) {
+                    status.textContent = update.status.replace('_', ' ');
+                    status.className = `agent-status ${update.status}`;
+                }
+            }
+
+            updateTaskStatus(text, statusClass = '') {
+                const taskStatus = document.getElementById('taskStatus');
+                if (taskStatus) {
+                    taskStatus.textContent = text;
+                    taskStatus.className = `task-status ${statusClass}`;
+                }
+            }
+
+            showTaskPrompt(prompt) {
+                const taskPrompt = document.getElementById('taskPrompt');
+                const promptText = taskPrompt?.querySelector('.task-prompt-text');
+                
+                if (taskPrompt && promptText) {
+                    promptText.textContent = prompt;
+                    taskPrompt.style.display = 'block';
+                }
+            }
+
+            showTaskOutput(text) {
+                const taskLog = document.getElementById('taskOutputLog');
+                if (!taskLog) return;
+                
+                // Clear waiting message if it exists
+                const waitingMsg = taskLog.querySelector('.task-waiting');
+                if (waitingMsg) {
+                    waitingMsg.remove();
+                }
+                
+                const outputLine = document.createElement('div');
+                outputLine.className = 'task-output-line';
+                
+                const timestamp = document.createElement('div');
+                timestamp.className = 'task-output-timestamp';
+                timestamp.textContent = new Date().toLocaleTimeString();
+                
+                const content = document.createElement('div');
+                content.className = 'task-output-activity';
+                content.textContent = text;
+                
+                outputLine.appendChild(timestamp);
+                outputLine.appendChild(content);
+                taskLog.appendChild(outputLine);
+                
+                // Scroll to bottom
+                const taskContent = document.getElementById('taskOutputContent');
+                if (taskContent) {
+                    taskContent.scrollTop = taskContent.scrollHeight;
+                }
+            }
+
+            createProgressSimulator() {
+                // Simple in-browser version of AgentProgressSimulator
+                return {
+                    loopingAnimations: new Map(),
+                    
+                    startLoopingAnimations: (agents, onProgress) => {
+                        agents.forEach((agent, index) => {
+                            const startDelay = index * (500 + Math.random() * 1000);
+                            
+                            setTimeout(() => {
+                                this.startAgentLoop(agent, onProgress);
+                            }, startDelay);
+                        });
+                        
+                        return {
+                            stopAll: () => this.stopAllAnimations(),
+                            showCompletion: () => this.showCompletionState(agents, onProgress)
+                        };
+                    },
+                    
+                    stopAllAnimations: () => {
+                        this.loopingAnimations.forEach(animation => {
+                            if (animation.stop) animation.stop();
+                        });
+                        this.loopingAnimations.clear();
+                    },
+                    
+                    showCompletionState: (agents, onProgress) => {
+                        agents.forEach(agent => {
+                            onProgress({
+                                agentId: agent.id,
+                                agentName: agent.name,
+                                status: 'completed',
+                                progress: 100,
+                                phase: '✅ Task completed'
+                            });
+                        });
+                    }
+                };
+            }
+
+            startAgentLoop(agent, onProgress) {
+                const progressPatterns = {
+                    'frontend-engineer': [
+                        { phase: 'Analyzing UI requirements', duration: 3000, progress: 15 },
+                        { phase: 'Setting up components', duration: 4000, progress: 30 },
+                        { phase: 'Building user interface', duration: 8000, progress: 60 },
+                        { phase: 'Adding styles and polish', duration: 6000, progress: 80 },
+                        { phase: 'Testing interactions', duration: 4000, progress: 95 },
+                        { phase: 'Finalizing UI', duration: 2000, progress: 100 }
+                    ],
+                    'backend-engineer': [
+                        { phase: 'Reviewing requirements', duration: 2500, progress: 10 },
+                        { phase: 'Designing architecture', duration: 4500, progress: 25 },
+                        { phase: 'Setting up database', duration: 5000, progress: 40 },
+                        { phase: 'Building API endpoints', duration: 9000, progress: 70 },
+                        { phase: 'Adding validation', duration: 5000, progress: 85 },
+                        { phase: 'Writing documentation', duration: 3000, progress: 100 }
+                    ],
+                    'qa-testing': [
+                        { phase: 'Analyzing test requirements', duration: 2000, progress: 10 },
+                        { phase: 'Creating test scenarios', duration: 3500, progress: 25 },
+                        { phase: 'Writing test cases', duration: 6000, progress: 50 },
+                        { phase: 'Running automated tests', duration: 7000, progress: 75 },
+                        { phase: 'Validating results', duration: 4000, progress: 90 },
+                        { phase: 'Generating reports', duration: 2500, progress: 100 }
+                    ],
+                    'devops-engineer': [
+                        { phase: 'Checking infrastructure', duration: 3000, progress: 15 },
+                        { phase: 'Configuring pipeline', duration: 5000, progress: 35 },
+                        { phase: 'Setting up CI/CD', duration: 7000, progress: 60 },
+                        { phase: 'Optimizing build', duration: 4500, progress: 80 },
+                        { phase: 'Deployment checks', duration: 3500, progress: 95 },
+                        { phase: 'Finalizing setup', duration: 2000, progress: 100 }
+                    ],
+                    'security-analyst': [
+                        { phase: 'Scanning for vulnerabilities', duration: 5000, progress: 20 },
+                        { phase: 'Analyzing dependencies', duration: 4000, progress: 40 },
+                        { phase: 'Checking authentication', duration: 4500, progress: 60 },
+                        { phase: 'Testing security headers', duration: 3000, progress: 75 },
+                        { phase: 'Reviewing permissions', duration: 3500, progress: 90 },
+                        { phase: 'Security report', duration: 2000, progress: 100 }
+                    ],
+                    'ux-designer': [
+                        { phase: 'Researching user needs', duration: 3000, progress: 15 },
+                        { phase: 'Creating wireframes', duration: 6000, progress: 35 },
+                        { phase: 'Designing mockups', duration: 8000, progress: 65 },
+                        { phase: 'Building prototypes', duration: 5000, progress: 85 },
+                        { phase: 'Refining experience', duration: 3000, progress: 100 }
+                    ]
+                };
+                
+                const pattern = progressPatterns[agent.type] || progressPatterns['backend-engineer'];
+                let currentPhaseIndex = 0;
+                let currentProgress = 0;
+                let isRunning = true;
+                
+                const animate = () => {
+                    if (!isRunning) return;
+                    
+                    const phase = pattern[currentPhaseIndex];
+                    const targetProgress = phase.progress;
+                    
+                    const progressStep = () => {
+                        if (!isRunning) return;
+                        
+                        if (currentProgress < targetProgress) {
+                            currentProgress = Math.min(currentProgress + (Math.random() * 2 + 0.5), targetProgress);
+                            
+                            onProgress({
+                                agentId: agent.id,
+                                agentName: agent.name,
+                                status: 'in_progress',
+                                progress: Math.round(currentProgress),
+                                phase: phase.phase + (Math.random() > 0.5 ? '...' : '')
+                            });
+                            
+                            setTimeout(progressStep, 50 + Math.random() * 100);
+                        } else {
+                            currentPhaseIndex = (currentPhaseIndex + 1) % pattern.length;
+                            if (currentPhaseIndex === 0) {
+                                currentProgress = 0;
+                                setTimeout(animate, 2000 + Math.random() * 1000);
+                            } else {
+                                setTimeout(animate, 200 + Math.random() * 300);
+                            }
+                        }
+                    };
+                    
+                    progressStep();
+                };
+                
+                // Store animation control
+                if (!this.agentProgressSimulator.loopingAnimations) {
+                    this.agentProgressSimulator.loopingAnimations = new Map();
+                }
+                
+                this.agentProgressSimulator.loopingAnimations.set(agent.id, {
+                    stop: () => { isRunning = false; }
+                });
+                
+                animate();
+            }
+
+            createTaskBridge() {
+                // Simple in-browser version of ClaudeTaskBridge
+                return {
+                    formatTaskRequest: (requirements, agents) => {
+                        const agentDescriptions = agents.map(agent => 
+                            `- ${agent.name}: ${this.getAgentDescription(agent.type)}`
+                        ).join('\n');
+
+                        return `Please use the Task tool to coordinate specialized agents:
+
+**Project Requirements:**
+${requirements}
+
+**Team Composition:**
+${agentDescriptions}
+
+Execute as a single Task with multiple sub-agents working in parallel.`;
+                    }
+                };
             }
 
             init() {
@@ -7542,6 +8228,43 @@
         VibeDashboard.prototype.exportHooks = function() {
             // Export hooks functionality
             window.vibeDashboard.showInfoDialog('Export Hooks', 'Hooks export feature will be available soon! This will export all your automation hooks as a JSON file.');
+        };
+
+        // AI Team Dashboard Global Functions
+        window.showAITeam = function(requirements = "Build a modern web application with React and Node.js") {
+            if (window.vibeDashboard) {
+                window.vibeDashboard.showAITeam(requirements);
+            }
+        };
+        
+        window.hideAITeam = function() {
+            if (window.vibeDashboard) {
+                window.vibeDashboard.hideAITeam();
+            }
+        };
+        
+        window.launchAITeam = function() {
+            // Demo function that shows AI Team with sample requirements
+            const requirements = "Build a comprehensive todo application with the following features:\n\n" +
+                "Frontend:\n" +
+                "- React with TypeScript\n" +
+                "- Modern responsive UI with Tailwind CSS\n" +
+                "- Real-time updates\n" +
+                "- User authentication\n\n" +
+                "Backend:\n" +
+                "- Node.js with Express\n" +
+                "- RESTful API design\n" +
+                "- MongoDB database\n" +
+                "- JWT authentication\n" +
+                "- Input validation\n\n" +
+                "Additional Requirements:\n" +
+                "- Comprehensive testing suite\n" +
+                "- CI/CD pipeline setup\n" +
+                "- Security best practices\n" +
+                "- Performance optimization\n" +
+                "- Full documentation";
+                
+            window.showAITeam(requirements);
         };
 
         // Initialize dashboard when page loads

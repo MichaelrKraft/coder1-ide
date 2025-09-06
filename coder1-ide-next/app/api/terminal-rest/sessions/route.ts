@@ -1,52 +1,45 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { contextProcessor } from '@/services/context-processor';
+import { logger } from '@/lib/logger';
 
-const EXPRESS_BACKEND_URL = process.env.EXPRESS_BACKEND_URL || 'http://localhost:3000';
-
-// Simple in-memory store for terminal sessions (fallback)
-const terminalSessions = new Map();
+// Simple in-memory session tracking for REST API compatibility
+const sessionCounter = new Map();
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     
-    // Try to proxy to Express backend first
-    try {
-      const response = await fetch(`${EXPRESS_BACKEND_URL}/api/terminal-rest/sessions`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(body),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        console.log(`✅ Terminal session created via Express: ${data.sessionId}`);
-        return NextResponse.json(data);
-      }
-    } catch (backendError) {
-      console.warn('Failed to connect to Express backend, using fallback:', backendError);
-    }
-    
-    // Fallback to local implementation if Express is unavailable
+    // Generate session ID for REST API compatibility
     const { cols, rows } = body;
     const sessionId = `session_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
     
-    terminalSessions.set(sessionId, {
+    // Store minimal session info
+    sessionCounter.set(sessionId, {
       id: sessionId,
       cols: cols || 80,
       rows: rows || 24,
       createdAt: new Date(),
-      isActive: true
+      isActive: true,
+      type: 'unified-server'
     });
     
-    console.log(`✅ Terminal session created (fallback): ${sessionId}`);
+    // Initialize context processor for this terminal session
+    try {
+      await contextProcessor.initialize('/Users/michaelkraft/autonomous_vibe_interface');
+      logger.info(`🧠 Context processor initialized for terminal session: ${sessionId}`);
+    } catch (error) {
+      logger.warn('Context processor initialization failed:', error);
+      // Continue even if context processor fails - terminal should still work
+    }
+    
+    console.log(`✅ Terminal session created (unified): ${sessionId}`);
     
     return NextResponse.json({
       sessionId,
       status: 'created',
       cols,
-      rows
+      rows,
+      message: 'Terminal managed by unified server via Socket.IO'
     });
     
   } catch (error) {
@@ -63,13 +56,23 @@ export async function DELETE(request: NextRequest) {
     const url = new URL(request.url);
     const sessionId = url.pathname.split('/').pop();
     
-    if (sessionId && terminalSessions.has(sessionId)) {
-      terminalSessions.delete(sessionId);
-      console.log(`✅ Terminal session deleted: ${sessionId}`);
+    if (sessionId && sessionCounter.has(sessionId)) {
+      // End the context processor session
+      try {
+        await contextProcessor.endSession(`Terminal session ${sessionId} closed`, 1.0);
+        logger.info(`🧠 Context processor session ended for: ${sessionId}`);
+      } catch (error) {
+        logger.warn('Context processor session end failed:', error);
+        // Continue even if context processor fails
+      }
+      
+      sessionCounter.delete(sessionId);
+      console.log(`✅ Terminal session deleted (unified): ${sessionId}`);
       
       return NextResponse.json({
         sessionId,
-        status: 'deleted'
+        status: 'deleted',
+        message: 'Session cleaned up, actual terminal managed by unified server'
       });
     } else {
       return NextResponse.json(
@@ -89,11 +92,12 @@ export async function DELETE(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
-    const activeSessions = Array.from(terminalSessions.values());
+    const activeSessions = Array.from(sessionCounter.values());
     
     return NextResponse.json({
       sessions: activeSessions,
-      count: activeSessions.length
+      count: activeSessions.length,
+      message: 'Sessions listed, actual terminals managed by unified server via Socket.IO'
     });
     
   } catch (error) {

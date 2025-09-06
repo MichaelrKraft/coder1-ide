@@ -1,0 +1,14 @@
+{
+  "id": "60b18598e82bb9bd",
+  "title": "Test Component via Playwright",
+  "url": "https://example.com",
+  "selector": "div.test-component",
+  "html": "<div class=\"test-component\"><h2>Test Component</h2><p>This is a test component captured via Playwright MCP</p><button>Test Button</button></div>",
+  "css": ".test-component { background: #f0f0f0; padding: 20px; border-radius: 8px; } .test-component h2 { color: #333; margin: 0 0 10px 0; } .test-component p { color: #666; } .test-component button { background: #007bff; color: white; padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; }",
+  "screenshot": null,
+  "timestamp": "2025-09-04T21:17:01.083Z",
+  "tags": [],
+  "category": "uncategorized",
+  "framework": "vanilla",
+  "generatedCode": null
+}

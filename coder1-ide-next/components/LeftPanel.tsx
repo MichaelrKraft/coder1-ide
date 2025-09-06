@@ -1,9 +1,11 @@
 'use client';
 
 import React, { useState } from 'react';
-import { FolderTree, Clock } from 'lucide-react';
+import { FolderTree, Clock, Brain } from 'lucide-react';
 import FileExplorer from './FileExplorer';
 import SessionsPanel from './SessionsPanel';
+import ContextMemoryPanel from './ContextMemoryPanel';
+import SimpleMemoryPanel from './SimpleMemoryPanel';
 
 interface LeftPanelProps {
   onFileSelect: (path: string) => void;
@@ -11,7 +13,9 @@ interface LeftPanelProps {
 }
 
 export default function LeftPanel({ onFileSelect, activeFile }: LeftPanelProps) {
-  const [activeTab, setActiveTab] = useState<'explorer' | 'sessions'>('explorer');
+  const [activeTab, setActiveTab] = useState<'explorer' | 'sessions' | 'memory'>('explorer');
+  
+  console.log('🔄 LeftPanel rendered with activeTab:', activeTab);
   
   return (
     <div className="h-full flex flex-col bg-bg-secondary relative border border-coder1-cyan/50 shadow-glow-cyan">
@@ -88,10 +92,28 @@ export default function LeftPanel({ onFileSelect, activeFile }: LeftPanelProps) 
               ? 'text-coder1-cyan border-b-2 border-coder1-cyan bg-bg-tertiary'
               : 'text-text-muted hover:text-text-secondary hover:bg-bg-tertiary'
           }`}
-          onClick={() => setActiveTab('sessions')}
+          onClick={(e) => {
+            e.stopPropagation();
+            console.log('🎯 Sessions tab clicked in LeftPanel');
+            setActiveTab('sessions');
+            
+            // Auto-close ContextManagerPanel if it's open
+            window.dispatchEvent(new CustomEvent('ideSessionsTabClicked'));
+          }}
         >
           <Clock className="w-3 h-3" />
           <span>Sessions</span>
+        </button>
+        <button
+          className={`flex-1 px-3 py-2 text-xs font-semibold uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 ${
+            activeTab === 'memory'
+              ? 'text-coder1-cyan border-b-2 border-coder1-cyan bg-bg-tertiary'
+              : 'text-text-muted hover:text-text-secondary hover:bg-bg-tertiary'
+          }`}
+          onClick={() => setActiveTab('memory')}
+        >
+          <Brain className="w-3 h-3" />
+          <span>Memory</span>
         </button>
       </div>
       
@@ -99,8 +121,10 @@ export default function LeftPanel({ onFileSelect, activeFile }: LeftPanelProps) 
       <div className="flex-1 min-h-0 overflow-auto relative z-10">
         {activeTab === 'explorer' ? (
           <FileExplorer onFileSelect={onFileSelect} activeFile={activeFile} />
+        ) : activeTab === 'sessions' ? (
+          <SessionsPanel isVisible={true} />
         ) : (
-          <SessionsPanel />
+          <SimpleMemoryPanel />
         )}
       </div>
       

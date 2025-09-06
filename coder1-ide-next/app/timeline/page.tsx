@@ -70,8 +70,7 @@ export default function TimelinePage() {
       });
 
       // Then restore the selected checkpoint
-      const EXPRESS_BACKEND_URL = 'http://localhost:3000';
-      const restoreResponse = await fetch(`${EXPRESS_BACKEND_URL}/api/sessions/${sessionId}/checkpoints/${checkpointId}/restore`, {
+      const restoreResponse = await fetch(`/api/sessions/${sessionId}/checkpoints/${checkpointId}/restore`, {
         method: 'POST'
       });
 

@@ -12,11 +12,28 @@ export default function HeroSection() {
     const timer = setTimeout(() => {
       setLogoAnimated(true);
     }, 100);
-    return () => clearTimeout(timer);
+    
+    return () => {
+      clearTimeout(timer);
+    };
   }, []);
 
   return (
     <div className="hero-section relative flex flex-col items-center justify-center h-full w-full px-4 py-4 overflow-auto">
+      {/* Animated Dot Grid Background - Pure CSS Implementation */}
+      <div className="dot-grid-background">
+        <div className="dot-grid-container">
+          <div className="dot-grid"></div>
+          <div className="dot-grid-overlay"></div>
+        </div>
+      </div>
+      
+      {/* Hero Background Gradients */}
+      <div className="hero-gradient">
+        <div className="hero-top-line"></div>
+        <div className="hero-cone-left"></div>
+        <div className="hero-cone-right"></div>
+      </div>
       {/* Logo - responsive sizing with zoom-in from back animation */}
       <div className="relative z-10 mb-2 mt-2">
         <div 
@@ -83,7 +100,7 @@ export default function HeroSection() {
           backgroundClip: 'text',
         }}
       >
-        The only IDE in the world built just for Claude Code
+        The world's most advanced AI-native development environment
       </p>
 
       {/* Action buttons - responsive */}

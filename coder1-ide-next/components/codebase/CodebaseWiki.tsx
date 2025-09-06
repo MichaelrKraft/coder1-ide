@@ -82,8 +82,8 @@ const CodebaseWiki: React.FC = () => {
     const searchInputRef = useRef<HTMLInputElement>(null);
     const suggestionsRef = useRef<HTMLDivElement>(null);
 
-    // API base URL for Express backend
-    const API_BASE = 'http://localhost:3000/api/codebase';
+    // API base URL for unified server
+    const API_BASE = '/api/codebase';
 
     // Load stats on component mount
     useEffect(() => {

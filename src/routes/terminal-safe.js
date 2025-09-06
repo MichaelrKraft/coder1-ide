@@ -155,15 +155,51 @@ function setupTerminalSocket(io) {
                     workingDirectory: data.cwd || process.env.HOME,
                     sessionId: socket.id,
                     currentErrorId: null,
-                    outputBuffer: ''
+                    outputBuffer: '',
+                    // Throttling for performance
+                    dataBuffer: [],
+                    flushTimer: null,
+                    lastFlush: Date.now()
                 });
                 
-                // Handle terminal output with error detection
+                // Throttled data emission function
+                const flushDataBuffer = (context) => {
+                    if (context.dataBuffer.length > 0) {
+                        const combinedData = context.dataBuffer.join('');
+                        context.dataBuffer = [];
+                        socket.emit('terminal:data', combinedData);
+                        context.lastFlush = Date.now();
+                    }
+                    context.flushTimer = null;
+                };
+                
+                // Handle terminal output with error detection and throttling
                 terminalProcess.onData(async (outputData) => {
-                    socket.emit('terminal:data', outputData);
+                    const context = terminalContext.get(socket.id) || {};
+                    
+                    // Add to buffer
+                    context.dataBuffer.push(outputData);
+                    
+                    // Determine flush strategy based on data size and time since last flush
+                    const dataSize = outputData.length;
+                    const timeSinceFlush = Date.now() - context.lastFlush;
+                    
+                    // Clear any pending flush
+                    if (context.flushTimer) {
+                        clearTimeout(context.flushTimer);
+                        context.flushTimer = null;
+                    }
+                    
+                    // Flush immediately for small amounts or after delay threshold
+                    if (dataSize < 50 || timeSinceFlush > 100) {
+                        // Small data or enough time passed: flush immediately
+                        flushDataBuffer(context);
+                    } else {
+                        // Large data burst: throttle to 20ms batches
+                        context.flushTimer = setTimeout(() => flushDataBuffer(context), 20);
+                    }
                     
                     // Analyze output for errors
-                    const context = terminalContext.get(socket.id) || {};
                     context.outputBuffer = (context.outputBuffer + outputData).slice(-1000); // Keep last 1000 chars
                     
                     // Detect common error patterns
@@ -303,6 +339,12 @@ function setupTerminalSocket(io) {
                 }
                 terminals.delete(socket.id);
                 terminalSessions.delete(socket.id);
+                
+                // Clean up throttling timer before deleting context
+                const context = terminalContext.get(socket.id);
+                if (context && context.flushTimer) {
+                    clearTimeout(context.flushTimer);
+                }
                 terminalContext.delete(socket.id); // Clean up context
             }
         });

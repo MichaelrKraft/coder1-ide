@@ -11,8 +11,9 @@ const pLimit = require('p-limit').default || require('p-limit');
 const writeFile = promisify(fs.writeFile);
 const mkdir = promisify(fs.mkdir);
 
-// Import Claude API for real code generation
+// Import Claude integrations for real code generation
 const { ClaudeCodeAPI } = require('../integrations/claude-code-api');
+const ClaudeCodeExec = require('../integrations/claude-code-exec');
 
 class AIAgentOrchestrator {
   constructor() {
@@ -22,16 +23,52 @@ class AIAgentOrchestrator {
     this.agentsPath = path.join(process.cwd(), '.coder1', 'agents');
     this.outputDirectory = path.join(process.cwd(), 'generated');
     
-    // Initialize Claude API for real code generation
+    // Initialize Claude integrations for real code generation
     this.claudeAPI = null;
-    if (process.env.ANTHROPIC_API_KEY) {
-      this.claudeAPI = new ClaudeCodeAPI(process.env.ANTHROPIC_API_KEY, {
+    this.claudeCLI = null;
+    
+    // Check for API keys and authentication options
+    const claudeCodeApiKey = process.env.CLAUDE_CODE_API_KEY;
+    const anthropicApiKey = process.env.ANTHROPIC_API_KEY;
+    const claudeCodeToken = process.env.CLAUDE_CODE_OAUTH_TOKEN;
+    
+    // Priority 1: Try Claude CLI for CLAUDE_CODE_API_KEY (best for Claude Code Max plan)
+    if (claudeCodeApiKey) {
+      console.log('🔍 AI Agent Orchestrator: CLAUDE_CODE_API_KEY detected, initializing CLI integration...');
+      try {
+        this.claudeCLI = new ClaudeCodeExec({
+          logger: console,
+          timeout: 60000, // 60 second timeout for code generation
+          implementationMode: true
+        });
+        console.log('✅ AI Agent Orchestrator: Claude CLI initialized for CLAUDE_CODE_API_KEY');
+        console.log('🚀 AI Team will use Claude CLI with your Claude Code Max plan pricing');
+      } catch (cliError) {
+        console.warn('⚠️ Claude CLI initialization failed:', cliError.message);
+        console.log('🔄 Falling back to API approach...');
+      }
+    }
+    
+    // Priority 2: Use API SDK (fallback or for ANTHROPIC_API_KEY)
+    const apiKey = anthropicApiKey;  // Only use ANTHROPIC_API_KEY for API calls
+    
+    if (apiKey && !this.claudeCLI) {
+      // API keys work with SDK - fallback option
+      this.claudeAPI = new ClaudeCodeAPI(apiKey, {
         logger: console,
         timeout: 60000 // 60 second timeout for code generation
       });
-      console.log('✅ AI Agent Orchestrator: Claude API initialized for real code generation');
+      console.log('✅ AI Agent Orchestrator: Claude API SDK initialized (fallback mode)');
+      console.log('🚀 AI Team will use Claude API for automated code generation');
+    } else if (claudeCodeToken) {
+      // OAuth token detected but not optimal for automation
+      console.log('✅ AI Agent Orchestrator: Claude Code OAuth token detected');
+      console.warn('⚠️ OAuth tokens are for interactive Claude CLI, not automated AI Team');
+      console.warn('💡 For AI Team, add CLAUDE_CODE_API_KEY to .env.local (preferred for Claude Code Max plan)');
+      console.warn('💡 CLAUDE_CODE_API_KEY provides better pricing than ANTHROPIC_API_KEY');
     } else {
-      console.warn('⚠️ AI Agent Orchestrator: No ANTHROPIC_API_KEY found, will use simulation mode');
+      console.warn('⚠️ AI Agent Orchestrator: No Claude API key found, will use simulation mode');
+      console.warn('💡 Set CLAUDE_CODE_API_KEY in .env.local to enable real AI Team (Claude Code Max plan pricing)');
     }
     
     this.loadAgentDefinitions();
@@ -356,14 +393,14 @@ class AIAgentOrchestrator {
   }
 
   /**
-   * Execute agent work with real Claude API code generation
+   * Execute agent work with real Claude code generation
    */
   async simulateAgentWork(agent, workflowStep, agentIndex) {
-    // Use real API if available, otherwise fall back to simulation
-    if (this.claudeAPI && this.agentDefinitions.has(agent.agentId)) {
+    // Use real AI (CLI or API) if available, otherwise fall back to simulation
+    if ((this.claudeCLI || this.claudeAPI) && this.agentDefinitions.has(agent.agentId)) {
       await this.executeRealAgentWork(agent, workflowStep, agentIndex);
     } else {
-      // Fallback to simulation if no API or agent definition
+      // Fallback to simulation if no AI integration or agent definition
       this.executeSimulatedWork(agent, workflowStep, agentIndex);
     }
   }
@@ -415,13 +452,25 @@ class AIAgentOrchestrator {
       agent.currentTask = 'Generating code';
       agent.progress = 50;
 
-      console.log(`🤖 ${agent.agentName}: Calling Claude API for real code generation...`);
+      console.log(`🤖 ${agent.agentName}: Generating code with Claude API...`);
 
-      // Call Claude API for real code generation
-      const response = await this.claudeAPI.sendMessage(fullPrompt, {
-        maxTokens: agentDef.maxTokens || 2000,
-        temperature: agentDef.temperature || 0.3
-      });
+      // Use Claude CLI (preferred) or API SDK for automation
+      let response;
+      if (this.claudeCLI) {
+        console.log(`🖥️ Using Claude CLI for ${agent.agentName} (CLAUDE_CODE_API_KEY)`);
+        response = await this.claudeCLI.executePrompt(fullPrompt, {
+          maxTokens: agentDef.maxTokens || 2000,
+          temperature: agentDef.temperature || 0.3
+        });
+      } else if (this.claudeAPI) {
+        console.log(`🌐 Using Claude API SDK for ${agent.agentName} (fallback)`);
+        response = await this.claudeAPI.sendMessage(fullPrompt, {
+          maxTokens: agentDef.maxTokens || 2000,
+          temperature: agentDef.temperature || 0.3
+        });
+      } else {
+        throw new Error('No Claude integration available. Please set CLAUDE_CODE_API_KEY or ANTHROPIC_API_KEY in .env.local');
+      }
 
       agent.progress = 75;
       agent.currentTask = 'Processing response';

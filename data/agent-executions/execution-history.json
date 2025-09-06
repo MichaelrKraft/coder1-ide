@@ -1,14 +1,29 @@
 [
   {
-    "id": "exec-1757004410912",
-    "agentType": "test-agent",
-    "task": "test task",
-    "command": "test command",
+    "id": "claude-general-1757015022486",
+    "agentType": "claude-general",
+    "agentId": "claude-general-1757015022486",
     "status": "completed",
-    "startTime": "2025-09-04T16:46:50.912Z",
-    "duration": 1000,
+    "startTime": "2025-09-04T19:50:32.904Z",
+    "endTime": "2025-09-04T19:50:32.898Z",
+    "duration": 410411,
     "success": true,
-    "cost": 0.01,
+    "output": "╭───────────────────────────────────────────────────╮\r\n│ ✻ Welcome to Claude Code!                         │\r\n│                                                   │\r\n│   /help for help, /status for your current setup  │\r\n│                                                   │\r\n│   cwd: /Users/michaelkraft                        │\r\n╰───────────────────────────────────────────────────╯\n\u001b[?25l\r\n╭───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮\r\n│ >                                                                                                                                             │\r\n╰─────────────────────────────────────────────────────────────────────────────────────────────────\n──────────────────────────────────────────────╯\r\n  ? for shortcuts\r\n\u001b[?25l\n\u001b[?2004h\u001b[?1004h\n\u001b[2K\u001b[1A\u001b[2K\u001b[1A\u001b[2K\u001b[1A\u001b[2K\u001b[1A\u001b[2K\u001b[1A\u001b[2K\u001b[G\r\n╭───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮\r\n│ > Try \"refactor app.js\"                                                                                                                       │\r\n╰────────────────────────────────────────────────────────────────────────────────\n───────────────────────────────────────────────────────────────╯\r\n  Found invalid settings files. They will be ignored. Run /doctor for details.\n\u001b[2K\u001b[1A\u001b[2K\u001b[1A\u001b[2K\u001b[1A\u001b[2K\u001b[1A\u001b[2K\u001b[1A\u001b[2K\u001b[G\r\n╭───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮\r\n│ > Try \"refactor app.js\"                                                                                                                       │\r\n╰────────────────────────────────────────────────────────────────────────────────\n───────────────────────────────────────────────────────────────╯\r\n  Found invalid settings files. They will be ignored. Run /doctor for details.                              1 MCP server failed · /mcp for info\n\u001b[2J\u001b[3J\u001b[H╭───────────────────────────────────────────────────╮\r\n│ ✻ Welcome to Claude Code!                         │\r\n│                                                   │\r\n│   /help for help, /status for your current setup  │\r\n│                                                   │\r\n│   cwd: /Users/michaelkraft                        │\r\n╰───────────────────────────────────────────────────╯\r\n\r\n╭\n───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮\r\n│ > Try \"refactor app.js\"                                                                                                                       │\r\n╰──────────────────────────────────────────────────────────────────────────────────────────────────────────\n─────────────────────────────────────╯\r\n  Found invalid settings files. They will be ignored. Run /doctor for details.                              1 MCP server failed · /mcp for info\n\u001b[2K\u001b[1A\u001b[2K\u001b[1A\u001b[2K\u001b[1A\u001b[2K\u001b[1A\u001b[2K\u001b[1A\u001b[2K\u001b[G\r\n╭───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮\r\n│ > Try \"refactor app.js\"                                                                                                                       │\r\n╰────────────────────────────────────────────────────────────────────────────────\n───────────────────────────────────────────────────────────────╯\r\n  Found invalid settings files. They will be ignored. Run /doctor for details.                             2 MCP servers failed · /mcp for info\n\u001b[2J\u001b[3J\u001b[H╭───────────────────────────────────────────────────╮\r\n│ ✻ Welcome to Claude Code!                         │\r\n│                                                   │\r\n│   /help for help, /status for your current setup  │\r\n│                                                   │\r\n│   cwd: /Users/michaelkraft                        │\r\n╰───────────────────────────────────────────────────╯\r\n\r\n╭\n───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮\r\n│ > Try \"refactor app.js\"                                                                                                                       │\r\n╰──────────────────────────────────────────────────────────────────────────────────────────────────────────\n─────────────────────────────────────╯\r\n  Found invalid settings files. They will be ignored. Run /doctor for details.                             2 MCP servers failed · /mcp for info\n\u001b[2J\u001b[3J\u001b[H╭───────────────────────────────────────────────────╮\r\n│ ✻ Welcome to Claude Code!                         │\r\n│                                                   │\r\n│   /help for help, /status for your current setup  │\r\n│                                                   │\r\n│   cwd: /Users/michaelkraft                        │\r\n╰───────────────────────────────────────────────────╯\r\n\r\n╭\n",
+    "sessionId": "22f7ad05-87c6-4f3b-a40f-06eb1b253ef3",
+    "cost": 0,
+    "tokensUsed": 0,
+    "metadata": {}
+  },
+  {
+    "id": "claude-general-1757015022486",
+    "agentType": "claude-general",
+    "agentId": "claude-general-1757015022486",
+    "task": "claude",
+    "command": "claude",
+    "status": "starting",
+    "startTime": "2025-09-04T19:43:42.487Z",
+    "sessionId": "22f7ad05-87c6-4f3b-a40f-06eb1b253ef3",
+    "cost": 0,
     "tokensUsed": 0,
     "metadata": {}
   }

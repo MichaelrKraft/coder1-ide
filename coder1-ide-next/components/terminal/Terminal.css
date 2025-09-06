@@ -96,21 +96,21 @@
   left: 100%;
 }
 
-/* Terminal content padding for plan mode visibility */
+/* Terminal content padding for visibility */
 .terminal-content {
   position: relative;
-  height: calc(100% - 80px) !important; /* Reserve 80px at bottom for Claude prompt */
-  margin-bottom: 80px; /* Ensure space is actually reserved */
+  height: 100%; /* Use full height available */
+  overflow-y: auto; /* Allow scrolling if needed */
 }
 
 /* Add scroll padding to terminal viewport for better visibility */
 .terminal-content .xterm-viewport {
-  scroll-padding-bottom: 100px; /* Keep content away from bottom edge */
+  scroll-padding-bottom: 20px; /* Small padding for visual comfort */
 }
 
 /* Terminal screen container */
 .terminal-content .xterm-screen {
-  padding-bottom: 20px; /* Small padding for visual comfort */
+  padding-bottom: 10px; /* Small padding for visual comfort */
 }
 
 /* Scroll to Follow button styles */

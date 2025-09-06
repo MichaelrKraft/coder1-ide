@@ -11,6 +11,7 @@ import StatusBarCore from '@/components/status-bar/StatusBarCore';
 import HeroSection from '@/components/HeroSection';
 import { SessionProvider } from '@/contexts/SessionContext';
 import { EnhancedSupervisionProvider } from '@/contexts/EnhancedSupervisionContext';
+import { TerminalCommandProvider } from '@/contexts/TerminalCommandContext';
 import AboutModal from '@/components/AboutModal';
 import KeyboardShortcutsModal from '@/components/KeyboardShortcutsModal';
 import SettingsModal from '@/components/SettingsModal';
@@ -47,6 +48,10 @@ export default function IDEPage() {
   const [openFiles, setOpenFiles] = useState<IDEFile[]>([]);
   const [terminalHistory, setTerminalHistory] = useState<string>('');
   const [terminalCommands, setTerminalCommands] = useState<string[]>([]);
+  
+  // Terminal session tracking for command bridge
+  const [terminalSessionId, setTerminalSessionId] = useState<string | null>(null);
+  const [terminalReady, setTerminalReady] = useState<boolean>(false);
 
   // Add keyboard shortcuts
   React.useEffect(() => {
@@ -152,8 +157,47 @@ export default function IDEPage() {
       }
     };
     
+    const initializeUsageTracking = async () => {
+      try {
+        console.log('📊 Starting usage tracking...');
+        
+        // Start periodic usage data collection
+        const sessionId = localStorage.getItem('contextSessionId') || `session_${Date.now()}`;
+        
+        // Initial collection
+        await fetch('/api/claude/usage/track', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sessionId, model: 'claude-3-5-sonnet' })
+        });
+        
+        // Set up periodic collection (every 60 seconds)
+        const intervalId = setInterval(async () => {
+          try {
+            await fetch('/api/claude/usage/track', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ sessionId, model: 'claude-3-5-sonnet' })
+            });
+          } catch (error) {
+            console.error('Failed to track usage:', error);
+          }
+        }, 60000); // 1 minute
+        
+        // Store interval ID for cleanup
+        (window as any).__usageTrackingInterval = intervalId;
+        
+        console.log('✅ Usage tracking started');
+      } catch (error) {
+        console.error('❌ Failed to start usage tracking:', error);
+      }
+    };
+    
     // Initialize Context system
     initializeContext();
+    
+    // Initialize usage tracking
+    initializeUsageTracking();
     
     // Cleanup on unmount
     return () => {
@@ -162,6 +206,14 @@ export default function IDEPage() {
         // Log session ending (no endpoint needed as sessions auto-expire)
         console.log('🔚 Context session ending:', sessionId);
         localStorage.removeItem('contextSessionId');
+      }
+      
+      // Clean up usage tracking interval
+      const intervalId = (window as any).__usageTrackingInterval;
+      if (intervalId) {
+        clearInterval(intervalId);
+        delete (window as any).__usageTrackingInterval;
+        console.log('🔚 Usage tracking stopped');
       }
     };
   }, []);
@@ -420,7 +472,7 @@ export default function IDEPage() {
           
           const handleMouseMove = (e: MouseEvent) => {
             const deltaY = e.clientY - startY;
-            const newHeight = Math.max(20, Math.min(80, startHeight - (deltaY / window.innerHeight * 100)));
+            const newHeight = Math.max(20, Math.min(90, startHeight - (deltaY / window.innerHeight * 100)));
             setTerminalHeight(newHeight);
           };
           
@@ -454,6 +506,11 @@ export default function IDEPage() {
                 return newCommands.length > 100 ? newCommands.slice(-100) : newCommands;
               });
             }}
+            onTerminalReady={(sessionId, ready) => {
+              // Performance-safe session tracking - no intervals
+              setTerminalSessionId(sessionId);
+              setTerminalReady(ready);
+            }}
           />
         </div>
       )}
@@ -471,7 +528,11 @@ export default function IDEPage() {
 
   return (
     <EnhancedSupervisionProvider>
-      <div className="h-screen w-full flex flex-col bg-bg-primary">
+      <TerminalCommandProvider 
+        sessionId={terminalSessionId} 
+        terminalReady={terminalReady}
+      >
+        <div className="h-screen w-full flex flex-col bg-bg-primary">
       {/* Menu Bar */}
       <MenuBar 
         onNewFile={handleNewFile}
@@ -500,8 +561,8 @@ export default function IDEPage() {
       />
 
       {/* Version Banner - Current Active IDE */}
-      <div className="bg-green-600/20 border-b border-green-500/30 px-4 py-1 text-center">
-        <span className="text-green-400 text-sm font-medium">
+      <div className="bg-coder1-cyan/20 border-b border-coder1-cyan/30 px-4 py-1 text-center">
+        <span className="text-coder1-cyan text-sm font-medium">
           ✅ CURRENT IDE - Coder1 v2.0 (Next.js) | Terminal Connected | Status Line Ready ✅
         </span>
       </div>
@@ -549,7 +610,8 @@ export default function IDEPage() {
         fontSize={fontSize}
         onFontSizeChange={setFontSize}
       />
-      </div>
+        </div>
+      </TerminalCommandProvider>
     </EnhancedSupervisionProvider>
   );
 }

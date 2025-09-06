@@ -8,14 +8,76 @@
 const express = require('express');
 const router = express.Router();
 
-// Import real AI Agent Orchestrator (JavaScript version)
+// Import real AI Agent Orchestrator (JavaScript version) - FALLBACK ONLY
 const { aiOrchestrator } = require('../services/ai-agent-orchestrator');
+
+// Import cost-free Claude Code Bridge Service (PRIMARY)
+// Note: Will need to access via HTTP to the unified Next.js server or create JS wrapper
+let claudeCodeBridge = null;
+
+// Initialize bridge service connection
+async function initializeBridge() {
+    try {
+        // For now, we'll make HTTP calls to the unified Next.js server
+        // This maintains separation between Express and Next.js services
+        claudeCodeBridge = {
+            spawnParallelTeam: async (requirement, sessionId) => {
+                const response = await fetch('http://localhost:3001/api/claude-bridge/spawn', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ requirement, sessionId })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`Bridge spawn failed: ${response.status} ${response.statusText}`);
+                }
+                
+                return await response.json();
+            },
+            getTeamStatus: async (teamId) => {
+                const response = await fetch(`http://localhost:3001/api/claude-bridge/status/${teamId}`);
+                return await response.json();
+            },
+            getAllTeams: async () => {
+                const response = await fetch('http://localhost:3001/api/claude-bridge/teams');
+                const data = await response.json();
+                return data.teams || [];
+            },
+            startMonitoring: async (teamId) => {
+                const response = await fetch(`http://localhost:3001/api/claude-bridge/${teamId}/start`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                return await response.json();
+            },
+            mergeTeamWork: async (teamId) => {
+                const response = await fetch(`http://localhost:3001/api/claude-bridge/${teamId}/merge`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                return await response.json();
+            },
+            stopTeam: async (teamId) => {
+                const response = await fetch(`http://localhost:3001/api/claude-bridge/${teamId}/stop`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                return await response.json();
+            }
+        };
+        console.log('✅ Claude Code Bridge Service initialized');
+        return true;
+    } catch (error) {
+        console.warn('⚠️ Claude Code Bridge Service not available, using fallback orchestrator:', error.message);
+        return false;
+    }
+}
 
 // Legacy activeTeams for compatibility - now just mirrors orchestrator
 const activeTeams = new Map();
 
 /**
- * Spawn AI Team - Create REAL AI development team with Claude integration
+ * Spawn AI Team - Create cost-free automated team with Claude Code Bridge (with fallback)
  */
 router.post('/spawn', async (req, res) => {
     try {
@@ -28,29 +90,83 @@ router.post('/spawn', async (req, res) => {
             });
         }
 
-        console.log(`🚀 [AI-TEAM] Spawning REAL AI team for: "${requirement}"`);
+        console.log(`🚀 [AI-TEAM] Spawning AI team for: "${requirement}"`);
         
-        // Use AI Agent Orchestrator to spawn real team
-        const teamSession = await aiOrchestrator.spawnTeam(requirement);
+        // Initialize bridge service if not already done
+        if (!claudeCodeBridge) {
+            const bridgeInitialized = await initializeBridge();
+            if (!bridgeInitialized) {
+                console.log('⚠️ [AI-TEAM] Bridge unavailable, using expensive orchestrator fallback');
+            }
+        }
         
-        // Map orchestrator format to legacy API format for compatibility
+        let teamSession = null;
+        let usedBridge = false;
+        let costSavings = false;
+        
+        // Try cost-free Claude Code Bridge first
+        if (claudeCodeBridge) {
+            try {
+                console.log(`💰 [AI-TEAM] Attempting cost-free bridge spawn...`);
+                
+                const bridgeResponse = await claudeCodeBridge.spawnParallelTeam(requirement, sessionId);
+                
+                if (bridgeResponse.success) {
+                    teamSession = bridgeResponse;
+                    usedBridge = true;
+                    costSavings = true;
+                    console.log(`✅ [AI-TEAM] Cost-free bridge team spawned: ${bridgeResponse.teamId}`);
+                    console.log(`💰 [AI-TEAM] Cost savings: ~$0.30 (vs expensive orchestrator)`);
+                } else {
+                    throw new Error(bridgeResponse.error || 'Bridge spawn failed');
+                }
+            } catch (bridgeError) {
+                console.warn('⚠️ [AI-TEAM] Bridge spawn failed, falling back to expensive orchestrator:', bridgeError.message);
+                // Fall through to expensive orchestrator
+            }
+        }
+        
+        // Fallback to expensive AI orchestrator if bridge failed
+        if (!teamSession) {
+            console.log(`💸 [AI-TEAM] Using EXPENSIVE orchestrator fallback...`);
+            
+            const orchestratorTeam = await aiOrchestrator.spawnTeam(requirement);
+            
+            // Transform orchestrator format to match API
+            teamSession = {
+                success: true,
+                teamId: orchestratorTeam.teamId,
+                sessionId: orchestratorTeam.sessionId,
+                agents: orchestratorTeam.agents.map((agent, index) => ({
+                    id: `agent_${index + 1}`,
+                    name: agent.agentName,
+                    role: agent.agentId,
+                    status: agent.status,
+                    progress: agent.progress,
+                    currentTask: agent.currentTask,
+                    completedTasks: agent.completedDeliverables,
+                    expertise: [] // Legacy field
+                })),
+                status: orchestratorTeam.status,
+                workflow: orchestratorTeam.workflow,
+                requirement: requirement,
+                context: orchestratorTeam.context,
+                message: `Expensive AI Team spawned with ${orchestratorTeam.agents.length} agents`
+            };
+            
+            usedBridge = false;
+            costSavings = false;
+        }
+        
+        // Create compatible team structure for storage
         const compatibleTeam = {
             teamId: teamSession.teamId,
             sessionId: teamSession.sessionId,
-            projectRequirement: teamSession.projectRequirement,
+            projectRequirement: requirement,
             workflow: teamSession.workflow,
             status: teamSession.status,
-            agents: teamSession.agents.map((agent, index) => ({
-                id: `agent_${index + 1}`,
-                name: agent.agentName,
-                role: agent.agentId,
-                status: agent.status,
-                progress: agent.progress,
-                currentTask: agent.currentTask,
-                completedTasks: agent.completedDeliverables,
-                expertise: [] // Legacy field
-            })),
-            createdAt: teamSession.startTime.getTime(),
+            agents: teamSession.agents,
+            createdAt: Date.now(),
             startedAt: null,
             completedAt: null,
             progress: {
@@ -61,7 +177,10 @@ router.post('/spawn', async (req, res) => {
                 deployment: 0
             },
             context: teamSession.context,
-            files: teamSession.files
+            files: teamSession.files || [],
+            usedBridge,
+            costSavings,
+            executionType: usedBridge ? 'automated-claude-code' : 'expensive-orchestrator'
         };
         
         // Store in legacy activeTeams for compatibility
@@ -75,13 +194,17 @@ router.post('/spawn', async (req, res) => {
                 agents: compatibleTeam.agents,
                 status: teamSession.status,
                 requirement: requirement,
-                workflow: teamSession.workflow
+                workflow: teamSession.workflow,
+                costSavings,
+                executionType: compatibleTeam.executionType
             });
         }
         
-        console.log(`✅ [AI-TEAM] REAL team spawned: ${teamSession.teamId}`);
+        console.log(`✅ [AI-TEAM] Team spawned: ${teamSession.teamId}`);
         console.log(`📋 Workflow: ${teamSession.workflow}`);
-        console.log(`👥 Agents: ${teamSession.agents.map(a => a.agentName).join(', ')}`);
+        console.log(`💰 Cost savings: ${costSavings ? '✅ FREE' : '❌ EXPENSIVE'}`);
+        console.log(`🤖 Execution: ${compatibleTeam.executionType}`);
+        console.log(`👥 Agents: ${teamSession.agents.map(a => a.name).join(', ')}`);
         
         res.json({
             success: true,
@@ -92,11 +215,14 @@ router.post('/spawn', async (req, res) => {
             workflow: teamSession.workflow,
             requirement: requirement,
             context: teamSession.context,
-            message: `REAL AI Team spawned with ${teamSession.agents.length} agents`
+            message: teamSession.message,
+            costSavings,
+            executionType: compatibleTeam.executionType,
+            usedBridge
         });
         
     } catch (error) {
-        console.error('❌ [AI-TEAM] Real spawn error:', error);
+        console.error('❌ [AI-TEAM] Spawn error:', error);
         res.status(500).json({ 
             success: false,
             error: `Failed to spawn AI team: ${error.message}` 
@@ -183,67 +309,113 @@ router.post('/:teamId/start', async (req, res) => {
 });
 
 /**
- * Get AI Team Status - Retrieve REAL team progress from orchestrator
+ * Get AI Team Status - Retrieve team progress from bridge or orchestrator
  */
-router.get('/:teamId/status', (req, res) => {
+router.get('/:teamId/status', async (req, res) => {
     try {
         const { teamId } = req.params;
-        
-        // Get real-time status from orchestrator
-        const realTeam = aiOrchestrator.getTeamStatus(teamId);
         const legacyTeam = activeTeams.get(teamId);
         
-        if (!realTeam || !legacyTeam) {
+        if (!legacyTeam) {
             return res.status(404).json({ 
                 success: false,
                 error: 'Team not found' 
             });
         }
+
+        let updatedTeam = null;
         
-        // Update legacy format with real orchestrator data
-        const updatedTeam = {
-            ...legacyTeam,
-            status: realTeam.status,
-            agents: realTeam.agents.map((agent, index) => ({
-                id: `agent_${index + 1}`,
-                name: agent.agentName,
-                role: agent.agentId,
-                status: agent.status,
-                progress: agent.progress,
-                currentTask: agent.currentTask,
-                completedTasks: agent.completedDeliverables,
-                expertise: [],
-                output: agent.output,
-                files: agent.files.length
-            })),
-            progress: {
-                overall: Math.floor(realTeam.agents.reduce((sum, a) => sum + a.progress, 0) / realTeam.agents.length),
-                planning: realTeam.status === 'planning' ? 50 : (realTeam.status === 'completed' ? 100 : 25),
-                development: realTeam.status === 'executing' ? 75 : (realTeam.status === 'completed' ? 100 : 0),
-                testing: realTeam.status === 'integrating' ? 50 : (realTeam.status === 'completed' ? 100 : 0),
-                deployment: realTeam.status === 'completed' ? 100 : 0
-            },
-            workflow: realTeam.workflow,
-            requirement: realTeam.projectRequirement,
-            context: realTeam.context,
-            files: realTeam.files,
-            generatedFiles: realTeam.files.length
-        };
+        // Check if this team was created with the bridge service
+        if (legacyTeam.usedBridge && claudeCodeBridge) {
+            try {
+                console.log(`📊 [AI-TEAM] Checking bridge status for: ${teamId}`);
+                
+                const bridgeResponse = await claudeCodeBridge.getTeamStatus(teamId);
+                
+                if (bridgeResponse.success && bridgeResponse.team) {
+                    const bridgeTeam = bridgeResponse.team;
+                    
+                    updatedTeam = {
+                        ...legacyTeam,
+                        status: bridgeTeam.status,
+                        agents: bridgeTeam.agents,
+                        progress: bridgeTeam.progress,
+                        workflow: bridgeTeam.workflow,
+                        requirement: bridgeTeam.requirement,
+                        context: bridgeTeam.context,
+                        files: bridgeTeam.files || [],
+                        generatedFiles: bridgeTeam.generatedFiles,
+                        startedAt: bridgeTeam.startedAt,
+                        completedAt: bridgeTeam.completedAt
+                    };
+                    
+                    console.log(`📊 [AI-TEAM] Bridge status: ${teamId} - ${bridgeTeam.status} (${bridgeTeam.progress.overall}% complete)`);
+                } else {
+                    throw new Error('Bridge team status not found');
+                }
+            } catch (bridgeError) {
+                console.warn(`⚠️ [AI-TEAM] Bridge status failed, checking orchestrator: ${bridgeError.message}`);
+                // Fall through to orchestrator check
+            }
+        }
+        
+        // Fallback to expensive orchestrator if bridge failed or wasn't used
+        if (!updatedTeam) {
+            const realTeam = aiOrchestrator.getTeamStatus(teamId);
+            
+            if (!realTeam) {
+                return res.status(404).json({ 
+                    success: false,
+                    error: 'Team not found in any service' 
+                });
+            }
+            
+            updatedTeam = {
+                ...legacyTeam,
+                status: realTeam.status,
+                agents: realTeam.agents.map((agent, index) => ({
+                    id: `agent_${index + 1}`,
+                    name: agent.agentName,
+                    role: agent.agentId,
+                    status: agent.status,
+                    progress: agent.progress,
+                    currentTask: agent.currentTask,
+                    completedTasks: agent.completedDeliverables,
+                    expertise: [],
+                    output: agent.output,
+                    files: agent.files.length
+                })),
+                progress: {
+                    overall: Math.floor(realTeam.agents.reduce((sum, a) => sum + a.progress, 0) / realTeam.agents.length),
+                    planning: realTeam.status === 'planning' ? 50 : (realTeam.status === 'completed' ? 100 : 25),
+                    development: realTeam.status === 'executing' ? 75 : (realTeam.status === 'completed' ? 100 : 0),
+                    testing: realTeam.status === 'integrating' ? 50 : (realTeam.status === 'completed' ? 100 : 0),
+                    deployment: realTeam.status === 'completed' ? 100 : 0
+                },
+                workflow: realTeam.workflow,
+                requirement: realTeam.projectRequirement,
+                context: realTeam.context,
+                files: realTeam.files,
+                generatedFiles: realTeam.files.length
+            };
+            
+            console.log(`📊 [AI-TEAM] Orchestrator status: ${teamId} - ${realTeam.status} (${updatedTeam.progress.overall}% complete)`);
+        }
         
         // Update legacy storage
         activeTeams.set(teamId, updatedTeam);
-        
-        console.log(`📊 [AI-TEAM] Status check: ${teamId} - ${realTeam.status} (${updatedTeam.progress.overall}% complete)`);
         
         res.json({
             success: true,
             team: updatedTeam,
             realTimeData: {
-                activeAgents: realTeam.agents.filter(a => a.status === 'working').length,
-                completedAgents: realTeam.agents.filter(a => a.status === 'completed').length,
-                generatedFiles: realTeam.files.length,
-                workflow: realTeam.workflow,
-                lastUpdate: new Date().toISOString()
+                activeAgents: updatedTeam.agents.filter(a => a.status === 'working').length,
+                completedAgents: updatedTeam.agents.filter(a => a.status === 'completed').length,
+                generatedFiles: updatedTeam.generatedFiles,
+                workflow: updatedTeam.workflow,
+                lastUpdate: new Date().toISOString(),
+                executionType: updatedTeam.executionType,
+                costSavings: updatedTeam.costSavings
             }
         });
         

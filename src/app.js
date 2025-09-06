@@ -75,8 +75,8 @@ app.use(cors({
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 }));
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 // Session management with file store to prevent memory leaks
 const FileStore = require('session-file-store')(session);
@@ -213,7 +213,7 @@ app.use((req, res, next) => {
     }
     
     // Bypass auth during development/testing or for public paths
-    const publicPaths = ['/', '/health', '/beta-access', '/api/beta-access', '/api/waitlist', '/invite', '/api/market-insights', '/api/intelligence', '/api/analytics', '/ide', '/hooks', '/welcome', '/api/license', '/tmux-lab', '/api/experimental', '/vibe-dashboard', '/workflow-dashboard', '/agent-dashboard'];
+    const publicPaths = ['/', '/health', '/beta-access', '/api/beta-access', '/api/waitlist', '/invite', '/api/market-insights', '/api/intelligence', '/api/analytics', '/ide', '/hooks', '/welcome', '/api/license', '/tmux-lab', '/api/experimental', '/vibe-dashboard', '/workflow-dashboard', '/agent-dashboard', '/components-beta'];
     const isPublicPath = publicPaths.some(path => req.path.startsWith(path)) || 
                         req.path.startsWith('/static/') || 
                         req.path.startsWith('/ide/static/') ||
@@ -420,6 +420,9 @@ app.use('/api', require('./routes/prettier-config'));
 app.use('/api/experimental', require('./routes/experimental/orchestrator'));
 app.use('/api/agents', require('./routes/agent-dashboard').router);  // Multi-Agent Observability Dashboard
 app.use('/api/memory-metrics', require('./routes/memory-metrics'));  // Memory Performance Monitoring
+
+// Component Capture Beta Routes (Isolated from main IDE)
+app.use('/components-beta', require('./routes/components-beta'));  // Beta component capture system
 
 // Socket.IO connection handling with cleanup
 // NOTE: Moved to terminal-websocket-safepty.js to fix duplicate handler issue

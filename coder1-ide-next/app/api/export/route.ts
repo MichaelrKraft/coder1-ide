@@ -10,17 +10,45 @@ export async function POST(request: NextRequest) {
   try {
     const { format, includeNodeModules, includeGitHistory, sessionId } = await request.json();
     
-    const EXPRESS_BACKEND_URL = 'http://localhost:3000';
-    
-    // If sessionId provided, export session data from Express backend
+    // If sessionId provided, export session data from local storage
     if (sessionId) {
       try {
-        const response = await fetch(`${EXPRESS_BACKEND_URL}/api/sessions/${sessionId}/export`);
+        const dataDir = path.join(process.cwd(), 'data');
+        const sessionDir = path.join(dataDir, 'sessions', sessionId);
         
-        if (response.ok) {
-          const sessionData = await response.json();
+        // Check if session exists
+        try {
+          await fs.access(sessionDir);
           
-          // Convert session data to downloadable format
+          // Read session metadata
+          const metadataPath = path.join(sessionDir, 'metadata.json');
+          const metadata = JSON.parse(await fs.readFile(metadataPath, 'utf8'));
+          
+          // Read all checkpoints
+          const checkpointsDir = path.join(sessionDir, 'checkpoints');
+          const checkpointFiles = await fs.readdir(checkpointsDir);
+          const checkpoints = [];
+          
+          for (const file of checkpointFiles) {
+            if (file.endsWith('.json')) {
+              const checkpointData = JSON.parse(
+                await fs.readFile(path.join(checkpointsDir, file), 'utf8')
+              );
+              checkpoints.push(checkpointData);
+            }
+          }
+          
+          // Sort checkpoints by timestamp
+          checkpoints.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+          
+          // Create session export data
+          const sessionData = {
+            metadata,
+            checkpoints,
+            exportedAt: new Date().toISOString(),
+            exportVersion: '2.0.0'
+          };
+          
           const jsonContent = JSON.stringify(sessionData, null, 2);
           const buffer = Buffer.from(jsonContent);
           
@@ -30,6 +58,10 @@ export async function POST(request: NextRequest) {
               'Content-Disposition': `attachment; filename="session-${sessionId}-export-${Date.now()}.json"`
             }
           });
+          
+        } catch (error) {
+          console.error('Session not found:', sessionId);
+          // Continue to project export fallback
         }
       } catch (error) {
         console.error('Failed to export session data:', error);

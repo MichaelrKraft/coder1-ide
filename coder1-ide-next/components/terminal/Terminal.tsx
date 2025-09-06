@@ -27,6 +27,7 @@ interface TerminalProps {
   onClaudeTyped?: () => void;
   onTerminalData?: (data: string) => void;
   onTerminalCommand?: (command: string) => void;
+  onTerminalReady?: (sessionId: string | null, ready: boolean) => void;
 }
 
 /**
@@ -40,7 +41,7 @@ interface TerminalProps {
  * 
  * DO NOT MODIFY button positioning without checking original
  */
-export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData, onTerminalCommand }: TerminalProps) {
+export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData, onTerminalCommand, onTerminalReady }: TerminalProps) {
   console.log('🖥️ Terminal component rendering...');
   const terminalRef = useRef<HTMLDivElement>(null);
   const xtermRef = useRef<XTerm | null>(null);
@@ -220,6 +221,17 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
   }, [terminalSettings]);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [terminalReady, setTerminalReady] = useState(false);
+  
+  // Performance-safe callback helper - no intervals, immediate execution
+  const notifyTerminalReady = React.useCallback((newSessionId: string | null, ready: boolean) => {
+    if (onTerminalReady) {
+      try {
+        onTerminalReady(newSessionId, ready);
+      } catch (error) {
+        console.error('[Terminal] onTerminalReady callback error:', error);
+      }
+    }
+  }, [onTerminalReady]);
   const [lastError, setLastError] = useState<string | null>(null);
   const [errorDoctorActive, setErrorDoctorActive] = useState(true);
   const socketRef = useRef<ReturnType<typeof getSocket> | null>(null);
@@ -234,6 +246,11 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
   const scrollCheckIntervalRef = useRef<NodeJS.Timeout | null>(null);
   // Phase 4: Debouncing for flicker reduction
   const scrollDebounceRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // Output buffering for performance optimization
+  const outputBufferRef = useRef<string[]>([]);
+  const outputFlushTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const writeRAFRef = useRef<number | null>(null);
 
   // Create terminal session on mount via REST API
   useEffect(() => {
@@ -270,6 +287,8 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
           // Immediately update the ref for voice recognition
           sessionIdForVoiceRef.current = data.sessionId;
           setTerminalReady(true);
+          // Notify parent component - performance-safe callback
+          notifyTerminalReady(data.sessionId, true);
           console.log('✅ Terminal session created:', data.sessionId);
         } else {
           console.error('Failed to create terminal session:', response.status);
@@ -278,6 +297,8 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
           setSessionId(simulatedId);
           sessionIdForVoiceRef.current = simulatedId;
           setTerminalReady(true);
+          // Notify parent component - performance-safe callback
+          notifyTerminalReady(simulatedId, true);
         }
       } catch (error) {
         console.error('Error creating terminal session:', error);
@@ -286,6 +307,8 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
         setSessionId(simulatedId);
         sessionIdForVoiceRef.current = simulatedId;
         setTerminalReady(true);
+        // Notify parent component - performance-safe callback
+        notifyTerminalReady(simulatedId, true);
       }
     };
     
@@ -328,7 +351,7 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
 
     try {
       console.log('🔧 Creating XTerm instance...');
-      // Initialize terminal with exact settings
+      // Initialize terminal with performance-optimized settings
       const term = new XTerm({
         theme: {
           background: '#0a0a0a',
@@ -342,6 +365,13 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
         cursorBlink: true,
         cursorStyle: 'block',
         allowProposedApi: true, // Add this to prevent API warnings
+        // Performance optimizations
+        scrollback: 10000, // Limit scrollback buffer
+        fastScrollModifier: 'ctrl', // Enable fast scrolling with Ctrl key
+        smoothScrollDuration: 0, // Disable smooth scrolling animations
+        rendererType: 'canvas', // Use canvas renderer for better performance
+        scrollOnUserInput: true,
+        scrollSensitivity: 1,
       });
 
       const fitAddon = new FitAddon();
@@ -377,144 +407,63 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
         xtermRef.current = term;
         fitAddonRef.current = fitAddon;
 
-        // ROBUST SCROLL SYSTEM: Handle both tracking AND auto-scrolling
-        // This replaces the competing WebSocket scroll logic
+        // SIMPLIFIED SCROLL SYSTEM: Only track user position, don't force scroll
         const checkScrollPosition = () => {
           if (term && term.buffer && term.buffer.active) {
             try {
               const buffer = term.buffer.active;
               const isAtBottom = buffer.viewportY === buffer.baseY;
-              const hasNewContent = buffer.baseY > 0; // Check if there's actually content
               
-              // 🔍 DIAGNOSTIC: Log scroll state changes for investigation
-              const timestamp = Date.now();
-              const debugInfo = {
-                timestamp,
-                isAtBottom,
-                hasNewContent,
-                viewportY: buffer.viewportY,
-                baseY: buffer.baseY,
-                isUserScrolled,
-                sessionId
-              };
-              
-              // Log significant state changes
-              if (isAtBottom !== (buffer.viewportY === buffer.baseY)) {
-                console.log('🔍 SCROLL STATE CHANGE:', debugInfo);
+              // Simply track whether user has scrolled up
+              // No auto-scrolling here - let user control it
+              if (!isAtBottom && !isUserScrolled) {
+                setIsUserScrolled(true);
+              } else if (isAtBottom && isUserScrolled) {
+                setIsUserScrolled(false);
               }
-              
-              // Clear existing debounce timer
-              if (scrollDebounceRef.current) {
-                clearTimeout(scrollDebounceRef.current);
-              }
-              
-              // Debounce the state update by 50ms (reduced for more responsiveness)
-              scrollDebounceRef.current = setTimeout(() => {
-                if (!isAtBottom && !isUserScrolled) {
-                  console.log('👆 USER SCROLLED UP:', debugInfo);
-                  setIsUserScrolled(true);
-                } else if (isAtBottom && isUserScrolled) {
-                  console.log('👇 USER RETURNED TO BOTTOM:', debugInfo);
-                  setIsUserScrolled(false);
-                }
-                
-                // AUTO-SCROLL LOGIC: If user is at bottom and there's new content, keep following
-                if (isAtBottom && hasNewContent && !isUserScrolled) {
-                  console.log('🚀 AUTO-SCROLL TRIGGERED:', debugInfo);
-                  // Use multiple scroll methods to ensure it works
-                  try {
-                    term.scrollToBottom();
-                    // Fallback: Force viewport to match baseY if scrollToBottom fails
-                    if (term.buffer && term.buffer.active && buffer.viewportY !== buffer.baseY) {
-                      console.log('🔧 FORCING VIEWPORT SYNC:', { from: buffer.viewportY, to: buffer.baseY });
-                      term.scrollLines(buffer.baseY - buffer.viewportY);
-                    }
-                  } catch (scrollError) {
-                    console.error('❌ SCROLL ERROR:', scrollError);
-                  }
-                }
-              }, 50);
             } catch (e) {
-              console.error('❌ SCROLL CHECK ERROR:', e);
+              // Silently handle errors
             }
           }
         };
         
-        // 🔍 DIAGNOSTIC: Log timer setup
-        console.log('⏰ SETTING UP SCROLL INTERVAL:', { sessionId, interval: '150ms' });
-        scrollCheckIntervalRef.current = setInterval(checkScrollPosition, 150); // Increased frequency for better responsiveness
+        // Set up scroll interval - reduced frequency for better performance
+        scrollCheckIntervalRef.current = setInterval(checkScrollPosition, 500); // Reduced to 500ms to prevent aggressive scrolling
 
         // Handle resize
         const resizeObserver = new ResizeObserver(() => {
           if (fitAddonRef.current && term) {
             try {
-              // 🔍 DIAGNOSTIC: Log resize events and terminal state before/after
               const beforeBuffer = term.buffer?.active;
-              const beforeState = beforeBuffer ? {
-                viewportY: beforeBuffer.viewportY,
-                baseY: beforeBuffer.baseY,
-                isAtBottom: beforeBuffer.viewportY === beforeBuffer.baseY
-              } : null;
-              
-              console.log('🔄 RESIZE EVENT TRIGGERED:', {
-                timestamp: Date.now(),
-                beforeState,
-                sessionId
-              });
+              const wasAtBottom = beforeBuffer ? beforeBuffer.viewportY === beforeBuffer.baseY : false;
 
               setTimeout(() => {
                 fitAddonRef.current?.fit();
                 
                 // Check state after resize
                 const afterBuffer = term.buffer?.active;
-                const afterState = afterBuffer ? {
-                  viewportY: afterBuffer.viewportY,
-                  baseY: afterBuffer.baseY,
-                  isAtBottom: afterBuffer.viewportY === afterBuffer.baseY
-                } : null;
                 
-                console.log('📐 RESIZE COMPLETED:', {
-                  timestamp: Date.now(),
-                  beforeState,
-                  afterState,
-                  stateChanged: JSON.stringify(beforeState) !== JSON.stringify(afterState)
-                });
-                
-                // If resize broke the viewport sync, fix it immediately
-                if (afterBuffer && afterBuffer.viewportY !== afterBuffer.baseY) {
-                  console.log('🚨 RESIZE BROKE VIEWPORT SYNC - FIXING:', {
-                    viewportY: afterBuffer.viewportY,
-                    baseY: afterBuffer.baseY,
-                    scrollLines: afterBuffer.baseY - afterBuffer.viewportY
-                  });
+                // If resize broke the viewport sync and we were at bottom, fix it
+                if (wasAtBottom && afterBuffer && afterBuffer.viewportY !== afterBuffer.baseY) {
                   term.scrollLines(afterBuffer.baseY - afterBuffer.viewportY);
                 }
                 
                 // Additional fix: If resize caused container to jump to top but content fits
-                // Force the terminal to stay at bottom by scrolling the container
                 const terminalContainer = terminalRef.current?.parentElement;
-                if (terminalContainer) {
+                if (terminalContainer && wasAtBottom) {
                   const isContainerAtTop = terminalContainer.scrollTop === 0;
                   const hasContent = afterBuffer && afterBuffer.baseY > 0;
                   
                   if (isContainerAtTop && hasContent) {
-                    console.log('🚨 RESIZE CAUSED CONTAINER TOP JUMP - FIXING:', {
-                      containerScrollTop: terminalContainer.scrollTop,
-                      containerScrollHeight: terminalContainer.scrollHeight,
-                      containerClientHeight: terminalContainer.clientHeight,
-                      baseY: afterBuffer.baseY
-                    });
-                    
                     // Force container to bottom
                     terminalContainer.scrollTop = terminalContainer.scrollHeight;
-                    
                     // Also ensure xterm is at bottom
                     term.scrollToBottom();
                   }
                 }
               }, 10);
             } catch (error) {
-              console.error('❌ RESIZE ERROR:', error);
+              // Silently handle resize errors
             }
           }
         });
@@ -526,26 +475,33 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
         // Return cleanup function
         const cleanup = () => {
           try {
-            console.log('🧹 CLEANING UP TERMINAL:', { sessionId });
             resizeObserver.disconnect();
             // Clean up scroll monitoring
             if (scrollCheckIntervalRef.current) {
-              console.log('⏰ CLEARING SCROLL INTERVAL');
               clearInterval(scrollCheckIntervalRef.current);
               scrollCheckIntervalRef.current = null;
             }
-            // Phase 4: Clean up debounce timer
+            // Clean up debounce timer
             if (scrollDebounceRef.current) {
-              console.log('⏰ CLEARING DEBOUNCE TIMER');
               clearTimeout(scrollDebounceRef.current);
               scrollDebounceRef.current = null;
             }
+            // Clean up output buffering timers
+            if (outputFlushTimeoutRef.current) {
+              clearTimeout(outputFlushTimeoutRef.current);
+              outputFlushTimeoutRef.current = null;
+            }
+            if (writeRAFRef.current) {
+              cancelAnimationFrame(writeRAFRef.current);
+              writeRAFRef.current = null;
+            }
+            // Clear any pending buffer
+            outputBufferRef.current = [];
             if (term) {
-              console.log('🗑️ DISPOSING TERMINAL');
               term.dispose();
             }
           } catch (error) {
-            console.error('❌ CLEANUP ERROR:', error);
+            // Silently handle cleanup errors
           }
         };
 
@@ -637,11 +593,11 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
           }
         }
         
-        // Show interim results as user speaks
+        // Show interim results as user speaks (but don't spam the terminal)
         if (interimTranscript && xtermRef.current) {
           console.log('Interim transcript:', interimTranscript);
-          // Show interim feedback inline
-          xtermRef.current.write(`\r\n💬 Hearing: "${interimTranscript}"`);
+          // Only show interim feedback in console, not in terminal to avoid spam
+          // xtermRef.current.write(`\r\n💬 Hearing: "${interimTranscript}"`);
         }
         
         if (finalTranscript && finalTranscript.trim()) {
@@ -649,9 +605,10 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
           const cleanTranscript = finalTranscript.trim();
           console.log('Final speech recognized:', cleanTranscript);
           
-          // Clear interim feedback and show final
+          // Clear interim feedback and show final (minimal UI feedback)
           if (xtermRef.current) {
-            xtermRef.current.writeln(`\r\n✅ Recognized: "${cleanTranscript}"`);
+            // Minimal feedback - just show that voice was recognized
+            xtermRef.current.writeln(`\r\n🎤 Voice: ${cleanTranscript}`);
             
             // Check if it's a Claude activation command
             if (cleanTranscript.toLowerCase().includes('claude')) {
@@ -665,8 +622,8 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
               }
             }
             
-            // Write the text to the terminal UI for immediate feedback
-            xtermRef.current.write(cleanTranscript);
+            // Don't write to terminal UI directly - let the backend handle it
+            // The text will appear when the backend processes it
             
             // Get the socket from the global socket service
             const socket = getSocket();
@@ -852,29 +809,39 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
     socket.emit('terminal:create', { id: sessionId });
     console.log('📡 Connecting to Express backend terminal:', sessionId);
 
+    // Flush buffered output to terminal (performance optimization)
+    const flushOutput = () => {
+      if (outputBufferRef.current.length > 0 && term) {
+        const output = outputBufferRef.current.join('');
+        outputBufferRef.current = [];
+        term.write(output);
+        
+        // Only auto-scroll if user is already at bottom
+        if (term.buffer && term.buffer.active) {
+          const buffer = term.buffer.active;
+          const isAtBottom = buffer.viewportY === buffer.baseY;
+          if (isAtBottom) {
+            term.scrollToBottom();
+          }
+        }
+      }
+      outputFlushTimeoutRef.current = null;
+    };
+
     // Handle terminal output from backend
     socket.on('terminal:data', ({ id, data }: { id: string; data: string }) => {
       if (id === sessionId && term) {
-        // 🔍 DIAGNOSTIC: Log incoming terminal data
-        const timestamp = Date.now();
-        const dataLength = data.length;
-        const hasNewlines = data.includes('\n');
-        const hasCarriageReturn = data.includes('\r');
+        // Buffer the output for performance
+        outputBufferRef.current.push(data);
         
-        console.log('📡 WEBSOCKET DATA:', {
-          timestamp,
-          sessionId: id,
-          dataLength,
-          hasNewlines,
-          hasCarriageReturn,
-          preview: data.length > 50 ? data.substring(0, 50) + '...' : data
-        });
+        // Cancel any pending flush
+        if (outputFlushTimeoutRef.current) {
+          clearTimeout(outputFlushTimeoutRef.current);
+        }
         
-        // CRITICAL FIX: Remove ALL automatic scrolling from WebSocket handler
-        // Let the user-controlled scroll monitoring handle all scroll behavior
-        
-        // Write the data (this is all we should do here)
-        term.write(data);
+        // Simplified flush: Always flush quickly for responsiveness
+        // Use a very short timeout to batch rapid updates
+        outputFlushTimeoutRef.current = setTimeout(flushOutput, 10);
         
         // Check if we should display statusline after command completion
         if (terminalSettings.statusLine?.enabled && data.includes('\n')) {
@@ -1079,125 +1046,6 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
     }
   };
 
-  const handleSpawnAgents = async () => {
-    if (agentsRunning) {
-      // Stop agents
-      setAgentsRunning(false);
-      xtermRef.current?.writeln('\r\n🛑 Stopping AI agents...');
-      
-      // Stop the team via backend API
-      try {
-        const teamId = localStorage.getItem('activeTeamId');
-        if (teamId) {
-          const response = await fetch(`/api/ai-team/${teamId}/stop`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' }
-          });
-          
-          if (response.ok) {
-            const result = await response.json();
-            xtermRef.current?.writeln(`✅ AI Team stopped (${Math.round(result.duration / 1000)}s runtime)`);
-            localStorage.removeItem('activeTeamId');
-          }
-        }
-      } catch (error) {
-        console.error('Failed to stop AI team:', error);
-        xtermRef.current?.writeln('⚠️ Team stopped locally (backend unavailable)');
-      }
-    } else {
-      // Start agents
-      setAgentsRunning(true);
-      setIsConnected(true);
-      
-      xtermRef.current?.writeln('\r\n⚡ Spawning AI Team...');
-      xtermRef.current?.writeln('🤖 Connecting to AI Team Management System...');
-      
-      try {
-        // Get current session ID from localStorage or create new one
-        const sessionId = localStorage.getItem('currentSessionId') || `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-        localStorage.setItem('currentSessionId', sessionId);
-        
-        // Get what user is currently typing, or fall back to last command
-        const currentInput = currentLineBuffer.trim();
-        const lastCommand = commandHistory.length > 0 ? commandHistory[commandHistory.length - 1] : '';
-        const requirement = currentInput || lastCommand || 'Build a web application';
-        
-        console.log('🎯 AI Team requirement:', { currentInput, lastCommand, final: requirement });
-        
-        // Spawn AI team via backend API
-        const spawnResponse = await fetch('/api/ai-team/spawn', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            sessionId,
-            projectType: 'web-app',
-            complexity: 'medium',
-            requirement: requirement
-          })
-        });
-        
-        if (!spawnResponse.ok) {
-          throw new Error(`HTTP ${spawnResponse.status}`);
-        }
-        
-        const spawnResult = await spawnResponse.json();
-        console.log('🎯 AI Team spawn result:', spawnResult);
-        
-        if (spawnResult.success) {
-          console.log('✅ Writing to terminal, xtermRef.current:', xtermRef.current);
-          xtermRef.current?.writeln(`✅ Team spawned: ${spawnResult.teamId.slice(-8)}`);
-          xtermRef.current?.writeln(`👥 ${spawnResult.agents.length} AI agents initialized:`);
-          
-          // List each agent with their expertise
-          spawnResult.agents.forEach((agent: any, index: number) => {
-            // Check if expertise exists and is an array, otherwise use role or fallback
-            const expertiseText = agent.expertise && Array.isArray(agent.expertise) 
-              ? agent.expertise.slice(0, 2).join(', ')
-              : agent.role || 'AI Agent';
-            xtermRef.current?.writeln(`   ${index + 1}. ${agent.name} - ${expertiseText}`);
-          });
-          
-          // Start the team working
-          xtermRef.current?.writeln('\r\n🚀 Starting AI development work...');
-          
-          const startResponse = await fetch(`/api/ai-team/${spawnResult.teamId}/start`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({})
-          });
-          
-          if (startResponse.ok) {
-            const startResult = await startResponse.json();
-            xtermRef.current?.writeln('✅ AI Team is now working on your project!');
-            xtermRef.current?.writeln('📊 Real-time progress tracking active');
-            xtermRef.current?.writeln('👀 LOOK RIGHT! OPEN PREVIEW PANEL TO SEE LIVE PROGRESS →');
-            xtermRef.current?.write('\r\n$ ');
-            
-            // Store team ID for future operations
-            localStorage.setItem('activeTeamId', spawnResult.teamId);
-            
-            // Notify parent component
-            onAgentsSpawn?.();
-          } else {
-            throw new Error('Failed to start team');
-          }
-          
-        } else {
-          throw new Error(spawnResult.error || 'Unknown error');
-        }
-        
-      } catch (error) {
-        console.error('AI Team spawn failed:', error);
-        xtermRef.current?.writeln(`❌ Failed to spawn AI team: ${error}`);
-        xtermRef.current?.writeln('🔧 Ensure backend server is running on port 3000');
-        xtermRef.current?.write('\r\n$ ');
-        
-        // Reset state on failure
-        setAgentsRunning(false);
-        setIsConnected(false);
-      }
-    }
-  };
 
   // Add effect to connect to backend when session is ready
   useEffect(() => {
@@ -1205,6 +1053,61 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
       connectToBackend(xtermRef.current);
     }
   }, [sessionId, terminalReady]);
+
+  // Handle AI Team spawn
+  const handleSpawnAgents = async () => {
+    if (!xtermRef.current) return;
+    
+    xtermRef.current.writeln('\r\n⚡ Spawning AI Team...');
+    xtermRef.current.writeln('🤖 Connecting to AI Team Management System...');
+    
+    try {
+      // Call the new Claude Bridge API endpoint
+      const response = await fetch('/api/claude-bridge/spawn', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          requirement: 'Build a complete project based on user requirements',
+          sessionId: sessionId || `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+        })
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        setAgentsRunning(true);
+        
+        xtermRef.current.writeln(`✅ AI Team spawned with ${data.agents?.length || 0} automated agents`);
+        xtermRef.current.writeln(`📊 Team ID: ${data.teamId}`);
+        xtermRef.current.writeln(`👥 ${data.agents?.length || 0} agents deployed`);
+        
+        // Display agent details
+        if (data.agents && data.agents.length > 0) {
+          xtermRef.current.writeln('\r\n🤖 Agent Roster:');
+          data.agents.forEach((agent: any) => {
+            xtermRef.current?.writeln(`  • ${agent.name} - ${agent.role}`);
+          });
+        }
+        
+        xtermRef.current.writeln('\r\nAgents are now working in parallel. Updates will appear here.');
+        xtermRef.current.write('\r\n$ ');
+        
+        // Notify parent component
+        if (onAgentsSpawn) {
+          onAgentsSpawn();
+        }
+      } else {
+        throw new Error(data.error || 'Failed to spawn AI team');
+      }
+    } catch (error) {
+      console.error('AI Team spawn failed:', error);
+      xtermRef.current.writeln(`❌ Failed to spawn AI team: ${error}`);
+      xtermRef.current.writeln('🔧 Check that the server is running and try again');
+      xtermRef.current.write('\r\n$ ');
+      
+      setAgentsRunning(false);
+    }
+  };
 
   // Get current context for Claude
   const getCurrentContext = () => {
@@ -1406,7 +1309,6 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
         <button
           onClick={() => {
             if (xtermRef.current) {
-              console.log('📜 FOLLOW BUTTON CLICKED');
               try {
                 // First try standard method
                 xtermRef.current.scrollToBottom();
@@ -1415,19 +1317,13 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
                 if (xtermRef.current.buffer && xtermRef.current.buffer.active) {
                   const buffer = xtermRef.current.buffer.active;
                   if (buffer.viewportY !== buffer.baseY) {
-                    console.log('🔧 BUTTON FORCING VIEWPORT SYNC:', { 
-                      viewportY: buffer.viewportY, 
-                      baseY: buffer.baseY,
-                      scrollLines: buffer.baseY - buffer.viewportY
-                    });
                     xtermRef.current.scrollLines(buffer.baseY - buffer.viewportY);
                   }
                 }
                 
                 setIsUserScrolled(false);
-                console.log('✅ Follow button scroll completed');
               } catch (error) {
-                console.error('❌ FOLLOW BUTTON ERROR:', error);
+                // Silently handle scroll errors
               }
             }
           }}

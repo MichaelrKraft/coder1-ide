@@ -123,23 +123,23 @@ export default function DiscoverSection() {
         <div className="px-3 pb-3 space-y-3">
           {/* Menu Items */}
           <div className="space-y-1">
-            <a href="http://localhost:3000/component-studio.html" className="w-full flex items-center gap-2 px-2 py-1.5 text-xs text-text-secondary hover:text-text-primary hover:bg-bg-tertiary rounded transition-colors">
+            <a href="/component-studio.html" className="w-full flex items-center gap-2 px-2 py-1.5 text-xs text-text-secondary hover:text-text-primary hover:bg-bg-tertiary rounded transition-colors">
               <Grid className="w-3 h-3" />
               <span>Components</span>
             </a>
             
-            <a href="http://localhost:3000/templates-hub.html" className="w-full flex items-center gap-2 px-2 py-1.5 text-xs text-text-secondary hover:text-text-primary hover:bg-bg-tertiary rounded transition-colors">
+            <a href="/templates-hub.html" className="w-full flex items-center gap-2 px-2 py-1.5 text-xs text-text-secondary hover:text-text-primary hover:bg-bg-tertiary rounded transition-colors">
               <FileText className="w-3 h-3" />
               <span>Templates</span>
             </a>
             
-            <a href="http://localhost:3000/hooks" className="w-full flex items-center gap-2 px-2 py-1.5 text-xs text-text-secondary hover:text-text-primary hover:bg-bg-tertiary rounded transition-colors">
+            <a href="/hooks" className="w-full flex items-center gap-2 px-2 py-1.5 text-xs text-text-secondary hover:text-text-primary hover:bg-bg-tertiary rounded transition-colors">
               <Code className="w-3 h-3" />
               <span>Hooks</span>
             </a>
             
-            <a href="http://localhost:3000/workflow-dashboard.html" className="w-full flex items-center gap-2 px-2 py-1.5 text-xs text-text-secondary hover:text-text-primary hover:bg-bg-tertiary rounded transition-colors">
-              <Sparkles className="w-3 h-3 text-green-400" />
+            <a href="/workflow-dashboard.html" className="w-full flex items-center gap-2 px-2 py-1.5 text-xs text-text-secondary hover:text-text-primary hover:bg-bg-tertiary rounded transition-colors">
+              <Sparkles className="w-3 h-3 text-coder1-cyan" />
               <span>Workflows</span>
             </a>
           </div>

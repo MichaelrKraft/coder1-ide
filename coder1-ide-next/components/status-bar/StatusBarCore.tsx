@@ -11,6 +11,7 @@ import React, { useState, useEffect } from 'react';
 import { Eye, GitBranch, FileText, Brain } from 'lucide-react';
 import StatusBarActions from './StatusBarActions';
 import DiscoverPanel from './DiscoverPanel';
+import ContextManagerPanel from '../ContextManagerPanel';
 import { useIDEStore } from '@/stores/useIDEStore';
 import { useSessionStore } from '@/stores/useSessionStore';
 import { useUIStore } from '@/stores/useUIStore';
@@ -35,6 +36,9 @@ export default function StatusBarCore({
   const { connections } = useIDEStore();
   const { supervision } = useSessionStore();
   const { discoverPanel, addToast } = useUIStore();
+  
+  // Context Manager Panel state
+  const [isContextManagerOpen, setIsContextManagerOpen] = useState(false);
   
   // Git state management
   const [gitInfo, setGitInfo] = useState<{
@@ -118,7 +122,7 @@ export default function StatusBarCore({
     try {
       setContextStats(prev => ({ ...prev, isLoading: true }));
       
-      const response = await fetch('http://localhost:3001/api/context/stats', {
+      const response = await fetch('/api/context/stats', {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' }
       });
@@ -154,12 +158,28 @@ export default function StatusBarCore({
     return () => clearInterval(interval);
   }, []);
   
+  // Listen for IDE Sessions tab clicks to auto-close ContextManagerPanel
+  useEffect(() => {
+    const handleIdeSessionsClick = () => {
+      console.log('🎯 IDE Sessions tab clicked - auto-closing ContextManagerPanel');
+      setIsContextManagerOpen(false);
+    };
+    
+    window.addEventListener('ideSessionsTabClicked', handleIdeSessionsClick);
+    
+    return () => {
+      window.removeEventListener('ideSessionsTabClicked', handleIdeSessionsClick);
+    };
+  }, []);
+  
   return (
     <>
-      <div className="h-11 bg-bg-secondary border-t border-border-default flex items-center justify-between px-4">
+      <div className="h-11 bg-bg-secondary border-t border-border-default flex items-center px-4">
         {/* Left section - Discover Button & Supervision Indicator */}
-        <div className="flex items-center gap-4 text-sm text-text-muted">
-          <DiscoverPanel />
+        <div className="flex items-center gap-4 text-sm text-text-muted flex-1">
+          <div className="relative">
+            <DiscoverPanel />
+          </div>
           
           {/* Supervision Indicator */}
           {supervisionActive && (
@@ -179,21 +199,24 @@ export default function StatusBarCore({
         </div>
 
         {/* Center section - Action buttons */}
-        <StatusBarActions
-          activeFile={activeFile}
-          isConnected={actuallyConnected}
-          openFiles={openFiles}
-          terminalHistory={terminalHistory}
-          terminalCommands={terminalCommands}
-        />
+        <div className="flex items-center justify-center">
+          <StatusBarActions
+            activeFile={activeFile}
+            isConnected={actuallyConnected}
+            openFiles={openFiles}
+            terminalHistory={terminalHistory}
+            terminalCommands={terminalCommands}
+          />
+        </div>
 
         {/* Right section - Status info */}
-        <div className="flex items-center gap-4 text-sm text-text-muted">
-          {/* Context Folders Information */}
+        <div className="flex items-center gap-4 text-sm text-text-muted flex-1 justify-end">
+          {/* Context Folders Information - Clickable */}
           {contextStats.isActive && (
             <div 
-              className="flex items-center gap-1" 
-              title={`Context Folders: ${contextStats.totalSessions} sessions, ${contextStats.totalMemories} memories`}
+              className="flex items-center gap-1 cursor-pointer hover:opacity-80 transition-opacity" 
+              title={`Context Memory: ${contextStats.totalMemories} memories, ${contextStats.totalSessions} contexts - Click to view AI memory dashboard`}
+              onClick={() => setIsContextManagerOpen(!isContextManagerOpen)}
             >
               <Brain className={`w-3 h-3 ${contextStats.totalMemories > 0 ? 'text-purple-400' : 'text-text-muted'}`} />
               <span className={contextStats.totalMemories > 0 ? 'text-purple-400' : 'text-text-secondary'}>
@@ -202,7 +225,7 @@ export default function StatusBarCore({
               {contextStats.totalSessions > 0 && (
                 <div className="flex items-center gap-1">
                   <span className="text-text-muted">•</span>
-                  <span className="text-text-secondary">{contextStats.totalSessions} sessions</span>
+                  <span className="text-text-secondary">{contextStats.totalSessions} contexts</span>
                 </div>
               )}
             </div>
@@ -222,9 +245,6 @@ export default function StatusBarCore({
               )}
             </div>
           )}
-          <span>UTF-8</span>
-          <span>TypeScript React</span>
-          <span>Ln 1, Col 1</span>
           {actuallyConnected && (
             <div className="flex items-center gap-1">
               <span className="w-2 h-2 rounded-full bg-green-400"></span>
@@ -233,6 +253,12 @@ export default function StatusBarCore({
           )}
         </div>
       </div>
+      
+      {/* Context Manager Panel */}
+      <ContextManagerPanel 
+        isOpen={isContextManagerOpen}
+        onClose={() => setIsContextManagerOpen(false)}
+      />
     </>
   );
 }

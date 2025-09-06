@@ -124,7 +124,7 @@ export default function MenuBar({
     ],
     Help: [
       { label: 'About Coder1', action: onShowAbout || (() => alert('Coder1 IDE v2.0.0\nBuilt for Claude Code and vibe coders')), shortcut: '' },
-      { label: 'Documentation', action: () => window.open('http://localhost:3000/documentation', '_blank'), shortcut: '' },
+      { label: 'Documentation', action: () => window.open('/documentation', '_blank'), shortcut: '' },
       { separator: true },
       { label: 'Keyboard Shortcuts', action: onShowKeyboardShortcuts || (() => console.log('Shortcuts')), shortcut: 'Ctrl+K Ctrl+S' },
       { label: 'Report Issue', action: () => window.open('https://github.com/michaelkraft/autonomous_vibe_interface/issues', '_blank') }
@@ -158,12 +158,12 @@ export default function MenuBar({
     setActiveMenu(null);
   };
 
-  // Menu items with proper routing to Express backend pages
+  // Menu items with proper routing to Next.js pages
   const menuItems = [
     { icon: Home, label: 'Home page', href: '/', emoji: '🏠' },
-    { icon: Grid, label: 'AI dashboard', href: 'http://localhost:3001/vibe-dashboard', emoji: '🤖' },
-    { icon: Code, label: 'Agent dashboard', href: 'http://localhost:3001/agent-dashboard', emoji: '👥' },
-    { icon: FileText, label: 'Documentation', href: 'http://localhost:3001/documentation', emoji: '📚' },
+    { icon: Grid, label: 'AI dashboard', href: '/vibe-dashboard', emoji: '🤖' },
+    { icon: Code, label: 'Agent dashboard', href: '/agent-dashboard', emoji: '👥' },
+    { icon: FileText, label: 'Documentation', href: '/docs-manager', emoji: '📚' },
     { icon: SettingsIcon, label: 'Settings', href: '#', onClick: () => onShowSettings?.(), emoji: '⚙️' },
   ];
 

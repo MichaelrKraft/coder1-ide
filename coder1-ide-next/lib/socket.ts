@@ -8,11 +8,12 @@ export const getSocket = (): Socket => {
     connectionAttempts++;
     console.log(`🔌 CREATING SOCKET CONNECTION (attempt ${connectionAttempts})`);
     
-    // Connect to the Express backend using environment variable
-    const backendUrl = process.env.NEXT_PUBLIC_EXPRESS_BACKEND_URL || 'http://localhost:3000';
-    console.log(`🎯 CONNECTING TO: ${backendUrl}`);
+    // Connect to the unified server (Next.js custom server)
+    const unifiedUrl = process.env.NEXT_PUBLIC_UNIFIED_SERVER_URL || 'http://localhost:3001';
+    console.log(`🎯 CONNECTING TO UNIFIED SERVER: ${unifiedUrl}`);
     
-    socket = io(backendUrl, {
+    socket = io(unifiedUrl, {
+      path: '/socket.io/',
       transports: ['websocket', 'polling'],
       reconnection: true,
       reconnectionAttempts: 10,
@@ -28,7 +29,7 @@ export const getSocket = (): Socket => {
       console.log('✅ SOCKET.IO CONNECTED:', {
         id: socket?.id,
         transport: socket?.io.engine.transport.name,
-        url: backendUrl,
+        url: unifiedUrl,
         timestamp: new Date().toISOString()
       });
       connectionAttempts = 0; // Reset on successful connection
@@ -47,7 +48,7 @@ export const getSocket = (): Socket => {
         message: error.message,
         type: error.type,
         description: error.description,
-        url: backendUrl,
+        url: unifiedUrl,
         attempt: connectionAttempts,
         timestamp: new Date().toISOString()
       });

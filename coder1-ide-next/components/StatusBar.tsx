@@ -7,6 +7,13 @@ import { glows } from '@/lib/design-tokens';
 import { useSessionSummary } from '@/lib/hooks/useSessionSummary';
 import { useEnhancedSupervision } from '@/contexts/EnhancedSupervisionContext';
 
+// Extend window interface for AI Team Dashboard
+declare global {
+  interface Window {
+    updateAITeamDashboard?: (data: any) => void;
+  }
+}
+
 interface StatusBarProps {
   activeFile?: string | null;
   isConnected?: boolean;
@@ -322,8 +329,65 @@ export default function StatusBar({
   };
 
   const handleDocs = async () => {
-    // Open the documentation page in a new tab
-    window.open('/documentation', '_blank');
+    // Open the documentation intelligence system in a new tab
+    window.open('http://localhost:3000/docs-manager', '_blank');
+  };
+
+  const handleAITeam = async () => {
+    setIsLoading('ai-team');
+    
+    try {
+      // Prompt user for project requirement
+      const requirement = prompt('What would you like the AI Team to build? (e.g., "Create a hello world React component")');
+      
+      if (!requirement) {
+        setIsLoading(null);
+        return;
+      }
+      
+      showToast('🚀 Spawning AI Team with Claude Code Bridge...');
+      
+      // Call the Claude Code Bridge API endpoint
+      const response = await fetch('/api/claude-bridge/spawn', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          requirement,
+          sessionId
+        })
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok && data.success) {
+        showToast(`✅ AI Team spawned successfully! ${data.agents?.length || 0} agents working...`);
+        console.log('🤖 Claude Code Bridge Team:', data);
+        
+        // Update the Preview Panel with team data if it's visible
+        if (window.updateAITeamDashboard) {
+          window.updateAITeamDashboard({
+            teamId: data.teamId,
+            status: data.status,
+            agents: data.agents,
+            progress: { overall: 0 },
+            generatedFiles: 0,
+            requirement: requirement,
+            costSavings: data.costSavings,
+            executionType: data.executionType,
+            automatedExecution: true,
+            usedBridge: true,
+            workflow: data.workflow
+          });
+        }
+      } else {
+        throw new Error(data.error || 'Failed to spawn AI team');
+      }
+    } catch (error) {
+      console.error('Failed to spawn AI team:', error);
+      showToast(`⚠️ Failed to spawn AI team: ${error.message}`);
+    }
+    
+    setIsLoading(null);
   };
 
   // Discover Panel Functions
@@ -554,6 +618,36 @@ export default function StatusBar({
             <FileText className="w-4 h-4" />
           )}
           <span>Session Summary</span>
+        </button>
+
+        {/* AI Team Button - Claude Code Bridge */}
+        <button
+          onClick={handleAITeam}
+          disabled={isLoading === 'ai-team'}
+          className="flex items-center gap-1.5 px-4 py-1.5 text-sm font-medium text-text-secondary hover:text-text-primary rounded transition-all duration-200 disabled:opacity-50"
+          style={{
+            background: 'transparent padding-box, linear-gradient(135deg, #10b981, #06b6d4) border-box',
+            border: '1px solid transparent',
+            borderRadius: '6px',
+          }}
+          onMouseEnter={(e) => {
+            if (isLoading !== 'ai-team') {
+              e.currentTarget.style.borderColor = '#10b981';
+              e.currentTarget.style.boxShadow = '0 0 20px rgba(16, 185, 129, 0.3)';
+            }
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.borderColor = 'transparent';
+            e.currentTarget.style.boxShadow = 'none';
+          }}
+          title="Spawn AI Team with Claude Code Bridge (Cost-Free)"
+        >
+          {isLoading === 'ai-team' ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : (
+            <Sparkles className="w-4 h-4" />
+          )}
+          <span>AI Team</span>
         </button>
 
         {/* Docs Button */}
@@ -800,7 +894,7 @@ export default function StatusBar({
               href="/features" 
               className="flex items-center gap-2 p-2 rounded border border-border-default hover:border-coder1-cyan hover:bg-bg-tertiary transition-all group"
             >
-              <Sparkles className="w-4 h-4 text-green-400 group-hover:text-green-300" />
+              <Sparkles className="w-4 h-4 text-coder1-cyan group-hover:text-cyan-300" />
               <span className="text-xs text-text-secondary group-hover:text-text-primary">Features</span>
             </Link>
           </div>

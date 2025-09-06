@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { BookOpen, Users, Eye, X } from '@/lib/icons';
 import { colors, glows } from '@/lib/design-tokens';
 import CodebaseWiki from '@/components/codebase/CodebaseWiki';
+import AITeamDashboard from '@/components/preview/AITeamDashboard';
 
 type PreviewMode = 'dashboard' | 'wiki' | 'preview' | 'terminal';
 
@@ -161,8 +162,13 @@ const PreviewPanel = React.memo(function PreviewPanel({
       </div>
       
       {/* Tabs */}
-      <div className="flex items-center justify-between border-b border-border-default px-4 h-12 shrink-0">
+      <div className="flex items-center justify-between px-4 h-12 shrink-0">
         <div className="flex items-center gap-1">
+          {renderTabButton(
+            'preview',
+            <Eye className="w-4 h-4" />,
+            'Preview'
+          )}
           {renderTabButton(
             'dashboard',
             <Users className="w-4 h-4" />,
@@ -172,11 +178,6 @@ const PreviewPanel = React.memo(function PreviewPanel({
             'wiki',
             <BookOpen className="w-4 h-4" />,
             'Codebase Wiki'
-          )}
-          {renderTabButton(
-            'preview',
-            <Eye className="w-4 h-4" />,
-            'Preview'
           )}
         </div>
         
@@ -199,97 +200,8 @@ const PreviewPanel = React.memo(function PreviewPanel({
           <>
             {/* Agent Dashboard - REAL AI INTEGRATION */}
             {mode === 'dashboard' && (
-              <div className="h-full p-4 overflow-auto">
-                {error && (
-                  <div className="mb-4 p-3 bg-error/10 border border-error/20 rounded-lg text-error text-sm">
-                    {error}
-                  </div>
-                )}
-                
-                {teamData ? (
-                  <div className="space-y-4">
-                    {/* Team Overview - Clickable to navigate to full dashboard */}
-                    <div 
-                      className="glass-card p-4 rounded-lg border border-border-default hover:border-coder1-cyan/70 transition-all duration-200 cursor-pointer hover:shadow-lg hover:shadow-coder1-cyan/20"
-                      onClick={() => {
-                        // Navigate to full agent dashboard
-                        window.open('/agent-dashboard', '_blank');
-                      }}
-                      title="Click to open full Agent Dashboard"
-                    >
-                      <div className="flex items-center justify-between mb-3">
-                        <h3 className="text-sm font-semibold text-coder1-cyan">
-                          🚀 AI Team Status
-                        </h3>
-                        <div className="flex items-center gap-1 text-xs text-text-muted">
-                          <span>View Full Dashboard</span>
-                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                          </svg>
-                        </div>
-                      </div>
-                      <div className="grid grid-cols-2 gap-4 text-sm">
-                        <div>
-                          <span className="text-text-muted">Project:</span>
-                          <p className="text-text-primary font-medium">{teamData.requirement}</p>
-                        </div>
-                        <div>
-                          <span className="text-text-muted">Overall Progress:</span>
-                          <p className="text-coder1-cyan font-bold">{teamData.progress.overall}%</p>
-                        </div>
-                        <div>
-                          <span className="text-text-muted">Status:</span>
-                          <p className="text-text-primary font-medium capitalize">{teamData.status}</p>
-                        </div>
-                        <div>
-                          <span className="text-text-muted">Files Generated:</span>
-                          <p className="text-coder1-purple font-bold">{teamData.generatedFiles}</p>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Agent Status Cards */}
-                    <div className="glass-card p-4 rounded-lg border border-border-default">
-                      <h3 className="text-sm font-semibold text-coder1-cyan mb-3">
-                        🤖 {teamData.agents.length} Active Agents
-                      </h3>
-                      <div className="space-y-2">
-                        {teamData.agents.map((agent) => (
-                          <AgentStatusCard
-                            key={agent.id}
-                            name={agent.name}
-                            status={agent.status}
-                            task={agent.currentTask}
-                            progress={agent.progress}
-                            role={agent.role}
-                          />
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="h-full flex flex-col items-center justify-center text-center">
-                    <div className="mb-4">
-                      <Users className="w-16 h-16 text-text-muted mx-auto mb-2" />
-                      <h3 className="text-lg font-semibold text-text-primary mb-2">
-                        No AI Team Active
-                      </h3>
-                      <p className="text-text-muted text-sm max-w-xs">
-                        Start a new AI development team to see real-time agent status here.
-                      </p>
-                    </div>
-                    
-                    <button 
-                      className="px-4 py-2 bg-coder1-cyan hover:bg-coder1-cyan/80 text-black font-medium rounded-lg transition-colors"
-                      onClick={() => {
-                        // Navigate to team creation - could emit event or use router
-                        window.dispatchEvent(new CustomEvent('navigate-to-team-creation'));
-                      }}
-                    >
-                      Spawn AI Team
-                    </button>
-                  </div>
-                )}
+              <div className="h-full overflow-hidden">
+                <AITeamDashboard teamData={teamData} />
               </div>
             )}
 
@@ -302,33 +214,147 @@ const PreviewPanel = React.memo(function PreviewPanel({
 
             {/* Live Preview */}
             {mode === 'preview' && (
-              <div className="h-full bg-black p-4 pt-12 flex flex-col items-start">
-                <div className="w-full max-w-md">
-                  <h2 className="text-white text-2xl font-bold mb-4">Live Preview Mode</h2>
-                  <p className="text-gray-400 text-sm mb-6">
-                    This preview will display your HTML, React, or web content as you edit it in the editor.
-                  </p>
-                  <p className="text-gray-500 text-xs mb-16 italic">
-                    Type claude in the terminal below to begin
-                  </p>
-                  
-                  <div className="border border-gray-600 rounded-lg p-4 mb-6 bg-gray-900">
-                    <h3 className="text-white text-lg font-semibold mb-3">Demo Component</h3>
-                    <p className="text-gray-400 text-sm mb-4">
-                      When you edit HTML or React files, they will render here automatically.
-                    </p>
-                    
-                    <div className="flex items-center gap-3">
-                      <button className="px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-medium rounded-lg hover:from-blue-600 hover:to-purple-700 transition-all">
-                        Test Button
+              <div className="h-full bg-gradient-to-br from-bg-primary via-bg-secondary/50 to-bg-primary">
+                {/* Professional Dark Theme Preview Container */}
+                <div className="h-full flex flex-col">
+                  {/* Simplified Preview Actions Bar */}
+                  <div className="flex items-center justify-end px-4 py-2 bg-transparent">
+                    {/* Preview Actions Only */}
+                    <div className="flex items-center gap-2">
+                      <button className="p-2 hover:bg-coder1-cyan/10 rounded-lg transition-all duration-200 group" title="Refresh Preview">
+                        <svg className="w-4 h-4 text-text-muted group-hover:text-coder1-cyan" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
                       </button>
-                      <span className="text-green-400 text-sm font-medium">Ready</span>
+                      <button className="p-2 hover:bg-coder1-purple/10 rounded-lg transition-all duration-200 group" title="Open in New Window">
+                        <svg className="w-4 h-4 text-text-muted group-hover:text-coder1-purple" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                        </svg>
+                      </button>
                     </div>
                   </div>
                   
-                  <p className="text-gray-500 text-xs">
-                    Supports: HTML, CSS, JavaScript, React, Vue, and more
-                  </p>
+                  {/* Main Preview Area */}
+                  <div className="flex-1 relative overflow-hidden">
+                    {/* Animated Background Gradient */}
+                    <div className="absolute inset-0">
+                      <div className="absolute inset-0 bg-gradient-to-br from-coder1-cyan/10 via-transparent to-coder1-purple/10 animate-pulse-slow" />
+                      <div className="absolute top-20 left-20 w-96 h-96 bg-coder1-cyan/5 rounded-full blur-3xl" />
+                      <div className="absolute bottom-20 right-20 w-96 h-96 bg-coder1-purple/5 rounded-full blur-3xl" />
+                    </div>
+                    
+                    {/* Dark Browser Frame */}
+                    <div className="relative h-full flex items-center justify-center p-6">
+                      <div className="w-full max-w-5xl h-full bg-bg-secondary/95 backdrop-blur-xl rounded-xl border border-coder1-cyan/30 shadow-2xl shadow-coder1-cyan/10 overflow-hidden">
+                        {/* Dark Browser Chrome */}
+                        <div className="bg-bg-primary/80 border-b border-coder1-cyan/20 px-4 py-2.5 flex items-center gap-3">
+                          <div className="flex gap-2">
+                            <div className="w-3 h-3 bg-red-500/80 rounded-full hover:bg-red-500 transition-colors cursor-pointer" />
+                            <div className="w-3 h-3 bg-yellow-500/80 rounded-full hover:bg-yellow-500 transition-colors cursor-pointer" />
+                            <div className="w-3 h-3 bg-green-500/80 rounded-full hover:bg-green-500 transition-colors cursor-pointer" />
+                          </div>
+                          <div className="flex-1 bg-bg-primary/50 rounded-lg px-3 py-1 border border-border-default/50">
+                            <span className="text-xs text-text-muted font-mono">Preview Window</span>
+                          </div>
+                          <div className="flex gap-2">
+                            <button className="p-1 hover:bg-bg-primary/50 rounded transition-colors">
+                              <svg className="w-3.5 h-3.5 text-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                              </svg>
+                            </button>
+                          </div>
+                        </div>
+                        
+                        {/* Dark Content Area */}
+                        <div className="h-[calc(100%-44px)] bg-gradient-to-b from-bg-primary to-bg-secondary/95 p-8 overflow-auto">
+                          {/* Empty State with Dark Theme */}
+                          <div className="h-full flex flex-col items-center justify-center text-center">
+                            {/* Glowing Icon */}
+                            <div className="mb-8 relative">
+                              <div className="absolute inset-0 bg-gradient-to-br from-coder1-cyan to-coder1-purple rounded-3xl blur-2xl opacity-50 animate-pulse-slow" />
+                              <div className="relative w-24 h-24 bg-gradient-to-br from-coder1-cyan via-coder1-purple to-coder1-cyan rounded-3xl flex items-center justify-center shadow-lg shadow-coder1-cyan/30">
+                                <Eye className="w-12 h-12 text-white drop-shadow-lg" />
+                              </div>
+                            </div>
+                            
+                            <h3 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-coder1-cyan to-coder1-purple mb-4">
+                              Live Preview Mode
+                            </h3>
+                            
+                            <p className="text-text-secondary mb-8 max-w-lg leading-relaxed">
+                              Your web content will render here in real-time as you code. 
+                              Open any HTML, React, or web file to see it come to life.
+                            </p>
+                            
+                            {/* Features Grid */}
+                            <div className="grid grid-cols-2 gap-4 mb-8 max-w-md">
+                              <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-coder1-cyan/5 to-coder1-cyan/10 rounded-lg border border-coder1-cyan/30">
+                                <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+                                <span className="text-sm text-text-secondary">Hot Reload</span>
+                              </div>
+                              <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-coder1-purple/5 to-coder1-purple/10 rounded-lg border border-coder1-purple/30">
+                                <svg className="w-4 h-4 text-coder1-purple" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                                </svg>
+                                <span className="text-sm text-text-secondary">Instant Updates</span>
+                              </div>
+                              <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-coder1-cyan/5 to-coder1-cyan/10 rounded-lg border border-coder1-cyan/30">
+                                <svg className="w-4 h-4 text-coder1-cyan" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+                                </svg>
+                                <span className="text-sm text-text-secondary">All Frameworks</span>
+                              </div>
+                              <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-coder1-purple/5 to-coder1-purple/10 rounded-lg border border-coder1-purple/30">
+                                <svg className="w-4 h-4 text-coder1-purple" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
+                                </svg>
+                                <span className="text-sm text-text-secondary">Live Editing</span>
+                              </div>
+                            </div>
+                            
+                            {/* Supported Technologies */}
+                            <div className="flex flex-wrap gap-2 justify-center mb-8">
+                              {['HTML', 'CSS', 'JavaScript', 'React', 'Vue', 'TypeScript', 'Next.js', 'Tailwind'].map(tech => (
+                                <span 
+                                  key={tech} 
+                                  className="px-3 py-1 bg-gradient-to-r from-coder1-cyan/10 to-coder1-purple/10 text-text-secondary border border-coder1-cyan/20 rounded-full text-xs font-medium hover:border-coder1-cyan/40 transition-colors"
+                                >
+                                  {tech}
+                                </span>
+                              ))}
+                            </div>
+                            
+                            {/* Call to Action */}
+                            <div className="px-6 py-4 bg-gradient-to-r from-coder1-cyan/10 to-coder1-purple/10 rounded-xl border border-coder1-cyan/30 max-w-md">
+                              <p className="text-sm text-text-primary">
+                                <span className="text-coder1-cyan font-semibold">Quick Start:</span>
+                                <span className="text-text-secondary ml-2">
+                                  Open a file or type <code className="px-2 py-0.5 bg-bg-tertiary rounded text-coder1-purple font-mono text-xs">claude</code> in the terminal to begin
+                                </span>
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Status Bar */}
+                  <div className="px-4 py-2 bg-bg-primary/50 backdrop-blur-sm border-t border-coder1-cyan/20 flex items-center justify-between">
+                    <div className="flex items-center gap-4 text-xs">
+                      <span className="text-text-muted">Preview Mode</span>
+                      <span className="text-green-400 flex items-center gap-1.5">
+                        <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse shadow-glow-green" />
+                        Connected
+                      </span>
+                      <span className="text-coder1-cyan">Ready</span>
+                    </div>
+                    <div className="flex items-center gap-4 text-xs text-text-muted font-mono">
+                      <span>1920 × 1080</span>
+                      <span className="text-coder1-purple">100%</span>
+                      <span>60 FPS</span>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}

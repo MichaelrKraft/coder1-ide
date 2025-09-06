@@ -1,14 +1,14 @@
 /**
  * StatusBarActions - Action Buttons Component
  * 
- * Contains all the action buttons: CheckPoint, TimeLine, Export, Session Summary, Docs
+ * Contains all the action buttons: CheckPoint, TimeLine, Session Summary, Docs
  * Extracted from the original StatusBar for better separation of concerns
  */
 
 'use client';
 
 import React from 'react';
-import { Save, Clock, Download, FileText, BookOpen, Loader2 } from '@/lib/icons';
+import { Save, Clock, FileText, BookOpen, Loader2 } from '@/lib/icons';
 import StatusBarModals from './StatusBarModals';
 import { useIDEStore } from '@/stores/useIDEStore';
 import { useSessionStore } from '@/stores/useSessionStore';
@@ -90,6 +90,16 @@ const StatusBarActions = React.memo(function StatusBarActions({
       });
       
       if (response.ok) {
+        const data = await response.json();
+        
+        // Dispatch event to notify Sessions panel to refresh
+        window.dispatchEvent(new CustomEvent('checkpointCreated', { 
+          detail: { 
+            checkpoint: data.checkpoint,
+            sessionId: data.sessionId 
+          } 
+        }));
+        
         addToast({
           message: '✅ Checkpoint saved successfully',
           type: 'success'
@@ -131,50 +141,13 @@ const StatusBarActions = React.memo(function StatusBarActions({
     }
   };
 
-  const handleExport = async () => {
-    try {
-      const response = await fetch('/api/export', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          sessionId,
-          format: 'zip',
-          includeNodeModules: false,
-          includeGitHistory: true
-        })
-      });
-      
-      if (response.ok) {
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `export-${sessionId}-${Date.now()}.zip`;
-        a.click();
-        window.URL.revokeObjectURL(url);
-        addToast({
-          message: '📦 Export completed successfully',
-          type: 'success'
-        });
-        console.log('📦 Project exported successfully');
-      } else {
-        throw new Error('Failed to export');
-      }
-    } catch (error) {
-      console.error('Failed to export project:', error);
-      addToast({
-        message: '⚠️ Failed to export project',
-        type: 'error'
-      });
-    }
-  };
 
   const handleSessionSummary = () => {
     openModal('sessionSummary');
   };
 
   const handleDocs = () => {
-    window.open('http://localhost:3000/docs-manager', '_blank');
+    window.open('/docs-manager', '_blank');
   };
 
   const isLoadingState = (state: string) => loading === state;
@@ -220,24 +193,6 @@ const StatusBarActions = React.memo(function StatusBarActions({
           </button>
         </div>
 
-        {/* Export Button */}
-        <div className="p-[1px] rounded-md" style={{background: 'linear-gradient(135deg, #6366f1, #8b5cf6)'}}>
-          <button
-            onClick={handleExport}
-            disabled={isLoadingState('export')}
-            className="flex items-center gap-1.5 px-4 py-1.5 text-sm font-medium text-text-secondary hover:text-text-primary rounded transition-all duration-200 disabled:opacity-50 bg-bg-secondary w-full"
-            onMouseEnter={(e) => applyHoverEffect(e, isLoadingState('export'))}
-            onMouseLeave={removeHoverEffect}
-            title="Export your project"
-          >
-            {isLoadingState('export') ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <Download className="w-4 h-4" />
-            )}
-            <span>Export</span>
-          </button>
-        </div>
 
         {/* Session Summary Button */}
         <div className="p-[1px] rounded-md" style={{background: 'linear-gradient(135deg, #6366f1, #8b5cf6)'}}>

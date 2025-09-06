@@ -1,17 +1,17 @@
 {
   "byAgent": {
-    "test-agent": {
-      "executions": 1,
-      "successRate": 100,
-      "avgDuration": 1000,
-      "totalCost": 0.01,
-      "lastUsed": "2025-09-04T16:46:50.912Z"
+    "claude-general": {
+      "executions": 2,
+      "successRate": 50,
+      "avgDuration": 205205.5,
+      "totalCost": 0,
+      "lastUsed": "2025-09-04T19:50:32.904Z"
     }
   },
   "overall": {
-    "totalExecutions": 1,
-    "successRate": 100,
-    "avgDuration": 1000,
-    "totalCost": 0.01
+    "totalExecutions": 2,
+    "successRate": 50,
+    "avgDuration": 205205.5,
+    "totalCost": 0
   }
 }

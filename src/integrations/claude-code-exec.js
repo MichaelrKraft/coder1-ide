@@ -53,16 +53,12 @@ class ClaudeCodeExec extends EventEmitter {
                 return;
             }
             
-            // Remove ANTHROPIC_API_KEY from environment to use CLI auth
-            const cleanEnv = { ...process.env };
-            delete cleanEnv.ANTHROPIC_API_KEY;
-            delete cleanEnv.CLAUDE_API_KEY;
+            // Use cat to pipe file content to Claude CLI with --print flag for non-interactive mode
+            const shellCommand = `cat "${tempFile}" | ${this.claudePath} --print`;
             
-            // Use cat to pipe file content to Claude CLI
-            const shellCommand = `cat "${tempFile}" | ${this.claudePath}`;
-            
+            // Use the current environment - Claude CLI is already authenticated
             const claudeProcess = spawn('sh', ['-c', shellCommand], {
-                env: cleanEnv,
+                env: process.env,
                 stdio: ['ignore', 'pipe', 'pipe']
             });
 
