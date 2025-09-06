@@ -28,12 +28,12 @@ export default function HeroSection() {
         </div>
       </div>
       
-      {/* Hero Background Gradients */}
-      <div className="hero-gradient">
+      {/* Hero Background Gradients - Disabled for now */}
+      {/* <div className="hero-gradient">
         <div className="hero-top-line"></div>
         <div className="hero-cone-left"></div>
         <div className="hero-cone-right"></div>
-      </div>
+      </div> */}
       {/* Logo - responsive sizing with zoom-in from back animation */}
       <div className="relative z-10 mb-2 mt-2">
         <div 

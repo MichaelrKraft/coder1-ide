@@ -342,6 +342,67 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
     };
   }, []); // Empty dependency array - only run on mount/unmount
 
+  // Connect to Socket.IO when session is ready
+  useEffect(() => {
+    if (!sessionId || !terminalReady || !xtermRef.current) {
+      console.log('🔌 Waiting for terminal prerequisites:', { sessionId, terminalReady, hasXterm: !!xtermRef.current });
+      return;
+    }
+
+    console.log('🚀 Connecting to Socket.IO for terminal session:', sessionId);
+    
+    const socket = getSocket();
+    socketRef.current = socket;
+
+    // Create terminal session on the backend
+    socket.emit('terminal:create', { 
+      id: sessionId,
+      cols: 130,
+      rows: 30
+    });
+
+    // Handle terminal creation confirmation
+    socket.on('terminal:created', ({ sessionId: id, pid }) => {
+      console.log('✅ Terminal created on backend:', { id, pid });
+      if (xtermRef.current) {
+        xtermRef.current.write('\r\n✅ Connected to backend terminal\r\n');
+      }
+    });
+
+    // Handle terminal data from backend
+    socket.on('terminal:data', ({ id, data }) => {
+      if (id === sessionId && xtermRef.current) {
+        xtermRef.current.write(data);
+      }
+    });
+
+    // Handle terminal errors
+    socket.on('terminal:error', ({ message }) => {
+      console.error('❌ Terminal error:', message);
+      if (xtermRef.current) {
+        xtermRef.current.write(`\r\n❌ Terminal error: ${message}\r\n`);
+      }
+    });
+
+    // Send input from terminal to backend
+    if (xtermRef.current) {
+      const disposable = xtermRef.current.onData((data) => {
+        socket.emit('terminal:input', { 
+          id: sessionId, 
+          data 
+        });
+      });
+
+      // Cleanup
+      return () => {
+        disposable.dispose();
+        socket.off('terminal:created');
+        socket.off('terminal:data');
+        socket.off('terminal:error');
+      };
+    }
+  }, [sessionId, terminalReady]);
+
   useEffect(() => {
     console.log('🖥️ INITIALIZING XTERM...');
     if (!terminalRef.current) {
@@ -395,10 +456,7 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
             term.writeln('');
             
             // Don't show initial prompt - backend will provide it
-            // Connect to backend immediately
-            if (sessionId && terminalReady) {
-              connectToBackend(term);
-            }
+            // Note: Connection to backend will happen via useEffect when both sessionId and terminalReady are set
           } catch (error) {
             console.log('FitAddon error (non-critical):', error);
           }
@@ -559,6 +617,14 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
     sessionIdForVoiceRef.current = sessionId;
     console.log('📝 Updated sessionIdForVoiceRef:', sessionId);
   }, [sessionId]);
+
+  // Connect to backend when both terminal and session are ready
+  useEffect(() => {
+    if (sessionId && terminalReady && xtermRef.current && !isConnected) {
+      console.log('🚀 Both terminal and session ready, connecting to backend...');
+      connectToBackend(xtermRef.current);
+    }
+  }, [sessionId, terminalReady, isConnected]);
 
   // Store isConnected in a ref for use in callbacks
   const isConnectedRef = useRef(false);

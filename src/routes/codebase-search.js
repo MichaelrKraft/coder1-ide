@@ -48,12 +48,19 @@ codebaseWiki.on('indexing-error', (error) => {
  */
 router.get('/search', async (req, res) => {
     try {
-        const { q: query, limit = 20, type } = req.query;
+        const { 
+            q: query, 
+            limit = 20, 
+            type,
+            minComplexity,
+            maxComplexity,
+            complexity 
+        } = req.query;
         
         if (!query) {
             return res.status(400).json({
                 error: 'Query parameter "q" is required',
-                example: '/api/codebase/search?q=getUserProfile'
+                example: '/api/codebase/search?q=getUserProfile&complexity=high'
             });
         }
         
@@ -63,6 +70,28 @@ router.get('/search', async (req, res) => {
             maxResults: parseInt(limit),
             type
         });
+        
+        // Filter by complexity if requested
+        if (minComplexity || maxComplexity || complexity) {
+            const min = minComplexity ? parseInt(minComplexity) : 0;
+            const max = maxComplexity ? parseInt(maxComplexity) : Infinity;
+            
+            // Handle complexity categories
+            let complexityRange = { min, max };
+            if (complexity === 'low') {
+                complexityRange = { min: 1, max: 5 };
+            } else if (complexity === 'medium') {
+                complexityRange = { min: 6, max: 10 };
+            } else if (complexity === 'high') {
+                complexityRange = { min: 11, max: Infinity };
+            }
+            
+            // Filter functions by complexity
+            results.functions = results.functions.filter(func => {
+                const funcComplexity = func.complexity || 1;
+                return funcComplexity >= complexityRange.min && funcComplexity <= complexityRange.max;
+            });
+        }
         
         // Calculate total results
         const totalResults = Object.values(results).reduce((sum, arr) => sum + arr.length, 0);

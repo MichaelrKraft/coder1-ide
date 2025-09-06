@@ -142,7 +142,9 @@ class CodebaseWiki extends EventEmitter {
             '**/*.jsx',
             '**/*.ts',
             '**/*.tsx',
-            '**/*.mjs'
+            '**/*.mjs',
+            '**/*.md',
+            '**/*.mdx'
         ];
         
         const files = [];
@@ -174,8 +176,15 @@ class CodebaseWiki extends EventEmitter {
             return; // File unchanged, skip parsing
         }
         
+        // Check if it's a markdown file
+        const ext = path.extname(filePath).toLowerCase();
+        if (ext === '.md' || ext === '.mdx') {
+            await this.indexMarkdownFile(filePath, relativePath, content, hash);
+            return;
+        }
+        
         try {
-            // Parse AST
+            // Parse AST for code files
             const ast = parse(content, this.parserOptions);
             
             const fileInfo = {
@@ -283,6 +292,64 @@ class CodebaseWiki extends EventEmitter {
             
             this.index.files.set(relativePath, fileInfo);
         }
+    }
+    
+    /**
+     * Index a markdown file
+     */
+    async indexMarkdownFile(filePath, relativePath, content, hash) {
+        const lines = content.split('\n');
+        
+        // Extract title (first # heading or filename)
+        let title = path.basename(relativePath, path.extname(relativePath));
+        const titleMatch = content.match(/^#\s+(.+)$/m);
+        if (titleMatch) {
+            title = titleMatch[1];
+        }
+        
+        // Extract all headings for structure
+        const headings = [];
+        const headingRegex = /^(#{1,6})\s+(.+)$/gm;
+        let match;
+        while ((match = headingRegex.exec(content)) !== null) {
+            headings.push({
+                level: match[1].length,
+                text: match[2],
+                line: content.substring(0, match.index).split('\n').length
+            });
+        }
+        
+        // Extract code blocks for potential function references
+        const codeBlocks = [];
+        const codeBlockRegex = /```(\w+)?\n([\s\S]*?)```/g;
+        while ((match = codeBlockRegex.exec(content)) !== null) {
+            codeBlocks.push({
+                language: match[1] || 'unknown',
+                code: match[2],
+                line: content.substring(0, match.index).split('\n').length
+            });
+        }
+        
+        const fileInfo = {
+            path: relativePath,
+            absolutePath: filePath,
+            hash,
+            size: content.length,
+            lines: lines.length,
+            functions: [],
+            classes: [],
+            variables: [],
+            imports: [],
+            exports: [],
+            lastModified: (await fs.stat(filePath)).mtime.toISOString(),
+            indexedAt: new Date().toISOString(),
+            type: 'markdown',
+            title,
+            headings,
+            codeBlocks: codeBlocks.length
+        };
+        
+        this.index.files.set(relativePath, fileInfo);
     }
     
     /**
