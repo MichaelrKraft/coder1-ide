@@ -5,7 +5,6 @@ import { FolderTree, Clock, Brain } from 'lucide-react';
 import FileExplorer from './FileExplorer';
 import SessionsPanel from './SessionsPanel';
 import ContextMemoryPanel from './ContextMemoryPanel';
-import SimpleMemoryPanel from './SimpleMemoryPanel';
 
 interface LeftPanelProps {
   onFileSelect: (path: string) => void;
@@ -124,7 +123,7 @@ export default function LeftPanel({ onFileSelect, activeFile }: LeftPanelProps) 
         ) : activeTab === 'sessions' ? (
           <SessionsPanel isVisible={true} />
         ) : (
-          <SimpleMemoryPanel />
+          <ContextMemoryPanel />
         )}
       </div>
       

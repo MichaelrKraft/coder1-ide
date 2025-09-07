@@ -9,7 +9,7 @@ import { Users, Zap, StopCircle, Brain, Eye, Code2, Mic, MicOff, Speaker, Chevro
 import TerminalSettings, { TerminalSettingsState } from './TerminalSettings';
 import { glows, spacing } from '@/lib/design-tokens';
 import { getSocket } from '@/lib/socket';
-import ErrorDoctor from './ErrorDoctor';
+// import ErrorDoctor from './ErrorDoctor'; // Removed to fix terminal overlap issue
 import { soundAlertService, SoundPreset } from '@/lib/sound-alert-service';
 import { useEnhancedSupervision } from '@/contexts/EnhancedSupervisionContext';
 import SupervisionConfigModal from '@/components/supervision/SupervisionConfigModal';
@@ -48,6 +48,8 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
   const fitAddonRef = useRef<FitAddon | null>(null);
   const sessionIdForVoiceRef = useRef<string | null>(null); // Move this up here
   const sessionCreatedRef = useRef(false); // Track if session was already created
+  const onDataDisposableRef = useRef<any>(null); // Store onData disposable
+  const connectionInProgressRef = useRef(false); // Prevent concurrent connections
   const [isConnected, setIsConnected] = useState(false);
   const [agentsRunning, setAgentsRunning] = useState(false);
   const [voiceListening, setVoiceListening] = useState(false);
@@ -342,66 +344,8 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
     };
   }, []); // Empty dependency array - only run on mount/unmount
 
-  // Connect to Socket.IO when session is ready
-  useEffect(() => {
-    if (!sessionId || !terminalReady || !xtermRef.current) {
-      console.log('🔌 Waiting for terminal prerequisites:', { sessionId, terminalReady, hasXterm: !!xtermRef.current });
-      return;
-    }
-
-    console.log('🚀 Connecting to Socket.IO for terminal session:', sessionId);
-    
-    const socket = getSocket();
-    socketRef.current = socket;
-
-    // Create terminal session on the backend
-    socket.emit('terminal:create', { 
-      id: sessionId,
-      cols: 130,
-      rows: 30
-    });
-
-    // Handle terminal creation confirmation
-    socket.on('terminal:created', ({ sessionId: id, pid }) => {
-      console.log('✅ Terminal created on backend:', { id, pid });
-      if (xtermRef.current) {
-        xtermRef.current.write('\r\n✅ Connected to backend terminal\r\n');
-      }
-    });
-
-    // Handle terminal data from backend
-    socket.on('terminal:data', ({ id, data }) => {
-      if (id === sessionId && xtermRef.current) {
-        xtermRef.current.write(data);
-      }
-    });
-
-    // Handle terminal errors
-    socket.on('terminal:error', ({ message }) => {
-      console.error('❌ Terminal error:', message);
-      if (xtermRef.current) {
-        xtermRef.current.write(`\r\n❌ Terminal error: ${message}\r\n`);
-      }
-    });
-
-    // Send input from terminal to backend
-    if (xtermRef.current) {
-      const disposable = xtermRef.current.onData((data) => {
-        socket.emit('terminal:input', { 
-          id: sessionId, 
-          data 
-        });
-      });
-
-      // Cleanup
-      return () => {
-        disposable.dispose();
-        socket.off('terminal:created');
-        socket.off('terminal:data');
-        socket.off('terminal:error');
-      };
-    }
-  }, [sessionId, terminalReady]);
+  // This useEffect has been removed to prevent duplicate socket connections
+  // All socket connection logic is now handled in connectToBackend function
 
   useEffect(() => {
     console.log('🖥️ INITIALIZING XTERM...');
@@ -430,7 +374,6 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
         scrollback: 10000, // Limit scrollback buffer
         fastScrollModifier: 'ctrl', // Enable fast scrolling with Ctrl key
         smoothScrollDuration: 0, // Disable smooth scrolling animations
-        rendererType: 'canvas', // Use canvas renderer for better performance
         scrollOnUserInput: true,
         scrollSensitivity: 1,
       });
@@ -455,7 +398,7 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
             term.writeln('──────────────────────────────────────────────');
             term.writeln('');
             
-            // Don't show initial prompt - backend will provide it
+            // Don&apos;t show initial prompt - backend will provide it
             // Note: Connection to backend will happen via useEffect when both sessionId and terminalReady are set
           } catch (error) {
             console.log('FitAddon error (non-critical):', error);
@@ -555,6 +498,11 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
             }
             // Clear any pending buffer
             outputBufferRef.current = [];
+            // Dispose of onData handler
+            if (onDataDisposableRef.current) {
+              onDataDisposableRef.current.dispose();
+              onDataDisposableRef.current = null;
+            }
             if (term) {
               term.dispose();
             }
@@ -569,7 +517,7 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
         console.log('Terminal container not ready, retrying...');
         // Retry after a short delay if container isn't ready
         setTimeout(() => {
-          if (terminalRef.current) {
+          if (terminalRef.current && !xtermRef.current) {
             term.open(terminalRef.current);
             fitAddon.fit();
             term.focus();
@@ -620,7 +568,7 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
 
   // Connect to backend when both terminal and session are ready
   useEffect(() => {
-    if (sessionId && terminalReady && xtermRef.current && !isConnected) {
+    if (sessionId && terminalReady && xtermRef.current && !isConnected && !connectionInProgressRef.current) {
       console.log('🚀 Both terminal and session ready, connecting to backend...');
       connectToBackend(xtermRef.current);
     }
@@ -688,7 +636,7 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
               }
             }
             
-            // Don't write to terminal UI directly - let the backend handle it
+            // Don&apos;t write to terminal UI directly - let the backend handle it
             // The text will appear when the backend processes it
             
             // Get the socket from the global socket service
@@ -846,10 +794,20 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
 
   const connectToBackend = (term: XTerm) => {
     console.log('🔌 CONNECTING TO BACKEND:', { sessionId, terminalReady });
+    
+    // Prevent concurrent connections
+    if (connectionInProgressRef.current) {
+      console.log('⚠️ Connection already in progress, skipping...');
+      return;
+    }
+    
     if (!sessionId || !terminalReady) {
       console.log('❌ Session not ready yet:', { sessionId, terminalReady });
       return;
     }
+    
+    // Mark connection as in progress
+    connectionInProgressRef.current = true;
 
     // Get Socket.IO instance to connect to Express backend
     console.log('🔧 Getting Socket.IO instance...');
@@ -983,7 +941,12 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
     socket.on('terminal:created', ({ id }: { id: string }) => {
       if (id === sessionId) {
         console.log('✅ Terminal connected to Express backend');
+        // Write connection message to terminal
+        if (term) {
+          term.write('\r\n✅ Connected to backend terminal\r\n');
+        }
         setIsConnected(true);
+        connectionInProgressRef.current = false; // Connection complete
         
         // Send initial resize
         if (fitAddonRef.current && xtermRef.current) {
@@ -998,6 +961,7 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
       console.error('Terminal error:', message);
       term.writeln(`\r\n❌ Terminal error: ${message}`);
       setIsConnected(false);
+      connectionInProgressRef.current = false; // Connection failed
     });
 
     // Handle Claude session events
@@ -1045,7 +1009,14 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
     });
 
     // Set up terminal input handling - send to backend
-    term.onData((data) => {
+    // Clean up any existing handler first
+    if (onDataDisposableRef.current) {
+      onDataDisposableRef.current.dispose();
+      onDataDisposableRef.current = null;
+    }
+    
+    // Create new handler and store the disposable
+    onDataDisposableRef.current = term.onData((data) => {
       // Send all input to backend via Socket.IO
       if (sessionId && socket.connected) {
         socket.emit('terminal:input', { 
@@ -1113,12 +1084,7 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
   };
 
 
-  // Add effect to connect to backend when session is ready
-  useEffect(() => {
-    if (sessionId && terminalReady && xtermRef.current && !socketRef.current) {
-      connectToBackend(xtermRef.current);
-    }
-  }, [sessionId, terminalReady]);
+  // Removed duplicate useEffect - connection is already handled above
 
   // Handle AI Team spawn
   const handleSpawnAgents = async () => {
@@ -1171,7 +1137,7 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
             agents: data.agents || [],
             progress: { overall: 0 },
             generatedFiles: 0,
-            requirement: requirement,
+            requirement: 'Build a complete project based on user requirements',
             workflow: data.workflow,
             executionType: data.executionType
           });
@@ -1213,6 +1179,7 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
         <div className="flex items-center gap-2">
           {/* Voice-to-text button */}
           <button
+            data-tour="voice-input-button"
             onClick={toggleVoiceRecognition}
             className={`terminal-control-btn p-1.5 rounded-md ${voiceListening ? 'bg-red-600 bg-opacity-20' : ''}`}
             title={voiceListening ? 'Stop voice input (LISTENING)' : 'Start voice-to-text'}
@@ -1305,6 +1272,7 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
 
           {/* Enhanced Supervision button */}
           <button
+            data-tour="supervision-button"
             onClick={() => {
               if (isSupervisionActive) {
                 // If supervision is active, disable it
@@ -1366,14 +1334,10 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
           }
         }}
       >
-        <div ref={terminalRef} className="h-full terminal-content" />
+        <div ref={terminalRef} data-tour="terminal-input" className="h-full terminal-content" />
       </div>
 
-      {/* Error Doctor */}
-      <ErrorDoctor 
-        lastError={lastError} 
-        isActive={errorDoctorActive} 
-      />
+      {/* Error Doctor removed to fix terminal overlap issue */}
 
       {/* Supervision Configuration Modal */}
       <SupervisionConfigModal 

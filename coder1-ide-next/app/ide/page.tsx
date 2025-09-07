@@ -9,6 +9,7 @@ import LeftPanel from '@/components/LeftPanel';
 import Toast from '@/components/Toast';
 import StatusBarCore from '@/components/status-bar/StatusBarCore';
 import HeroSection from '@/components/HeroSection';
+import InteractiveTour from '@/components/InteractiveTour';
 import { SessionProvider } from '@/contexts/SessionContext';
 import { EnhancedSupervisionProvider } from '@/contexts/EnhancedSupervisionContext';
 import { TerminalCommandProvider } from '@/contexts/TerminalCommandContext';
@@ -38,6 +39,40 @@ export default function IDEPage() {
   const [fontSize, setFontSize] = useState(14);
   const [toast, setToast] = useState<string | null>(null);
   const [showHero, setShowHero] = useState(true); // Show hero initially in editor area
+  const [showTour, setShowTour] = useState(false); // State for interactive tour
+  
+  // Example code to show when tour starts
+  const tourExampleCode = `// Welcome to Coder1 IDE! 🚀
+// This is where you write code with AI assistance
+
+import React from 'react';
+import { useState } from 'react';
+
+function App() {
+  const [count, setCount] = useState(0);
+  
+  // Type 'claude' in the terminal below to get AI help
+  const handleClick = () => {
+    setCount(count + 1);
+    console.log('Button clicked!', count + 1);
+  };
+  
+  return (
+    <div className="app">
+      <h1>Welcome to Coder1</h1>
+      <p>Count: {count}</p>
+      <button onClick={handleClick}>
+        Click me!
+      </button>
+    </div>
+  );
+}
+
+export default App;
+
+// Pro tip: Use Ctrl+Space for IntelliSense
+// Pro tip: Use Ctrl+Shift+P for command palette
+// Pro tip: Type 'claude' in terminal for AI assistance`;
   
   // Modal states
   const [showAboutModal, setShowAboutModal] = useState(false);
@@ -52,6 +87,16 @@ export default function IDEPage() {
   // Terminal session tracking for command bridge
   const [terminalSessionId, setTerminalSessionId] = useState<string | null>(null);
   const [terminalReady, setTerminalReady] = useState<boolean>(false);
+  
+  // Handler for when tour starts
+  const handleTourStart = React.useCallback(() => {
+    setShowTour(true);
+    // Keep hero visible for the first steps
+    setShowHero(true);
+    // Set a demo file when tour starts
+    setActiveFile('demo.tsx');
+    setEditorContent(tourExampleCode);
+  }, [tourExampleCode]);
 
   // Add keyboard shortcuts
   React.useEffect(() => {
@@ -427,10 +472,12 @@ export default function IDEPage() {
 
   // Left Panel - Explorer and Discover tabs
   const leftPanel = showExplorer ? (
-    <LeftPanel 
+    <div data-tour="file-explorer">
+      <LeftPanel 
       onFileSelect={handleFileSelect}
       activeFile={activeFile}
-    />
+      />
+    </div>
   ) : null;
 
   // Center Panel - Editor + Terminal Split
@@ -441,16 +488,27 @@ export default function IDEPage() {
         {showHero ? (
           <div 
             className="h-full w-full bg-black cursor-pointer flex items-center justify-center"
-            onClick={() => setShowHero(false)}
+            onClick={(e) => {
+              // Only close hero if clicking the background, not buttons
+              if (e.target === e.currentTarget) {
+                setShowHero(false);
+              }
+            }}
           >
-            <HeroSection />
+            <div data-tour="ide-interface" className="h-full w-full">
+            <HeroSection onTourStart={handleTourStart} />
+          </div>
           </div>
         ) : (
-          <MonacoEditor
-            file={activeFile}
-            theme="vs-dark"
-            fontSize={fontSize}
-          />
+          <div data-tour="monaco-editor" className="h-full w-full">
+            <MonacoEditor
+              file={activeFile}
+              theme="vs-dark"
+              fontSize={fontSize}
+              value={editorContent}
+              onChange={setEditorContent}
+            />
+          </div>
         )}
       </div>
       
@@ -488,7 +546,7 @@ export default function IDEPage() {
       
       {/* Terminal */}
       {showTerminal && (
-        <div style={{ height: `${terminalHeight}%` }}>
+        <div style={{ height: `${terminalHeight}%` }} data-tour="terminal">
           <Terminal 
             onAgentsSpawn={() => setAgentsActive(true)}
             onClaudeTyped={() => setShowHero(false)}
@@ -577,13 +635,15 @@ export default function IDEPage() {
       </div>
 
       {/* Status Bar */}
-      <StatusBarCore 
+      <div data-tour="status-bar">
+        <StatusBarCore 
         activeFile={activeFile}
         isConnected={agentsActive}
         openFiles={openFiles}
         terminalHistory={terminalHistory}
         terminalCommands={terminalCommands}
-      />
+        />
+      </div>
 
       {/* Toast Notifications */}
       {toast && (
@@ -610,6 +670,21 @@ export default function IDEPage() {
         fontSize={fontSize}
         onFontSizeChange={setFontSize}
       />
+      
+      {/* Interactive Tour Overlay - at root level */}
+      {showTour && (
+        <InteractiveTour 
+          onClose={() => setShowTour(false)}
+          onStepChange={(stepId) => {
+            // Keep hero section visible for steps 1 and 2, hide for others
+            if (stepId === 'welcome-overview' || stepId === 'prd-generator') {
+              setShowHero(true);
+            } else {
+              setShowHero(false);
+            }
+          }}
+        />
+      )}
         </div>
       </TerminalCommandProvider>
     </EnhancedSupervisionProvider>

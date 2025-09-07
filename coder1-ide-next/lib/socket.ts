@@ -19,7 +19,6 @@ export const getSocket = (): Socket => {
       reconnectionAttempts: 10,
       reconnectionDelay: 1000,
       reconnectionDelayMax: 5000,
-      maxReconnectionAttempts: 10,
       timeout: 20000,
       forceNew: false,
     });
@@ -46,8 +45,8 @@ export const getSocket = (): Socket => {
     socket.on('connect_error', (error) => {
       console.error('🚨 SOCKET.IO CONNECTION ERROR:', {
         message: error.message,
-        type: error.type,
-        description: error.description,
+        type: (error as any).type,
+        description: (error as any).description,
         url: unifiedUrl,
         attempt: connectionAttempts,
         timestamp: new Date().toISOString()
@@ -78,11 +77,11 @@ export const getSocket = (): Socket => {
     });
 
     // Debug transport changes
-    socket.io.on('upgrade', () => {
+    (socket.io as any).on('upgrade', () => {
       console.log('⬆️ SOCKET.IO TRANSPORT UPGRADED:', socket?.io.engine.transport.name);
     });
 
-    socket.io.on('upgradeError', (error) => {
+    (socket.io as any).on('upgradeError', (error: any) => {
       console.error('🚨 SOCKET.IO UPGRADE ERROR:', error);
     });
   }

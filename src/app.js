@@ -412,6 +412,7 @@ app.use('/api/claude/session-doc', require('./routes/claude-session-doc'));  // 
 app.use('/api/agents-context', require('./routes/agents-context'));  // AGENTS.md Context Integration for Claude Code
 // app.use('/api/workflows', require('./routes/workflows'));  // Revolutionary Workflow Automation System - TEMPORARILY DISABLED
 app.use('/api/mcp-prompts', require('./routes/mcp-prompts'));  // MCP Ambient Prompt Display System
+app.use('/api/experimental', require('./routes/experimental-mcp'));  // MCP Agent Framework (Experimental) - Zero conflicts
 app.use('/api', require('./routes/prettier-config'));
 // Remove duplicate terminal-rest route - using terminal-rest-api.js instead
 // app.use('/api/terminal-rest', require('./routes/terminal-rest'));

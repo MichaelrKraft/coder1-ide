@@ -124,7 +124,7 @@ export default function MenuBar({
     ],
     Help: [
       { label: 'About Coder1', action: onShowAbout || (() => alert('Coder1 IDE v2.0.0\nBuilt for Claude Code and vibe coders')), shortcut: '' },
-      { label: 'Documentation', action: () => window.open('/documentation', '_blank'), shortcut: '' },
+      { label: 'Documentation', action: () => window.open('/features', '_blank'), shortcut: '' },
       { separator: true },
       { label: 'Keyboard Shortcuts', action: onShowKeyboardShortcuts || (() => console.log('Shortcuts')), shortcut: 'Ctrl+K Ctrl+S' },
       { label: 'Report Issue', action: () => window.open('https://github.com/michaelkraft/autonomous_vibe_interface/issues', '_blank') }

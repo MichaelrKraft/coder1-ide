@@ -75,7 +75,7 @@ export default function SessionsPanel({ isVisible = true }: SessionsPanelProps) 
     if (currentSession && event.detail.sessionId === currentSession.id) {
       loadCheckpoints(currentSession.id);
     }
-    // Don't call refreshSessions here - causes infinite loop
+    // Don&apos;t call refreshSessions here - causes infinite loop
   }, [currentSession]);
   
   const handleSessionChanged = useCallback((event: CustomEvent) => {

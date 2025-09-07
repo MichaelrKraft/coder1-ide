@@ -2,10 +2,29 @@
 
 import React, { useEffect, useState } from 'react';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 import TypewriterText from './TypewriterText';
+import dynamic from 'next/dynamic';
 
-export default function HeroSection() {
+// Dynamically import FaultyTerminal to avoid SSR issues with WebGL
+const FaultyTerminal = dynamic(() => import('./backgrounds/FaultyTerminal'), {
+  ssr: false,
+  loading: () => <div className="absolute inset-0 bg-black" />
+});
+
+// Toggle this to switch between animations
+// Set to true for FaultyTerminal, false for dot-grid
+const USE_FAULTY_TERMINAL = false;
+
+interface HeroSectionProps {
+  onTourStart?: () => void;
+}
+
+export default function HeroSection({ onTourStart }: HeroSectionProps = {}) {
   const [logoAnimated, setLogoAnimated] = useState(false);
+  const [showEntranceAnimation, setShowEntranceAnimation] = useState(true);
+  const [animationFadingOut, setAnimationFadingOut] = useState(false);
+  const router = useRouter();
 
   useEffect(() => {
     // Trigger animation after component mounts
@@ -18,15 +37,92 @@ export default function HeroSection() {
     };
   }, []);
 
+  // Handle user interaction to fade out entrance animation
+  const handleUserInteraction = React.useCallback(() => {
+    if (showEntranceAnimation && !animationFadingOut) {
+      setAnimationFadingOut(true);
+      // After fade transition, completely remove the animation
+      setTimeout(() => {
+        setShowEntranceAnimation(false);
+      }, 1500); // 1.5s transition duration
+    }
+  }, [showEntranceAnimation, animationFadingOut]);
+
+  // Set up interaction listeners
+  useEffect(() => {
+    if (!showEntranceAnimation) return;
+
+    const events = ['mousemove', 'click', 'keydown', 'touchstart', 'scroll'];
+    
+    events.forEach(event => {
+      document.addEventListener(event, handleUserInteraction, { passive: true });
+    });
+
+    // Auto-timeout after 10 seconds
+    const autoTimeout = setTimeout(() => {
+      handleUserInteraction();
+    }, 10000);
+
+    return () => {
+      events.forEach(event => {
+        document.removeEventListener(event, handleUserInteraction);
+      });
+      clearTimeout(autoTimeout);
+    };
+  }, [showEntranceAnimation, handleUserInteraction]);
+
   return (
-    <div className="hero-section relative flex flex-col items-center justify-center h-full w-full px-4 py-4 overflow-auto">
-      {/* Animated Dot Grid Background - Pure CSS Implementation */}
+    <div className="hero-section relative flex flex-col items-center justify-center min-h-full h-full w-full px-4 py-4 overflow-auto bg-black">
+      {/* Always present dot-grid background */}
       <div className="dot-grid-background">
         <div className="dot-grid-container">
           <div className="dot-grid"></div>
           <div className="dot-grid-overlay"></div>
         </div>
       </div>
+
+      {/* Interactive entrance animation overlay */}
+      {showEntranceAnimation && (
+        <div 
+          className={`absolute inset-0 z-10 transition-all duration-1500 ease-out ${
+            animationFadingOut ? 'opacity-0 scale-110' : 'opacity-100 scale-100'
+          }`}
+          style={{ 
+            pointerEvents: animationFadingOut ? 'none' : 'auto' 
+          }}
+        >
+          <FaultyTerminal
+            scale={1.2}
+            tint="#00D9FF"
+            scanlineIntensity={0.3}
+            glitchAmount={0.9}
+            flickerAmount={0.4}
+            noiseAmp={0.6}
+            chromaticAberration={3}
+            curvature={0.15}
+            mouseReact={true}
+            mouseStrength={0.4}
+            brightness={0.8}
+            pageLoadAnimation={true}
+            digitSize={1.8}
+            gridMul={[2.5, 1.5]}
+          />
+          
+          {/* Subtle hint text that appears after a few seconds */}
+          <div 
+            className="absolute bottom-8 left-1/2 transform -translate-x-1/2 text-center animate-pulse"
+            style={{
+              animation: 'fadeInDelay 1s ease-in forwards',
+              animationDelay: '3s',
+              opacity: 0
+            }}
+          >
+            <p className="text-cyan-300 text-sm font-light tracking-wide">
+              Click anywhere to begin
+            </p>
+          </div>
+        </div>
+      )}
       
       {/* Hero Background Gradients - Disabled for now */}
       {/* <div className="hero-gradient">
@@ -100,12 +196,18 @@ export default function HeroSection() {
           backgroundClip: 'text',
         }}
       >
-        The world's most advanced AI-native development environment
+        The world&apos;s most advanced AI-native development environment
       </p>
 
       {/* Action buttons - responsive */}
       <div className="relative z-10 flex flex-col gap-2 mb-3 w-full max-w-[min(90%,500px)] px-2">
         <button 
+          onClick={(e) => {
+            e.stopPropagation();
+            if (onTourStart) {
+              onTourStart();
+            }
+          }}
           className="glass-button flex items-center gap-3 sm:gap-4 px-4 sm:px-6 py-3 sm:py-4 rounded-lg transition-all duration-300 w-full transform hover:translate-y-[-2px]"
           style={{
             background: 'linear-gradient(135deg, rgba(125, 211, 252, 0.1) 0%, rgba(187, 154, 247, 0.1) 100%)',
@@ -129,14 +231,19 @@ export default function HeroSection() {
             (e.currentTarget.style as any).WebkitBackdropFilter = 'blur(4px)';
           }}
         >
-          <span className="text-xl sm:text-2xl">📁</span>
+          <span className="text-xl sm:text-2xl">🎯</span>
           <span className="text-gray-300 text-left text-sm sm:text-base">
-            Open a file to start coding
+            Start Interactive Tour
           </span>
         </button>
 
         <button 
+          onClick={(e) => {
+            e.stopPropagation();
+            router.push('/prd-generator');
+          }}
           className="glass-button flex items-center gap-3 sm:gap-4 px-4 sm:px-6 py-3 sm:py-4 rounded-lg transition-all duration-300 w-full transform hover:translate-y-[-2px]"
+          data-tour="prd-generator-button"
           style={{
             background: 'linear-gradient(135deg, rgba(125, 211, 252, 0.1) 0%, rgba(187, 154, 247, 0.1) 100%)',
           backdropFilter: 'blur(4px)',
@@ -159,13 +266,16 @@ export default function HeroSection() {
             (e.currentTarget.style as any).WebkitBackdropFilter = 'blur(4px)';
           }}
         >
-          <span className="text-xl sm:text-2xl">💻</span>
+          <span className="text-xl sm:text-2xl">📝</span>
           <span className="text-gray-300 text-left text-sm sm:text-base">
-            Use the terminal for commands
+            Automate your PRD documentation
           </span>
         </button>
 
         <button 
+          onClick={(e) => {
+            e.stopPropagation();
+          }}
           className="glass-button flex items-center gap-3 sm:gap-4 px-4 sm:px-6 py-3 sm:py-4 rounded-lg transition-all duration-300 w-full transform hover:translate-y-[-2px]"
           style={{
             background: 'linear-gradient(135deg, rgba(125, 211, 252, 0.1) 0%, rgba(187, 154, 247, 0.1) 100%)',
@@ -202,6 +312,7 @@ export default function HeroSection() {
           Type claude in the terminal below to begin
         </p>
       </div>
+      
     </div>
   );
 }

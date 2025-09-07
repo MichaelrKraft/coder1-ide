@@ -384,7 +384,8 @@ export default function StatusBar({
       }
     } catch (error) {
       console.error('Failed to spawn AI team:', error);
-      showToast(`⚠️ Failed to spawn AI team: ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      showToast(`⚠️ Failed to spawn AI team: ${errorMessage}`);
     }
     
     setIsLoading(null);
@@ -497,7 +498,7 @@ export default function StatusBar({
           </div>
         )}
         {lastCheckpoint && (
-          <div className="flex items-center gap-1">
+          <div data-tour="timeline-display" className="flex items-center gap-1">
             <Check className="w-4 h-4 text-green-400" />
             <span>Checkpoint: {lastCheckpoint.toLocaleTimeString()}</span>
           </div>
@@ -509,6 +510,7 @@ export default function StatusBar({
         {/* CheckPoint Button */}
         <div className="p-[1px] rounded-md bg-gradient-to-r from-purple-500 to-cyan-500">
           <button
+            data-tour="checkpoint-timeline"
             onClick={handleCheckpoint}
             disabled={isLoading === 'checkpoint'}
             className="flex items-center gap-1.5 px-4 py-1.5 text-sm font-medium text-text-secondary hover:text-text-primary rounded-md transition-all duration-200 disabled:opacity-50 bg-bg-secondary w-full"
@@ -592,6 +594,7 @@ export default function StatusBar({
 
         {/* Session Summary Button */}
         <button
+          data-tour="session-summary"
           onClick={handleSessionSummary}
           disabled={isLoading === 'session'}
           className="flex items-center gap-1.5 px-4 py-1.5 text-sm font-medium text-text-secondary hover:text-text-primary rounded-md transition-all duration-200 disabled:opacity-50"

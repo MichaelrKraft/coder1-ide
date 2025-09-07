@@ -240,6 +240,31 @@
           "N8N_HOST": "http://localhost:5678"
         }
       }
+    },
+    {
+      "id": "context7-mcp",
+      "name": "Context7 MCP",
+      "description": "Up-to-date code documentation and examples - eliminates outdated API suggestions and hallucinations.",
+      "tags": ["Documentation", "Code Examples", "AI Context", "Libraries"],
+      "installCommand": "coderone install context7-mcp",
+      "stats": {
+        "rating": 4.9,
+        "downloads": 2800,
+        "comments": 112
+      },
+      "features": [
+        "Up-to-date documentation injection",
+        "Version-specific code examples",
+        "Universal MCP client compatibility",
+        "Eliminates API hallucinations"
+      ],
+      "mcpConfig": {
+        "command": "npx",
+        "args": ["-y", "@upstash/context7-mcp@latest"],
+        "env": {
+          "CONTEXT7_API_KEY": "YOUR_CONTEXT7_API_KEY (Optional for higher rate limits)"
+        }
+      }
     }
   ]
 }

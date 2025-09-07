@@ -1,0 +1,19 @@
+{
+  "version": "1.0",
+  "lastUpdated": "2025-09-06T22:04:57.313Z",
+  "repositories": [
+    {
+      "url": "https://github.com/steipete/claude-code-mcp",
+      "firstSeen": 1757196237306,
+      "lastUsed": 1757196292848,
+      "analysisCount": 1,
+      "queryCount": 1,
+      "totalInteractions": 2,
+      "score": 19,
+      "metadata": {
+        "timestamp": 1757196237306,
+        "source": "manual"
+      }
+    }
+  ]
+}

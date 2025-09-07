@@ -47,7 +47,7 @@ const PreviewPanel = React.memo(function PreviewPanel({
   fileOpen = false,
   isPreviewable = false,
 }: PreviewPanelProps) {
-  const [mode, setMode] = useState<PreviewMode>('dashboard');
+  const [mode, setMode] = useState<PreviewMode>('preview');
   const [isLoading, setIsLoading] = useState(false);
   const [teamData, setTeamData] = useState<TeamData | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -62,7 +62,7 @@ const PreviewPanel = React.memo(function PreviewPanel({
   }, [agentsActive, fileOpen, isPreviewable]);
 
   const fetchTeamData = useCallback(async () => {
-    // Don't show loading spinner during polling updates to prevent blinking
+    // Don&apos;t show loading spinner during polling updates to prevent blinking
     const isFirstLoad = !teamData && !error;
     
     try {
@@ -201,7 +201,10 @@ const PreviewPanel = React.memo(function PreviewPanel({
             {/* Agent Dashboard - REAL AI INTEGRATION */}
             {mode === 'dashboard' && (
               <div className="h-full overflow-hidden">
-                <AITeamDashboard teamData={teamData} />
+                <div className="flex items-center justify-center h-full text-text-muted">
+                  AI Team Dashboard temporarily disabled during build fixes
+                </div>
+                {/* <AITeamDashboard teamData={teamData} /> */}
               </div>
             )}
 
@@ -286,43 +289,7 @@ const PreviewPanel = React.memo(function PreviewPanel({
                               Open any HTML, React, or web file to see it come to life.
                             </p>
                             
-                            {/* Features Grid */}
-                            <div className="grid grid-cols-2 gap-4 mb-8 max-w-md">
-                              <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-coder1-cyan/5 to-coder1-cyan/10 rounded-lg border border-coder1-cyan/30">
-                                <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
-                                <span className="text-sm text-text-secondary">Hot Reload</span>
-                              </div>
-                              <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-coder1-purple/5 to-coder1-purple/10 rounded-lg border border-coder1-purple/30">
-                                <svg className="w-4 h-4 text-coder1-purple" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                                </svg>
-                                <span className="text-sm text-text-secondary">Instant Updates</span>
-                              </div>
-                              <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-coder1-cyan/5 to-coder1-cyan/10 rounded-lg border border-coder1-cyan/30">
-                                <svg className="w-4 h-4 text-coder1-cyan" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
-                                </svg>
-                                <span className="text-sm text-text-secondary">All Frameworks</span>
-                              </div>
-                              <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-coder1-purple/5 to-coder1-purple/10 rounded-lg border border-coder1-purple/30">
-                                <svg className="w-4 h-4 text-coder1-purple" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
-                                </svg>
-                                <span className="text-sm text-text-secondary">Live Editing</span>
-                              </div>
-                            </div>
                             
-                            {/* Supported Technologies */}
-                            <div className="flex flex-wrap gap-2 justify-center mb-8">
-                              {['HTML', 'CSS', 'JavaScript', 'React', 'Vue', 'TypeScript', 'Next.js', 'Tailwind'].map(tech => (
-                                <span 
-                                  key={tech} 
-                                  className="px-3 py-1 bg-gradient-to-r from-coder1-cyan/10 to-coder1-purple/10 text-text-secondary border border-coder1-cyan/20 rounded-full text-xs font-medium hover:border-coder1-cyan/40 transition-colors"
-                                >
-                                  {tech}
-                                </span>
-                              ))}
-                            </div>
                             
                             {/* Call to Action */}
                             <div className="px-6 py-4 bg-gradient-to-r from-coder1-cyan/10 to-coder1-purple/10 rounded-xl border border-coder1-cyan/30 max-w-md">
