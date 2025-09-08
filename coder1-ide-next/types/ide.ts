@@ -169,7 +169,7 @@ export interface ProjectContext {
   name: string;
   path: string;
   type: 'react' | 'next' | 'vue' | 'angular' | 'vanilla' | 'unknown';
-  package: any; // package.json contents
+  package: Record<string, unknown>; // package.json contents
   dependencies: string[];
   devDependencies: string[];
   scripts: Record<string, string>;
@@ -218,6 +218,6 @@ export interface UseAsyncOperationReturn<T> {
   data: T | null;
   error: string | null;
   isLoading: boolean;
-  execute: (...args: any[]) => Promise<T>;
+  execute: (...args: unknown[]) => Promise<T>;
   reset: () => void;
 }

@@ -36,7 +36,7 @@ export default function TimelinePage() {
         setEvents(data.events);
       }
     } catch (error) {
-      console.error('Failed to fetch timeline:', error);
+      logger?.error('Failed to fetch timeline:', error);
     } finally {
       setLoading(false);
     }
@@ -86,7 +86,7 @@ export default function TimelinePage() {
         alert('Checkpoint restored successfully! Please refresh the IDE.');
       }
     } catch (error) {
-      console.error('Failed to restore checkpoint:', error);
+      logger?.error('Failed to restore checkpoint:', error);
       alert('Failed to restore checkpoint');
     }
   };

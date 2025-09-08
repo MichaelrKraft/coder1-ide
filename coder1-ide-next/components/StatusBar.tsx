@@ -139,9 +139,9 @@ export default function StatusBar({
 
         const now = new Date();
         setLastCheckpoint(now);
-        console.log('🕐 Auto-checkpoint saved at:', now.toLocaleTimeString());
+        // REMOVED: // REMOVED: console.log('🕐 Auto-checkpoint saved at:', now.toLocaleTimeString());
       } catch (error) {
-        console.error('Auto-checkpoint failed:', error);
+        logger?.error('Auto-checkpoint failed:', error);
       }
     };
 
@@ -194,12 +194,12 @@ export default function StatusBar({
         }
         setLastCheckpoint(now);
         showToast('✅ Checkpoint saved successfully');
-        console.log('✅ Checkpoint saved at:', now.toLocaleTimeString());
+        // REMOVED: // REMOVED: console.log('✅ Checkpoint saved at:', now.toLocaleTimeString());
       } else {
         throw new Error('Failed to save checkpoint');
       }
     } catch (error) {
-      console.error('Failed to save checkpoint:', error);
+      logger?.error('Failed to save checkpoint:', error);
       showToast('⚠️ Failed to save checkpoint');
     }
     
@@ -215,7 +215,7 @@ export default function StatusBar({
       const data = await response.json();
       
       if (response.ok) {
-        console.log('📊 Timeline data:', data);
+        // REMOVED: // REMOVED: console.log('📊 Timeline data:', data);
         // Open timeline page with sessionId
         window.open(`/timeline?sessionId=${sessionId}`, '_blank');
         showToast('📊 Opening timeline view');
@@ -223,7 +223,7 @@ export default function StatusBar({
         throw new Error('Failed to fetch timeline');
       }
     } catch (error) {
-      console.error('Failed to fetch timeline:', error);
+      logger?.error('Failed to fetch timeline:', error);
       showToast('⚠️ Failed to load timeline');
     }
     
@@ -255,12 +255,12 @@ export default function StatusBar({
         a.click();
         window.URL.revokeObjectURL(url);
         showToast('📦 Export completed successfully');
-        console.log('📦 Project exported successfully');
+        // REMOVED: // REMOVED: console.log('📦 Project exported successfully');
       } else {
         throw new Error('Failed to export');
       }
     } catch (error) {
-      console.error('Failed to export project:', error);
+      logger?.error('Failed to export project:', error);
       showToast('⚠️ Failed to export project');
     }
     
@@ -361,7 +361,7 @@ export default function StatusBar({
       
       if (response.ok && data.success) {
         showToast(`✅ AI Team spawned successfully! ${data.agents?.length || 0} agents working...`);
-        console.log('🤖 Claude Code Bridge Team:', data);
+        // REMOVED: // REMOVED: console.log('🤖 Claude Code Bridge Team:', data);
         
         // Update the Preview Panel with team data if it's visible
         if (window.updateAITeamDashboard) {
@@ -383,7 +383,7 @@ export default function StatusBar({
         throw new Error(data.error || 'Failed to spawn AI team');
       }
     } catch (error) {
-      console.error('Failed to spawn AI team:', error);
+      logger?.error('Failed to spawn AI team:', error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       showToast(`⚠️ Failed to spawn AI team: ${errorMessage}`);
     }
@@ -440,7 +440,7 @@ export default function StatusBar({
   };
 
   const executeSlashCommand = (command: string) => {
-    console.log('Executing command:', command);
+    // REMOVED: // REMOVED: console.log('Executing command:', command);
     // This would integrate with the Terminal component
     showToast(`Executing: /${command}`);
   };
@@ -538,6 +538,7 @@ export default function StatusBar({
         {/* TimeLine Button */}
         <div className="p-[1px] rounded-md bg-gradient-to-r from-purple-500 to-cyan-500">
           <button
+            data-tour="timeline-button"
             onClick={handleTimeline}
             disabled={isLoading === 'timeline'}
             className="flex items-center gap-1.5 px-4 py-1.5 text-sm font-medium text-text-secondary hover:text-text-primary rounded-md transition-all duration-200 disabled:opacity-50 bg-bg-secondary w-full"

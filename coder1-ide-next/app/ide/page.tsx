@@ -54,7 +54,7 @@ function App() {
   // Type 'claude' in the terminal below to get AI help
   const handleClick = () => {
     setCount(count + 1);
-    console.log('Button clicked!', count + 1);
+    // REMOVED: // REMOVED: console.log('Button clicked!', count + 1);
   };
   
   return (
@@ -162,7 +162,7 @@ export default App;
   React.useEffect(() => {
     const initializeContext = async () => {
       try {
-        console.log('🧠 Initializing Context Folders system...');
+        // REMOVED: // REMOVED: console.log('🧠 Initializing Context Folders system...');
         
         // Initialize the Context system
         const initResponse = await fetch('http://localhost:3001/api/context/init', {
@@ -179,32 +179,32 @@ export default App;
         }
         
         const initData = await initResponse.json();
-        console.log('✅ Context system initialized:', initData);
+        // REMOVED: // REMOVED: console.log('✅ Context system initialized:', initData);
         
         // Store the session ID returned from init
         if (initData.stats?.currentSession) {
           localStorage.setItem('contextSessionId', initData.stats.currentSession);
-          console.log('✅ Context session active:', initData.stats.currentSession);
+          // REMOVED: // REMOVED: console.log('✅ Context session active:', initData.stats.currentSession);
         }
         
         // Log stats from initialization
-        console.log('📊 Context stats:', {
-          sessions: initData.stats?.totalSessions || 0,
-          conversations: initData.stats?.totalConversations || 0,
-          patterns: initData.stats?.totalPatterns || 0,
-          fileWatcher: initData.fileWatcherActive ? 'active' : 'inactive'
-        });
+        // REMOVED: // REMOVED: console.log('📊 Context stats:', {
+        //   sessions: initData.stats?.totalSessions || 0,
+        //   conversations: initData.stats?.totalConversations || 0,
+        //   patterns: initData.stats?.totalPatterns || 0,
+        //   fileWatcher: initData.fileWatcherActive ? 'active' : 'inactive'
+        // });
         
         showToast('Context Folders initialized - Your sessions are now being saved!');
       } catch (error) {
-        console.error('❌ Failed to initialize Context system:', error);
+        logger?.error('❌ Failed to initialize Context system:', error);
         showToast('Context Folders unavailable - Sessions will not be saved');
       }
     };
     
     const initializeUsageTracking = async () => {
       try {
-        console.log('📊 Starting usage tracking...');
+        // REMOVED: // REMOVED: console.log('📊 Starting usage tracking...');
         
         // Start periodic usage data collection
         const sessionId = localStorage.getItem('contextSessionId') || `session_${Date.now()}`;
@@ -225,16 +225,16 @@ export default App;
               body: JSON.stringify({ sessionId, model: 'claude-3-5-sonnet' })
             });
           } catch (error) {
-            console.error('Failed to track usage:', error);
+            logger?.error('Failed to track usage:', error);
           }
         }, 60000); // 1 minute
         
         // Store interval ID for cleanup
         (window as any).__usageTrackingInterval = intervalId;
         
-        console.log('✅ Usage tracking started');
+        // REMOVED: // REMOVED: console.log('✅ Usage tracking started');
       } catch (error) {
-        console.error('❌ Failed to start usage tracking:', error);
+        logger?.error('❌ Failed to start usage tracking:', error);
       }
     };
     
@@ -249,7 +249,7 @@ export default App;
       const sessionId = localStorage.getItem('contextSessionId');
       if (sessionId) {
         // Log session ending (no endpoint needed as sessions auto-expire)
-        console.log('🔚 Context session ending:', sessionId);
+        // REMOVED: // REMOVED: console.log('🔚 Context session ending:', sessionId);
         localStorage.removeItem('contextSessionId');
       }
       
@@ -258,7 +258,7 @@ export default App;
       if (intervalId) {
         clearInterval(intervalId);
         delete (window as any).__usageTrackingInterval;
-        console.log('🔚 Usage tracking stopped');
+        // REMOVED: // REMOVED: console.log('🔚 Usage tracking stopped');
       }
     };
   }, []);
@@ -270,7 +270,7 @@ export default App;
 
   // Menu handlers
   const handleNewFile = () => {
-    console.log('New file');
+    // REMOVED: // REMOVED: console.log('New file');
     const newFileName = 'untitled.tsx';
     setActiveFile(newFileName);
     setEditorContent('// New file\n');
@@ -297,17 +297,17 @@ export default App;
   };
 
   const handleOpenFile = () => {
-    console.log('Open file dialog');
+    // REMOVED: // REMOVED: console.log('Open file dialog');
     // Would open file dialog
     showToast('Open file dialog (not implemented)');
   };
 
   const handleSave = () => {
-    console.log('Save file:', activeFile);
+    // REMOVED: // REMOVED: console.log('Save file:', activeFile);
     if (activeFile) {
       // Save to localStorage for demo
       localStorage.setItem(`file_${activeFile}`, editorContent);
-      console.log('File saved to localStorage');
+      // REMOVED: // REMOVED: console.log('File saved to localStorage');
       showToast(`Saved ${activeFile}`);
     } else {
       showToast('No file to save');
@@ -319,7 +319,7 @@ export default App;
     if (fileName) {
       setActiveFile(fileName);
       localStorage.setItem(`file_${fileName}`, editorContent);
-      console.log('File saved as:', fileName);
+      // REMOVED: // REMOVED: console.log('File saved as:', fileName);
       showToast(`Saved as ${fileName}`);
     }
   };
@@ -346,7 +346,7 @@ export default App;
   
   const handleStop = () => {
     // In a real implementation, this would stop running processes
-    console.log('Stopping execution...');
+    // REMOVED: // REMOVED: console.log('Stopping execution...');
     showToast('Execution stopped');
   };
   
@@ -384,7 +384,7 @@ export default App;
     try {
       const text = await navigator.clipboard.readText();
       // In a real editor, we would insert the text at cursor position
-      console.log('Pasting:', text);
+      // REMOVED: // REMOVED: console.log('Pasting:', text);
       showToast('Pasted from clipboard');
     } catch (err) {
       showToast('Failed to paste - clipboard access denied');
@@ -408,17 +408,17 @@ export default App;
 
   const handleToggleOutput = () => {
     setShowOutput(!showOutput);
-    console.log('Toggle output panel');
+    // REMOVED: // REMOVED: console.log('Toggle output panel');
   };
 
   const handleRunCode = () => {
-    console.log('Running code:', activeFile);
+    // REMOVED: // REMOVED: console.log('Running code:', activeFile);
     // Would execute code in terminal
     showToast(activeFile ? `Running ${activeFile}...` : 'No file to run');
   };
 
   const handleDebug = () => {
-    console.log('Debug mode:', activeFile);
+    // REMOVED: // REMOVED: console.log('Debug mode:', activeFile);
     showToast(activeFile ? `Debugging ${activeFile}...` : 'No file to debug');
   };
 
@@ -441,12 +441,12 @@ export default App;
 
   const handleFind = () => {
     // Trigger Monaco editor find
-    console.log('Find in editor');
+    // REMOVED: // REMOVED: console.log('Find in editor');
   };
 
   const handleReplace = () => {
     // Trigger Monaco editor replace
-    console.log('Replace in editor');
+    // REMOVED: // REMOVED: console.log('Replace in editor');
   };
 
   // Handle file selection from explorer
@@ -505,8 +505,7 @@ export default App;
               file={activeFile}
               theme="vs-dark"
               fontSize={fontSize}
-              value={editorContent}
-              onChange={setEditorContent}
+              onChange={(value) => setEditorContent(value || '')}
             />
           </div>
         )}

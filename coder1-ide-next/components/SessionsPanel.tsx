@@ -48,7 +48,7 @@ export default function SessionsPanel({ isVisible = true }: SessionsPanelProps) 
         loadCheckpoints(currentSession.id);
       }
     } catch (error) {
-      console.error('Failed to load sessions:', error);
+      logger?.error('Failed to load sessions:', error);
     } finally {
       setLoading(false);
     }
@@ -64,13 +64,13 @@ export default function SessionsPanel({ isVisible = true }: SessionsPanelProps) 
         setCheckpoints(data.checkpoints || []);
       }
     } catch (error) {
-      console.error('Failed to load checkpoints:', error);
+      logger?.error('Failed to load checkpoints:', error);
     }
   };
   
   // Memoize event handlers to prevent unnecessary re-registration
   const handleCheckpointCreated = useCallback((event: CustomEvent) => {
-    console.log('📍 Checkpoint created event received:', event.detail);
+    // REMOVED: // REMOVED: console.log('📍 Checkpoint created event received:', event.detail);
     // Only reload checkpoints if this is the current session
     if (currentSession && event.detail.sessionId === currentSession.id) {
       loadCheckpoints(currentSession.id);
@@ -79,7 +79,7 @@ export default function SessionsPanel({ isVisible = true }: SessionsPanelProps) 
   }, [currentSession]);
   
   const handleSessionChanged = useCallback((event: CustomEvent) => {
-    console.log('🔄 Session changed event received:', event.detail);
+    // REMOVED: // REMOVED: console.log('🔄 Session changed event received:', event.detail);
     // Only reload checkpoints for the new session
     if (event.detail.session) {
       loadCheckpoints(event.detail.session.id);
@@ -132,28 +132,28 @@ export default function SessionsPanel({ isVisible = true }: SessionsPanelProps) 
 
   // Handle checkpoint restoration
   const handleRestoreCheckpoint = async (checkpoint: Checkpoint) => {
-    console.log('🔄 Starting checkpoint restoration for:', checkpoint.name, 'ID:', checkpoint.id);
+    // REMOVED: // REMOVED: console.log('🔄 Starting checkpoint restoration for:', checkpoint.name, 'ID:', checkpoint.id);
     setRestoringCheckpointId(checkpoint.id);
     setLastAction(null);
     
     try {
-      console.log('📡 Calling API: /api/sessions/' + checkpoint.sessionId + '/checkpoints/' + checkpoint.id + '/restore');
+      // REMOVED: // REMOVED: console.log('📡 Calling API: /api/sessions/' + checkpoint.sessionId + '/checkpoints/' + checkpoint.id + '/restore');
       
       // Restore checkpoint data
       const restoreResponse = await fetch(`/api/sessions/${checkpoint.sessionId}/checkpoints/${checkpoint.id}/restore`, {
         method: 'POST'
       });
       
-      console.log('📊 Checkpoint API Response Status:', restoreResponse.status, restoreResponse.ok);
+      // REMOVED: // REMOVED: console.log('📊 Checkpoint API Response Status:', restoreResponse.status, restoreResponse.ok);
       
       if (restoreResponse.ok) {
         const restoreData = await restoreResponse.json();
-        console.log('📦 Checkpoint API Response Data:', restoreData);
+        // REMOVED: // REMOVED: console.log('📦 Checkpoint API Response Data:', restoreData);
         
         // Apply the restored state to the IDE with smooth transitions
         if (restoreData.checkpoint && restoreData.checkpoint.data) {
           const snapshot = restoreData.checkpoint.data.snapshot;
-          console.log('📸 Applying checkpoint snapshot:', snapshot);
+          // REMOVED: // REMOVED: console.log('📸 Applying checkpoint snapshot:', snapshot);
           
           // Restore localStorage data
           if (snapshot.files) localStorage.setItem('openFiles', snapshot.files);
@@ -163,7 +163,7 @@ export default function SessionsPanel({ isVisible = true }: SessionsPanelProps) 
           // Switch to the checkpoint's session smoothly
           const checkpointSession = sessions.find(s => s.id === checkpoint.sessionId);
           if (checkpointSession) {
-            console.log('🔄 Switching to checkpoint session:', checkpointSession.name);
+            // REMOVED: // REMOVED: console.log('🔄 Switching to checkpoint session:', checkpointSession.name);
             switchSession(checkpointSession);
           }
           
@@ -177,19 +177,19 @@ export default function SessionsPanel({ isVisible = true }: SessionsPanelProps) 
           }));
           
           // Notify user with success
-          console.log('✅ Checkpoint restored successfully:', checkpoint.name);
+          // REMOVED: // REMOVED: console.log('✅ Checkpoint restored successfully:', checkpoint.name);
           setLastAction({ type: 'success', message: `Checkpoint "${checkpoint.name}" restored successfully` });
         } else {
-          console.log('⚠️ Checkpoint data missing or invalid structure');
+          // REMOVED: // REMOVED: console.log('⚠️ Checkpoint data missing or invalid structure');
           setLastAction({ type: 'error', message: 'Checkpoint data not found or invalid' });
         }
       } else {
         const errorText = await restoreResponse.text();
-        console.error('❌ Checkpoint API failed:', restoreResponse.status, errorText);
+        logger?.error('❌ Checkpoint API failed:', restoreResponse.status, errorText);
         setLastAction({ type: 'error', message: `Failed to restore checkpoint: ${restoreResponse.status} ${errorText}` });
       }
     } catch (error) {
-      console.error('💥 Checkpoint restoration error:', error);
+      logger?.error('💥 Checkpoint restoration error:', error);
       setLastAction({ type: 'error', message: `Error restoring checkpoint: ${error instanceof Error ? error.message : 'Unknown error'}` });
     } finally {
       setRestoringCheckpointId(null);
@@ -202,44 +202,44 @@ export default function SessionsPanel({ isVisible = true }: SessionsPanelProps) 
 
   // Handle session restoration - simplified to use context
   const handleRestoreSession = async (session: Session) => {
-    console.log('🎯 Starting session restoration for:', session.name, 'ID:', session.id);
+    // REMOVED: // REMOVED: console.log('🎯 Starting session restoration for:', session.name, 'ID:', session.id);
     setRestoringSessionId(session.id);
     setLastAction(null);
     
     try {
-      console.log('📡 Fetching checkpoints for session:', session.id);
+      // REMOVED: // REMOVED: console.log('📡 Fetching checkpoints for session:', session.id);
       
       // Load checkpoints for this session
       const checkpointsResponse = await fetch(`/api/checkpoint?sessionId=${session.id}`);
-      console.log('📊 Checkpoints API Response Status:', checkpointsResponse.status, checkpointsResponse.ok);
+      // REMOVED: // REMOVED: console.log('📊 Checkpoints API Response Status:', checkpointsResponse.status, checkpointsResponse.ok);
       
       if (!checkpointsResponse.ok) {
         const errorText = await checkpointsResponse.text();
-        console.error('❌ Checkpoints API failed:', checkpointsResponse.status, errorText);
+        logger?.error('❌ Checkpoints API failed:', checkpointsResponse.status, errorText);
         setLastAction({ type: 'error', message: `Failed to load session checkpoints: ${checkpointsResponse.status}` });
         return;
       }
       
       const checkpointsData = await checkpointsResponse.json();
-      console.log('📦 Checkpoints API Response Data:', checkpointsData);
+      // REMOVED: // REMOVED: console.log('📦 Checkpoints API Response Data:', checkpointsData);
       
       if (checkpointsData.success && checkpointsData.checkpoints && checkpointsData.checkpoints.length > 0) {
-        console.log('📍 Found', checkpointsData.checkpoints.length, 'checkpoints, restoring latest');
+        // REMOVED: // REMOVED: console.log('📍 Found', checkpointsData.checkpoints.length, 'checkpoints, restoring latest');
         
         // Get the latest checkpoint and restore it
         const latestCheckpoint = checkpointsData.checkpoints[0];
-        console.log('🔄 Restoring latest checkpoint:', latestCheckpoint.name);
+        // REMOVED: // REMOVED: console.log('🔄 Restoring latest checkpoint:', latestCheckpoint.name);
         await handleRestoreCheckpoint(latestCheckpoint);
       } else {
-        console.log('📄 No checkpoints found, switching to session directly');
+        // REMOVED: // REMOVED: console.log('📄 No checkpoints found, switching to session directly');
         
         // No checkpoints, just switch to this session via context
         switchSession(session);
-        console.log('✅ Switched to session (no checkpoints):', session.name);
+        // REMOVED: // REMOVED: console.log('✅ Switched to session (no checkpoints):', session.name);
         setLastAction({ type: 'success', message: `Switched to session "${session.name}"` });
       }
     } catch (error) {
-      console.error('💥 Session restoration error:', error);
+      logger?.error('💥 Session restoration error:', error);
       setLastAction({ type: 'error', message: `Error restoring session: ${error instanceof Error ? error.message : 'Unknown error'}` });
     } finally {
       setRestoringSessionId(null);

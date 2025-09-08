@@ -12,12 +12,12 @@ export default function DiscoverSection() {
   // Debug function to reset panel state
   const resetPanel = () => {
     setIsExpanded(true);
-    console.log('Discover panel reset to expanded state');
+    // REMOVED: // REMOVED: console.log('Discover panel reset to expanded state');
   };
 
   // Handle panel toggle with debugging
   const handleToggle = () => {
-    console.log('Discover panel toggle:', isExpanded ? 'collapsing' : 'expanding');
+    // REMOVED: // REMOVED: console.log('Discover panel toggle:', isExpanded ? 'collapsing' : 'expanding');
     setIsExpanded(prev => !prev);
   };
 
@@ -65,7 +65,7 @@ export default function DiscoverSection() {
 
   const executeSlashCommand = (command: string) => {
     // Send command to terminal or Claude Code
-    console.log('Executing command:', command);
+    // REMOVED: // REMOVED: console.log('Executing command:', command);
     // This would integrate with the Terminal component
   };
 

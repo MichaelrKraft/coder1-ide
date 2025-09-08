@@ -115,7 +115,7 @@ export default function ErrorDoctor({ lastError, isActive }: ErrorDoctorProps) {
           <button
             onClick={() => {
               // In production, this would open detailed help
-              console.log('Opening detailed help for:', diagnosis);
+              // REMOVED: // REMOVED: console.log('Opening detailed help for:', diagnosis);
             }}
             className="text-xs px-2 py-1 rounded bg-bg-tertiary hover:bg-bg-primary text-coder1-cyan hover:text-white transition-colors"
           >

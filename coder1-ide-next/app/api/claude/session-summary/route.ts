@@ -1,22 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
 import fs from 'fs/promises';
 import path from 'path';
+import { withAPIMiddleware } from '@/lib/api-middleware';
 
-export async function POST(request: NextRequest) {
+async function sessionSummaryHandler({ req }: { req: NextRequest }): Promise<NextResponse> {
+  const request = req;
   try {
     const requestData = await request.json();
     let { sessionId, sessionData, prompt, includeTerminalHistory, includeFileChanges, includeCommits } = requestData;
     
-    console.log('📤 Session summary API called with:', { 
-      hasSessionData: !!sessionData, 
-      hasPrompt: !!prompt, 
-      sessionId: sessionId?.substring(0, 20) + '...' 
-    });
+    // REMOVED: // REMOVED: console.log('📤 Session summary API called with:', { 
+    //   hasSessionData: !!sessionData, 
+    //   hasPrompt: !!prompt, 
+    //   sessionId: sessionId?.substring(0, 20) + '...' 
+    // });
     
     // If we received the enhanced sessionData and prompt from SessionSummaryService, use those
     if (sessionData && prompt) {
       // This is the enhanced call from SessionSummaryService
-      console.log('📊 Using enhanced session data from SessionSummaryService');
+      // REMOVED: // REMOVED: console.log('📊 Using enhanced session data from SessionSummaryService');
     } else {
       // Legacy simple call - gather basic session data
       sessionData = {
@@ -67,10 +69,10 @@ Remember: BE EXHAUSTIVELY DETAILED. The next agent should know EVERYTHING about 
     }
     
     // Generate the summary directly (no external backend required)
-    console.log('📝 Generating session summary locally...');
+    // REMOVED: // REMOVED: console.log('📝 Generating session summary locally...');
     
     const result = await generateSessionSummary(sessionData, prompt);
-    console.log('✅ Session summary generated successfully');
+    // REMOVED: // REMOVED: console.log('✅ Session summary generated successfully');
     
     // Save summary to file locally as well
     const summariesDir = path.join(process.cwd(), 'summaries');
@@ -89,14 +91,25 @@ Remember: BE EXHAUSTIVELY DETAILED. The next agent should know EVERYTHING about 
       file: summaryFile,
       metadata: result.metadata
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Failed to generate session summary:', error);
+    console.error('Error stack:', error?.stack);
     return NextResponse.json(
-      { error: 'Failed to generate session summary' },
+      { 
+        error: 'Failed to generate session summary',
+        details: error?.message || 'Unknown error'
+      },
       { status: 500 }
     );
   }
 }
+
+// Export with AI middleware (rate limiting, logging) - disable body validation to avoid consuming body stream
+export const POST = withAPIMiddleware(sessionSummaryHandler, {
+  rateLimit: 'ai',
+  logRequests: true,
+  validateBody: false  // Disabled to prevent "Body has already been read" error
+});
 
 async function getTerminalHistory(): Promise<string> {
   // In a real implementation, this would fetch from the terminal session

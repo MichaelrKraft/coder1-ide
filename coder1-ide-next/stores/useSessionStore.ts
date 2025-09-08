@@ -300,7 +300,7 @@ export const useSessionStore = create<SessionStore>()(
               } : null
             }), false, 'loadCheckpoint');
           } catch (error) {
-            console.error('Failed to load checkpoint:', error);
+            logger?.error('Failed to load checkpoint:', error);
           }
         },
         
@@ -585,7 +585,7 @@ export const useSessionStore = create<SessionStore>()(
         loadSessionHistory: () => {
           // This would typically load from a persistent store or API
           // For now, we'll use the existing sessionHistory
-          console.log('Loading session history...');
+          // REMOVED: // REMOVED: // REMOVED: console.log('Loading session history...');
         },
         
         clearSessionHistory: () => {

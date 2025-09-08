@@ -60,11 +60,11 @@ export async function POST(request: NextRequest) {
           });
           
         } catch (error) {
-          console.error('Session not found:', sessionId);
+          logger?.error('Session not found:', sessionId);
           // Continue to project export fallback
         }
       } catch (error) {
-        console.error('Failed to export session data:', error);
+        logger?.error('Failed to export session data:', error);
       }
     }
     
@@ -110,11 +110,11 @@ export async function POST(request: NextRequest) {
         }
       });
     } catch (error) {
-      console.error('Failed to create zip:', error);
+      logger?.error('Failed to create zip:', error);
       throw error;
     }
   } catch (error) {
-    console.error('Failed to export project:', error);
+    logger?.error('Failed to export project:', error);
     return NextResponse.json(
       { error: 'Failed to export project' },
       { status: 500 }

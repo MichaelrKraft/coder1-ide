@@ -109,9 +109,9 @@ class AIAgentOrchestrator {
         this.agentDefinitions.set(agentId, agentData);
       }
 
-      console.log(`✅ Loaded ${this.agentDefinitions.size} agent definitions`);
+      // REMOVED: // REMOVED: // REMOVED: console.log(`✅ Loaded ${this.agentDefinitions.size} agent definitions`);
     } catch (error) {
-      console.error('❌ Error loading agent definitions:', error);
+      logger?.error('❌ Error loading agent definitions:', error);
     }
   }
 
@@ -127,9 +127,9 @@ class AIAgentOrchestrator {
         this.workflowTemplates.set(workflowId, workflow as WorkflowTemplate);
       }
 
-      console.log(`✅ Loaded ${this.workflowTemplates.size} workflow templates`);
+      // REMOVED: // REMOVED: // REMOVED: console.log(`✅ Loaded ${this.workflowTemplates.size} workflow templates`);
     } catch (error) {
-      console.error('❌ Error loading workflow templates:', error);
+      logger?.error('❌ Error loading workflow templates:', error);
     }
   }
 
@@ -230,16 +230,16 @@ class AIAgentOrchestrator {
       throw new Error(`❌ Workflow '${workflowId}' not found`);
     }
 
-    console.log(`🚀 Spawning AI team for: ${requirement}`);
-    console.log(`📋 Using workflow: ${workflow.name}`);
-    console.log(`👥 Agents needed: ${workflow.agents.join(', ')}`);
+    // REMOVED: // REMOVED: // REMOVED: console.log(`🚀 Spawning AI team for: ${requirement}`);
+    // REMOVED: // REMOVED: // REMOVED: console.log(`📋 Using workflow: ${workflow.name}`);
+    // REMOVED: // REMOVED: // REMOVED: console.log(`👥 Agents needed: ${workflow.agents.join(', ')}`);
 
     // Create agent sessions based on workflow
     const agents: AgentSession[] = [];
     for (const agentId of workflow.agents) {
       const agentDef = this.agentDefinitions.get(agentId);
       if (!agentDef) {
-        console.warn(`⚠️ Agent definition not found: ${agentId}`);
+        logger?.warn(`⚠️ Agent definition not found: ${agentId}`);
         continue;
       }
 
@@ -292,7 +292,7 @@ class AIAgentOrchestrator {
     if (!workflow) return;
 
     team.status = 'planning';
-    console.log(`📋 Executing workflow: ${workflow.name}`);
+    // REMOVED: // REMOVED: // REMOVED: console.log(`📋 Executing workflow: ${workflow.name}`);
 
     try {
       // Execute workflow steps in sequence
@@ -306,7 +306,7 @@ class AIAgentOrchestrator {
         );
 
         if (unmetDependencies.length > 0) {
-          console.log(`⏸️ Agent ${agent.agentName} waiting for dependencies: ${unmetDependencies.join(', ')}`);
+          // REMOVED: // REMOVED: // REMOVED: console.log(`⏸️ Agent ${agent.agentName} waiting for dependencies: ${unmetDependencies.join(', ')}`);
           agent.status = 'waiting';
           continue;
         }
@@ -316,11 +316,11 @@ class AIAgentOrchestrator {
       }
 
       team.status = 'completed';
-      console.log(`✅ Team ${teamId} completed workflow`);
+      // REMOVED: // REMOVED: // REMOVED: console.log(`✅ Team ${teamId} completed workflow`);
 
     } catch (error) {
       team.status = 'error';
-      console.error(`❌ Team ${teamId} workflow failed:`, error);
+      logger?.error(`❌ Team ${teamId} workflow failed:`, error);
     }
   }
 
@@ -337,7 +337,7 @@ class AIAgentOrchestrator {
 
     agent.status = 'thinking';
     agent.currentTask = step.task;
-    console.log(`🤖 ${agent.agentName} starting: ${step.task}`);
+    // REMOVED: // REMOVED: // REMOVED: console.log(`🤖 ${agent.agentName} starting: ${step.task}`);
 
     try {
       // Prepare context for agent
@@ -363,13 +363,13 @@ class AIAgentOrchestrator {
       agent.status = 'completed';
       agent.progress = 100;
 
-      console.log(`✅ ${agent.agentName} completed: ${step.task}`);
-      console.log(`📁 Generated ${files.length} files`);
+      // REMOVED: // REMOVED: // REMOVED: console.log(`✅ ${agent.agentName} completed: ${step.task}`);
+      // REMOVED: // REMOVED: // REMOVED: console.log(`📁 Generated ${files.length} files`);
 
     } catch (error) {
       agent.status = 'error';
       agent.output.push(`❌ Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
-      console.error(`❌ ${agent.agentName} failed:`, error);
+      logger?.error(`❌ ${agent.agentName} failed:`, error);
     }
   }
 
@@ -553,9 +553,9 @@ Respond with clear file paths and complete file contents in code blocks.`;
       // Write file
       fs.writeFileSync(fullPath, file.content, 'utf-8');
       
-      console.log(`📁 Generated: ${file.path}`);
+      // REMOVED: // REMOVED: // REMOVED: console.log(`📁 Generated: ${file.path}`);
     } catch (error) {
-      console.error(`❌ Failed to write file ${file.path}:`, error);
+      logger?.error(`❌ Failed to write file ${file.path}:`, error);
     }
   }
 
@@ -568,7 +568,7 @@ Respond with clear file paths and complete file contents in code blocks.`;
       // For now, return basic context
       return `Previous project patterns and best practices for similar requirements`;
     } catch (error) {
-      console.warn('⚠️ Memory context unavailable:', error);
+      logger?.warn('⚠️ Memory context unavailable:', error);
       return '';
     }
   }
@@ -612,7 +612,7 @@ Respond with clear file paths and complete file contents in code blocks.`;
       
       return true;
     } catch (error) {
-      console.error(`❌ Failed to send input to ${agentId}:`, error);
+      logger?.error(`❌ Failed to send input to ${agentId}:`, error);
       return false;
     }
   }
@@ -621,7 +621,7 @@ Respond with clear file paths and complete file contents in code blocks.`;
    * Emergency stop - clean up all active teams
    */
   emergencyStop(): void {
-    console.log(`🚨 Emergency stop - cleaning up ${this.activeTeams.size} teams`);
+    // REMOVED: // REMOVED: // REMOVED: console.log(`🚨 Emergency stop - cleaning up ${this.activeTeams.size} teams`);
     this.activeTeams.clear();
   }
 }

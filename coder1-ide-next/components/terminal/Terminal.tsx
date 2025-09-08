@@ -42,7 +42,7 @@ interface TerminalProps {
  * DO NOT MODIFY button positioning without checking original
  */
 export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData, onTerminalCommand, onTerminalReady }: TerminalProps) {
-  console.log('🖥️ Terminal component rendering...');
+  // REMOVED: // REMOVED: console.log('🖥️ Terminal component rendering...');
   const terminalRef = useRef<HTMLDivElement>(null);
   const xtermRef = useRef<XTerm | null>(null);
   const fitAddonRef = useRef<FitAddon | null>(null);
@@ -105,7 +105,7 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
         const parsed = JSON.parse(savedSettings);
         setTerminalSettings(prev => ({ ...prev, ...parsed }));
       } catch (error) {
-        console.warn('Failed to parse terminal settings:', error);
+        logger?.warn('Failed to parse terminal settings:', error);
       }
     }
   }, []);
@@ -134,7 +134,7 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
         }
       } catch (error) {
         // Use console.warn instead of console.error to reduce noise
-        console.warn('Failed to fetch Claude usage:', error);
+        logger?.warn('Failed to fetch Claude usage:', error);
       }
     };
     
@@ -163,7 +163,7 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
           }
         }
       } catch (error) {
-        console.error('Failed to fetch MCP status:', error);
+        logger?.error('Failed to fetch MCP status:', error);
       }
     };
     
@@ -230,7 +230,7 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
       try {
         onTerminalReady(newSessionId, ready);
       } catch (error) {
-        console.error('[Terminal] onTerminalReady callback error:', error);
+        logger?.error('[Terminal] onTerminalReady callback error:', error);
       }
     }
   }, [onTerminalReady]);
@@ -258,17 +258,17 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
   useEffect(() => {
     // Prevent duplicate session creation
     if (sessionCreatedRef.current) {
-      console.log('Session already created, skipping');
+      // REMOVED: // REMOVED: console.log('Session already created, skipping');
       return;
     }
     
     const createTerminalSession = async () => {
       sessionCreatedRef.current = true;
-      console.log('🚀 CREATING TERMINAL SESSION...');
+      // REMOVED: // REMOVED: console.log('🚀 CREATING TERMINAL SESSION...');
       
       try {
         // Create a real terminal session via the backend
-        console.log('📡 Calling /api/terminal-rest/sessions...');
+        // REMOVED: // REMOVED: console.log('📡 Calling /api/terminal-rest/sessions...');
         const response = await fetch('/api/terminal-rest/sessions', {
           method: 'POST',
           headers: {
@@ -280,20 +280,20 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
           }),
         });
         
-        console.log('📡 Session response status:', response.status);
+        // REMOVED: // REMOVED: console.log('📡 Session response status:', response.status);
         
         if (response.ok) {
           const data = await response.json();
-          console.log('📡 Session response data:', data);
+          // REMOVED: // REMOVED: console.log('📡 Session response data:', data);
           setSessionId(data.sessionId);
           // Immediately update the ref for voice recognition
           sessionIdForVoiceRef.current = data.sessionId;
           setTerminalReady(true);
           // Notify parent component - performance-safe callback
           notifyTerminalReady(data.sessionId, true);
-          console.log('✅ Terminal session created:', data.sessionId);
+          // REMOVED: // REMOVED: console.log('✅ Terminal session created:', data.sessionId);
         } else {
-          console.error('Failed to create terminal session:', response.status);
+          logger?.error('Failed to create terminal session:', response.status);
           // Fallback to simulated mode
           const simulatedId = 'simulated-' + Date.now();
           setSessionId(simulatedId);
@@ -303,7 +303,7 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
           notifyTerminalReady(simulatedId, true);
         }
       } catch (error) {
-        console.error('Error creating terminal session:', error);
+        logger?.error('Error creating terminal session:', error);
         // Fallback to simulated mode
         const simulatedId = 'simulated-' + Date.now();
         setSessionId(simulatedId);
@@ -334,11 +334,11 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
       // Only cleanup the current session on unmount
       const currentSessionId = sessionIdForVoiceRef.current || sessionId;
       if (currentSessionId && !currentSessionId.startsWith('simulated-')) {
-        console.log('🧹 Cleaning up terminal session on unmount:', currentSessionId);
+        // REMOVED: // REMOVED: console.log('🧹 Cleaning up terminal session on unmount:', currentSessionId);
         fetch(`/api/terminal-rest/sessions/${currentSessionId}`, {
           method: 'DELETE'
         }).catch(err => {
-          console.log('Session cleanup (expected on unmount):', err.message);
+          // REMOVED: // REMOVED: console.log('Session cleanup (expected on unmount):', err.message);
         });
       }
     };
@@ -348,14 +348,14 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
   // All socket connection logic is now handled in connectToBackend function
 
   useEffect(() => {
-    console.log('🖥️ INITIALIZING XTERM...');
+    // REMOVED: // REMOVED: console.log('🖥️ INITIALIZING XTERM...');
     if (!terminalRef.current) {
-      console.log('❌ Terminal ref not ready');
+      // REMOVED: // REMOVED: console.log('❌ Terminal ref not ready');
       return;
     }
 
     try {
-      console.log('🔧 Creating XTerm instance...');
+      // REMOVED: // REMOVED: console.log('🔧 Creating XTerm instance...');
       // Initialize terminal with performance-optimized settings
       const term = new XTerm({
         theme: {
@@ -401,7 +401,7 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
             // Don&apos;t show initial prompt - backend will provide it
             // Note: Connection to backend will happen via useEffect when both sessionId and terminalReady are set
           } catch (error) {
-            console.log('FitAddon error (non-critical):', error);
+            // REMOVED: // REMOVED: console.log('FitAddon error (non-critical):', error);
           }
         }, 100);
         
@@ -514,7 +514,7 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
         return cleanup;
         
       } else {
-        console.log('Terminal container not ready, retrying...');
+        // REMOVED: // REMOVED: console.log('Terminal container not ready, retrying...');
         // Retry after a short delay if container isn't ready
         setTimeout(() => {
           if (terminalRef.current && !xtermRef.current) {
@@ -527,7 +527,7 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
         }, 200);
       }
     } catch (error) {
-      console.error('Terminal initialization error:', error);
+      logger?.error('Terminal initialization error:', error);
       // Set up a basic fallback
       if (terminalRef.current) {
         terminalRef.current.innerHTML = '<div style="color: #ff6b6b; padding: 20px;">Terminal initialization failed. Please refresh the page.</div>';
@@ -563,13 +563,13 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
   // Keep sessionId ref in sync for voice callbacks
   useEffect(() => {
     sessionIdForVoiceRef.current = sessionId;
-    console.log('📝 Updated sessionIdForVoiceRef:', sessionId);
+    // REMOVED: // REMOVED: console.log('📝 Updated sessionIdForVoiceRef:', sessionId);
   }, [sessionId]);
 
   // Connect to backend when both terminal and session are ready
   useEffect(() => {
     if (sessionId && terminalReady && xtermRef.current && !isConnected && !connectionInProgressRef.current) {
-      console.log('🚀 Both terminal and session ready, connecting to backend...');
+      // REMOVED: // REMOVED: console.log('🚀 Both terminal and session ready, connecting to backend...');
       connectToBackend(xtermRef.current);
     }
   }, [sessionId, terminalReady, isConnected]);
@@ -609,7 +609,7 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
         
         // Show interim results as user speaks (but don't spam the terminal)
         if (interimTranscript && xtermRef.current) {
-          console.log('Interim transcript:', interimTranscript);
+          // REMOVED: // REMOVED: console.log('Interim transcript:', interimTranscript);
           // Only show interim feedback in console, not in terminal to avoid spam
           // xtermRef.current.write(`\r\n💬 Hearing: "${interimTranscript}"`);
         }
@@ -617,7 +617,7 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
         if (finalTranscript && finalTranscript.trim()) {
           // Clean up the transcript
           const cleanTranscript = finalTranscript.trim();
-          console.log('Final speech recognized:', cleanTranscript);
+          // REMOVED: // REMOVED: console.log('Final speech recognized:', cleanTranscript);
           
           // Clear interim feedback and show final (minimal UI feedback)
           if (xtermRef.current) {
@@ -643,16 +643,16 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
             const socket = getSocket();
             const currentSessionId = sessionIdForVoiceRef.current;
             
-            console.log('🎤 Voice input debug:', {
-              sessionIdFromRef: currentSessionId,
-              sessionIdFromState: sessionId,
-              socketConnected: socket?.connected,
-              transcript: cleanTranscript
-            });
+            // REMOVED: console.log('🎤 Voice input debug:', {
+            //   sessionIdFromRef: currentSessionId,
+            //   sessionIdFromState: sessionId,
+            //   socketConnected: socket?.connected,
+            //   transcript: cleanTranscript
+            // });
             
             // Send to backend if we have a valid session
             if (socket && socket.connected && currentSessionId && !currentSessionId.startsWith('simulated-')) {
-              console.log('✅ Sending voice input to real session:', currentSessionId);
+              // REMOVED: console.log('✅ Sending voice input to real session:', currentSessionId);
               
               // Send as a single message (not character by character)
               socket.emit('terminal:input', { 
@@ -671,7 +671,7 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
                 });
               }
             } else {
-              console.warn('Cannot send voice input to backend:', {
+              logger?.warn('Cannot send voice input to backend:', {
                 socketConnected: socket?.connected,
                 sessionId: currentSessionId
               });
@@ -689,7 +689,7 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
       };
       
       recognitionInstance.onerror = (event: any) => {
-        console.error('Speech recognition error:', event.error);
+        logger?.error('Speech recognition error:', event.error);
         setVoiceListening(false);
         if (xtermRef.current) {
           let errorMessage = '';
@@ -729,7 +729,7 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
               }
             }, 100); // Small delay before restarting
           } catch (error) {
-            console.log('Auto-restart failed:', error);
+            // REMOVED: // REMOVED: console.log('Auto-restart failed:', error);
             setVoiceListening(false);
             if (xtermRef.current) {
               xtermRef.current.writeln('\r\n🎤 Voice input ended');
@@ -745,7 +745,7 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
       
       setRecognition(recognitionInstance);
     } else {
-      console.warn('Speech recognition not supported in this browser');
+      logger?.warn('Speech recognition not supported in this browser');
     }
   }, []);
 
@@ -784,7 +784,7 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
         xtermRef.current?.writeln('\r\n🎤 Voice input started - speak now...');
         xtermRef.current?.writeln('Say your commands clearly. Speech will be converted to text.');
       } catch (error) {
-        console.error('Failed to start speech recognition:', error);
+        logger?.error('Failed to start speech recognition:', error);
         setVoiceListening(false);
         xtermRef.current?.writeln('\r\n❌ Failed to start voice input');
         xtermRef.current?.writeln(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -793,16 +793,16 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
   };
 
   const connectToBackend = (term: XTerm) => {
-    console.log('🔌 CONNECTING TO BACKEND:', { sessionId, terminalReady });
+    // REMOVED: // REMOVED: console.log('🔌 CONNECTING TO BACKEND:', { sessionId, terminalReady });
     
     // Prevent concurrent connections
     if (connectionInProgressRef.current) {
-      console.log('⚠️ Connection already in progress, skipping...');
+      // REMOVED: // REMOVED: console.log('⚠️ Connection already in progress, skipping...');
       return;
     }
     
     if (!sessionId || !terminalReady) {
-      console.log('❌ Session not ready yet:', { sessionId, terminalReady });
+      // REMOVED: // REMOVED: console.log('❌ Session not ready yet:', { sessionId, terminalReady });
       return;
     }
     
@@ -810,28 +810,28 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
     connectionInProgressRef.current = true;
 
     // Get Socket.IO instance to connect to Express backend
-    console.log('🔧 Getting Socket.IO instance...');
+    // REMOVED: // REMOVED: console.log('🔧 Getting Socket.IO instance...');
     const socket = getSocket();
-    console.log('✅ Socket.IO instance obtained:', socket.connected ? 'CONNECTED' : 'DISCONNECTED');
+    // REMOVED: // REMOVED: console.log('✅ Socket.IO instance obtained:', socket.connected ? 'CONNECTED' : 'DISCONNECTED');
     socketRef.current = socket;
 
     // Add connection status listeners for debugging
     socket.on('connect', () => {
-      console.log('🟢 Socket.IO CONNECTED to backend');
+      // REMOVED: // REMOVED: console.log('🟢 Socket.IO CONNECTED to backend');
     });
     
     socket.on('disconnect', (reason) => {
-      console.log('🔴 Socket.IO DISCONNECTED:', reason);
+      // REMOVED: // REMOVED: console.log('🔴 Socket.IO DISCONNECTED:', reason);
     });
     
     socket.on('connect_error', (error) => {
-      console.error('❌ Socket.IO CONNECTION ERROR:', error);
+      logger?.error('❌ Socket.IO CONNECTION ERROR:', error);
     });
 
     // Join the terminal session
-    console.log('📡 Emitting terminal:create for session:', sessionId);
+    // REMOVED: // REMOVED: console.log('📡 Emitting terminal:create for session:', sessionId);
     socket.emit('terminal:create', { id: sessionId });
-    console.log('📡 Connecting to Express backend terminal:', sessionId);
+    // REMOVED: // REMOVED: console.log('📡 Connecting to Express backend terminal:', sessionId);
 
     // Flush buffered output to terminal (performance optimization)
     const flushOutput = () => {
@@ -907,7 +907,7 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
         
         // Check for Claude activation in output
         if (data.includes('Claude conversation mode') || data.includes('Claude>')) {
-          console.log('🤖 CLAUDE ACTIVATED');
+          // REMOVED: // REMOVED: console.log('🤖 CLAUDE ACTIVATED');
           setClaudeActive(true);
           setConversationMode(true);
         }
@@ -931,7 +931,7 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
         
         // Check for errors to trigger Error Doctor
         if (data.includes('error') || data.includes('Error') || data.includes('failed')) {
-          console.log('❌ ERROR DETECTED:', data.substring(0, 100));
+          // REMOVED: // REMOVED: console.log('❌ ERROR DETECTED:', data.substring(0, 100));
           setLastError(data);
         }
       }
@@ -940,7 +940,7 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
     // Handle terminal creation confirmation
     socket.on('terminal:created', ({ id }: { id: string }) => {
       if (id === sessionId) {
-        console.log('✅ Terminal connected to Express backend');
+        // REMOVED: // REMOVED: console.log('✅ Terminal connected to Express backend');
         // Write connection message to terminal
         if (term) {
           term.write('\r\n✅ Connected to backend terminal\r\n');
@@ -958,7 +958,7 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
 
     // Handle errors
     socket.on('terminal:error', ({ message }: { message: string }) => {
-      console.error('Terminal error:', message);
+      logger?.error('Terminal error:', message);
       term.writeln(`\r\n❌ Terminal error: ${message}`);
       setIsConnected(false);
       connectionInProgressRef.current = false; // Connection failed
@@ -1050,7 +1050,7 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
               // Activate supervision when claude is typed
               if (!isSupervisionActive) {
                 enableSupervision();
-                console.log('👁️ Supervision auto-activated: claude detected');
+                // REMOVED: // REMOVED: console.log('👁️ Supervision auto-activated: claude detected');
               }
               if (onClaudeTyped) {
                 onClaudeTyped();
@@ -1061,7 +1061,7 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
         }
       } else if (!socket.connected) {
         // Show connection status
-        console.log('Not connected to backend, trying to reconnect...');
+        // REMOVED: // REMOVED: console.log('Not connected to backend, trying to reconnect...');
       }
     });
 
@@ -1082,7 +1082,6 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
       resizeObserver.observe(terminalRef.current.parentElement);
     }
   };
-
 
   // Removed duplicate useEffect - connection is already handled above
 
@@ -1146,7 +1145,7 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
         throw new Error(data.error || 'Failed to spawn AI team');
       }
     } catch (error) {
-      console.error('AI Team spawn failed:', error);
+      logger?.error('AI Team spawn failed:', error);
       xtermRef.current.writeln(`❌ Failed to spawn AI team: ${error}`);
       xtermRef.current.writeln('🔧 Check that the server is running and try again');
       xtermRef.current.write('\r\n$ ');

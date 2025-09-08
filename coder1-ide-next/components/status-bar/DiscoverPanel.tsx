@@ -304,7 +304,7 @@ export default function DiscoverPanel() {
         try {
           navigator.clipboard?.writeText(`/${command.action}`);
         } catch (error) {
-          console.debug('Clipboard failed:', error);
+          // REMOVED: console.debug('Clipboard failed:', error);
         }
         return;
       }

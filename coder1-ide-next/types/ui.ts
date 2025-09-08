@@ -236,17 +236,17 @@ export interface BreadcrumbProps extends BaseUIProps {
 // Data Display Types
 // ================================================================================
 
-export interface DataTableColumn<T = any> {
+export interface DataTableColumn<T = Record<string, unknown>> {
   id: string;
   header: string;
-  accessor: keyof T | ((row: T) => any);
+  accessor: keyof T | ((row: T) => unknown);
   width?: number | string;
   sortable?: boolean;
   filterable?: boolean;
-  render?: (value: any, row: T) => ReactNode;
+  render?: (value: unknown, row: T) => ReactNode;
 }
 
-export interface DataTableProps<T = any> extends BaseUIProps {
+export interface DataTableProps<T = Record<string, unknown>> extends BaseUIProps {
   data: T[];
   columns: DataTableColumn<T>[];
   loading?: boolean;
@@ -267,7 +267,7 @@ export interface TreeNode {
   expanded?: boolean;
   selected?: boolean;
   disabled?: boolean;
-  data?: any;
+  data?: Record<string, unknown>;
 }
 
 export interface TreeViewProps extends BaseUIProps {
@@ -380,7 +380,7 @@ export interface DragDropEvent {
   type: 'drag' | 'drop';
   sourceId: string;
   targetId: string;
-  data: any;
+  data: Record<string, unknown>;
   position?: 'before' | 'after' | 'inside';
 }
 

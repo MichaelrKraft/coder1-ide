@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
       // Continue even if context processor fails - terminal should still work
     }
     
-    console.log(`✅ Terminal session created (unified): ${sessionId}`);
+    // REMOVED: // REMOVED: console.log(`✅ Terminal session created (unified): ${sessionId}`);
     
     return NextResponse.json({
       sessionId,
@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
     });
     
   } catch (error) {
-    console.error('Error creating terminal session:', error);
+    logger?.error('Error creating terminal session:', error);
     return NextResponse.json(
       { error: 'Failed to create terminal session' },
       { status: 500 }
@@ -67,7 +67,7 @@ export async function DELETE(request: NextRequest) {
       }
       
       sessionCounter.delete(sessionId);
-      console.log(`✅ Terminal session deleted (unified): ${sessionId}`);
+      // REMOVED: // REMOVED: console.log(`✅ Terminal session deleted (unified): ${sessionId}`);
       
       return NextResponse.json({
         sessionId,
@@ -82,7 +82,7 @@ export async function DELETE(request: NextRequest) {
     }
     
   } catch (error) {
-    console.error('Error deleting terminal session:', error);
+    logger?.error('Error deleting terminal session:', error);
     return NextResponse.json(
       { error: 'Failed to delete terminal session' },
       { status: 500 }
@@ -101,7 +101,7 @@ export async function GET(request: NextRequest) {
     });
     
   } catch (error) {
-    console.error('Error getting terminal sessions:', error);
+    logger?.error('Error getting terminal sessions:', error);
     return NextResponse.json(
       { error: 'Failed to get terminal sessions' },
       { status: 500 }

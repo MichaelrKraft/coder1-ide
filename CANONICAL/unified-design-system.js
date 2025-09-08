@@ -18,7 +18,7 @@ class Coder1DesignSystem {
         this.initScrollEffects();
         this.initBackgroundAnimation();
         this.initButtonEffects();
-        console.log('🎨 Coder1 Design System initialized');
+        // REMOVED: // REMOVED: console.log('🎨 Coder1 Design System initialized');
     }
 
     /**
@@ -92,7 +92,7 @@ class Coder1DesignSystem {
             });
         });
 
-        console.log(`✨ Mouse tracking initialized for ${cards.length} cards`);
+        // REMOVED: // REMOVED: console.log(`✨ Mouse tracking initialized for ${cards.length} cards`);
     }
 
     /**

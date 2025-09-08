@@ -1,11 +1,17 @@
 import Link from 'next/link';
 import { Code, FileText, Users } from 'lucide-react';
 import { glows } from '@/lib/design-tokens';
+import MemoryPersistenceDemo from '@/components/landing/MemoryPersistenceDemo';
 
 export default function HomePage() {
   return (
-    <div className="min-h-screen bg-bg-primary flex items-center justify-center p-8">
-      <div className="max-w-4xl w-full">
+    <div className="min-h-screen bg-bg-primary">
+      {/* Memory Persistence Demo - First thing users see */}
+      <MemoryPersistenceDemo />
+      
+      {/* Original Landing Content */}
+      <div className="flex items-center justify-center p-8">
+        <div className="max-w-4xl w-full">
         {/* Welcome Header */}
         <div className="text-center mb-12">
           <h1 className="text-5xl font-bold mb-4 bg-gradient-to-r from-coder1-cyan to-coder1-purple bg-clip-text text-transparent">
@@ -88,6 +94,7 @@ export default function HomePage() {
             </li>
           </ul>
         </div>
+      </div>
       </div>
     </div>
   );

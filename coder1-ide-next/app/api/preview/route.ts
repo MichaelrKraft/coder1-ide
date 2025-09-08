@@ -121,7 +121,7 @@ export async function GET() {
         // Listen for messages from parent window for live updates
         window.addEventListener('message', (event) => {
           if (event.data.type === 'preview-update') {
-            console.log('Preview update received:', event.data);
+            // REMOVED: // REMOVED: console.log('Preview update received:', event.data);
           }
         });
         

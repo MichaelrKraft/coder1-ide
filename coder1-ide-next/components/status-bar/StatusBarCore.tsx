@@ -15,6 +15,7 @@ import ContextManagerPanel from '../ContextManagerPanel';
 import { useIDEStore } from '@/stores/useIDEStore';
 import { useSessionStore } from '@/stores/useSessionStore';
 import { useUIStore } from '@/stores/useUIStore';
+import { logger } from '@/lib/logger';
 import type { IDEFile } from '@/types';
 
 interface StatusBarCoreProps {
@@ -112,7 +113,7 @@ export default function StatusBarCore({
         }
       }
     } catch (error) {
-      console.warn('Git info fetch failed:', error);
+      logger?.warn('Git info fetch failed:', error);
       setGitInfo(prev => ({ ...prev, isLoading: false }));
     }
   };
@@ -139,7 +140,7 @@ export default function StatusBarCore({
         setContextStats(prev => ({ ...prev, isLoading: false }));
       }
     } catch (error) {
-      console.warn('Context stats fetch failed:', error);
+      logger?.warn('Context stats fetch failed:', error);
       setContextStats(prev => ({ ...prev, isLoading: false }));
     }
   };
@@ -161,7 +162,7 @@ export default function StatusBarCore({
   // Listen for IDE Sessions tab clicks to auto-close ContextManagerPanel
   useEffect(() => {
     const handleIdeSessionsClick = () => {
-      console.log('🎯 IDE Sessions tab clicked - auto-closing ContextManagerPanel');
+      // REMOVED: // REMOVED: console.log('🎯 IDE Sessions tab clicked - auto-closing ContextManagerPanel');
       setIsContextManagerOpen(false);
     };
     

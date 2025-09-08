@@ -87,14 +87,14 @@ export default function MenuBar({
   // Menu configuration with actual actions
   const menuConfig: MenuConfig = {
     File: [
-      { label: 'New File', action: onNewFile || (() => console.log('New File')), shortcut: 'Ctrl+N' },
-      { label: 'Open File...', action: onOpenFile || (() => console.log('Open File')), shortcut: 'Ctrl+O' },
+      { label: 'New File', action: onNewFile || (() => {}), shortcut: 'Ctrl+N' },
+      { label: 'Open File...', action: onOpenFile || (() => {}), shortcut: 'Ctrl+O' },
       { separator: true },
-      { label: 'Save', action: onSave || (() => console.log('Save')), shortcut: 'Ctrl+S' },
-      { label: 'Save As...', action: onSaveAs || (() => console.log('Save As')), shortcut: 'Ctrl+Shift+S' },
+      { label: 'Save', action: onSave || (() => {}), shortcut: 'Ctrl+S' },
+      { label: 'Save As...', action: onSaveAs || (() => {}), shortcut: 'Ctrl+Shift+S' },
       { separator: true },
-      { label: 'Close Editor', action: onCloseFile || (() => console.log('Close editor')), shortcut: 'Ctrl+W' },
-      { label: 'Exit', action: onExit || (() => console.log('Exit')) }
+      { label: 'Close Editor', action: onCloseFile || (() => {}), shortcut: 'Ctrl+W' },
+      { label: 'Exit', action: onExit || (() => {}) }
     ],
     Edit: [
       { label: 'Undo', action: () => document.execCommand('undo'), shortcut: 'Ctrl+Z' },
@@ -124,7 +124,7 @@ export default function MenuBar({
     ],
     Help: [
       { label: 'About Coder1', action: onShowAbout || (() => alert('Coder1 IDE v2.0.0\nBuilt for Claude Code and vibe coders')), shortcut: '' },
-      { label: 'Documentation', action: () => window.open('/features', '_blank'), shortcut: '' },
+      { label: 'Documentation', action: () => window.open('/docs-manager', '_blank'), shortcut: '' },
       { separator: true },
       { label: 'Keyboard Shortcuts', action: onShowKeyboardShortcuts || (() => console.log('Shortcuts')), shortcut: 'Ctrl+K Ctrl+S' },
       { label: 'Report Issue', action: () => window.open('https://github.com/michaelkraft/autonomous_vibe_interface/issues', '_blank') }

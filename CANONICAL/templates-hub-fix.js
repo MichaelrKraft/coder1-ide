@@ -4,7 +4,7 @@
 (function() {
     'use strict';
     
-    console.log('Templates Hub Fix Loading...');
+    // REMOVED: // REMOVED: console.log('Templates Hub Fix Loading...');
     
     // Ensure functions are globally available
     window.templateFunctions = {
@@ -14,12 +14,12 @@
                 event.stopPropagation();
             }
             
-            console.log('Install Template clicked');
+            // REMOVED: // REMOVED: console.log('Install Template clicked');
             
             // Get the button
             const btn = event ? event.currentTarget : document.querySelector('.modal-content .btn-primary');
             if (!btn) {
-                console.error('Button not found');
+                logger?.error('Button not found');
                 return;
             }
             
@@ -64,14 +64,14 @@
                 event.stopPropagation();
             }
             
-            console.log('View Docs clicked');
+            // REMOVED: // REMOVED: console.log('View Docs clicked');
             
             const templateName = document.getElementById('modalName')?.textContent || '';
             const templateId = templates.find(t => t.name === templateName)?.id || '';
             
             // Open documentation
             const docsUrl = `https://docs.coder1.dev/templates/${templateId}`;
-            console.log('Opening docs:', docsUrl);
+            // REMOVED: // REMOVED: console.log('Opening docs:', docsUrl);
             window.open(docsUrl, '_blank');
             
             // Show notification
@@ -79,7 +79,7 @@
         },
         
         closeModal: function() {
-            console.log('Closing modal');
+            // REMOVED: // REMOVED: console.log('Closing modal');
             const modal = document.getElementById('modalOverlay');
             if (modal) {
                 modal.classList.remove('active');
@@ -161,28 +161,28 @@
         const installBtn = modal.querySelector('.btn-primary');
         if (installBtn) {
             installBtn.onclick = window.templateFunctions.installTemplate;
-            console.log('Install button handler attached');
+            // REMOVED: // REMOVED: console.log('Install button handler attached');
         }
         
         // Docs button
         const docsBtn = modal.querySelector('.btn-secondary');
         if (docsBtn) {
             docsBtn.onclick = window.templateFunctions.viewDocs;
-            console.log('Docs button handler attached');
+            // REMOVED: // REMOVED: console.log('Docs button handler attached');
         }
         
         // Close button
         const closeBtn = modal.querySelector('.modal-close');
         if (closeBtn) {
             closeBtn.onclick = window.templateFunctions.closeModal;
-            console.log('Close button handler attached');
+            // REMOVED: // REMOVED: console.log('Close button handler attached');
         }
     }
     
     // Override the openModal function to ensure listeners are attached
     const originalOpenModal = window.openModal;
     window.openModal = function(templateId) {
-        console.log('Opening modal for:', templateId);
+        // REMOVED: // REMOVED: console.log('Opening modal for:', templateId);
         
         // Call original function if it exists
         if (originalOpenModal) {
@@ -206,6 +206,6 @@
         setTimeout(attachModalListeners, 100);
     }
     
-    console.log('Templates Hub Fix Loaded Successfully');
-    console.log('Functions available:', Object.keys(window.templateFunctions));
+    // REMOVED: // REMOVED: console.log('Templates Hub Fix Loaded Successfully');
+    // REMOVED: // REMOVED: console.log('Functions available:', Object.keys(window.templateFunctions));
 })();

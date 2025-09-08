@@ -8,7 +8,7 @@ interface Session {
   description?: string;
   createdAt: number;
   updatedAt: number;
-  metadata?: any;
+  metadata?: Record<string, unknown>;
 }
 
 interface SessionContextType {
@@ -79,7 +79,7 @@ export function SessionProvider({ children }: SessionProviderProps) {
         }
       }
     } catch (error) {
-      console.error('Failed to load sessions:', error);
+      logger?.error('Failed to load sessions:', error);
     }
   };
 
@@ -115,11 +115,11 @@ export function SessionProvider({ children }: SessionProviderProps) {
             detail: { session: newSession } 
           }));
           
-          console.log('✨ Created new session:', newSession.name);
+          // REMOVED: // REMOVED: console.log('✨ Created new session:', newSession.name);
         }
       }
     } catch (error) {
-      console.error('Failed to create session:', error);
+      logger?.error('Failed to create session:', error);
     }
   };
 
@@ -133,7 +133,7 @@ export function SessionProvider({ children }: SessionProviderProps) {
       detail: { session } 
     }));
     
-    console.log('🔄 Switched to session:', session.name);
+    // REMOVED: // REMOVED: console.log('🔄 Switched to session:', session.name);
   };
 
   const endSession = () => {
@@ -144,7 +144,7 @@ export function SessionProvider({ children }: SessionProviderProps) {
     // Dispatch custom event
     window.dispatchEvent(new CustomEvent('sessionEnded'));
     
-    console.log('🏁 Session ended');
+    // REMOVED: // REMOVED: console.log('🏁 Session ended');
   };
 
   const value: SessionContextType = {

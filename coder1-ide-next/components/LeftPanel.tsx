@@ -14,7 +14,7 @@ interface LeftPanelProps {
 export default function LeftPanel({ onFileSelect, activeFile }: LeftPanelProps) {
   const [activeTab, setActiveTab] = useState<'explorer' | 'sessions' | 'memory'>('explorer');
   
-  console.log('🔄 LeftPanel rendered with activeTab:', activeTab);
+  // REMOVED: // REMOVED: console.log('🔄 LeftPanel rendered with activeTab:', activeTab);
   
   return (
     <div className="h-full flex flex-col bg-bg-secondary relative border border-coder1-cyan/50 shadow-glow-cyan">
@@ -93,7 +93,7 @@ export default function LeftPanel({ onFileSelect, activeFile }: LeftPanelProps) 
           }`}
           onClick={(e) => {
             e.stopPropagation();
-            console.log('🎯 Sessions tab clicked in LeftPanel');
+            // REMOVED: // REMOVED: console.log('🎯 Sessions tab clicked in LeftPanel');
             setActiveTab('sessions');
             
             // Auto-close ContextManagerPanel if it's open

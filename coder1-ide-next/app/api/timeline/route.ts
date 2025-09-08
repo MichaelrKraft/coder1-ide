@@ -51,7 +51,7 @@ export async function GET(request: NextRequest) {
           }
         } catch (error) {
           // Session or checkpoints directory doesn't exist, return empty
-          console.warn(`No checkpoints found for session ${sessionId}`);
+          logger?.warn(`No checkpoints found for session ${sessionId}`);
         }
       } else {
         // Get checkpoints from all sessions for comprehensive timeline
@@ -100,16 +100,16 @@ export async function GET(request: NextRequest) {
               }
             } catch (error) {
               // Checkpoints directory doesn't exist for this session
-              console.warn(`No checkpoints found for session ${sessionDir}`);
+              logger?.warn(`No checkpoints found for session ${sessionDir}`);
             }
           }
         } catch (error) {
           // Sessions directory doesn't exist
-          console.warn('No sessions directory found');
+          logger?.warn('No sessions directory found');
         }
       }
     } catch (error) {
-      console.warn('Error reading session data:', error);
+      logger?.warn('Error reading session data:', error);
     }
     
     // Sort by timestamp (newest first)
@@ -126,7 +126,7 @@ export async function GET(request: NextRequest) {
     });
     
   } catch (error) {
-    console.error('Failed to fetch timeline:', error);
+    logger?.error('Failed to fetch timeline:', error);
     return NextResponse.json(
       { error: 'Failed to fetch timeline' },
       { status: 500 }
@@ -175,7 +175,7 @@ export async function POST(request: NextRequest) {
     });
     
   } catch (error) {
-    console.error('Failed to add timeline event:', error);
+    logger?.error('Failed to add timeline event:', error);
     return NextResponse.json(
       { error: 'Failed to add timeline event' },
       { status: 500 }

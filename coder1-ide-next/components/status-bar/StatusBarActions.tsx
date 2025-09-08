@@ -104,12 +104,12 @@ const StatusBarActions = React.memo(function StatusBarActions({
           message: '✅ Checkpoint saved successfully',
           type: 'success'
         });
-        console.log('✅ Checkpoint saved at:', new Date().toLocaleTimeString());
+        // REMOVED: // REMOVED: console.log('✅ Checkpoint saved at:', new Date().toLocaleTimeString());
       } else {
         throw new Error('Failed to save checkpoint');
       }
     } catch (error) {
-      console.error('Failed to save checkpoint:', error);
+      logger?.error('Failed to save checkpoint:', error);
       addToast({
         message: '⚠️ Failed to save checkpoint',
         type: 'error'
@@ -123,7 +123,7 @@ const StatusBarActions = React.memo(function StatusBarActions({
       const data = await response.json();
       
       if (response.ok) {
-        console.log('📊 Timeline data:', data);
+        // REMOVED: // REMOVED: console.log('📊 Timeline data:', data);
         window.open(`/timeline?sessionId=${sessionId}`, '_blank');
         addToast({
           message: '📊 Opening timeline view',
@@ -133,7 +133,7 @@ const StatusBarActions = React.memo(function StatusBarActions({
         throw new Error('Failed to fetch timeline');
       }
     } catch (error) {
-      console.error('Failed to fetch timeline:', error);
+      logger?.error('Failed to fetch timeline:', error);
       addToast({
         message: '⚠️ Failed to load timeline',
         type: 'error'

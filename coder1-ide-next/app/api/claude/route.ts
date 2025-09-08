@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
     }
 
   } catch (error) {
-    console.error('Claude API route error:', error);
+    logger?.error('Claude API route error:', error);
     
     return NextResponse.json(
       { 

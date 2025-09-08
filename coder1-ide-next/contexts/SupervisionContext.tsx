@@ -25,14 +25,14 @@ export function SupervisionProvider({ children }: { children: ReactNode }) {
 
     // Listen for supervision state changes from backend
     socket.on('supervision:activated', (data: { timestamp: string, triggeredBy: string }) => {
-      console.log('👁️ Supervision activated by:', data.triggeredBy);
+      // REMOVED: // REMOVED: console.log('👁️ Supervision activated by:', data.triggeredBy);
       setIsSupervisionActive(true);
       setSupervisionStatus('active');
       setLastSupervisionCheck(new Date(data.timestamp));
     });
 
     socket.on('supervision:deactivated', (data: { timestamp: string }) => {
-      console.log('👁️ Supervision deactivated');
+      // REMOVED: // REMOVED: console.log('👁️ Supervision deactivated');
       setIsSupervisionActive(false);
       setSupervisionStatus('inactive');
       setLastSupervisionCheck(new Date(data.timestamp));

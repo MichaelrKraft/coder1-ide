@@ -365,7 +365,7 @@ export class SessionSummaryService {
     try {
       const prompt = this.buildSessionSummaryPrompt(sessionData);
       
-      console.log('📤 Sending session summary request to Next.js API');
+      // REMOVED: // REMOVED: // REMOVED: console.log('📤 Sending session summary request to Next.js API');
       
       const response = await fetch(`${this.baseURL}/api/claude/session-summary`, {
         method: 'POST',
@@ -384,12 +384,12 @@ export class SessionSummaryService {
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('API error response:', errorText);
+        logger?.error('API error response:', errorText);
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
       const result = await response.json();
-      console.log('📥 Received response from API:', result.metadata);
+      // REMOVED: // REMOVED: // REMOVED: console.log('📥 Received response from API:', result.metadata);
       
       // Return the actual summary from the API
       return {
@@ -400,7 +400,7 @@ export class SessionSummaryService {
       };
 
     } catch (error) {
-      console.error('Failed to generate session summary:', error);
+      logger?.error('Failed to generate session summary:', error);
       
       // Provide fallback summary if API fails
       const fallbackSummary = this.generateFallbackSummary(sessionData);
@@ -768,7 +768,7 @@ Remember: BE EXHAUSTIVELY DETAILED. The next agent should know EVERYTHING about 
         exports
       };
     } catch (error) {
-      console.error('Export failed:', error);
+      logger?.error('Export failed:', error);
       return {
         success: false,
         exports: {},

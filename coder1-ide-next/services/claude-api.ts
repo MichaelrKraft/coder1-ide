@@ -98,7 +98,7 @@ class ClaudeAPIService {
       return claudeResponse;
 
     } catch (error) {
-      console.error('Claude API error:', error);
+      logger?.error('Claude API error:', error);
       throw error;
     }
   }

@@ -98,7 +98,7 @@ const PreviewPanel = React.memo(function PreviewPanel({
         }
       }
     } catch (err) {
-      console.error('Failed to fetch team data:', err);
+      logger?.error('Failed to fetch team data:', err);
       // Only show connection error on first load to prevent blinking
       if (!teamData) {
         setError('Connection error - using offline mode');
