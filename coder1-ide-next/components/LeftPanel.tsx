@@ -17,7 +17,7 @@ export default function LeftPanel({ onFileSelect, activeFile }: LeftPanelProps) 
   // REMOVED: // REMOVED: console.log('🔄 LeftPanel rendered with activeTab:', activeTab);
   
   return (
-    <div className="h-full flex flex-col bg-bg-secondary relative border border-coder1-cyan/50 shadow-glow-cyan">
+    <div className="h-full flex flex-col bg-bg-secondary relative border-l border-t border-b border-r-2 border-coder1-cyan/50 shadow-glow-cyan">
       {/* Animated Background Gradient Orbs */}
       <div className="absolute inset-0 pointer-events-none">
         {/* Gradient Orb 1 - Cyan */}

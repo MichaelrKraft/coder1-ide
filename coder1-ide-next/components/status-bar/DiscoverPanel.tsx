@@ -249,13 +249,13 @@ export default function DiscoverPanel() {
   // Slash commands (just the slash commands for scrolling)
   const slashCommands = allCommands.filter(cmd => cmd.name.startsWith('/'));
   
-  // Get current visible slash commands (increased from 3 to 10)
-  const visibleCount = 10;
+  // Get current visible slash commands (show only 3 at a time)
+  const visibleCount = 3;
   const visibleSlashCommands = slashCommands.slice(slashCommandOffset, slashCommandOffset + visibleCount);
   
-  // Scroll slash commands (updated for more items)
+  // Scroll slash commands
   const scrollSlashCommands = (direction: 'up' | 'down') => {
-    const scrollAmount = 5; // Scroll 5 items at a time
+    const scrollAmount = 1; // Scroll 1 item at a time for smoother experience with only 3 visible
     if (direction === 'down' && slashCommandOffset + visibleCount < slashCommands.length) {
       setSlashCommandOffset(Math.min(slashCommandOffset + scrollAmount, slashCommands.length - visibleCount));
     } else if (direction === 'up' && slashCommandOffset > 0) {
@@ -474,28 +474,18 @@ export default function DiscoverPanel() {
               <h4 className="text-xs font-semibold text-coder1-cyan uppercase tracking-wider">
                 /slash commands <span className="text-orange-500">({slashCommands.length} total)</span>
               </h4>
-              <div className="flex items-center gap-1">
-                <span className="text-xs text-text-muted mr-2">
-                  {slashCommandOffset + 1}-{Math.min(slashCommandOffset + visibleCount, slashCommands.length)}
-                </span>
-                <button
-                  onClick={() => scrollSlashCommands('up')}
-                  disabled={slashCommandOffset === 0}
-                  className="p-1 rounded hover:bg-bg-primary disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  <ChevronUp className="w-3 h-3 text-text-muted" />
-                </button>
-                <button
-                  onClick={() => scrollSlashCommands('down')}
-                  disabled={slashCommandOffset + visibleCount >= slashCommands.length}
-                  className="p-1 rounded hover:bg-bg-primary disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  <ChevronDown className="w-3 h-3 text-text-muted" />
-                </button>
-              </div>
+              <span className="text-xs text-text-muted">
+                Scroll for more
+              </span>
             </div>
-            <div className="space-y-1">
-              {visibleSlashCommands.map((cmd) => {
+            <div 
+              className="space-y-1 max-h-[140px] overflow-y-auto pr-2 custom-scrollbar"
+              style={{
+                scrollbarWidth: 'thin',
+                scrollbarColor: 'rgba(139, 92, 246, 0.5) rgba(30, 30, 40, 0.5)'
+              }}
+            >
+              {slashCommands.map((cmd) => {
                 const IconComponent = cmd.icon;
                 return (
                   <button

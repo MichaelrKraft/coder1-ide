@@ -1,32 +1,61 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { claudeAPI } from '@/services/claude-api';
+import { claudeCliService } from '@/services/claude-cli-service';
+
+// CORS configuration for security - only allow specific origins
+const ALLOWED_ORIGINS = [
+  'https://coder1.app',
+  'http://localhost:3001',
+  'http://127.0.0.1:3001'
+];
 
 export async function POST(request: NextRequest) {
   try {
-    const { message, context, command } = await request.json();
-
-    // Check if Claude API is configured
-    if (!claudeAPI.isConfigured()) {
+    // SECURITY: Verify origin to prevent malicious websites from accessing local server
+    const origin = request.headers.get('origin');
+    if (origin && !ALLOWED_ORIGINS.includes(origin)) {
       return NextResponse.json(
-        { error: 'Claude API key not configured. Please add CLAUDE_API_KEY to .env.local' },
-        { status: 500 }
+        { error: 'Forbidden: Invalid origin' },
+        { status: 403 }
       );
     }
+
+    const { message, context, command, sessionId } = await request.json();
+
+    // Check if Claude CLI is available
+    if (!claudeCliService.isClaudeAvailable()) {
+      return NextResponse.json(
+        { 
+          error: 'Claude CLI not available', 
+          details: 'Please install Claude Code CLI from https://claude.ai/code',
+          command: claudeCliService.getClaudeCommand()
+        },
+        { status: 503 }
+      );
+    }
+
+    const session = sessionId || 'default';
 
     let response;
 
     if (command) {
       // Process terminal command
-      response = await claudeAPI.processTerminalCommand(command, context);
+      response = await claudeCliService.processTerminalCommand(session, command, context);
       return NextResponse.json({ content: response });
     } else {
-      // Regular message
-      const claudeResponse = await claudeAPI.sendMessage(message, context);
-      return NextResponse.json(claudeResponse);
+      // Regular message - create session if needed
+      if (!claudeCliService.getSession(session)) {
+        claudeCliService.createSession(session);
+      }
+      
+      const claudeResponse = await claudeCliService.sendMessage(session, message, context);
+      return NextResponse.json({ 
+        content: claudeResponse,
+        sessionId: session
+      });
     }
 
   } catch (error) {
-    logger?.error('Claude API route error:', error);
+    console.error('Claude CLI route error:', error);
     
     return NextResponse.json(
       { 
@@ -39,13 +68,19 @@ export async function POST(request: NextRequest) {
 }
 
 // Handle OPTIONS for CORS
-export async function OPTIONS() {
+export async function OPTIONS(request: NextRequest) {
+  const origin = request.headers.get('origin');
+  
+  // Check if origin is allowed
+  const allowedOrigin = ALLOWED_ORIGINS.includes(origin || '') ? origin : ALLOWED_ORIGINS[1]; // Default to localhost
+  
   return new NextResponse(null, {
     status: 200,
     headers: {
-      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Origin': allowedOrigin,
       'Access-Control-Allow-Methods': 'POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+      'Access-Control-Allow-Credentials': 'true',
     },
   });
 }

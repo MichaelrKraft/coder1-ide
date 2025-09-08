@@ -163,7 +163,7 @@ export default function MenuBar({
     { icon: Home, label: 'Home page', href: '/', emoji: '🏠' },
     { icon: Grid, label: 'AI dashboard', href: '/vibe-dashboard', emoji: '🤖' },
     { icon: Code, label: 'Agent dashboard', href: '/agent-dashboard', emoji: '👥' },
-    { icon: FileText, label: 'Documentation', href: '/docs-manager', emoji: '📚' },
+    { icon: FileText, label: 'Documentation', href: '/documentation.html', emoji: '📚' },
     { icon: SettingsIcon, label: 'Settings', href: '#', onClick: () => onShowSettings?.(), emoji: '⚙️' },
   ];
 
