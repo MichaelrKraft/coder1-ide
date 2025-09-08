@@ -153,7 +153,9 @@ const PreviewPanel = React.memo(function PreviewPanel({
   ), [mode]);
 
   return (
-    <div className="h-full flex flex-col bg-bg-secondary border border-coder1-cyan/50 shadow-glow-cyan">
+    <div className="h-full flex flex-col bg-bg-secondary border-l-2 border-coder1-cyan/50" style={{
+      boxShadow: '-2px 0 8px rgba(0, 217, 255, 0.3)'
+    }}>
       {/* Preview Header - matching Explorer style */}
       <div className="px-3 py-2 border-b border-border-default">
         <h3 className="text-xs font-semibold text-text-muted uppercase tracking-wider">
