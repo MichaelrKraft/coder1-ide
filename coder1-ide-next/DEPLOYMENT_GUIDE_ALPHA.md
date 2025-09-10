@@ -46,7 +46,7 @@ npm run build:alpha
 ### Build & Deploy Settings
 - **Build Command**: 
   ```bash
-  npm ci --production && NODE_OPTIONS="--max-old-space-size=400" npm run build
+  npm ci && NODE_OPTIONS="--max-old-space-size=500" npm run build && npm prune --production
   ```
 - **Start Command**:
   ```bash

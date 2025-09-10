@@ -10,11 +10,14 @@ services:
     
     # Build configuration
     buildCommand: |
-      # Install only production dependencies
-      npm ci --production --omit=dev
+      # Install ALL dependencies (including dev) for build
+      npm ci
       
-      # Build with memory constraints
-      NODE_OPTIONS="--max-old-space-size=400" npm run build
+      # Build with higher memory limit for build phase
+      NODE_OPTIONS="--max-old-space-size=500" npm run build
+      
+      # Now remove dev dependencies to save runtime memory
+      npm prune --production
       
       # Clean up build artifacts to save space
       rm -rf .next/cache
@@ -24,8 +27,8 @@ services:
       find . -name "*.map" -delete
       find . -name "*.md" -not -path "./public/*" -delete
     
-    # Start command with memory limit
-    startCommand: node --max-old-space-size=400 server.js
+    # Start command with lower memory limit for runtime
+    startCommand: node --max-old-space-size=400 --expose-gc server.js
     
     # Health check
     healthCheckPath: /api/health
