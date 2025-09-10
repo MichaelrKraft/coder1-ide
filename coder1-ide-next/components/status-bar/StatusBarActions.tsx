@@ -109,7 +109,7 @@ const StatusBarActions = React.memo(function StatusBarActions({
         throw new Error('Failed to save checkpoint');
       }
     } catch (error) {
-      logger?.error('Failed to save checkpoint:', error);
+      // logger?.error('Failed to save checkpoint:', error);
       addToast({
         message: '⚠️ Failed to save checkpoint',
         type: 'error'
@@ -133,7 +133,7 @@ const StatusBarActions = React.memo(function StatusBarActions({
         throw new Error('Failed to fetch timeline');
       }
     } catch (error) {
-      logger?.error('Failed to fetch timeline:', error);
+      // logger?.error('Failed to fetch timeline:', error);
       addToast({
         message: '⚠️ Failed to load timeline',
         type: 'error'

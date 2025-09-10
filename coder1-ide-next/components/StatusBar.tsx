@@ -141,7 +141,7 @@ export default function StatusBar({
         setLastCheckpoint(now);
         // REMOVED: // REMOVED: console.log('🕐 Auto-checkpoint saved at:', now.toLocaleTimeString());
       } catch (error) {
-        logger?.error('Auto-checkpoint failed:', error);
+        // logger?.error('Auto-checkpoint failed:', error);
       }
     };
 
@@ -199,7 +199,7 @@ export default function StatusBar({
         throw new Error('Failed to save checkpoint');
       }
     } catch (error) {
-      logger?.error('Failed to save checkpoint:', error);
+      // logger?.error('Failed to save checkpoint:', error);
       showToast('⚠️ Failed to save checkpoint');
     }
     
@@ -223,7 +223,7 @@ export default function StatusBar({
         throw new Error('Failed to fetch timeline');
       }
     } catch (error) {
-      logger?.error('Failed to fetch timeline:', error);
+      // logger?.error('Failed to fetch timeline:', error);
       showToast('⚠️ Failed to load timeline');
     }
     
@@ -260,7 +260,7 @@ export default function StatusBar({
         throw new Error('Failed to export');
       }
     } catch (error) {
-      logger?.error('Failed to export project:', error);
+      // logger?.error('Failed to export project:', error);
       showToast('⚠️ Failed to export project');
     }
     
@@ -330,7 +330,7 @@ export default function StatusBar({
 
   const handleDocs = async () => {
     // Open the documentation intelligence system in a new tab
-    window.open('http://localhost:3000/docs-manager', '_blank');
+    window.open('/docs-manager', '_blank');
   };
 
   const handleAITeam = async () => {
@@ -344,24 +344,59 @@ export default function StatusBar({
         setIsLoading(null);
         return;
       }
+
+      // Check if CLI Puppeteer is available
+      let response: Response;
+      let bridgeType = 'standard';
       
-      showToast('🚀 Spawning AI Team with Claude Code Bridge...');
-      
-      // Call the Claude Code Bridge API endpoint
-      const response = await fetch('/api/claude-bridge/spawn', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          requirement,
-          sessionId
-        })
-      });
+      try {
+        // First check if puppet-bridge is enabled
+        const puppetCheck = await fetch('/api/puppet-bridge/spawn');
+        const puppetStatus = await puppetCheck.json();
+        
+        if (puppetStatus.enabled) {
+          showToast('🎭 Spawning AI Team with CLI Puppeteer (Cost-Free)...');
+          bridgeType = 'puppet';
+          
+          response = await fetch('/api/puppet-bridge/spawn', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              requirement,
+              sessionId
+            })
+          });
+        } else {
+          // Fallback to standard bridge
+          showToast('🚀 Spawning AI Team with Claude Code Bridge...');
+          response = await fetch('/api/claude-bridge/spawn', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              requirement,
+              sessionId
+            })
+          });
+        }
+      } catch (puppetError) {
+        // If puppet-bridge fails, fallback to standard bridge
+        showToast('🚀 Spawning AI Team with Claude Code Bridge...');
+        response = await fetch('/api/claude-bridge/spawn', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            requirement,
+            sessionId
+          })
+        });
+      }
       
       const data = await response.json();
       
       if (response.ok && data.success) {
-        showToast(`✅ AI Team spawned successfully! ${data.agents?.length || 0} agents working...`);
-        // REMOVED: // REMOVED: console.log('🤖 Claude Code Bridge Team:', data);
+        const bridgeEmoji = bridgeType === 'puppet' ? '🎭' : '🤖';
+        const bridgeName = bridgeType === 'puppet' ? 'CLI Puppeteer' : 'Claude Code Bridge';
+        showToast(`✅ AI Team spawned with ${bridgeName}! ${data.agents?.length || 0} agents working...`);
         
         // Update the Preview Panel with team data if it's visible
         if (window.updateAITeamDashboard) {
@@ -372,18 +407,20 @@ export default function StatusBar({
             progress: { overall: 0 },
             generatedFiles: 0,
             requirement: requirement,
-            costSavings: data.costSavings,
-            executionType: data.executionType,
+            costSavings: data.costSavings || (bridgeType === 'puppet'),
+            executionType: data.executionType || (bridgeType === 'puppet' ? 'puppet-bridge-cli' : 'claude-code-bridge'),
             automatedExecution: true,
             usedBridge: true,
-            workflow: data.workflow
+            workflow: data.workflow,
+            bridgeType: bridgeType,
+            costFree: data.costFree || (bridgeType === 'puppet')
           });
         }
       } else {
         throw new Error(data.error || 'Failed to spawn AI team');
       }
     } catch (error) {
-      logger?.error('Failed to spawn AI team:', error);
+      // logger?.error('Failed to spawn AI team:', error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       showToast(`⚠️ Failed to spawn AI team: ${errorMessage}`);
     }
@@ -508,9 +545,8 @@ export default function StatusBar({
       {/* Center section - Action buttons (centered) */}
       <div className="flex items-center gap-2">
         {/* CheckPoint Button */}
-        <div className="p-[1px] rounded-md bg-gradient-to-r from-purple-500 to-cyan-500">
+        <div data-tour="checkpoint-timeline" className="p-[1px] rounded-md bg-gradient-to-r from-purple-500 to-cyan-500">
           <button
-            data-tour="checkpoint-timeline"
             onClick={handleCheckpoint}
             disabled={isLoading === 'checkpoint'}
             className="flex items-center gap-1.5 px-4 py-1.5 text-sm font-medium text-text-secondary hover:text-text-primary rounded-md transition-all duration-200 disabled:opacity-50 bg-bg-secondary w-full"
@@ -536,9 +572,8 @@ export default function StatusBar({
         </div>
 
         {/* TimeLine Button */}
-        <div className="p-[1px] rounded-md bg-gradient-to-r from-purple-500 to-cyan-500">
+        <div data-tour="timeline-button" className="p-[1px] rounded-md bg-gradient-to-r from-purple-500 to-cyan-500">
           <button
-            data-tour="timeline-button"
             onClick={handleTimeline}
             disabled={isLoading === 'timeline'}
             className="flex items-center gap-1.5 px-4 py-1.5 text-sm font-medium text-text-secondary hover:text-text-primary rounded-md transition-all duration-200 disabled:opacity-50 bg-bg-secondary w-full"
@@ -644,7 +679,7 @@ export default function StatusBar({
             e.currentTarget.style.borderColor = 'transparent';
             e.currentTarget.style.boxShadow = 'none';
           }}
-          title="Spawn AI Team with Claude Code Bridge (Cost-Free)"
+          title="Spawn AI Team - Auto-detects CLI Puppeteer or Claude Code Bridge"
         >
           {isLoading === 'ai-team' ? (
             <Loader2 className="w-4 h-4 animate-spin" />

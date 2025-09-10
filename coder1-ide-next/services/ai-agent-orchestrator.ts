@@ -7,6 +7,7 @@
 import fs from 'fs';
 import path from 'path';
 import { claudeAPI, ClaudeMessage, ClaudeResponse } from './claude-api';
+import { logger } from '@/lib/logger';
 import type { AIProjectContext } from '@/types/session';
 
 export interface AgentDefinition {
@@ -99,6 +100,12 @@ class AIAgentOrchestrator {
    */
   private loadAgentDefinitions() {
     try {
+      // Check if agents directory exists
+      if (!fs.existsSync(this.agentsPath)) {
+        logger.warn(`⚠️ Agents directory not found: ${this.agentsPath}`);
+        return;
+      }
+
       const agentFiles = fs.readdirSync(this.agentsPath)
         .filter(file => file.endsWith('.json') && file !== 'templates.json');
 
@@ -111,7 +118,7 @@ class AIAgentOrchestrator {
 
       // REMOVED: // REMOVED: // REMOVED: console.log(`✅ Loaded ${this.agentDefinitions.size} agent definitions`);
     } catch (error) {
-      logger?.error('❌ Error loading agent definitions:', error);
+      logger.error('❌ Error loading agent definitions:', error);
     }
   }
 
@@ -121,6 +128,13 @@ class AIAgentOrchestrator {
   private loadWorkflowTemplates() {
     try {
       const templatesPath = path.join(this.agentsPath, 'templates.json');
+      
+      // Check if templates file exists
+      if (!fs.existsSync(templatesPath)) {
+        logger.warn(`⚠️ Templates file not found: ${templatesPath}`);
+        return;
+      }
+
       const templatesData = JSON.parse(fs.readFileSync(templatesPath, 'utf-8'));
       
       for (const [workflowId, workflow] of Object.entries(templatesData.workflows)) {
@@ -129,7 +143,7 @@ class AIAgentOrchestrator {
 
       // REMOVED: // REMOVED: // REMOVED: console.log(`✅ Loaded ${this.workflowTemplates.size} workflow templates`);
     } catch (error) {
-      logger?.error('❌ Error loading workflow templates:', error);
+      logger.error('❌ Error loading workflow templates:', error);
     }
   }
 
@@ -239,7 +253,7 @@ class AIAgentOrchestrator {
     for (const agentId of workflow.agents) {
       const agentDef = this.agentDefinitions.get(agentId);
       if (!agentDef) {
-        logger?.warn(`⚠️ Agent definition not found: ${agentId}`);
+        logger.warn(`⚠️ Agent definition not found: ${agentId}`);
         continue;
       }
 
@@ -320,7 +334,7 @@ class AIAgentOrchestrator {
 
     } catch (error) {
       team.status = 'error';
-      logger?.error(`❌ Team ${teamId} workflow failed:`, error);
+      logger.error(`❌ Team ${teamId} workflow failed:`, error);
     }
   }
 
@@ -369,7 +383,7 @@ class AIAgentOrchestrator {
     } catch (error) {
       agent.status = 'error';
       agent.output.push(`❌ Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
-      logger?.error(`❌ ${agent.agentName} failed:`, error);
+      logger.error(`❌ ${agent.agentName} failed:`, error);
     }
   }
 
@@ -555,7 +569,7 @@ Respond with clear file paths and complete file contents in code blocks.`;
       
       // REMOVED: // REMOVED: // REMOVED: console.log(`📁 Generated: ${file.path}`);
     } catch (error) {
-      logger?.error(`❌ Failed to write file ${file.path}:`, error);
+      logger.error(`❌ Failed to write file ${file.path}:`, error);
     }
   }
 
@@ -568,7 +582,7 @@ Respond with clear file paths and complete file contents in code blocks.`;
       // For now, return basic context
       return `Previous project patterns and best practices for similar requirements`;
     } catch (error) {
-      logger?.warn('⚠️ Memory context unavailable:', error);
+      logger.warn('⚠️ Memory context unavailable:', error);
       return '';
     }
   }
@@ -612,7 +626,7 @@ Respond with clear file paths and complete file contents in code blocks.`;
       
       return true;
     } catch (error) {
-      logger?.error(`❌ Failed to send input to ${agentId}:`, error);
+      logger.error(`❌ Failed to send input to ${agentId}:`, error);
       return false;
     }
   }

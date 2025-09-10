@@ -1,10 +1,11 @@
 /* Terminal Button Styles - Glass effect with Blue glow default, Orange on hover */
 .terminal-control-btn {
   background: linear-gradient(135deg, rgba(125, 211, 252, 0.1) 0%, rgba(187, 154, 247, 0.1) 100%);
-  border: 1px solid rgba(0, 217, 255, 0.3);
+  border: 1px solid rgba(0, 217, 255, 0.5);
   box-shadow: 
-    0 0 10px rgba(0, 217, 255, 0.2),
-    0 0 20px rgba(0, 217, 255, 0.1),
+    0 0 15px rgba(0, 217, 255, 0.4),
+    0 0 30px rgba(0, 217, 255, 0.2),
+    0 0 45px rgba(0, 217, 255, 0.1),
     0 2px 4px rgba(0, 0, 0, 0.3),
     inset 0 1px 0 rgba(255, 255, 255, 0.05);
   color: #ffffff;
@@ -29,10 +30,11 @@
 }
 
 .terminal-control-btn:hover {
-  border-color: rgba(251, 146, 60, 0.5);
+  border-color: rgba(251, 146, 60, 0.7);
   box-shadow: 
-    0 0 20px rgba(251, 146, 60, 0.4),
-    0 0 40px rgba(251, 146, 60, 0.2),
+    0 0 25px rgba(251, 146, 60, 0.6),
+    0 0 50px rgba(251, 146, 60, 0.3),
+    0 0 75px rgba(251, 146, 60, 0.15),
     0 2px 8px rgba(0, 0, 0, 0.3),
     inset 0 1px 0 rgba(255, 255, 255, 0.1);
   transform: translateY(-2px) scale(1.02);
@@ -53,10 +55,11 @@
 /* Stop button special style - same glass effect as others */
 .terminal-stop-btn {
   background: linear-gradient(135deg, rgba(125, 211, 252, 0.1) 0%, rgba(187, 154, 247, 0.1) 100%);
-  border: 1px solid rgba(0, 217, 255, 0.3);
+  border: 1px solid rgba(0, 217, 255, 0.5);
   box-shadow: 
-    0 0 10px rgba(0, 217, 255, 0.2),
-    0 0 20px rgba(0, 217, 255, 0.1),
+    0 0 15px rgba(0, 217, 255, 0.4),
+    0 0 30px rgba(0, 217, 255, 0.2),
+    0 0 45px rgba(0, 217, 255, 0.1),
     0 2px 4px rgba(0, 0, 0, 0.3),
     inset 0 1px 0 rgba(255, 255, 255, 0.05);
   color: #ffffff;
@@ -81,10 +84,11 @@
 }
 
 .terminal-stop-btn:hover {
-  border-color: rgba(251, 146, 60, 0.5);
+  border-color: rgba(251, 146, 60, 0.7);
   box-shadow: 
-    0 0 20px rgba(251, 146, 60, 0.4),
-    0 0 40px rgba(251, 146, 60, 0.2),
+    0 0 25px rgba(251, 146, 60, 0.6),
+    0 0 50px rgba(251, 146, 60, 0.3),
+    0 0 75px rgba(251, 146, 60, 0.15),
     0 2px 8px rgba(0, 0, 0, 0.3),
     inset 0 1px 0 rgba(255, 255, 255, 0.1);
   transform: translateY(-2px) scale(1.02);
@@ -100,7 +104,7 @@
 .terminal-content {
   position: relative;
   height: 100%; /* Use full height available */
-  overflow-y: auto; /* Allow scrolling if needed */
+  z-index: 10; /* Ensure proper stacking context */
 }
 
 /* Add scroll padding to terminal viewport for better visibility */
@@ -116,10 +120,11 @@
 /* Scroll to Follow button styles */
 .scroll-to-follow-btn {
   background: linear-gradient(135deg, rgba(125, 211, 252, 0.1) 0%, rgba(187, 154, 247, 0.1) 100%);
-  border: 1px solid rgba(0, 217, 255, 0.3);
+  border: 1px solid rgba(0, 217, 255, 0.5);
   box-shadow: 
-    0 0 10px rgba(0, 217, 255, 0.2),
-    0 0 20px rgba(0, 217, 255, 0.1),
+    0 0 15px rgba(0, 217, 255, 0.4),
+    0 0 30px rgba(0, 217, 255, 0.2),
+    0 0 45px rgba(0, 217, 255, 0.1),
     0 2px 4px rgba(0, 0, 0, 0.3),
     inset 0 1px 0 rgba(255, 255, 255, 0.05);
   backdrop-filter: blur(4px);
@@ -128,10 +133,11 @@
 }
 
 .scroll-to-follow-btn:hover {
-  border-color: rgba(251, 146, 60, 0.5);
+  border-color: rgba(251, 146, 60, 0.7);
   box-shadow: 
-    0 0 20px rgba(251, 146, 60, 0.4),
-    0 0 40px rgba(251, 146, 60, 0.2),
+    0 0 25px rgba(251, 146, 60, 0.6),
+    0 0 50px rgba(251, 146, 60, 0.3),
+    0 0 75px rgba(251, 146, 60, 0.15),
     0 2px 8px rgba(0, 0, 0, 0.3),
     inset 0 1px 0 rgba(255, 255, 255, 0.1);
   transform: translateY(-2px);

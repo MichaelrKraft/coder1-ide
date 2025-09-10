@@ -16,6 +16,7 @@ import { TerminalCommandProvider } from '@/contexts/TerminalCommandContext';
 import AboutModal from '@/components/AboutModal';
 import KeyboardShortcutsModal from '@/components/KeyboardShortcutsModal';
 import SettingsModal from '@/components/SettingsModal';
+import FileOpenDialog from '@/components/FileOpenDialog';
 import type { IDEFile } from '@/types';
 
 // Dynamic imports for heavy components with optimized lazy loading
@@ -78,6 +79,7 @@ export default App;
   const [showAboutModal, setShowAboutModal] = useState(false);
   const [showKeyboardShortcutsModal, setShowKeyboardShortcutsModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [showFileOpenDialog, setShowFileOpenDialog] = useState(false);
   
   // Session tracking for Session Summary feature
   const [openFiles, setOpenFiles] = useState<IDEFile[]>([]);
@@ -197,7 +199,7 @@ export default App;
         
         showToast('Context Folders initialized - Your sessions are now being saved!');
       } catch (error) {
-        logger?.error('❌ Failed to initialize Context system:', error);
+        // logger?.error('❌ Failed to initialize Context system:', error);
         showToast('Context Folders unavailable - Sessions will not be saved');
       }
     };
@@ -225,7 +227,7 @@ export default App;
               body: JSON.stringify({ sessionId, model: 'claude-3-5-sonnet' })
             });
           } catch (error) {
-            logger?.error('Failed to track usage:', error);
+            // logger?.error('Failed to track usage:', error);
           }
         }, 60000); // 1 minute
         
@@ -234,7 +236,7 @@ export default App;
         
         // REMOVED: // REMOVED: console.log('✅ Usage tracking started');
       } catch (error) {
-        logger?.error('❌ Failed to start usage tracking:', error);
+        // logger?.error('❌ Failed to start usage tracking:', error);
       }
     };
     
@@ -297,20 +299,120 @@ export default App;
   };
 
   const handleOpenFile = () => {
-    // REMOVED: // REMOVED: console.log('Open file dialog');
-    // Would open file dialog
-    showToast('Open file dialog (not implemented)');
+    setShowFileOpenDialog(true);
+  };
+  
+  const handleFileSelectFromDialog = async (filePath: string) => {
+    try {
+      // Fetch file content from API
+      const response = await fetch(`/api/files/read?path=${encodeURIComponent(filePath)}`);
+      const data = await response.json();
+      
+      if (data.success) {
+        const fileName = filePath.split('/').pop() || filePath;
+        setActiveFile(filePath);
+        setEditorContent(data.content);
+        setShowHero(false); // Hide hero section when file is opened
+        
+        // Create IDEFile object
+        const newFile: IDEFile = {
+          id: `file_${Date.now()}`,
+          path: filePath,
+          name: fileName,
+          content: data.content,
+          isDirty: false,
+          isOpen: true,
+          language: getLanguageFromFileName(fileName),
+          type: getLanguageFromFileName(fileName) as any,
+          lastModified: new Date()
+        };
+        
+        // Track in openFiles if not already there
+        if (!openFiles.some(f => f.path === filePath)) {
+          setOpenFiles([...openFiles, newFile]);
+        }
+        
+        showToast(`Opened ${fileName}`);
+      } else {
+        showToast(`Failed to open file: ${data.error}`);
+      }
+    } catch (error) {
+      console.error('Error opening file:', error);
+      showToast('Failed to open file');
+    }
+  };
+  
+  const getLanguageFromFileName = (fileName: string): string => {
+    const ext = fileName.split('.').pop()?.toLowerCase();
+    switch (ext) {
+      case 'ts':
+      case 'tsx':
+        return 'typescript';
+      case 'js':
+      case 'jsx':
+        return 'javascript';
+      case 'html':
+        return 'html';
+      case 'css':
+        return 'css';
+      case 'json':
+        return 'json';
+      case 'md':
+        return 'markdown';
+      case 'py':
+        return 'python';
+      case 'java':
+        return 'java';
+      case 'cpp':
+      case 'c':
+        return 'cpp';
+      default:
+        return 'text';
+    }
   };
 
-  const handleSave = () => {
-    // REMOVED: // REMOVED: console.log('Save file:', activeFile);
-    if (activeFile) {
-      // Save to localStorage for demo
-      localStorage.setItem(`file_${activeFile}`, editorContent);
-      // REMOVED: // REMOVED: console.log('File saved to localStorage');
-      showToast(`Saved ${activeFile}`);
-    } else {
+  const handleSave = async () => {
+    if (!activeFile) {
       showToast('No file to save');
+      return;
+    }
+    
+    try {
+      // Save to backend
+      const response = await fetch('/api/files/write', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          path: activeFile,
+          content: editorContent
+        })
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        // Also save to localStorage as backup
+        localStorage.setItem(`file_${activeFile}`, editorContent);
+        
+        // Update file in openFiles to mark as not dirty
+        setOpenFiles(prev => prev.map(file => 
+          file.path === activeFile 
+            ? { ...file, isDirty: false, content: editorContent }
+            : file
+        ));
+        
+        const fileName = activeFile.split('/').pop() || activeFile;
+        showToast(`✅ Saved ${fileName}`);
+      } else {
+        showToast(`Failed to save: ${data.error}`);
+      }
+    } catch (error) {
+      console.error('Save error:', error);
+      // Fallback to localStorage
+      localStorage.setItem(`file_${activeFile}`, editorContent);
+      showToast('Saved locally (server unavailable)');
     }
   };
 
@@ -412,14 +514,72 @@ export default App;
   };
 
   const handleRunCode = () => {
-    // REMOVED: // REMOVED: console.log('Running code:', activeFile);
-    // Would execute code in terminal
-    showToast(activeFile ? `Running ${activeFile}...` : 'No file to run');
+    if (!activeFile) {
+      showToast('No file to run. Open a file first.');
+      return;
+    }
+    
+    const fileName = activeFile.split('/').pop() || activeFile;
+    const ext = fileName.split('.').pop()?.toLowerCase();
+    
+    // Determine run command based on file type
+    let runCommand = '';
+    switch (ext) {
+      case 'js':
+        runCommand = `node ${activeFile}`;
+        break;
+      case 'ts':
+      case 'tsx':
+        runCommand = `npx ts-node ${activeFile}`;
+        break;
+      case 'py':
+        runCommand = `python ${activeFile}`;
+        break;
+      case 'java':
+        runCommand = `javac ${activeFile} && java ${fileName.replace('.java', '')}`;
+        break;
+      case 'html':
+        showToast('HTML files are previewed in the Preview panel');
+        return;
+      case 'css':
+        showToast('CSS files are applied in the Preview panel');
+        return;
+      default:
+        showToast(`Cannot run .${ext} files directly`);
+        return;
+    }
+    
+    showToast(`To run: Type "${runCommand}" in the terminal below`);
+    
+    // Optionally, we could auto-type the command in the terminal
+    // This would require terminal integration
   };
 
   const handleDebug = () => {
-    // REMOVED: // REMOVED: console.log('Debug mode:', activeFile);
-    showToast(activeFile ? `Debugging ${activeFile}...` : 'No file to debug');
+    if (!activeFile) {
+      showToast('No file to debug. Open a file first.');
+      return;
+    }
+    
+    const fileName = activeFile.split('/').pop() || activeFile;
+    const ext = fileName.split('.').pop()?.toLowerCase();
+    
+    // Provide debug guidance based on file type
+    switch (ext) {
+      case 'js':
+      case 'ts':
+      case 'tsx':
+        showToast('Add "debugger;" statements or use Chrome DevTools');
+        break;
+      case 'py':
+        showToast('Use "import pdb; pdb.set_trace()" for debugging');
+        break;
+      case 'java':
+        showToast('Use IDE debugger or jdb command-line debugger');
+        break;
+      default:
+        showToast(`Debug support for .${ext} files coming soon`);
+    }
   };
 
   const handleZoomIn = () => {
@@ -441,12 +601,36 @@ export default App;
 
   const handleFind = () => {
     // Trigger Monaco editor find
-    // REMOVED: // REMOVED: console.log('Find in editor');
+    if (activeFile) {
+      // Monaco editor has built-in find functionality triggered by Ctrl+F
+      // We can show a toast to guide the user
+      showToast('Press Ctrl+F (or Cmd+F on Mac) to search in editor');
+      // Programmatically trigger the find dialog
+      window.dispatchEvent(new KeyboardEvent('keydown', {
+        key: 'f',
+        code: 'KeyF',
+        ctrlKey: true,
+        bubbles: true
+      }));
+    } else {
+      showToast('Open a file first to use find');
+    }
   };
 
   const handleReplace = () => {
     // Trigger Monaco editor replace
-    // REMOVED: // REMOVED: console.log('Replace in editor');
+    if (activeFile) {
+      showToast('Press Ctrl+H (or Cmd+H on Mac) to find and replace');
+      // Programmatically trigger the replace dialog
+      window.dispatchEvent(new KeyboardEvent('keydown', {
+        key: 'h',
+        code: 'KeyH',
+        ctrlKey: true,
+        bubbles: true
+      }));
+    } else {
+      showToast('Open a file first to use replace');
+    }
   };
 
   // Handle file selection from explorer
@@ -579,7 +763,9 @@ export default App;
     <PreviewPanel
       agentsActive={agentsActive}
       fileOpen={!!activeFile}
-      isPreviewable={activeFile?.endsWith('.html') || activeFile?.endsWith('.tsx')}
+      activeFile={activeFile}
+      editorContent={editorContent}
+      isPreviewable={activeFile?.endsWith('.html') || activeFile?.endsWith('.tsx') || activeFile?.endsWith('.jsx') || activeFile?.endsWith('.css') || activeFile?.endsWith('.js') || activeFile?.endsWith('.ts')}
     />
   );
 
@@ -670,13 +856,19 @@ export default App;
         onFontSizeChange={setFontSize}
       />
       
+      <FileOpenDialog
+        isOpen={showFileOpenDialog}
+        onClose={() => setShowFileOpenDialog(false)}
+        onFileSelect={handleFileSelectFromDialog}
+      />
+      
       {/* Interactive Tour Overlay - at root level */}
       {showTour && (
         <InteractiveTour 
           onClose={() => setShowTour(false)}
           onStepChange={(stepId) => {
             // Keep hero section visible for steps 1 and 2, hide for others
-            if (stepId === 'welcome-overview' || stepId === 'prd-generator') {
+            if (stepId === 'welcome-overview' || stepId === 'smart-prd-generator') {
               setShowHero(true);
             } else {
               setShowHero(false);

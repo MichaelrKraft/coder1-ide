@@ -105,7 +105,7 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
         const parsed = JSON.parse(savedSettings);
         setTerminalSettings(prev => ({ ...prev, ...parsed }));
       } catch (error) {
-        logger?.warn('Failed to parse terminal settings:', error);
+        // logger?.warn('Failed to parse terminal settings:', error);
       }
     }
   }, []);
@@ -134,7 +134,7 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
         }
       } catch (error) {
         // Use console.warn instead of console.error to reduce noise
-        logger?.warn('Failed to fetch Claude usage:', error);
+        // logger?.warn('Failed to fetch Claude usage:', error);
       }
     };
     
@@ -163,7 +163,7 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
           }
         }
       } catch (error) {
-        logger?.error('Failed to fetch MCP status:', error);
+        // logger?.error('Failed to fetch MCP status:', error);
       }
     };
     
@@ -230,7 +230,7 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
       try {
         onTerminalReady(newSessionId, ready);
       } catch (error) {
-        logger?.error('[Terminal] onTerminalReady callback error:', error);
+        // logger?.error('[Terminal] onTerminalReady callback error:', error);
       }
     }
   }, [onTerminalReady]);
@@ -293,7 +293,7 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
           notifyTerminalReady(data.sessionId, true);
           // REMOVED: // REMOVED: console.log('✅ Terminal session created:', data.sessionId);
         } else {
-          logger?.error('Failed to create terminal session:', response.status);
+          // logger?.error('Failed to create terminal session:', response.status);
           // Fallback to simulated mode
           const simulatedId = 'simulated-' + Date.now();
           setSessionId(simulatedId);
@@ -303,7 +303,7 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
           notifyTerminalReady(simulatedId, true);
         }
       } catch (error) {
-        logger?.error('Error creating terminal session:', error);
+        // logger?.error('Error creating terminal session:', error);
         // Fallback to simulated mode
         const simulatedId = 'simulated-' + Date.now();
         setSessionId(simulatedId);
@@ -527,7 +527,7 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
         }, 200);
       }
     } catch (error) {
-      logger?.error('Terminal initialization error:', error);
+      // logger?.error('Terminal initialization error:', error);
       // Set up a basic fallback
       if (terminalRef.current) {
         terminalRef.current.innerHTML = '<div style="color: #ff6b6b; padding: 20px;">Terminal initialization failed. Please refresh the page.</div>';
@@ -671,10 +671,10 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
                 });
               }
             } else {
-              logger?.warn('Cannot send voice input to backend:', {
-                socketConnected: socket?.connected,
-                sessionId: currentSessionId
-              });
+              // logger?.warn('Cannot send voice input to backend:', {
+              //   socketConnected: socket?.connected,
+              //   sessionId: currentSessionId
+              // });
               
               // Still show in terminal UI
               if (cleanTranscript.toLowerCase().includes('claude')) {
@@ -689,7 +689,7 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
       };
       
       recognitionInstance.onerror = (event: any) => {
-        logger?.error('Speech recognition error:', event.error);
+        // logger?.error('Speech recognition error:', event.error);
         setVoiceListening(false);
         if (xtermRef.current) {
           let errorMessage = '';
@@ -745,7 +745,7 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
       
       setRecognition(recognitionInstance);
     } else {
-      logger?.warn('Speech recognition not supported in this browser');
+      // logger?.warn('Speech recognition not supported in this browser');
     }
   }, []);
 
@@ -784,7 +784,7 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
         xtermRef.current?.writeln('\r\n🎤 Voice input started - speak now...');
         xtermRef.current?.writeln('Say your commands clearly. Speech will be converted to text.');
       } catch (error) {
-        logger?.error('Failed to start speech recognition:', error);
+        // logger?.error('Failed to start speech recognition:', error);
         setVoiceListening(false);
         xtermRef.current?.writeln('\r\n❌ Failed to start voice input');
         xtermRef.current?.writeln(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -825,7 +825,7 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
     });
     
     socket.on('connect_error', (error) => {
-      logger?.error('❌ Socket.IO CONNECTION ERROR:', error);
+      // logger?.error('❌ Socket.IO CONNECTION ERROR:', error);
     });
 
     // Join the terminal session
@@ -958,7 +958,7 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
 
     // Handle errors
     socket.on('terminal:error', ({ message }: { message: string }) => {
-      logger?.error('Terminal error:', message);
+      // logger?.error('Terminal error:', message);
       term.writeln(`\r\n❌ Terminal error: ${message}`);
       setIsConnected(false);
       connectionInProgressRef.current = false; // Connection failed
@@ -1145,7 +1145,7 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
         throw new Error(data.error || 'Failed to spawn AI team');
       }
     } catch (error) {
-      logger?.error('AI Team spawn failed:', error);
+      // logger?.error('AI Team spawn failed:', error);
       xtermRef.current.writeln(`❌ Failed to spawn AI team: ${error}`);
       xtermRef.current.writeln('🔧 Check that the server is running and try again');
       xtermRef.current.write('\r\n$ ');
@@ -1168,7 +1168,7 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
   };
 
   return (
-    <div className="h-full flex flex-col bg-bg-primary">
+    <div className="h-full flex flex-col bg-bg-primary relative">
       {/* Terminal Header - Exact 40px height */}
       <div 
         className="flex items-center justify-between border-b border-border-default px-3 bg-bg-secondary border-t border-t-coder1-cyan/50 shadow-glow-cyan"
@@ -1292,40 +1292,17 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
             <span>Supervision</span>
           </button>
 
-          {/* hooks button */}
-          <button
-            onClick={() => {
-              xtermRef.current?.writeln('\r\n🪝 Hooks System Status:');
-              xtermRef.current?.writeln('');
-              xtermRef.current?.writeln('🔧 Available Hooks:');
-              xtermRef.current?.writeln('• pre-commit: Code formatting & linting');
-              xtermRef.current?.writeln('• pre-push: Run tests before push');
-              xtermRef.current?.writeln('• post-merge: Update dependencies');
-              xtermRef.current?.writeln('• on-file-save: Auto-format & validate');
-              xtermRef.current?.writeln('');
-              xtermRef.current?.writeln('🎣 Custom Hooks:');
-              xtermRef.current?.writeln('• ai-review: Auto code review');
-              xtermRef.current?.writeln('• security-scan: Vulnerability check');
-              xtermRef.current?.writeln('• performance-test: Benchmark changes');
-              xtermRef.current?.writeln('');
-              xtermRef.current?.writeln('Opening hooks configuration panel...');
-              // Simulate opening hooks panel
-              setTimeout(() => {
-                xtermRef.current?.writeln('\r\nType "hooks list" to see all hooks or "hooks help" for commands.');
-              }, 1000);
-            }}
-            className="terminal-control-btn flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md"
-            title="Open hooks management page"
-          >
-            <Code2 className="w-4 h-4" />
-            <span>hooks</span>
-          </button>
         </div>
       </div>
 
       {/* Terminal Content */}
       <div 
-        className="flex-1 p-3 overflow-hidden relative"
+        className="flex-1 relative"
+        style={{
+          // Ensure there's space for content and status line
+          paddingBottom: terminalSettings.statusLine.enabled ? '40px' : '0px',
+          overflow: 'hidden'
+        }}
         onClick={() => {
           // Focus the terminal when clicked
           if (xtermRef.current) {
@@ -1333,7 +1310,14 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
           }
         }}
       >
-        <div ref={terminalRef} data-tour="terminal-input" className="h-full terminal-content" />
+        <div 
+          className="absolute inset-0 p-3"
+          style={{
+            bottom: terminalSettings.statusLine.enabled ? '40px' : '0px'
+          }}
+        >
+          <div ref={terminalRef} data-tour="terminal-input" className="h-full" />
+        </div>
       </div>
 
       {/* Error Doctor removed to fix terminal overlap issue */}
@@ -1380,7 +1364,7 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
 
       {/* Status Line */}
       {terminalSettings.statusLine.enabled && (
-        <div className="absolute bottom-0 left-0 right-0 bg-bg-tertiary border-t border-border-default px-4 py-2 text-xs text-text-secondary flex items-center justify-between">
+        <div className="bg-bg-tertiary border-t border-border-default px-4 py-2 text-xs text-text-secondary flex items-center justify-between" style={{ position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 30, height: '40px' }}>
           <div className="flex items-center gap-4">
             {terminalSettings.statusLine.showFile && (
               <div className="flex items-center gap-1">

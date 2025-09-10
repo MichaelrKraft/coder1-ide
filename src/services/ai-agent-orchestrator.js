@@ -13,7 +13,7 @@ const mkdir = promisify(fs.mkdir);
 
 // Import Claude integrations for real code generation
 const { ClaudeCodeAPI } = require('../integrations/claude-code-api');
-const ClaudeCodeExec = require('../integrations/claude-code-exec');
+// const ClaudeCodeExec = require('../integrations/claude-code-exec'); // Removed - agent dashboard deprecated
 
 class AIAgentOrchestrator {
   constructor() {
@@ -33,21 +33,22 @@ class AIAgentOrchestrator {
     const claudeCodeToken = process.env.CLAUDE_CODE_OAUTH_TOKEN;
     
     // Priority 1: Try Claude CLI for CLAUDE_CODE_API_KEY (best for Claude Code Max plan)
-    if (claudeCodeApiKey) {
-      console.log('🔍 AI Agent Orchestrator: CLAUDE_CODE_API_KEY detected, initializing CLI integration...');
-      try {
-        this.claudeCLI = new ClaudeCodeExec({
-          logger: console,
-          timeout: 60000, // 60 second timeout for code generation
-          implementationMode: true
-        });
-        console.log('✅ AI Agent Orchestrator: Claude CLI initialized for CLAUDE_CODE_API_KEY');
-        console.log('🚀 AI Team will use Claude CLI with your Claude Code Max plan pricing');
-      } catch (cliError) {
-        console.warn('⚠️ Claude CLI initialization failed:', cliError.message);
-        console.log('🔄 Falling back to API approach...');
-      }
-    }
+    // Disabled - ClaudeCodeExec removed with agent dashboard
+    // if (claudeCodeApiKey) {
+    //   console.log('🔍 AI Agent Orchestrator: CLAUDE_CODE_API_KEY detected, initializing CLI integration...');
+    //   try {
+    //     this.claudeCLI = new ClaudeCodeExec({
+    //       logger: console,
+    //       timeout: 60000, // 60 second timeout for code generation
+    //       implementationMode: true
+    //     });
+    //     console.log('✅ AI Agent Orchestrator: Claude CLI initialized for CLAUDE_CODE_API_KEY');
+    //     console.log('🚀 AI Team will use Claude CLI with your Claude Code Max plan pricing');
+    //   } catch (cliError) {
+    //     console.warn('⚠️ Claude CLI initialization failed:', cliError.message);
+    //     console.log('🔄 Falling back to API approach...');
+    //   }
+    // }
     
     // Priority 2: Use API SDK (fallback or for ANTHROPIC_API_KEY)
     const apiKey = anthropicApiKey;  // Only use ANTHROPIC_API_KEY for API calls

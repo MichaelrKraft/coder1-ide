@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useRef } from 'react';
 
 interface Session {
   id: string;
@@ -39,10 +39,18 @@ export function SessionProvider({ children }: SessionProviderProps) {
   const [currentSession, setCurrentSession] = useState<Session | null>(null);
   const [sessionId, setSessionId] = useState<string>('');
   const [sessions, setSessions] = useState<Session[]>([]);
+  
+  // Add mutex to prevent race conditions during session creation
+  const isCreatingSession = useRef(false);
+  const hasInitialized = useRef(false);
 
   // Initialize session on mount
   useEffect(() => {
-    initializeSession();
+    // Prevent multiple initializations
+    if (!hasInitialized.current) {
+      hasInitialized.current = true;
+      initializeSession();
+    }
   }, []);
 
   const initializeSession = async () => {
@@ -50,8 +58,13 @@ export function SessionProvider({ children }: SessionProviderProps) {
     let storedSessionId = localStorage.getItem('currentSessionId');
     
     if (!storedSessionId) {
-      // Create a new session automatically
-      await createSession();
+      // Load sessions first to check if any exist
+      await refreshSessions();
+      
+      // If no sessions exist, create one (with mutex protection)
+      if (sessions.length === 0 && !isCreatingSession.current) {
+        await createSession();
+      }
       return;
     }
 
@@ -79,18 +92,29 @@ export function SessionProvider({ children }: SessionProviderProps) {
         }
       }
     } catch (error) {
-      logger?.error('Failed to load sessions:', error);
+      console.error('Failed to load sessions:', error);
     }
   };
 
   const createSession = async (name?: string, description?: string) => {
+    // Prevent concurrent session creation
+    if (isCreatingSession.current) {
+      console.log('Session creation already in progress, skipping...');
+      return;
+    }
+    
+    isCreatingSession.current = true;
+    
+    // Track session creation time for baseline metrics
+    const startTime = performance.now();
+    
     try {
       const response = await fetch('/api/sessions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: name || `IDE Session ${new Date().toLocaleString()}`,
-          description: description || 'CoderOne IDE development session',
+          description: description || 'Coder1 IDE development session',
           metadata: {
             ide: true,
             version: '1.0.0',
@@ -115,11 +139,32 @@ export function SessionProvider({ children }: SessionProviderProps) {
             detail: { session: newSession } 
           }));
           
+          // Track session creation time for baseline
+          const duration = performance.now() - startTime;
+          fetch('/api/metrics/track', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              type: 'session-creation',
+              value: duration
+            })
+          }).catch(() => {}); // Fire and forget
+          
           // REMOVED: // REMOVED: console.log('✨ Created new session:', newSession.name);
         }
       }
     } catch (error) {
-      logger?.error('Failed to create session:', error);
+      console.error('Failed to create session:', error);
+      
+      // Track error for baseline
+      fetch('/api/metrics/track', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'error' })
+      }).catch(() => {});
+    } finally {
+      // Always release the mutex
+      isCreatingSession.current = false;
     }
   };
 

@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
     });
     
   } catch (error) {
-    logger?.error('Error creating terminal session:', error);
+    // logger?.error('Error creating terminal session:', error);
     return NextResponse.json(
       { error: 'Failed to create terminal session' },
       { status: 500 }
@@ -82,7 +82,7 @@ export async function DELETE(request: NextRequest) {
     }
     
   } catch (error) {
-    logger?.error('Error deleting terminal session:', error);
+    // logger?.error('Error deleting terminal session:', error);
     return NextResponse.json(
       { error: 'Failed to delete terminal session' },
       { status: 500 }
@@ -101,7 +101,7 @@ export async function GET(request: NextRequest) {
     });
     
   } catch (error) {
-    logger?.error('Error getting terminal sessions:', error);
+    // logger?.error('Error getting terminal sessions:', error);
     return NextResponse.json(
       { error: 'Failed to get terminal sessions' },
       { status: 500 }

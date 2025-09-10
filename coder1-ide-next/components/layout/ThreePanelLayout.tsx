@@ -53,9 +53,12 @@ export default function ThreePanelLayout({
           collapsible={true}
           collapsedSize={3}
           onCollapse={handleLeftCollapse}
-          className="bg-bg-secondary border-r border-border-default"
+          className="h-full bg-bg-secondary"
         >
-          <div className="h-full overflow-hidden">
+          <div className="h-full border-r-2 border-coder1-cyan/50" style={{
+            boxShadow: '2px 0 8px rgba(0, 217, 255, 0.3)',
+            minHeight: '100%'
+          }}>
             {leftPanel}
           </div>
         </Panel>
@@ -126,9 +129,9 @@ export default function ThreePanelLayout({
           collapsible={true}
           collapsedSize={3}
           onCollapse={handleRightCollapse}
-          className="bg-bg-secondary border-l border-border-default"
+          className="bg-bg-secondary"
         >
-          <div className="h-full overflow-hidden">
+          <div className="h-full">
             {rightPanel}
           </div>
         </Panel>

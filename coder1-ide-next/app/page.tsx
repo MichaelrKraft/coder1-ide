@@ -61,13 +61,13 @@ export default function HomePage() {
           </Link>
 
           <Link
-            href="/agent-dashboard"
+            href="/hooks"
             className="group relative p-8 bg-bg-secondary border border-border-default rounded-lg hover:border-orange-400 transition-all duration-300"
           >
             <div className="flex flex-col items-center text-center">
               <Users className="w-12 h-12 mb-4 text-orange-400" />
-              <h3 className="text-xl font-semibold mb-2">Agent</h3>
-              <span className="text-sm text-text-secondary">[Monitor]</span>
+              <h3 className="text-xl font-semibold mb-2">Hooks</h3>
+              <span className="text-sm text-text-secondary">[Configure]</span>
             </div>
             <div 
               className="absolute inset-0 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"

@@ -140,7 +140,7 @@ export const useSessionSummary = () => {
       await navigator.clipboard.writeText(textToCopy);
       return true;
     } catch (error) {
-      logger?.error('Failed to copy to clipboard:', error);
+      console.error('Failed to copy to clipboard:', error);
       return false;
     }
   }, [state.summary]);
@@ -164,7 +164,7 @@ export const useSessionSummary = () => {
 
       return result.success;
     } catch (error) {
-      logger?.error('Export failed:', error);
+      console.error('Export failed:', error);
       return false;
     }
   }, [state.summary]);
@@ -174,7 +174,6 @@ export const useSessionSummary = () => {
 
     try {
       const sessionDate = new Date();
-      const sessionId = `session_${sessionDate.getTime()}_${Math.random().toString(36).substr(2, 9)}`;
       const sessionName = `CoderOne v2.0 Session ${sessionDate.toLocaleDateString()} ${sessionDate.toLocaleTimeString()}`;
       
       const response = await fetch('/api/docs/add', {
@@ -183,24 +182,23 @@ export const useSessionSummary = () => {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          url: `session://${sessionId}`,
-          name: sessionName,
-          description: `CoderOne v2.0 development session with comprehensive AI analysis`,
-          content: state.summary
+          title: sessionName,
+          content: state.summary,
+          category: 'session-summaries'
         })
       });
       
       const data = await response.json();
       
       if (response.ok) {
-        // REMOVED: // REMOVED: console.log('✅ Session stored in Documentation Intelligence:', data.doc?.name);
+        console.log('✅ Session stored in Documentation Intelligence:', data.data?.title);
         return true;
       } else {
-        logger?.error('Failed to store session:', data.error);
+        console.error('Failed to store session:', data.error);
         return false;
       }
     } catch (error) {
-      logger?.error('Error storing session in docs:', error);
+      console.error('Error storing session in docs:', error);
       return false;
     }
   }, [state.summary]);

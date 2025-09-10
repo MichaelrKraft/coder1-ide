@@ -11,7 +11,6 @@ import React, { useState, useEffect } from 'react';
 import { Eye, GitBranch, FileText, Brain } from 'lucide-react';
 import StatusBarActions from './StatusBarActions';
 import DiscoverPanel from './DiscoverPanel';
-import ContextManagerPanel from '../ContextManagerPanel';
 import { useIDEStore } from '@/stores/useIDEStore';
 import { useSessionStore } from '@/stores/useSessionStore';
 import { useUIStore } from '@/stores/useUIStore';
@@ -37,9 +36,6 @@ export default function StatusBarCore({
   const { connections } = useIDEStore();
   const { supervision } = useSessionStore();
   const { discoverPanel, addToast } = useUIStore();
-  
-  // Context Manager Panel state
-  const [isContextManagerOpen, setIsContextManagerOpen] = useState(false);
   
   // Git state management
   const [gitInfo, setGitInfo] = useState<{
@@ -113,7 +109,7 @@ export default function StatusBarCore({
         }
       }
     } catch (error) {
-      logger?.warn('Git info fetch failed:', error);
+      // logger?.warn('Git info fetch failed:', error);
       setGitInfo(prev => ({ ...prev, isLoading: false }));
     }
   };
@@ -133,14 +129,14 @@ export default function StatusBarCore({
         setContextStats({
           totalSessions: stats.totalSessions || 0,
           totalMemories: stats.totalConversations || 0,
-          isActive: stats.isLearning || stats.totalSessions > 0,
+          isActive: (stats.totalConversations || 0) > 0 || (stats.totalSessions || 0) > 0,
           isLoading: false
         });
       } else {
         setContextStats(prev => ({ ...prev, isLoading: false }));
       }
     } catch (error) {
-      logger?.warn('Context stats fetch failed:', error);
+      // logger?.warn('Context stats fetch failed:', error);
       setContextStats(prev => ({ ...prev, isLoading: false }));
     }
   };
@@ -155,22 +151,8 @@ export default function StatusBarCore({
   // Fetch Context stats on mount and periodically
   useEffect(() => {
     fetchContextStats();
-    const interval = setInterval(fetchContextStats, 10000); // Update every 10 seconds
+    const interval = setInterval(fetchContextStats, 60000); // Update every 60 seconds instead of 10
     return () => clearInterval(interval);
-  }, []);
-  
-  // Listen for IDE Sessions tab clicks to auto-close ContextManagerPanel
-  useEffect(() => {
-    const handleIdeSessionsClick = () => {
-      // REMOVED: // REMOVED: console.log('🎯 IDE Sessions tab clicked - auto-closing ContextManagerPanel');
-      setIsContextManagerOpen(false);
-    };
-    
-    window.addEventListener('ideSessionsTabClicked', handleIdeSessionsClick);
-    
-    return () => {
-      window.removeEventListener('ideSessionsTabClicked', handleIdeSessionsClick);
-    };
   }, []);
   
   return (
@@ -212,12 +194,15 @@ export default function StatusBarCore({
 
         {/* Right section - Status info */}
         <div className="flex items-center gap-4 text-sm text-text-muted flex-1 justify-end">
-          {/* Context Folders Information - Clickable */}
+          {/* Context Folders Information - Clickable - Opens Explorer Memory Tab */}
           {contextStats.isActive && (
             <div 
               className="flex items-center gap-1 cursor-pointer hover:opacity-80 transition-opacity" 
-              title={`Context Memory: ${contextStats.totalMemories} memories, ${contextStats.totalSessions} contexts - Click to view AI memory dashboard`}
-              onClick={() => setIsContextManagerOpen(!isContextManagerOpen)}
+              title={`Context Memory: ${contextStats.totalMemories} memories, ${contextStats.totalSessions} contexts - Click to view AI memory in Explorer`}
+              onClick={() => {
+                // Dispatch event to open Memory tab in Explorer panel
+                window.dispatchEvent(new CustomEvent('openExplorerMemoryTab'));
+              }}
             >
               <Brain className={`w-3 h-3 ${contextStats.totalMemories > 0 ? 'text-purple-400' : 'text-text-muted'}`} />
               <span className={contextStats.totalMemories > 0 ? 'text-purple-400' : 'text-text-secondary'}>
@@ -254,12 +239,6 @@ export default function StatusBarCore({
           )}
         </div>
       </div>
-      
-      {/* Context Manager Panel */}
-      <ContextManagerPanel 
-        isOpen={isContextManagerOpen}
-        onClose={() => setIsContextManagerOpen(false)}
-      />
     </>
   );
 }

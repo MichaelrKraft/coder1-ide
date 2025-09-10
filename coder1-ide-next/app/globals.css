@@ -77,6 +77,16 @@ body {
   padding: 8px;
 }
 
+/* Ensure xterm viewport allows scrolling */
+.xterm-viewport {
+  overflow-y: auto !important;
+}
+
+/* Ensure xterm screen is visible */
+.xterm-screen {
+  position: relative;
+}
+
 /* Glass button sweep animation */
 .glass-button {
   position: relative;
@@ -107,6 +117,26 @@ body {
   }
   50% {
     opacity: 0.5;
+  }
+}
+
+@keyframes tour-pulse-orange {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.7;
+    transform: scale(1.02);
+  }
+}
+
+@keyframes pulse-glow-terminal {
+  0%, 100% {
+    opacity: 0.8;
+  }
+  50% {
+    opacity: 0.4;
   }
 }
 

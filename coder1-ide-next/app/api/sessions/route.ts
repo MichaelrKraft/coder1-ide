@@ -73,7 +73,7 @@ export async function GET(request: NextRequest) {
     });
     
   } catch (error) {
-    logger?.error('❌ [Unified] Sessions GET error:', error);
+    // logger?.error('❌ [Unified] Sessions GET error:', error);
     return NextResponse.json(
       {
         success: false,
@@ -141,7 +141,7 @@ export async function POST(request: NextRequest) {
     });
     
   } catch (error) {
-    logger?.error('❌ [Unified] Sessions POST error:', error);
+    // logger?.error('❌ [Unified] Sessions POST error:', error);
     return NextResponse.json(
       {
         success: false,
@@ -187,7 +187,7 @@ export async function DELETE(request: NextRequest) {
     }
     
   } catch (error) {
-    logger?.error('❌ [Unified] Sessions DELETE error:', error);
+    // logger?.error('❌ [Unified] Sessions DELETE error:', error);
     return NextResponse.json(
       {
         success: false,

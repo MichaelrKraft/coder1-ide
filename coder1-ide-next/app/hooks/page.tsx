@@ -8,10 +8,10 @@ export default function HooksPage() {
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8">
-          <Link href="/ide" className="inline-flex items-center gap-2 text-gray-400 hover:text-white transition-colors">
+          <a href="http://localhost:3001/ide" className="inline-flex items-center gap-2 text-gray-400 hover:text-white transition-colors">
             <ArrowLeft className="w-4 h-4" />
             Back to IDE
-          </Link>
+          </a>
         </div>
         
         <h1 className="text-4xl font-bold text-white mb-8">React Hooks Library</h1>

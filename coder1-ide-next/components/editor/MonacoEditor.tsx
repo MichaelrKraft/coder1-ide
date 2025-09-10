@@ -62,6 +62,20 @@ export default function MonacoEditor({
       wordWrap: 'on',
       automaticLayout: true,
       tabSize: 2,
+      // Disable overview ruler (removes red bars)
+      overviewRulerLanes: 0,
+      hideCursorInOverviewRuler: true,
+      overviewRulerBorder: false,
+      // Configure scrollbar to hide decorations
+      scrollbar: {
+        vertical: 'visible',
+        horizontal: 'visible',
+        verticalScrollbarSize: 10,
+        horizontalScrollbarSize: 10,
+        useShadows: false,
+      },
+      // Disable error decorations
+      renderValidationDecorations: 'off' as const,
     });
   };
 
@@ -110,6 +124,20 @@ export default function MonacoEditor({
           fontSize: 14,
           wordWrap: 'on',
           automaticLayout: true,
+          // Disable overview ruler (removes red bars)
+          overviewRulerLanes: 0,
+          hideCursorInOverviewRuler: true,
+          overviewRulerBorder: false,
+          // Configure scrollbar to hide decorations
+          scrollbar: {
+            vertical: 'visible',
+            horizontal: 'visible',
+            verticalScrollbarSize: 10,
+            horizontalScrollbarSize: 10,
+            useShadows: false,
+          },
+          // Disable error decorations
+          renderValidationDecorations: 'off' as const,
         }}
       />
     </div>

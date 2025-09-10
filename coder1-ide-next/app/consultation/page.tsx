@@ -71,7 +71,7 @@ export default function AIConsultationPage() {
         // Redirect to IDE with agents auto-spawned
         router.push('/ide?autoSpawn=true');
       } catch (error) {
-        logger?.error('Consultation processing failed:', error);
+        // logger?.error('Consultation processing failed:', error);
         setIsProcessing(false);
       }
     }

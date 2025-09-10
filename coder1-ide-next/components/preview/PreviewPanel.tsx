@@ -1,16 +1,19 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { BookOpen, Users, Eye, X } from '@/lib/icons';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { BookOpen, Users, Eye, X, RefreshCw, ExternalLink } from '@/lib/icons';
 import { colors, glows } from '@/lib/design-tokens';
 import CodebaseWiki from '@/components/codebase/CodebaseWiki';
 import AITeamDashboard from '@/components/preview/AITeamDashboard';
+import { previewLoopPrevention, createDebouncedPreviewUpdate } from '@/lib/preview-loop-prevention';
 
 type PreviewMode = 'dashboard' | 'wiki' | 'preview' | 'terminal';
 
 interface PreviewPanelProps {
   agentsActive?: boolean;
   fileOpen?: boolean;
+  activeFile?: string | null;
+  editorContent?: string;
   isPreviewable?: boolean;
 }
 
@@ -45,12 +48,81 @@ interface TeamData {
 const PreviewPanel = React.memo(function PreviewPanel({
   agentsActive = false,
   fileOpen = false,
+  activeFile = null,
+  editorContent = '',
   isPreviewable = false,
 }: PreviewPanelProps) {
   const [mode, setMode] = useState<PreviewMode>('preview');
   const [isLoading, setIsLoading] = useState(false);
   const [teamData, setTeamData] = useState<TeamData | null>(null);
   const [error, setError] = useState<string | null>(null);
+  
+  // Live preview state
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [previewError, setPreviewError] = useState<string | null>(null);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const updateTimeoutRef = useRef<NodeJS.Timeout>();
+  const lastUpdateRef = useRef({ file: '', content: '', timestamp: 0 });
+
+  // Debounced preview update function with loop prevention
+  const debouncedPreviewUpdate = useMemo(
+    () => createDebouncedPreviewUpdate((file: string, content: string) => {
+      if (!previewLoopPrevention.canUpdate('preview-panel')) {
+        return;
+      }
+
+      // Check for duplicate updates
+      if (previewLoopPrevention.isDuplicateUpdate(file, content, 'preview-panel')) {
+        return;
+      }
+
+      // Update iframe source with version parameter for cache busting
+      const timestamp = Date.now();
+      const previewUrl = `/api/preview?file=${encodeURIComponent(file)}&v=${timestamp}`;
+      
+      if (iframeRef.current) {
+        setPreviewLoading(true);
+        setPreviewError(null);
+        iframeRef.current.src = previewUrl;
+      }
+    }, 300),
+    []
+  );
+
+  // Live preview update effect with loop prevention
+  useEffect(() => {
+    // Only update if we're in preview mode and have a previewable file
+    if (mode !== 'preview' || !isPreviewable || !activeFile) {
+      return;
+    }
+
+    // Clear any existing timeout
+    if (updateTimeoutRef.current) {
+      clearTimeout(updateTimeoutRef.current);
+    }
+
+    // Check for rapid updates that might indicate a loop
+    const now = Date.now();
+    const lastUpdate = lastUpdateRef.current;
+    
+    if (lastUpdate.file === activeFile && 
+        lastUpdate.content === editorContent && 
+        now - lastUpdate.timestamp < 500) {
+      return; // Skip duplicate update
+    }
+
+    // Update the preview with debouncing
+    debouncedPreviewUpdate.update(activeFile, editorContent);
+    lastUpdateRef.current = { file: activeFile, content: editorContent, timestamp: now };
+
+    // Cleanup function
+    return () => {
+      if (updateTimeoutRef.current) {
+        clearTimeout(updateTimeoutRef.current);
+      }
+      debouncedPreviewUpdate.cancel();
+    };
+  }, [activeFile, editorContent, mode, isPreviewable, debouncedPreviewUpdate]);
 
   // Auto-switch based on context
   useEffect(() => {
@@ -60,6 +132,37 @@ const PreviewPanel = React.memo(function PreviewPanel({
       setMode('preview');
     }
   }, [agentsActive, fileOpen, isPreviewable]);
+
+  // Handle iframe load events
+  const handleIframeLoad = useCallback(() => {
+    setPreviewLoading(false);
+    setPreviewError(null);
+  }, []);
+
+  const handleIframeError = useCallback(() => {
+    setPreviewLoading(false);
+    setPreviewError('Failed to load preview');
+  }, []);
+
+  // Manual refresh function
+  const handleRefreshPreview = useCallback(() => {
+    if (activeFile && iframeRef.current) {
+      const timestamp = Date.now();
+      const previewUrl = `/api/preview?file=${encodeURIComponent(activeFile)}&v=${timestamp}`;
+      setPreviewLoading(true);
+      setPreviewError(null);
+      iframeRef.current.src = previewUrl;
+    }
+  }, [activeFile]);
+
+  // Open preview in new window
+  const handleOpenExternal = useCallback(() => {
+    if (activeFile) {
+      const timestamp = Date.now();
+      const previewUrl = `/api/preview?file=${encodeURIComponent(activeFile)}&v=${timestamp}`;
+      window.open(previewUrl, '_blank');
+    }
+  }, [activeFile]);
 
   const fetchTeamData = useCallback(async () => {
     // Don&apos;t show loading spinner during polling updates to prevent blinking
@@ -98,7 +201,7 @@ const PreviewPanel = React.memo(function PreviewPanel({
         }
       }
     } catch (err) {
-      logger?.error('Failed to fetch team data:', err);
+      // logger?.error('Failed to fetch team data:', err);
       // Only show connection error on first load to prevent blinking
       if (!teamData) {
         setError('Connection error - using offline mode');
@@ -222,19 +325,43 @@ const PreviewPanel = React.memo(function PreviewPanel({
               <div className="h-full bg-gradient-to-br from-bg-primary via-bg-secondary/50 to-bg-primary">
                 {/* Professional Dark Theme Preview Container */}
                 <div className="h-full flex flex-col">
-                  {/* Simplified Preview Actions Bar */}
-                  <div className="flex items-center justify-end px-4 py-2 bg-transparent">
-                    {/* Preview Actions Only */}
+                  {/* Preview Actions Bar */}
+                  <div className="flex items-center justify-between px-4 py-2 bg-transparent">
+                    <div className="flex items-center gap-3 text-xs">
+                      <span className="text-text-muted">
+                        {activeFile ? `Preview: ${activeFile}` : 'No file selected'}
+                      </span>
+                      {previewLoading && (
+                        <span className="text-coder1-cyan flex items-center gap-1.5">
+                          <div className="w-2 h-2 bg-coder1-cyan rounded-full animate-pulse" />
+                          Loading...
+                        </span>
+                      )}
+                      {previewError && (
+                        <span className="text-red-400 flex items-center gap-1.5">
+                          <div className="w-2 h-2 bg-red-400 rounded-full" />
+                          Error
+                        </span>
+                      )}
+                    </div>
+                    
+                    {/* Preview Actions */}
                     <div className="flex items-center gap-2">
-                      <button className="p-2 hover:bg-coder1-cyan/10 rounded-lg transition-all duration-200 group" title="Refresh Preview">
-                        <svg className="w-4 h-4 text-text-muted group-hover:text-coder1-cyan" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                        </svg>
+                      <button 
+                        className="p-2 hover:bg-coder1-cyan/10 rounded-lg transition-all duration-200 group disabled:opacity-50 disabled:cursor-not-allowed" 
+                        title="Refresh Preview"
+                        onClick={handleRefreshPreview}
+                        disabled={!activeFile || previewLoading}
+                      >
+                        <RefreshCw className={`w-4 h-4 text-text-muted group-hover:text-coder1-cyan ${previewLoading ? 'animate-spin' : ''}`} />
                       </button>
-                      <button className="p-2 hover:bg-coder1-purple/10 rounded-lg transition-all duration-200 group" title="Open in New Window">
-                        <svg className="w-4 h-4 text-text-muted group-hover:text-coder1-purple" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                        </svg>
+                      <button 
+                        className="p-2 hover:bg-coder1-purple/10 rounded-lg transition-all duration-200 group disabled:opacity-50 disabled:cursor-not-allowed" 
+                        title="Open in New Window"
+                        onClick={handleOpenExternal}
+                        disabled={!activeFile}
+                      >
+                        <ExternalLink className="w-4 h-4 text-text-muted group-hover:text-coder1-purple" />
                       </button>
                     </div>
                   </div>
@@ -270,39 +397,55 @@ const PreviewPanel = React.memo(function PreviewPanel({
                           </div>
                         </div>
                         
-                        {/* Dark Content Area */}
-                        <div className="h-[calc(100%-44px)] bg-gradient-to-b from-bg-primary to-bg-secondary/95 p-8 overflow-auto">
-                          {/* Empty State with Dark Theme */}
-                          <div className="h-full flex flex-col items-center justify-center text-center">
-                            {/* Glowing Icon */}
-                            <div className="mb-8 relative">
-                              <div className="absolute inset-0 bg-gradient-to-br from-coder1-cyan to-coder1-purple rounded-3xl blur-2xl opacity-50 animate-pulse-slow" />
-                              <div className="relative w-24 h-24 bg-gradient-to-br from-coder1-cyan via-coder1-purple to-coder1-cyan rounded-3xl flex items-center justify-center shadow-lg shadow-coder1-cyan/30">
-                                <Eye className="w-12 h-12 text-white drop-shadow-lg" />
+                        {/* Live Preview Content */}
+                        <div className="h-[calc(100%-44px)] bg-gradient-to-b from-bg-primary to-bg-secondary/95 overflow-hidden">
+                          {activeFile && isPreviewable ? (
+                            // Live Preview iframe
+                            <iframe
+                              ref={iframeRef}
+                              src={`/api/preview?file=${encodeURIComponent(activeFile)}&v=${Date.now()}`}
+                              className="w-full h-full border-0 bg-white"
+                              sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals"
+                              onLoad={handleIframeLoad}
+                              onError={handleIframeError}
+                              title={`Preview of ${activeFile}`}
+                            />
+                          ) : (
+                            // Empty State with Dark Theme
+                            <div className="h-full flex flex-col items-center justify-center p-8 text-center">
+                              {/* Glowing Icon */}
+                              <div className="mb-6 relative">
+                                <div className="absolute inset-0 bg-gradient-to-br from-coder1-cyan to-coder1-purple rounded-3xl blur-2xl opacity-50 animate-pulse-slow" />
+                                <div className="relative w-24 h-24 bg-gradient-to-br from-coder1-cyan via-coder1-purple to-coder1-cyan rounded-3xl flex items-center justify-center shadow-lg shadow-coder1-cyan/30">
+                                  <Eye className="w-12 h-12 text-white drop-shadow-lg" />
+                                </div>
+                              </div>
+                              
+                              <h3 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-coder1-cyan to-coder1-purple mb-3">
+                                Live Preview Ready
+                              </h3>
+                              
+                              <p className="text-text-secondary mb-6 max-w-lg leading-relaxed">
+                                {!activeFile ? (
+                                  "Open a file to see live preview. Supports HTML, React, CSS, JavaScript, and more."
+                                ) : !isPreviewable ? (
+                                  `File type "${activeFile.split('.').pop()}" is not previewable. Try opening an HTML, React, or CSS file.`
+                                ) : (
+                                  "Loading preview..."
+                                )}
+                              </p>
+                              
+                              {/* Quick Start Guide */}
+                              <div className="px-6 py-4 bg-gradient-to-r from-coder1-cyan/10 to-coder1-purple/10 rounded-xl border border-coder1-cyan/30 max-w-md">
+                                <p className="text-sm text-text-primary">
+                                  <span className="text-coder1-cyan font-semibold">Supported Files:</span>
+                                  <span className="text-text-secondary ml-2">
+                                    .html, .tsx, .jsx, .css, .js, .ts
+                                  </span>
+                                </p>
                               </div>
                             </div>
-                            
-                            <h3 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-coder1-cyan to-coder1-purple mb-4">
-                              Live Preview Mode
-                            </h3>
-                            
-                            <p className="text-text-secondary mb-8 max-w-lg leading-relaxed">
-                              Your web content will render here in real-time as you code. 
-                              Open any HTML, React, or web file to see it come to life.
-                            </p>
-                            
-                            
-                            
-                            {/* Call to Action */}
-                            <div className="px-6 py-4 bg-gradient-to-r from-coder1-cyan/10 to-coder1-purple/10 rounded-xl border border-coder1-cyan/30 max-w-md">
-                              <p className="text-sm text-text-primary">
-                                <span className="text-coder1-cyan font-semibold">Quick Start:</span>
-                                <span className="text-text-secondary ml-2">
-                                  Open a file or type <code className="px-2 py-0.5 bg-bg-tertiary rounded text-coder1-purple font-mono text-xs">claude</code> in the terminal to begin
-                                </span>
-                              </p>
-                            </div>
-                          </div>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -311,17 +454,31 @@ const PreviewPanel = React.memo(function PreviewPanel({
                   {/* Status Bar */}
                   <div className="px-4 py-2 bg-bg-primary/50 backdrop-blur-sm border-t border-coder1-cyan/20 flex items-center justify-between">
                     <div className="flex items-center gap-4 text-xs">
-                      <span className="text-text-muted">Preview Mode</span>
-                      <span className="text-green-400 flex items-center gap-1.5">
-                        <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse shadow-glow-green" />
-                        Connected
-                      </span>
-                      <span className="text-coder1-cyan">Ready</span>
+                      <span className="text-text-muted">Live Preview</span>
+                      {activeFile && isPreviewable ? (
+                        <>
+                          <span className="text-green-400 flex items-center gap-1.5">
+                            <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse shadow-glow-green" />
+                            Active
+                          </span>
+                          <span className="text-coder1-cyan">Real-time Updates</span>
+                        </>
+                      ) : (
+                        <>
+                          <span className="text-text-muted flex items-center gap-1.5">
+                            <div className="w-2 h-2 bg-text-muted rounded-full" />
+                            Waiting for file
+                          </span>
+                          <span className="text-text-muted">Ready</span>
+                        </>
+                      )}
                     </div>
                     <div className="flex items-center gap-4 text-xs text-text-muted font-mono">
-                      <span>1920 × 1080</span>
-                      <span className="text-coder1-purple">100%</span>
-                      <span>60 FPS</span>
+                      {activeFile && (
+                        <span className="text-coder1-cyan">{activeFile.split('.').pop()?.toUpperCase()}</span>
+                      )}
+                      <span>Auto-refresh: 300ms</span>
+                      <span className="text-coder1-purple">Loop Protection: ON</span>
                     </div>
                   </div>
                 </div>

@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Clock, Play, Pause, Save, FileText, DollarSign, RefreshCw, Loader2, CheckCircle, XCircle } from 'lucide-react';
 import { useSession } from '@/contexts/SessionContext';
+import { sessionEnhancementService } from '@/services/session-enhancement-service';
 
 interface Session {
   id: string;
@@ -36,7 +37,7 @@ export default function SessionsPanel({ isVisible = true }: SessionsPanelProps) 
   const [restoringCheckpointId, setRestoringCheckpointId] = useState<string | null>(null);
   const [lastAction, setLastAction] = useState<{type: 'success' | 'error', message: string} | null>(null);
   
-  // Simplified session loading - use context instead of duplicating logic
+  // Enhanced session loading with deduplication and intelligent naming
   const loadSessions = async () => {
     try {
       setLoading(true);
@@ -48,10 +49,24 @@ export default function SessionsPanel({ isVisible = true }: SessionsPanelProps) 
         loadCheckpoints(currentSession.id);
       }
     } catch (error) {
-      logger?.error('Failed to load sessions:', error);
+      console.error('Failed to load sessions:', error);
     } finally {
       setLoading(false);
     }
+  };
+  
+  // Get enhanced session display data
+  const getEnhancedSession = (session: Session) => {
+    // For now, add some basic enhancements
+    // This will be expanded with real activity tracking
+    const enhanced = sessionEnhancementService.formatSessionForDisplay({
+      ...session,
+      filesModified: [],
+      terminalHistory: '',
+      claudeInteractions: 0
+    });
+    
+    return enhanced;
   };
   
   // Load checkpoints for a session
@@ -64,7 +79,7 @@ export default function SessionsPanel({ isVisible = true }: SessionsPanelProps) 
         setCheckpoints(data.checkpoints || []);
       }
     } catch (error) {
-      logger?.error('Failed to load checkpoints:', error);
+      console.error('Failed to load checkpoints:', error);
     }
   };
   
@@ -185,11 +200,11 @@ export default function SessionsPanel({ isVisible = true }: SessionsPanelProps) 
         }
       } else {
         const errorText = await restoreResponse.text();
-        logger?.error('❌ Checkpoint API failed:', restoreResponse.status, errorText);
+        console.error('❌ Checkpoint API failed:', restoreResponse.status, errorText);
         setLastAction({ type: 'error', message: `Failed to restore checkpoint: ${restoreResponse.status} ${errorText}` });
       }
     } catch (error) {
-      logger?.error('💥 Checkpoint restoration error:', error);
+      console.error('💥 Checkpoint restoration error:', error);
       setLastAction({ type: 'error', message: `Error restoring checkpoint: ${error instanceof Error ? error.message : 'Unknown error'}` });
     } finally {
       setRestoringCheckpointId(null);
@@ -215,7 +230,7 @@ export default function SessionsPanel({ isVisible = true }: SessionsPanelProps) 
       
       if (!checkpointsResponse.ok) {
         const errorText = await checkpointsResponse.text();
-        logger?.error('❌ Checkpoints API failed:', checkpointsResponse.status, errorText);
+        console.error('❌ Checkpoints API failed:', checkpointsResponse.status, errorText);
         setLastAction({ type: 'error', message: `Failed to load session checkpoints: ${checkpointsResponse.status}` });
         return;
       }
@@ -239,7 +254,7 @@ export default function SessionsPanel({ isVisible = true }: SessionsPanelProps) 
         setLastAction({ type: 'success', message: `Switched to session "${session.name}"` });
       }
     } catch (error) {
-      logger?.error('💥 Session restoration error:', error);
+      console.error('💥 Session restoration error:', error);
       setLastAction({ type: 'error', message: `Error restoring session: ${error instanceof Error ? error.message : 'Unknown error'}` });
     } finally {
       setRestoringSessionId(null);
@@ -280,23 +295,31 @@ export default function SessionsPanel({ isVisible = true }: SessionsPanelProps) 
   return (
     <div className="h-full flex flex-col">
       {/* Current Session */}
-      {currentSession && (
-        <div className="p-3 bg-bg-tertiary border-b border-border-default">
-          <div className="flex items-center justify-between mb-2">
-            <h4 className="text-xs font-semibold text-text-primary">Active Session</h4>
-            <span className="text-xs text-coder1-cyan font-mono">{sessionTime}</span>
-          </div>
-          
-          <div className="text-xs text-text-secondary mb-2 truncate" title={currentSession.name}>
-            {currentSession.name}
-          </div>
-          
-          <div className="flex items-center gap-2 mb-2">
-            <FileText className="w-3 h-3 text-blue-400" />
-            <span className="text-xs text-text-secondary">
-              {checkpoints.length} checkpoint{checkpoints.length !== 1 ? 's' : ''}
-            </span>
-          </div>
+      {currentSession && (() => {
+        const enhanced = getEnhancedSession(currentSession);
+        return (
+          <div className="p-3 bg-bg-tertiary border-b border-border-default">
+            <div className="flex items-center justify-between mb-2">
+              <h4 className="text-xs font-semibold text-text-primary">Active Session</h4>
+              <span className="text-xs text-coder1-cyan font-mono">{sessionTime}</span>
+            </div>
+            
+            <div className="text-sm font-medium text-text-primary mb-1 truncate" title={enhanced.title}>
+              {enhanced.title}
+            </div>
+            
+            {enhanced.projectName && enhanced.projectName !== 'Development Project' && (
+              <div className="text-xs text-text-secondary mb-2">
+                📁 {enhanced.projectName}
+              </div>
+            )}
+            
+            <div className="flex items-center gap-2 mb-2">
+              <FileText className="w-3 h-3 text-blue-400" />
+              <span className="text-xs text-text-secondary">
+                {checkpoints.length} checkpoint{checkpoints.length !== 1 ? 's' : ''}
+              </span>
+            </div>
           
           {/* Show checkpoints list if available */}
           {checkpoints.length > 0 && (
@@ -351,7 +374,8 @@ export default function SessionsPanel({ isVisible = true }: SessionsPanelProps) 
             </button>
           </div>
         </div>
-      )}
+        );
+      })()}
       
       {/* Start New Session */}
       {!currentSession && (
@@ -385,6 +409,7 @@ export default function SessionsPanel({ isVisible = true }: SessionsPanelProps) 
           <div className="space-y-2">
             {sessions.filter(s => s.id !== currentSession?.id).map(session => {
               const isRestoring = restoringSessionId === session.id;
+              const enhanced = getEnhancedSession(session);
               return (
                 <div
                   key={session.id}
@@ -394,19 +419,19 @@ export default function SessionsPanel({ isVisible = true }: SessionsPanelProps) 
                       : 'bg-bg-primary hover:bg-bg-tertiary cursor-pointer'
                   }`}
                   onClick={() => !isRestoring && handleRestoreSession(session)}
-                  title={isRestoring ? 'Restoring session...' : `Click to restore session: ${session.name}`}
+                  title={isRestoring ? 'Restoring session...' : `Click to restore: ${enhanced.title}`}
                 >
                   <div className="flex items-start justify-between mb-1">
                     <div className="flex items-center gap-2">
                       {isRestoring && <Loader2 className="w-4 h-4 animate-spin text-coder1-cyan flex-shrink-0" />}
                       <span className={`text-sm font-medium truncate ${
                         isRestoring ? 'text-coder1-cyan' : 'text-text-primary'
-                      }`} title={session.name}>
-                        {session.name}
+                      }`} title={enhanced.title}>
+                        {enhanced.title}
                       </span>
                     </div>
                     <span className="text-xs text-text-muted whitespace-nowrap ml-2">
-                      {isRestoring ? 'Restoring...' : formatDuration(session.createdAt, session.updatedAt)}
+                      {isRestoring ? 'Restoring...' : enhanced.duration}
                     </span>
                   </div>
                   
@@ -415,12 +440,12 @@ export default function SessionsPanel({ isVisible = true }: SessionsPanelProps) 
                       <Clock className="w-3 h-3" />
                       <span>{new Date(session.createdAt).toLocaleDateString()}</span>
                     </div>
-                    {session.metadata?.ide && (
+                    {session.metadata?.ide ? (
                       <div className="flex items-center gap-1">
                         <FileText className="w-3 h-3" />
                         <span>IDE</span>
                       </div>
-                    )}
+                    ) : null}
                   </div>
                   
                   {session.description && (

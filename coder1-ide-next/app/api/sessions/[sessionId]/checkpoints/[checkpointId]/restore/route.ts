@@ -24,7 +24,7 @@ export async function POST(
       });
       
     } catch (error) {
-      logger?.error('Checkpoint file not found:', checkpointFile);
+      // logger?.error('Checkpoint file not found:', checkpointFile);
       return NextResponse.json(
         { error: 'Checkpoint not found' },
         { status: 404 }
@@ -32,7 +32,7 @@ export async function POST(
     }
     
   } catch (error) {
-    logger?.error('Restore checkpoint API error:', error);
+    // logger?.error('Restore checkpoint API error:', error);
     return NextResponse.json(
       { error: 'Failed to restore checkpoint' },
       { status: 500 }

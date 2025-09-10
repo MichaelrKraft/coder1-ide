@@ -16,10 +16,21 @@ export default function LeftPanel({ onFileSelect, activeFile }: LeftPanelProps) 
   
   // REMOVED: // REMOVED: console.log('🔄 LeftPanel rendered with activeTab:', activeTab);
   
+  // Listen for event from footer to open Memory tab
+  React.useEffect(() => {
+    const handleOpenMemoryTab = () => {
+      setActiveTab('memory');
+    };
+    
+    window.addEventListener('openExplorerMemoryTab', handleOpenMemoryTab);
+    
+    return () => {
+      window.removeEventListener('openExplorerMemoryTab', handleOpenMemoryTab);
+    };
+  }, []);
+  
   return (
-    <div className="h-full flex flex-col bg-bg-secondary relative border-r-2 border-coder1-cyan/50" style={{
-      boxShadow: '2px 0 8px rgba(0, 217, 255, 0.3)'
-    }}>
+    <div className="h-full flex flex-col bg-bg-secondary relative">
       {/* Animated Background Gradient Orbs */}
       <div className="absolute inset-0 pointer-events-none">
         {/* Gradient Orb 1 - Cyan */}

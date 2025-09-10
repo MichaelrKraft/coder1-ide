@@ -2618,6 +2618,85 @@ export const Button: React.FC<ButtonProps> = ({
     
     <!-- Unified Design System JavaScript -->
     <script src="unified-design-system.js"></script>
+    
+    <!-- Ensure button functions are available immediately -->
+    <script>
+        // Immediate fallback functions in case the fix script hasn't initialized yet
+        if (!window.installTemplate) {
+            window.installTemplate = function(event) {
+                if (event) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+                
+                const btn = event ? event.currentTarget : document.querySelector('.modal-content .btn-primary');
+                if (!btn) return;
+                
+                const originalHTML = btn.innerHTML;
+                const templateName = document.getElementById('modalName')?.textContent || 'Template';
+                
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Installing...';
+                btn.disabled = true;
+                btn.style.background = '#666';
+                
+                setTimeout(() => {
+                    btn.innerHTML = '<i class="fas fa-check"></i> Installed Successfully!';
+                    btn.style.background = '#10b981';
+                    
+                    // Show notification
+                    const notification = document.createElement('div');
+                    notification.style.cssText = 'position: fixed; top: 20px; right: 20px; background: #10b981; color: white; padding: 15px 20px; border-radius: 8px; z-index: 100000; box-shadow: 0 4px 6px rgba(0,0,0,0.1);';
+                    notification.innerHTML = `✅ "${templateName}" installed successfully!`;
+                    document.body.appendChild(notification);
+                    
+                    setTimeout(() => {
+                        notification.remove();
+                        const modal = document.getElementById('modalOverlay');
+                        if (modal) {
+                            modal.classList.remove('active');
+                        }
+                        btn.innerHTML = originalHTML;
+                        btn.disabled = false;
+                        btn.style.background = '';
+                    }, 2000);
+                }, 1500);
+            };
+        }
+        
+        if (!window.viewDocs) {
+            window.viewDocs = function(event) {
+                if (event) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+                
+                const templateName = document.getElementById('modalName')?.textContent || '';
+                const docsUrl = `https://docs.coder1.dev/templates/${templateName.toLowerCase().replace(/\s+/g, '-')}`;
+                console.log('Opening documentation:', docsUrl);
+                window.open(docsUrl, '_blank');
+                
+                // Show notification
+                const notification = document.createElement('div');
+                notification.style.cssText = 'position: fixed; top: 20px; right: 20px; background: #3b82f6; color: white; padding: 15px 20px; border-radius: 8px; z-index: 100000; box-shadow: 0 4px 6px rgba(0,0,0,0.1);';
+                notification.innerHTML = '📚 Opening documentation...';
+                document.body.appendChild(notification);
+                
+                setTimeout(() => notification.remove(), 2000);
+            };
+        }
+        
+        // Also ensure close modal function exists
+        if (!window.closeModal) {
+            window.closeModal = function() {
+                const modal = document.getElementById('modalOverlay');
+                if (modal) {
+                    modal.classList.remove('active');
+                }
+            };
+        }
+        
+        console.log('Template button functions initialized');
+    </script>
     <script>
         // Initialize unified design system for template cards
         document.addEventListener('DOMContentLoaded', () => {

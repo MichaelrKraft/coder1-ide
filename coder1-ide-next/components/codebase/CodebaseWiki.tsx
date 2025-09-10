@@ -121,7 +121,19 @@ const CodebaseWiki: React.FC = () => {
     const loadStats = async () => {
         try {
             const response = await fetch(`${API_BASE}/stats`);
-            const data = await response.json();
+            
+            if (!response.ok) {
+                console.warn('Stats API returned error:', response.status);
+                return;
+            }
+            
+            const text = await response.text();
+            if (!text) {
+                console.warn('Stats API returned empty response');
+                return;
+            }
+            
+            const data = JSON.parse(text);
             
             if (data.success) {
                 setStats(data);
@@ -130,7 +142,7 @@ const CodebaseWiki: React.FC = () => {
                 setError(data.error || 'Failed to load stats');
             }
         } catch (err) {
-            logger?.error('Failed to load codebase stats:', err);
+            console.error('Failed to load codebase stats:', err);
             setError('Failed to connect to codebase service');
         }
     };
@@ -145,7 +157,7 @@ const CodebaseWiki: React.FC = () => {
                 setShowSuggestions(data.suggestions.length > 0);
             }
         } catch (err) {
-            logger?.error('Failed to fetch suggestions:', err);
+            console.error('Failed to fetch suggestions:', err);
         }
     };
 
@@ -159,7 +171,23 @@ const CodebaseWiki: React.FC = () => {
 
         try {
             const response = await fetch(`${API_BASE}/search?q=${encodeURIComponent(searchTerm)}&limit=20`);
-            const data = await response.json();
+            
+            if (!response.ok) {
+                console.warn('Search API returned error:', response.status);
+                setSearchResults(null);
+                setLoading(false);
+                return;
+            }
+            
+            const text = await response.text();
+            if (!text) {
+                console.warn('Search API returned empty response');
+                setSearchResults(null);
+                setLoading(false);
+                return;
+            }
+            
+            const data = JSON.parse(text);
             
             if (data.success) {
                 setSearchResults(data.results);
@@ -170,7 +198,7 @@ const CodebaseWiki: React.FC = () => {
                 setError(data.error || 'Search failed');
             }
         } catch (err) {
-            logger?.error('Search failed:', err);
+            console.error('Search failed:', err);
             setError('Failed to search codebase');
         } finally {
             setLoading(false);
@@ -188,16 +216,39 @@ const CodebaseWiki: React.FC = () => {
             if (data.success) {
                 // Poll for indexing completion
                 const pollInterval = setInterval(async () => {
-                    const statusResponse = await fetch(`${API_BASE}/status`);
-                    const statusData = await statusResponse.json();
-                    
-                    if (statusData.success) {
-                        setIndexing(statusData.indexing?.isIndexing || false);
+                    try {
+                        const statusResponse = await fetch(`${API_BASE}/status`);
                         
-                        if (!statusData.indexing?.isIndexing) {
+                        // Check if response is ok and has content
+                        if (!statusResponse.ok) {
+                            console.warn('Status API returned error:', statusResponse.status);
                             clearInterval(pollInterval);
-                            loadStats(); // Reload stats after indexing
+                            setIndexing(false);
+                            return;
                         }
+                        
+                        const text = await statusResponse.text();
+                        if (!text) {
+                            console.warn('Status API returned empty response');
+                            clearInterval(pollInterval);
+                            setIndexing(false);
+                            return;
+                        }
+                        
+                        const statusData = JSON.parse(text);
+                        
+                        if (statusData.success) {
+                            setIndexing(statusData.indexing?.isIndexing || false);
+                            
+                            if (!statusData.indexing?.isIndexing) {
+                                clearInterval(pollInterval);
+                                loadStats(); // Reload stats after indexing
+                            }
+                        }
+                    } catch (err) {
+                        console.error('Error polling status:', err);
+                        clearInterval(pollInterval);
+                        setIndexing(false);
                     }
                 }, 2000);
 
@@ -208,7 +259,7 @@ const CodebaseWiki: React.FC = () => {
                 setIndexing(false);
             }
         } catch (err) {
-            logger?.error('Failed to trigger indexing:', err);
+            console.error('Failed to trigger indexing:', err);
             setError('Failed to start codebase indexing');
             setIndexing(false);
         }
@@ -277,7 +328,7 @@ const CodebaseWiki: React.FC = () => {
                             onClick={() => handleSearch()}
                             disabled={loading}
                         >
-                            {loading ? '⏳' : '🔍'}
+                            {loading ? 'Loading' : 'Search'}
                         </button>
                     </div>
 
@@ -296,8 +347,8 @@ const CodebaseWiki: React.FC = () => {
                                     onClick={() => selectSuggestion(suggestion)}
                                 >
                                     <span className="text-lg">
-                                        {suggestion.type === 'function' ? '⚡' : 
-                                         suggestion.type === 'class' ? '📦' : '📝'}
+                                        {suggestion.type === 'function' ? 'f' : 
+                                         suggestion.type === 'class' ? 'C' : 'v'}
                                     </span>
                                     <div className="flex-1 min-w-0">
                                         <div className="font-medium text-text-primary">{suggestion.name}</div>
@@ -321,7 +372,7 @@ const CodebaseWiki: React.FC = () => {
                         onClick={triggerIndexing}
                         disabled={indexing}
                     >
-                        {indexing ? '🔄 Indexing...' : '🔄 Reindex'}
+                        {indexing ? 'Indexing...' : 'Reindex'}
                     </button>
                 </div>
             </div>
@@ -331,7 +382,7 @@ const CodebaseWiki: React.FC = () => {
                 {/* Error Message */}
                 {error && (
                     <div className="mb-4 p-3 bg-error/10 border border-error/20 rounded-lg text-error flex items-center gap-2">
-                        <span>⚠️</span>
+                        <span>Warning:</span>
                         {error}
                     </div>
                 )}
@@ -339,27 +390,27 @@ const CodebaseWiki: React.FC = () => {
                 {/* Welcome Message */}
                 {!stats?.lastIndexed && !indexing && (
                     <div className="text-center py-8">
-                        <h3 className="text-lg font-semibold text-coder1-cyan mb-4">Welcome to Codebase Wiki! 📚</h3>
+                        <h3 className="text-lg font-semibold text-coder1-cyan mb-4">Welcome to Codebase Wiki!</h3>
                         <p className="text-text-muted mb-6 max-w-md mx-auto">
                             Your code hasn&apos;t been indexed yet. Click &quot;Reindex&quot; to start exploring your codebase with AI-powered search.
                         </p>
                         <div className="space-y-2 text-left max-w-lg mx-auto text-sm">
                             <div className="flex items-start gap-2">
-                                <span>🔍</span>
+                                <span>•</span>
                                 <div>
                                     <strong className="text-text-primary">Search Everything:</strong>
                                     <span className="text-text-muted"> Find functions, classes, variables across your entire codebase</span>
                                 </div>
                             </div>
                             <div className="flex items-start gap-2">
-                                <span>📊</span>
+                                <span>•</span>
                                 <div>
                                     <strong className="text-text-primary">Understand Dependencies:</strong>
                                     <span className="text-text-muted"> See how your code connects together</span>
                                 </div>
                             </div>
                             <div className="flex items-start gap-2">
-                                <span>🧠</span>
+                                <span>•</span>
                                 <div>
                                     <strong className="text-text-primary">AI Insights:</strong>
                                     <span className="text-text-muted"> Get intelligent explanations of your code</span>
@@ -378,7 +429,7 @@ const CodebaseWiki: React.FC = () => {
                         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
                             <div className="bg-bg-tertiary border border-border-default rounded-lg p-4">
                                 <div className="flex items-center gap-2 mb-2">
-                                    <span className="text-lg">📄</span>
+                                    <span className="text-lg">Files</span>
                                     <h4 className="font-medium text-text-primary">Files</h4>
                                 </div>
                                 <div className="text-2xl font-bold text-coder1-cyan">{stats.files}</div>
@@ -387,7 +438,7 @@ const CodebaseWiki: React.FC = () => {
 
                             <div className="bg-bg-tertiary border border-border-default rounded-lg p-4">
                                 <div className="flex items-center gap-2 mb-2">
-                                    <span className="text-lg">⚡</span>
+                                    <span className="text-lg">Func</span>
                                     <h4 className="font-medium text-text-primary">Functions</h4>
                                 </div>
                                 <div className="text-2xl font-bold text-coder1-cyan">{stats.functions}</div>
@@ -398,7 +449,7 @@ const CodebaseWiki: React.FC = () => {
 
                             <div className="bg-bg-tertiary border border-border-default rounded-lg p-4">
                                 <div className="flex items-center gap-2 mb-2">
-                                    <span className="text-lg">📦</span>
+                                    <span className="text-lg">Class</span>
                                     <h4 className="font-medium text-text-primary">Classes</h4>
                                 </div>
                                 <div className="text-2xl font-bold text-coder1-cyan">{stats.classes}</div>
@@ -407,7 +458,7 @@ const CodebaseWiki: React.FC = () => {
 
                             <div className="bg-bg-tertiary border border-border-default rounded-lg p-4">
                                 <div className="flex items-center gap-2 mb-2">
-                                    <span className="text-lg">🔗</span>
+                                    <span className="text-lg">Deps</span>
                                     <h4 className="font-medium text-text-primary">Dependencies</h4>
                                 </div>
                                 <div className="text-2xl font-bold text-coder1-cyan">{stats.dependencies}</div>
@@ -477,7 +528,7 @@ const CodebaseWiki: React.FC = () => {
                         {searchResults.functions.length > 0 && (
                             <div className="mb-6">
                                 <h4 className="font-medium text-text-primary mb-3">
-                                    ⚡ Functions ({searchResults.functions.length})
+                                    Functions ({searchResults.functions.length})
                                 </h4>
                                 <div className="space-y-3">
                                     {searchResults.functions.map((func) => (
@@ -510,7 +561,7 @@ const CodebaseWiki: React.FC = () => {
                                                     className="text-coder1-cyan hover:underline cursor-pointer text-sm"
                                                     onClick={() => openInEditor(func.file, func.line)}
                                                 >
-                                                    📄 {func.file}:{func.line}
+                                                    {func.file}:{func.line}
                                                 </span>
                                             </div>
                                             {func.params.length > 0 && (
@@ -535,7 +586,7 @@ const CodebaseWiki: React.FC = () => {
                         {searchResults.classes.length > 0 && (
                             <div className="mb-6">
                                 <h4 className="font-medium text-text-primary mb-3">
-                                    📦 Classes ({searchResults.classes.length})
+                                    Classes ({searchResults.classes.length})
                                 </h4>
                                 <div className="space-y-3">
                                     {searchResults.classes.map((cls) => (
@@ -551,7 +602,7 @@ const CodebaseWiki: React.FC = () => {
                                                     className="text-coder1-cyan hover:underline cursor-pointer text-sm"
                                                     onClick={() => openInEditor(cls.file, cls.line)}
                                                 >
-                                                    📄 {cls.file}:{cls.line}
+                                                    {cls.file}:{cls.line}
                                                 </span>
                                             </div>
                                             {cls.methods.length > 0 && (
@@ -569,7 +620,7 @@ const CodebaseWiki: React.FC = () => {
                         {searchResults.files.length > 0 && (
                             <div className="mb-6">
                                 <h4 className="font-medium text-text-primary mb-3">
-                                    📄 Files ({searchResults.files.length})
+                                    Files ({searchResults.files.length})
                                 </h4>
                                 <div className="space-y-3">
                                     {searchResults.files.map((file, index) => (

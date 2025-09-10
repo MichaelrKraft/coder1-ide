@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Compass, ChevronUp, ChevronDown, Grid, FileText, Code, Sparkles, Terminal, Plus } from 'lucide-react';
+import { Compass, ChevronUp, ChevronDown, Grid, FileText, Code, Sparkles, Terminal, Plus, Brain } from 'lucide-react';
 
 export default function DiscoverSection() {
   const [isExpanded, setIsExpanded] = useState(true);
@@ -133,15 +133,24 @@ export default function DiscoverSection() {
               <span>Templates</span>
             </a>
             
-            <a href="/hooks" className="w-full flex items-center gap-2 px-2 py-1.5 text-xs text-text-secondary hover:text-text-primary hover:bg-bg-tertiary rounded transition-colors">
-              <Code className="w-3 h-3" />
-              <span>Hooks</span>
-            </a>
-            
             <a href="/workflow-dashboard.html" className="w-full flex items-center gap-2 px-2 py-1.5 text-xs text-text-secondary hover:text-text-primary hover:bg-bg-tertiary rounded transition-colors">
               <Sparkles className="w-3 h-3 text-coder1-cyan" />
               <span>Workflows</span>
             </a>
+          </div>
+
+          {/* AI Tools Section */}
+          <div className="pt-2 border-t border-border-default">
+            <h4 className="text-xs font-semibold text-text-muted mb-1 flex items-center gap-1">
+              <Brain className="w-3 h-3 text-coder1-cyan" />
+              AI Tools
+            </h4>
+            <div className="space-y-1">
+              <a href="/hooks" className="w-full flex items-center gap-2 px-2 py-1.5 text-xs text-text-secondary hover:text-text-primary hover:bg-bg-tertiary rounded transition-colors">
+                <Code className="w-3 h-3" />
+                <span>Hooks</span>
+              </a>
+            </div>
           </div>
 
           {/* Commands Section */}

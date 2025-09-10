@@ -59,7 +59,6 @@ export default function DiscoverPanel() {
   // Wcygan commands state
   const [wcyganCommands, setWcyganCommands] = useState<WcyganCommand[]>([]);
   const [isLoadingWcygan, setIsLoadingWcygan] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
   
   // Helper function: Get icon for wcygan category
   const getIconForCategory = (category: string) => {
@@ -205,7 +204,7 @@ export default function DiscoverPanel() {
     { id: 'document', name: '/document', description: 'Automated documentation generation', icon: FileText, action: 'document', category: 'PROJECT MANAGEMENT' },
     { id: 'git', name: '/git', description: 'Advanced Git workflow automation', icon: GitBranch, action: 'git', category: 'PROJECT MANAGEMENT' },
     { id: 'estimate', name: '/estimate', description: 'Project estimation and timeline planning', icon: Calculator, action: 'estimate', category: 'PROJECT MANAGEMENT' },
-    { id: 'task', name: '/task', description: 'Task management and progress tracking', icon: ListTodo, action: 'task', category: 'PROJECT MANAGEMENT' },
+    { id: 'task-manage', name: '/task', description: 'Task management and progress tracking', icon: ListTodo, action: 'task', category: 'PROJECT MANAGEMENT' },
     { id: 'index', name: '/index', description: 'Codebase indexing and search', icon: Hash, action: 'index', category: 'PROJECT MANAGEMENT' },
     { id: 'load', name: '/load', description: 'Smart file and context loading', icon: FolderOpen, action: 'load', category: 'PROJECT MANAGEMENT' },
     { id: 'spawn', name: '/spawn', description: 'Multi-agent task spawning', icon: Users, action: 'spawn', category: 'PROJECT MANAGEMENT' },
@@ -233,7 +232,7 @@ export default function DiscoverPanel() {
     // Convert wcygan commands to TaskCommand format
     wcyganCommands.forEach(wcmd => {
       combinedCommands.push({
-        id: wcmd.id,
+        id: `wcygan-${wcmd.id}`, // Prefix with 'wcygan-' to ensure uniqueness
         name: wcmd.slashCommand,
         description: wcmd.description,
         icon: getIconForCategory(wcmd.category),
@@ -263,13 +262,8 @@ export default function DiscoverPanel() {
     }
   };
 
-  // Filter commands based on search and category
+  // Filter commands based on search
   const filteredCommands = allCommands.filter(cmd => {
-    // Category filter
-    if (selectedCategory !== 'all' && cmd.category !== selectedCategory) {
-      return false;
-    }
-    
     // Search filter
     if (searchInput) {
       const query = searchInput.toLowerCase();
@@ -283,14 +277,12 @@ export default function DiscoverPanel() {
     return true;
   });
 
-  // Group commands by category and get unique categories
+  // Group commands by category (kept for potential future use but not displayed)
   const commandsByCategory = filteredCommands.reduce((acc, cmd) => {
     if (!acc[cmd.category]) acc[cmd.category] = [];
     acc[cmd.category].push(cmd);
     return acc;
   }, {} as Record<string, TaskCommand[]>);
-  
-  const uniqueCategories = Object.keys(commandsByCategory).sort();
 
   // Execute command
   const executeCommand = (command: TaskCommand) => {
@@ -436,36 +428,6 @@ export default function DiscoverPanel() {
           </div>
         </div>
 
-        {/* Category Filter */}
-        <div className="px-4 py-2 border-b border-border-default">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-xs text-text-muted">Category:</span>
-            <button
-              onClick={() => setSelectedCategory('all')}
-              className={`px-2 py-1 text-xs rounded transition-colors ${
-                selectedCategory === 'all'
-                  ? 'bg-coder1-cyan text-black'
-                  : 'bg-bg-tertiary text-text-secondary hover:text-text-primary'
-              }`}
-            >
-              All ({allCommands.length})
-            </button>
-            {uniqueCategories.slice(0, 8).map(cat => (
-              <button
-                key={cat}
-                onClick={() => setSelectedCategory(cat)}
-                className={`px-2 py-1 text-xs rounded transition-colors ${
-                  selectedCategory === cat
-                    ? 'bg-coder1-cyan text-black'
-                    : 'bg-bg-tertiary text-text-secondary hover:text-text-primary'
-                }`}
-              >
-                {cat.split(' ').map(w => w[0]).join('')} ({commandsByCategory[cat]?.length || 0})
-              </button>
-            ))}
-          </div>
-        </div>
-
         {/* Content */}
         <div className="flex-1 overflow-y-auto px-4 py-3" style={{ maxHeight: '500px' }}>
           {/* Slash Commands (Scrollable) */}
@@ -501,6 +463,33 @@ export default function DiscoverPanel() {
                   </button>
                 );
               })}
+            </div>
+          </div>
+
+          {/* AI Tools Section */}
+          <div className="mb-4 p-3 border-2 border-coder1-purple rounded-lg bg-coder1-purple/5">
+            <h4 className="text-xs font-semibold text-coder1-purple uppercase tracking-wider mb-3">✨ AI TOOLS</h4>
+            <div className="grid grid-cols-2 gap-2 text-sm text-text-secondary">
+              <div className="flex items-center gap-2">
+                <span>•</span>
+                <a href="/component-studio.html" className="text-coder1-cyan hover:text-coder1-cyan-secondary transition-colors">Component Studio</a>
+              </div>
+              <div className="flex items-center gap-2">
+                <span>•</span>
+                <a href="/templates-hub.html" target="_blank" className="text-coder1-cyan hover:text-coder1-cyan-secondary transition-colors">Templates Hub</a>
+              </div>
+              <div className="flex items-center gap-2">
+                <span>•</span>
+                <a href="/hooks" className="text-coder1-cyan hover:text-coder1-cyan-secondary transition-colors">Hooks Manager</a>
+              </div>
+              <div className="flex items-center gap-2">
+                <span>•</span>
+                <a href="/workflow-dashboard.html" className="text-coder1-cyan hover:text-coder1-cyan-secondary transition-colors">Workflows</a>
+              </div>
+              <div className="flex items-center gap-2">
+                <span>•</span>
+                <a href="/" className="text-coder1-cyan hover:text-coder1-cyan-secondary transition-colors">PRD Generator</a>
+              </div>
             </div>
           </div>
 
@@ -603,27 +592,6 @@ export default function DiscoverPanel() {
 
           {/* Separator */}
           <div className="border-t border-border-default my-4"></div>
-
-          {/* AI Tools Section */}
-          <div className="mb-4">
-            <h4 className="text-xs font-semibold text-coder1-cyan uppercase tracking-wider mb-3">✨ AI TOOLS</h4>
-            <div className="text-sm text-text-secondary leading-relaxed">
-              <div className="flex flex-wrap items-center gap-2 mb-1">
-                <span>•</span>
-                <a href="/component-studio.html" className="text-coder1-cyan hover:text-coder1-cyan-secondary transition-colors">Component Studio</a>
-                <span>•</span>
-                <a href="/templates-hub.html" className="text-coder1-cyan hover:text-coder1-cyan-secondary transition-colors">Templates Hub</a>
-                <span>•</span>
-                <a href="/hooks.html" className="text-coder1-cyan hover:text-coder1-cyan-secondary transition-colors">Hooks Manager</a>
-              </div>
-              <div className="flex flex-wrap items-center gap-2">
-                <span>•</span>
-                <a href="/workflow-dashboard.html" className="text-coder1-cyan hover:text-coder1-cyan-secondary transition-colors">Workflows</a>
-                <span>•</span>
-                <a href="/" className="text-coder1-cyan hover:text-coder1-cyan-secondary transition-colors">PRD Generator</a>
-              </div>
-            </div>
-          </div>
 
           {/* Sandbox Section */}
           <div>

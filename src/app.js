@@ -213,7 +213,7 @@ app.use((req, res, next) => {
     }
     
     // Bypass auth during development/testing or for public paths
-    const publicPaths = ['/', '/health', '/beta-access', '/api/beta-access', '/api/waitlist', '/invite', '/api/market-insights', '/api/intelligence', '/api/analytics', '/ide', '/hooks', '/welcome', '/api/license', '/tmux-lab', '/api/experimental', '/vibe-dashboard', '/workflow-dashboard', '/agent-dashboard', '/components-beta'];
+    const publicPaths = ['/', '/health', '/beta-access', '/api/beta-access', '/api/waitlist', '/invite', '/api/market-insights', '/api/intelligence', '/api/analytics', '/ide', '/hooks', '/welcome', '/api/license', '/tmux-lab', '/api/experimental', '/vibe-dashboard', '/workflow-dashboard', '/components-beta'];
     const isPublicPath = publicPaths.some(path => req.path.startsWith(path)) || 
                         req.path.startsWith('/static/') || 
                         req.path.startsWith('/ide/static/') ||
@@ -419,7 +419,6 @@ app.use('/api', require('./routes/prettier-config'));
 
 // EXPERIMENTAL: Tmux Orchestrator Lab (isolated test environment)
 app.use('/api/experimental', require('./routes/experimental/orchestrator'));
-app.use('/api/agents', require('./routes/agent-dashboard').router);  // Multi-Agent Observability Dashboard
 app.use('/api/memory-metrics', require('./routes/memory-metrics'));  // Memory Performance Monitoring
 
 // Component Capture Beta Routes (Isolated from main IDE)
@@ -659,22 +658,6 @@ app.get(['/workflow-dashboard', '/workflow-dashboard.html'], (req, res) => {
         'ETag': 'W/"no-cache-' + Date.now() + '"'
     });
     res.sendFile(path.join(__dirname, '../CANONICAL/workflow-dashboard.html'));
-});
-
-// Agent Dashboard route - Multi-Agent Observability Dashboard
-app.get(['/agent-dashboard', '/agent-dashboard.html'], (req, res) => {
-    // Add no-cache headers for real-time dashboard updates
-    res.set({
-        'Cache-Control': 'no-cache, no-store, must-revalidate, max-age=0',
-        'Pragma': 'no-cache',
-        'Expires': '0',
-        'Last-Modified': new Date().toUTCString(),
-        'ETag': 'W/"agent-dashboard-' + Date.now() + '"'
-    });
-    
-    performanceMonitor.start('agent-dashboard-load');
-    res.sendFile(path.join(__dirname, '../CANONICAL/agent-dashboard.html'));
-    performanceMonitor.end('agent-dashboard-load');
 });
 
 // CoderOne Landing Page route - serve with no-cache headers
@@ -1108,18 +1091,7 @@ setupTerminalWebSocket(io);
 const { setupFileActivityWebSocket } = require('./routes/claude-file-activity');
 setupFileActivityWebSocket(io);
 
-// Setup Agent Dashboard WebSocket handler for real-time agent observability
-const { agentObserver } = require('./routes/agent-dashboard');
 io.on('connection', (socket) => {
-    if (socket.handshake.url && socket.handshake.url.includes('agent-dashboard')) {
-        console.log('🤖 Agent Dashboard client connected');
-        agentObserver.addWebSocketClient(socket);
-        
-        socket.on('disconnect', () => {
-            console.log('🤖 Agent Dashboard client disconnected');
-        });
-    }
-    
     // Orchestrator Socket.IO event handlers
     setupOrchestratorSocketHandlers(socket);
     

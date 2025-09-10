@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
     });
     
   } catch (error) {
-    logger?.error('Checkpoint API error:', error);
+    console.error('Checkpoint API error:', error);
     return NextResponse.json(
       { error: 'Failed to create checkpoint' },
       { status: 500 }
@@ -168,7 +168,7 @@ export async function GET(request: NextRequest) {
     }
     
   } catch (error) {
-    logger?.error('Checkpoint fetch error:', error);
+    console.error('Checkpoint fetch error:', error);
     return NextResponse.json(
       { error: 'Failed to fetch checkpoints' },
       { status: 500 }
