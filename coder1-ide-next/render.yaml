@@ -1,0 +1,96 @@
+# Render Configuration for Coder1 IDE Alpha
+# Optimized for Starter Plan ($7/month, 512MB RAM)
+
+services:
+  - type: web
+    name: coder1-ide-alpha
+    runtime: node
+    region: oregon # or your preferred region
+    plan: starter # $7/month plan
+    
+    # Build configuration
+    buildCommand: |
+      # Install only production dependencies
+      npm ci --production --omit=dev
+      
+      # Build with memory constraints
+      NODE_OPTIONS="--max-old-space-size=400" npm run build
+      
+      # Clean up build artifacts to save space
+      rm -rf .next/cache
+      rm -rf node_modules/.cache
+      
+      # Remove unnecessary files
+      find . -name "*.map" -delete
+      find . -name "*.md" -not -path "./public/*" -delete
+    
+    # Start command with memory limit
+    startCommand: node --max-old-space-size=400 server.js
+    
+    # Health check
+    healthCheckPath: /api/health
+    
+    # Environment variables
+    envVars:
+      - key: NODE_ENV
+        value: production
+        
+      - key: DEPLOYMENT_MODE
+        value: alpha-limited
+        
+      - key: PORT
+        value: 3001
+        
+      - key: NEXT_PUBLIC_API_URL
+        generateValue: true # Render will generate the URL
+        
+      # Memory optimization
+      - key: NODE_OPTIONS
+        value: --max-old-space-size=400
+        
+      # Session storage
+      - key: DATABASE_URL
+        value: sqlite:///data/coder1-sessions.db
+        
+      # Alpha configuration
+      - key: ALPHA_MODE_ENABLED
+        value: true
+        
+      - key: MAX_CONCURRENT_TEAMS
+        value: 1
+        
+      - key: MAX_AGENTS_PER_TEAM
+        value: 2
+        
+      # Add your alpha invite code
+      - key: ALPHA_INVITE_CODE
+        sync: false # Set this in Render dashboard for security
+        
+      # Monitoring
+      - key: ENABLE_HEALTH_CHECKS
+        value: true
+        
+      - key: MEMORY_PANIC_THRESHOLD_MB
+        value: 380
+
+    # Auto-deploy from GitHub
+    autoDeploy: false # Set to true after initial testing
+    
+    # Branch to deploy from
+    branch: master # or your production branch
+    
+    # Number of instances (keep at 1 for alpha)
+    numInstances: 1
+    
+    # Disk storage for session persistence
+    disk:
+      name: coder1-data
+      mountPath: /data
+      sizeGB: 1 # 1GB is plenty for alpha
+
+# Optional: PostgreSQL database (if you want to upgrade from SQLite)
+# Uncomment if you need more robust database storage
+# databases:
+#   - name: coder1-sessions
+#     plan: starter # $7/month
+#     region: oregon
