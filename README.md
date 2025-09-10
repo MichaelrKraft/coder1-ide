@@ -202,10 +202,10 @@ We welcome contributions! Please read our contributing guidelines before submitt
 
 ## 📚 Documentation
 
-- [Architecture Overview](./REAL_ARCHITECTURE_FINDINGS.md)
-- [Security Documentation](./SECURITY_FIXES_SUMMARY.md)
-- [Phase 1 Summary](./PHASE1_COMPLETION_SUMMARY.md)
-- [Phase 2 Plan](./PHASE2_ACTION_PLAN.md)
+- [Architecture Overview](./docs/architecture/REAL_ARCHITECTURE_FINDINGS.md)
+- [Security Documentation](./docs/phase-reports/SECURITY_FIXES_SUMMARY.md)
+- [Phase 1 Summary](./docs/phase-reports/PHASE1_COMPLETION_SUMMARY.md)
+- [Phase 2 Plan](./docs/phase-reports/PHASE2_ACTION_PLAN.md)
 
 ---
 

@@ -1,7 +1,7 @@
 /**
  * Agent Personality Loader
  * 
- * Loads and parses agent personality definitions from .claude/agents/*.md files
+ * Loads and parses agent personality definitions from docs/api/agents/*.md files
  * Extracts personality traits, response styles, and example formats
  */
 
@@ -11,7 +11,7 @@ const yaml = require('js-yaml');
 
 class AgentPersonalityLoader {
     constructor() {
-        this.agentsDir = path.join(process.cwd(), '.claude', 'agents');
+        this.agentsDir = path.join(process.cwd(), 'docs', 'api', 'agents');
         this.loadedPersonalities = new Map();
     }
 

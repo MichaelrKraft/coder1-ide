@@ -1,7 +1,7 @@
 /**
  * Agent Personality Loader
  * 
- * Loads and parses agent personality definitions from .claude/agents/*.md files
+ * [LEGACY] Loads and parses agent personality definitions from .claude/agents/*.md files (now moved to docs/api/agents/)
  * Extracts personality traits, response styles, and example formats
  */
 

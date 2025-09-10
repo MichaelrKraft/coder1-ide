@@ -1,5 +1,45 @@
 # 🚀 Coder1 IDE - The Claude Code Native Development Environment
 
+## 📖 Table of Contents
+
+### 🚨 Critical Information
+- [🚨 GitHub Repository Information](#-critical-github-repository-information-for-all-ai-agents)
+- [📖 Essential Reading](#-essential-reading-for-all-ai-agents)
+- [📁 Documentation Organization](#-documentation-organization-updated-september-2025)
+
+### 🎯 Getting Started
+- [🎯 Vision & Mission](#-vision--mission)
+- [🌟 What Makes Coder1 Special](#-what-makes-coder1-special)
+- [🎮 Quick Start Guide](#-quick-start-guide)
+- [🎓 For Beginners](#-for-beginners-start-here)
+
+### 🏗️ Technical Documentation
+- [🏗️ Architecture Overview](#️-architecture-overview)
+- [🌈 Key Features](#-key-features-explained)
+- [🔧 Configuration](#-configuration)
+- [📚 API Reference](#-api-reference)
+
+### 🛠️ Development & Operations
+- [💻 Development Workflow](#-development-workflow)
+- [🚀 Current Deployment Status](#-current-deployment-status-august-29-2025)
+- [🚀 Deployment & Modernization](#-deployment--modernization)
+- [🔧 Terminal Issues](#-terminal-issues)
+- [🚨 Troubleshooting](#-troubleshooting)
+
+### 🚀 Advanced Features
+- [🚀 Hybrid Hook System](#-hybrid-hook-system-revolutionary-performance)
+- [🎭 Claude CLI Puppeteer System](#-claude-cli-puppeteer-system---true-ai-agent-automation)
+- [🏗️ Unified Server Architecture](#️-coder1-unified-server-architecture-critical-for-all-agents)
+- [🔧 Error Doctor Service](#-error-doctor-service-configuration)
+
+### 📋 Project Information
+- [🗺️ Roadmap & Vision](#️-roadmap--vision)
+- [🤝 Contributing](#-contributing)
+- [📖 Additional Documentation](#-additional-documentation)
+- [📞 Support & Community](#-support--community)
+
+---
+
 ## 🚨 CRITICAL GITHUB REPOSITORY INFORMATION FOR ALL AI AGENTS
 
 **PRIMARY REPOSITORY**: 
@@ -139,89 +179,9 @@ cp -r build/* ../../public/ide/
 
 ---
 
-## 🔧 Terminal Display Fix (September 9, 2025)
+## 🔧 Terminal Issues
 
-### Problem Solved
-The terminal in the Coder1 IDE was cutting off the prompt at the bottom, making it impossible to see what was being typed. This issue affected both the terminal output visibility and keyboard input functionality.
-
-### Root Causes Identified
-1. **Overflow management conflicts** between parent and child containers
-2. **Status line positioning** taking up space in the document flow
-3. **Incorrect padding calculations** not accounting for all UI elements
-4. **CSS cascade issues** with terminal-content class interfering with xterm.js
-
-### Solution Implemented
-
-#### Terminal Container Structure (Terminal.tsx)
-```tsx
-// Terminal content wrapper with proper spacing
-<div 
-  className="flex-1 relative"
-  style={{
-    paddingBottom: terminalSettings.statusLine.enabled ? '40px' : '0px',
-    overflow: 'hidden'
-  }}
->
-  <div 
-    className="absolute inset-0 p-3"
-    style={{
-      bottom: terminalSettings.statusLine.enabled ? '40px' : '0px'
-    }}
-  >
-    <div ref={terminalRef} className="h-full" />
-  </div>
-</div>
-
-// Status line with absolute positioning
-{terminalSettings.statusLine.enabled && (
-  <div style={{ 
-    position: 'absolute', 
-    bottom: 0, 
-    left: 0, 
-    right: 0, 
-    zIndex: 30, 
-    height: '40px' 
-  }}>
-    {/* status line content */}
-  </div>
-)}
-```
-
-#### CSS Fixes (globals.css)
-```css
-/* Ensure xterm viewport allows scrolling */
-.xterm-viewport {
-  overflow-y: auto !important;
-}
-
-/* Ensure xterm screen is visible */
-.xterm-screen {
-  position: relative;
-}
-```
-
-### Key Changes
-1. **Removed problematic CSS** - Eliminated `terminal-content` class that was interfering with xterm
-2. **Absolute positioning** for terminal content with proper bottom spacing
-3. **Fixed status line height** at 40px with absolute positioning
-4. **Parent container** with relative positioning for proper context
-5. **Simplified terminal div** to just use `h-full` class
-
-### Testing Checklist
-- ✅ Terminal accepts keyboard input
-- ✅ Prompt is always visible at the bottom
-- ✅ Long output scrolls properly
-- ✅ Status line doesn't overlap content
-- ✅ Terminal resizes correctly with window
-- ✅ No visual glitches or jumps
-
-### For Future Agents
-If you encounter terminal display issues:
-1. Check the terminal container structure in Terminal.tsx
-2. Verify CSS doesn't conflict with xterm.js requirements
-3. Ensure proper absolute/relative positioning relationships
-4. Test with both status line enabled and disabled
-5. Always test keyboard input after making layout changes
+**Terminal display problems?** See the comprehensive [Terminal Display Fix Guide](./docs/guides/terminal-display-fix.md) for detailed troubleshooting, including the September 2025 fix for prompt visibility issues.
 
 ---
 
@@ -522,85 +482,9 @@ npm run build
 
 ---
 
-## 🚀 PROJECT MODERNIZATION PLAN - DEPLOYMENT SIMPLIFICATION
+## 🚀 Deployment & Modernization
 
-**IMPORTANT FOR ALL CLAUDE AGENTS:**
-
-This project currently has deployment complexity that confuses agents. Here's the modernization plan to fix this:
-
-### Current Architecture Problems
-- **Dual-App Structure**: Express server + separate React IDE app
-- **Manual Deployment**: Build → Copy → Update server → Restart (4 manual steps)
-- **Hardcoded HTML**: Server serves hardcoded HTML with specific file hashes
-- **Directory Maze**: Multiple build locations, unclear file relationships
-- **Deployment Confusion**: Looks simple but has hidden complexity
-
-### Why Every Agent Gets Confused
-The project **looks** like it should be simple to deploy, but it's actually a **custom deployment system** with:
-- React app builds to one location
-- Files must be copied to different location  
-- Server code must be manually updated with new file hashes
-- Server restart required for changes to take effect
-
-This creates a "simple-looking but complex-acting" situation that drives agents crazy.
-
-### Modernization Options
-
-#### Option A: Next.js Conversion (RECOMMENDED - 2-3 days)
-**Benefits**: 
-- One app instead of two
-- `npm run build` + `vercel deploy` = done
-- No manual steps ever again
-- Professional deployment process
-
-**Implementation Plan**:
-1. Create parallel version (`/autonomous_vibe_interface_nextjs/`)
-2. Migrate Express routes → Next.js API routes
-3. Migrate React components → Next.js pages/components  
-4. Side-by-side testing before switchover
-5. Zero risk to original site
-
-**Risk Areas**: Terminal/PTY integration, WebSockets, file system operations
-**Confidence Level**: 85-90% technical feasibility, 60-70% without breaking existing functionality
-
-#### Option B: Fix Current Architecture (1 day - Lower Risk)
-- Remove hardcoded HTML entirely
-- Auto-detect build file hashes
-- Create unified build script that handles all steps
-- Keep current structure but make it deployable
-
-**Benefits**: Lower risk, keeps familiar architecture
-**Downside**: Still complex under the hood, just automated
-
-#### Option C: Static-First (3 hours - Lowest Risk)
-- Convert to static files + serverless functions
-- Remove complex Express server
-- Deploy anywhere easily
-
-**Benefits**: Simplest possible deployment
-**Downside**: May lose some advanced features
-
-### The Real Issue: Over-Engineering
-
-**What you wanted:** A simple web app that deploys easily  
-**What you have:** A complex multi-app system with manual deployment steps
-
-This happened because the project evolved organically - features were added, solutions were layered on top of solutions, and now it's much more complex than it needs to be.
-
-### For Simple Deployment, You Need:
-1. **Single Build Command:** `npm run build` should build everything
-2. **Single Deploy Target:** One set of files to upload to Vercel/Render
-3. **No Manual Steps:** No file hash updates, no copying files around
-4. **Standard Architecture:** Follows conventional patterns that hosting platforms expect
-
-### Current Status
-**Planning phase** - awaiting user approval for implementation approach.
-
-**Recommended Next Steps:**
-1. Choose modernization option based on risk tolerance
-2. If choosing Next.js: Create parallel development environment
-3. Implement chosen solution with comprehensive testing
-4. Document new simplified deployment process
+**Deployment complexity issues?** See the [Project Modernization Plan](./docs/architecture/modernization-plan.md) for solutions to the current dual-app deployment complexity and recommended modernization approaches.
 
 ---
 
@@ -778,12 +662,53 @@ The system includes 25 domain-specific agents:
 
 ---
 
+## 📁 DOCUMENTATION ORGANIZATION (UPDATED SEPTEMBER 2025)
+
+**🚨 IMPORTANT FOR ALL AI AGENTS:** The documentation has been reorganized into a structured `/docs/` directory system for better navigation and maintenance.
+
+### 📂 New Documentation Structure
+
+- **[docs/](./docs/)** - Complete documentation index and navigation
+- **[docs/architecture/](./docs/architecture/)** - System architecture and design (5 files)
+- **[docs/guides/](./docs/guides/)** - User and developer guides (9 files)  
+- **[docs/development/](./docs/development/)** - Technical docs and Claude commands (11 files)
+- **[docs/api/](./docs/api/)** - API documentation and agent definitions (7 files)
+- **[docs/phase-reports/](./docs/phase-reports/)** - Historical development reports (5 files)
+- **[docs/archive/](./docs/archive/)** - Legacy and archived documentation (9 files)
+
+### 🎯 Quick Navigation for AI Agents
+
+- **Start Here**: [docs/README.md](./docs/README.md) - Complete navigation guide
+- **Architecture Overview**: [docs/architecture/ARCHITECTURE.md](./docs/architecture/ARCHITECTURE.md)
+- **Agent Definitions**: [docs/api/agents/](./docs/api/agents/) - All 6 specialized agents
+- **Development Commands**: [docs/development/claude-commands/](./docs/development/claude-commands/) - 9 command files
+- **User Guides**: [docs/guides/](./docs/guides/) - Setup, testing, deployment guides
+
+### ⚠️ Important Changes for Agents
+
+1. **Agent Files Moved**: `.claude/agents/*.md` → `docs/api/agents/*.md`
+2. **Architecture Docs**: Root `*.md` files → `docs/architecture/`
+3. **Code Updated**: `src/utils/agent-personality-loader.js` updated to new paths
+4. **All References**: Updated in README.md and CLAUDE.md
+
+### 💾 Safety & Backup
+
+- **Backup Created**: `autonomous_vibe_backup_20250910_113005.tar.gz`
+- **Zero Files Deleted**: All 47 original files preserved + 7 new README indexes
+- **Verified Organization**: All files accounted for and properly categorized
+
+**Reorganization Date**: September 10, 2025  
+**Total Files**: 54 markdown files (47 original + 7 indexes)
+
+---
+
 ## 📖 Additional Documentation
 
-- **[ARCHITECTURE.md](./docs/ARCHITECTURE.md)**: Technical deep dive
-- **[API.md](./docs/API.md)**: Complete API reference
-- **[TUTORIALS.md](./docs/TUTORIALS.md)**: Step-by-step guides
-- **[VIBE-CODING.md](./docs/VIBE-CODING.md)**: Philosophy and principles
+- **[Architecture Documentation](./docs/architecture/)**: Technical deep dive and system design
+- **[User & Developer Guides](./docs/guides/)**: Setup, troubleshooting, and how-to guides
+- **[Development Documentation](./docs/development/)**: Claude commands and technical references
+- **[API & Agent Definitions](./docs/api/)**: Agent specifications and API documentation
+- **[Phase Reports](./docs/phase-reports/)**: Historical development progress and testing results
 
 ---
 

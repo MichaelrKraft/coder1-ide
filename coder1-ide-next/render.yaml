@@ -16,9 +16,6 @@ services:
       # Build with higher memory limit for build phase
       NODE_OPTIONS="--max-old-space-size=500" npm run build
       
-      # Now remove dev dependencies to save runtime memory
-      npm prune --production
-      
       # Clean up build artifacts to save space
       rm -rf .next/cache
       rm -rf node_modules/.cache
@@ -26,6 +23,9 @@ services:
       # Remove unnecessary files
       find . -name "*.map" -delete
       find . -name "*.md" -not -path "./public/*" -delete
+      
+      # Selectively remove only truly unnecessary dev dependencies
+      npm uninstall --save-dev @types/bcryptjs @types/better-sqlite3 @types/d3 @types/jsonwebtoken @types/react @types/react-dom @types/three eslint eslint-config-next glob node-fetch
     
     # Start command with lower memory limit for runtime
     startCommand: node --max-old-space-size=400 --expose-gc server.js
