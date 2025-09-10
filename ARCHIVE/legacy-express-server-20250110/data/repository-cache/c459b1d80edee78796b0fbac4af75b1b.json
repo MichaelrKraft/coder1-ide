@@ -1,0 +1,62 @@
+{
+  "repoId": "c459b1d80edee78796b0fbac4af75b1b",
+  "url": "https://github.com/anubhavsrivastava/awesome-ui-component-library",
+  "name": "anubhavsrivastava/awesome-ui-component-library",
+  "analyzedAt": "2025-08-20T16:14:25.343Z",
+  "metadata": {
+    "description": "",
+    "language": "",
+    "stars": 0,
+    "forks": 0
+  },
+  "semantics": {
+    "architecture": {
+      "type": "unknown",
+      "patterns": []
+    },
+    "dependencies": {
+      "dependencies": [],
+      "devDependencies": []
+    },
+    "patterns": {
+      "patterns": []
+    },
+    "conventions": {
+      "conventions": []
+    },
+    "complexity": {
+      "complexity": "medium"
+    },
+    "relationships": {
+      "relationships": []
+    }
+  },
+  "patterns": {
+    "common": [],
+    "framework": [],
+    "design": [],
+    "antipatterns": [],
+    "best_practices": []
+  },
+  "knowledge": {
+    "nodes": [],
+    "edges": [],
+    "clusters": [],
+    "paths": [],
+    "embeddings": {}
+  },
+  "intelligence": {
+    "suggestions": [],
+    "explanations": [],
+    "improvements": [],
+    "examples": [],
+    "documentation": [],
+    "testing": []
+  },
+  "stats": {
+    "fileCount": 0,
+    "patternCount": 5,
+    "suggestionCount": 0,
+    "analysisTime": 1755706465343
+  }
+}

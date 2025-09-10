@@ -1,0 +1,270 @@
+{
+  "category": "MCP Quick Install",
+  "categorySlug": "mcp",
+  "description": "Essential MCP integrations for Claude Code - One-click installation",
+  "templates": [
+    {
+      "id": "filesystem-mcp",
+      "name": "Filesystem MCP",
+      "description": "Essential file operations - read, write, search, and manage files directly from Claude.",
+      "tags": ["Files", "Core", "Essential", "I/O"],
+      "installCommand": "Already installed",
+      "stats": {
+        "rating": 5.0,
+        "downloads": 10000,
+        "comments": 324
+      },
+      "features": [
+        "Read and write any file",
+        "Directory navigation",
+        "File search and pattern matching",
+        "Safe sandboxed operations"
+      ],
+      "mcpConfig": {
+        "command": "node",
+        "args": ["/Users/michaelkraft/mcp-servers/src/filesystem/dist/index.js"],
+        "env": {}
+      }
+    },
+    {
+      "id": "git-mcp",
+      "name": "Git MCP",
+      "description": "Complete Git version control - manage branches, commits, and repository operations.",
+      "tags": ["Git", "Version Control", "Core", "Essential"],
+      "installCommand": "Already installed",
+      "stats": {
+        "rating": 5.0,
+        "downloads": 9500,
+        "comments": 287
+      },
+      "features": [
+        "Branch management",
+        "Commit and push operations",
+        "Diff and merge handling",
+        "Repository status and history"
+      ],
+      "mcpConfig": {
+        "command": "/Users/michaelkraft/.local/bin/uv",
+        "args": ["run", "--project", "/Users/michaelkraft/mcp-servers/src/git", "python", "-m", "mcp_server_git"],
+        "env": {}
+      }
+    },
+    {
+      "id": "playwright-mcp",
+      "name": "Playwright/Browser MCP",
+      "description": "Browser automation and testing - control browsers, test UIs, and scrape web content.",
+      "tags": ["Browser", "Testing", "Automation", "Web"],
+      "installCommand": "Already installed",
+      "stats": {
+        "rating": 4.9,
+        "downloads": 7200,
+        "comments": 198
+      },
+      "features": [
+        "Browser automation",
+        "UI testing and screenshots",
+        "Web scraping",
+        "Multi-browser support"
+      ],
+      "mcpConfig": {
+        "command": "npx",
+        "args": ["-y", "@modelcontextprotocol/server-playwright"],
+        "env": {}
+      }
+    },
+    {
+      "id": "supabase-mcp",
+      "name": "Supabase MCP",
+      "description": "Instant backend infrastructure - database, auth, storage, and realtime features.",
+      "tags": ["Backend", "Database", "Auth", "Storage"],
+      "installCommand": "coderone install supabase-mcp",
+      "stats": {
+        "rating": 4.8,
+        "downloads": 4500,
+        "comments": 156
+      },
+      "features": [
+        "PostgreSQL database",
+        "Authentication system",
+        "File storage",
+        "Realtime subscriptions"
+      ],
+      "mcpConfig": {
+        "command": "npx",
+        "args": ["-y", "@modelcontextprotocol/server-supabase"],
+        "env": {
+          "SUPABASE_URL": "YOUR_SUPABASE_URL",
+          "SUPABASE_SERVICE_ROLE_KEY": "YOUR_SERVICE_KEY"
+        }
+      }
+    },
+    {
+      "id": "vercel-mcp",
+      "name": "Vercel MCP",
+      "description": "Deploy and manage applications - serverless functions, edge config, and instant deployments.",
+      "tags": ["Deployment", "Hosting", "Serverless", "CI/CD"],
+      "installCommand": "coderone install vercel-mcp",
+      "stats": {
+        "rating": 4.7,
+        "downloads": 3800,
+        "comments": 142
+      },
+      "features": [
+        "One-click deployments",
+        "Serverless functions",
+        "Edge configuration",
+        "Preview deployments"
+      ],
+      "mcpConfig": {
+        "command": "npx",
+        "args": ["-y", "@modelcontextprotocol/server-vercel"],
+        "env": {
+          "VERCEL_TOKEN": "YOUR_VERCEL_TOKEN"
+        }
+      }
+    },
+    {
+      "id": "coder1-intelligence",
+      "name": "Coder1 Intelligence MCP",
+      "description": "Repository analysis and pattern extraction - learn from any codebase instantly.",
+      "tags": ["AI", "Analysis", "Patterns", "Learning"],
+      "installCommand": "coderone install coder1-intelligence",
+      "stats": {
+        "rating": 4.9,
+        "downloads": 2100,
+        "comments": 89
+      },
+      "features": [
+        "Analyze any GitHub repository",
+        "Extract patterns and best practices",
+        "Natural language code queries",
+        "Cross-repository knowledge"
+      ],
+      "mcpConfig": {
+        "command": "node",
+        "args": ["/Users/michaelkraft/autonomous_vibe_interface/mcp-servers/src/coder1-intelligence/dist/index.js"],
+        "env": {}
+      }
+    },
+    {
+      "id": "sequential-thinking",
+      "name": "Sequential Thinking MCP",
+      "description": "Step-by-step reasoning for complex problems - break down and solve systematically.",
+      "tags": ["Reasoning", "Problem Solving", "AI", "Logic"],
+      "installCommand": "coderone install sequential-thinking",
+      "stats": {
+        "rating": 4.8,
+        "downloads": 3200,
+        "comments": 124
+      },
+      "features": [
+        "Break complex problems into steps",
+        "Revise and refine thinking",
+        "Branch into alternative solutions",
+        "Maintain context over multiple steps"
+      ],
+      "mcpConfig": {
+        "command": "npx",
+        "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"],
+        "env": {}
+      }
+    },
+    {
+      "id": "ref-mcp",
+      "name": "Ref MCP",
+      "description": "Smart reference management - organize and access documentation, code snippets, and resources.",
+      "tags": ["Documentation", "References", "Knowledge", "Organization"],
+      "installCommand": "coderone install ref-mcp",
+      "stats": {
+        "rating": 4.6,
+        "downloads": 2800,
+        "comments": 98
+      },
+      "features": [
+        "Store code references",
+        "Organize documentation",
+        "Quick snippet access",
+        "Knowledge base management"
+      ],
+      "mcpConfig": {
+        "command": "npx",
+        "args": ["-y", "@refmcp/server"],
+        "env": {}
+      }
+    },
+    {
+      "id": "crawl4ai-rag",
+      "name": "mcp-crawl4ai-rag",
+      "description": "Advanced web crawling with RAG - extract and process web content for AI context.",
+      "tags": ["Web Crawling", "RAG", "AI", "Content"],
+      "installCommand": "coderone install crawl4ai-rag",
+      "stats": {
+        "rating": 4.7,
+        "downloads": 1900,
+        "comments": 76
+      },
+      "features": [
+        "Intelligent web crawling",
+        "Content extraction and processing",
+        "RAG integration",
+        "Structured data extraction"
+      ],
+      "mcpConfig": {
+        "command": "npx",
+        "args": ["-y", "mcp-crawl4ai-rag"],
+        "env": {}
+      }
+    },
+    {
+      "id": "n8n-mcp",
+      "name": "n8n MCP",
+      "description": "Workflow automation platform - connect any API, automate tasks, build complex workflows.",
+      "tags": ["Automation", "Workflows", "Integration", "API"],
+      "installCommand": "coderone install n8n-mcp",
+      "stats": {
+        "rating": 4.8,
+        "downloads": 3400,
+        "comments": 145
+      },
+      "features": [
+        "Visual workflow builder",
+        "600+ app integrations",
+        "Custom API connections",
+        "Scheduled automation"
+      ],
+      "mcpConfig": {
+        "command": "npx",
+        "args": ["-y", "@n8n/mcp-server"],
+        "env": {
+          "N8N_API_KEY": "YOUR_N8N_API_KEY",
+          "N8N_HOST": "http://localhost:5678"
+        }
+      }
+    },
+    {
+      "id": "context7-mcp",
+      "name": "Context7 MCP",
+      "description": "Up-to-date code documentation and examples - eliminates outdated API suggestions and hallucinations.",
+      "tags": ["Documentation", "Code Examples", "AI Context", "Libraries"],
+      "installCommand": "coderone install context7-mcp",
+      "stats": {
+        "rating": 4.9,
+        "downloads": 2800,
+        "comments": 112
+      },
+      "features": [
+        "Up-to-date documentation injection",
+        "Version-specific code examples",
+        "Universal MCP client compatibility",
+        "Eliminates API hallucinations"
+      ],
+      "mcpConfig": {
+        "command": "npx",
+        "args": ["-y", "@upstash/context7-mcp@latest"],
+        "env": {
+          "CONTEXT7_API_KEY": "YOUR_CONTEXT7_API_KEY (Optional for higher rate limits)"
+        }
+      }
+    }
+  ]
+}

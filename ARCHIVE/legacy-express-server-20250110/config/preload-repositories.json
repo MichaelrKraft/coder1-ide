@@ -1,0 +1,68 @@
+{
+  "description": "Strategic repositories for pre-loading to create instant AI intelligence",
+  "version": "1.0.0",
+  "lastUpdated": "2025-01-19",
+  "phases": {
+    "phase1": "Core Framework Essentials - Most commonly used",
+    "phase2": "Popular Templates - Frequently cloned",
+    "phase3": "Community Favorites - High-value patterns"
+  },
+  "repositories": [
+    "https://github.com/facebook/react",
+    "https://github.com/vercel/next.js",
+    "https://github.com/expressjs/express",
+    "https://github.com/vuejs/vue",
+    "https://github.com/tailwindlabs/tailwindcss",
+    "https://github.com/nodejs/node",
+    "https://github.com/microsoft/TypeScript",
+    "https://github.com/angular/angular",
+    "https://github.com/sveltejs/svelte",
+    "https://github.com/remix-run/remix",
+    "https://github.com/nestjs/nest",
+    "https://github.com/strapi/strapi",
+    "https://github.com/fastify/fastify",
+    "https://github.com/t3-oss/create-t3-app",
+    "https://github.com/vercel/commerce",
+    "https://github.com/shadcn-ui/ui",
+    "https://github.com/prisma/prisma",
+    "https://github.com/supabase/supabase",
+    "https://github.com/clerk/javascript",
+    "https://github.com/trpc/trpc",
+    "https://github.com/n8n-io/n8n",
+    "https://github.com/davila7/claude-code-templates",
+    "https://github.com/bmad-code-org/BMAD-METHOD"
+  ],
+  "testRepositories": [
+    "https://github.com/vercel/next.js",
+    "https://github.com/tailwindlabs/tailwindcss",
+    "https://github.com/shadcn-ui/ui"
+  ],
+  "sources": {
+    "static": true,
+    "dynamic": false,
+    "userPatterns": false,
+    "categories": false
+  },
+  "dynamicConfig": {
+    "minStars": 5000,
+    "languages": ["javascript", "typescript", "python", "java", "go"],
+    "maxAge": 86400000,
+    "githubToken": null,
+    "includeTrending": true,
+    "includeFrameworks": true
+  },
+  "settings": {
+    "autoPreloadOnStartup": true,
+    "preloadDelay": 30000,
+    "maxRepositories": 50,
+    "cacheExpiry": 604800000,
+    "enableMetrics": true,
+    "trackUsage": true
+  },
+  "notes": [
+    "These repositories cover 90% of common development patterns",
+    "Pre-loading creates instant responses for users",
+    "Network effects: popular repos help more users",
+    "Competitive advantage through hidden sophistication"
+  ]
+}
