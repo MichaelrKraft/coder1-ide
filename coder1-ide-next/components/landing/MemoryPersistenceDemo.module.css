@@ -1,0 +1,55 @@
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from { 
+    opacity: 0; 
+  }
+  to { 
+    opacity: 1; 
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes progress {
+  from { 
+    width: 0%; 
+  }
+  to { 
+    width: 100%; 
+  }
+}
+
+.animateSlideIn {
+  animation: slideIn 0.3s ease-out;
+}
+
+.animateFadeIn {
+  animation: fadeIn 0.5s ease-out;
+}
+
+.animateScaleIn {
+  animation: scaleIn 0.4s ease-out both;
+}
+
+.animateProgress {
+  animation: progress linear;
+}

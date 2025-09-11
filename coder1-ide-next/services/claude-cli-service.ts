@@ -1,0 +1,368 @@
+/**
+ * Claude CLI Service for Terminal Integration
+ * Replaces API-based Claude with direct Claude Code CLI integration
+ */
+
+import { exec, spawn, ChildProcess } from 'child_process';
+import { promisify } from 'util';
+import path from 'path';
+import fs from 'fs/promises';
+
+const execAsync = promisify(exec);
+
+export interface ClaudeCliMessage {
+  role: 'user' | 'assistant';
+  content: string;
+  timestamp: Date;
+}
+
+export interface ClaudeCliSession {
+  id: string;
+  projectPath?: string;
+  conversationHistory: ClaudeCliMessage[];
+  lastActivity: Date;
+}
+
+export interface ClaudeCliDetection {
+  command: string;
+  version: string;
+  available: boolean;
+  path?: string;
+}
+
+class ClaudeCliService {
+  private sessions: Map<string, ClaudeCliSession> = new Map();
+  private detectedCommand: string | null = null;
+  private isAvailable: boolean = false;
+
+  // Possible Claude CLI command variations
+  private readonly POSSIBLE_COMMANDS = [
+    'claude',
+    'claude-cli', 
+    'claude-code',
+    'anthropic'
+  ];
+
+  constructor() {
+    this.initializeService();
+  }
+
+  /**
+   * Initialize service by detecting Claude CLI
+   */
+  private async initializeService() {
+    try {
+      const detection = await this.detectClaude();
+      this.detectedCommand = detection.command;
+      this.isAvailable = detection.available;
+      
+      if (this.isAvailable) {
+        console.log(`✅ Claude CLI detected: ${this.detectedCommand} v${detection.version}`);
+      } else {
+        console.warn('⚠️ Claude CLI not found. Users will need to install Claude Code CLI');
+      }
+    } catch (error) {
+      console.warn('⚠️ Failed to initialize Claude CLI service:', error);
+      this.isAvailable = false;
+    }
+  }
+
+  /**
+   * Detect which Claude CLI command is available
+   */
+  async detectClaude(): Promise<ClaudeCliDetection> {
+    for (const cmd of this.POSSIBLE_COMMANDS) {
+      try {
+        // Check if command exists
+        const { stdout: which } = await execAsync(`which ${cmd}`);
+        if (which.trim()) {
+          // Get version
+          const { stdout: versionOutput } = await execAsync(`${cmd} --version`);
+          const version = this.parseVersion(versionOutput);
+          
+          return {
+            command: cmd,
+            version,
+            available: true,
+            path: which.trim()
+          };
+        }
+      } catch (error) {
+        // Command not found, continue to next
+        continue;
+      }
+    }
+
+    return {
+      command: '',
+      version: '',
+      available: false
+    };
+  }
+
+  /**
+   * Parse version from command output
+   */
+  private parseVersion(versionOutput: string): string {
+    // Extract version number from various formats
+    const versionMatch = versionOutput.match(/(\d+\.\d+\.\d+)/);
+    return versionMatch ? versionMatch[1] : 'unknown';
+  }
+
+  /**
+   * Check if Claude CLI is available
+   */
+  isClaudeAvailable(): boolean {
+    return this.isAvailable && !!this.detectedCommand;
+  }
+
+  /**
+   * Get detected Claude command
+   */
+  getClaudeCommand(): string | null {
+    return this.detectedCommand;
+  }
+
+  /**
+   * Create new conversation session
+   */
+  createSession(sessionId: string, projectPath?: string): ClaudeCliSession {
+    const session: ClaudeCliSession = {
+      id: sessionId,
+      projectPath,
+      conversationHistory: [],
+      lastActivity: new Date()
+    };
+
+    this.sessions.set(sessionId, session);
+    return session;
+  }
+
+  /**
+   * Get existing session
+   */
+  getSession(sessionId: string): ClaudeCliSession | null {
+    return this.sessions.get(sessionId) || null;
+  }
+
+  /**
+   * Send message to Claude CLI in interactive session
+   */
+  async sendMessage(
+    sessionId: string, 
+    message: string, 
+    context?: string
+  ): Promise<string> {
+    if (!this.isClaudeAvailable()) {
+      throw new Error('Claude CLI not available. Please install Claude Code CLI from https://claude.ai/code');
+    }
+
+    const session = this.getSession(sessionId);
+    if (!session) {
+      throw new Error(`Session ${sessionId} not found`);
+    }
+
+    // Prepare the full message with context
+    let fullMessage = message;
+    if (context) {
+      fullMessage = `Context:\n${context}\n\nUser: ${message}`;
+    }
+
+    try {
+      // Execute Claude CLI command
+      const claudeCommand = `${this.detectedCommand} chat "${fullMessage}"`;
+      const workingDir = session.projectPath || process.cwd();
+      
+      const { stdout, stderr } = await execAsync(claudeCommand, {
+        cwd: workingDir,
+        timeout: 60000, // 60 second timeout
+        maxBuffer: 1024 * 1024 // 1MB buffer
+      });
+
+      if (stderr) {
+        console.warn('Claude CLI stderr:', stderr);
+      }
+
+      // Clean up the response
+      const response = this.cleanClaudeResponse(stdout);
+
+      // Update session history
+      session.conversationHistory.push(
+        { role: 'user', content: fullMessage, timestamp: new Date() },
+        { role: 'assistant', content: response, timestamp: new Date() }
+      );
+      session.lastActivity = new Date();
+
+      return response;
+
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      console.error('Claude CLI error:', errorMessage);
+      throw new Error(`Claude CLI error: ${errorMessage}`);
+    }
+  }
+
+  /**
+   * Clean up Claude CLI response
+   */
+  private cleanClaudeResponse(rawResponse: string): string {
+    // Remove any CLI formatting or noise
+    let cleaned = rawResponse.trim();
+    
+    // Remove common CLI prefixes
+    cleaned = cleaned.replace(/^Claude:?\s*/gm, '');
+    cleaned = cleaned.replace(/^Assistant:?\s*/gm, '');
+    
+    // Remove excessive whitespace
+    cleaned = cleaned.replace(/\n{3,}/g, '\n\n');
+    
+    return cleaned.trim();
+  }
+
+  /**
+   * Process terminal commands that mention Claude
+   */
+  async processTerminalCommand(
+    sessionId: string, 
+    command: string, 
+    workingDir?: string
+  ): Promise<string> {
+    // Extract Claude-specific commands
+    const claudeCommands = [
+      'claude help',
+      'claude explain',
+      'claude fix', 
+      'claude optimize',
+      'claude review',
+      'claude suggest',
+      'claude debug',
+      'claude refactor'
+    ];
+
+    const isClaudeCommand = claudeCommands.some(cmd => 
+      command.toLowerCase().startsWith(cmd)
+    );
+
+    if (!isClaudeCommand) {
+      return '';
+    }
+
+    if (!this.isClaudeAvailable()) {
+      return '❌ Claude CLI not available. Please install Claude Code CLI from https://claude.ai/code';
+    }
+
+    try {
+      // Create session if it doesn't exist
+      if (!this.getSession(sessionId)) {
+        this.createSession(sessionId, workingDir);
+      }
+
+      // Get project context for better responses
+      const context = await this.getProjectContext(workingDir);
+      
+      const response = await this.sendMessage(sessionId, command, context);
+      return `🤖 Claude: ${response}`;
+
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      return `❌ Claude Error: ${errorMessage}`;
+    }
+  }
+
+  /**
+   * Get project context for better Claude responses
+   */
+  private async getProjectContext(workingDir?: string): Promise<string> {
+    if (!workingDir) return '';
+
+    try {
+      const contextParts: string[] = [];
+
+      // Check for package.json
+      try {
+        const packagePath = path.join(workingDir, 'package.json');
+        const packageContent = await fs.readFile(packagePath, 'utf-8');
+        const packageJson = JSON.parse(packageContent);
+        contextParts.push(`Project: ${packageJson.name || 'Unknown'}`);
+        if (packageJson.description) {
+          contextParts.push(`Description: ${packageJson.description}`);
+        }
+      } catch (error) {
+        // No package.json, that's okay
+      }
+
+      // Check for README
+      try {
+        const readmePath = path.join(workingDir, 'README.md');
+        const readmeContent = await fs.readFile(readmePath, 'utf-8');
+        // Include first few lines of README
+        const readmePreview = readmeContent.split('\n').slice(0, 5).join('\n');
+        contextParts.push(`README preview:\n${readmePreview}`);
+      } catch (error) {
+        // No README, that's okay
+      }
+
+      contextParts.push(`Working directory: ${workingDir}`);
+      
+      return contextParts.join('\n');
+
+    } catch (error) {
+      return `Working directory: ${workingDir}`;
+    }
+  }
+
+  /**
+   * Get conversation history for a session
+   */
+  getConversationHistory(sessionId: string): ClaudeCliMessage[] {
+    const session = this.getSession(sessionId);
+    return session ? [...session.conversationHistory] : [];
+  }
+
+  /**
+   * Clear conversation history for a session
+   */
+  clearHistory(sessionId: string): void {
+    const session = this.getSession(sessionId);
+    if (session) {
+      session.conversationHistory = [];
+      session.lastActivity = new Date();
+    }
+  }
+
+  /**
+   * Clean up old inactive sessions
+   */
+  cleanupSessions(maxAgeHours: number = 24): void {
+    const cutoffTime = new Date(Date.now() - (maxAgeHours * 60 * 60 * 1000));
+    
+    for (const [sessionId, session] of this.sessions.entries()) {
+      if (session.lastActivity < cutoffTime) {
+        this.sessions.delete(sessionId);
+      }
+    }
+  }
+
+  /**
+   * Get service status
+   */
+  getStatus() {
+    return {
+      available: this.isAvailable,
+      command: this.detectedCommand,
+      activeSessions: this.sessions.size,
+      supportedCommands: [
+        'claude help - Get help with Claude commands',
+        'claude explain <topic> - Explain code or concepts', 
+        'claude fix <error> - Debug and fix errors',
+        'claude optimize <code> - Optimize code performance',
+        'claude review <file> - Review code quality',
+        'claude suggest <task> - Get implementation suggestions'
+      ]
+    };
+  }
+}
+
+// Export singleton instance
+export const claudeCliService = new ClaudeCliService();
+export default claudeCliService;
