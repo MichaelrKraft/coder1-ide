@@ -58,7 +58,7 @@ terminal-server.js
 terminal-server-debug.js
 
 # Script files
-*.sh
+# *.sh  # Commented out - we need start.sh for Render
 
 # Development files
 simple-terminal-test.html
