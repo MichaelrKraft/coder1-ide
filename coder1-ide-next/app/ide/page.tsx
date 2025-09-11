@@ -9,18 +9,18 @@ import LeftPanel from '@/components/LeftPanel';
 import Toast from '@/components/Toast';
 import StatusBarCore from '@/components/status-bar/StatusBarCore';
 import HeroSection from '@/components/HeroSection';
-import InteractiveTour from '@/components/InteractiveTour';
+import InteractiveTour from '../../components/InteractiveTour';
 import { SessionProvider } from '@/contexts/SessionContext';
-import { EnhancedSupervisionProvider } from '@/contexts/EnhancedSupervisionContext';
-import { TerminalCommandProvider } from '@/contexts/TerminalCommandContext';
+import { EnhancedSupervisionProvider } from '../../contexts/EnhancedSupervisionContext';
+import { TerminalCommandProvider } from '../../contexts/TerminalCommandContext';
 import AboutModal from '@/components/AboutModal';
 import KeyboardShortcutsModal from '@/components/KeyboardShortcutsModal';
 import SettingsModal from '@/components/SettingsModal';
-import FileOpenDialog from '@/components/FileOpenDialog';
+import FileOpenDialog from '../../components/FileOpenDialog';
 import type { IDEFile } from '@/types';
 
 // Dynamic imports for heavy components with optimized lazy loading
-const MonacoEditor = dynamic(() => import('@/components/editor/LazyMonacoEditor'), {
+const MonacoEditor = dynamic(() => import('../../components/editor/LazyMonacoEditor'), {
   ssr: false
 });
 
