@@ -13,6 +13,7 @@ import { getSocket } from '@/lib/socket';
 import { soundAlertService, SoundPreset } from '@/lib/sound-alert-service';
 import { useEnhancedSupervision } from '@/contexts/EnhancedSupervisionContext';
 import SupervisionConfigModal from '@/components/supervision/SupervisionConfigModal';
+import { useSessionMemory } from '@/hooks/useSessionMemory';
 
 // TypeScript declarations for Web Speech API
 declare global {
@@ -85,6 +86,15 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
     status: 'unknown'
   });
   const [blockResetTime, setBlockResetTime] = useState<string>('--:--:--');
+  
+  // Memory system integration
+  const [memoryEnabled, setMemoryEnabled] = useState(true);
+  const memory = useSessionMemory({
+    enabled: memoryEnabled,
+    sessionId: sessionIdForVoiceRef.current || `alpha_session_${Date.now()}`,
+    platform: 'Claude Code',
+    autoInject: true
+  });
   
   // Terminal settings state
   const [terminalSettings, setTerminalSettings] = useState<TerminalSettingsState>({
@@ -242,6 +252,8 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
   const [showSoundPresetDropdown, setShowSoundPresetDropdown] = useState(false);
   const soundButtonRef = useRef<HTMLButtonElement>(null);
   const soundDropdownRef = useRef<HTMLDivElement>(null);
+  const [showMemoryDropdown, setShowMemoryDropdown] = useState(false);
+  const memoryDropdownRef = useRef<HTMLDivElement>(null);
   
   // Scroll tracking - Phase 1: Read-only monitoring
   const [isUserScrolled, setIsUserScrolled] = useState(false);
@@ -548,11 +560,16 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
           !soundButtonRef.current.contains(event.target as Node)) {
         setShowSoundPresetDropdown(false);
       }
+      if (showMemoryDropdown && 
+          memoryDropdownRef.current && 
+          !memoryDropdownRef.current.contains(event.target as Node)) {
+        setShowMemoryDropdown(false);
+      }
     };
 
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [showThinkingDropdown, showSoundPresetDropdown]);
+  }, [showThinkingDropdown, showSoundPresetDropdown, showMemoryDropdown]);
 
   // Load sound preferences
   useEffect(() => {
@@ -867,6 +884,19 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
         // Use a very short timeout to batch rapid updates
         outputFlushTimeoutRef.current = setTimeout(flushOutput, 10);
         
+        // Memory system: Track Claude interactions
+        if (memory.isEnabled && sessionStorage.getItem('memory_context_injected') === 'true') {
+          const lastCommand = sessionStorage.getItem('last_claude_command');
+          if (lastCommand && data.length > 50) { // Only track substantial responses
+            // Add interaction to memory
+            memory.addInteraction(lastCommand, data, 'command').then(() => {
+              // Clear the tracking flags
+              sessionStorage.removeItem('last_claude_command');
+              sessionStorage.removeItem('memory_context_injected');
+            });
+          }
+        }
+        
         // Check if we should display statusline after command completion
         if (terminalSettings.statusLine?.enabled && data.includes('\n')) {
           // Check for command prompt pattern (indicates command completed)
@@ -1031,6 +1061,21 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
           if (currentLineBuffer.trim()) {
             const command = currentLineBuffer.trim();
             setCommandHistory(prev => [...prev, command]);
+            
+            // Memory system: Inject context for Claude commands
+            if (memory.isEnabled && memory.isActive && command.toLowerCase().includes('claude')) {
+              // Get memory context and inject it
+              memory.getInjectionContext().then(memoryContext => {
+                if (memoryContext) {
+                  // Prepend memory context to the command
+                  const contextPrefix = `\n[Memory Context: ${memoryContext}]\n`;
+                  // Note: Since we're using PTY, we can't modify the command that was already sent
+                  // Instead, we'll track it for response handling
+                  sessionStorage.setItem('last_claude_command', command);
+                  sessionStorage.setItem('memory_context_injected', 'true');
+                }
+              });
+            }
             
             // Notify parent component about the command
             if (onTerminalCommand) {
@@ -1244,6 +1289,64 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
             <Users className="w-4 h-4" />
             <span>AI Team</span>
           </button>
+
+          {/* Memory button with dropdown */}
+          <div className="relative">
+            <button
+              onClick={() => setShowMemoryDropdown(!showMemoryDropdown)}
+              className="terminal-control-btn flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md"
+              title="Memory system status and controls"
+            >
+              <Brain className="w-4 h-4" />
+              <span>Memory</span>
+            </button>
+            
+            {/* Memory dropdown */}
+            {showMemoryDropdown && (
+              <div 
+                ref={memoryDropdownRef}
+                className="absolute top-full mt-2 right-0 bg-bg-secondary border border-border-default rounded-lg shadow-lg p-3 z-50 min-w-[250px]"
+              >
+                <div className="text-xs space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-400">Status:</span>
+                    <span className={memory.isActive ? "text-green-400" : "text-yellow-400"}>
+                      {memory.isActive ? 'Active' : 'Initializing'}
+                    </span>
+                  </div>
+                  {memory.stats.sessions > 0 && (
+                    <>
+                      <div className="flex items-center justify-between">
+                        <span className="text-gray-400">Sessions:</span>
+                        <span className="text-gray-300">{memory.stats.sessions}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-gray-400">Tokens:</span>
+                        <span className="text-gray-300">{memory.stats.tokens}</span>
+                      </div>
+                    </>
+                  )}
+                  <div className="border-t border-border-default pt-2 mt-2">
+                    <button
+                      onClick={() => {
+                        memory.toggleMemory();
+                        setMemoryEnabled(!memoryEnabled);
+                      }}
+                      className="w-full flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md bg-gradient-to-br from-sky-100/10 to-purple-100/10 border border-cyan-500/50 text-white backdrop-blur-sm transition-all duration-300 hover:border-orange-400/70 hover:bg-gradient-to-br hover:from-orange-100/10 hover:to-amber-100/10 hover:backdrop-blur-md"
+                      style={{
+                        background: 'linear-gradient(135deg, rgba(125, 211, 252, 0.1) 0%, rgba(187, 154, 247, 0.1) 100%)',
+                        border: '1px solid rgba(0, 217, 255, 0.5)',
+                        backdropFilter: 'blur(4px)',
+                        WebkitBackdropFilter: 'blur(4px)'
+                      }}
+                    >
+                      {memory.isEnabled ? 'Disable Memory' : 'Enable Memory'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
 
           {/* AI Mastermind button */}
           <button
