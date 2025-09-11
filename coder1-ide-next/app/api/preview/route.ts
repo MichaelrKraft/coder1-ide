@@ -4,6 +4,8 @@ import path from 'path';
 import { previewCompiler } from '@/lib/preview-compiler';
 import { previewRequestCache, previewLoopPrevention } from '@/lib/preview-loop-prevention';
 
+export const dynamic = 'force-dynamic';
+
 // Get project root directory
 const getProjectRoot = () => {
   return process.cwd();

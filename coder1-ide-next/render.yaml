@@ -8,13 +8,14 @@ services:
     region: oregon # or your preferred region
     plan: starter # $7/month plan
     
-    # Build configuration  
+    # Build configuration with memory optimization (custom server mode)
     buildCommand: |
-      npm ci
-      npm run build
+      NODE_OPTIONS="--max-old-space-size=500" npm ci
+      NODE_OPTIONS="--max-old-space-size=500" npm run build
       rm -rf .next/cache node_modules/.cache
+      npm prune --production
     
-    # Start command with lower memory limit for runtime
+    # Start command - use our custom server.js (not Next.js standalone)
     startCommand: node --max-old-space-size=400 --expose-gc server.js
     
     # Health check

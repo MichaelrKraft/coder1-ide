@@ -1,7 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  output: 'standalone', // Enable standalone mode for Render deployment
+  // Disabled standalone mode - using custom server.js with Socket.IO integration
+  // output: 'standalone',
   eslint: {
     // Temporarily disable ESLint during builds for Alpha deployment
     ignoreDuringBuilds: true,
