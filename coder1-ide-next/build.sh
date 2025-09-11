@@ -12,4 +12,13 @@ npm ci
 echo "=== Building Next.js app ==="
 npm run build
 
+echo "=== Verifying build output ==="
+if [ -d ".next" ]; then
+  echo "✅ Build directory exists"
+  ls -la .next/
+else
+  echo "❌ Build directory missing!"
+  exit 1
+fi
+
 echo "=== Build complete ==="
