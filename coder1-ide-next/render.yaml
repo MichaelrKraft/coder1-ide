@@ -8,21 +8,11 @@ services:
     region: oregon # or your preferred region
     plan: starter # $7/month plan
     
-    # Build configuration
+    # Build configuration  
     buildCommand: |
-      # Install ALL dependencies (including dev) for build
       npm ci
-      
-      # Build WITHOUT memory limits (Render build environment has more memory)
       npm run build
-      
-      # Clean up build artifacts to save space
-      rm -rf .next/cache
-      rm -rf node_modules/.cache
-      
-      # Remove unnecessary files
-      find . -name "*.map" -delete
-      find . -name "*.md" -not -path "./public/*" -delete
+      rm -rf .next/cache node_modules/.cache
     
     # Start command with lower memory limit for runtime
     startCommand: node --max-old-space-size=400 --expose-gc server.js
