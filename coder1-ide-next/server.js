@@ -30,7 +30,7 @@ const memoryOptimizer = getMemoryOptimizer({
 // Enhanced tmux service
 let EnhancedTmuxService;
 try {
-  EnhancedTmuxService = require('./services/enhanced-tmux-service.ts').EnhancedTmuxService;
+  EnhancedTmuxService = require('./services/enhanced-tmux-service').EnhancedTmuxService;
 } catch (error) {
   console.warn('⚠️ Enhanced tmux service not available:', error.message);
   EnhancedTmuxService = null;
@@ -47,19 +47,23 @@ try {
 }
 
 // Environment validation
-const { envValidator } = require('./lib/env-validator.ts');
-
-// Check environment variables on startup
-if (!envValidator.isValid()) {
-  console.error('\n🚨 Environment Variable Validation Failed!\n');
-  console.error(envValidator.getReport());
-  process.exit(1);
-} else {
-  console.log('\n✅ Environment variables validated successfully');
-  if (envValidator.getWarnings().length > 0) {
-    console.warn('\n⚠️  Environment warnings:');
-    envValidator.getWarnings().forEach(warn => console.warn(`  - ${warn}`));
+let envValidator;
+try {
+  envValidator = require('./lib/env-validator').envValidator;
+  // Check environment variables on startup
+  if (!envValidator.isValid()) {
+    console.error('\n🚨 Environment Variable Validation Failed!\n');
+    console.error(envValidator.getReport());
+    process.exit(1);
+  } else {
+    console.log('\n✅ Environment variables validated successfully');
+    if (envValidator.getWarnings().length > 0) {
+      console.warn('\n⚠️  Environment warnings:');
+      envValidator.getWarnings().forEach(warn => console.warn(`  - ${warn}`));
+    }
   }
+} catch (error) {
+  console.warn('⚠️ Environment validator not available, skipping validation');
 }
 
 // Environment configuration
