@@ -11,6 +11,12 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
   webpack: (config, { isServer }) => {
+    // Add path alias resolution for standalone mode
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      '@': __dirname,
+    };
+    
     // Monaco Editor fix and client-side externals
     if (!isServer) {
       config.resolve.fallback = {
