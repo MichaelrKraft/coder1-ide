@@ -13,6 +13,7 @@ import StatusBarModals from './StatusBarModals';
 import { useIDEStore } from '@/stores/useIDEStore';
 import { useSessionStore } from '@/stores/useSessionStore';
 import { useUIStore } from '@/stores/useUIStore';
+import { useContextActivation } from '@/lib/hooks/useContextActivation';
 import { glows } from '@/lib/design-tokens';
 import type { IDEFile } from '@/types';
 
@@ -35,6 +36,9 @@ const StatusBarActions = React.memo(function StatusBarActions({
   const { loading } = useIDEStore();
   const { currentSession, createCheckpoint } = useSessionStore();
   const { addToast, openModal, isModalOpen } = useUIStore();
+  
+  // PHASE 3: Context activation for AI features
+  const { activateContext, isContextActive } = useContextActivation();
   
   // Get current session ID
   const [sessionId, setSessionId] = React.useState<string>('');
@@ -142,7 +146,9 @@ const StatusBarActions = React.memo(function StatusBarActions({
   };
 
 
-  const handleSessionSummary = () => {
+  const handleSessionSummary = async () => {
+    // PHASE 3: Activate context when Session Summary is requested
+    await activateContext('Session Summary');
     openModal('sessionSummary');
   };
 

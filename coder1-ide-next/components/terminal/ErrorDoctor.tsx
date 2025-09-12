@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { AlertCircle, CheckCircle, XCircle, Lightbulb, Loader2 } from 'lucide-react';
+import { useContextActivation } from '@/lib/hooks/useContextActivation';
 
 interface ErrorDoctorProps {
   lastError: string | null;
@@ -12,6 +13,9 @@ export default function ErrorDoctor({ lastError, isActive }: ErrorDoctorProps) {
   const [diagnosis, setDiagnosis] = useState<string | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [errorType, setErrorType] = useState<'error' | 'warning' | 'info'>('error');
+  
+  // PHASE 3: Context activation for Error Doctor AI analysis
+  const { activateContext } = useContextActivation();
 
   useEffect(() => {
     if (lastError && isActive) {
@@ -21,6 +25,9 @@ export default function ErrorDoctor({ lastError, isActive }: ErrorDoctorProps) {
 
   const analyzeError = async (error: string) => {
     setIsAnalyzing(true);
+    
+    // PHASE 3: Activate context when Error Doctor analyzes errors
+    await activateContext('Error Doctor');
     
     // Simulate error analysis (in production, this would call an AI service)
     setTimeout(() => {

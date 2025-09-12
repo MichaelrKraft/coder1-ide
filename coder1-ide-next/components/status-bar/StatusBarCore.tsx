@@ -194,7 +194,23 @@ export default function StatusBarCore({
 
         {/* Right section - Status info */}
         <div className="flex items-center gap-4 text-sm text-text-muted flex-1 justify-end">
-          {/* Context Folders Information - Clickable - Opens Explorer Memory Tab */}
+          {/* Git Modified Files Count (without branch name) */}
+          {gitInfo.modifiedCount > 0 && (
+            <div className="flex items-center gap-1" title={`${gitInfo.modifiedCount} file${gitInfo.modifiedCount > 1 ? 's' : ''} modified`}>
+              <FileText className="w-3 h-3 text-orange-400" />
+              <span className="text-orange-400">{gitInfo.modifiedCount} modified</span>
+            </div>
+          )}
+          
+          {/* Connection Status */}
+          {actuallyConnected && (
+            <div className="flex items-center gap-1">
+              <span className="w-2 h-2 rounded-full bg-green-400"></span>
+              <span className="text-green-400">Connected</span>
+            </div>
+          )}
+          
+          {/* Context Folders Information - Now positioned last (far right) */}
           {contextStats.isActive && (
             <div 
               className="flex items-center gap-1 cursor-pointer hover:opacity-80 transition-opacity" 
@@ -214,27 +230,6 @@ export default function StatusBarCore({
                   <span className="text-text-secondary">{contextStats.totalSessions} contexts</span>
                 </div>
               )}
-            </div>
-          )}
-          
-          {/* Git Information */}
-          {gitInfo.branch && (
-            <div className="flex items-center gap-1" title={`Git branch: ${gitInfo.branch}${gitInfo.modifiedCount > 0 ? ` • ${gitInfo.modifiedCount} modified` : ''}`}>
-              <GitBranch className="w-3 h-3" />
-              <span className="text-text-secondary">{gitInfo.branch}</span>
-              {gitInfo.modifiedCount > 0 && (
-                <div className="flex items-center gap-1">
-                  <span className="text-text-muted">•</span>
-                  <FileText className="w-3 h-3 text-orange-400" />
-                  <span className="text-orange-400">{gitInfo.modifiedCount}</span>
-                </div>
-              )}
-            </div>
-          )}
-          {actuallyConnected && (
-            <div className="flex items-center gap-1">
-              <span className="w-2 h-2 rounded-full bg-green-400"></span>
-              <span className="text-green-400">Connected</span>
             </div>
           )}
         </div>
