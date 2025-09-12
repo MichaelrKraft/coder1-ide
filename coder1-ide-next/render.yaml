@@ -1,22 +1,24 @@
 # Render Configuration for Coder1 IDE Alpha
-# Optimized for Starter Plan ($7/month, 512MB RAM)
+# Optimized for Standard Plan ($25/month, 2GB RAM)
 
 services:
   - type: web
     name: coder1-ide-alpha
     runtime: node
     region: oregon # or your preferred region
-    plan: starter # $7/month plan
+    plan: standard # $25/month plan - 2GB RAM
     
-    # Build configuration with memory optimization (custom server mode)
+    # Build configuration with enhanced memory for Standard plan
+    # Install build tools for native dependencies (node-pty, better-sqlite3)
     buildCommand: |
-      NODE_OPTIONS="--max-old-space-size=500" npm ci
-      NODE_OPTIONS="--max-old-space-size=500" npm run build
+      apt-get update && apt-get install -y python3 make g++ build-essential
+      NODE_OPTIONS="--max-old-space-size=1800" npm ci
+      NODE_OPTIONS="--max-old-space-size=1800" npm run build:standalone
       rm -rf .next/cache node_modules/.cache
       npm prune --production
     
-    # Start command - use our custom server.js (not Next.js standalone)
-    startCommand: node --max-old-space-size=400 --expose-gc server.js
+    # Start command with optimized memory for 2GB plan
+    startCommand: NODE_OPTIONS="--max-old-space-size=1500 --expose-gc" node server.js
     
     # Health check
     healthCheckPath: /api/health
@@ -35,9 +37,9 @@ services:
       - key: NEXT_PUBLIC_API_URL
         generateValue: true # Render will generate the URL
         
-      # Memory optimization
+      # Memory optimization for 2GB Standard plan
       - key: NODE_OPTIONS
-        value: --max-old-space-size=400
+        value: --max-old-space-size=1500
         
       # Session storage
       - key: DATABASE_URL
@@ -48,10 +50,10 @@ services:
         value: true
         
       - key: MAX_CONCURRENT_TEAMS
-        value: 1
+        value: 5  # Increased from 1 - we have more memory now
         
       - key: MAX_AGENTS_PER_TEAM
-        value: 2
+        value: 3  # Increased from 2 - we have more memory now
         
       # Add your alpha invite code
       - key: ALPHA_INVITE_CODE
@@ -62,7 +64,7 @@ services:
         value: true
         
       - key: MEMORY_PANIC_THRESHOLD_MB
-        value: 380
+        value: 1800  # Increased from 380 for 2GB plan
 
     # Auto-deploy from GitHub
     autoDeploy: false # Set to true after initial testing

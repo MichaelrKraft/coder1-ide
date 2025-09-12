@@ -1,8 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  // Disabled standalone mode - using custom server.js with Socket.IO integration
-  // output: 'standalone',
+  // Enable standalone mode for optimized production builds on Render
+  output: 'standalone',
   eslint: {
     // Temporarily disable ESLint during builds for Alpha deployment
     ignoreDuringBuilds: true,
@@ -12,6 +12,33 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
   webpack: (config, { isServer }) => {
+    // Webpack stability improvements - prevent chunk loading errors
+    config.cache = {
+      type: 'filesystem',
+      maxMemoryGenerations: 1,
+    };
+    
+    // Optimize chunks for better stability
+    config.optimization = {
+      ...config.optimization,
+      splitChunks: {
+        chunks: 'all',
+        cacheGroups: {
+          default: {
+            minChunks: 1,
+            priority: -20,
+            reuseExistingChunk: true,
+          },
+          vendor: {
+            test: /[\\/]node_modules[\\/]/,
+            name: 'vendors',
+            priority: -10,
+            reuseExistingChunk: true,
+          },
+        },
+      },
+    };
+    
     // Add path alias resolution for standalone mode
     config.resolve.alias = {
       ...config.resolve.alias,
