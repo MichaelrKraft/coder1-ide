@@ -1,13 +1,14 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { BookOpen, Users, Eye, X, RefreshCw, ExternalLink } from '@/lib/icons';
+import { BookOpen, Users, Eye, X, RefreshCw, ExternalLink, Brain } from '@/lib/icons';
 import { colors, glows } from '@/lib/design-tokens';
 import CodebaseWiki from '@/components/codebase/CodebaseWiki';
 import AITeamDashboard from '@/components/preview/AITeamDashboard';
+import ParallelReasoningDashboard from '@/components/beta/ParallelReasoningDashboard';
 import { previewLoopPrevention, createDebouncedPreviewUpdate } from '@/lib/preview-loop-prevention';
 
-type PreviewMode = 'dashboard' | 'wiki' | 'preview' | 'terminal';
+type PreviewMode = 'dashboard' | 'wiki' | 'preview' | 'terminal' | 'parathink';
 
 interface PreviewPanelProps {
   agentsActive?: boolean;
@@ -56,6 +57,7 @@ const PreviewPanel = React.memo(function PreviewPanel({
   const [isLoading, setIsLoading] = useState(false);
   const [teamData, setTeamData] = useState<TeamData | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [paraThinkSessionId, setParaThinkSessionId] = useState<string | null>(null);
   
   // Live preview state
   const [previewLoading, setPreviewLoading] = useState(false);
@@ -132,6 +134,21 @@ const PreviewPanel = React.memo(function PreviewPanel({
       setMode('preview');
     }
   }, [agentsActive, fileOpen, isPreviewable]);
+
+  // Listen for ParaThinker dashboard open events
+  useEffect(() => {
+    const handleOpenParaThinker = (event: CustomEvent) => {
+      const { sessionId } = event.detail;
+      setParaThinkSessionId(sessionId);
+      setMode('parathink');
+    };
+
+    window.addEventListener('openParaThinkerDashboard', handleOpenParaThinker as EventListener);
+    
+    return () => {
+      window.removeEventListener('openParaThinkerDashboard', handleOpenParaThinker as EventListener);
+    };
+  }, []);
 
   // Handle iframe load events
   const handleIframeLoad = useCallback(() => {
@@ -284,6 +301,12 @@ const PreviewPanel = React.memo(function PreviewPanel({
             <BookOpen className="w-4 h-4" />,
             'Codebase Wiki'
           )}
+          {/* Only show ParaThinker tab when we have a session */}
+          {paraThinkSessionId && renderTabButton(
+            'parathink',
+            <Brain className="w-4 h-4" />,
+            'ParaThinker'
+          )}
         </div>
         
         {/* Close button */}
@@ -317,6 +340,19 @@ const PreviewPanel = React.memo(function PreviewPanel({
             {mode === 'wiki' && (
               <div className="h-full">
                 <CodebaseWiki />
+              </div>
+            )}
+
+            {/* ParaThinker Dashboard */}
+            {mode === 'parathink' && paraThinkSessionId && (
+              <div className="h-full">
+                <ParallelReasoningDashboard 
+                  sessionId={paraThinkSessionId}
+                  onClose={() => {
+                    setParaThinkSessionId(null);
+                    setMode('preview');
+                  }}
+                />
               </div>
             )}
 
@@ -410,8 +446,19 @@ const PreviewPanel = React.memo(function PreviewPanel({
                               onError={handleIframeError}
                               title={`Preview of ${activeFile}`}
                             />
+                          ) : !activeFile ? (
+                            // Demo preview when no file is selected
+                            <iframe
+                              ref={iframeRef}
+                              src="/api/preview"
+                              className="w-full h-full border-0 bg-white"
+                              sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals"
+                              onLoad={handleIframeLoad}
+                              onError={handleIframeError}
+                              title="Demo Preview"
+                            />
                           ) : (
-                            // Empty State with Dark Theme
+                            // Empty State with Dark Theme (for non-previewable files)
                             <div className="h-full flex flex-col items-center justify-center p-8 text-center">
                               {/* Glowing Icon */}
                               <div className="mb-6 relative">

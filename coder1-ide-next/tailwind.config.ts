@@ -99,5 +99,22 @@ const config: Config = {
   	}
   },
   plugins: [require("tailwindcss-animate")],
+  safelist: [
+    // Tour highlight classes - ensure they're included in production build
+    'tour-highlight-blue',
+    'tour-highlight-orange', 
+    'tour-highlight-turquoise',
+    // Tour backdrop and overlay classes
+    'bg-black/50',
+    'fixed',
+    'inset-0',
+    'pointer-events-none',
+    'tour-tooltip',
+    // Glow shadows
+    'shadow-glow-cyan',
+    'shadow-glow-orange',
+    'shadow-glow-cyan-intense',
+    'shadow-glow-orange-intense',
+  ]
 }
 export default config

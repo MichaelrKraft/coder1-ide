@@ -1348,29 +1348,6 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
             )}
           </div>
 
-          {/* AI Mastermind button */}
-          <button
-            onClick={() => {
-              xtermRef.current?.writeln('\r\n🧠 AI Mastermind System Activated');
-              xtermRef.current?.writeln('\r\n📊 Analyzing current project state...');
-              xtermRef.current?.writeln('• Code structure: React + TypeScript');
-              xtermRef.current?.writeln('• Components: 15 active');
-              xtermRef.current?.writeln('• Dependencies: Next.js, Tailwind, Lucide');
-              xtermRef.current?.writeln('');
-              xtermRef.current?.writeln('🎯 Strategic Recommendations:');
-              xtermRef.current?.writeln('• Optimize component re-renders');
-              xtermRef.current?.writeln('• Implement error boundaries');
-              xtermRef.current?.writeln('• Add comprehensive testing');
-              xtermRef.current?.writeln('• Setup CI/CD pipeline');
-              xtermRef.current?.writeln('');
-              xtermRef.current?.writeln('Type "mastermind help" for advanced commands');
-            }}
-            className="terminal-control-btn flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md"
-            title="AI Mastermind - Revolutionary AI brainstorming"
-          >
-            <Brain className="w-4 h-4" />
-            <span>AI Mastermind</span>
-          </button>
 
           {/* Enhanced Supervision button */}
           <button

@@ -26,6 +26,21 @@ export default function MonacoEditor({
     }
   }, [fontSize]);
 
+  // Listen for tour:addCode event to add code during the tour
+  useEffect(() => {
+    const handleTourAddCode = (event: CustomEvent) => {
+      if (editorRef.current && event.detail?.code) {
+        editorRef.current.setValue(event.detail.code);
+      }
+    };
+
+    window.addEventListener('tour:addCode', handleTourAddCode as EventListener);
+    
+    return () => {
+      window.removeEventListener('tour:addCode', handleTourAddCode as EventListener);
+    };
+  }, []);
+
   const handleEditorDidMount: OnMount = (editor, monaco) => {
     editorRef.current = editor;
     

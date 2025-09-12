@@ -123,7 +123,11 @@ class ContextProcessor {
         await this.updateMemoryContext(chunks);
       }
       
-      logger.debug(`🔄 Processed ${conversations.length} conversations, ${patterns.length} patterns`);
+      if (conversations.length > 0) {
+        logger.info(`🚀 PROCESSING COMPLETE: ${conversations.length} conversations, ${patterns.length} patterns stored`);
+      } else {
+        logger.debug(`🔄 Processed ${chunks.length} chunks: No conversations extracted`);
+      }
     } catch (error) {
       logger.error('❌ Failed to process chunk batch:', error);
     }
@@ -131,6 +135,7 @@ class ContextProcessor {
 
   /**
    * Extract Claude conversation pairs from terminal output
+   * Enhanced to capture all meaningful interactions, not just explicit "claude" commands
    */
   private extractClaudeDialogs(chunks: TerminalChunk[]): ProcessedConversation[] {
     const conversations: ProcessedConversation[] = [];
@@ -139,6 +144,7 @@ class ContextProcessor {
       let currentUserInput = '';
       let currentClaudeReply = '';
       let inClaudeResponse = false;
+      let inClaudeSession = false;
       let filesInvolved: Set<string> = new Set();
       
       logger.debug(`🔍 Processing ${chunks.length} chunks for Claude dialogs`);
@@ -149,18 +155,49 @@ class ContextProcessor {
         
         logger.debug(`🔎 Chunk ${i}: type="${chunk.type}" content="${chunk.content.substring(0, 50)}..."`);
         
-        // Detect Claude command start - enhanced patterns for Claude Code CLI
-        const claudePatterns = [
-          /^claude\s+(.+)$/i,           // claude command
-          /^cld\s+(.+)$/i,              // cld shorthand  
-          /^claude-code\s+(.+)$/i,      // claude-code variant
-          /^cc\s+(.+)$/i,               // cc shorthand
-          /^\$\s*claude\s+(.+)$/i,      // with bash prompt
-          /^>\s*claude\s+(.+)$/i,       // with > prompt
-          /^➜\s*.*claude\s+(.+)$/i,     // with zsh prompt
-          /^\[.*\]\$\s*claude\s+(.+)$/i, // with git prompt
-          /claude\s+(.+)$/i             // anywhere in line (fallback)
+        // Detect Claude Code session start patterns
+        const sessionStartPatterns = [
+          /starting\s+claude\s+code/i,
+          /claude\s+code\s+(cli|session)/i,
+          /connected\s+to\s+claude/i,
+          /anthropic\s+claude\s+code/i,
+          /welcome.*claude/i
         ];
+        
+        // Detect Claude response patterns (more comprehensive)
+        const claudeResponsePatterns = [
+          /^I'll\s+/i,                    // "I'll help you", "I'll create"
+          /^I\s+can\s+/i,                 // "I can help", "I can see"
+          /^Let\s+me\s+/i,                // "Let me help", "Let me create"
+          /^I\s+need\s+to\s+/i,           // "I need to understand"
+          /^I\s+understand\s+/i,          // "I understand you want"
+          /^Looking\s+at\s+/i,            // "Looking at your code"
+          /^Based\s+on\s+/i,              // "Based on your request"
+          /^Here's\s+/i,                  // "Here's the solution"
+          /^To\s+(help|assist|fix)/i,     // "To help with this"
+          /^I\s+see\s+/i,                 // "I see the issue"
+          /^The\s+(issue|problem|error)\s+is/i, // "The issue is"
+          /generated\s+with.*claude\s+code/i    // Claude Code signature
+        ];
+        
+        // Enhanced Claude command patterns
+        const claudePatterns = [
+          /^claude\s+(.+)$/i,             // explicit claude command
+          /^cld\s+(.+)$/i,                // cld shorthand  
+          /^claude-code\s+(.+)$/i,        // claude-code variant
+          /^cc\s+(.+)$/i,                 // cc shorthand
+          /^\$\s*claude\s+(.+)$/i,        // with bash prompt
+          /^>\s*claude\s+(.+)$/i,         // with > prompt
+          /^➜\s*.*claude\s+(.+)$/i,       // with zsh prompt
+          /^\[.*\]\$\s*claude\s+(.+)$/i,  // with git prompt
+          /claude\s+(.+)$/i               // anywhere in line (fallback)
+        ];
+        
+        // Check if we're entering a Claude Code session
+        if (sessionStartPatterns.some(pattern => pattern.test(chunk.content))) {
+          inClaudeSession = true;
+          logger.debug(`🚀 Detected Claude Code session start`);
+        }
         
         if (chunk.type === 'terminal_input') {
           let extractedInput: string | null = null;
@@ -168,6 +205,7 @@ class ContextProcessor {
           // Extract command context for better analysis
           chunk.commandContext = this.extractCommandContext(chunk.content);
           
+          // 1. Check explicit Claude commands first
           for (const pattern of claudePatterns) {
             const match = chunk.content.match(pattern);
             if (match && match[1]) {
@@ -176,7 +214,7 @@ class ContextProcessor {
             }
           }
           
-          // Also detect pure Claude sessions (with prompt prefixes)
+          // 2. Check for pure Claude sessions (with prompt prefixes)
           const cleanContent = chunk.content.replace(/^(\$|>|➜.*?|\[.*\]\$)\s*/, '').trim();
           if (!extractedInput && (
             cleanContent === 'claude' || 
@@ -185,13 +223,34 @@ class ContextProcessor {
             cleanContent === 'cc'
           )) {
             extractedInput = '[Interactive Claude session started]';
+            inClaudeSession = true;
+          }
+          
+          // 3. If in Claude session, capture ALL meaningful input as potential questions
+          if (!extractedInput && inClaudeSession) {
+            // Skip empty inputs and basic shell commands
+            const skipInputPatterns = [
+              /^\s*$/,                        // Empty
+              /^ls\s*$/,                      // Basic ls
+              /^pwd\s*$/,                     // Basic pwd
+              /^cd\s*$/,                      // Basic cd with no args
+              /^clear\s*$/,                   // Clear screen
+              /^exit\s*$/                     // Exit
+            ];
+            
+            const shouldSkipInput = skipInputPatterns.some(pattern => pattern.test(cleanContent));
+            
+            if (!shouldSkipInput && cleanContent.length > 2) {
+              extractedInput = cleanContent;
+              logger.debug(`📝 Capturing session input: "${extractedInput}"`);
+            }
           }
           
           if (extractedInput) {
             currentUserInput = extractedInput;
             filesInvolved.clear();
             inClaudeResponse = true;
-            logger.debug(`🎯 Detected Claude command: "${extractedInput}"`);
+            logger.debug(`🎯 Detected user input: "${extractedInput}"`);
           }
         }
         
@@ -223,6 +282,23 @@ class ContextProcessor {
           }
         }
         
+        // Also check for Claude response patterns in terminal output when not explicitly in response mode
+        // This helps capture responses that don't start with explicit Claude commands
+        if (!inClaudeResponse && chunk.type === 'terminal_output') {
+          const isClaudeResponse = claudeResponsePatterns.some(pattern => pattern.test(chunk.content));
+          
+          if (isClaudeResponse) {
+            // Start capturing a Claude response that we might have missed
+            if (!currentUserInput) {
+              // Try to infer what the user might have asked based on recent context
+              currentUserInput = '[Terminal interaction]';
+            }
+            inClaudeResponse = true;
+            currentClaudeReply = chunk.content + '\n';
+            logger.debug(`🎯 Detected Claude response pattern: "${chunk.content.substring(0, 50)}..."`);
+          }
+        }
+        
         // Detect file references
         if (chunk.fileContext) {
           chunk.fileContext.forEach(file => filesInvolved.add(file));
@@ -236,6 +312,7 @@ class ContextProcessor {
           /^\[.*\]\s*\$\s*$/,               // Return to git prompt
           /Generated with \[Claude Code\]/i, // Claude Code signature
           /^---+$/,                         // Separator lines
+          /^Co-Authored-By:\s+Claude/i,     // Claude Code co-author signature
           /^\s*$/ // Empty line after response
         ];
         
@@ -243,10 +320,13 @@ class ContextProcessor {
           pattern.test(chunk.content)
         );
         
+        // More flexible conversation ending detection
         const shouldEnd = !nextChunk || 
                          nextChunk.type === 'terminal_input' ||
                          (inClaudeResponse && isClaudeCompletion) ||
-                         (content.includes('$ ') && inClaudeResponse);
+                         (content.includes('$ ') && inClaudeResponse) ||
+                         // If we haven't seen input for a while and have accumulated response content
+                         (inClaudeResponse && currentClaudeReply.trim().length > 50 && !nextChunk);
         
         if (shouldEnd && inClaudeResponse && currentUserInput && currentClaudeReply.trim()) {
           const success = this.detectSuccess(currentClaudeReply);
@@ -262,7 +342,7 @@ class ContextProcessor {
           };
           
           conversations.push(conversation);
-          logger.debug(`✅ Found conversation: "${currentUserInput}" -> "${currentClaudeReply.substring(0, 50)}..."`);
+          logger.info(`✅ CAPTURED CONVERSATION: "${currentUserInput}" -> "${currentClaudeReply.substring(0, 100)}..." (${currentClaudeReply.length} chars)`);
           
           // Reset for next conversation
           currentUserInput = '';

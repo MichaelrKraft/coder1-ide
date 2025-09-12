@@ -134,9 +134,11 @@ class ClaudeCLIPuppeteerAlpha extends EventEmitter {
   async requestTeamSpawn(teamId, requirement, agentRoles = ['frontend', 'backend'], workTreeRoot) {
     this.stats.totalRequests++;
     
-    // Check memory before accepting request
+    // Check memory before accepting request (environment-aware threshold)
     const memUsage = this.memoryOptimizer.getMemoryUsage();
-    if (memUsage.heapUsedMB > 350) {
+    const isDevelopment = process.env.NODE_ENV !== 'production';
+    const memoryThreshold = isDevelopment ? 1500 : 350;
+    if (memUsage.heapUsedMB > memoryThreshold) {
       throw new Error('System under memory pressure. Please try again in a few minutes.');
     }
     

@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { FolderTree, Clock, Brain } from 'lucide-react';
-import FileExplorer from './FileExplorer';
+import SafeFileExplorer from './SafeFileExplorer';
 import SessionsPanel from './SessionsPanel';
 import ContextMemoryPanel from './ContextMemoryPanel';
 
@@ -132,7 +132,7 @@ export default function LeftPanel({ onFileSelect, activeFile }: LeftPanelProps) 
       {/* Tab Content - Takes remaining space but leaves room for Discover */}
       <div className="flex-1 min-h-0 overflow-auto relative z-10">
         {activeTab === 'explorer' ? (
-          <FileExplorer onFileSelect={onFileSelect} activeFile={activeFile} />
+          <SafeFileExplorer onFileSelect={onFileSelect} activeFile={activeFile} />
         ) : activeTab === 'sessions' ? (
           <SessionsPanel isVisible={true} />
         ) : (

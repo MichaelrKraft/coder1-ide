@@ -7,10 +7,16 @@ import TypewriterText from './TypewriterText';
 import dynamic from 'next/dynamic';
 
 // Dynamically import FaultyTerminal to avoid SSR issues with WebGL
-const FaultyTerminal = dynamic(() => import('./backgrounds/FaultyTerminal'), {
-  ssr: false,
-  loading: () => <div className="absolute inset-0 bg-black" />
-});
+const FaultyTerminal = dynamic(
+  () => import('./backgrounds/FaultyTerminal').catch(() => {
+    // If the component fails to load, return a fallback
+    return { default: () => <div className="absolute inset-0 bg-black" /> };
+  }), 
+  {
+    ssr: false,
+    loading: () => <div className="absolute inset-0 bg-black" />
+  }
+);
 
 // Toggle this to switch between animations
 // Set to true for FaultyTerminal, false for dot-grid
@@ -154,19 +160,6 @@ export default function HeroSection({ onTourStart }: HeroSectionProps = {}) {
         </div>
       </div>
       
-      {/* Subtitle - moved higher, right under logo */}
-      <p 
-        className="relative z-10 text-[clamp(0.875rem,2vw,1.125rem)] mb-6 text-center max-w-[90%] font-semibold px-2"
-        style={{
-          background: 'linear-gradient(90deg, #FCD34D 0%, #FB923C 50%, #F97316 100%)',
-          WebkitBackgroundClip: 'text',
-          WebkitTextFillColor: 'transparent',
-          backgroundClip: 'text',
-        }}
-      >
-        The world&apos;s most advanced AI-native development environment
-      </p>
-      
       <style jsx>{`
         @keyframes pulse-glow {
           0%, 100% {
@@ -180,7 +173,7 @@ export default function HeroSection({ onTourStart }: HeroSectionProps = {}) {
 
       {/* Title with typewriter effect - responsive */}
       <h1 
-        className="relative z-10 shimmer-text mb-4 text-[clamp(1.5rem,5vw,3.5rem)] text-center"
+        className="relative z-10 shimmer-text mb-2 text-[clamp(1.5rem,5vw,3.5rem)] text-center"
         style={{
           fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
           fontWeight: 800,
@@ -198,6 +191,19 @@ export default function HeroSection({ onTourStart }: HeroSectionProps = {}) {
           stopAfterCycles={2}
         />
       </h1>
+
+      {/* Subtitle - right under typewriter text */}
+      <p 
+        className="relative z-10 text-[clamp(0.875rem,2vw,1.125rem)] mb-6 text-center max-w-[90%] font-semibold px-2"
+        style={{
+          background: 'linear-gradient(90deg, #FCD34D 0%, #FB923C 50%, #F97316 100%)',
+          WebkitBackgroundClip: 'text',
+          WebkitTextFillColor: 'transparent',
+          backgroundClip: 'text',
+        }}
+      >
+        The world&apos;s most advanced AI-native development environment
+      </p>
 
       {/* Action buttons - responsive */}
       <div className="relative z-10 flex flex-col gap-2 mb-3 w-full max-w-[min(90%,500px)] px-2">

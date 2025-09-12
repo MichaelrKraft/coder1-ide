@@ -867,12 +867,19 @@ export default App;
         <InteractiveTour 
           onClose={() => setShowTour(false)}
           onStepChange={(stepId) => {
-            // Keep hero section visible only for the welcome step
-            if (stepId === 'welcome-overview') {
+            // Keep hero section visible for steps that need it
+            if (stepId === 'welcome-overview' || stepId === 'prd-generator') {
               setShowHero(true);
             } else {
               setShowHero(false);
             }
+          }}
+          onTourComplete={() => {
+            // Clean up tour artifacts
+            console.log('[IDE] Tour completed, cleaning up editor content');
+            setEditorContent(''); // Clear dummy code from editor
+            setActiveFile(null); // Reset active file
+            setShowHero(false); // Hide hero section after tour
           }}
         />
       )}

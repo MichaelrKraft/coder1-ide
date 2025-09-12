@@ -106,7 +106,10 @@ ide-old*/
 **/src-tauri/target/
 
 # Cache and temporary directories
-**/.next/
+**/.next/cache/
+**/.next/static/
+**/.next/trace
+**/node_modules/.cache/
 **/.cache/
 **/tmp/
 

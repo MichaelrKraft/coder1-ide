@@ -328,13 +328,13 @@ export default function TerminalSettings({
               <div className="flex items-center gap-2">
                 <Shield className="w-4 h-4 text-coder1-cyan" />
                 <span className="text-sm font-medium text-text-primary">Skip Permissions</span>
-                {terminalSettings.skipPermissions && (
+                {terminalSettings?.skipPermissions && (
                   <span className="text-xs text-orange-400 bg-orange-400 bg-opacity-20 px-2 py-1 rounded">⚠️ DANGER</span>
                 )}
               </div>
               <button
                 onClick={() => {
-                  const newState = !terminalSettings.skipPermissions;
+                  const newState = !terminalSettings?.skipPermissions;
                   setTerminalSettings({ ...terminalSettings, skipPermissions: newState });
                   
                   if (newState) {
@@ -347,11 +347,11 @@ export default function TerminalSettings({
                   }
                 }}
                 className={`w-12 h-6 rounded-full transition-colors ${
-                  terminalSettings.skipPermissions ? 'bg-orange-400' : 'bg-border-default'
+                  terminalSettings?.skipPermissions ? 'bg-orange-400' : 'bg-border-default'
                 }`}
               >
                 <div className={`w-4 h-4 rounded-full bg-white transition-transform ${
-                  terminalSettings.skipPermissions ? 'translate-x-7' : 'translate-x-1'
+                  terminalSettings?.skipPermissions ? 'translate-x-7' : 'translate-x-1'
                 }`} />
               </button>
             </div>
@@ -368,15 +368,15 @@ export default function TerminalSettings({
                 onClick={() => {
                   try {
                     logger.debug('[TerminalSettings] Status line toggle clicked');
-                    logger.debug('[TerminalSettings] Current state:', terminalSettings.statusLine.enabled);
+                    logger.debug('[TerminalSettings] Current state:', terminalSettings?.statusLine?.enabled);
                     
-                    const newState = !terminalSettings.statusLine.enabled;
+                    const newState = !terminalSettings?.statusLine?.enabled;
                     logger.debug('[TerminalSettings] New state will be:', newState);
                     
                     const newSettings = {
                       ...terminalSettings,
                       statusLine: { 
-                        ...terminalSettings.statusLine, 
+                        ...terminalSettings?.statusLine, 
                         enabled: newState 
                       }
                     };
@@ -405,17 +405,17 @@ export default function TerminalSettings({
                   }
                 }}
                 className={`w-12 h-6 rounded-full transition-colors ${
-                  terminalSettings.statusLine.enabled ? 'bg-coder1-cyan' : 'bg-border-default'
+                  terminalSettings?.statusLine?.enabled ? 'bg-coder1-cyan' : 'bg-border-default'
                 }`}
               >
                 <div className={`w-4 h-4 rounded-full bg-white transition-transform ${
-                  terminalSettings.statusLine.enabled ? 'translate-x-7' : 'translate-x-1'
+                  terminalSettings?.statusLine?.enabled ? 'translate-x-7' : 'translate-x-1'
                 }`} />
               </button>
             </div>
 
             {/* Status Line Options */}
-            {terminalSettings.statusLine.enabled && (
+            {terminalSettings?.statusLine?.enabled && (
               <div className="space-y-2 ml-4 border-l-2 border-border-default pl-3">
                 {[
                   { key: 'showFile', label: 'Current file' },
@@ -430,13 +430,13 @@ export default function TerminalSettings({
                       onClick={() => {
                         try {
                           logger.debug(`[TerminalSettings] Toggling ${key}`);
-                          const currentValue = terminalSettings.statusLine[key as keyof typeof terminalSettings.statusLine];
+                          const currentValue = terminalSettings?.statusLine?.[key as keyof typeof terminalSettings.statusLine];
                           logger.debug(`[TerminalSettings] Current ${key}:`, currentValue);
                           
                           const newSettings = {
                             ...terminalSettings,
                             statusLine: {
-                              ...terminalSettings.statusLine,
+                              ...terminalSettings?.statusLine,
                               [key]: !currentValue
                             }
                           };
@@ -457,11 +457,11 @@ export default function TerminalSettings({
                         }
                       }}
                       className={`w-8 h-4 rounded-full transition-colors ${
-                        terminalSettings.statusLine[key as keyof typeof terminalSettings.statusLine] ? 'bg-coder1-cyan' : 'bg-border-default'
+                        terminalSettings?.statusLine?.[key as keyof typeof terminalSettings.statusLine] ? 'bg-coder1-cyan' : 'bg-border-default'
                       }`}
                     >
                       <div className={`w-2 h-2 rounded-full bg-white transition-transform ${
-                        terminalSettings.statusLine[key as keyof typeof terminalSettings.statusLine] ? 'translate-x-5' : 'translate-x-1'
+                        terminalSettings?.statusLine?.[key as keyof typeof terminalSettings.statusLine] ? 'translate-x-5' : 'translate-x-1'
                       }`} />
                     </button>
                   </div>

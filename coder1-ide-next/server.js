@@ -18,13 +18,16 @@ const os = require('os');
 const path = require('path');
 const express = require('express');
 
-// Memory Optimizer for Alpha deployment (512MB RAM limit)
+// Environment detection
+const isDevelopment = process.env.NODE_ENV !== 'production';
+
+// Memory Optimizer with environment-aware limits
 const { getMemoryOptimizer } = require('./services/memory-optimizer');
 const memoryOptimizer = getMemoryOptimizer({
-  maxHeapMB: parseInt(process.env.NODE_OPTIONS?.match(/--max-old-space-size=(\d+)/)?.[1]) || 400,
-  warningThresholdMB: 300,
-  panicThresholdMB: 380,
-  checkIntervalMs: 30000
+  maxHeapMB: isDevelopment ? 2048 : (parseInt(process.env.NODE_OPTIONS?.match(/--max-old-space-size=(\d+)/)?.[1]) || 400),
+  warningThresholdMB: isDevelopment ? 1500 : 300,
+  panicThresholdMB: isDevelopment ? 1800 : 380,
+  checkIntervalMs: isDevelopment ? 60000 : 30000  // Check less frequently in dev
 });
 
 // Enhanced tmux service
@@ -459,9 +462,10 @@ app.prepare().then(() => {
       try {
         const { id, cols = 80, rows = 30, workingDirectory } = data || {};
         
-        // Check memory before creating new session
+        // Check memory before creating new session (environment-aware threshold)
         const memStats = memoryOptimizer.getMemoryUsage();
-        if (memStats.heapUsedMB > 350) {
+        const memoryThreshold = isDevelopment ? 1500 : 350;
+        if (memStats.heapUsedMB > memoryThreshold) {
           socket.emit('terminal:error', { 
             message: 'System under memory pressure. Please try again in a moment.' 
           });
