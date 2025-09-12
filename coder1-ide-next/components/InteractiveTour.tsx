@@ -23,7 +23,7 @@ interface TourStep {
   title: string;
   content: string;
   target: string;
-  position?: 'center' | 'auto' | 'middle-top' | 'center-monaco' | 'right-terminal' | 'center-terminal';
+  position?: 'center' | 'auto' | 'middle-top' | 'center-monaco' | 'right-terminal' | 'center-terminal' | 'right-preview';
   highlightColor?: 'turquoise' | 'orange';
   hasSubSteps?: boolean;
   subSteps?: SubStep[];
@@ -47,7 +47,7 @@ const tourSteps: TourStep[] = [
     title: 'Smart PRD Generator',
     content: 'Click this button to automate your PRD documentation. It uses AI to create comprehensive product requirement documents.',
     target: 'prd-generator-button',
-    position: 'auto',
+    position: 'right-preview', // Position in preview panel area
     highlightColor: 'turquoise', // BLUE border, not orange
     keepHero: true // Hero section stays visible
   },
@@ -64,7 +64,7 @@ const tourSteps: TourStep[] = [
     title: 'Monaco Code Editor',
     content: 'Full-featured code editor with syntax highlighting, IntelliSense, and all VS Code features you love.',
     target: 'monaco-editor',
-    position: 'center',
+    position: 'center-monaco', // Move up to match step 5.1 position
     highlightColor: 'turquoise',
     addCode: true // Will trigger code addition
   },
@@ -73,7 +73,7 @@ const tourSteps: TourStep[] = [
     title: 'AI-Powered Terminal',
     content: 'Your terminal includes voice input and AI supervision. Let me show you the key features.',
     target: 'terminal',
-    position: 'auto',
+    position: 'center-monaco', // Move up to where step 5.1 will be
     highlightColor: 'turquoise',
     hasSubSteps: true,
     subSteps: [
@@ -87,7 +87,7 @@ const tourSteps: TourStep[] = [
       { 
         target: 'terminal-settings-button', 
         title: 'Terminal Settings',
-        content: 'Configure your terminal preferences, themes, and behavior.',
+        content: 'Configure your terminal preferences for Claude code, think mode, task completion alerts, skip permissions and add a helpful status line.',
         action: 'openTerminalSettings',
         tooltipPosition: 'center-monaco',
         borderColor: 'orange'
@@ -95,12 +95,20 @@ const tourSteps: TourStep[] = [
       { 
         target: 'supervision-button', 
         title: 'AI Supervision',
-        content: 'Enable AI supervision for intelligent command suggestions and error prevention.',
+        content: 'Enable AI supervision to watch and manage Claude Code sessions, so you can walk away with peace of mind and stop babysitting Claude Code.',
         action: 'highlightSupervision',
-        tooltipPosition: 'right-terminal',
+        tooltipPosition: 'center-terminal', // Same position as Memory button (step 6)
         borderColor: 'orange'
       }
     ]
+  },
+  {
+    id: 'memory-feature',
+    title: 'Memory (Core Feature)',
+    content: 'Access your AI memory, the revolutionary core feature that remembers your coding patterns, preferences, and project context across sessions, and gets smarter as time goes on.',
+    target: 'memory-button',
+    position: 'center-terminal',
+    highlightColor: 'orange' // Orange glow for Memory button
   },
   {
     id: 'status-bar-features',
@@ -128,14 +136,7 @@ const tourSteps: TourStep[] = [
       { 
         target: 'session-summary', 
         title: 'Session Summary',
-        content: 'Generate AI-powered summaries of your coding session for documentation.',
-        tooltipPosition: 'center-terminal',
-        borderColor: 'orange'
-      },
-      { 
-        target: 'memory-button', 
-        title: 'Memory (Core Feature)',
-        content: 'Access your AI memory - the core feature that remembers your coding patterns, preferences, and project context across sessions.',
+        content: 'Generate AI-powered in-depth summaries with one click so you can easily hand-off to the next agent with full context.',
         tooltipPosition: 'center-terminal',
         borderColor: 'orange'
       },
@@ -151,7 +152,7 @@ const tourSteps: TourStep[] = [
   {
     id: 'discover-menu',
     title: 'Discover Commands',
-    content: 'Access powerful slash commands that enhance your workflow. Type / to see available commands like /build, /test, /deploy and more.',
+    content: 'Access powerful slash commands that enhance your workflow. Type slash to see over a hundred available commands like /build, /test, /deploy, and many more.',
     target: 'discover-button',
     position: 'center-terminal', // Center in terminal area
     highlightColor: 'orange', // Orange glow for Discover button like other buttons
@@ -197,6 +198,17 @@ export default function InteractiveTour({ onClose, onStepChange, onTourComplete 
   const currentStepData = tourSteps[currentStep];
   const isOnSubStep = currentStepData.hasSubSteps && currentSubStep > 0;
   const currentSubStepData = isOnSubStep ? currentStepData.subSteps?.[currentSubStep - 1] : null;
+  
+  // Dispatch tour:start event when tour mounts
+  useEffect(() => {
+    window.dispatchEvent(new Event('tour:start'));
+    document.body.setAttribute('data-tour-active', 'true');
+    
+    return () => {
+      window.dispatchEvent(new Event('tour:end'));
+      document.body.removeAttribute('data-tour-active');
+    };
+  }, []);
 
   // Add creative code to Monaco editor when on Step 4
   useEffect(() => {
@@ -244,7 +256,7 @@ export default function InteractiveTour({ onClose, onStepChange, onTourComplete 
       // First highlight the button
       setTimeout(() => {
         // Then open the menu
-        window.dispatchEvent(new Event('tour:openDiscoverMenu'));
+        window.dispatchEvent(new Event('tour:openDiscoverPanel'));
         setIsDiscoverMenuOpen(true);
         
         // Enhanced Discover menu content injection with better timing and selectors
@@ -300,11 +312,13 @@ export default function InteractiveTour({ onClose, onStepChange, onTourComplete 
               discoverPanel.setAttribute('data-tour', 'discover-menu');
             }
             
-            console.log(`[InteractiveTour] 📝 Injecting content into discover panel (${strategyUsed})`);
+            console.log(`[InteractiveTour] 📝 Found discover panel (${strategyUsed})`);
             
-            // Clear existing content and inject our enhanced content
-            discoverPanel.innerHTML = '';
+            // DO NOT clear existing content - this breaks the React component!
+            // discoverPanel.innerHTML = '';
             
+            // Skip mock content injection to preserve React functionality
+            /*
             const mockContent = document.createElement('div');
             mockContent.className = 'p-6 text-sm bg-gray-900 border border-gray-600 rounded-lg min-w-[300px]';
             mockContent.innerHTML = `
@@ -344,12 +358,13 @@ export default function InteractiveTour({ onClose, onStepChange, onTourComplete 
             `;
             
             discoverPanel.appendChild(mockContent);
-            console.log(`[InteractiveTour] ✅ Successfully injected enhanced discover menu content`);
+            */
+            console.log(`[InteractiveTour] ✅ Discover panel ready for tour (React component preserved)`);
             
-            // Force visibility and proper styling
-            discoverPanel.style.display = 'block';
-            discoverPanel.style.visibility = 'visible';
-            discoverPanel.style.opacity = '1';
+            // Don't force styling - let React control the component
+            // (discoverPanel as HTMLElement).style.display = 'block';
+            // (discoverPanel as HTMLElement).style.visibility = 'visible';
+            // (discoverPanel as HTMLElement).style.opacity = '1';
             
             // Trigger re-highlighting
             setTimeout(() => {
@@ -434,7 +449,22 @@ export default function InteractiveTour({ onClose, onStepChange, onTourComplete 
       onStepChange?.(tourSteps[nextStep].id);
     } else {
       console.log(`[InteractiveTour] Tour completed, cleaning up and closing`);
-      // Call tour completion callback to clean up editor
+      
+      // Clear Monaco editor content via event
+      window.dispatchEvent(new Event('tour:clearCode'));
+      
+      // Close discover menu if open - dispatch multiple times to ensure it's received
+      if (isDiscoverMenuOpen) {
+        console.log('[InteractiveTour] Closing discover panel on tour completion');
+        window.dispatchEvent(new Event('tour:closeDiscoverPanel'));
+        // Dispatch again after a short delay to ensure it's processed
+        setTimeout(() => {
+          window.dispatchEvent(new Event('tour:closeDiscoverPanel'));
+        }, 100);
+        setIsDiscoverMenuOpen(false);
+      }
+      
+      // Call tour completion callback to clean up editor state
       if (onTourComplete) {
         onTourComplete();
       }
@@ -638,6 +668,22 @@ export default function InteractiveTour({ onClose, onStepChange, onTourComplete 
           });
           break;
           
+        case 'above-terminal':
+          // Above the terminal header
+          setTooltipPosition({
+            x: viewportWidth / 2,
+            y: viewportHeight * 0.45 // Position above terminal header
+          });
+          break;
+          
+        case 'right-preview':
+          // Position in the right preview panel area for Smart PRD Generator
+          setTooltipPosition({
+            x: viewportWidth * 0.65, // Right side but with margin to prevent cutoff
+            y: viewportHeight * 0.25 // Upper portion of the screen
+          });
+          break;
+          
         default: // 'auto'
           const targetRect = isOnSubStep && subHighlightRect ? subHighlightRect : highlightRect;
           if (targetRect) {
@@ -790,7 +836,7 @@ export default function InteractiveTour({ onClose, onStepChange, onTourComplete 
       
       {/* Tour Tooltip */}
       <div
-        className="tour-tooltip fixed bg-bg-secondary border border-border-default rounded-lg shadow-2xl p-6 max-w-sm"
+        className="tour-tooltip fixed bg-bg-secondary border border-orange-400 rounded-lg shadow-2xl p-6 max-w-sm"
         style={{
           left: tooltipPosition.x - 200,
           top: tooltipPosition.y,

@@ -38,6 +38,7 @@ export default function DiscoverPanel() {
   const {
     discoverPanel,
     toggleDiscoverPanel,
+    setDiscoverPanelOpen,
     setCommandInput,
     addCustomCommand,
     toggleAddCommandForm,
@@ -59,6 +60,10 @@ export default function DiscoverPanel() {
   // Wcygan commands state
   const [wcyganCommands, setWcyganCommands] = useState<WcyganCommand[]>([]);
   const [isLoadingWcygan, setIsLoadingWcygan] = useState(false);
+  
+  // Sandbox state
+  const [showSandboxDialog, setShowSandboxDialog] = useState(false);
+  const [sandboxAction, setSandboxAction] = useState<'new' | 'load'>('new');
   
   // Helper function: Get icon for wcygan category
   const getIconForCategory = (category: string) => {
@@ -135,6 +140,63 @@ export default function DiscoverPanel() {
     }
   };
 
+  // Handle sandbox actions
+  const handleSandboxAction = async (action: 'new' | 'load') => {
+    setSandboxAction(action);
+    
+    if (action === 'new') {
+      // Create new sandbox with default name
+      const projectName = `sandbox-${Date.now().toString(36).slice(-6)}`;
+      
+      try {
+        const response = await fetch('/api/sandbox', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-user-id': 'default-user'
+          },
+          body: JSON.stringify({
+            projectId: projectName
+          })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+          addToast({
+            message: `✅ Sandbox "${projectName}" created! Check the status bar for more options.`,
+            type: 'success'
+          });
+          
+          // Close discover panel
+          toggleDiscoverPanel();
+          
+          // Emit event to show sandbox panel in status bar
+          window.dispatchEvent(new CustomEvent('sandbox:created', {
+            detail: { sandboxId: data.sandbox.id }
+          }));
+        } else {
+          throw new Error(data.error);
+        }
+      } catch (error) {
+        addToast({
+          message: `❌ Failed to create sandbox: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          type: 'error'
+        });
+      }
+    } else {
+      // Show sandbox management dialog
+      addToast({
+        message: '🧪 Opening sandbox management panel...',
+        type: 'info'
+      });
+      
+      // Close discover panel and emit event to show sandbox panel
+      toggleDiscoverPanel();
+      window.dispatchEvent(new CustomEvent('sandbox:manage'));
+    }
+  };
+
   // Handle tour events
   useEffect(() => {
     const handleOpenDiscoverPanel = () => {
@@ -144,9 +206,11 @@ export default function DiscoverPanel() {
     };
     
     const handleCloseDiscoverPanel = () => {
-      if (isOpen) {
-        toggleDiscoverPanel();
-      }
+      console.log('[DiscoverPanel] Received tour:closeDiscoverPanel event, closing panel');
+      // Use explicit close instead of toggle to ensure panel closes
+      setDiscoverPanelOpen(false);
+      // Also clear search input
+      setCommandInput('');
     };
     
     window.addEventListener('tour:openDiscoverPanel', handleOpenDiscoverPanel);
@@ -156,7 +220,7 @@ export default function DiscoverPanel() {
       window.removeEventListener('tour:openDiscoverPanel', handleOpenDiscoverPanel);
       window.removeEventListener('tour:closeDiscoverPanel', handleCloseDiscoverPanel);
     };
-  }, [isOpen, toggleDiscoverPanel]);
+  }, [isOpen, toggleDiscoverPanel, setDiscoverPanelOpen]);
 
   // Handle keyboard shortcuts
   useEffect(() => {
@@ -380,6 +444,7 @@ export default function DiscoverPanel() {
           e.currentTarget.style.borderColor = '#00D9FF';
           e.currentTarget.style.boxShadow = 'none';
         }}
+        title="Discover - Command center with AI tools, terminal commands, and workspace management"
       >
         <Compass className="w-4 h-4" />
         Discover
@@ -408,6 +473,7 @@ export default function DiscoverPanel() {
           <button
             onClick={toggleDiscoverPanel}
             className="p-1 hover:bg-bg-primary rounded transition-colors"
+            title="Close Discover panel"
           >
             <X className="w-4 h-4 text-text-muted" />
           </button>
@@ -472,7 +538,7 @@ export default function DiscoverPanel() {
             <div className="grid grid-cols-2 gap-2 text-sm text-text-secondary">
               <div className="flex items-center gap-2">
                 <span>•</span>
-                <a href="/component-studio.html" className="text-coder1-cyan hover:text-coder1-cyan-secondary transition-colors">Component Studio</a>
+                <a href="http://localhost:3000/components-beta" className="text-coder1-cyan hover:text-coder1-cyan-secondary transition-colors">Component Studio</a>
               </div>
               <div className="flex items-center gap-2">
                 <span>•</span>
@@ -533,6 +599,7 @@ export default function DiscoverPanel() {
             <button 
               onClick={toggleAddCommandForm}
               className="w-full flex items-center gap-2 px-3 py-2 text-sm text-coder1-cyan hover:bg-bg-primary rounded-lg transition-colors border border-dashed border-border-default hover:border-coder1-cyan"
+              title="Add custom command - Create your own terminal shortcuts and workflows"
             >
               {showAddForm ? (
                 <>
@@ -599,18 +666,74 @@ export default function DiscoverPanel() {
             <div className="text-sm text-text-secondary space-y-1">
               <div className="flex items-center gap-2">
                 <span>•</span>
-                <button className="text-coder1-cyan hover:text-coder1-cyan-secondary transition-colors">New Session</button>
+                <button 
+                  onClick={() => handleSandboxAction('new')}
+                  className="text-coder1-cyan hover:text-coder1-cyan-secondary transition-colors"
+                >
+                  New Session
+                </button>
                 <span className="text-text-muted">Create isolated environment</span>
               </div>
               <div className="flex items-center gap-2">
                 <span>•</span>
-                <button className="text-coder1-cyan hover:text-coder1-cyan-secondary transition-colors">Load Session</button>
+                <button 
+                  onClick={() => setShowSandboxDialog(true)}
+                  className="text-coder1-cyan hover:text-coder1-cyan-secondary transition-colors"
+                >
+                  Load Session
+                </button>
                 <span className="text-text-muted">Continue previous work</span>
               </div>
             </div>
           </div>
         </div>
       </div>
+
+      {/* Sandbox Management Modal */}
+      {showSandboxDialog && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={() => setShowSandboxDialog(false)}>
+          <div className="bg-bg-secondary border border-border-default rounded-lg p-4 max-w-md w-full mx-4" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-text-primary">Sandbox Management</h3>
+              <button onClick={() => setShowSandboxDialog(false)} className="text-text-muted hover:text-text-primary">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            
+            <div className="space-y-3">
+              <div className="text-sm text-text-secondary">
+                <p>🚧 <strong>Feature in Development</strong></p>
+                <p className="mt-2 text-text-muted">
+                  The full sandbox management interface is being built. For now, you can:
+                </p>
+                <ul className="mt-2 ml-4 space-y-1 text-text-muted">
+                  <li>• Click "New Session" to create a sandbox instantly</li>
+                  <li>• View sandboxes in the right sidebar (coming soon)</li>
+                  <li>• Use the comparison view when you have 2+ sandboxes</li>
+                </ul>
+              </div>
+              
+              <div className="flex gap-2 pt-3">
+                <button 
+                  onClick={() => {
+                    setShowSandboxDialog(false);
+                    handleSandboxAction('new');
+                  }}
+                  className="px-3 py-2 bg-coder1-cyan text-black rounded hover:bg-coder1-cyan-secondary transition-colors text-sm"
+                >
+                  Create New Sandbox
+                </button>
+                <button 
+                  onClick={() => setShowSandboxDialog(false)}
+                  className="px-3 py-2 bg-bg-primary border border-border-default rounded hover:bg-bg-secondary text-text-secondary transition-colors text-sm"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

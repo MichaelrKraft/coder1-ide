@@ -15,6 +15,8 @@ import * as fs from 'fs/promises';
 import * as path from 'path';
 import * as os from 'os';
 import { v4 as uuidv4 } from 'uuid';
+import { getSandboxMetricsService } from './sandbox-metrics-service';
+import { getSandboxPreviewService } from './sandbox-preview-service';
 // Simple logger fallback for production
 const logger = {
   warn: console.warn,
@@ -158,6 +160,19 @@ export class EnhancedTmuxService extends EventEmitter {
       setTimeout(() => {
         this.destroySandbox(sandboxId).catch(console.error);
       }, timeLimit);
+    }
+    
+    // Start metrics collection
+    const metricsService = getSandboxMetricsService();
+    metricsService.startCollecting(sandboxId, sandboxPath);
+    
+    // Start preview server if it's a web project
+    const previewService = getSandboxPreviewService();
+    try {
+      await previewService.startPreviewServer(sandboxId, sandboxPath);
+      logger.debug(`Preview server started for sandbox ${sandboxId}`);
+    } catch (error) {
+      logger.warn(`Could not start preview server for sandbox ${sandboxId}:`, error);
     }
     
     this.emit('sandbox:created', session);
@@ -312,6 +327,14 @@ export class EnhancedTmuxService extends EventEmitter {
     }
     
     sandbox.status = 'stopped';
+    
+    // Stop metrics collection
+    const metricsService = getSandboxMetricsService();
+    metricsService.stopCollecting(sandboxId);
+    
+    // Stop preview server
+    const previewService = getSandboxPreviewService();
+    await previewService.stopPreviewServer(sandboxId);
     
     // Kill all processes in sandbox
     for (const pid of Array.from(sandbox.processes)) {

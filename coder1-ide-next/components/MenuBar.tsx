@@ -84,6 +84,18 @@ export default function MenuBar({
   const menuBarRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
+  // Tooltip text for menu buttons
+  const getMenuTooltip = (menuName: string): string => {
+    const tooltips: { [key: string]: string } = {
+      'File': 'File operations - Create, open, save files (Ctrl+N, Ctrl+O, Ctrl+S)',
+      'Edit': 'Edit operations - Undo, redo, copy, paste, find (Ctrl+Z, Ctrl+C, Ctrl+V, Ctrl+F)',
+      'View': 'View options - Toggle panels, zoom controls (Ctrl+Shift+E, Ctrl+`, Ctrl+±)',
+      'Run': 'Run & debug - Execute code, start debugging (F5, F9)',
+      'Help': 'Help & documentation - About, shortcuts, support'
+    };
+    return tooltips[menuName] || `${menuName} menu`;
+  };
+
   // Menu configuration with actual actions
   const menuConfig: MenuConfig = {
     File: [
@@ -221,6 +233,7 @@ export default function MenuBar({
                 e.currentTarget.style.transform = 'scale(1)';
               }}
               onClick={() => handleMenuClick(menuName)}
+              title={getMenuTooltip(menuName)}
             >
               {menuName}
             </button>
@@ -268,7 +281,7 @@ export default function MenuBar({
               e.currentTarget.style.transform = 'rotate(0deg) scale(1)';
               e.currentTarget.style.color = '';
             }}
-            title="Settings"
+            title="Settings - Configure IDE preferences and appearance"
           >
             <SettingsIcon className="w-5 h-5" />
           </button>
@@ -304,6 +317,7 @@ export default function MenuBar({
             e.currentTarget.style.backdropFilter = 'blur(4px)';
             (e.currentTarget.style as any).WebkitBackdropFilter = 'blur(4px)';
           }}
+          title="Main menu - Navigation to dashboard, documentation, and settings"
         >
           <span>Menu</span>
           <ChevronDown className={`w-3 h-3 transition-transform ${isMenuOpen ? 'rotate-180' : ''}`} />

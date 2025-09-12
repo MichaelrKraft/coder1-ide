@@ -1,8 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  // Enable standalone mode for optimized production builds on Render
-  output: 'standalone',
+  // Disable standalone mode for development - causes static asset issues
+  // output: 'standalone', // Only enable for production builds
   eslint: {
     // Temporarily disable ESLint during builds for Alpha deployment
     ignoreDuringBuilds: true,
@@ -11,33 +11,41 @@ const nextConfig = {
     // Skip TypeScript errors during build for deployment
     ignoreBuildErrors: true,
   },
-  webpack: (config, { isServer }) => {
-    // Webpack stability improvements - prevent chunk loading errors
-    config.cache = {
-      type: 'filesystem',
-      maxMemoryGenerations: 1,
-    };
-    
-    // Optimize chunks for better stability
-    config.optimization = {
-      ...config.optimization,
-      splitChunks: {
-        chunks: 'all',
-        cacheGroups: {
-          default: {
-            minChunks: 1,
-            priority: -20,
-            reuseExistingChunk: true,
-          },
-          vendor: {
-            test: /[\\/]node_modules[\\/]/,
-            name: 'vendors',
-            priority: -10,
-            reuseExistingChunk: true,
+  // Speed up development CSS loading
+  experimental: {
+    optimizeCss: false,
+    optimizePackageImports: ['@xterm/xterm'],
+  },
+  webpack: (config, { isServer, dev }) => {
+    // Only apply heavy optimizations in production
+    if (!dev) {
+      // Production webpack stability improvements
+      config.cache = {
+        type: 'filesystem',
+        maxMemoryGenerations: 1,
+      };
+      
+      // Optimize chunks for production only
+      config.optimization = {
+        ...config.optimization,
+        splitChunks: {
+          chunks: 'all',
+          cacheGroups: {
+            default: {
+              minChunks: 1,
+              priority: -20,
+              reuseExistingChunk: true,
+            },
+            vendor: {
+              test: /[\\/]node_modules[\\/]/,
+              name: 'vendors',
+              priority: -10,
+              reuseExistingChunk: true,
+            },
           },
         },
-      },
-    };
+      };
+    }
     
     // Add path alias resolution for standalone mode
     config.resolve.alias = {

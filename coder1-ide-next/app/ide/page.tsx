@@ -17,6 +17,8 @@ import AboutModal from '@/components/AboutModal';
 import KeyboardShortcutsModal from '@/components/KeyboardShortcutsModal';
 import SettingsModal from '@/components/SettingsModal';
 import FileOpenDialog from '../../components/FileOpenDialog';
+import { getSocket } from '@/lib/socket';
+import { browserSessionManager } from '@/services/browser-session-manager';
 import type { IDEFile } from '@/types';
 
 // Dynamic imports for heavy components with optimized lazy loading
@@ -90,6 +92,31 @@ export default App;
   const [terminalSessionId, setTerminalSessionId] = useState<string | null>(null);
   const [terminalReady, setTerminalReady] = useState<boolean>(false);
   
+  // Phase 2: Browser session management
+  const [browserSessionInfo, setBrowserSessionInfo] = useState<any>(null);
+  const [contextActive, setContextActive] = useState<boolean>(false);
+  
+  // Component capture integration (ultrathin)
+  useEffect(() => {
+    const socket = getSocket();
+    
+    const handleComponentCapture = (data: any) => {
+      console.log('📦 Component captured:', data.title);
+      
+      // Load directly into editor
+      setEditorContent(data.code);
+      setActiveFile(`${data.title.toLowerCase().replace(/\s+/g, '-')}.html`);
+      setShowHero(false);
+      
+      // Show toast
+      setToast(`📦 Captured: ${data.title}`);
+      setTimeout(() => setToast(null), 3000);
+    };
+    
+    socket.on('component:captured', handleComponentCapture);
+    return () => socket.off('component:captured', handleComponentCapture);
+  }, []);
+  
   // Handler for when tour starts
   const handleTourStart = React.useCallback(() => {
     setShowTour(true);
@@ -160,47 +187,47 @@ export default App;
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []); // Note: Handler functions are stable and don't need to be dependencies
 
-  // Auto-initialize Context system on IDE startup
+  // PHASE 2: Browser Session Detection - Web-Native Context System
   React.useEffect(() => {
-    const initializeContext = async () => {
+    const initializeBrowserSession = async () => {
       try {
-        // REMOVED: // REMOVED: console.log('🧠 Initializing Context Folders system...');
+        console.log('🌐 Initializing browser session detection...');
         
-        // Initialize the Context system
-        const initResponse = await fetch('http://localhost:3001/api/context/init', {
+        // Initialize browser session (does NOT create context sessions automatically)
+        const sessionInfo = browserSessionManager.initialize();
+        setBrowserSessionInfo(sessionInfo);
+        
+        // Register session with server (still no context creation)
+        await fetch('/api/browser-session', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            projectPath: '/Users/michaelkraft/autonomous_vibe_interface',
-            autoStart: true  // Enable file watcher
+            action: 'init',
+            browserSessionId: sessionInfo.browserSessionId,
+            userSessionId: sessionInfo.userSessionId,
+            projectPath: '/Users/michaelkraft/autonomous_vibe_interface'
           })
         });
         
-        if (!initResponse.ok) {
-          throw new Error(`Context init failed: ${initResponse.status}`);
+        // Check if context is already active for this session
+        const hasContext = browserSessionManager.hasActiveContext();
+        setContextActive(hasContext);
+        
+        // Show session status to user
+        if (sessionInfo.isNewUser) {
+          showToast('🎉 Welcome to Coder1 IDE! Context system ready for AI assistance');
+        } else if (sessionInfo.isNewSession) {
+          showToast('🌐 Browser session detected - Context system ready when needed');
+        } else {
+          showToast(hasContext ? 
+            '🧠 Context system active - AI assistance available' : 
+            '⚡ Session restored - Context will activate when you use AI features'
+          );
         }
         
-        const initData = await initResponse.json();
-        // REMOVED: // REMOVED: console.log('✅ Context system initialized:', initData);
-        
-        // Store the session ID returned from init
-        if (initData.stats?.currentSession) {
-          localStorage.setItem('contextSessionId', initData.stats.currentSession);
-          // REMOVED: // REMOVED: console.log('✅ Context session active:', initData.stats.currentSession);
-        }
-        
-        // Log stats from initialization
-        // REMOVED: // REMOVED: console.log('📊 Context stats:', {
-        //   sessions: initData.stats?.totalSessions || 0,
-        //   conversations: initData.stats?.totalConversations || 0,
-        //   patterns: initData.stats?.totalPatterns || 0,
-        //   fileWatcher: initData.fileWatcherActive ? 'active' : 'inactive'
-        // });
-        
-        showToast('Context Folders initialized - Your sessions are now being saved!');
       } catch (error) {
-        // logger?.error('❌ Failed to initialize Context system:', error);
-        showToast('Context Folders unavailable - Sessions will not be saved');
+        console.error('Browser session initialization failed:', error);
+        showToast('⚠️ Session detection failed - AI features may be limited');
       }
     };
     
@@ -240,8 +267,8 @@ export default App;
       }
     };
     
-    // Initialize Context system
-    initializeContext();
+    // Initialize browser session detection
+    initializeBrowserSession();
     
     // Initialize usage tracking
     initializeUsageTracking();
@@ -740,12 +767,37 @@ export default App;
                 return newHistory.length > 10000 ? newHistory.slice(-10000) : newHistory;
               });
             }}
-            onTerminalCommand={(command) => {
+            onTerminalCommand={async (command) => {
               // Track executed commands (limit to last 100 commands)
               setTerminalCommands(prev => {
                 const newCommands = [...prev, command];
                 return newCommands.length > 100 ? newCommands.slice(-100) : newCommands;
               });
+              
+              // PHASE 2: Lazy Context Activation on AI Commands
+              // Activate context session only when user actually needs AI features
+              const aiCommands = ['claude', 'cld', 'claude-code', 'cc'];
+              const isAICommand = aiCommands.some(cmd => command.toLowerCase().startsWith(cmd));
+              
+              if (isAICommand && !contextActive) {
+                try {
+                  console.log(`🧠 AI command detected: "${command}" - Activating context session...`);
+                  showToast('🧠 Activating AI context session...');
+                  
+                  // Activate context session via browser session manager
+                  const contextSessionId = await browserSessionManager.activateContextSession();
+                  setContextActive(true);
+                  
+                  console.log(`✅ Context session activated: ${contextSessionId.substring(0, 8)}...`);
+                  showToast('✅ AI context activated - Claude is now learning from your session');
+                  
+                } catch (error) {
+                  console.error('Context activation failed:', error);
+                  showToast('⚠️ AI context activation failed - features may be limited');
+                }
+              } else if (isAICommand && contextActive) {
+                console.log(`🧠 AI command detected: "${command}" - Context already active`);
+              }
             }}
             onTerminalReady={(sessionId, ready) => {
               // Performance-safe session tracking - no intervals
@@ -876,10 +928,19 @@ export default App;
           }}
           onTourComplete={() => {
             // Clean up tour artifacts
-            console.log('[IDE] Tour completed, cleaning up editor content');
-            setEditorContent(''); // Clear dummy code from editor
+            console.log('[IDE] Tour completed, cleaning up editor content and discover menu');
+            setEditorContent(''); // Clear dummy code from editor state
             setActiveFile(null); // Reset active file
             setShowHero(false); // Hide hero section after tour
+            
+            // Clear Monaco editor content directly
+            window.dispatchEvent(new Event('tour:clearCode'));
+            
+            // Close discover menu if it's open - dispatch multiple times to ensure closure
+            window.dispatchEvent(new Event('tour:closeDiscoverPanel'));
+            setTimeout(() => {
+              window.dispatchEvent(new Event('tour:closeDiscoverPanel'));
+            }, 150);
           }}
         />
       )}

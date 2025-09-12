@@ -24,10 +24,12 @@ import {
   AlertCircle,
   Loader,
   RefreshCw,
-  ChevronRight
+  ChevronRight,
+  Grid
 } from 'lucide-react';
 import { logger } from '@/lib/logger';
 import { useUIStore } from '@/stores/useUIStore';
+import SandboxComparisonView from './SandboxComparisonView';
 
 interface Sandbox {
   id: string;
@@ -51,6 +53,7 @@ export default function SandboxPanel() {
   const [projectId, setProjectId] = useState('my-project');
   const [baseFrom, setBaseFrom] = useState('');
   const [testResults, setTestResults] = useState<Record<string, any>>({});
+  const [showComparisonView, setShowComparisonView] = useState(false);
   
   const { addToast } = useUIStore();
 
@@ -360,9 +363,20 @@ export default function SandboxPanel() {
             Agent Sandboxes
           </h4>
         </div>
-        <span className="text-xs text-text-muted">
-          {sandboxes.length}/5 active
-        </span>
+        <div className="flex items-center gap-2">
+          {sandboxes.length >= 2 && (
+            <button
+              onClick={() => setShowComparisonView(true)}
+              className="px-2 py-1 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white text-xs rounded transition-all duration-200 flex items-center gap-1 shadow-lg animate-pulse"
+            >
+              <Grid className="w-3 h-3" />
+              Compare All
+            </button>
+          )}
+          <span className="text-xs text-text-muted">
+            {sandboxes.length}/5 active
+          </span>
+        </div>
       </div>
 
       {/* Create Sandbox */}
@@ -540,6 +554,22 @@ export default function SandboxPanel() {
             ))}
           </div>
         </div>
+      )}
+
+      {/* Sandbox Comparison View */}
+      {showComparisonView && (
+        <SandboxComparisonView
+          sandboxIds={sandboxes.map(s => s.id)}
+          onClose={() => setShowComparisonView(false)}
+          onPromote={(sandboxId) => {
+            setShowComparisonView(false);
+            addToast({
+              message: `✅ Sandbox ${sandboxId.slice(-6)} promoted!`,
+              type: 'success'
+            });
+            loadSandboxes(); // Refresh the list
+          }}
+        />
       )}
     </div>
   );

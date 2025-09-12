@@ -488,8 +488,11 @@ app.prepare().then(() => {
         // Resize if needed
         session.resize(cols, rows);
         
-        // Initialize context session for this terminal
-        await initializeContextSession(sessionId);
+        // PHASE 1 FIX: Initialize context session DISABLED for memory stability
+        // - Auto-initializing context for every terminal session causes memory exhaustion
+        // - Results in 1,673+ sessions created, causing server crashes (exit code 137)
+        // PRESERVED: Original code for Phase 2 restoration:
+        // await initializeContextSession(sessionId);
         
         // Set up data forwarding for this socket with context capture
         session.pty.onData((data) => {

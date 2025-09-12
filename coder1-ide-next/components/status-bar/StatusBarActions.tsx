@@ -200,9 +200,12 @@ const StatusBarActions = React.memo(function StatusBarActions({
 
   const isLoadingState = (state: string) => loading === state;
   
-  // Check if we're in Beta environment
-  const isBetaEnvironment = typeof window !== 'undefined' && 
-                           window.location.pathname.includes('ide-beta');
+  // Check if we're in Beta environment (hydration-safe)
+  const [isBetaEnvironment, setIsBetaEnvironment] = React.useState(false);
+  
+  React.useEffect(() => {
+    setIsBetaEnvironment(window.location.pathname.includes('ide-beta'));
+  }, []);
 
   return (
     <>
@@ -215,7 +218,7 @@ const StatusBarActions = React.memo(function StatusBarActions({
             className="flex items-center gap-1.5 px-4 py-1.5 text-sm font-medium text-text-secondary hover:text-text-primary rounded transition-all duration-200 disabled:opacity-50 bg-bg-secondary w-full"
             onMouseEnter={(e) => applyHoverEffect(e, isLoadingState('checkpoint'))}
             onMouseLeave={removeHoverEffect}
-            title="Save a checkpoint of your current work"
+            title="CheckPoint - Save a snapshot of your current work state for easy rollback (Ctrl+Shift+S)"
           >
             {isLoadingState('checkpoint') ? (
               <Loader2 className="w-4 h-4 animate-spin" />
@@ -234,7 +237,7 @@ const StatusBarActions = React.memo(function StatusBarActions({
             className="flex items-center gap-1.5 px-4 py-1.5 text-sm font-medium text-text-secondary hover:text-text-primary rounded transition-all duration-200 disabled:opacity-50 bg-bg-secondary w-full"
             onMouseEnter={(e) => applyHoverEffect(e, isLoadingState('timeline'))}
             onMouseLeave={removeHoverEffect}
-            title="View timeline of changes"
+            title="TimeLine - View chronological history of your development session and changes"
           >
             {isLoadingState('timeline') ? (
               <Loader2 className="w-4 h-4 animate-spin" />
@@ -254,7 +257,7 @@ const StatusBarActions = React.memo(function StatusBarActions({
             className="flex items-center gap-1.5 px-4 py-1.5 text-sm font-medium text-text-secondary hover:text-text-primary rounded transition-all duration-200 disabled:opacity-50 bg-bg-secondary w-full"
             onMouseEnter={(e) => applyHoverEffect(e, isLoadingState('session'))}
             onMouseLeave={removeHoverEffect}
-            title="Generate AI session summary"
+            title="Session Summary - Generate AI-powered summary of your coding session for handoffs and documentation"
           >
             {isLoadingState('session') ? (
               <Loader2 className="w-4 h-4 animate-spin" />
@@ -268,11 +271,12 @@ const StatusBarActions = React.memo(function StatusBarActions({
         {/* Docs Button */}
         <div className="p-[1px] rounded-md" style={{background: 'linear-gradient(135deg, #6366f1, #8b5cf6)'}}>
           <button
+            data-tour="docs-button"
             onClick={handleDocs}
             className="flex items-center gap-1.5 px-4 py-1.5 text-sm font-medium text-text-secondary hover:text-text-primary rounded transition-all duration-200 bg-bg-secondary w-full"
             onMouseEnter={(e) => applyHoverEffect(e, false)}
             onMouseLeave={removeHoverEffect}
-            title="Open documentation"
+            title="Docs - Open documentation manager with intelligent search and AI-powered content"
           >
             <BookOpen className="w-4 h-4" />
             <span>Docs</span>
@@ -296,7 +300,7 @@ const StatusBarActions = React.memo(function StatusBarActions({
                 e.currentTarget.style.boxShadow = 'none';
                 e.currentTarget.parentElement!.style.background = 'linear-gradient(135deg, #9333ea, #ec4899)';
               }}
-              title="ParaThinker - Parallel AI reasoning (Beta)"
+              title="ParaThinker - Advanced parallel AI reasoning system for complex problem solving (Beta feature)"
             >
               {isLoadingState('parathink') ? (
                 <Loader2 className="w-4 h-4 animate-spin" />

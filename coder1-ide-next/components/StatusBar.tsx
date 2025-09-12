@@ -691,6 +691,7 @@ export default function StatusBar({
 
         {/* Docs Button */}
         <button
+          data-tour="docs-button"
           onClick={handleDocs}
           className="flex items-center gap-1.5 px-4 py-1.5 text-sm font-medium text-text-secondary hover:text-text-primary rounded transition-all duration-200"
           style={{

@@ -54,24 +54,44 @@ export function SessionProvider({ children }: SessionProviderProps) {
   }, []);
 
   const initializeSession = async () => {
+    // Prevent concurrent initialization
+    if (isCreatingSession.current) {
+      return;
+    }
+    
     // Check for existing session in localStorage
     let storedSessionId = localStorage.getItem('currentSessionId');
     
-    if (!storedSessionId) {
-      // Load sessions first to check if any exist
+    if (storedSessionId) {
+      setSessionId(storedSessionId);
+      // Load all sessions and find the current one
       await refreshSessions();
       
-      // If no sessions exist, create one (with mutex protection)
-      if (sessions.length === 0 && !isCreatingSession.current) {
-        await createSession();
+      // Verify the stored session still exists
+      const sessionExists = sessions.some(s => s.id === storedSessionId);
+      if (!sessionExists) {
+        // Session no longer exists, clear it
+        localStorage.removeItem('currentSessionId');
+        storedSessionId = null;
+      } else {
+        return; // Valid session found, we're done
       }
-      return;
     }
-
-    setSessionId(storedSessionId);
     
-    // Load all sessions and find the current one
-    await refreshSessions();
+    // No valid session, need to create one
+    if (!storedSessionId) {
+      // Load sessions first to check if any exist
+      const existingSessions = await refreshSessions();
+      
+      // If no sessions exist, create one (with mutex protection)
+      if (!isCreatingSession.current) {
+        // Double-check after await that we still need to create
+        const currentStoredId = localStorage.getItem('currentSessionId');
+        if (!currentStoredId) {
+          await createSession();
+        }
+      }
+    }
   };
 
   const refreshSessions = async () => {
@@ -80,20 +100,24 @@ export function SessionProvider({ children }: SessionProviderProps) {
       const data = await response.json();
       
       if (data.success) {
-        setSessions(data.sessions || []);
+        const loadedSessions = data.sessions || [];
+        setSessions(loadedSessions);
         
         // Update current session if we have a sessionId
         const currentSessionId = sessionId || localStorage.getItem('currentSessionId');
         if (currentSessionId) {
-          const activeSession = data.sessions.find((s: Session) => s.id === currentSessionId);
+          const activeSession = loadedSessions.find((s: Session) => s.id === currentSessionId);
           if (activeSession) {
             setCurrentSession(activeSession);
           }
         }
+        
+        return loadedSessions; // Return sessions for coordination
       }
     } catch (error) {
       console.error('Failed to load sessions:', error);
     }
+    return []; // Return empty array on error
   };
 
   const createSession = async (name?: string, description?: string) => {

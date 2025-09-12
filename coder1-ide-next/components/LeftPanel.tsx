@@ -94,6 +94,7 @@ export default function LeftPanel({ onFileSelect, activeFile }: LeftPanelProps) 
               : 'text-text-muted hover:text-text-secondary hover:bg-bg-tertiary'
           }`}
           onClick={() => setActiveTab('explorer')}
+          title="File Explorer - Browse project files and folders"
         >
           <FolderTree className="w-3 h-3" />
           <span>Explorer</span>
@@ -112,6 +113,7 @@ export default function LeftPanel({ onFileSelect, activeFile }: LeftPanelProps) 
             // Auto-close ContextManagerPanel if it's open
             window.dispatchEvent(new CustomEvent('ideSessionsTabClicked'));
           }}
+          title="Sessions - View development sessions, checkpoints, and timeline history"
         >
           <Clock className="w-3 h-3" />
           <span>Sessions</span>
@@ -123,6 +125,7 @@ export default function LeftPanel({ onFileSelect, activeFile }: LeftPanelProps) 
               : 'text-text-muted hover:text-text-secondary hover:bg-bg-tertiary'
           }`}
           onClick={() => setActiveTab('memory')}
+          title="Memory - AI context folders with conversation history and patterns"
         >
           <Brain className="w-3 h-3" />
           <span>Memory</span>

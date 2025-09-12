@@ -202,12 +202,13 @@ export default function HeroSection({ onTourStart }: HeroSectionProps = {}) {
           backgroundClip: 'text',
         }}
       >
-        The world&apos;s most advanced AI-native development environment
+        The only AI-first IDE with built-in contextual memory
       </p>
 
       {/* Action buttons - responsive */}
       <div className="relative z-10 flex flex-col gap-2 mb-3 w-full max-w-[min(90%,500px)] px-2">
         <button 
+          data-tour="start-tour-button"
           onClick={(e) => {
             e.stopPropagation();
             if (onTourStart) {
@@ -215,6 +216,7 @@ export default function HeroSection({ onTourStart }: HeroSectionProps = {}) {
             }
           }}
           className="glass-button flex items-center gap-3 sm:gap-4 px-4 sm:px-6 py-3 sm:py-4 rounded-lg transition-all duration-300 w-full transform hover:translate-y-[-2px]"
+          title="Start Interactive Tour - Learn how to use the Coder1 IDE with a guided walkthrough"
           style={{
             background: 'linear-gradient(135deg, rgba(125, 211, 252, 0.1) 0%, rgba(187, 154, 247, 0.1) 100%)',
           backdropFilter: 'blur(4px)',
@@ -246,10 +248,11 @@ export default function HeroSection({ onTourStart }: HeroSectionProps = {}) {
         <button 
           onClick={(e) => {
             e.stopPropagation();
-            router.push('/prd-generator');
+            router.push('/orchestrator');
           }}
           className="glass-button flex items-center gap-3 sm:gap-4 px-4 sm:px-6 py-3 sm:py-4 rounded-lg transition-all duration-300 w-full transform hover:translate-y-[-2px]"
           data-tour="prd-generator-button"
+          title="Smart PRD Generator - AI-powered Product Requirements Document creation with 5-question intelligent flow"
           style={{
             background: 'linear-gradient(135deg, rgba(125, 211, 252, 0.1) 0%, rgba(187, 154, 247, 0.1) 100%)',
           backdropFilter: 'blur(4px)',
@@ -283,6 +286,7 @@ export default function HeroSection({ onTourStart }: HeroSectionProps = {}) {
             e.stopPropagation();
           }}
           className="glass-button flex items-center gap-3 sm:gap-4 px-4 sm:px-6 py-3 sm:py-4 rounded-lg transition-all duration-300 w-full transform hover:translate-y-[-2px]"
+          title="Open File - Browse and open project files to start coding with AI assistance"
           style={{
             background: 'linear-gradient(135deg, rgba(125, 211, 252, 0.1) 0%, rgba(187, 154, 247, 0.1) 100%)',
           backdropFilter: 'blur(4px)',

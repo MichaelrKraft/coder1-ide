@@ -26,7 +26,7 @@ export default function MonacoEditor({
     }
   }, [fontSize]);
 
-  // Listen for tour:addCode event to add code during the tour
+  // Listen for tour:addCode and tour:clearCode events
   useEffect(() => {
     const handleTourAddCode = (event: CustomEvent) => {
       if (editorRef.current && event.detail?.code) {
@@ -34,10 +34,18 @@ export default function MonacoEditor({
       }
     };
 
+    const handleTourClearCode = () => {
+      if (editorRef.current) {
+        editorRef.current.setValue('');
+      }
+    };
+
     window.addEventListener('tour:addCode', handleTourAddCode as EventListener);
+    window.addEventListener('tour:clearCode', handleTourClearCode);
     
     return () => {
       window.removeEventListener('tour:addCode', handleTourAddCode as EventListener);
+      window.removeEventListener('tour:clearCode', handleTourClearCode);
     };
   }, []);
 

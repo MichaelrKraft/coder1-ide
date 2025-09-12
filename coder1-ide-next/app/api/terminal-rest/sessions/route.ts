@@ -23,7 +23,11 @@ export async function POST(request: NextRequest) {
       type: 'unified-server'
     });
     
-    // Initialize context processor for this terminal session
+    // PHASE 1 FIX: Context processor initialization DISABLED for memory stability
+    // - Auto-initializing context for every terminal REST session causes memory exhaustion
+    // - Results in 1,673+ sessions created, causing server crashes (exit code 137)
+    // PRESERVED: Original code for Phase 2 restoration:
+    /*
     try {
       await contextProcessor.initialize('/Users/michaelkraft/autonomous_vibe_interface');
       logger.info(`🧠 Context processor initialized for terminal session: ${sessionId}`);
@@ -31,6 +35,7 @@ export async function POST(request: NextRequest) {
       logger.warn('Context processor initialization failed:', error);
       // Continue even if context processor fails - terminal should still work
     }
+    */
     
     // REMOVED: // REMOVED: console.log(`✅ Terminal session created (unified): ${sessionId}`);
     

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { Terminal as XTerm } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
 import '@xterm/xterm/css/xterm.css';
@@ -73,6 +73,7 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
   const [audioAlertsEnabled, setAudioAlertsEnabled] = useState(false);
   const [recognition, setRecognition] = useState<any | null>(null);
   const [claudeActive, setClaudeActive] = useState(false);
+  const claudeActivityTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [commandHistory, setCommandHistory] = useState<string[]>([]);
   const [currentCommand, setCurrentCommand] = useState('');
   const [conversationMode, setConversationMode] = useState(false);
@@ -275,6 +276,18 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
     }
     
     const createTerminalSession = async () => {
+      // Check if there's already a session in localStorage (from SessionContext)
+      const existingSessionId = localStorage.getItem('currentSessionId');
+      if (existingSessionId) {
+        // Use existing session instead of creating new one
+        sessionCreatedRef.current = true;
+        setSessionId(existingSessionId);
+        sessionIdForVoiceRef.current = existingSessionId;
+        setTerminalReady(true);
+        notifyTerminalReady(existingSessionId, true);
+        return;
+      }
+      
       sessionCreatedRef.current = true;
       // REMOVED: // REMOVED: console.log('🚀 CREATING TERMINAL SESSION...');
       
@@ -343,6 +356,69 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
     
     return () => {
       isMountedRef.current = false;
+      
+      // Clean up Claude activity timeout
+      if (claudeActivityTimeoutRef.current) {
+        clearTimeout(claudeActivityTimeoutRef.current);
+        claudeActivityTimeoutRef.current = null;
+      }
+      
+      // Clean up scroll tracking interval
+      if (scrollCheckIntervalRef.current) {
+        clearInterval(scrollCheckIntervalRef.current);
+        scrollCheckIntervalRef.current = null;
+      }
+      
+      // Clean up scroll debounce timer
+      if (scrollDebounceRef.current) {
+        clearTimeout(scrollDebounceRef.current);
+        scrollDebounceRef.current = null;
+      }
+      
+      // Clean up output buffering timers
+      if (outputFlushTimeoutRef.current) {
+        clearTimeout(outputFlushTimeoutRef.current);
+        outputFlushTimeoutRef.current = null;
+      }
+      
+      if (writeRAFRef.current) {
+        cancelAnimationFrame(writeRAFRef.current);
+        writeRAFRef.current = null;
+      }
+      
+      // Clear output buffer
+      outputBufferRef.current = [];
+      
+      // Dispose of onData handler
+      if (onDataDisposableRef.current) {
+        onDataDisposableRef.current.dispose();
+        onDataDisposableRef.current = null;
+      }
+      
+      // Stop speech recognition if active
+      if (recognition) {
+        try {
+          recognition.stop();
+          recognition.onresult = null;
+          recognition.onerror = null;
+          recognition.onend = null;
+        } catch (error) {
+          // Silently handle
+        }
+      }
+      
+      // Disconnect socket if needed
+      if (socketRef.current) {
+        socketRef.current.off('terminal:data');
+        socketRef.current.off('terminal:created');
+        socketRef.current.off('terminal:error');
+        socketRef.current.off('claude:output');
+        socketRef.current.off('claude:sessionComplete');
+        socketRef.current.off('claude:error');
+        socketRef.current.off('ai-team:progress');
+        socketRef.current.off('ai-team:complete');
+      }
+      
       // Only cleanup the current session on unmount
       const currentSessionId = sessionIdForVoiceRef.current || sessionId;
       if (currentSessionId && !currentSessionId.startsWith('simulated-')) {
@@ -420,20 +496,37 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
         xtermRef.current = term;
         fitAddonRef.current = fitAddon;
 
-        // SIMPLIFIED SCROLL SYSTEM: Only track user position, don't force scroll
+        // ENHANCED SCROLL TRACKING: Better user intent detection
+        let lastViewportY = 0;
         const checkScrollPosition = () => {
           if (term && term.buffer && term.buffer.active) {
             try {
               const buffer = term.buffer.active;
-              const isAtBottom = buffer.viewportY === buffer.baseY;
+              const viewportY = buffer.viewportY;
+              const baseY = buffer.baseY;
+              const linesFromBottom = baseY - viewportY;
               
-              // Simply track whether user has scrolled up
-              // No auto-scrolling here - let user control it
-              if (!isAtBottom && !isUserScrolled) {
+              // Detect scroll direction and magnitude
+              const scrollDelta = viewportY - lastViewportY;
+              const isScrollingUp = scrollDelta < 0;
+              const isSignificantScroll = Math.abs(scrollDelta) > 3;
+              
+              // User intentionally scrolled up if:
+              // 1. They scrolled up significantly (more than 3 lines)
+              // 2. They're more than 10 lines from bottom
+              if (isScrollingUp && isSignificantScroll && linesFromBottom > 10) {
                 setIsUserScrolled(true);
-              } else if (isAtBottom && isUserScrolled) {
+              } 
+              // Reset user scroll if they're back near bottom
+              else if (linesFromBottom <= 2) {
                 setIsUserScrolled(false);
               }
+              // If Claude is active and we're somewhat close, reset user scroll
+              else if (claudeActive && linesFromBottom <= 15 && !isScrollingUp) {
+                setIsUserScrolled(false);
+              }
+              
+              lastViewportY = viewportY;
             } catch (e) {
               // Silently handle errors
             }
@@ -596,6 +689,43 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
   useEffect(() => {
     isConnectedRef.current = isConnected;
   }, [isConnected]);
+
+  // Auto-focus terminal when component mounts and after interactions
+  useEffect(() => {
+    // Focus terminal after a short delay to ensure DOM is ready
+    const focusTimer = setTimeout(() => {
+      if (xtermRef.current && terminalRef.current) {
+        try {
+          xtermRef.current.focus();
+          console.log('✅ Terminal auto-focused on mount');
+        } catch (error) {
+          console.warn('Could not auto-focus terminal:', error);
+        }
+      }
+    }, 500);
+
+    // Add global click handler to refocus terminal when clicked anywhere in terminal area
+    const handleTerminalAreaClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      // Check if click is within terminal container
+      if (terminalRef.current && terminalRef.current.contains(target)) {
+        if (xtermRef.current) {
+          try {
+            xtermRef.current.focus();
+          } catch (error) {
+            console.warn('Could not focus terminal on click:', error);
+          }
+        }
+      }
+    };
+
+    document.addEventListener('click', handleTerminalAreaClick);
+
+    return () => {
+      clearTimeout(focusTimer);
+      document.removeEventListener('click', handleTerminalAreaClick);
+    };
+  }, [terminalReady]);
 
   // Initialize speech recognition
   useEffect(() => {
@@ -809,6 +939,29 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
     }
   };
 
+  // Input buffer for when socket is reconnecting (moved to component scope)
+  const inputBufferRef = useRef<string[]>([]);
+  const isProcessingBufferRef = useRef(false);
+  
+  // Function to process buffered input (moved to component scope)
+  const processInputBuffer = useCallback(() => {
+    const socket = socketRef.current;
+    if (!isProcessingBufferRef.current && inputBufferRef.current.length > 0 && socket?.connected && sessionId) {
+      isProcessingBufferRef.current = true;
+      while (inputBufferRef.current.length > 0) {
+        const bufferedData = inputBufferRef.current.shift();
+        if (bufferedData) {
+          socket.emit('terminal:input', { 
+            id: sessionId, 
+            data: bufferedData,
+            thinkingMode 
+          });
+        }
+      }
+      isProcessingBufferRef.current = false;
+    }
+  }, [sessionId, thinkingMode]);
+
   const connectToBackend = (term: XTerm) => {
     // REMOVED: // REMOVED: console.log('🔌 CONNECTING TO BACKEND:', { sessionId, terminalReady });
     
@@ -831,14 +984,37 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
     const socket = getSocket();
     // REMOVED: // REMOVED: console.log('✅ Socket.IO instance obtained:', socket.connected ? 'CONNECTED' : 'DISCONNECTED');
     socketRef.current = socket;
+    
+    // Focus terminal immediately when backend is connected
+    const focusOnConnect = () => {
+      if (term && !term.element?.contains(document.activeElement)) {
+        setTimeout(() => {
+          try {
+            term.focus();
+            console.log('✅ Terminal focused after backend connection');
+          } catch (error) {
+            console.warn('Could not focus terminal after connection:', error);
+          }
+        }, 100);
+      }
+    };
 
     // Add connection status listeners for debugging
     socket.on('connect', () => {
       // REMOVED: // REMOVED: console.log('🟢 Socket.IO CONNECTED to backend');
+      // If reconnecting, re-establish terminal session
+      if (isConnected && sessionId) {
+        console.log('🔄 Reconnected - re-establishing terminal session');
+        socket.emit('terminal:create', { id: sessionId });
+        focusOnConnect();
+      }
     });
     
     socket.on('disconnect', (reason) => {
       // REMOVED: // REMOVED: console.log('🔴 Socket.IO DISCONNECTED:', reason);
+      if (term) {
+        term.writeln(`\r\n⚠️ Connection lost: ${reason}`);
+      }
     });
     
     socket.on('connect_error', (error) => {
@@ -857,12 +1033,31 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
         outputBufferRef.current = [];
         term.write(output);
         
-        // Only auto-scroll if user is already at bottom
+        // Smart auto-scroll logic for better Claude session tracking
         if (term.buffer && term.buffer.active) {
           const buffer = term.buffer.active;
-          const isAtBottom = buffer.viewportY === buffer.baseY;
-          if (isAtBottom) {
+          const viewportY = buffer.viewportY;
+          const baseY = buffer.baseY;
+          
+          // Calculate how far from bottom (in lines)
+          const linesFromBottom = baseY - viewportY;
+          
+          // Smart auto-scroll conditions:
+          // 1. If exactly at bottom
+          // 2. If within 5 lines of bottom (likely automatic displacement)
+          // 3. If Claude is active and within 20 lines (more aggressive during AI output)
+          const shouldAutoScroll = 
+            viewportY === baseY || // Exactly at bottom
+            linesFromBottom <= 5 || // Very close to bottom
+            (claudeActive && linesFromBottom <= 20) || // Claude active, be more aggressive
+            (!isUserScrolled && linesFromBottom <= 10); // Not user scrolled and reasonably close
+          
+          if (shouldAutoScroll) {
             term.scrollToBottom();
+            // Reset user scroll flag if we're auto-scrolling
+            if (isUserScrolled && linesFromBottom <= 5) {
+              setIsUserScrolled(false);
+            }
           }
         }
       }
@@ -878,6 +1073,22 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
         // Cancel any pending flush
         if (outputFlushTimeoutRef.current) {
           clearTimeout(outputFlushTimeoutRef.current);
+        }
+        
+        // Detect Claude activity based on output patterns
+        // Claude outputs typically have certain patterns or continuous streams
+        if (data.length > 20 || data.includes('```') || data.includes('I\'ll') || data.includes('Let me')) {
+          setClaudeActive(true);
+          
+          // Clear existing activity timeout
+          if (claudeActivityTimeoutRef.current) {
+            clearTimeout(claudeActivityTimeoutRef.current);
+          }
+          
+          // Set new timeout - consider Claude inactive after 2 seconds of no output
+          claudeActivityTimeoutRef.current = setTimeout(() => {
+            setClaudeActive(false);
+          }, 2000);
         }
         
         // Simplified flush: Always flush quickly for responsiveness
@@ -978,10 +1189,18 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
         setIsConnected(true);
         connectionInProgressRef.current = false; // Connection complete
         
+        // Focus terminal after successful connection
+        focusOnConnect();
+        
         // Send initial resize
         if (fitAddonRef.current && xtermRef.current) {
           const { cols, rows } = xtermRef.current;
           socket.emit('terminal:resize', { id: sessionId, cols, rows });
+        }
+        
+        // Process any buffered input after connection
+        if (typeof processInputBuffer === 'function') {
+          processInputBuffer();
         }
       }
     });
@@ -1047,66 +1266,83 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
     
     // Create new handler and store the disposable
     onDataDisposableRef.current = term.onData((data) => {
-      // Send all input to backend via Socket.IO
-      if (sessionId && socket.connected) {
-        socket.emit('terminal:input', { 
-          id: sessionId, 
-          data,
-          thinkingMode 
-        });
+      // Check connection status
+      if (!sessionId) {
+        term.writeln('\r\n⚠️ Terminal session not initialized. Please refresh the page.');
+        return;
+      }
+      
+      if (!socket.connected) {
+        // Buffer input when disconnected
+        inputBufferRef.current.push(data);
+        // Show local echo for better UX
+        term.write(data);
         
-        // Track current line buffer for command history
-        if (data === '\r') {
-          // Enter pressed - command was sent
-          if (currentLineBuffer.trim()) {
-            const command = currentLineBuffer.trim();
-            setCommandHistory(prev => [...prev, command]);
+        // Show reconnection message once
+        if (!term.buffer.active.getLine(term.buffer.active.cursorY)?.translateToString().includes('Reconnecting')) {
+          term.writeln('\r\n⚠️ Connection lost. Reconnecting... (your input is buffered)');
+        }
+        return;
+      }
+      
+      // Send input to backend via Socket.IO
+      socket.emit('terminal:input', { 
+        id: sessionId, 
+        data,
+        thinkingMode 
+      });
+      
+      // Process any buffered input
+      processInputBuffer();
+      
+      // Track current line buffer for command history
+      if (data === '\r') {
+        // Enter pressed - command was sent
+        if (currentLineBuffer.trim()) {
+          const command = currentLineBuffer.trim();
+          setCommandHistory(prev => [...prev, command]);
             
-            // Memory system: Inject context for Claude commands
-            if (memory.isEnabled && memory.isActive && command.toLowerCase().includes('claude')) {
-              // Get memory context and inject it
-              memory.getInjectionContext().then(memoryContext => {
-                if (memoryContext) {
-                  // Prepend memory context to the command
-                  const contextPrefix = `\n[Memory Context: ${memoryContext}]\n`;
-                  // Note: Since we're using PTY, we can't modify the command that was already sent
-                  // Instead, we'll track it for response handling
-                  sessionStorage.setItem('last_claude_command', command);
-                  sessionStorage.setItem('memory_context_injected', 'true');
-                }
-              });
+          // Memory system: Inject context for Claude commands
+          if (memory.isEnabled && memory.isActive && command.toLowerCase().includes('claude')) {
+            // Get memory context and inject it
+            memory.getInjectionContext().then(memoryContext => {
+              if (memoryContext) {
+                // Prepend memory context to the command
+                const contextPrefix = `\n[Memory Context: ${memoryContext}]\n`;
+                // Note: Since we're using PTY, we can't modify the command that was already sent
+                // Instead, we'll track it for response handling
+                sessionStorage.setItem('last_claude_command', command);
+                sessionStorage.setItem('memory_context_injected', 'true');
+              }
+            });
+          }
+            
+          // Notify parent component about the command
+          if (onTerminalCommand) {
+            onTerminalCommand(command);
+          }
+        }
+        setCurrentLineBuffer('');
+      } else if (data === '\x7F') {
+        // Backspace
+        setCurrentLineBuffer(prev => prev.slice(0, -1));
+      } else if (data >= ' ' || data === '\t') {
+        // Regular character
+        setCurrentLineBuffer(prev => {
+          const newBuffer = prev + data;
+          // Check if "claude" has been typed
+          if (newBuffer.toLowerCase().includes('claude')) {
+            // Activate supervision when claude is typed
+            if (!isSupervisionActive) {
+              enableSupervision();
+              // REMOVED: // REMOVED: console.log('👁️ Supervision auto-activated: claude detected');
             }
-            
-            // Notify parent component about the command
-            if (onTerminalCommand) {
-              onTerminalCommand(command);
+            if (onClaudeTyped) {
+              onClaudeTyped();
             }
           }
-          setCurrentLineBuffer('');
-        } else if (data === '\x7F') {
-          // Backspace
-          setCurrentLineBuffer(prev => prev.slice(0, -1));
-        } else if (data >= ' ' || data === '\t') {
-          // Regular character
-          setCurrentLineBuffer(prev => {
-            const newBuffer = prev + data;
-            // Check if "claude" has been typed
-            if (newBuffer.toLowerCase().includes('claude')) {
-              // Activate supervision when claude is typed
-              if (!isSupervisionActive) {
-                enableSupervision();
-                // REMOVED: // REMOVED: console.log('👁️ Supervision auto-activated: claude detected');
-              }
-              if (onClaudeTyped) {
-                onClaudeTyped();
-              }
-            }
-            return newBuffer;
-          });
-        }
-      } else if (!socket.connected) {
-        // Show connection status
-        // REMOVED: // REMOVED: console.log('Not connected to backend, trying to reconnect...');
+          return newBuffer;
+        });
       }
     });
 
@@ -1293,6 +1529,7 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
           {/* Memory button with dropdown */}
           <div className="relative">
             <button
+              data-tour="memory-button"
               onClick={() => setShowMemoryDropdown(!showMemoryDropdown)}
               className="terminal-control-btn flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md"
               title="Memory system status and controls"
@@ -1411,8 +1648,8 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
         templates={templates}
       />
       
-      {/* Phase 2: Scroll to bottom button - appears when user has scrolled up */}
-      {isUserScrolled && (
+      {/* Phase 2: Scroll to bottom button - appears when user has scrolled up OR Claude is active */}
+      {(isUserScrolled || claudeActive) && (
         <button
           onClick={() => {
             if (xtermRef.current) {
@@ -1434,11 +1671,18 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
               }
             }
           }}
-          className="scroll-to-follow-btn absolute bottom-24 right-4 px-3 py-2 rounded-lg flex items-center gap-2 text-sm font-medium shadow-lg z-50"
-          title="Scroll to bottom and follow output"
+          className={`
+            scroll-to-follow-btn absolute bottom-24 right-4 px-4 py-2.5 rounded-lg 
+            flex items-center gap-2 text-sm font-medium shadow-lg z-50 transition-all
+            ${claudeActive 
+              ? 'bg-gradient-to-r from-purple-600 to-blue-600 text-white animate-pulse' 
+              : 'bg-gray-800 text-gray-200 hover:bg-gray-700'
+            }
+          `}
+          title={claudeActive ? "Claude is active - click to follow output (Ctrl+End)" : "Scroll to bottom and follow output (Ctrl+End)"}
         >
-          <ChevronDown className="w-4 h-4" />
-          <span>Follow Output</span>
+          <ChevronDown className={`w-4 h-4 ${claudeActive ? 'animate-bounce' : ''}`} />
+          <span>{claudeActive ? 'Follow Claude' : 'Follow Output'}</span>
         </button>
       )}
 

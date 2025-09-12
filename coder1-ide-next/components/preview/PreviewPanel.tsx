@@ -1,62 +1,34 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { BookOpen, Users, Eye, X, RefreshCw, ExternalLink, Brain } from '@/lib/icons';
+import { BookOpen, Eye, X, RefreshCw, ExternalLink, Brain } from '@/lib/icons';
 import { colors, glows } from '@/lib/design-tokens';
 import CodebaseWiki from '@/components/codebase/CodebaseWiki';
-import AITeamDashboard from '@/components/preview/AITeamDashboard';
 import ParallelReasoningDashboard from '@/components/beta/ParallelReasoningDashboard';
 import { previewLoopPrevention, createDebouncedPreviewUpdate } from '@/lib/preview-loop-prevention';
 
-type PreviewMode = 'dashboard' | 'wiki' | 'preview' | 'terminal' | 'parathink';
+type PreviewMode = 'wiki' | 'preview' | 'terminal' | 'parathink';
 
 interface PreviewPanelProps {
-  agentsActive?: boolean;
   fileOpen?: boolean;
   activeFile?: string | null;
   editorContent?: string;
   isPreviewable?: boolean;
 }
 
-interface Agent {
-  id: string;
-  name: string;
-  role: string;
-  status: 'idle' | 'thinking' | 'working' | 'completed' | 'error';
-  progress: number;
-  currentTask: string;
-  completedTasks: string[];
-}
-
-interface TeamData {
-  teamId: string;
-  status: string;
-  agents: Agent[];
-  progress: {
-    overall: number;
-  };
-  generatedFiles: number;
-  requirement: string;
-}
-
 /**
- * Preview Panel with Multiple Modes - REAL AI INTEGRATION
- * - Agent Dashboard (default when agents active) - Connected to REAL AI orchestrator
- * - Codebase Wiki (📚 button in preview)
+ * Preview Panel with Multiple Modes
  * - Live Preview (when HTML/React files open)
- * - Terminal Output (optional)
+ * - Codebase Wiki (📚 button in preview)
+ * - ParaThinker Dashboard (Beta feature)
  */
 const PreviewPanel = React.memo(function PreviewPanel({
-  agentsActive = false,
   fileOpen = false,
   activeFile = null,
   editorContent = '',
   isPreviewable = false,
 }: PreviewPanelProps) {
   const [mode, setMode] = useState<PreviewMode>('preview');
-  const [isLoading, setIsLoading] = useState(false);
-  const [teamData, setTeamData] = useState<TeamData | null>(null);
-  const [error, setError] = useState<string | null>(null);
   const [paraThinkSessionId, setParaThinkSessionId] = useState<string | null>(null);
   
   // Live preview state
@@ -128,12 +100,10 @@ const PreviewPanel = React.memo(function PreviewPanel({
 
   // Auto-switch based on context
   useEffect(() => {
-    if (agentsActive) {
-      setMode('dashboard');
-    } else if (fileOpen && isPreviewable) {
+    if (fileOpen && isPreviewable) {
       setMode('preview');
     }
-  }, [agentsActive, fileOpen, isPreviewable]);
+  }, [fileOpen, isPreviewable]);
 
   // Listen for ParaThinker dashboard open events
   useEffect(() => {
@@ -181,80 +151,13 @@ const PreviewPanel = React.memo(function PreviewPanel({
     }
   }, [activeFile]);
 
-  const fetchTeamData = useCallback(async () => {
-    // Don&apos;t show loading spinner during polling updates to prevent blinking
-    const isFirstLoad = !teamData && !error;
-    
-    try {
-      if (isFirstLoad) {
-        setIsLoading(true);
-        setError(null);
-      }
-      
-      // Call the Next.js API route which proxies to Express backend
-      const teamsResponse = await fetch('/api/ai-team/');
-      const teamsData = await teamsResponse.json();
-      
-      if (teamsData.success && teamsData.teams.length > 0) {
-        // Get the most recent active team
-        const activeTeam = teamsData.teams[0];
-        
-        // Get detailed status for this team
-        const statusResponse = await fetch(`/api/ai-team/${activeTeam.teamId}/status`);
-        const statusData = await statusResponse.json();
-        
-        if (statusData.success) {
-          // Batch state updates to prevent blinking
-          setError(null);
-          setTeamData(statusData.team);
-        } else {
-          if (isFirstLoad) setError('Failed to fetch team status');
-        }
-      } else {
-        // Only clear team data if this is the first load or there was an error
-        if (isFirstLoad || error) {
-          setTeamData(null);
-          setError(null);
-        }
-      }
-    } catch (err) {
-      // logger?.error('Failed to fetch team data:', err);
-      // Only show connection error on first load to prevent blinking
-      if (!teamData) {
-        setError('Connection error - using offline mode');
-        setTeamData(null);
-      }
-    } finally {
-      if (isFirstLoad) {
-        setIsLoading(false);
-      }
-    }
-  }, [teamData, error]);
 
-  // Fetch real team data when dashboard is active
-  useEffect(() => {
-    let interval: NodeJS.Timeout | undefined;
-    
-    if (mode === 'dashboard') {
-      // TEMPORARILY DISABLED: AI team polling causing timeouts
-      // TODO: Fix Express backend /api/ai-team endpoint performance
-      // fetchTeamData();
-      // interval = setInterval(fetchTeamData, 5000);
-      
-      // For now, just set mock data to prevent loading spinner
-      setTeamData(null);
-      setIsLoading(false);
-    }
-    
-    return () => {
-      if (interval) clearInterval(interval);
-    };
-  }, [mode, fetchTeamData]);
 
   const renderTabButton = useCallback((
     tabMode: PreviewMode,
     icon: React.ReactNode,
-    label: string
+    label: string,
+    tooltip?: string
   ) => (
     <button
       onClick={() => setMode(tabMode)}
@@ -266,6 +169,7 @@ const PreviewPanel = React.memo(function PreviewPanel({
           : 'text-text-secondary border-transparent hover:text-text-primary hover:border-border-hover'
         }
       `}
+      title={tooltip}
     >
       {icon}
       <span>{label}</span>
@@ -289,23 +193,21 @@ const PreviewPanel = React.memo(function PreviewPanel({
           {renderTabButton(
             'preview',
             <Eye className="w-4 h-4" />,
-            'Preview'
-          )}
-          {renderTabButton(
-            'dashboard',
-            <Users className="w-4 h-4" />,
-            'Agent Dashboard'
+            'Preview',
+            'Live preview of your HTML, CSS, and JavaScript code'
           )}
           {renderTabButton(
             'wiki',
             <BookOpen className="w-4 h-4" />,
-            'Codebase Wiki'
+            'Codebase Wiki',
+            'Browse project documentation and intelligent code analysis'
           )}
           {/* Only show ParaThinker tab when we have a session */}
           {paraThinkSessionId && renderTabButton(
             'parathink',
             <Brain className="w-4 h-4" />,
-            'ParaThinker'
+            'ParaThinker',
+            'Advanced parallel reasoning dashboard for complex problem solving'
           )}
         </div>
         
@@ -313,6 +215,7 @@ const PreviewPanel = React.memo(function PreviewPanel({
         <button 
           className="p-1 hover:bg-bg-tertiary rounded transition-colors"
           onClick={() => {/* Handle close */}}
+          title="Close preview panel"
         >
           <X className="w-4 h-4 text-text-muted" />
         </button>
@@ -320,23 +223,7 @@ const PreviewPanel = React.memo(function PreviewPanel({
 
       {/* Content Area */}
       <div className="flex-1 overflow-auto">
-        {isLoading ? (
-          <div className="h-full flex items-center justify-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-2 border-coder1-cyan border-t-transparent" />
-          </div>
-        ) : (
-          <>
-            {/* Agent Dashboard - REAL AI INTEGRATION */}
-            {mode === 'dashboard' && (
-              <div className="h-full overflow-hidden">
-                <div className="flex items-center justify-center h-full text-text-muted">
-                  AI Team Dashboard temporarily disabled during build fixes
-                </div>
-                {/* <AITeamDashboard teamData={teamData} /> */}
-              </div>
-            )}
-
-            {/* Codebase Wiki */}
+        {/* Codebase Wiki */}
             {mode === 'wiki' && (
               <div className="h-full">
                 <CodebaseWiki />
@@ -425,7 +312,7 @@ const PreviewPanel = React.memo(function PreviewPanel({
                             <span className="text-xs text-text-muted font-mono">Preview Window</span>
                           </div>
                           <div className="flex gap-2">
-                            <button className="p-1 hover:bg-bg-primary/50 rounded transition-colors">
+                            <button className="p-1 hover:bg-bg-primary/50 rounded transition-colors" title="Preview options menu">
                               <svg className="w-3.5 h-3.5 text-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
                               </svg>
@@ -531,8 +418,6 @@ const PreviewPanel = React.memo(function PreviewPanel({
                 </div>
               </div>
             )}
-          </>
-        )}
       </div>
     </div>
   );
@@ -561,11 +446,11 @@ const AgentStatusCard = React.memo(function AgentStatusCard({
   };
 
   const statusIcons = {
-    idle: '⏸️',
-    thinking: '🤔', 
-    working: '⚡',
-    completed: '✅',
-    error: '❌',
+    idle: '',
+    thinking: '', 
+    working: '',
+    completed: '',
+    error: '',
   };
 
   return (

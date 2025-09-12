@@ -6,11 +6,11 @@ let connectionAttempts = 0;
 export const getSocket = (): Socket => {
   if (!socket) {
     connectionAttempts++;
-    // REMOVED: // REMOVED: console.log(`🔌 CREATING SOCKET CONNECTION (attempt ${connectionAttempts})`);
+    console.log(`🔌 CREATING SOCKET CONNECTION (attempt ${connectionAttempts})`);
     
     // Connect to the unified server (Next.js custom server)
     const unifiedUrl = process.env.NEXT_PUBLIC_UNIFIED_SERVER_URL || 'http://localhost:3001';
-    // REMOVED: // REMOVED: console.log(`🎯 CONNECTING TO UNIFIED SERVER: ${unifiedUrl}`);
+    console.log(`🎯 CONNECTING TO UNIFIED SERVER: ${unifiedUrl}`);
     
     socket = io(unifiedUrl, {
       path: '/socket.io/',
@@ -25,12 +25,12 @@ export const getSocket = (): Socket => {
 
     // Enhanced connection event logging
     socket.on('connect', () => {
-      // REMOVED: // REMOVED: console.log('✅ SOCKET.IO CONNECTED:', {
-    //         id: socket?.id,
-    //         transport: socket?.io.engine.transport.name,
-    //         url: unifiedUrl,
-    //         timestamp: new Date().toISOString()
-    //       });
+      console.log('✅ SOCKET.IO CONNECTED:', {
+        id: socket?.id,
+        transport: socket?.io.engine.transport.name,
+        url: unifiedUrl,
+        timestamp: new Date().toISOString()
+      });
       connectionAttempts = 0; // Reset on successful connection
     });
 
@@ -43,7 +43,7 @@ export const getSocket = (): Socket => {
     });
 
     socket.on('connect_error', (error) => {
-      logger?.error('🚨 SOCKET.IO CONNECTION ERROR:', {
+      console.error('🚨 SOCKET.IO CONNECTION ERROR:', {
         message: error.message,
         type: (error as any).type,
         description: (error as any).description,
@@ -66,14 +66,14 @@ export const getSocket = (): Socket => {
     });
 
     socket.on('reconnect_error', (error) => {
-      logger?.error('🚨 SOCKET.IO RECONNECT ERROR:', {
+      console.error('🚨 SOCKET.IO RECONNECT ERROR:', {
         message: error.message,
         timestamp: new Date().toISOString()
       });
     });
 
     socket.on('reconnect_failed', () => {
-      logger?.error('💀 SOCKET.IO RECONNECT FAILED - All attempts exhausted');
+      console.error('💀 SOCKET.IO RECONNECT FAILED - All attempts exhausted');
     });
 
     // Debug transport changes
@@ -82,7 +82,7 @@ export const getSocket = (): Socket => {
     });
 
     (socket.io as any).on('upgradeError', (error: any) => {
-      logger?.error('🚨 SOCKET.IO UPGRADE ERROR:', error);
+      console.error('🚨 SOCKET.IO UPGRADE ERROR:', error);
     });
   }
 

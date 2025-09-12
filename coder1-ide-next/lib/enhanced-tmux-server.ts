@@ -1,9 +1,12 @@
 /**
  * Enhanced tmux Server Implementation
- * This runs server-side only - simplified mock for client
+ * Bridges the real tmux service to the API layer
  */
 
-// Mock implementation for client-side
+import { getEnhancedTmuxService } from '../services/enhanced-tmux-service';
+import type { SandboxSession as ServiceSandboxSession } from '../services/enhanced-tmux-service';
+
+// Re-export the interface for consistency
 export interface SandboxSession {
   id: string;
   userId: string;
@@ -21,69 +24,47 @@ export interface SandboxSession {
   processes: number[];
 }
 
-// In-memory storage for demo
-const sandboxes = new Map<string, SandboxSession>();
+// Get the singleton tmux service instance
+const tmuxService = getEnhancedTmuxService();
+
+// Convert Set to Array for processes field
+function convertSession(session: ServiceSandboxSession): SandboxSession {
+  return {
+    ...session,
+    processes: Array.from(session.processes)
+  };
+}
 
 export async function createSandbox(userId: string, projectId: string): Promise<SandboxSession> {
-  const sandboxId = `sandbox_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-  
-  const session: SandboxSession = {
-    id: sandboxId,
+  const session = await tmuxService.createSandbox({
     userId,
-    projectId,
-    path: `/tmp/coder1-workspaces/${userId}/sandboxes/${sandboxId}`,
-    tmuxSession: `sandbox_${sandboxId}`,
-    status: 'ready',
-    createdAt: new Date(),
-    lastActivity: new Date(),
-    resources: {
-      cpuUsage: 0,
-      memoryUsage: 512,
-      diskUsage: 100
-    },
-    processes: []
-  };
-  
-  sandboxes.set(sandboxId, session);
-  return session;
+    projectId
+  });
+  return convertSession(session);
 }
 
 export async function getSandbox(sandboxId: string): Promise<SandboxSession | null> {
-  return sandboxes.get(sandboxId) || null;
+  const session = tmuxService.getSandbox(sandboxId);
+  return session ? convertSession(session) : null;
 }
 
 export async function listUserSandboxes(userId: string): Promise<SandboxSession[]> {
-  return Array.from(sandboxes.values()).filter(s => s.userId === userId);
+  const sessions = tmuxService.listUserSandboxes(userId);
+  return sessions.map(convertSession);
 }
 
 export async function destroySandbox(sandboxId: string): Promise<void> {
-  sandboxes.delete(sandboxId);
+  await tmuxService.destroySandbox(sandboxId);
 }
 
 export async function runInSandbox(sandboxId: string, command: string): Promise<{ stdout: string; stderr: string }> {
-  // Mock implementation
-  return {
-    stdout: `Executed: ${command}`,
-    stderr: ''
-  };
+  return await tmuxService.runInSandbox(sandboxId, command);
 }
 
 export async function testSandbox(sandboxId: string): Promise<{ passed: boolean; results: any }> {
-  // Mock test results
-  return {
-    passed: Math.random() > 0.3,
-    results: {
-      message: 'Test execution completed',
-      tests: 5,
-      passed: 4,
-      failed: 1
-    }
-  };
+  return await tmuxService.testSandbox(sandboxId);
 }
 
 export async function promoteSandbox(sandboxId: string, targetPath?: string): Promise<void> {
-  const sandbox = sandboxes.get(sandboxId);
-  if (sandbox) {
-    sandbox.status = 'stopped';
-  }
+  await tmuxService.promoteSandbox(sandboxId, targetPath);
 }

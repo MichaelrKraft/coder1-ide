@@ -1,6 +1,6 @@
-// Coder1 Component Capture - Background Service Worker
+// Coder1 Component Capture - Background Service Worker (ULTRATHIN)
 
-const CODER1_BACKEND = 'http://localhost:3000';
+const CODER1_BACKEND = 'http://localhost:3001';
 
 // Create context menu on installation
 chrome.runtime.onInstalled.addListener(() => {
@@ -30,8 +30,8 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
 // Handle messages from content script
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.action === 'captureComponent') {
-        // Send captured component to Coder1 backend
-        fetch(`${CODER1_BACKEND}/components-beta/api/save`, {
+        // Send captured component to Coder1 IDE (ultrathin)
+        fetch(`${CODER1_BACKEND}/api/component-capture`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -53,10 +53,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 
                 sendResponse({ success: true, id: data.id, message: data.message });
                 
-                // Open Coder1 components page in new tab after a short delay
+                // Open Coder1 IDE in new tab after a short delay
                 setTimeout(() => {
                     chrome.tabs.create({
-                        url: `${CODER1_BACKEND}/components-beta`
+                        url: `${CODER1_BACKEND}/ide`
                     });
                 }, 2000);
             } else {
@@ -68,7 +68,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             console.error('[Coder1 Background] Network error:', error);
             sendResponse({ 
                 success: false, 
-                error: `Network error: ${error.message}. Make sure Coder1 backend is running on localhost:3000.`
+                error: `Network error: ${error.message}. Make sure Coder1 IDE is running on localhost:3001.`
             });
         });
         
@@ -77,8 +77,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     }
     
     if (request.action === 'getBackendStatus') {
-        // Check if Coder1 backend is running
-        fetch(`${CODER1_BACKEND}/health`)
+        // Check if Coder1 IDE is running
+        fetch(`${CODER1_BACKEND}/api/health`)
             .then(response => response.json())
             .then(data => {
                 sendResponse({ connected: true, status: data.status });
