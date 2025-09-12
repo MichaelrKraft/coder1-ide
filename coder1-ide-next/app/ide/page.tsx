@@ -95,8 +95,8 @@ export default App;
     setShowTour(true);
     // Keep hero visible for the first steps
     setShowHero(true);
-    // Set a demo file when tour starts
-    setActiveFile('demo.tsx');
+    // Don't set a non-existent file - let preview show default demo
+    // setActiveFile('demo.tsx'); // Removed - file doesn't exist
     setEditorContent(tourExampleCode);
   }, [tourExampleCode]);
 
@@ -806,7 +806,7 @@ export default App;
       {/* Version Banner - Current Active IDE */}
       <div className="bg-coder1-cyan/20 border-b border-coder1-cyan/30 px-4 py-1 text-center">
         <span className="text-coder1-cyan text-sm font-medium">
-          ✅ CURRENT IDE - Coder1 v2.0 (Next.js) | Terminal Connected | Status Line Ready ✅
+          The world's most advanced AI-native development environment
         </span>
       </div>
       
@@ -867,8 +867,8 @@ export default App;
         <InteractiveTour 
           onClose={() => setShowTour(false)}
           onStepChange={(stepId) => {
-            // Keep hero section visible for steps 1 and 2, hide for others
-            if (stepId === 'welcome-overview' || stepId === 'smart-prd-generator') {
+            // Keep hero section visible only for the welcome step
+            if (stepId === 'welcome-overview') {
               setShowHero(true);
             } else {
               setShowHero(false);
