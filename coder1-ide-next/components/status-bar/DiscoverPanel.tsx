@@ -538,23 +538,23 @@ export default function DiscoverPanel() {
             <div className="grid grid-cols-2 gap-2 text-sm text-text-secondary">
               <div className="flex items-center gap-2">
                 <span>•</span>
-                <a href="http://localhost:3000/components-beta" className="text-coder1-cyan hover:text-coder1-cyan-secondary transition-colors">Component Studio</a>
+                <a href="/" className="text-coder1-cyan hover:text-coder1-cyan-secondary transition-colors">Home / PRD Generator</a>
               </div>
               <div className="flex items-center gap-2">
                 <span>•</span>
-                <a href="/templates-hub.html" target="_blank" className="text-coder1-cyan hover:text-coder1-cyan-secondary transition-colors">Templates Hub</a>
+                <a href="/hooks" className="text-coder1-cyan hover:text-coder1-cyan-secondary transition-colors">AI Hooks Manager</a>
               </div>
               <div className="flex items-center gap-2">
                 <span>•</span>
-                <a href="/hooks" className="text-coder1-cyan hover:text-coder1-cyan-secondary transition-colors">Hooks Manager</a>
+                <a href="/consultation" className="text-coder1-cyan hover:text-coder1-cyan-secondary transition-colors">AI Consultation</a>
               </div>
               <div className="flex items-center gap-2">
                 <span>•</span>
-                <a href="/workflow-dashboard.html" className="text-coder1-cyan hover:text-coder1-cyan-secondary transition-colors">Workflows</a>
+                <a href="/timeline" className="text-coder1-cyan hover:text-coder1-cyan-secondary transition-colors">Timeline View</a>
               </div>
               <div className="flex items-center gap-2">
                 <span>•</span>
-                <a href="/" className="text-coder1-cyan hover:text-coder1-cyan-secondary transition-colors">PRD Generator</a>
+                <a href="/ide" className="text-coder1-cyan hover:text-coder1-cyan-secondary transition-colors">Back to IDE</a>
               </div>
             </div>
           </div>

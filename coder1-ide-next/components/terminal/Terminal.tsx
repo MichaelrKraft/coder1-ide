@@ -1457,6 +1457,14 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
       >
         {/* Left section - Edit mode and settings */}
         <div className="flex items-center gap-2">
+          {/* Claude is thinking indicator */}
+          {claudeActive && (
+            <div className="flex items-center gap-2 px-3 py-1 bg-gradient-to-r from-purple-600/20 to-blue-600/20 rounded-md border border-purple-500/30">
+              <div className="w-2 h-2 bg-purple-500 rounded-full animate-pulse" />
+              <span className="text-sm text-purple-300 font-medium">Claude is thinking...</span>
+            </div>
+          )}
+          
           {/* Voice-to-text button */}
           <button
             data-tour="voice-input-button"
