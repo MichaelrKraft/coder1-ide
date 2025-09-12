@@ -805,7 +805,7 @@ export default App;
 
       {/* Version Banner - Current Active IDE */}
       <div className="bg-coder1-cyan/20 border-b border-coder1-cyan/30 px-4 py-1 text-center">
-        <span className="text-coder1-cyan text-sm font-medium">
+        <span className="text-coder1-cyan text-lg font-semibold">
           The world's most advanced AI-native development environment
         </span>
       </div>
