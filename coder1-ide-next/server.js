@@ -459,6 +459,9 @@ app.prepare().then(() => {
     });
   });
   
+  // Track command buffers globally for all sessions
+  const commandBuffers = new Map();
+  
   // Initialize Socket.IO with authentication middleware
   const io = new Server(server, {
     cors: {
@@ -568,9 +571,6 @@ app.prepare().then(() => {
         });
       }
     });
-    
-    // Track command buffer per session
-    const commandBuffers = new Map();
     
     // Handle terminal input
     socket.on('terminal:input', ({ id, data }) => {
