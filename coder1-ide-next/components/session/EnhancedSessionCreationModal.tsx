@@ -148,14 +148,14 @@ export default function EnhancedSessionCreationModal({
         description: sessionDescription.trim()
       });
       
-      const newSession = await onCreateSession(
+      await onCreateSession(
         selectedType.id,
         sessionName.trim(),
         sessionDescription.trim() || undefined,
         contextData
       );
       
-      console.log('✅ Session created successfully:', newSession);
+      console.log('✅ Session created successfully, closing modal now');
       
       // Reset modal state
       setStep('type');
@@ -164,8 +164,8 @@ export default function EnhancedSessionCreationModal({
       setSessionDescription('');
       setCustomName('');
       
-      // The parent component will handle closing the modal
-      // based on the returned session object
+      // Close the modal directly after successful creation
+      onClose();
     } catch (error) {
       console.error('❌ Failed to create enhanced session:', error);
       // Add user-visible error feedback
