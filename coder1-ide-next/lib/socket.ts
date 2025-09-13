@@ -1,5 +1,5 @@
 import { io, Socket } from 'socket.io-client';
-import { ClientWebSocketAuth } from './websocket-auth';
+import { ClientWebSocketAuth } from './websocket-auth-client';
 
 let socket: Socket | null = null;
 let connectionAttempts = 0;
@@ -29,7 +29,10 @@ export const getSocket = async (sessionId?: string, bridgeAuth: boolean = false)
     }
 
     // Connect to the unified server (Next.js custom server)
-    const unifiedUrl = process.env.NEXT_PUBLIC_UNIFIED_SERVER_URL || 'http://localhost:3001';
+    // In production, use the same origin. In dev, use localhost:3001
+    const unifiedUrl = typeof window !== 'undefined' && window.location.hostname !== 'localhost'
+      ? `${window.location.protocol}//${window.location.host}`
+      : (process.env.NEXT_PUBLIC_UNIFIED_SERVER_URL || 'http://localhost:3001');
     console.log(`🎯 CONNECTING TO UNIFIED SERVER: ${unifiedUrl}`);
     
     socket = io(unifiedUrl, {
