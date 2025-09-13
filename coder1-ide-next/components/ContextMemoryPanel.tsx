@@ -232,9 +232,9 @@ export default function ContextMemoryPanel() {
   }
 
   return (
-    <div className="h-full flex flex-col bg-bg-primary text-text-primary">
+    <div className="h-full overflow-y-auto bg-bg-primary text-text-primary">
       {/* Enhanced Header */}
-      <div className="flex-shrink-0 p-3 sm:p-4 lg:p-6 border-b border-border-default bg-gradient-to-r from-bg-primary to-bg-secondary overflow-x-auto">
+      <div className="p-3 sm:p-4 lg:p-6 border-b border-border-default bg-gradient-to-r from-bg-primary to-bg-secondary overflow-x-auto">
         <div className="flex items-center justify-between mb-3 sm:mb-4 min-w-0">
           <div className="flex items-center min-w-0 flex-1">
             <div className="w-8 h-8 sm:w-10 sm:h-10 bg-coder1-purple/20 rounded-xl flex items-center justify-center mr-2 sm:mr-3 flex-shrink-0">
@@ -292,7 +292,7 @@ export default function ContextMemoryPanel() {
 
       {/* Enhanced Context Injection Section */}
       {contextInjection && contextInjection.hasContext && (
-        <div className="flex-shrink-0 p-3 sm:p-4 border-b border-border-default bg-gradient-to-r from-coder1-purple/5 to-coder1-cyan/5">
+        <div className="p-3 sm:p-4 border-b border-border-default bg-gradient-to-r from-coder1-purple/5 to-coder1-cyan/5">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 bg-coder1-purple/10 rounded-lg flex items-center justify-center">
@@ -411,7 +411,7 @@ export default function ContextMemoryPanel() {
       )}
 
       {/* Enhanced Search and Advanced Filters */}
-      <div className="flex-shrink-0 p-3 sm:p-4 border-b border-border-default space-y-3 sm:space-y-4">
+      <div className="p-3 sm:p-4 border-b border-border-default space-y-3 sm:space-y-4">
         {/* Search Input with Clear Button */}
         <div className="relative">
           <Search className="absolute left-3 top-2.5 w-4 h-4 text-text-muted" />
@@ -507,7 +507,7 @@ export default function ContextMemoryPanel() {
       </div>
 
       {/* Enhanced Conversations List */}
-      <div className="flex-1 overflow-y-auto min-h-0">
+      <div>
         {filteredAndSortedConversations.length === 0 ? (
           <div className="p-8 text-center text-text-muted">
             <MessageSquare className="w-12 h-12 mx-auto mb-3 opacity-50" />

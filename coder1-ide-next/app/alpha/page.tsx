@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Download, Terminal, Zap, CheckCircle, AlertCircle, ExternalLink } from 'lucide-react';
+import { Download, Terminal, Zap, CheckCircle, AlertCircle, ExternalLink, BookOpen } from 'lucide-react';
+import Image from 'next/image';
 
 export default function AlphaPage() {
   const [selectedOS, setSelectedOS] = useState<'windows' | 'macos' | 'linux'>('macos');
@@ -45,9 +46,13 @@ export default function AlphaPage() {
         <header className="border-b border-gray-800 bg-gray-900/50 backdrop-blur-xl">
           <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-cyan-400 to-blue-500 rounded-xl flex items-center justify-center">
-                <Terminal className="w-6 h-6 text-white" />
-              </div>
+              <Image 
+                src="/Coder1-logo-Trans.png" 
+                alt="Coder1 Logo" 
+                width={48} 
+                height={48}
+                className="rounded-lg"
+              />
               <div>
                 <h1 className="text-xl font-bold">Coder1 Alpha</h1>
                 <p className="text-sm text-gray-400">Private Alpha Program</p>
@@ -95,9 +100,12 @@ export default function AlphaPage() {
             </h2>
             
             <div className="grid md:grid-cols-2 gap-8">
-              <div>
-                <h3 className="text-lg font-semibold mb-3 text-cyan-400">✅ You Need</h3>
-                <ul className="space-y-2 text-gray-300">
+              <div className="bg-gray-900/30 rounded-lg p-6">
+                <h3 className="text-lg font-semibold mb-4 text-cyan-400 flex items-center gap-2">
+                  <CheckCircle className="w-5 h-5" />
+                  Requirements
+                </h3>
+                <ul className="space-y-3 text-gray-300">
                   <li className="flex items-start gap-2">
                     <CheckCircle className="w-5 h-5 text-green-400 mt-0.5 flex-shrink-0" />
                     <span>
@@ -122,9 +130,12 @@ export default function AlphaPage() {
                 </ul>
               </div>
               
-              <div>
-                <h3 className="text-lg font-semibold mb-3 text-amber-400">ℹ️ What You Get</h3>
-                <ul className="space-y-2 text-gray-300">
+              <div className="bg-gray-900/30 rounded-lg p-6">
+                <h3 className="text-lg font-semibold mb-4 text-amber-400 flex items-center gap-2">
+                  <Zap className="w-5 h-5" />
+                  What You Get
+                </h3>
+                <ul className="space-y-3 text-gray-300">
                   <li className="flex items-start gap-2">
                     <Zap className="w-5 h-5 text-amber-400 mt-0.5 flex-shrink-0" />
                     <span>Professional web IDE with full Monaco editor</span>
@@ -179,10 +190,15 @@ export default function AlphaPage() {
                   </div>
                 </div>
                 
-                <button className="w-full bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-semibold py-3 px-6 rounded-lg transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2">
-                  <Download className="w-5 h-5" />
-                  Download Bridge
-                </button>
+                <a 
+                  href={`/api/bridge/download/${downloads[selectedOS].file}`}
+                  className="block w-full bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-semibold py-3 px-6 rounded-lg transition-all shadow-lg hover:shadow-xl text-center"
+                >
+                  <div className="flex items-center justify-center gap-2">
+                    <Download className="w-5 h-5" />
+                    Download Bridge
+                  </div>
+                </a>
                 
                 <p className="text-center text-gray-400 text-sm mt-3">
                   v1.0.0-alpha.1 • Released today
@@ -269,13 +285,13 @@ export default function AlphaPage() {
               >
                 Email Support <ExternalLink className="w-4 h-4" />
               </a>
-              <a 
-                href="https://docs.coder1.app" 
-                target="_blank"
+              <button 
+                onClick={() => window.open('/documentation', '_blank')}
                 className="px-6 py-3 bg-cyan-600 hover:bg-cyan-700 rounded-lg font-semibold transition-colors inline-flex items-center gap-2"
               >
-                Documentation <ExternalLink className="w-4 h-4" />
-              </a>
+                <BookOpen className="w-4 h-4" />
+                Documentation
+              </button>
             </div>
           </div>
         </div>
