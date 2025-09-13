@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Clock, Play, Pause, Save, FileText, DollarSign, RefreshCw, Loader2, CheckCircle, XCircle } from 'lucide-react';
 import { useSession } from '@/contexts/SessionContext';
 import { sessionEnhancementService } from '@/services/session-enhancement-service';
+import { getSessionTypeById } from '@/lib/session-types';
 
 interface Session {
   id: string;
@@ -55,7 +56,7 @@ export default function SessionsPanel({ isVisible = true }: SessionsPanelProps) 
     }
   };
   
-  // Get enhanced session display data
+  // Get enhanced session display data with session type information
   const getEnhancedSession = (session: Session) => {
     // For now, add some basic enhancements
     // This will be expanded with real activity tracking
@@ -66,7 +67,16 @@ export default function SessionsPanel({ isVisible = true }: SessionsPanelProps) 
       claudeInteractions: 0
     });
     
-    return enhanced;
+    // Add session type information from metadata
+    const sessionType = session.metadata?.sessionType 
+      ? getSessionTypeById(session.metadata.sessionType)
+      : null;
+    
+    return {
+      ...enhanced,
+      sessionType,
+      isEnhanced: !!session.metadata?.sessionType
+    };
   };
   
   // Load checkpoints for a session
@@ -304,8 +314,15 @@ export default function SessionsPanel({ isVisible = true }: SessionsPanelProps) 
               <span className="text-xs text-coder1-cyan font-mono">{sessionTime}</span>
             </div>
             
-            <div className="text-sm font-medium text-text-primary mb-1 truncate" title={enhanced.title}>
-              {enhanced.title}
+            <div className="flex items-center gap-2 mb-1">
+              {enhanced.sessionType && (
+                <span className="text-sm" title={enhanced.sessionType.name}>
+                  {enhanced.sessionType.emoji}
+                </span>
+              )}
+              <div className="text-sm font-medium text-text-primary truncate flex-1" title={enhanced.title}>
+                {enhanced.title}
+              </div>
             </div>
             
             {enhanced.projectName && enhanced.projectName !== 'Development Project' && (
@@ -418,12 +435,17 @@ export default function SessionsPanel({ isVisible = true }: SessionsPanelProps) 
                       ? 'bg-coder1-cyan/10 border border-coder1-cyan/20' 
                       : 'bg-bg-primary hover:bg-bg-tertiary cursor-pointer'
                   }`}
-                  onClick={() => !isRestoring && handleRestoreSession(session)}
-                  title={isRestoring ? 'Restoring session...' : `Click to restore: ${enhanced.title}`}
+                  onClick={() => !isRestoring && switchSession(session)}
+                  title={isRestoring ? 'Restoring session...' : `Click to switch to: ${enhanced.title}`}
                 >
                   <div className="flex items-start justify-between mb-1">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
                       {isRestoring && <Loader2 className="w-4 h-4 animate-spin text-coder1-cyan flex-shrink-0" />}
+                      {enhanced.sessionType && (
+                        <span className="text-sm flex-shrink-0" title={enhanced.sessionType.name}>
+                          {enhanced.sessionType.emoji}
+                        </span>
+                      )}
                       <span className={`text-sm font-medium truncate ${
                         isRestoring ? 'text-coder1-cyan' : 'text-text-primary'
                       }`} title={enhanced.title}>
@@ -440,7 +462,13 @@ export default function SessionsPanel({ isVisible = true }: SessionsPanelProps) 
                       <Clock className="w-3 h-3" />
                       <span>{new Date(session.createdAt).toLocaleDateString()}</span>
                     </div>
-                    {session.metadata?.ide ? (
+                    {enhanced.sessionType ? (
+                      <div className="flex items-center gap-1">
+                        <span className="text-xs" style={{ color: enhanced.sessionType.color }}>
+                          {enhanced.sessionType.name}
+                        </span>
+                      </div>
+                    ) : session.metadata?.ide ? (
                       <div className="flex items-center gap-1">
                         <FileText className="w-3 h-3" />
                         <span>IDE</span>

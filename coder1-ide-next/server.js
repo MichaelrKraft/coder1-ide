@@ -271,32 +271,40 @@ app.prepare().then(() => {
     // Enhanced error handling and CSS serving fallback
     const handleWithFallback = async () => {
       try {
-        // CSS serving monitoring
-        if (pathname?.startsWith('/_next/static/css/') || pathname?.startsWith('/_next/static/js/')) {
-          // Log CSS/JS asset requests for monitoring
-          const startTime = Date.now();
-          
-          // Set proper headers for static assets
-          if (pathname.endsWith('.css')) {
-            res.setHeader('Content-Type', 'text/css');
-            res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
-          } else if (pathname.endsWith('.js')) {
-            res.setHeader('Content-Type', 'application/javascript');
-            res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
-          }
-          
-          // Handle request with timing
-          await handle(req, res, parsedUrl);
-          
-          const duration = Date.now() - startTime;
-          if (duration > 1000) {
-            console.warn(`⚠️ Slow asset serving: ${pathname} took ${duration}ms`);
-          }
-          
-        } else {
-          // Handle all other requests normally
-          await handle(req, res, parsedUrl);
-        }
+        // CSS serving monitoring - DISABLED: This was breaking Next.js image preloading
+        // The query parameter stripping caused resource.src undefined errors
+        // if (pathname?.startsWith('/_next/static/css/') || pathname?.startsWith('/_next/static/js/')) {
+        //   // Strip version query parameters that break asset serving
+        //   const cleanUrl = req.url.split('?')[0];
+        //   const cleanParsedUrl = parse(cleanUrl, true);
+        //   
+        //   // Log CSS/JS asset requests for monitoring
+        //   const startTime = Date.now();
+        //   
+        //   // Set proper headers for static assets
+        //   if (pathname.endsWith('.css') || cleanUrl.endsWith('.css')) {
+        //     res.setHeader('Content-Type', 'text/css');
+        //     res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+        //   } else if (pathname.endsWith('.js') || cleanUrl.endsWith('.js')) {
+        //     res.setHeader('Content-Type', 'application/javascript');
+        //     res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+        //   }
+        //   
+        //   // Handle request with cleaned URL to fix version query parameter issue
+        //   await handle(req, res, cleanParsedUrl);
+        //   
+        //   const duration = Date.now() - startTime;
+        //   if (duration > 1000) {
+        //     console.warn(`⚠️ Slow asset serving: ${pathname} took ${duration}ms`);
+        //   }
+        //   
+        // } else {
+        //   // Handle all other requests normally
+        //   await handle(req, res, parsedUrl);
+        // }
+        
+        // Let Next.js handle all requests normally without modification
+        await handle(req, res, parsedUrl);
         
       } catch (error) {
         console.error(`❌ Request handling error for ${pathname}:`, error.message);

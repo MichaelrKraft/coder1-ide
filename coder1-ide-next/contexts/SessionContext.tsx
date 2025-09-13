@@ -17,6 +17,7 @@ interface SessionContextType {
   sessions: Session[];
   refreshSessions: () => Promise<void>;
   createSession: (name?: string, description?: string) => Promise<void>;
+  createEnhancedSession: (sessionType: string, name: string, description?: string, context?: any) => Promise<void>;
   switchSession: (session: Session) => void;
   endSession: () => void;
 }
@@ -43,54 +44,84 @@ export function SessionProvider({ children }: SessionProviderProps) {
   // Add mutex to prevent race conditions during session creation
   const isCreatingSession = useRef(false);
   const hasInitialized = useRef(false);
+  const initializationPromise = useRef<Promise<void> | null>(null);
 
   // Initialize session on mount
   useEffect(() => {
-    // Prevent multiple initializations
+    // Prevent multiple initializations (including React StrictMode double-invocation)
     if (!hasInitialized.current) {
       hasInitialized.current = true;
-      initializeSession();
+      
+      // Use promise-based approach to prevent race conditions
+      if (!initializationPromise.current) {
+        initializationPromise.current = initializeSession();
+      }
+      
+      // Don't return the promise - React expects either undefined or a cleanup function
+      // The promise will handle itself asynchronously
     }
   }, []);
 
   const initializeSession = async () => {
-    // Prevent concurrent initialization
+    // Prevent concurrent initialization with immediate return if already running
     if (isCreatingSession.current) {
+      console.log('🔒 Session initialization already in progress, waiting...');
       return;
     }
     
-    // Check for existing session in localStorage
-    let storedSessionId = localStorage.getItem('currentSessionId');
+    // Set the mutex immediately to prevent race conditions
+    isCreatingSession.current = true;
     
-    if (storedSessionId) {
-      setSessionId(storedSessionId);
-      // Load all sessions and find the current one
-      await refreshSessions();
+    try {
+      console.log('🔄 Starting atomic session initialization...');
       
-      // Verify the stored session still exists
-      const sessionExists = sessions.some(s => s.id === storedSessionId);
-      if (!sessionExists) {
-        // Session no longer exists, clear it
-        localStorage.removeItem('currentSessionId');
-        storedSessionId = null;
-      } else {
-        return; // Valid session found, we're done
-      }
-    }
-    
-    // No valid session, need to create one
-    if (!storedSessionId) {
-      // Load sessions first to check if any exist
-      const existingSessions = await refreshSessions();
+      // Check for existing session in localStorage
+      let storedSessionId = localStorage.getItem('currentSessionId');
       
-      // If no sessions exist, create one (with mutex protection)
-      if (!isCreatingSession.current) {
-        // Double-check after await that we still need to create
-        const currentStoredId = localStorage.getItem('currentSessionId');
-        if (!currentStoredId) {
-          await createSession();
+      if (storedSessionId) {
+        console.log('📂 Found stored session:', storedSessionId);
+        setSessionId(storedSessionId);
+        
+        // Load all sessions and find the current one
+        const loadedSessions = await refreshSessions();
+        
+        // Verify the stored session still exists
+        const sessionExists = loadedSessions.some(s => s.id === storedSessionId);
+        if (!sessionExists) {
+          console.log('⚠️ Stored session no longer exists, clearing...');
+          localStorage.removeItem('currentSessionId');
+          storedSessionId = null;
+        } else {
+          console.log('✅ Valid session found, initialization complete');
+          return; // Valid session found, we're done
         }
       }
+      
+      // No valid session, need to create one atomically
+      if (!storedSessionId) {
+        console.log('🆕 No valid session found, creating new session...');
+        
+        // Load sessions first to check if any exist
+        const existingSessions = await refreshSessions();
+        
+        // Double-check localStorage one more time after the await
+        const finalCheck = localStorage.getItem('currentSessionId');
+        if (!finalCheck && existingSessions.length === 0) {
+          console.log('🔨 Creating new session atomically...');
+          await createSession();
+        } else if (finalCheck) {
+          console.log('🔄 Session was created by another process:', finalCheck);
+          setSessionId(finalCheck);
+        }
+      }
+      
+      console.log('✅ Session initialization completed successfully');
+      
+    } catch (error) {
+      console.error('❌ Error during session initialization:', error);
+    } finally {
+      // Always release the mutex
+      isCreatingSession.current = false;
     }
   };
 
@@ -101,6 +132,10 @@ export function SessionProvider({ children }: SessionProviderProps) {
       
       if (data.success) {
         const loadedSessions = data.sessions || [];
+        
+        // Automatically clean up old sessions (keep only last 10)
+        await cleanupOldSessions(loadedSessions);
+        
         setSessions(loadedSessions);
         
         // Update current session if we have a sessionId
@@ -120,29 +155,64 @@ export function SessionProvider({ children }: SessionProviderProps) {
     return []; // Return empty array on error
   };
 
-  const createSession = async (name?: string, description?: string) => {
-    // Prevent concurrent session creation
-    if (isCreatingSession.current) {
-      console.log('Session creation already in progress, skipping...');
-      return;
-    }
+  const cleanupOldSessions = async (sessions: Session[]) => {
+    const SESSION_LIMIT = 10; // Keep only 10 most recent sessions
     
-    isCreatingSession.current = true;
+    if (sessions.length > SESSION_LIMIT) {
+      // Sort by creation date and get sessions to delete
+      const sortedSessions = sessions.sort((a, b) => {
+        const timeA = typeof a.createdAt === 'string' ? new Date(a.createdAt).getTime() : a.createdAt;
+        const timeB = typeof b.createdAt === 'string' ? new Date(b.createdAt).getTime() : b.createdAt;
+        return timeB - timeA; // Most recent first
+      });
+      
+      const sessionsToDelete = sortedSessions.slice(SESSION_LIMIT);
+      const currentSessionId = localStorage.getItem('currentSessionId');
+      
+      console.log(`🧹 Cleaning up ${sessionsToDelete.length} old sessions (keeping ${SESSION_LIMIT} most recent)`);
+      
+      for (const session of sessionsToDelete) {
+        // Don't delete the current session
+        if (session.id !== currentSessionId) {
+          try {
+            console.log('🗑️ Deleting old session:', session.name, session.id);
+            await fetch(`/api/sessions?sessionId=${session.id}`, {
+              method: 'DELETE'
+            });
+          } catch (error) {
+            console.error('❌ Failed to delete session:', session.id, error);
+          }
+        }
+      }
+    }
+  };
+
+  const createSession = async (name?: string, description?: string) => {
+    // Atomic session creation - don't use mutex here since initializeSession already handles it
+    console.log('🔨 Starting atomic session creation...');
     
     // Track session creation time for baseline metrics
     const startTime = performance.now();
     
     try {
+      // Generate unique session name with timestamp
+      const sessionName = name || `IDE Session ${new Date().toLocaleString()}`;
+      const sessionDescription = description || 'Coder1 IDE development session';
+      
+      console.log('📝 Creating session with name:', sessionName);
+      
       const response = await fetch('/api/sessions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          name: name || `IDE Session ${new Date().toLocaleString()}`,
-          description: description || 'Coder1 IDE development session',
+          name: sessionName,
+          description: sessionDescription,
           metadata: {
             ide: true,
             version: '1.0.0',
-            createdFrom: 'coder1-ide'
+            createdFrom: 'coder1-ide',
+            createdAt: new Date().toISOString(),
+            preventDuplicates: true
           }
         })
       });
@@ -151,6 +221,9 @@ export function SessionProvider({ children }: SessionProviderProps) {
         const data = await response.json();
         if (data.success) {
           const newSession = data.session;
+          console.log('✨ Session created successfully:', newSession.name, newSession.id);
+          
+          // Atomically set all session state
           setCurrentSession(newSession);
           setSessionId(newSession.id);
           localStorage.setItem('currentSessionId', newSession.id);
@@ -163,32 +236,146 @@ export function SessionProvider({ children }: SessionProviderProps) {
             detail: { session: newSession } 
           }));
           
-          // Track session creation time for baseline
+          // Track session creation time for monitoring
           const duration = performance.now() - startTime;
+          console.log('⏱️ Session creation took:', Math.round(duration), 'ms');
+          
           fetch('/api/metrics/track', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               type: 'session-creation',
-              value: duration
+              value: duration,
+              sessionId: newSession.id
             })
           }).catch(() => {}); // Fire and forget
           
-          // REMOVED: // REMOVED: console.log('✨ Created new session:', newSession.name);
+        } else {
+          console.error('❌ Session creation failed:', data.error);
         }
+      } else {
+        console.error('❌ Session creation request failed:', response.status, response.statusText);
       }
     } catch (error) {
-      console.error('Failed to create session:', error);
+      console.error('❌ Session creation error:', error);
       
-      // Track error for baseline
+      // Track error for monitoring
       fetch('/api/metrics/track', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: 'error' })
+        body: JSON.stringify({ 
+          type: 'session-creation-error',
+          error: error.message 
+        })
       }).catch(() => {});
-    } finally {
-      // Always release the mutex
-      isCreatingSession.current = false;
+    }
+  };
+
+  const createEnhancedSession = async (sessionType: string, name: string, description?: string, context?: any) => {
+    // Enhanced session creation with contextual metadata
+    console.log('✨ Starting enhanced session creation...', { sessionType, name, description });
+    
+    // Track session creation time for monitoring
+    const startTime = performance.now();
+    
+    try {
+      // Create enhanced metadata structure
+      const enhancedMetadata = {
+        ide: true,
+        version: '1.0.0',
+        createdFrom: 'coder1-ide-enhanced',
+        createdAt: new Date().toISOString(),
+        preventDuplicates: true,
+        
+        // Enhanced contextual data
+        sessionType,
+        context: context || {
+          workingDirectory: process.cwd(),
+          recentFiles: [],
+          terminalCommands: [],
+          lastActivity: new Date().toISOString()
+        },
+        
+        // Additional session organization data
+        tags: [sessionType],
+        progress: {
+          status: 'planning',
+          completionPercentage: 0,
+          milestones: []
+        }
+      };
+      
+      console.log('📝 Creating enhanced session with metadata:', enhancedMetadata);
+      
+      const response = await fetch('/api/sessions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: name.trim(),
+          description: description?.trim() || `Enhanced ${sessionType} session`,
+          metadata: enhancedMetadata
+        })
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          const newSession = data.session;
+          console.log('✨ Enhanced session created successfully:', newSession.name, newSession.id);
+          
+          // Atomically set all session state
+          setCurrentSession(newSession);
+          setSessionId(newSession.id);
+          localStorage.setItem('currentSessionId', newSession.id);
+          
+          // Refresh sessions list
+          await refreshSessions();
+          
+          // Dispatch custom event for other components
+          window.dispatchEvent(new CustomEvent('sessionChanged', { 
+            detail: { session: newSession, enhanced: true } 
+          }));
+          
+          // Track session creation time for monitoring
+          const duration = performance.now() - startTime;
+          console.log('⏱️ Enhanced session creation took:', Math.round(duration), 'ms');
+          
+          fetch('/api/metrics/track', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              type: 'enhanced-session-creation',
+              value: duration,
+              sessionId: newSession.id,
+              sessionType,
+              metadata: { enhanced: true }
+            })
+          }).catch(() => {}); // Fire and forget
+          
+        } else {
+          console.error('❌ Enhanced session creation failed:', data.error);
+          throw new Error(data.error || 'Failed to create enhanced session');
+        }
+      } else {
+        console.error('❌ Enhanced session creation request failed:', response.status, response.statusText);
+        throw new Error(`Session creation failed: ${response.status}`);
+      }
+    } catch (error) {
+      console.error('❌ Enhanced session creation error:', error);
+      
+      // Track error for monitoring
+      fetch('/api/metrics/track', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          type: 'enhanced-session-creation-error',
+          error: error instanceof Error ? error.message : 'Unknown error',
+          sessionType
+        })
+      }).catch(() => {});
+      
+      // Re-throw to let the UI handle the error
+      throw error;
     }
   };
 
@@ -222,6 +409,7 @@ export function SessionProvider({ children }: SessionProviderProps) {
     sessions,
     refreshSessions,
     createSession,
+    createEnhancedSession,
     switchSession,
     endSession
   };

@@ -1,8 +1,11 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  reactStrictMode: true,
+  reactStrictMode: false, // Disabled to prevent double-initialization issues
   // Disable standalone mode for development - causes static asset issues
   // output: 'standalone', // Only enable for production builds
+  images: {
+    unoptimized: true, // Disable image optimization to fix preload error
+  },
   eslint: {
     // Temporarily disable ESLint during builds for Alpha deployment
     ignoreDuringBuilds: true,
@@ -11,10 +14,12 @@ const nextConfig = {
     // Skip TypeScript errors during build for deployment
     ignoreBuildErrors: true,
   },
-  // Speed up development CSS loading
+  // Speed up development CSS loading and fix CSS serving issues
   experimental: {
     optimizeCss: false,
     optimizePackageImports: ['@xterm/xterm'],
+    // Fix CSS hot reload issues in development
+    cssChunking: 'loose',
   },
   webpack: (config, { isServer, dev }) => {
     // Only apply heavy optimizations in production

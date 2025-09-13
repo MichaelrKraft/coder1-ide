@@ -143,7 +143,6 @@ function TerminalPlaceholder({ onActivate }: { onActivate: () => void }) {
 }
 
 export default function LazyTerminal(props: LazyTerminalProps) {
-  // Always auto-load terminal immediately, no lazy loading
   return (
     <ErrorBoundary fallback={
       <div className="h-full w-full bg-bg-primary border border-border-default rounded flex items-center justify-center">
@@ -154,7 +153,9 @@ export default function LazyTerminal(props: LazyTerminalProps) {
         </div>
       </div>
     }>
-      <Terminal {...props} />
+      <Suspense fallback={<TerminalSkeleton />}>
+        <Terminal {...props} />
+      </Suspense>
     </ErrorBoundary>
   );
 }

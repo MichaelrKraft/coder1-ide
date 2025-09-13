@@ -2,7 +2,7 @@
 
 import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { AlertTriangle, RefreshCw, Home } from 'lucide-react';
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger'; // Temporarily disabled
 
 interface Props {
   children: ReactNode;
@@ -27,7 +27,7 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    logger.error('ErrorBoundary caught an error:', { error, errorInfo });
+    console.error('ErrorBoundary caught an error:', { error, errorInfo });
     
     // Call custom error handler if provided
     if (this.props.onError) {

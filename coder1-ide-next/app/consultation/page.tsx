@@ -84,6 +84,11 @@ export default function AIConsultationPage() {
     }
   };
 
+  const handleSkipQuestions = () => {
+    // Skip consultation and go directly to IDE with AI assistance ready
+    router.push('/ide-beta?skipConsultation=true');
+  };
+
   const progress = ((currentQuestion + 1) / questions.length) * 100;
   const CurrentIcon = questions[currentQuestion]?.icon || Code;
 
@@ -116,6 +121,16 @@ export default function AIConsultationPage() {
               className="h-full bg-gradient-to-r from-coder1-cyan to-coder1-purple transition-all duration-500"
               style={{ width: `${progress}%` }}
             />
+          </div>
+          
+          {/* Skip Questions Option */}
+          <div className="flex justify-center mt-4">
+            <button
+              onClick={handleSkipQuestions}
+              className="text-sm text-text-muted hover:text-coder1-cyan transition-colors underline decoration-dashed underline-offset-4"
+            >
+              Skip questions - go directly to IDE
+            </button>
           </div>
         </div>
 

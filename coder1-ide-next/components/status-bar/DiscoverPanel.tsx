@@ -17,13 +17,14 @@ import {
   Shield, Rocket, Monitor, Server
 } from 'lucide-react';
 import WcyganCommandsSection from '../WcyganCommandsSection';
-import SandboxPanel from '../sandbox/SandboxPanel';
 import { useUIStore } from '@/stores/useUIStore';
 import { useTerminalCommand } from '@/contexts/TerminalCommandContext';
 import { glows } from '@/lib/design-tokens';
 import { wcyganCommandManager, type WcyganCommand } from '@/lib/wcygan-commands';
 import { logger } from '@/lib/logger';
 import type { Command } from '@/types';
+import { useSession } from '@/contexts/SessionContext';
+import EnhancedSessionCreationModal from '@/components/session/EnhancedSessionCreationModal';
 
 interface TaskCommand {
   id: string;
@@ -48,6 +49,7 @@ export default function DiscoverPanel() {
   } = useUIStore();
 
   const { injectCommand, isTerminalReady } = useTerminalCommand();
+  const { createEnhancedSession } = useSession();
   const { isOpen, commandInput, customCommands, showAddForm, newCommand } = discoverPanel;
   
   // Search state
@@ -64,6 +66,14 @@ export default function DiscoverPanel() {
   // Sandbox state
   const [showSandboxDialog, setShowSandboxDialog] = useState(false);
   const [sandboxAction, setSandboxAction] = useState<'new' | 'load'>('new');
+  
+  // Sandbox creation feedback states
+  const [sandboxCreationStatus, setSandboxCreationStatus] = useState<'idle' | 'creating' | 'success' | 'error'>('idle');
+  const [sandboxCreationMessage, setSandboxCreationMessage] = useState<string>('');
+  const [createdSandboxId, setCreatedSandboxId] = useState<string>('');
+  
+  // Enhanced session creation modal state
+  const [showEnhancedSessionModal, setShowEnhancedSessionModal] = useState<boolean>(false);
   
   // Helper function: Get icon for wcygan category
   const getIconForCategory = (category: string) => {
@@ -140,12 +150,21 @@ export default function DiscoverPanel() {
     }
   };
 
-  // Handle sandbox actions
+  // Handle sandbox actions with improved feedback
   const handleSandboxAction = async (action: 'new' | 'load') => {
+    console.log('🎯 handleSandboxAction called with:', action);
     setSandboxAction(action);
     
     if (action === 'new') {
-      // Create new sandbox with default name
+      // Reset previous status
+      console.log('🔄 Setting status to: creating');
+      setSandboxCreationStatus('creating');
+      setSandboxCreationMessage('');
+      setCreatedSandboxId('');
+      
+      // Add console logging for debugging
+      console.log('🚀 Creating new sandbox...');
+      
       const projectName = `sandbox-${Date.now().toString(36).slice(-6)}`;
       
       try {
@@ -161,39 +180,91 @@ export default function DiscoverPanel() {
         });
         
         const data = await response.json();
+        console.log('📦 Sandbox API response:', data);
         
         if (data.success) {
-          addToast({
-            message: `✅ Sandbox "${projectName}" created! Check the status bar for more options.`,
-            type: 'success'
-          });
+          console.log('🔄 Setting status to: success');
+          setSandboxCreationStatus('success');
+          setSandboxCreationMessage(`✅ Sandbox "${projectName}" created successfully!`);
+          setCreatedSandboxId(data.sandbox.id);
           
-          // Close discover panel
-          toggleDiscoverPanel();
+          // Log success
+          console.log('✅ Sandbox created:', data.sandbox);
           
-          // Emit event to show sandbox panel in status bar
+          // Try to show toast (may fail with CSS issues)
+          try {
+            addToast({
+              message: `✅ Sandbox "${projectName}" created!`,
+              type: 'success'
+            });
+          } catch (e) {
+            console.warn('Toast notification failed:', e);
+          }
+          
+          // Emit event for other components
           window.dispatchEvent(new CustomEvent('sandbox:created', {
             detail: { sandboxId: data.sandbox.id }
           }));
+          
+          // Navigate to consultation workspace after short delay
+          setTimeout(() => {
+            console.log('🔄 Opening sandbox workspace:', data.sandbox.id);
+            // Open consultation page with sandbox ID as parameter
+            const workspaceUrl = `/consultation?sandbox=${data.sandbox.id}`;
+            window.open(workspaceUrl, '_blank');
+            
+            // Reset status after navigation
+            setSandboxCreationStatus('idle');
+            setSandboxCreationMessage('');
+          }, 2000); // Shorter delay before opening
+          
         } else {
-          throw new Error(data.error);
+          throw new Error(data.error || 'Unknown error');
         }
       } catch (error) {
-        addToast({
-          message: `❌ Failed to create sandbox: ${error instanceof Error ? error.message : 'Unknown error'}`,
-          type: 'error'
-        });
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        
+        setSandboxCreationStatus('error');
+        setSandboxCreationMessage(`❌ Failed: ${errorMessage}`);
+        
+        // Console error for debugging
+        console.error('❌ Sandbox creation failed:', error);
+        
+        // Try toast (may fail)
+        try {
+          addToast({
+            message: `❌ Failed to create sandbox: ${errorMessage}`,
+            type: 'error'
+          });
+        } catch (e) {
+          console.warn('Toast notification failed:', e);
+        }
+        
+        // For critical errors, use browser alert as fallback
+        if (errorMessage.includes('Maximum sandbox limit')) {
+          alert(`Cannot create sandbox: ${errorMessage}`);
+        }
+        
+        // Keep error visible for 5 seconds
+        setTimeout(() => {
+          setSandboxCreationStatus('idle');
+          setSandboxCreationMessage('');
+        }, 5000);
       }
     } else {
       // Show sandbox management dialog
-      addToast({
-        message: '🧪 Opening sandbox management panel...',
-        type: 'info'
-      });
+      console.log('🧪 Opening sandbox management panel...');
       
-      // Close discover panel and emit event to show sandbox panel
-      toggleDiscoverPanel();
-      window.dispatchEvent(new CustomEvent('sandbox:manage'));
+      try {
+        addToast({
+          message: '🧪 Opening sandbox management panel...',
+          type: 'info'
+        });
+      } catch (e) {
+        console.warn('Toast notification failed:', e);
+      }
+      
+      setShowSandboxDialog(true);
     }
   };
 
@@ -667,12 +738,15 @@ export default function DiscoverPanel() {
               <div className="flex items-center gap-2">
                 <span>•</span>
                 <button 
-                  onClick={() => handleSandboxAction('new')}
-                  className="text-coder1-cyan hover:text-coder1-cyan-secondary transition-colors"
+                  onClick={() => {
+                    console.log('✨ Enhanced New Session button clicked!');
+                    setShowEnhancedSessionModal(true);
+                  }}
+                  className="transition-colors flex items-center gap-1 text-coder1-cyan hover:text-coder1-cyan-secondary"
                 >
-                  New Session
+                  ✨ New Session
                 </button>
-                <span className="text-text-muted">Create isolated environment</span>
+                <span className="text-text-muted">Create contextual workspace</span>
               </div>
               <div className="flex items-center gap-2">
                 <span>•</span>
@@ -685,6 +759,36 @@ export default function DiscoverPanel() {
                 <span className="text-text-muted">Continue previous work</span>
               </div>
             </div>
+            
+            {/* Sandbox Creation Status */}
+            {sandboxCreationStatus !== 'idle' && (
+              <div className={`mt-3 p-2 rounded text-xs border ${
+                sandboxCreationStatus === 'creating' ? 'bg-blue-500/20 text-blue-400 border-blue-500/30' :
+                sandboxCreationStatus === 'success' ? 'bg-green-500/20 text-green-400 border-green-500/30' :
+                'bg-red-500/20 text-red-400 border-red-500/30'
+              }`}>
+                {sandboxCreationStatus === 'creating' && (
+                  <div className="flex items-center gap-2">
+                    <div 
+                      className="w-3 h-3 border-2 border-blue-400 border-t-transparent rounded-full animate-spin"
+                      style={{
+                        borderColor: 'rgba(96, 165, 250, 0.3)',
+                        borderTopColor: '#60a5fa'
+                      }}
+                    />
+                    Creating sandbox...
+                  </div>
+                )}
+                {sandboxCreationMessage && (
+                  <div className={sandboxCreationStatus === 'creating' ? 'mt-1' : ''}>{sandboxCreationMessage}</div>
+                )}
+                {sandboxCreationStatus === 'success' && createdSandboxId && (
+                  <div className="text-xs text-text-muted mt-1">
+                    ID: {createdSandboxId.slice(-8)}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -734,6 +838,13 @@ export default function DiscoverPanel() {
           </div>
         </div>
       )}
+
+      {/* Enhanced Session Creation Modal */}
+      <EnhancedSessionCreationModal
+        isOpen={showEnhancedSessionModal}
+        onClose={() => setShowEnhancedSessionModal(false)}
+        onCreateSession={createEnhancedSession}
+      />
     </>
   );
 }

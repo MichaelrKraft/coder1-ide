@@ -10,11 +10,11 @@ import dynamic from 'next/dynamic';
 const FaultyTerminal = dynamic(
   () => import('./backgrounds/FaultyTerminal').catch(() => {
     // If the component fails to load, return a fallback
-    return { default: () => <div className="absolute inset-0 bg-black" /> };
+    return { default: () => <div className="absolute inset-0 bg-transparent" /> };
   }), 
   {
     ssr: false,
-    loading: () => <div className="absolute inset-0 bg-black" />
+    loading: () => <div className="absolute inset-0 bg-transparent" />
   }
 );
 
@@ -78,7 +78,7 @@ export default function HeroSection({ onTourStart }: HeroSectionProps = {}) {
   }, [showEntranceAnimation, handleUserInteraction]);
 
   return (
-    <div className="hero-section relative flex flex-col items-center justify-center min-h-full h-full w-full px-4 py-4 overflow-auto bg-black">
+    <div className="hero-section relative flex flex-col items-center justify-center min-h-full h-full w-full px-4 py-4 overflow-auto bg-bg-primary">
       {/* Always present dot-grid background */}
       <div className="dot-grid-background">
         <div className="dot-grid-container">
@@ -88,7 +88,7 @@ export default function HeroSection({ onTourStart }: HeroSectionProps = {}) {
       </div>
 
       {/* Interactive entrance animation overlay */}
-      {showEntranceAnimation && (
+      {showEntranceAnimation && USE_FAULTY_TERMINAL && (
         <div 
           className={`absolute inset-0 z-10 transition-all duration-1500 ease-out ${
             animationFadingOut ? 'opacity-0 scale-110' : 'opacity-100 scale-100'

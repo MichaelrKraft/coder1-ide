@@ -49,6 +49,16 @@ export default function MonacoEditor({
     };
   }, []);
 
+  // Cleanup function to dispose editor when component unmounts
+  useEffect(() => {
+    return () => {
+      if (editorRef.current) {
+        editorRef.current.dispose();
+        editorRef.current = null;
+      }
+    };
+  }, []);
+
   const handleEditorDidMount: OnMount = (editor, monaco) => {
     editorRef.current = editor;
     

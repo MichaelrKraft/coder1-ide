@@ -3,7 +3,7 @@ import { Inter } from 'next/font/google'
 import './globals.css'
 import { SessionProvider } from '@/contexts/SessionContext'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
-import '@/lib/logger' // Initialize global logger
+// import '@/lib/logger' // Initialize global logger - DISABLED: causing client-side errors
 
 const inter = Inter({ subsets: ['latin'] })
 

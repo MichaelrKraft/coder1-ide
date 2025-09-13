@@ -10,7 +10,7 @@ import Toast from '@/components/Toast';
 import StatusBarCore from '@/components/status-bar/StatusBarCore';
 import HeroSection from '@/components/HeroSection';
 import InteractiveTour from '../../components/InteractiveTour';
-import { SessionProvider } from '@/contexts/SessionContext';
+// import { SessionProvider } from '@/contexts/SessionContext'; // Already provided by layout
 import { EnhancedSupervisionProvider } from '../../contexts/EnhancedSupervisionContext';
 import { TerminalCommandProvider } from '../../contexts/TerminalCommandContext';
 import AboutModal from '@/components/AboutModal';
@@ -698,7 +698,7 @@ export default App;
       <div style={{ height: `${100 - terminalHeight}%` }} className="border-b border-border-default">
         {showHero ? (
           <div 
-            className="h-full w-full bg-black cursor-pointer flex items-center justify-center"
+            className="h-full w-full bg-bg-primary cursor-pointer flex items-center justify-center"
             onClick={(e) => {
               // Only close hero if clicking the background, not buttons
               if (e.target === e.currentTarget) {

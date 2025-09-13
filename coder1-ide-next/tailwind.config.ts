@@ -25,6 +25,8 @@ const config: Config = {
   				glass: 'rgba(255, 255, 255, 0.05)'
   			},
   			border: 'hsl(var(--border))',
+			'border-default': 'var(--border-default)',
+			'border-primary': 'var(--border-primary)',
   			text: {
   				primary: '#ffffff',
   				secondary: '#a0a0a0',
