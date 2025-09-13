@@ -16,6 +16,7 @@ const pty = require('node-pty');
 const { v4: uuidv4 } = require('uuid');
 const os = require('os');
 const path = require('path');
+const fs = require('fs');
 const express = require('express');
 
 // Environment detection
@@ -117,22 +118,36 @@ class TerminalSession {
     this.created = new Date();
     this.lastActivity = new Date();
     
-    // Create PTY process
-    const shell = os.platform() === 'win32' ? 'powershell.exe' : 'bash';
-    const homeDir = process.env.HOME || process.cwd();
-    const workingDir = path.join(homeDir, 'autonomous_vibe_interface');
-    
-    this.pty = pty.spawn(shell, [], {
-      name: 'xterm-color',
-      cols: 80,
-      rows: 30,
-      cwd: workingDir,
-      env: {
-        ...process.env,
-        CODER1_IDE: 'true',
-        TERMINAL_SESSION_ID: id
-      }
-    });
+    try {
+      // Create PTY process
+      const shell = os.platform() === 'win32' ? 'powershell.exe' : 'bash';
+      // Use current working directory in production, specific path in development
+      const workingDir = process.env.NODE_ENV === 'production' 
+        ? process.cwd() 
+        : path.join(process.env.HOME || process.cwd(), 'autonomous_vibe_interface');
+      
+      // Ensure working directory exists
+      const finalWorkingDir = fs.existsSync(workingDir) ? workingDir : process.cwd();
+      
+      console.log(`[Terminal] Creating PTY session ${id} with shell: ${shell}, cwd: ${finalWorkingDir}`);
+      
+      this.pty = pty.spawn(shell, [], {
+        name: 'xterm-color',
+        cols: 80,
+        rows: 30,
+        cwd: finalWorkingDir,
+        env: {
+          ...process.env,
+          CODER1_IDE: 'true',
+          TERMINAL_SESSION_ID: id
+        }
+      });
+      
+      console.log(`[Terminal] PTY session ${id} created successfully with PID: ${this.pty.pid}`);
+    } catch (error) {
+      console.error(`[Terminal] Failed to create PTY session ${id}:`, error);
+      throw new Error(`Failed to create terminal session: ${error.message}`);
+    }
     
     // REMOVED: // REMOVED: // REMOVED: console.log(`[Terminal] Created session ${id} with PID ${this.pty.pid}`);
   }
@@ -493,8 +508,17 @@ app.prepare().then(() => {
         // Use passed session ID or create new one
         const sessionId = id || `session_${Date.now()}_${uuidv4().slice(0, 8)}`;
         
-        const session = getOrCreateSession(sessionId);
-        currentSessionId = sessionId;
+        let session;
+        try {
+          session = getOrCreateSession(sessionId);
+          currentSessionId = sessionId;
+        } catch (error) {
+          console.error(`[Terminal] Failed to create/get session ${sessionId}:`, error);
+          socket.emit('terminal:error', { 
+            message: `Failed to create terminal session: ${error.message}` 
+          });
+          return;
+        }
         
         // Register session with memory optimizer
         memoryOptimizer.registerSession(sessionId, {

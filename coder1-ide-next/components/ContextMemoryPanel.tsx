@@ -232,7 +232,7 @@ export default function ContextMemoryPanel() {
   }
 
   return (
-    <div className="bg-bg-primary text-text-primary">
+    <div className="h-full flex flex-col bg-bg-primary text-text-primary overflow-hidden">
       {/* Enhanced Header */}
       <div className="flex-shrink-0 p-3 sm:p-4 lg:p-6 border-b border-border-default bg-gradient-to-r from-bg-primary to-bg-secondary overflow-x-auto">
         <div className="flex items-center justify-between mb-3 sm:mb-4 min-w-0">
@@ -507,7 +507,7 @@ export default function ContextMemoryPanel() {
       </div>
 
       {/* Enhanced Conversations List */}
-      <div>
+      <div className="flex-1 overflow-y-auto" style={{ minHeight: 0 }}>
         {filteredAndSortedConversations.length === 0 ? (
           <div className="p-8 text-center text-text-muted">
             <MessageSquare className="w-12 h-12 mx-auto mb-3 opacity-50" />
