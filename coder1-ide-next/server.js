@@ -139,17 +139,22 @@ class TerminalSession {
         env: {
           ...process.env,
           CODER1_IDE: 'true',
-          TERMINAL_SESSION_ID: id,
-          // Set a cleaner prompt for production
-          PS1: process.env.NODE_ENV === 'production' 
-            ? '\\[\\033[01;32m\\]coder1\\[\\033[00m\\]:\\[\\033[01;34m\\]\\w\\[\\033[00m\\]$ '
-            : process.env.PS1
+          TERMINAL_SESSION_ID: id
         }
       });
       
       console.log(`[Terminal] PTY session ${id} created successfully with PID: ${this.pty.pid}`);
       
-      // Don't send welcome messages - let the terminal show its natural prompt
+      // Set a cleaner prompt after terminal starts (overrides .bashrc)
+      const isProduction = process.env.RENDER === 'true' || process.env.NODE_ENV === 'production' || process.env.PORT === '10000';
+      if (isProduction) {
+        setTimeout(() => {
+          // Export a cleaner PS1 prompt
+          this.pty.write('export PS1="\\[\\033[01;32m\\]coder1\\[\\033[00m\\]:\\[\\033[01;34m\\]\\W\\[\\033[00m\\]$ "\r');
+          // Clear the screen to remove the ugly default prompt
+          this.pty.write('clear\r');
+        }, 100);
+      }
     } catch (error) {
       console.error(`[Terminal] Failed to create PTY session ${id}:`, error);
       throw new Error(`Failed to create terminal session: ${error.message}`);
@@ -572,9 +577,10 @@ app.prepare().then(() => {
         // Write the user input to terminal
         session.write(data);
         
-        // In production, show help message after 'claude' command
+        // Show help message after 'claude' command (check for production URL instead of NODE_ENV)
         const trimmedData = data.trim().toLowerCase();
-        if (process.env.NODE_ENV === 'production' && (trimmedData === 'claude' || trimmedData === 'claude\r' || trimmedData === 'claude\n')) {
+        const isProduction = process.env.RENDER === 'true' || process.env.NODE_ENV === 'production' || process.env.PORT === '10000';
+        if (isProduction && (trimmedData === 'claude' || trimmedData === 'claude\r' || trimmedData === 'claude\n')) {
           // Show help message after a short delay (after "command not found" appears)
           setTimeout(() => {
             const helpMessage = [

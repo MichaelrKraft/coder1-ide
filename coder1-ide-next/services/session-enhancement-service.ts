@@ -202,8 +202,8 @@ export class SessionEnhancementService {
    * Format session for display
    */
   formatSessionForDisplay(session: any): EnhancedSession {
-    // Generate intelligent title
-    const title = session.title || this.generateSessionTitle(session);
+    // Generate intelligent title - prioritize session.name over generated title
+    const title = session.name || session.title || this.generateSessionTitle(session);
     
     // Extract project name
     const projectName = session.projectName || this.extractProjectName(session);

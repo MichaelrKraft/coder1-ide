@@ -408,7 +408,7 @@ export default function SessionsPanel({ isVisible = true }: SessionsPanelProps) 
       )}
       
       {/* Previous Sessions */}
-      <div className="flex-1 overflow-auto">
+      <div className="flex-1 min-h-0 overflow-y-auto">
         <div className="p-3">
           <div className="flex items-center justify-between mb-3">
             <h4 className="text-xs font-semibold text-text-muted uppercase tracking-wider">

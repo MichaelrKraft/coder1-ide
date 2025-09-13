@@ -96,7 +96,7 @@ export async function POST(request: NextRequest) {
     
     const session: Session = {
       id: sessionId,
-      name: name || `IDE Session ${new Date().toLocaleString()}`,
+      name: name || `Session ${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} ${new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}`,
       description: description || 'Created from Coder1 IDE',
       userId: userId || 'anonymous',
       createdAt: now,

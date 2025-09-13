@@ -55,7 +55,7 @@ export default function ThreePanelLayout({
           onCollapse={handleLeftCollapse}
           className="h-full bg-bg-secondary"
         >
-          <div className="h-full border-r-2 border-coder1-cyan/50 overflow-hidden" style={{
+          <div className="h-full border-r-2 border-coder1-cyan/50 overflow-auto" style={{
             boxShadow: '2px 0 8px rgba(0, 217, 255, 0.3)'
           }}>
             {leftPanel}

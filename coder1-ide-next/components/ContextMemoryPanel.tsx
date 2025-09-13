@@ -519,7 +519,7 @@ export default function ContextMemoryPanel() {
             </p>
           </div>
         ) : (
-          <div className="space-y-3 p-4 pb-20">
+          <div className="space-y-3 p-4 pb-8">
             {filteredAndSortedConversations.map((conv) => {
               const isExpanded = expandedConversations.has(conv.id);
               return (
@@ -594,7 +594,7 @@ export default function ContextMemoryPanel() {
                           <Copy className="w-3 h-3 text-text-muted" />
                         </button>
                       </div>
-                      <div className="ml-8 text-sm text-text-primary bg-bg-secondary/20 p-3 rounded-lg border-l-2 border-coder1-purple/30 max-h-32 overflow-y-auto">
+                      <div className="ml-8 text-sm text-text-primary bg-bg-secondary/20 p-3 rounded-lg border-l-2 border-coder1-purple/30">
                         <div 
                           className="whitespace-pre-wrap break-words"
                           dangerouslySetInnerHTML={{ 

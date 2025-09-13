@@ -195,8 +195,12 @@ export function SessionProvider({ children }: SessionProviderProps) {
     const startTime = performance.now();
     
     try {
-      // Generate unique session name with timestamp
-      const sessionName = name || `IDE Session ${new Date().toLocaleString()}`;
+      // Generate unique session name with timestamp and counter
+      const now = new Date();
+      const timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+      const dateStr = now.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      const sessionCount = sessions.length + 1;
+      const sessionName = name || `Session ${sessionCount} - ${dateStr} ${timeStr}`;
       const sessionDescription = description || 'Coder1 IDE development session';
       
       console.log('📝 Creating session with name:', sessionName);
