@@ -232,9 +232,9 @@ export default function ContextMemoryPanel() {
   }
 
   return (
-    <div className="h-full overflow-y-auto bg-bg-primary text-text-primary">
+    <div className="h-full flex flex-col bg-bg-primary text-text-primary">
       {/* Enhanced Header */}
-      <div className="p-3 sm:p-4 lg:p-6 border-b border-border-default bg-gradient-to-r from-bg-primary to-bg-secondary overflow-x-auto">
+      <div className="p-3 sm:p-4 lg:p-6 border-b border-border-default bg-gradient-to-r from-bg-primary to-bg-secondary overflow-x-auto flex-shrink-0">
         <div className="flex items-center justify-between mb-3 sm:mb-4 min-w-0">
           <div className="flex items-center min-w-0 flex-1">
             <div className="w-8 h-8 sm:w-10 sm:h-10 bg-coder1-purple/20 rounded-xl flex items-center justify-center mr-2 sm:mr-3 flex-shrink-0">

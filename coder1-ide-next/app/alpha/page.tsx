@@ -45,18 +45,15 @@ export default function AlphaPage() {
         {/* Header */}
         <header className="border-b border-gray-800 bg-gray-900/50 backdrop-blur-xl">
           <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-            <div className="flex items-center gap-3">
+            <div className="flex flex-col items-start">
               <Image 
                 src="/Coder1-logo-Trans.png" 
                 alt="Coder1 Logo" 
-                width={48} 
-                height={48}
-                className="rounded-lg"
+                width={120} 
+                height={120}
+                className="mb-1"
               />
-              <div>
-                <h1 className="text-xl font-bold">Coder1 Alpha</h1>
-                <p className="text-sm text-gray-400">Private Alpha Program</p>
-              </div>
+              <p className="text-sm text-gray-400 ml-2">Private Alpha Program</p>
             </div>
             
             <div className="flex items-center gap-6">
