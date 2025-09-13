@@ -1,64 +1,48 @@
 import { io, Socket } from 'socket.io-client';
-import { ClientWebSocketAuth } from './websocket-auth-client';
 
 let socket: Socket | null = null;
 let connectionAttempts = 0;
-let wsAuth: ClientWebSocketAuth | null = null;
 
 export const getSocket = async (sessionId?: string, bridgeAuth: boolean = false): Promise<Socket> => {
-  if (!socket) {
-    connectionAttempts++;
-    console.log(`🔌 CREATING AUTHENTICATED SOCKET CONNECTION (attempt ${connectionAttempts})`);
-    
-    // Initialize WebSocket authentication
-    if (!wsAuth) {
-      wsAuth = new ClientWebSocketAuth();
-    }
-
-    // Get authentication ticket
-    let ticketId: string | null = null;
-    
-    if (sessionId) {
-      try {
-        ticketId = await wsAuth.requestTicket(sessionId, bridgeAuth);
-        console.log('🎫 Received authentication ticket for WebSocket');
-      } catch (error) {
-        console.error('❌ Failed to get WebSocket authentication ticket:', error);
-        // Continue without authentication for backwards compatibility
-      }
-    }
-
-    // Connect to the unified server (Next.js custom server)
-    // In production, use the same origin. In dev, use localhost:3001
-    const unifiedUrl = typeof window !== 'undefined' && window.location.hostname !== 'localhost'
-      ? `${window.location.protocol}//${window.location.host}`
-      : (process.env.NEXT_PUBLIC_UNIFIED_SERVER_URL || 'http://localhost:3001');
-    console.log(`🎯 CONNECTING TO UNIFIED SERVER: ${unifiedUrl}`);
-    
-    socket = io(unifiedUrl, {
-      path: '/socket.io/',
-      transports: ['websocket', 'polling'],
-      reconnection: true,
-      reconnectionAttempts: 10,
-      reconnectionDelay: 1000,
-      reconnectionDelayMax: 5000,
-      timeout: 20000,
-      forceNew: false,
-      auth: ticketId ? { ticketId } : undefined,
-    });
-
-    // Enhanced connection event logging
-    socket.on('connect', () => {
-      console.log('✅ SOCKET.IO CONNECTED:', {
-        id: socket?.id,
-        transport: socket?.io.engine.transport.name,
-        url: unifiedUrl,
-        timestamp: new Date().toISOString()
+  try {
+    if (!socket) {
+      connectionAttempts++;
+      console.log(`🔌 CREATING SOCKET CONNECTION (attempt ${connectionAttempts})`);
+      
+      // Connect to the unified server (Next.js custom server)
+      // In production, use the same origin. In dev, use localhost:3001
+      const unifiedUrl = typeof window !== 'undefined' && window.location.hostname !== 'localhost'
+        ? `${window.location.protocol}//${window.location.host}`
+        : (process.env.NEXT_PUBLIC_UNIFIED_SERVER_URL || 'http://localhost:3001');
+      console.log(`🎯 CONNECTING TO UNIFIED SERVER: ${unifiedUrl}`);
+      
+      const newSocket = io(unifiedUrl, {
+        path: '/socket.io/',
+        transports: ['websocket', 'polling'],
+        reconnection: true,
+        reconnectionAttempts: 10,
+        reconnectionDelay: 1000,
+        reconnectionDelayMax: 5000,
+        timeout: 20000,
+        forceNew: false
       });
-      connectionAttempts = 0; // Reset on successful connection
-    });
 
-    socket.on('disconnect', (reason) => {
+      // Verify socket was created properly
+      if (!newSocket || typeof newSocket.on !== 'function') {
+        throw new Error('Failed to create Socket.IO instance');
+      }
+
+      // Basic connection event logging
+      newSocket.on('connect', () => {
+        console.log('✅ SOCKET.IO CONNECTED:', {
+          id: newSocket.id,
+          url: unifiedUrl,
+          timestamp: new Date().toISOString()
+        });
+        connectionAttempts = 0; // Reset on successful connection
+      });
+
+      newSocket.on('disconnect', (reason) => {
       // REMOVED: // REMOVED: console.log('❌ SOCKET.IO DISCONNECTED:', {
     //         reason,
     //         timestamp: new Date().toISOString(),
@@ -66,18 +50,17 @@ export const getSocket = async (sessionId?: string, bridgeAuth: boolean = false)
     //       });
     });
 
-    socket.on('connect_error', (error) => {
-      console.error('🚨 SOCKET.IO CONNECTION ERROR:', {
-        message: error.message,
-        type: (error as any).type,
-        description: (error as any).description,
-        url: unifiedUrl,
-        attempt: connectionAttempts,
-        timestamp: new Date().toISOString()
+      newSocket.on('connect_error', (error) => {
+        console.error('🚨 SOCKET.IO CONNECTION ERROR:', {
+          message: error.message,
+          type: (error as any).type,
+          url: unifiedUrl,
+          attempt: connectionAttempts,
+          timestamp: new Date().toISOString()
+        });
       });
-    });
 
-    socket.on('reconnect', (attemptNumber) => {
+      newSocket.on('reconnect', (attemptNumber) => {
       // REMOVED: // REMOVED: console.log('🔄 SOCKET.IO RECONNECTED:', {
     //         attempts: attemptNumber,
     //         id: socket?.id,
@@ -85,32 +68,30 @@ export const getSocket = async (sessionId?: string, bridgeAuth: boolean = false)
     //       });
     });
 
-    socket.on('reconnect_attempt', (attemptNumber) => {
-      // REMOVED: // REMOVED: console.log(`🔄 SOCKET.IO RECONNECT ATTEMPT ${attemptNumber}/${socket?.io.opts.reconnectionAttempts}`);
-    });
-
-    socket.on('reconnect_error', (error) => {
-      console.error('🚨 SOCKET.IO RECONNECT ERROR:', {
-        message: error.message,
-        timestamp: new Date().toISOString()
+      newSocket.on('reconnect_attempt', (attemptNumber) => {
+        console.log(`🔄 SOCKET.IO RECONNECT ATTEMPT ${attemptNumber}`);
       });
-    });
 
-    socket.on('reconnect_failed', () => {
-      console.error('💀 SOCKET.IO RECONNECT FAILED - All attempts exhausted');
-    });
+      newSocket.on('reconnect_error', (error) => {
+        console.error('🚨 SOCKET.IO RECONNECT ERROR:', {
+          message: error.message,
+          timestamp: new Date().toISOString()
+        });
+      });
 
-    // Debug transport changes
-    (socket.io as any).on('upgrade', () => {
-      // REMOVED: console.log('⬆️ SOCKET.IO TRANSPORT UPGRADED:', socket?.io.engine.transport.name);
-    });
+      newSocket.on('reconnect_failed', () => {
+        console.error('💀 SOCKET.IO RECONNECT FAILED - All attempts exhausted');
+      });
 
-    (socket.io as any).on('upgradeError', (error: any) => {
-      console.error('🚨 SOCKET.IO UPGRADE ERROR:', error);
-    });
+      // Assign to module variable after setup
+      socket = newSocket;
+    }
+
+    return socket;
+  } catch (error) {
+    console.error('❌ Failed to create Socket.IO connection:', error);
+    throw error;
   }
-
-  return socket;
 };
 
 export const disconnectSocket = () => {
