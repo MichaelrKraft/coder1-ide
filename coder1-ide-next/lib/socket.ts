@@ -3,6 +3,41 @@ import { io, Socket } from 'socket.io-client';
 let socket: Socket | null = null;
 let connectionAttempts = 0;
 
+// Create a mock socket for fallback
+const createMockSocket = (): Socket => {
+  console.warn('⚠️ Using mock socket - real connection failed');
+  const mockSocket = {
+    id: 'mock-socket',
+    connected: false,
+    on: (event: string, callback: Function) => {
+      console.log(`Mock socket: on('${event}')`);
+      return mockSocket;
+    },
+    off: (event: string, callback?: Function) => {
+      console.log(`Mock socket: off('${event}')`);
+      return mockSocket;
+    },
+    emit: (event: string, ...args: any[]) => {
+      console.log(`Mock socket: emit('${event}')`, args);
+      return mockSocket;
+    },
+    disconnect: () => {
+      console.log('Mock socket: disconnect()');
+      return mockSocket;
+    },
+    connect: () => {
+      console.log('Mock socket: connect()');
+      return mockSocket;
+    },
+    io: {
+      engine: {
+        transport: { name: 'mock' }
+      }
+    }
+  } as any;
+  return mockSocket;
+};
+
 export const getSocket = async (sessionId?: string, bridgeAuth: boolean = false): Promise<Socket> => {
   try {
     if (!socket) {
@@ -16,20 +51,28 @@ export const getSocket = async (sessionId?: string, bridgeAuth: boolean = false)
         : (process.env.NEXT_PUBLIC_UNIFIED_SERVER_URL || 'http://localhost:3001');
       console.log(`🎯 CONNECTING TO UNIFIED SERVER: ${unifiedUrl}`);
       
-      const newSocket = io(unifiedUrl, {
-        path: '/socket.io/',
-        transports: ['websocket', 'polling'],
-        reconnection: true,
-        reconnectionAttempts: 10,
-        reconnectionDelay: 1000,
-        reconnectionDelayMax: 5000,
-        timeout: 20000,
-        forceNew: false
-      });
+      let newSocket: Socket;
+      
+      try {
+        newSocket = io(unifiedUrl, {
+          path: '/socket.io/',
+          transports: ['websocket', 'polling'],
+          reconnection: true,
+          reconnectionAttempts: 10,
+          reconnectionDelay: 1000,
+          reconnectionDelayMax: 5000,
+          timeout: 20000,
+          forceNew: false
+        });
 
-      // Verify socket was created properly
-      if (!newSocket || typeof newSocket.on !== 'function') {
-        throw new Error('Failed to create Socket.IO instance');
+        // Verify socket was created properly
+        if (!newSocket || typeof newSocket.on !== 'function') {
+          throw new Error('Failed to create Socket.IO instance');
+        }
+      } catch (ioError) {
+        console.error('❌ Socket.IO initialization failed:', ioError);
+        // Use mock socket as fallback
+        newSocket = createMockSocket();
       }
 
       // Basic connection event logging
