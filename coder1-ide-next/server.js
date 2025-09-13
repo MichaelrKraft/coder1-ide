@@ -569,6 +569,9 @@ app.prepare().then(() => {
       }
     });
     
+    // Track command buffer per session
+    const commandBuffers = new Map();
+    
     // Handle terminal input
     socket.on('terminal:input', ({ id, data }) => {
       const sessionId = id || currentSessionId;
@@ -577,36 +580,52 @@ app.prepare().then(() => {
         // Write the user input to terminal
         session.write(data);
         
-        // Show help message after 'claude' command (check for production URL instead of NODE_ENV)
-        const trimmedData = data.trim().toLowerCase();
-        const isProduction = process.env.RENDER === 'true' || process.env.NODE_ENV === 'production' || process.env.PORT === '10000';
-        if (isProduction && (trimmedData === 'claude' || trimmedData === 'claude\r' || trimmedData === 'claude\n')) {
-          // Show help message after a short delay (after "command not found" appears)
-          setTimeout(() => {
-            const helpMessage = [
-              '\r\n',
-              '╔═══════════════════════════════════════════════════════════════════╗\r\n',
-              '║                    🤖 Claude Bridge Required                       ║\r\n',
-              '╠═══════════════════════════════════════════════════════════════════╣\r\n',
-              '║                                                                     ║\r\n',
-              '║  Claude CLI runs on your local machine, not the cloud server.     ║\r\n',
-              '║                                                                     ║\r\n',
-              '║  To use Claude with Coder1 IDE:                                   ║\r\n',
-              '║                                                                     ║\r\n',
-              '║  1. Visit https://coder1-ide-alpha-v2.onrender.com/alpha          ║\r\n',
-              '║  2. Download the Coder1 Bridge for your OS                        ║\r\n',
-              '║  3. Run the Bridge on your local machine                          ║\r\n',
-              '║  4. Your local Claude CLI will connect to this IDE!               ║\r\n',
-              '║                                                                     ║\r\n',
-              '╚═══════════════════════════════════════════════════════════════════╝\r\n',
-              '\r\n'
-            ].join('');
-            
-            socket.emit('terminal:data', { 
-              id: sessionId, 
-              data: helpMessage 
-            });
-          }, 500); // Wait for "command not found" to appear first
+        // Build up command buffer
+        if (!commandBuffers.has(sessionId)) {
+          commandBuffers.set(sessionId, '');
+        }
+        
+        let buffer = commandBuffers.get(sessionId);
+        buffer += data;
+        
+        // Check if Enter was pressed (command complete)
+        if (data.includes('\r') || data.includes('\n')) {
+          const command = buffer.trim().toLowerCase();
+          console.log('[Terminal] Command completed:', command);
+          
+          // Check if user typed 'claude'
+          if (command === 'claude' || command.startsWith('claude ')) {
+            console.log('[Terminal] Claude command detected, showing help message');
+            // Show help message after a short delay (after "command not found" appears)
+            setTimeout(() => {
+              const helpMessage = [
+                '\r\n',
+                '╔═══════════════════════════════════════════════════════════════════╗\r\n',
+                '║                    🤖 Claude Bridge Required                       ║\r\n',
+                '╠═══════════════════════════════════════════════════════════════════╣\r\n',
+                '║                                                                     ║\r\n',
+                '║  Claude CLI runs on your local machine, not the cloud server.     ║\r\n',
+                '║                                                                     ║\r\n',
+                '║  To use Claude with Coder1 IDE:                                   ║\r\n',
+                '║                                                                     ║\r\n',
+                '║  1. Visit https://coder1-ide-alpha-v2.onrender.com/alpha          ║\r\n',
+                '║  2. Download the Coder1 Bridge for your OS                        ║\r\n',
+                '║  3. Run the Bridge on your local machine                          ║\r\n',
+                '║  4. Your local Claude CLI will connect to this IDE!               ║\r\n',
+                '║                                                                     ║\r\n',
+                '╚═══════════════════════════════════════════════════════════════════╝\r\n',
+                '\r\n'
+              ].join('');
+              
+              socket.emit('terminal:data', { 
+                id: sessionId, 
+                data: helpMessage 
+              });
+            }, 500); // Wait for "command not found" to appear first
+          }
+          
+          // Clear buffer after command
+          commandBuffers.set(sessionId, '');
         }
         
         // Buffer user input for context capture

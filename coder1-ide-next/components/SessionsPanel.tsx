@@ -409,7 +409,7 @@ export default function SessionsPanel({ isVisible = true }: SessionsPanelProps) 
       
       {/* Previous Sessions */}
       <div className="flex-1 min-h-0 overflow-y-auto">
-        <div className="p-3">
+        <div className="p-3 pb-1">
           <div className="flex items-center justify-between mb-3">
             <h4 className="text-xs font-semibold text-text-muted uppercase tracking-wider">
               Previous Sessions ({sessions.filter(s => s.id !== currentSession?.id).length})
@@ -423,7 +423,7 @@ export default function SessionsPanel({ isVisible = true }: SessionsPanelProps) 
             </button>
           </div>
           
-          <div className="space-y-2">
+          <div className="space-y-2 pb-4">
             {sessions.filter(s => s.id !== currentSession?.id).map(session => {
               const isRestoring = restoringSessionId === session.id;
               const enhanced = getEnhancedSession(session);
