@@ -295,7 +295,7 @@ export default function ContextMemoryPanel() {
         {/* Enhanced Context Injection Section */}
         {contextInjection && contextInjection.hasContext && (
           <div className="p-3 sm:p-4 border-b border-border-default bg-gradient-to-r from-coder1-purple/5 to-coder1-cyan/5">
-          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 bg-coder1-purple/10 rounded-lg flex items-center justify-center">
                 <Brain className="w-5 h-5 text-coder1-purple" />
@@ -519,7 +519,7 @@ export default function ContextMemoryPanel() {
             </p>
           </div>
         ) : (
-          <div className="space-y-3 p-4 pb-8">
+          <div className="space-y-3 p-4 pb-20">
             {filteredAndSortedConversations.map((conv) => {
               const isExpanded = expandedConversations.has(conv.id);
               return (
@@ -594,8 +594,9 @@ export default function ContextMemoryPanel() {
                           <Copy className="w-3 h-3 text-text-muted" />
                         </button>
                       </div>
-                      <div className="ml-8 text-sm text-text-primary bg-bg-secondary/20 p-3 rounded-lg border-l-2 border-coder1-purple/30">
+                      <div className="ml-8 text-sm text-text-primary bg-bg-secondary/20 p-3 rounded-lg border-l-2 border-coder1-purple/30 max-h-32 overflow-y-auto">
                         <div 
+                          className="whitespace-pre-wrap break-words"
                           dangerouslySetInnerHTML={{ 
                             __html: highlightSearchText(conv.userInput || '', searchTerm) 
                           }}

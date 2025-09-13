@@ -139,7 +139,11 @@ class TerminalSession {
         env: {
           ...process.env,
           CODER1_IDE: 'true',
-          TERMINAL_SESSION_ID: id
+          TERMINAL_SESSION_ID: id,
+          // Set a cleaner prompt for production
+          PS1: process.env.NODE_ENV === 'production' 
+            ? '\\[\\033[01;32m\\]coder1\\[\\033[00m\\]:\\[\\033[01;34m\\]\\w\\[\\033[00m\\]$ '
+            : process.env.PS1
         }
       });
       
