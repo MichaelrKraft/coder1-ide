@@ -95,8 +95,10 @@ export default function EnhancedSessionCreationModal({
   };
 
   const handleNameSelection = (name: string) => {
+    console.log('📝 handleNameSelection called with:', name);
     setSessionName(name);
     setCustomName(''); // Clear custom name when suggestion is selected
+    console.log('✅ Session name set to:', name);
   };
 
   const handleCustomNameChange = (name: string) => {
@@ -105,8 +107,16 @@ export default function EnhancedSessionCreationModal({
   };
 
   const handleNext = () => {
+    console.log('🔄 handleNext called');
+    console.log('Current step:', step);
+    console.log('Session name:', sessionName);
+    console.log('Session name trimmed:', sessionName.trim());
+    
     if (step === 'name' && sessionName.trim()) {
+      console.log('✅ Moving to context step');
       setStep('context');
+    } else {
+      console.log('❌ Cannot proceed - session name is empty or wrong step');
     }
   };
 
@@ -402,8 +412,19 @@ export default function EnhancedSessionCreationModal({
             
             {step === 'context' && (
               <button
-                onClick={handleCreateSession}
-                disabled={!sessionName.trim() || isCreating}
+                onClick={() => {
+                  console.log('🔘 Create Session button clicked!');
+                  console.log('Session name:', sessionName);
+                  console.log('Selected type:', selectedType);
+                  console.log('Is creating:', isCreating);
+                  console.log('Button disabled?', !sessionName || !sessionName.trim() || isCreating);
+                  if (!sessionName || !sessionName.trim()) {
+                    console.error('❌ Session name is empty!');
+                    return;
+                  }
+                  handleCreateSession();
+                }}
+                disabled={!sessionName || !sessionName.trim() || isCreating}
                 className="px-4 py-2 bg-coder1-cyan text-black font-medium rounded-lg text-sm hover:bg-coder1-cyan-secondary transition-colors disabled:opacity-50 flex items-center gap-2"
               >
                 {isCreating && (
