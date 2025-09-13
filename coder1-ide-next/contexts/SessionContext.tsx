@@ -17,7 +17,7 @@ interface SessionContextType {
   sessions: Session[];
   refreshSessions: () => Promise<void>;
   createSession: (name?: string, description?: string) => Promise<void>;
-  createEnhancedSession: (sessionType: string, name: string, description?: string, context?: any) => Promise<void>;
+  createEnhancedSession: (sessionType: string, name: string, description?: string, context?: any) => Promise<any>;
   switchSession: (session: Session) => void;
   endSession: () => void;
 }
@@ -336,6 +336,14 @@ export function SessionProvider({ children }: SessionProviderProps) {
             detail: { session: newSession, enhanced: true } 
           }));
           
+          // Show success notification
+          window.dispatchEvent(new CustomEvent('showToast', {
+            detail: {
+              message: `✅ Session "${newSession.name}" created successfully!`,
+              type: 'success'
+            }
+          }));
+          
           // Track session creation time for monitoring
           const duration = performance.now() - startTime;
           console.log('⏱️ Enhanced session creation took:', Math.round(duration), 'ms');
@@ -351,6 +359,9 @@ export function SessionProvider({ children }: SessionProviderProps) {
               metadata: { enhanced: true }
             })
           }).catch(() => {}); // Fire and forget
+          
+          // Return success
+          return newSession;
           
         } else {
           console.error('❌ Enhanced session creation failed:', data.error);

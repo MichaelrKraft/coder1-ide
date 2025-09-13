@@ -232,21 +232,21 @@ export default function ContextMemoryPanel() {
   }
 
   return (
-    <div className="h-full flex flex-col bg-bg-primary text-text-primary">
+    <div className="bg-bg-primary text-text-primary">
       {/* Enhanced Header */}
-      <div className="p-6 border-b border-border-default bg-gradient-to-r from-bg-primary to-bg-secondary">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center">
-            <div className="w-10 h-10 bg-coder1-purple/20 rounded-xl flex items-center justify-center mr-3">
-              <Brain className="w-6 h-6 text-coder1-purple" />
+      <div className="flex-shrink-0 p-3 sm:p-4 lg:p-6 border-b border-border-default bg-gradient-to-r from-bg-primary to-bg-secondary overflow-x-auto">
+        <div className="flex items-center justify-between mb-3 sm:mb-4 min-w-0">
+          <div className="flex items-center min-w-0 flex-1">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-coder1-purple/20 rounded-xl flex items-center justify-center mr-2 sm:mr-3 flex-shrink-0">
+              <Brain className="w-5 h-5 sm:w-6 sm:h-6 text-coder1-purple" />
             </div>
-            <div>
-              <h2 className="text-xl font-bold text-text-primary">Context Memory</h2>
-              <p className="text-sm text-text-muted">AI conversation history and context injection</p>
+            <div className="min-w-0 flex-1">
+              <h2 className="text-base sm:text-lg lg:text-xl font-bold text-text-primary truncate">Context Memory</h2>
+              <p className="text-xs sm:text-sm text-text-muted hidden sm:block">AI conversation history and context injection</p>
             </div>
             {stats && (
-              <div className="ml-4 px-3 py-1 bg-coder1-purple/10 border border-coder1-purple/30 rounded-full">
-                <span className="text-sm font-medium text-coder1-purple">{stats.memoryText}</span>
+              <div className="ml-2 sm:ml-4 px-2 sm:px-3 py-1 bg-coder1-purple/10 border border-coder1-purple/30 rounded-full flex-shrink-0">
+                <span className="text-xs sm:text-sm font-medium text-coder1-purple whitespace-nowrap">{stats.memoryText}</span>
               </div>
             )}
           </div>
@@ -261,41 +261,29 @@ export default function ContextMemoryPanel() {
         
         {/* Enhanced Stats */}
         {stats && (
-          <div className="grid grid-cols-4 gap-4">
-            <div className="bg-bg-primary/50 backdrop-blur-sm p-4 rounded-xl border border-border-default">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="text-text-muted text-sm font-medium">Sessions</div>
-                  <div className="text-2xl font-bold text-text-primary">{stats.totalSessions}</div>
-                </div>
-                <MessageSquare className="w-8 h-8 text-coder1-cyan opacity-60" />
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-1.5 sm:gap-2 lg:gap-3">
+            <div className="bg-bg-primary/50 backdrop-blur-sm p-1.5 sm:p-2 lg:p-3 rounded-lg border border-border-default">
+              <div className="flex flex-col">
+                <div className="text-text-muted text-[10px] sm:text-xs lg:text-sm font-medium truncate">Sessions</div>
+                <div className="text-sm sm:text-lg lg:text-xl font-bold text-text-primary">{stats.totalSessions}</div>
               </div>
             </div>
-            <div className="bg-bg-primary/50 backdrop-blur-sm p-4 rounded-xl border border-border-default">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="text-text-muted text-sm font-medium">Conversations</div>
-                  <div className="text-2xl font-bold text-text-primary">{stats.totalConversations}</div>
-                </div>
-                <Brain className="w-8 h-8 text-coder1-purple opacity-60" />
+            <div className="bg-bg-primary/50 backdrop-blur-sm p-1.5 sm:p-2 lg:p-3 rounded-lg border border-border-default">
+              <div className="flex flex-col">
+                <div className="text-text-muted text-[10px] sm:text-xs lg:text-sm font-medium truncate">Convs</div>
+                <div className="text-sm sm:text-lg lg:text-xl font-bold text-text-primary">{stats.totalConversations}</div>
               </div>
             </div>
-            <div className="bg-bg-primary/50 backdrop-blur-sm p-4 rounded-xl border border-border-default">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="text-text-muted text-sm font-medium">Success Rate</div>
-                  <div className="text-2xl font-bold text-green-400">{Math.round(stats.successRate * 100)}%</div>
-                </div>
-                <CheckCircle className="w-8 h-8 text-green-400 opacity-60" />
+            <div className="bg-bg-primary/50 backdrop-blur-sm p-1.5 sm:p-2 lg:p-3 rounded-lg border border-border-default">
+              <div className="flex flex-col">
+                <div className="text-text-muted text-[10px] sm:text-xs lg:text-sm font-medium truncate">Success</div>
+                <div className="text-sm sm:text-lg lg:text-xl font-bold text-green-400">{Math.round(stats.successRate * 100)}%</div>
               </div>
             </div>
-            <div className="bg-bg-primary/50 backdrop-blur-sm p-4 rounded-xl border border-border-default">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="text-text-muted text-sm font-medium">Patterns</div>
-                  <div className="text-2xl font-bold text-text-primary">{stats.totalPatterns}</div>
-                </div>
-                <Zap className="w-8 h-8 text-yellow-400 opacity-60" />
+            <div className="bg-bg-primary/50 backdrop-blur-sm p-1.5 sm:p-2 lg:p-3 rounded-lg border border-border-default">
+              <div className="flex flex-col">
+                <div className="text-text-muted text-[10px] sm:text-xs lg:text-sm font-medium truncate">Patterns</div>
+                <div className="text-sm sm:text-lg lg:text-xl font-bold text-text-primary">{stats.totalPatterns}</div>
               </div>
             </div>
           </div>
@@ -304,7 +292,7 @@ export default function ContextMemoryPanel() {
 
       {/* Enhanced Context Injection Section */}
       {contextInjection && contextInjection.hasContext && (
-        <div className="p-4 border-b border-border-default bg-gradient-to-r from-coder1-purple/5 to-coder1-cyan/5">
+        <div className="flex-shrink-0 p-3 sm:p-4 border-b border-border-default bg-gradient-to-r from-coder1-purple/5 to-coder1-cyan/5">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 bg-coder1-purple/10 rounded-lg flex items-center justify-center">
@@ -423,7 +411,7 @@ export default function ContextMemoryPanel() {
       )}
 
       {/* Enhanced Search and Advanced Filters */}
-      <div className="p-4 border-b border-border-default space-y-4">
+      <div className="flex-shrink-0 p-3 sm:p-4 border-b border-border-default space-y-3 sm:space-y-4">
         {/* Search Input with Clear Button */}
         <div className="relative">
           <Search className="absolute left-3 top-2.5 w-4 h-4 text-text-muted" />
@@ -519,7 +507,7 @@ export default function ContextMemoryPanel() {
       </div>
 
       {/* Enhanced Conversations List */}
-      <div className="flex-1 overflow-y-auto">
+      <div>
         {filteredAndSortedConversations.length === 0 ? (
           <div className="p-8 text-center text-text-muted">
             <MessageSquare className="w-12 h-12 mx-auto mb-3 opacity-50" />
@@ -529,7 +517,7 @@ export default function ContextMemoryPanel() {
             </p>
           </div>
         ) : (
-          <div className="space-y-3 p-4">
+          <div className="space-y-3 p-4 pb-8">
             {filteredAndSortedConversations.map((conv) => {
               const isExpanded = expandedConversations.has(conv.id);
               return (

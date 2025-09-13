@@ -98,23 +98,47 @@ export default App;
   
   // Component capture integration (ultrathin)
   useEffect(() => {
-    const socket = getSocket();
-    
-    const handleComponentCapture = (data: any) => {
-      console.log('📦 Component captured:', data.title);
-      
-      // Load directly into editor
-      setEditorContent(data.code);
-      setActiveFile(`${data.title.toLowerCase().replace(/\s+/g, '-')}.html`);
-      setShowHero(false);
-      
-      // Show toast
-      setToast(`📦 Captured: ${data.title}`);
-      setTimeout(() => setToast(null), 3000);
+    let mounted = true;
+
+    const initializeSocket = async () => {
+      try {
+        const socket = await getSocket();
+        
+        if (!mounted) return;
+        
+        const handleComponentCapture = (data: any) => {
+          if (!mounted) return;
+          console.log('📦 Component captured:', data.title);
+          
+          // Load directly into editor
+          setEditorContent(data.code);
+          setActiveFile(`${data.title.toLowerCase().replace(/\s+/g, '-')}.html`);
+          setShowHero(false);
+          
+          // Show toast
+          setToast(`📦 Captured: ${data.title}`);
+          setTimeout(() => setToast(null), 3000);
+        };
+        
+        socket.on('component:captured', handleComponentCapture);
+        
+        return socket;
+      } catch (error) {
+        console.error('Failed to initialize socket:', error);
+        return null;
+      }
     };
-    
-    socket.on('component:captured', handleComponentCapture);
-    return () => socket.off('component:captured', handleComponentCapture);
+
+    let socketPromise = initializeSocket();
+
+    return () => {
+      mounted = false;
+      socketPromise.then(socket => {
+        if (socket) {
+          socket.off('component:captured');
+        }
+      });
+    };
   }, []);
   
   // Handler for when tour starts

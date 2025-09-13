@@ -3,9 +3,12 @@
 import React, { createContext, useContext, useRef, useCallback } from 'react';
 import { getSocket } from '@/lib/socket';
 
+// Simple console logger for debugging
+const logger = typeof console !== 'undefined' ? console : undefined;
+
 interface TerminalCommandContextType {
-  executeCommand: (command: string, options?: ExecuteOptions) => boolean;
-  injectCommand: (command: string, options?: InjectOptions) => boolean;
+  executeCommand: (command: string, options?: ExecuteOptions) => Promise<boolean>;
+  injectCommand: (command: string, options?: InjectOptions) => Promise<boolean>;
   isTerminalReady: () => boolean;
 }
 
@@ -65,10 +68,10 @@ export function TerminalCommandProvider({
     );
   }, []);
 
-  const executeCommand = useCallback((
+  const executeCommand = useCallback(async (
     command: string, 
     options: ExecuteOptions = {}
-  ): boolean => {
+  ): Promise<boolean> => {
     // Defensive check - component must be mounted
     if (!isMountedRef.current) {
       logger?.warn('[TerminalCommand] Component unmounted, ignoring execute request');
@@ -94,7 +97,7 @@ export function TerminalCommandProvider({
     }
 
     try {
-      const socket = getSocket();
+      const socket = await getSocket();
       
       if (!socket || !socket.connected) {
         logger?.warn('[TerminalCommand] Socket not connected');
@@ -157,10 +160,10 @@ export function TerminalCommandProvider({
     }
   }, [isTerminalReady]);
 
-  const injectCommand = useCallback((
+  const injectCommand = useCallback(async (
     command: string, 
     options: InjectOptions = {}
-  ): boolean => {
+  ): Promise<boolean> => {
     // Defensive check - component must be mounted  
     if (!isMountedRef.current) {
       logger?.warn('[TerminalCommand] Component unmounted, ignoring inject request');
@@ -206,11 +209,11 @@ export function useTerminalCommand(): TerminalCommandContextType {
     
     // Return safe fallback functions instead of throwing
     return {
-      executeCommand: () => {
+      executeCommand: async () => {
         logger?.warn('[TerminalCommand] No provider found, command ignored');
         return false;
       },
-      injectCommand: () => {
+      injectCommand: async () => {
         logger?.warn('[TerminalCommand] No provider found, injection ignored'); 
         return false;
       },
