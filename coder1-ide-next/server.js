@@ -145,30 +145,7 @@ class TerminalSession {
       
       console.log(`[Terminal] PTY session ${id} created successfully with PID: ${this.pty.pid}`);
       
-      // Send welcome message for production environment
-      if (process.env.NODE_ENV === 'production') {
-        setTimeout(() => {
-          this.pty.write('clear\r');
-          this.pty.write('echo "═══════════════════════════════════════════════════════════════════"\r');
-          this.pty.write('echo "                     🚀 Coder1 IDE Terminal"\r');
-          this.pty.write('echo "═══════════════════════════════════════════════════════════════════"\r');
-          this.pty.write('echo ""\r');
-          this.pty.write('echo "📌 Claude CLI is not available on the cloud server."\r');
-          this.pty.write('echo ""\r');
-          this.pty.write('echo "To use Claude with Coder1 IDE:"\r');
-          this.pty.write('echo "  1. Download the Coder1 Bridge from /alpha"\r');
-          this.pty.write('echo "  2. Run the Bridge on your local machine"\r');
-          this.pty.write('echo "  3. Your local Claude CLI will connect to this IDE"\r');
-          this.pty.write('echo ""\r');
-          this.pty.write('echo "🔧 This terminal provides:"\r');
-          this.pty.write('echo "  • Full bash environment for development"\r');
-          this.pty.write('echo "  • npm, git, and other dev tools"\r');
-          this.pty.write('echo "  • File system access for your projects"\r');
-          this.pty.write('echo ""\r');
-          this.pty.write('echo "═══════════════════════════════════════════════════════════════════"\r');
-          this.pty.write('echo ""\r');
-        }, 100);
-      }
+      // Don't send welcome messages - let the terminal show its natural prompt
     } catch (error) {
       console.error(`[Terminal] Failed to create PTY session ${id}:`, error);
       throw new Error(`Failed to create terminal session: ${error.message}`);

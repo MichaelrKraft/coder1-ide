@@ -86,12 +86,12 @@ export const getSocket = async (sessionId?: string, bridgeAuth: boolean = false)
       });
 
       newSocket.on('disconnect', (reason) => {
-      // REMOVED: // REMOVED: console.log('❌ SOCKET.IO DISCONNECTED:', {
-    //         reason,
-    //         timestamp: new Date().toISOString(),
-    //         willReconnect: socket?.active
-    //       });
-    });
+        console.log('❌ SOCKET.IO DISCONNECTED:', {
+          reason,
+          timestamp: new Date().toISOString(),
+          willReconnect: newSocket?.active
+        });
+      });
 
       newSocket.on('connect_error', (error) => {
         console.error('🚨 SOCKET.IO CONNECTION ERROR:', {
@@ -104,12 +104,12 @@ export const getSocket = async (sessionId?: string, bridgeAuth: boolean = false)
       });
 
       newSocket.on('reconnect', (attemptNumber) => {
-      // REMOVED: // REMOVED: console.log('🔄 SOCKET.IO RECONNECTED:', {
-    //         attempts: attemptNumber,
-    //         id: socket?.id,
-    //         timestamp: new Date().toISOString()
-    //       });
-    });
+        console.log('🔄 SOCKET.IO RECONNECTED:', {
+          attempts: attemptNumber,
+          id: newSocket?.id,
+          timestamp: new Date().toISOString()
+        });
+      });
 
       newSocket.on('reconnect_attempt', (attemptNumber) => {
         console.log(`🔄 SOCKET.IO RECONNECT ATTEMPT ${attemptNumber}`);
