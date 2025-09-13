@@ -133,7 +133,7 @@ export default function LeftPanel({ onFileSelect, activeFile }: LeftPanelProps) 
       </div>
       
       {/* Tab Content - Takes remaining space but leaves room for Discover */}
-      <div className="flex-1 overflow-hidden relative z-10">
+      <div className="flex-1 min-h-0 relative z-10">
         {activeTab === 'explorer' ? (
           <SafeFileExplorer onFileSelect={onFileSelect} activeFile={activeFile} />
         ) : activeTab === 'sessions' ? (

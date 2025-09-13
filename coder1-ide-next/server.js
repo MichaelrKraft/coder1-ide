@@ -144,6 +144,31 @@ class TerminalSession {
       });
       
       console.log(`[Terminal] PTY session ${id} created successfully with PID: ${this.pty.pid}`);
+      
+      // Send welcome message for production environment
+      if (process.env.NODE_ENV === 'production') {
+        setTimeout(() => {
+          this.pty.write('clear\r');
+          this.pty.write('echo "═══════════════════════════════════════════════════════════════════"\r');
+          this.pty.write('echo "                     🚀 Coder1 IDE Terminal"\r');
+          this.pty.write('echo "═══════════════════════════════════════════════════════════════════"\r');
+          this.pty.write('echo ""\r');
+          this.pty.write('echo "📌 Claude CLI is not available on the cloud server."\r');
+          this.pty.write('echo ""\r');
+          this.pty.write('echo "To use Claude with Coder1 IDE:"\r');
+          this.pty.write('echo "  1. Download the Coder1 Bridge from /alpha"\r');
+          this.pty.write('echo "  2. Run the Bridge on your local machine"\r');
+          this.pty.write('echo "  3. Your local Claude CLI will connect to this IDE"\r');
+          this.pty.write('echo ""\r');
+          this.pty.write('echo "🔧 This terminal provides:"\r');
+          this.pty.write('echo "  • Full bash environment for development"\r');
+          this.pty.write('echo "  • npm, git, and other dev tools"\r');
+          this.pty.write('echo "  • File system access for your projects"\r');
+          this.pty.write('echo ""\r');
+          this.pty.write('echo "═══════════════════════════════════════════════════════════════════"\r');
+          this.pty.write('echo ""\r');
+        }, 100);
+      }
     } catch (error) {
       console.error(`[Terminal] Failed to create PTY session ${id}:`, error);
       throw new Error(`Failed to create terminal session: ${error.message}`);
@@ -563,7 +588,40 @@ app.prepare().then(() => {
       const sessionId = id || currentSessionId;
       const session = terminalSessions.get(sessionId);
       if (session) {
-        session.write(data);
+        // In production, intercept 'claude' command to provide helpful message
+        if (process.env.NODE_ENV === 'production' && data.trim() === 'claude\r') {
+          const helpMessage = [
+            '\r\n',
+            '╔═══════════════════════════════════════════════════════════════════╗\r\n',
+            '║                    🤖 Claude CLI Not Available                     ║\r\n',
+            '╠═══════════════════════════════════════════════════════════════════╣\r\n',
+            '║                                                                     ║\r\n',
+            '║  Claude CLI runs on your local machine, not the cloud server.     ║\r\n',
+            '║                                                                     ║\r\n',
+            '║  To use Claude with Coder1 IDE:                                   ║\r\n',
+            '║                                                                     ║\r\n',
+            '║  1. Visit https://coder1-ide-alpha-v2.onrender.com/alpha          ║\r\n',
+            '║  2. Download the Coder1 Bridge for your OS                        ║\r\n',
+            '║  3. Run: ./coder1-bridge --server [this-url] --api-key [key]      ║\r\n',
+            '║  4. Your local Claude CLI will connect to this IDE!               ║\r\n',
+            '║                                                                     ║\r\n',
+            '║  The Bridge creates a secure tunnel between your local            ║\r\n',
+            '║  Claude CLI and this cloud IDE, giving you the full power         ║\r\n',
+            '║  of Claude without any API costs!                                 ║\r\n',
+            '║                                                                     ║\r\n',
+            '╚═══════════════════════════════════════════════════════════════════╝\r\n',
+            '\r\n'
+          ].join('');
+          
+          socket.emit('terminal:data', { 
+            id: sessionId, 
+            data: helpMessage 
+          });
+          // Still write the command to show it was entered
+          session.write(data);
+        } else {
+          session.write(data);
+        }
         // Buffer user input for context capture
         bufferTerminalData(sessionId, 'terminal_input', data);
       } else {

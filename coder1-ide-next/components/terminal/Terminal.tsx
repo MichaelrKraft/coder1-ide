@@ -479,12 +479,14 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
             fitAddon.fit();
             term.focus();
             
-            // Add custom welcome message
-            term.clear();
-            term.writeln('Coder1 Terminal Ready');
-            term.writeln("Type 'claude' to start AI-assisted coding");
-            term.writeln('──────────────────────────────────────────────');
-            term.writeln('');
+            // Add custom welcome message (only in development)
+            if (process.env.NODE_ENV !== 'production') {
+              term.clear();
+              term.writeln('Coder1 Terminal Ready');
+              term.writeln("Type 'claude' to start AI-assisted coding");
+              term.writeln('──────────────────────────────────────────────');
+              term.writeln('');
+            }
             
             // Don&apos;t show initial prompt - backend will provide it
             // Note: Connection to backend will happen via useEffect when both sessionId and terminalReady are set
