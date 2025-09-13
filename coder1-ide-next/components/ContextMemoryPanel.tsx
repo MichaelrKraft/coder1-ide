@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Brain, MessageSquare, Clock, RefreshCw, Copy, Search } from 'lucide-react';
+import { Brain, MessageSquare, Clock, RefreshCw, Copy, Search, ChevronDown, ChevronUp, CheckCircle, XCircle, FileText, Zap, X } from 'lucide-react';
 
 interface Conversation {
   id: string;
@@ -46,6 +46,9 @@ export default function ContextMemoryPanel() {
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [showInjectionPreview, setShowInjectionPreview] = useState(false);
+  const [expandedConversations, setExpandedConversations] = useState<Set<string>>(new Set());
+  const [filterType, setFilterType] = useState<'all' | 'success' | 'error' | 'high-token'>('all');
+  const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'tokens'>('newest');
 
   // REMOVED: // REMOVED: console.log('🧠 ContextMemoryPanel rendered');
 
@@ -113,14 +116,93 @@ export default function ContextMemoryPanel() {
   const copyContextToClipboard = async () => {
     if (contextInjection?.contextMessage) {
       await navigator.clipboard.writeText(contextInjection.contextMessage);
-      alert('Context message copied to clipboard!');
+      showToast('Context copied to clipboard!');
     }
   };
 
-  const filteredConversations = conversations.filter(conv =>
-    conv.userInput.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    conv.claudeReply.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const copyConversationText = async (text: string, type: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      showToast(`${type} copied to clipboard!`);
+    } catch (error) {
+      console.error('Failed to copy to clipboard:', error);
+      showToast('Failed to copy to clipboard', 'error');
+    }
+  };
+
+  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
+    const toast = document.createElement('div');
+    toast.className = `fixed top-4 right-4 px-4 py-2 rounded-lg shadow-lg z-50 transition-opacity ${
+      type === 'error' 
+        ? 'bg-red-500 text-white' 
+        : 'bg-coder1-cyan text-black'
+    }`;
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    setTimeout(() => {
+      toast.style.opacity = '0';
+      setTimeout(() => document.body.removeChild(toast), 300);
+    }, 2000);
+  };
+
+  const highlightSearchText = (text: string, searchTerm: string) => {
+    if (!searchTerm || !text) return text;
+    
+    try {
+      const escapedTerm = searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const regex = new RegExp(`(${escapedTerm})`, 'gi');
+      return text.replace(regex, '<mark class="bg-yellow-200 text-black px-1 rounded">$1</mark>');
+    } catch (error) {
+      console.warn('Search highlighting error:', error);
+      return text;
+    }
+  };
+
+  const toggleConversationExpansion = (id: string) => {
+    const newExpanded = new Set(expandedConversations);
+    if (newExpanded.has(id)) {
+      newExpanded.delete(id);
+    } else {
+      newExpanded.add(id);
+    }
+    setExpandedConversations(newExpanded);
+  };
+
+  const filteredAndSortedConversations = conversations
+    .filter(conv => {
+      // Search filter
+      const matchesSearch = !searchTerm || 
+        conv.userInput.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        conv.claudeReply.toLowerCase().includes(searchTerm.toLowerCase());
+      
+      // Type filter  
+      let matchesType = true;
+      switch (filterType) {
+        case 'success':
+          matchesType = conv.success === 1;
+          break;
+        case 'error':
+          matchesType = conv.errorType !== null;
+          break;
+        case 'high-token':
+          matchesType = conv.tokensUsed > 1000;
+          break;
+      }
+      
+      return matchesSearch && matchesType;
+    })
+    .sort((a, b) => {
+      switch (sortBy) {
+        case 'newest':
+          return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
+        case 'oldest':
+          return new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime();
+        case 'tokens':
+          return b.tokensUsed - a.tokensUsed;
+        default:
+          return 0;
+      }
+    });
 
   if (loading) {
     return (
@@ -151,147 +233,498 @@ export default function ContextMemoryPanel() {
 
   return (
     <div className="h-full flex flex-col bg-bg-primary text-text-primary">
-      {/* Header */}
-      <div className="p-4 border-b border-border-default">
-        <div className="flex items-center justify-between">
+      {/* Enhanced Header */}
+      <div className="p-6 border-b border-border-default bg-gradient-to-r from-bg-primary to-bg-secondary">
+        <div className="flex items-center justify-between mb-4">
           <div className="flex items-center">
-            <Brain className="w-5 h-5 text-coder1-purple mr-2" />
-            <h2 className="font-semibold">Context Memory</h2>
+            <div className="w-10 h-10 bg-coder1-purple/20 rounded-xl flex items-center justify-center mr-3">
+              <Brain className="w-6 h-6 text-coder1-purple" />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold text-text-primary">Context Memory</h2>
+              <p className="text-sm text-text-muted">AI conversation history and context injection</p>
+            </div>
             {stats && (
-              <span className="ml-2 px-2 py-1 bg-coder1-purple rounded text-xs">
-                {stats.memoryText}
-              </span>
+              <div className="ml-4 px-3 py-1 bg-coder1-purple/10 border border-coder1-purple/30 rounded-full">
+                <span className="text-sm font-medium text-coder1-purple">{stats.memoryText}</span>
+              </div>
             )}
           </div>
           <button
             onClick={loadData}
-            className="p-1 hover:bg-bg-tertiary rounded"
+            className="p-2 hover:bg-bg-tertiary rounded-lg transition-colors group"
             title="Refresh memory"
           >
-            <RefreshCw className="w-4 h-4" />
+            <RefreshCw className="w-5 h-5 text-text-muted group-hover:text-coder1-purple transition-colors" />
           </button>
         </div>
         
-        {/* Stats */}
+        {/* Enhanced Stats */}
         {stats && (
-          <div className="mt-3 grid grid-cols-2 gap-2 text-sm">
-            <div className="bg-bg-tertiary p-2 rounded">
-              <div className="text-text-muted">Sessions</div>
-              <div className="font-semibold">{stats.totalSessions}</div>
+          <div className="grid grid-cols-4 gap-4">
+            <div className="bg-bg-primary/50 backdrop-blur-sm p-4 rounded-xl border border-border-default">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-text-muted text-sm font-medium">Sessions</div>
+                  <div className="text-2xl font-bold text-text-primary">{stats.totalSessions}</div>
+                </div>
+                <MessageSquare className="w-8 h-8 text-coder1-cyan opacity-60" />
+              </div>
             </div>
-            <div className="bg-bg-tertiary p-2 rounded">
-              <div className="text-text-muted">Conversations</div>
-              <div className="font-semibold">{stats.totalConversations}</div>
+            <div className="bg-bg-primary/50 backdrop-blur-sm p-4 rounded-xl border border-border-default">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-text-muted text-sm font-medium">Conversations</div>
+                  <div className="text-2xl font-bold text-text-primary">{stats.totalConversations}</div>
+                </div>
+                <Brain className="w-8 h-8 text-coder1-purple opacity-60" />
+              </div>
+            </div>
+            <div className="bg-bg-primary/50 backdrop-blur-sm p-4 rounded-xl border border-border-default">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-text-muted text-sm font-medium">Success Rate</div>
+                  <div className="text-2xl font-bold text-green-400">{Math.round(stats.successRate * 100)}%</div>
+                </div>
+                <CheckCircle className="w-8 h-8 text-green-400 opacity-60" />
+              </div>
+            </div>
+            <div className="bg-bg-primary/50 backdrop-blur-sm p-4 rounded-xl border border-border-default">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-text-muted text-sm font-medium">Patterns</div>
+                  <div className="text-2xl font-bold text-text-primary">{stats.totalPatterns}</div>
+                </div>
+                <Zap className="w-8 h-8 text-yellow-400 opacity-60" />
+              </div>
             </div>
           </div>
         )}
       </div>
 
-      {/* Context Injection Preview */}
+      {/* Enhanced Context Injection Section */}
       {contextInjection && contextInjection.hasContext && (
-        <div className="p-4 border-b border-border-default">
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="text-sm font-medium text-coder1-purple">Context Injection Ready</h3>
+        <div className="p-4 border-b border-border-default bg-gradient-to-r from-coder1-purple/5 to-coder1-cyan/5">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-coder1-purple/10 rounded-lg flex items-center justify-center">
+                <Brain className="w-5 h-5 text-coder1-purple" />
+              </div>
+              <div>
+                <h3 className="text-sm font-semibold text-coder1-purple">Context Injection Ready</h3>
+                <p className="text-xs text-text-muted">AI context prepared for Claude Code sessions</p>
+              </div>
+            </div>
             <button
               onClick={() => setShowInjectionPreview(!showInjectionPreview)}
-              className="text-xs text-coder1-purple hover:text-coder1-cyan"
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 ${
+                showInjectionPreview 
+                  ? 'bg-coder1-purple text-white shadow-sm' 
+                  : 'bg-bg-secondary text-text-muted hover:bg-bg-tertiary hover:text-text-primary'
+              }`}
             >
-              {showInjectionPreview ? 'Hide' : 'Show'} Preview
+              {showInjectionPreview ? 'Hide Preview' : 'Show Preview'}
             </button>
           </div>
           
-          <div className="text-xs text-text-muted mb-2">
-            {contextInjection.summary}
+          {/* Context Summary */}
+          <div className="bg-bg-primary/50 backdrop-blur-sm p-3 rounded-lg border border-border-default mb-3">
+            <div className="flex items-center gap-2 mb-2">
+              <MessageSquare className="w-4 h-4 text-coder1-cyan" />
+              <span className="text-sm font-medium text-text-primary">Context Summary</span>
+            </div>
+            <p className="text-sm text-text-secondary">{contextInjection.summary}</p>
+            <div className="flex items-center gap-4 mt-2 text-xs text-text-muted">
+              <span>{contextInjection.conversationCount} conversations included</span>
+              <span>•</span>
+              <span>{contextInjection.contextMessage.length} characters</span>
+            </div>
           </div>
           
+          {/* Enhanced Context Preview */}
           {showInjectionPreview && (
-            <div className="bg-bg-tertiary p-3 rounded mb-2 max-h-32 overflow-y-auto">
-              <pre className="text-xs whitespace-pre-wrap">
-                {contextInjection.contextMessage}
-              </pre>
+            <div className="bg-bg-tertiary border border-border-default rounded-lg overflow-hidden mb-3">
+              <div className="px-3 py-2 bg-bg-secondary/50 border-b border-border-default">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium text-text-primary">Context Preview</span>
+                  <span className="text-xs text-text-muted">
+                    {Math.ceil(contextInjection.contextMessage.length / 4)} tokens (approx.)
+                  </span>
+                </div>
+              </div>
+              <div className="p-3 max-h-48 overflow-y-auto">
+                <pre className="text-xs whitespace-pre-wrap text-text-secondary font-mono">
+                  {contextInjection.contextMessage}
+                </pre>
+              </div>
             </div>
           )}
           
-          <button
-            onClick={copyContextToClipboard}
-            className="flex items-center px-3 py-1 bg-coder1-purple hover:bg-coder1-cyan rounded text-xs transition-colors"
-          >
-            <Copy className="w-3 h-3 mr-1" />
-            Copy Context for Claude
-          </button>
+          {/* Recent Conversations Preview */}
+          {contextInjection.recentConversations.length > 0 && (
+            <div className="bg-bg-primary/50 backdrop-blur-sm p-3 rounded-lg border border-border-default mb-3">
+              <div className="flex items-center gap-2 mb-2">
+                <Clock className="w-4 h-4 text-coder1-cyan" />
+                <span className="text-sm font-medium text-text-primary">Recent Conversations</span>
+              </div>
+              <div className="space-y-2">
+                {contextInjection.recentConversations.slice(0, 2).map((conv, index) => (
+                  <div key={index} className="text-xs">
+                    <div className="text-text-muted mb-1">
+                      {new Date(conv.timestamp).toLocaleString()}
+                    </div>
+                    <div className="text-text-secondary">
+                      <span className="font-medium">User:</span> {conv.user.substring(0, 50)}
+                      {conv.user.length > 50 && '...'}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          
+          {/* Enhanced Action Buttons */}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={copyContextToClipboard}
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-coder1-purple hover:bg-coder1-purple/80 text-white rounded-lg text-sm font-medium transition-all duration-200 shadow-sm hover:shadow"
+            >
+              <Copy className="w-4 h-4" />
+              Copy Context for Claude
+            </button>
+            <button
+              onClick={() => {
+                const contextData = {
+                  summary: contextInjection.summary,
+                  message: contextInjection.contextMessage,
+                  conversations: contextInjection.recentConversations,
+                  timestamp: new Date().toISOString()
+                };
+                copyConversationText(JSON.stringify(contextData, null, 2), 'Context data (JSON)');
+              }}
+              className="px-3 py-2 bg-bg-secondary hover:bg-bg-tertiary text-text-primary rounded-lg text-sm font-medium transition-colors border border-border-default"
+              title="Copy as JSON data"
+            >
+              <FileText className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => setShowInjectionPreview(!showInjectionPreview)}
+              className="px-3 py-2 bg-bg-secondary hover:bg-bg-tertiary text-text-primary rounded-lg text-sm font-medium transition-colors border border-border-default"
+              title="Toggle preview"
+            >
+              {showInjectionPreview ? (
+                <ChevronUp className="w-4 h-4" />
+              ) : (
+                <ChevronDown className="w-4 h-4" />
+              )}
+            </button>
+          </div>
         </div>
       )}
 
-      {/* Search */}
-      <div className="p-4 border-b border-border-default">
+      {/* Enhanced Search and Advanced Filters */}
+      <div className="p-4 border-b border-border-default space-y-4">
+        {/* Search Input with Clear Button */}
         <div className="relative">
           <Search className="absolute left-3 top-2.5 w-4 h-4 text-text-muted" />
           <input
             type="text"
-            placeholder="Search conversations..."
+            placeholder="Search conversations, files, or errors..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-9 pr-3 py-2 bg-bg-tertiary border border-border-default rounded text-sm focus:border-coder1-cyan focus:outline-none text-text-primary"
+            className="w-full pl-9 pr-10 py-2.5 bg-bg-tertiary border border-border-default rounded-lg text-sm focus:border-coder1-cyan focus:outline-none text-text-primary transition-all duration-200 focus:shadow-sm"
           />
+          {searchTerm && (
+            <button
+              onClick={() => setSearchTerm('')}
+              className="absolute right-3 top-2.5 w-4 h-4 text-text-muted hover:text-text-primary transition-colors"
+              title="Clear search"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
         </div>
+        
+        {/* Quick Filter Tags */}
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-xs font-medium text-text-muted">Quick filters:</span>
+          {[
+            { key: 'all', label: 'All', count: conversations.length },
+            { key: 'success', label: 'Success', count: conversations.filter(c => c.success === 1).length },
+            { key: 'error', label: 'Errors', count: conversations.filter(c => c.errorType !== null).length },
+            { key: 'high-token', label: '1000+ tokens', count: conversations.filter(c => c.tokensUsed > 1000).length }
+          ].map(({ key, label, count }) => (
+            <button
+              key={key}
+              onClick={() => setFilterType(key as any)}
+              className={`px-2 py-1 rounded-full text-xs font-medium transition-all duration-200 ${
+                filterType === key
+                  ? 'bg-coder1-cyan text-black shadow-sm'
+                  : 'bg-bg-secondary text-text-muted hover:bg-bg-tertiary hover:text-text-primary'
+              }`}
+            >
+              {label} {count > 0 && `(${count})`}
+            </button>
+          ))}
+        </div>
+        
+        {/* Advanced Controls Row */}
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            {/* Sort Options */}
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-text-muted">Sort:</span>
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as any)}
+                className="text-xs px-2 py-1.5 bg-bg-tertiary border border-border-default rounded-lg text-text-primary focus:border-coder1-cyan focus:outline-none transition-colors"
+              >
+                <option value="newest">Newest first</option>
+                <option value="oldest">Oldest first</option>
+                <option value="tokens">Most tokens</option>
+              </select>
+            </div>
+            
+            {/* Results Info */}
+            <div className="text-xs text-text-muted bg-bg-tertiary px-2 py-1 rounded border border-border-default">
+              {filteredAndSortedConversations.length} of {conversations.length} conversations
+            </div>
+          </div>
+          
+          {/* Clear All Filters */}
+          {(searchTerm || filterType !== 'all' || sortBy !== 'newest') && (
+            <button
+              onClick={() => {
+                setSearchTerm('');
+                setFilterType('all');
+                setSortBy('newest');
+              }}
+              className="text-xs text-coder1-cyan hover:text-coder1-cyan-secondary font-medium transition-colors"
+            >
+              Clear filters
+            </button>
+          )}
+        </div>
+        
+        {/* Search Results Summary */}
+        {searchTerm && (
+          <div className="text-xs text-text-muted bg-coder1-cyan/5 border border-coder1-cyan/20 rounded-lg p-2">
+            {filteredAndSortedConversations.length > 0 ? (
+              <>Found {filteredAndSortedConversations.length} conversation{filteredAndSortedConversations.length !== 1 ? 's' : ''} matching "{searchTerm}"</>
+            ) : (
+              <>No conversations found matching "{searchTerm}". Try different keywords or clear filters.</>
+            )}
+          </div>
+        )}
       </div>
 
-      {/* Conversations List */}
+      {/* Enhanced Conversations List */}
       <div className="flex-1 overflow-y-auto">
-        {filteredConversations.length === 0 ? (
-          <div className="p-4 text-center text-text-muted">
-            <MessageSquare className="w-8 h-8 mx-auto mb-2" />
-            {searchTerm ? 'No conversations match your search' : 'No conversations found'}
+        {filteredAndSortedConversations.length === 0 ? (
+          <div className="p-8 text-center text-text-muted">
+            <MessageSquare className="w-12 h-12 mx-auto mb-3 opacity-50" />
+            <h3 className="font-medium mb-1">No Conversations Found</h3>
+            <p className="text-sm">
+              {searchTerm ? 'Try adjusting your search terms or filters' : 'Start a conversation to see it here'}
+            </p>
           </div>
         ) : (
-          <div className="space-y-2 p-2">
-            {filteredConversations.map((conv) => (
-              <div key={conv.id} className="bg-bg-tertiary p-3 rounded-lg hover:bg-bg-secondary border border-border-default transition-colors">
-                <div className="flex items-start justify-between mb-2">
-                  <div className="flex items-center text-xs text-text-muted">
-                    <Clock className="w-3 h-3 mr-1" />
-                    {new Date(conv.timestamp).toLocaleString()}
-                  </div>
-                  <div className="flex items-center">
-                    {conv.success === 1 && (
-                      <span className="px-1.5 py-0.5 bg-green-500/20 text-green-400 border border-green-500/30 rounded text-xs">Success</span>
-                    )}
-                    {conv.errorType && (
-                      <span className="px-1.5 py-0.5 bg-red-500/20 text-red-400 border border-red-500/30 rounded text-xs">{conv.errorType}</span>
-                    )}
-                  </div>
-                </div>
-                
-                <div className="space-y-2">
-                  <div>
-                    <div className="text-xs text-text-muted mb-1">User:</div>
-                    <div className="text-sm">{conv.userInput}</div>
+          <div className="space-y-3 p-4">
+            {filteredAndSortedConversations.map((conv) => {
+              const isExpanded = expandedConversations.has(conv.id);
+              return (
+                <div 
+                  key={conv.id} 
+                  className="bg-bg-primary border border-border-default rounded-xl overflow-hidden hover:border-border-focus transition-all duration-200 shadow-sm hover:shadow-md"
+                >
+                  {/* Card Header */}
+                  <div className="p-4 border-b border-border-default bg-bg-secondary/30">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="flex items-center text-sm text-text-muted">
+                          <Clock className="w-4 h-4 mr-2" />
+                          {new Date(conv.timestamp).toLocaleString()}
+                        </div>
+                        {conv.tokensUsed > 0 && (
+                          <div className="flex items-center text-sm text-text-muted">
+                            <span className="w-2 h-2 bg-coder1-cyan rounded-full mr-2"></span>
+                            {conv.tokensUsed.toLocaleString()} tokens
+                          </div>
+                        )}
+                      </div>
+                      
+                      <div className="flex items-center gap-2">
+                        {/* Status Indicators */}
+                        {conv.success === 1 ? (
+                          <div className="flex items-center gap-1 px-2 py-1 bg-green-500/10 border border-green-500/20 rounded-lg">
+                            <CheckCircle className="w-3 h-3 text-green-400" />
+                            <span className="text-xs font-medium text-green-400">Success</span>
+                          </div>
+                        ) : conv.errorType ? (
+                          <div className="flex items-center gap-1 px-2 py-1 bg-red-500/10 border border-red-500/20 rounded-lg">
+                            <XCircle className="w-3 h-3 text-red-400" />
+                            <span className="text-xs font-medium text-red-400">{conv.errorType}</span>
+                          </div>
+                        ) : (
+                          <div className="w-2 h-2 bg-yellow-400 rounded-full opacity-50"></div>
+                        )}
+                        
+                        {/* Expand/Collapse Button */}
+                        <button
+                          onClick={() => toggleConversationExpansion(conv.id)}
+                          className="p-1 hover:bg-bg-tertiary rounded transition-colors"
+                          title={isExpanded ? 'Collapse' : 'Expand'}
+                        >
+                          {isExpanded ? (
+                            <ChevronUp className="w-4 h-4 text-text-muted" />
+                          ) : (
+                            <ChevronDown className="w-4 h-4 text-text-muted" />
+                          )}
+                        </button>
+                      </div>
+                    </div>
                   </div>
                   
-                  <div>
-                    <div className="text-xs text-text-muted mb-1">Claude:</div>
-                    <div className="text-sm text-text-secondary">
-                      {conv.claudeReply.length > 200 
-                        ? `${conv.claudeReply.substring(0, 200)}...` 
-                        : conv.claudeReply
-                      }
+                  {/* Card Content */}
+                  <div className="p-4 space-y-4">
+                    {/* User Input */}
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className="w-6 h-6 bg-coder1-purple/10 rounded-full flex items-center justify-center">
+                            <span className="text-xs font-medium text-coder1-purple">U</span>
+                          </div>
+                          <span className="text-sm font-medium text-text-primary">User Input</span>
+                        </div>
+                        <button
+                          onClick={() => copyConversationText(conv.userInput, 'User input')}
+                          className="p-1 hover:bg-bg-tertiary rounded transition-colors opacity-60 hover:opacity-100"
+                          title="Copy user input"
+                        >
+                          <Copy className="w-3 h-3 text-text-muted" />
+                        </button>
+                      </div>
+                      <div className="ml-8 text-sm text-text-primary bg-bg-secondary/20 p-3 rounded-lg border-l-2 border-coder1-purple/30">
+                        <div 
+                          dangerouslySetInnerHTML={{ 
+                            __html: highlightSearchText(conv.userInput || '', searchTerm) 
+                          }}
+                        />
+                      </div>
+                    </div>
+                    
+                    {/* Claude Response */}
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className="w-6 h-6 bg-coder1-cyan/10 rounded-full flex items-center justify-center">
+                            <span className="text-xs font-medium text-coder1-cyan">C</span>
+                          </div>
+                          <span className="text-sm font-medium text-text-primary">Claude Response</span>
+                        </div>
+                        <button
+                          onClick={() => copyConversationText(conv.claudeReply, 'Claude response')}
+                          className="p-1 hover:bg-bg-tertiary rounded transition-colors opacity-60 hover:opacity-100"
+                          title="Copy Claude response"
+                        >
+                          <Copy className="w-3 h-3 text-text-muted" />
+                        </button>
+                      </div>
+                      <div className="ml-8 text-sm text-text-secondary bg-bg-secondary/20 p-3 rounded-lg border-l-2 border-coder1-cyan/30">
+                        {isExpanded ? (
+                          <div 
+                            className="whitespace-pre-wrap"
+                            dangerouslySetInnerHTML={{ 
+                              __html: highlightSearchText(conv.claudeReply || '', searchTerm) 
+                            }}
+                          />
+                        ) : (
+                          <div>
+                            <div 
+                              dangerouslySetInnerHTML={{ 
+                                __html: highlightSearchText(
+                                  (conv.claudeReply || '').length > 200 
+                                    ? `${(conv.claudeReply || '').substring(0, 200)}...` 
+                                    : (conv.claudeReply || ''),
+                                  searchTerm
+                                ) 
+                              }}
+                            />
+                            {(conv.claudeReply || '').length > 200 && (
+                              <button
+                                onClick={() => toggleConversationExpansion(conv.id)}
+                                className="ml-2 text-coder1-cyan hover:text-coder1-cyan-secondary text-xs font-medium"
+                              >
+                                Show more
+                              </button>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    
+                    {/* Files Involved (if any) */}
+                    {conv.filesInvolved.length > 0 && (
+                      <div className="mt-3 pt-3 border-t border-border-default">
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            <FileText className="w-4 h-4 text-text-muted" />
+                            <span className="text-sm font-medium text-text-secondary">
+                              Files Involved ({conv.filesInvolved.length})
+                            </span>
+                          </div>
+                          <button
+                            onClick={() => copyConversationText(conv.filesInvolved.join('\n'), 'File list')}
+                            className="p-1 hover:bg-bg-tertiary rounded transition-colors opacity-60 hover:opacity-100"
+                            title="Copy file list"
+                          >
+                            <Copy className="w-3 h-3 text-text-muted" />
+                          </button>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          {conv.filesInvolved.map((file, index) => (
+                            <span
+                              key={index}
+                              className="px-2 py-1 bg-bg-tertiary border border-border-default rounded text-xs text-text-muted font-mono hover:bg-bg-secondary transition-colors"
+                              dangerouslySetInnerHTML={{ 
+                                __html: highlightSearchText(file || '', searchTerm) 
+                              }}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Enhanced Actions Footer */}
+                    <div className="flex items-center justify-between pt-3 border-t border-border-default/50">
+                      <div className="flex items-center gap-3 text-xs text-text-muted">
+                        <span>{conv.tokensUsed.toLocaleString()} tokens</span>
+                        <span>•</span>
+                        <span>{new Date(conv.timestamp).toLocaleDateString()}</span>
+                        {conv.success === 1 && (
+                          <>
+                            <span>•</span>
+                            <span className="text-green-400">Successful</span>
+                          </>
+                        )}
+                      </div>
+                      
+                      <button
+                        onClick={() => {
+                          const fullConversation = `User: ${conv.userInput}\n\nClaude: ${conv.claudeReply}${
+                            conv.filesInvolved.length > 0 ? `\n\nFiles: ${conv.filesInvolved.join(', ')}` : ''
+                          }`;
+                          copyConversationText(fullConversation, 'Full conversation');
+                        }}
+                        className="text-xs text-coder1-cyan hover:text-coder1-cyan-secondary font-medium transition-colors"
+                      >
+                        Copy All
+                      </button>
                     </div>
                   </div>
                 </div>
-                
-                {conv.filesInvolved.length > 0 && (
-                  <div className="mt-2 pt-2 border-t border-border-default">
-                    <div className="text-xs text-text-muted">
-                      Files: {conv.filesInvolved.join(', ')}
-                    </div>
-                  </div>
-                )}
-                
-                <div className="mt-2 text-xs text-text-muted">
-                  {conv.tokensUsed} tokens
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

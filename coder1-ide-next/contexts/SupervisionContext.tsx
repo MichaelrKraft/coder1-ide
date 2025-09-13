@@ -21,56 +21,85 @@ export function SupervisionProvider({ children }: { children: ReactNode }) {
   const [lastSupervisionCheck, setLastSupervisionCheck] = useState<Date | null>(null);
 
   useEffect(() => {
-    const socket = getSocket();
+    let mounted = true;
 
-    // Listen for supervision state changes from backend
-    socket.on('supervision:activated', (data: { timestamp: string, triggeredBy: string }) => {
-      // REMOVED: // REMOVED: console.log('👁️ Supervision activated by:', data.triggeredBy);
-      setIsSupervisionActive(true);
-      setSupervisionStatus('active');
-      setLastSupervisionCheck(new Date(data.timestamp));
-    });
+    const initializeSocket = async () => {
+      try {
+        const socket = await getSocket();
 
-    socket.on('supervision:deactivated', (data: { timestamp: string }) => {
-      // REMOVED: // REMOVED: console.log('👁️ Supervision deactivated');
-      setIsSupervisionActive(false);
-      setSupervisionStatus('inactive');
-      setLastSupervisionCheck(new Date(data.timestamp));
-    });
+        if (!mounted) return; // Component unmounted before socket connected
 
-    socket.on('supervision:status', (data: { active: boolean, status: string }) => {
-      setIsSupervisionActive(data.active);
-      setSupervisionStatus(data.status);
-    });
+        // Listen for supervision state changes from backend
+        socket.on('supervision:activated', (data: { timestamp: string, triggeredBy: string }) => {
+          if (!mounted) return;
+          setIsSupervisionActive(true);
+          setSupervisionStatus('active');
+          setLastSupervisionCheck(new Date(data.timestamp));
+        });
 
-    // Request current supervision status on mount
-    socket.emit('supervision:get-status');
+        socket.on('supervision:deactivated', (data: { timestamp: string }) => {
+          if (!mounted) return;
+          setIsSupervisionActive(false);
+          setSupervisionStatus('inactive');
+          setLastSupervisionCheck(new Date(data.timestamp));
+        });
+
+        socket.on('supervision:status', (data: { active: boolean, status: string }) => {
+          if (!mounted) return;
+          setIsSupervisionActive(data.active);
+          setSupervisionStatus(data.status);
+        });
+
+        // Request current supervision status on mount
+        socket.emit('supervision:get-status');
+
+        return socket;
+      } catch (error) {
+        console.error('Failed to initialize supervision socket:', error);
+        return null;
+      }
+    };
+
+    let socketPromise = initializeSocket();
 
     return () => {
-      socket.off('supervision:activated');
-      socket.off('supervision:deactivated');
-      socket.off('supervision:status');
+      mounted = false;
+      socketPromise.then(socket => {
+        if (socket) {
+          socket.off('supervision:activated');
+          socket.off('supervision:deactivated');
+          socket.off('supervision:status');
+        }
+      });
     };
   }, []);
 
-  const enableSupervision = () => {
-    const socket = getSocket();
-    socket.emit('supervision:enable', { 
-      source: 'manual',
-      timestamp: new Date().toISOString() 
-    });
-    setIsSupervisionActive(true);
-    setSupervisionStatus('active');
-    setLastSupervisionCheck(new Date());
+  const enableSupervision = async () => {
+    try {
+      const socket = await getSocket();
+      socket.emit('supervision:enable', { 
+        source: 'manual',
+        timestamp: new Date().toISOString() 
+      });
+      setIsSupervisionActive(true);
+      setSupervisionStatus('active');
+      setLastSupervisionCheck(new Date());
+    } catch (error) {
+      console.error('Failed to enable supervision:', error);
+    }
   };
 
-  const disableSupervision = () => {
-    const socket = getSocket();
-    socket.emit('supervision:disable', { 
-      timestamp: new Date().toISOString() 
-    });
-    setIsSupervisionActive(false);
-    setSupervisionStatus('inactive');
+  const disableSupervision = async () => {
+    try {
+      const socket = await getSocket();
+      socket.emit('supervision:disable', { 
+        timestamp: new Date().toISOString() 
+      });
+      setIsSupervisionActive(false);
+      setSupervisionStatus('inactive');
+    } catch (error) {
+      console.error('Failed to disable supervision:', error);
+    }
   };
 
   const toggleSupervision = () => {

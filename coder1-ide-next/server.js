@@ -433,7 +433,7 @@ app.prepare().then(() => {
     });
   });
   
-  // Initialize Socket.IO
+  // Initialize Socket.IO with authentication middleware
   const io = new Server(server, {
     cors: {
       origin: [
@@ -445,6 +445,16 @@ app.prepare().then(() => {
     },
     path: '/socket.io/'
   });
+
+  // Add WebSocket authentication middleware (if available)
+  try {
+    const { createSocketAuthMiddleware } = require('./lib/websocket-auth');
+    io.use(createSocketAuthMiddleware());
+    console.log('🔐 WebSocket authentication middleware enabled');
+  } catch (error) {
+    console.warn('⚠️ WebSocket authentication not available (development mode):', error.message);
+    // Continue without authentication for development/backwards compatibility
+  }
 
   // Connect WebSocket Event Bridge to Socket.IO server for Claude Code Bridge events
   if (WebSocketEventBridge) {

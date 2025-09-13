@@ -87,6 +87,16 @@ const nextConfig = {
         'fsevents',
         'node-pty'
       ];
+      
+      // Fix "self is not defined" error during SSR by providing polyfills
+      const webpack = require('webpack');
+      config.plugins = config.plugins || [];
+      config.plugins.push(
+        new webpack.DefinePlugin({
+          'typeof self': JSON.stringify('object'),
+          'self': 'global',
+        })
+      );
     }
     
     // Remove node-loader (not needed and may cause issues)

@@ -1,13 +1,33 @@
 import { io, Socket } from 'socket.io-client';
+import { ClientWebSocketAuth } from './websocket-auth';
 
 let socket: Socket | null = null;
 let connectionAttempts = 0;
+let wsAuth: ClientWebSocketAuth | null = null;
 
-export const getSocket = (): Socket => {
+export const getSocket = async (sessionId?: string, bridgeAuth: boolean = false): Promise<Socket> => {
   if (!socket) {
     connectionAttempts++;
-    console.log(`🔌 CREATING SOCKET CONNECTION (attempt ${connectionAttempts})`);
+    console.log(`🔌 CREATING AUTHENTICATED SOCKET CONNECTION (attempt ${connectionAttempts})`);
     
+    // Initialize WebSocket authentication
+    if (!wsAuth) {
+      wsAuth = new ClientWebSocketAuth();
+    }
+
+    // Get authentication ticket
+    let ticketId: string | null = null;
+    
+    if (sessionId) {
+      try {
+        ticketId = await wsAuth.requestTicket(sessionId, bridgeAuth);
+        console.log('🎫 Received authentication ticket for WebSocket');
+      } catch (error) {
+        console.error('❌ Failed to get WebSocket authentication ticket:', error);
+        // Continue without authentication for backwards compatibility
+      }
+    }
+
     // Connect to the unified server (Next.js custom server)
     const unifiedUrl = process.env.NEXT_PUBLIC_UNIFIED_SERVER_URL || 'http://localhost:3001';
     console.log(`🎯 CONNECTING TO UNIFIED SERVER: ${unifiedUrl}`);
@@ -21,6 +41,7 @@ export const getSocket = (): Socket => {
       reconnectionDelayMax: 5000,
       timeout: 20000,
       forceNew: false,
+      auth: ticketId ? { ticketId } : undefined,
     });
 
     // Enhanced connection event logging

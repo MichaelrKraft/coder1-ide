@@ -1,7 +1,7 @@
 'use client';
 
 import React, { Suspense, lazy, useState } from 'react';
-import { Loader2, Terminal as TerminalIcon } from '@/lib/icons';
+import { Loader2, Terminal as TerminalIcon } from 'lucide-react';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 // Lazy load the heavy Terminal component
