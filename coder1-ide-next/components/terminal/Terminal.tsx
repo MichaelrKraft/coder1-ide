@@ -247,7 +247,7 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
   }, [onTerminalReady]);
   const [lastError, setLastError] = useState<string | null>(null);
   const [errorDoctorActive, setErrorDoctorActive] = useState(true);
-  const socketRef = useRef<ReturnType<typeof getSocket> | null>(null);
+  const socketRef = useRef<any>(null); // Will be Socket instance after async init
   const [currentLineBuffer, setCurrentLineBuffer] = useState('');
   const [selectedSoundPreset, setSelectedSoundPreset] = useState<SoundPreset>('gentle');
   const [showSoundPresetDropdown, setShowSoundPresetDropdown] = useState(false);
@@ -738,7 +738,7 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
       recognitionInstance.lang = 'en-US';
       recognitionInstance.maxAlternatives = 1;
       
-      recognitionInstance.onresult = (event: any) => {
+      recognitionInstance.onresult = async (event: any) => {
         let finalTranscript = '';
         let interimTranscript = '';
         
@@ -787,7 +787,7 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
             // The text will appear when the backend processes it
             
             // Get the socket from the global socket service
-            const socket = getSocket();
+            const socket = await getSocket();
             const currentSessionId = sessionIdForVoiceRef.current;
             
             // REMOVED: console.log('🎤 Voice input debug:', {
@@ -962,7 +962,7 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
     }
   }, [sessionId, thinkingMode]);
 
-  const connectToBackend = (term: XTerm) => {
+  const connectToBackend = async (term: XTerm) => {
     // REMOVED: // REMOVED: console.log('🔌 CONNECTING TO BACKEND:', { sessionId, terminalReady });
     
     // Prevent concurrent connections
@@ -981,7 +981,7 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
 
     // Get Socket.IO instance to connect to Express backend
     // REMOVED: // REMOVED: console.log('🔧 Getting Socket.IO instance...');
-    const socket = getSocket();
+    const socket = await getSocket();
     // REMOVED: // REMOVED: console.log('✅ Socket.IO instance obtained:', socket.connected ? 'CONNECTED' : 'DISCONNECTED');
     socketRef.current = socket;
     
