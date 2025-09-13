@@ -121,6 +121,7 @@ export default function EnhancedSessionCreationModal({
   const handleCreateSession = async () => {
     if (!selectedType || !sessionName.trim()) return;
     
+    console.log('🚀 Starting session creation from modal...');
     setIsCreating(true);
     
     try {
@@ -131,12 +132,27 @@ export default function EnhancedSessionCreationModal({
         createdAt: new Date().toISOString()
       };
       
+      console.log('📝 Calling onCreateSession with:', { 
+        type: selectedType.id, 
+        name: sessionName.trim(),
+        description: sessionDescription.trim()
+      });
+      
       await onCreateSession(
         selectedType.id,
         sessionName.trim(),
         sessionDescription.trim() || undefined,
         contextData
       );
+      
+      console.log('✅ Session created successfully, closing modal...');
+      
+      // Reset modal state
+      setStep('type');
+      setSelectedType(null);
+      setSessionName('');
+      setSessionDescription('');
+      setCustomName('');
       
       onClose();
     } catch (error) {
