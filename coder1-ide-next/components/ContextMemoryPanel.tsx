@@ -290,9 +290,11 @@ export default function ContextMemoryPanel() {
         )}
       </div>
 
-      {/* Enhanced Context Injection Section */}
-      {contextInjection && contextInjection.hasContext && (
-        <div className="p-3 sm:p-4 border-b border-border-default bg-gradient-to-r from-coder1-purple/5 to-coder1-cyan/5">
+      {/* Scrollable Content Container */}
+      <div className="flex-1 overflow-y-auto">
+        {/* Enhanced Context Injection Section */}
+        {contextInjection && contextInjection.hasContext && (
+          <div className="p-3 sm:p-4 border-b border-border-default bg-gradient-to-r from-coder1-purple/5 to-coder1-cyan/5">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 bg-coder1-purple/10 rounded-lg flex items-center justify-center">
@@ -715,6 +717,7 @@ export default function ContextMemoryPanel() {
             })}
           </div>
         )}
+      </div>
       </div>
     </div>
   );

@@ -565,40 +565,40 @@ app.prepare().then(() => {
       const sessionId = id || currentSessionId;
       const session = terminalSessions.get(sessionId);
       if (session) {
-        // In production, intercept 'claude' command to provide helpful message
-        if (process.env.NODE_ENV === 'production' && data.trim() === 'claude\r') {
-          const helpMessage = [
-            '\r\n',
-            '╔═══════════════════════════════════════════════════════════════════╗\r\n',
-            '║                    🤖 Claude CLI Not Available                     ║\r\n',
-            '╠═══════════════════════════════════════════════════════════════════╣\r\n',
-            '║                                                                     ║\r\n',
-            '║  Claude CLI runs on your local machine, not the cloud server.     ║\r\n',
-            '║                                                                     ║\r\n',
-            '║  To use Claude with Coder1 IDE:                                   ║\r\n',
-            '║                                                                     ║\r\n',
-            '║  1. Visit https://coder1-ide-alpha-v2.onrender.com/alpha          ║\r\n',
-            '║  2. Download the Coder1 Bridge for your OS                        ║\r\n',
-            '║  3. Run: ./coder1-bridge --server [this-url] --api-key [key]      ║\r\n',
-            '║  4. Your local Claude CLI will connect to this IDE!               ║\r\n',
-            '║                                                                     ║\r\n',
-            '║  The Bridge creates a secure tunnel between your local            ║\r\n',
-            '║  Claude CLI and this cloud IDE, giving you the full power         ║\r\n',
-            '║  of Claude without any API costs!                                 ║\r\n',
-            '║                                                                     ║\r\n',
-            '╚═══════════════════════════════════════════════════════════════════╝\r\n',
-            '\r\n'
-          ].join('');
-          
-          socket.emit('terminal:data', { 
-            id: sessionId, 
-            data: helpMessage 
-          });
-          // Still write the command to show it was entered
-          session.write(data);
-        } else {
-          session.write(data);
+        // Write the user input to terminal
+        session.write(data);
+        
+        // In production, show help message after 'claude' command
+        const trimmedData = data.trim().toLowerCase();
+        if (process.env.NODE_ENV === 'production' && (trimmedData === 'claude' || trimmedData === 'claude\r' || trimmedData === 'claude\n')) {
+          // Show help message after a short delay (after "command not found" appears)
+          setTimeout(() => {
+            const helpMessage = [
+              '\r\n',
+              '╔═══════════════════════════════════════════════════════════════════╗\r\n',
+              '║                    🤖 Claude Bridge Required                       ║\r\n',
+              '╠═══════════════════════════════════════════════════════════════════╣\r\n',
+              '║                                                                     ║\r\n',
+              '║  Claude CLI runs on your local machine, not the cloud server.     ║\r\n',
+              '║                                                                     ║\r\n',
+              '║  To use Claude with Coder1 IDE:                                   ║\r\n',
+              '║                                                                     ║\r\n',
+              '║  1. Visit https://coder1-ide-alpha-v2.onrender.com/alpha          ║\r\n',
+              '║  2. Download the Coder1 Bridge for your OS                        ║\r\n',
+              '║  3. Run the Bridge on your local machine                          ║\r\n',
+              '║  4. Your local Claude CLI will connect to this IDE!               ║\r\n',
+              '║                                                                     ║\r\n',
+              '╚═══════════════════════════════════════════════════════════════════╝\r\n',
+              '\r\n'
+            ].join('');
+            
+            socket.emit('terminal:data', { 
+              id: sessionId, 
+              data: helpMessage 
+            });
+          }, 500); // Wait for "command not found" to appear first
         }
+        
         // Buffer user input for context capture
         bufferTerminalData(sessionId, 'terminal_input', data);
       } else {
