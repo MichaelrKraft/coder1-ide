@@ -715,7 +715,11 @@ export default function ContextMemoryPanel() {
             })}
           </div>
         )}
+          </div>
+        </div>
       </div>
+    </div>
+    </div>
     </div>
   );
 }
