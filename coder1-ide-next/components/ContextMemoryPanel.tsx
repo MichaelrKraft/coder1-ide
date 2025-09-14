@@ -288,6 +288,7 @@ export default function ContextMemoryPanel() {
             </div>
           </div>
         )}
+      </div>
 
       {/* Enhanced Context Injection Section */}
       {contextInjection && contextInjection.hasContext && (
@@ -715,11 +716,7 @@ export default function ContextMemoryPanel() {
             })}
           </div>
         )}
-          </div>
-        </div>
       </div>
-    </div>
-    </div>
     </div>
   );
 }
