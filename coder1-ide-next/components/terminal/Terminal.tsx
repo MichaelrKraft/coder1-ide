@@ -4,7 +4,7 @@ import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { Terminal as XTerm } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
 import '@xterm/xterm/css/xterm.css';
-import './Terminal.css';
+import './Terminal.css'; // Re-enabled - critical for xterm viewport fixes
 import { Users, Zap, StopCircle, Brain, Eye, Code2, Mic, MicOff, Speaker, ChevronDown } from '@/lib/icons';
 import TerminalSettings, { TerminalSettingsState } from './TerminalSettings';
 import { glows, spacing } from '@/lib/design-tokens';
@@ -458,12 +458,15 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
         cursorBlink: true,
         cursorStyle: 'block',
         allowProposedApi: true, // Add this to prevent API warnings
-        // Performance optimizations
+        // Performance optimizations and scrolling configuration
         scrollback: 10000, // Limit scrollback buffer
         fastScrollModifier: 'ctrl', // Enable fast scrolling with Ctrl key
         smoothScrollDuration: 0, // Disable smooth scrolling animations
         scrollOnUserInput: true,
         scrollSensitivity: 1,
+        // Enhanced scrolling for better bottom access
+        minimumContrastRatio: 1, // Ensures all content is visible
+        allowTransparency: false, // Improve rendering consistency
       });
 
       const fitAddon = new FitAddon();
@@ -476,7 +479,12 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
         // Wait a bit before fitting to ensure DOM is ready
         setTimeout(() => {
           try {
+            // Enhanced initial fitting with scroll buffer support
             fitAddon.fit();
+            
+            setTimeout(() => {
+              fitAddon.fit(); // Second fit after initial render
+            }, 200);
             term.focus();
             
             // Add custom welcome message (only in development)
@@ -488,7 +496,7 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
               term.writeln('');
             }
             
-            // Don&apos;t show initial prompt - backend will provide it
+            // Don't show initial prompt - backend will provide it
             // Note: Connection to backend will happen via useEffect when both sessionId and terminalReady are set
           } catch (error) {
             // REMOVED: // REMOVED: console.log('FitAddon error (non-critical):', error);
@@ -556,17 +564,16 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
                   term.scrollLines(afterBuffer.baseY - afterBuffer.viewportY);
                 }
                 
-                // Additional fix: If resize caused container to jump to top but content fits
+                // Enhanced scroll buffer: Ensure content can expand beyond viewport
                 const terminalContainer = terminalRef.current?.parentElement;
-                if (terminalContainer && wasAtBottom) {
-                  const isContainerAtTop = terminalContainer.scrollTop === 0;
-                  const hasContent = afterBuffer && afterBuffer.baseY > 0;
-                  
-                  if (isContainerAtTop && hasContent) {
-                    // Force container to bottom
-                    terminalContainer.scrollTop = terminalContainer.scrollHeight;
-                    // Also ensure xterm is at bottom
-                    term.scrollToBottom();
+                if (terminalContainer && afterBuffer) {
+                  // If we were at bottom before resize, ensure we stay at bottom
+                  if (wasAtBottom) {
+                    // Small delay to let DOM settle
+                    setTimeout(() => {
+                      terminalContainer.scrollTop = terminalContainer.scrollHeight;
+                      term.scrollToBottom();
+                    }, 50);
                   }
                 }
               }, 10);
@@ -1622,13 +1629,12 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
         </div>
       </div>
 
-      {/* Terminal Content */}
+      {/* Terminal Content - Height constrained to fit within viewport */}
       <div 
-        className="flex-1 relative"
+        className="flex-1 overflow-hidden"
         style={{
-          // Ensure there's space for content and status line
-          paddingBottom: terminalSettings.statusLine.enabled ? '40px' : '0px',
-          overflow: 'hidden'
+          backgroundColor: '#0a0a0a',
+          maxHeight: 'calc(100vh - 620px)' // Ensure terminal fits within viewport
         }}
         onClick={() => {
           // Focus the terminal when clicked
@@ -1638,13 +1644,13 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
         }}
       >
         <div 
-          className="absolute inset-0 p-3"
+          ref={terminalRef} 
+          data-tour="terminal-input"
           style={{
-            bottom: terminalSettings.statusLine.enabled ? '40px' : '0px'
+            height: '100%',
+            width: '100%'
           }}
-        >
-          <div ref={terminalRef} data-tour="terminal-input" className="h-full" />
-        </div>
+        />
       </div>
 
       {/* Error Doctor removed to fix terminal overlap issue */}
@@ -1696,9 +1702,21 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
         </button>
       )}
 
-      {/* Status Line */}
+      {/* Status Line - Using absolute positioning from September 9th documentation */}
       {terminalSettings.statusLine.enabled && (
-        <div className="bg-bg-tertiary border-t border-border-default px-4 py-2 text-xs text-text-secondary flex items-center justify-between" style={{ position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 30, height: '40px' }}>
+        <div 
+          className="border-t border-border-default px-4 py-2 text-xs text-text-secondary flex items-center justify-between" 
+          style={{ 
+            position: 'absolute', 
+            bottom: 0, 
+            left: 0, 
+            right: 0, 
+            zIndex: 30, 
+            height: '40px',
+            backgroundColor: 'rgba(0, 0, 0, 0.3)', 
+            backdropFilter: 'blur(8px)' 
+          }}
+        >
           <div className="flex items-center gap-4">
             {terminalSettings.statusLine.showFile && (
               <div className="flex items-center gap-1">
