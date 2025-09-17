@@ -131,7 +131,7 @@ class ContextDatabase {
       this.db!.prepare(`
         INSERT INTO context_folders (id, project_path, name, auto_created)
         VALUES (?, ?, ?, ?)
-      `).run(id, projectPath, folderName, true);
+      `).run(id, projectPath, folderName, 1);
       
       logger.debug(`📁 Created context folder: ${folderName} (${id})`);
       
@@ -205,21 +205,35 @@ class ContextDatabase {
     try {
       const id = `conv_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       
+      // Convert data types for SQLite compatibility
+      const safeEmbedding = conversation.embedding ? 
+        (typeof conversation.embedding === 'string' ? conversation.embedding : JSON.stringify(conversation.embedding)) : null;
+      
+      const safeSuccess = conversation.success !== undefined ? (conversation.success ? 1 : 0) : null;
+      
+      const safeContextUsed = conversation.context_used ? 
+        (typeof conversation.context_used === 'string' ? conversation.context_used : JSON.stringify(conversation.context_used)) : null;
+      
+      const safeFilesInvolved = conversation.files_involved ? 
+        (typeof conversation.files_involved === 'string' ? conversation.files_involved : JSON.stringify(conversation.files_involved)) : null;
+      
+      const safeTokensUsed = conversation.tokens_used || 0;
+      
       this.db!.prepare(`
         INSERT INTO claude_conversations 
         (id, session_id, user_input, claude_reply, embedding, success, error_type, context_used, files_involved, tokens_used)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `).run(
         id,
-        conversation.session_id,
-        conversation.user_input,
-        conversation.claude_reply,
-        conversation.embedding,
-        conversation.success,
-        conversation.error_type,
-        conversation.context_used,
-        conversation.files_involved,
-        conversation.tokens_used
+        conversation.session_id || '',
+        conversation.user_input || '',
+        conversation.claude_reply || '',
+        safeEmbedding,
+        safeSuccess,
+        conversation.error_type || null,
+        safeContextUsed,
+        safeFilesInvolved,
+        safeTokensUsed
       );
       
       logger.debug(`💬 Stored conversation: ${id}`);
@@ -284,18 +298,22 @@ class ContextDatabase {
       // Create new pattern
       const id = `pattern_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       
+      // Convert metadata for SQLite compatibility
+      const safeMetadata = pattern.metadata ? 
+        (typeof pattern.metadata === 'string' ? pattern.metadata : JSON.stringify(pattern.metadata)) : null;
+      
       this.db!.prepare(`
         INSERT INTO detected_patterns 
         (id, session_id, pattern_type, description, frequency, confidence, metadata)
         VALUES (?, ?, ?, ?, ?, ?, ?)
       `).run(
         id,
-        pattern.session_id,
-        pattern.pattern_type,
-        pattern.description,
-        pattern.frequency,
-        pattern.confidence,
-        pattern.metadata
+        pattern.session_id || '',
+        pattern.pattern_type || '',
+        pattern.description || '',
+        pattern.frequency || 0,
+        pattern.confidence || 0,
+        safeMetadata
       );
       
       logger.debug(`🔍 Stored pattern: ${pattern.pattern_type} - ${pattern.description}`);
@@ -355,6 +373,112 @@ class ContextDatabase {
         totalInsights: 0,
         successRate: 0
       };
+    }
+  }
+
+  /**
+   * Get active session for a folder (session created within last 4 hours)
+   */
+  async getActiveSession(folderId: string): Promise<ContextSession | null> {
+    if (!this.db) await this.initialize();
+    
+    try {
+      // Get session created within last 4 hours that hasn't ended
+      const fourHoursAgo = new Date();
+      fourHoursAgo.setHours(fourHoursAgo.getHours() - 4);
+      
+      const activeSession = this.db!.prepare(`
+        SELECT * FROM context_sessions 
+        WHERE folder_id = ? 
+          AND end_time IS NULL 
+          AND start_time > ?
+        ORDER BY start_time DESC
+        LIMIT 1
+      `).get(folderId, fourHoursAgo.toISOString()) as ContextSession | undefined;
+      
+      if (activeSession) {
+        logger.debug(`🔄 Found active session: ${activeSession.id}`);
+      }
+      
+      return activeSession || null;
+    } catch (error) {
+      logger.error('❌ Failed to get active session:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Get today's session for reuse (session created today)
+   */
+  async getTodaySession(folderId: string): Promise<ContextSession | null> {
+    if (!this.db) await this.initialize();
+    
+    try {
+      // Get the start of today
+      const todayStart = new Date();
+      todayStart.setHours(0, 0, 0, 0);
+      
+      const todaySession = this.db!.prepare(`
+        SELECT * FROM context_sessions 
+        WHERE folder_id = ? 
+          AND start_time >= ?
+        ORDER BY start_time DESC
+        LIMIT 1
+      `).get(folderId, todayStart.toISOString()) as ContextSession | undefined;
+      
+      if (todaySession) {
+        logger.debug(`📅 Found today's session: ${todaySession.id}`);
+      }
+      
+      return todaySession || null;
+    } catch (error) {
+      logger.error('❌ Failed to get today session:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Clean up old sessions (older than specified days)
+   */
+  async cleanupOldSessions(daysToKeep: number = 30): Promise<number> {
+    if (!this.db) await this.initialize();
+    
+    try {
+      const cutoffDate = new Date();
+      cutoffDate.setDate(cutoffDate.getDate() - daysToKeep);
+      
+      // Delete old sessions and cascade will handle related records
+      const result = this.db!.prepare(`
+        DELETE FROM context_sessions 
+        WHERE start_time < ?
+      `).run(cutoffDate.toISOString());
+      
+      logger.debug(`🧹 Cleaned up ${result.changes} old sessions`);
+      
+      return result.changes;
+    } catch (error) {
+      logger.error('❌ Failed to cleanup old sessions:', error);
+      return 0;
+    }
+  }
+
+  /**
+   * Get session count for a folder
+   */
+  async getSessionCount(folderId: string): Promise<number> {
+    if (!this.db) await this.initialize();
+    
+    try {
+      const result = this.db!.prepare(`
+        SELECT COUNT(*) as count 
+        FROM context_sessions 
+        WHERE folder_id = ?
+      `).get(folderId) as { count: number };
+      
+      return result.count;
+    } catch (error) {
+      logger.error('❌ Failed to get session count:', error);
+      return 0;
     }
   }
 

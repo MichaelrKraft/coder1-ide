@@ -39,6 +39,7 @@ class ContextProcessor {
 
   /**
    * Initialize processor with current project context
+   * Uses smart session management to prevent memory exhaustion
    */
   async initialize(projectPath: string): Promise<void> {
     try {
@@ -46,11 +47,38 @@ class ContextProcessor {
       const folder = await contextDatabase.getOrCreateFolder(projectPath);
       this.currentFolder = folder.id;
       
-      // Create new session
-      const session = await contextDatabase.createSession(folder.id);
+      // Check for existing active session (within last 4 hours)
+      let session = await contextDatabase.getActiveSession(folder.id);
+      
+      if (!session) {
+        // Check for today's session for reuse
+        session = await contextDatabase.getTodaySession(folder.id);
+        
+        if (!session) {
+          // Only create new session if we don't have one today
+          // This prevents creating thousands of sessions
+          const sessionCount = await contextDatabase.getSessionCount(folder.id);
+          
+          // Safety check: prevent excessive session creation
+          if (sessionCount > 100) {
+            // Clean up old sessions (keep last 30 days)
+            const cleaned = await contextDatabase.cleanupOldSessions(30);
+            logger.info(`🧹 Cleaned up ${cleaned} old sessions to prevent memory issues`);
+          }
+          
+          // Create new session
+          session = await contextDatabase.createSession(folder.id);
+          logger.info(`✨ Created new context session: ${session.id}`);
+        } else {
+          logger.debug(`📅 Reusing today's session: ${session.id}`);
+        }
+      } else {
+        logger.debug(`🔄 Reusing active session: ${session.id}`);
+      }
+      
       this.currentSession = session.id;
       
-      logger.debug(`🧠 Context processor initialized for: ${folder.name}`);
+      logger.debug(`🧠 Context processor initialized for: ${folder.name} with session: ${session.id}`);
     } catch (error) {
       logger.error('❌ Failed to initialize context processor:', error);
       throw error;

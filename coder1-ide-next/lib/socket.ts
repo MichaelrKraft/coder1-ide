@@ -45,10 +45,11 @@ export const getSocket = async (sessionId?: string, bridgeAuth: boolean = false)
       console.log(`🔌 CREATING SOCKET CONNECTION (attempt ${connectionAttempts})`);
       
       // Connect to the unified server (Next.js custom server)
-      // In production, use the same origin. In dev, use localhost:3001
+      // In production, use the same origin. In dev, use the current port or default to 3001
       const unifiedUrl = typeof window !== 'undefined' && window.location.hostname !== 'localhost'
         ? `${window.location.protocol}//${window.location.host}`
-        : (process.env.NEXT_PUBLIC_UNIFIED_SERVER_URL || 'http://localhost:3001');
+        : (process.env.NEXT_PUBLIC_UNIFIED_SERVER_URL || 
+           (typeof window !== 'undefined' ? `http://localhost:${window.location.port || '3001'}` : 'http://localhost:3001'));
       console.log(`🎯 CONNECTING TO UNIFIED SERVER: ${unifiedUrl}`);
       
       let newSocket: Socket;

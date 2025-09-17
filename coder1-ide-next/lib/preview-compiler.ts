@@ -223,6 +223,10 @@ export class PreviewCompiler {
    * Compile CSS files
    */
   private compileCSS(content: string): CompilationResult {
+    // Detect animation/keyframe classes for better preview
+    const animationClasses = this.extractCSSClasses(content);
+    const hasAnimations = content.includes('@keyframes') || content.includes('animation:');
+    
     const html = `
 <!DOCTYPE html>
 <html lang="en">
@@ -231,25 +235,259 @@ export class PreviewCompiler {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>CSS Preview</title>
   <style>
-    body { font-family: system-ui, sans-serif; margin: 20px; }
-    .css-preview { border: 1px solid #ddd; padding: 20px; margin: 20px 0; }
+    body { 
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+      margin: 0; 
+      padding: 20px; 
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      color: #333;
+    }
+    .preview-container { 
+      max-width: 1000px; 
+      margin: 0 auto; 
+      background: white; 
+      border-radius: 12px; 
+      padding: 30px; 
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    }
+    .preview-header {
+      text-align: center;
+      margin-bottom: 30px;
+      padding-bottom: 20px;
+      border-bottom: 2px solid #eee;
+    }
+    .preview-header h1 {
+      color: #333;
+      margin-bottom: 10px;
+      font-size: 2.5em;
+    }
+    .preview-header p {
+      color: #666;
+      font-size: 1.1em;
+    }
+    .demo-section { 
+      margin: 30px 0; 
+      padding: 25px; 
+      border: 2px solid #e0e0e0; 
+      border-radius: 10px; 
+      background: #f9f9f9;
+    }
+    .demo-section h3 {
+      margin-top: 0;
+      color: #444;
+      border-bottom: 2px solid #ddd;
+      padding-bottom: 10px;
+    }
+    .demo-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px;
+      margin: 20px 0;
+    }
+    .demo-card {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      border: 1px solid #ddd;
+      text-align: center;
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+    .demo-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    .trigger-button {
+      background: linear-gradient(45deg, #667eea, #764ba2);
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 25px;
+      cursor: pointer;
+      font-size: 1em;
+      margin: 10px;
+      transition: all 0.3s ease;
+    }
+    .trigger-button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    }
+    .code-section {
+      background: #2d3748;
+      color: #e2e8f0;
+      padding: 20px;
+      border-radius: 8px;
+      margin-top: 30px;
+      overflow-x: auto;
+    }
+    .code-section pre {
+      margin: 0;
+      white-space: pre-wrap;
+      font-family: 'Monaco', 'Consolas', monospace;
+      font-size: 0.9em;
+    }
+    .animation-playground {
+      min-height: 200px;
+      background: linear-gradient(45deg, #f0f0f0, #e0e0e0);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 20px 0;
+      position: relative;
+      overflow: hidden;
+    }
   </style>
   <style>
+    /* Your CSS styles */
     ${content}
   </style>
 </head>
 <body>
-  <h2>CSS Preview</h2>
-  <div class="css-preview">
-    <h3>Sample Elements</h3>
-    <p>This is a paragraph with your CSS applied.</p>
-    <button>Button</button>
-    <div class="example">Example div</div>
+  <div class="preview-container">
+    <div class="preview-header">
+      <h1>🎨 CSS Preview</h1>
+      <p>Interactive demonstration of your CSS styles${hasAnimations ? ' and animations' : ''}</p>
+    </div>
+
+    <div class="demo-section">
+      <h3>📝 Text Elements</h3>
+      <div class="demo-grid">
+        <div class="demo-card">
+          <h4>Heading</h4>
+          <p>Sample paragraph text</p>
+          <span>Small text</span>
+        </div>
+        <div class="demo-card">
+          <h4>Lists</h4>
+          <ul>
+            <li>List item 1</li>
+            <li>List item 2</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="demo-section">
+      <h3>🔲 Interactive Elements</h3>
+      <div class="demo-grid">
+        <div class="demo-card">
+          <button class="trigger-button">Click Me</button>
+          <input type="text" placeholder="Input field" style="margin: 10px; padding: 8px;">
+        </div>
+        <div class="demo-card">
+          <div style="width: 100px; height: 100px; background: #667eea; margin: 0 auto; border-radius: 50%;"></div>
+          <p>Sample div element</p>
+        </div>
+      </div>
+    </div>
+
+    ${hasAnimations ? `
+    <div class="demo-section">
+      <h3>✨ Animation Playground</h3>
+      <div class="animation-playground" id="playground">
+        ${animationClasses.map(className => `
+          <div class="demo-element" style="
+            width: 80px; 
+            height: 80px; 
+            background: linear-gradient(45deg, #667eea, #764ba2); 
+            border-radius: 10px; 
+            margin: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+          " onclick="this.className='demo-element ${className}'; setTimeout(() => this.className='demo-element', 2000)">
+            ${className.replace(/^animate/, '').replace(/([A-Z])/g, ' $1').trim()}
+          </div>
+        `).join('')}
+      </div>
+      <div style="text-align: center; margin-top: 20px;">
+        <button class="trigger-button" onclick="triggerAllAnimations()">🎬 Trigger All Animations</button>
+        <button class="trigger-button" onclick="resetAnimations()">🔄 Reset</button>
+      </div>
+    </div>
+    ` : ''}
+
+    <div class="demo-section">
+      <h3>🎯 Apply Your Classes</h3>
+      <p>Click the buttons below to apply your CSS classes to sample elements:</p>
+      <div style="text-align: center;">
+        ${animationClasses.map(className => `
+          <button class="trigger-button" onclick="applyClass('${className}')">
+            .${className}
+          </button>
+        `).join('')}
+      </div>
+      <div id="testElement" style="
+        width: 200px; 
+        height: 100px; 
+        background: #f0f0f0; 
+        border: 2px solid #ddd; 
+        border-radius: 8px; 
+        margin: 20px auto; 
+        display: flex; 
+        align-items: center; 
+        justify-content: center;
+        font-weight: bold;
+        cursor: pointer;
+      ">
+        Test Element
+      </div>
+    </div>
+
+    <div class="code-section">
+      <h3>📄 Your CSS Code</h3>
+      <pre>${content}</pre>
+    </div>
   </div>
-  <details>
-    <summary>CSS Code</summary>
-    <pre>${content}</pre>
-  </details>
+
+  <script>
+    function applyClass(className) {
+      const element = document.getElementById('testElement');
+      element.className = '';
+      setTimeout(() => {
+        element.className = className;
+        element.textContent = '.' + className + ' applied!';
+        setTimeout(() => {
+          element.className = '';
+          element.textContent = 'Test Element';
+        }, 3000);
+      }, 100);
+    }
+
+    function triggerAllAnimations() {
+      const elements = document.querySelectorAll('.demo-element');
+      elements.forEach((el, index) => {
+        setTimeout(() => {
+          const classes = ${JSON.stringify(animationClasses)};
+          if (classes[index]) {
+            el.className = 'demo-element ' + classes[index];
+            setTimeout(() => el.className = 'demo-element', 2000);
+          }
+        }, index * 200);
+      });
+    }
+
+    function resetAnimations() {
+      const elements = document.querySelectorAll('.demo-element');
+      elements.forEach(el => {
+        el.className = 'demo-element';
+      });
+      document.getElementById('testElement').className = '';
+      document.getElementById('testElement').textContent = 'Test Element';
+    }
+
+    // Auto-trigger animations on load if available
+    window.addEventListener('load', () => {
+      if (${hasAnimations}) {
+        setTimeout(triggerAllAnimations, 1000);
+      }
+    });
+  </script>
 </body>
 </html>`;
 
@@ -383,6 +621,24 @@ export class PreviewCompiler {
       default:
         return 'other';
     }
+  }
+
+  /**
+   * Extract CSS class names from content
+   */
+  private extractCSSClasses(content: string): string[] {
+    const classRegex = /\.([a-zA-Z][a-zA-Z0-9_-]*)\s*\{/g;
+    const classes: string[] = [];
+    let match;
+    
+    while ((match = classRegex.exec(content)) !== null) {
+      const className = match[1];
+      if (!classes.includes(className)) {
+        classes.push(className);
+      }
+    }
+    
+    return classes;
   }
 
   /**
