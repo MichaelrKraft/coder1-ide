@@ -1,0 +1,262 @@
+<!-- 
+===============================================================================
+CANONICAL FILE - MODIFY THIS VERSION ONLY
+===============================================================================
+File: smart-prd-generator.html
+Purpose: Smart Repository Patterns PRD Generator - Lead Magnet Interface
+Status: PRODUCTION - Last updated: January 20, 2025
+Claude Agents: This is the OFFICIAL version - do not modify copies elsewhere
+===============================================================================
+-->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Repository Patterns - Generate PRDs from Proven Startup Success Patterns</title>
+    <meta name="description" content="Generate professional PRDs using proven patterns from Notion, Stripe, GitHub, and other successful startups. Free tool that provides real value and seamless handoff to Coder1 for implementation.">
+    
+    <!-- Open Graph Meta Tags -->
+    <meta property="og:title" content="Smart Repository Patterns PRD Generator">
+    <meta property="og:description" content="Generate professional PRDs using proven patterns from successful startups">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="http://localhost:3000/smart-prd-generator">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#6366f1',
+                        secondary: '#ec4899',
+                        accent: '#10b981'
+                    },
+                    animation: {
+                        'fade-in': 'fadeIn 0.5s ease-in-out',
+                        'slide-up': 'slideUp 0.5s ease-out',
+                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .pattern-card {
+            transition: all 0.3s ease;
+        }
+        .pattern-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+        .progress-step {
+            transition: all 0.3s ease;
+        }
+        .progress-step.active {
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            color: white;
+        }
+        .progress-step.completed {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+        }
+        .glassmorphism {
+            background: rgba(255, 255, 255, 0.25);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+        }
+        .gradient-text {
+            background: linear-gradient(135deg, #6366f1, #ec4899, #10b981);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-blue-50 via-white to-purple-50 min-h-screen">
+    <!-- Navigation -->
+    <nav class="fixed top-0 w-full z-50 glassmorphism">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center py-4">
+                <div class="flex items-center space-x-2">
+                    <div class="w-8 h-8 bg-gradient-to-br from-primary to-secondary rounded-lg flex items-center justify-center">
+                        <span class="text-white font-bold text-lg">S</span>
+                    </div>
+                    <span class="text-xl font-bold gradient-text">Smart Patterns</span>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <button onclick="showPatterns()" class="text-gray-600 hover:text-primary transition-colors">Browse Patterns</button>
+                    <button onclick="showAbout()" class="text-gray-600 hover:text-primary transition-colors">About</button>
+                    <button onclick="launchCoder1()" class="bg-gradient-to-r from-primary to-secondary text-white px-4 py-2 rounded-lg hover:shadow-lg transition-all">
+                        Launch Coder1 →
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Container -->
+    <div class="pt-20 pb-16">
+        <!-- Hero Section -->
+        <section id="hero-section" class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16 text-center">
+            <div class="animate-fade-in">
+                <div class="inline-flex items-center space-x-2 bg-gradient-to-r from-primary/10 to-secondary/10 px-4 py-2 rounded-full mb-6">
+                    <span class="w-2 h-2 bg-accent rounded-full animate-pulse"></span>
+                    <span class="text-sm font-medium text-gray-600">Free Professional PRD Generator</span>
+                </div>
+                
+                <h1 class="text-5xl md:text-6xl font-bold mb-6">
+                    Build Like the 
+                    <span class="gradient-text">Best Startups</span>
+                </h1>
+                
+                <p class="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
+                    Generate professional PRDs using proven patterns from Notion, Stripe, GitHub, and other successful companies. 
+                    Get real architectural guidance and seamless handoff to Coder1 for implementation.
+                </p>
+                
+                <div class="flex flex-col sm:flex-row gap-4 justify-center mb-12">
+                    <button onclick="startQuestionnaire()" class="bg-gradient-to-r from-primary to-secondary text-white px-8 py-4 rounded-lg text-lg font-semibold hover:shadow-xl transition-all transform hover:scale-105">
+                        🚀 Generate My PRD (Free)
+                    </button>
+                    <button onclick="showPatterns()" class="border-2 border-primary text-primary px-8 py-4 rounded-lg text-lg font-semibold hover:bg-primary hover:text-white transition-all">
+                        📋 Browse Patterns
+                    </button>
+                </div>
+                
+                <!-- Trust Indicators -->
+                <div class="flex justify-center items-center space-x-8 text-sm text-gray-500">
+                    <div class="flex items-center space-x-2">
+                        <span class="w-3 h-3 bg-accent rounded-full"></span>
+                        <span>8 Proven Patterns</span>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <span class="w-3 h-3 bg-accent rounded-full"></span>
+                        <span>70%+ Success Rate</span>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <span class="w-3 h-3 bg-accent rounded-full"></span>
+                        <span>5-Page Professional PRDs</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Pattern Selection -->
+        <section id="pattern-selection" class="hidden max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl font-bold text-gray-900 mb-4">Choose Your Success Pattern</h2>
+                <p class="text-lg text-gray-600">Select the pattern that best matches your startup vision</p>
+            </div>
+            
+            <div id="patterns-grid" class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Patterns will be loaded here -->
+            </div>
+        </section>
+
+        <!-- Questionnaire Interface -->
+        <section id="questionnaire-section" class="hidden max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+            <!-- Progress Bar -->
+            <div class="mb-8">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-2xl font-bold text-gray-900">Smart Questionnaire</h2>
+                    <span id="progress-text" class="text-sm text-gray-500">Question 1 of 5</span>
+                </div>
+                <div class="w-full bg-gray-200 rounded-full h-2">
+                    <div id="progress-bar" class="bg-gradient-to-r from-primary to-secondary h-2 rounded-full transition-all duration-500" style="width: 20%"></div>
+                </div>
+            </div>
+
+            <!-- Question Card -->
+            <div id="question-card" class="bg-white rounded-2xl shadow-xl p-8 mb-6">
+                <!-- Question content will be inserted here -->
+            </div>
+
+            <!-- Navigation Buttons -->
+            <div class="flex justify-between">
+                <button id="prev-btn" onclick="previousQuestion()" class="hidden px-6 py-3 text-primary border border-primary rounded-lg hover:bg-primary hover:text-white transition-all">
+                    ← Previous
+                </button>
+                <button id="next-btn" onclick="nextQuestion()" class="ml-auto px-8 py-3 bg-gradient-to-r from-primary to-secondary text-white rounded-lg hover:shadow-lg transition-all">
+                    Next Question →
+                </button>
+            </div>
+        </section>
+
+        <!-- PRD Generation -->
+        <section id="prd-generation" class="hidden max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+            <div class="text-center">
+                <div id="generation-loading" class="mb-8">
+                    <div class="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                    <h3 class="text-2xl font-bold text-gray-900 mb-2">Generating Your PRD</h3>
+                    <p class="text-gray-600">Applying proven patterns from successful startups...</p>
+                </div>
+                
+                <div id="generation-complete" class="hidden">
+                    <div class="w-16 h-16 bg-gradient-to-br from-accent to-green-400 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-2xl font-bold text-gray-900 mb-2">PRD Generated Successfully!</h3>
+                    <p class="text-gray-600 mb-8">Your professional 5-page PRD is ready for download and implementation.</p>
+                    
+                    <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                        <button onclick="downloadPRD()" class="bg-gradient-to-r from-accent to-green-400 text-white px-8 py-4 rounded-lg text-lg font-semibold hover:shadow-xl transition-all">
+                            📄 Download PRD
+                        </button>
+                        <button onclick="startHandoff()" class="bg-gradient-to-r from-primary to-secondary text-white px-8 py-4 rounded-lg text-lg font-semibold hover:shadow-xl transition-all">
+                            🚀 Implement with Coder1
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Handoff Section -->
+        <section id="handoff-section" class="hidden max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl font-bold text-gray-900 mb-4">Ready to Build?</h2>
+                <p class="text-lg text-gray-600">Your PRD provides the foundation. Now let's implement it with Coder1's AI-powered development environment.</p>
+            </div>
+            
+            <!-- Handoff Steps -->
+            <div id="handoff-steps" class="space-y-6">
+                <!-- Steps will be loaded here -->
+            </div>
+            
+            <!-- Launch IDE Button -->
+            <div class="text-center mt-12">
+                <button onclick="launchIDE()" class="bg-gradient-to-r from-primary to-secondary text-white px-12 py-6 rounded-lg text-xl font-bold hover:shadow-2xl transition-all transform hover:scale-105">
+                    🎯 Launch Coder1 IDE
+                </button>
+                <p class="text-sm text-gray-500 mt-4">Opens in new tab with your project context pre-loaded</p>
+            </div>
+        </section>
+    </div>
+
+    <!-- Floating Action Button -->
+    <div id="help-fab" class="fixed bottom-6 right-6 z-40">
+        <button onclick="showHelp()" class="w-14 h-14 bg-gradient-to-br from-primary to-secondary text-white rounded-full shadow-lg hover:shadow-xl transition-all transform hover:scale-110 flex items-center justify-center">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+        </button>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div id="toast-container" class="fixed top-20 right-6 z-50 space-y-2"></div>
+
+    <!-- JavaScript -->
+    <script src="smart-prd-generator.js"></script>
+</body>
+</html>
