@@ -25,6 +25,7 @@
 - [🚀 Deployment & Modernization](#-deployment--modernization)
 - [🔧 Terminal Issues](#-terminal-issues)
 - [🚨 Troubleshooting](#-troubleshooting)
+- [📋 Phase II: Claude Terminal Enhancement](./coder1-ide-next/PHASE_II_CLAUDE_TERMINAL_ENHANCEMENT.md)
 
 ### 🚀 Advanced Features
 - [🚀 Hybrid Hook System](#-hybrid-hook-system-revolutionary-performance)
@@ -704,6 +705,10 @@ The system includes 25 domain-specific agents:
 
 ## 📖 Additional Documentation
 
+### Development Plans
+- **[Phase II: Claude Terminal Enhancement](./coder1-ide-next/PHASE_II_CLAUDE_TERMINAL_ENHANCEMENT.md)**: Comprehensive plan for enhancing the Claude Code terminal experience with auto slash commands, activity visibility, and context intelligence
+
+### Technical Documentation
 - **[Architecture Documentation](./docs/architecture/)**: Technical deep dive and system design
 - **[User & Developer Guides](./docs/guides/)**: Setup, troubleshooting, and how-to guides
 - **[Development Documentation](./docs/development/)**: Claude commands and technical references
