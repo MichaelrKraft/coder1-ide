@@ -1,0 +1,7 @@
+This is a test file for drag and drop functionality.
+It contains some sample text that should be processed by the multimodal system.
+
+Sample code:
+function hello() {
+    console.log("Hello from drag and drop!");
+}
