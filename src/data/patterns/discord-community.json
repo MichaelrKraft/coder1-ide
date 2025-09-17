@@ -1,0 +1,252 @@
+{
+  "id": "discord-community",
+  "metadata": {
+    "name": "Discord-style Community Platform",
+    "category": "social",
+    "complexity": "medium-high",
+    "successRate": 0.72,
+    "avgTimeToPMF": "8.8 months",
+    "examples": ["Discord", "Slack", "Telegram"],
+    "tags": ["real-time", "community", "voice-chat", "gaming"],
+    "businessModel": ["freemium", "subscription", "premium-features"],
+    "lastUpdated": "2025-01-20"
+  },
+  "description": "Build a real-time community platform with text/voice chat, server management, bot ecosystem, and gaming integration - following Discord's community-first architecture.",
+  "architecture": {
+    "frontend": {
+      "tech": "React 18 + Electron (desktop) + React Native (mobile)",
+      "rationale": "Discord uses React for web, Electron for desktop, and React Native for mobile to maintain code consistency across platforms.",
+      "alternatives": ["Vue 3 + Tauri", "Flutter for all platforms"],
+      "keyFeatures": ["Real-time messaging", "Voice/video chat", "Server management", "Rich media support"]
+    },
+    "backend": {
+      "tech": "Node.js + Express + WebRTC",
+      "rationale": "Node.js for high-concurrency real-time features. WebRTC for peer-to-peer voice/video. Express for API layer.",
+      "alternatives": ["Go + Gin", "Elixir + Phoenix"],
+      "keyFeatures": ["Real-time messaging", "Voice server orchestration", "User management", "Bot API"]
+    },
+    "database": {
+      "tech": "MongoDB + Redis + Cassandra",
+      "rationale": "MongoDB for flexible message storage, Redis for real-time state, Cassandra for voice/call logs and analytics.",
+      "alternatives": ["PostgreSQL + Redis", "CockroachDB"],
+      "keyFeatures": ["Message history", "User profiles", "Server data", "Real-time presence"]
+    },
+    "realtime": {
+      "tech": "WebSocket + Socket.io + Redis Cluster",
+      "rationale": "WebSocket for low-latency messaging, Socket.io for connection management, Redis Cluster for horizontal scaling.",
+      "alternatives": ["Native WebSocket + Redis", "Phoenix Channels"],
+      "keyFeatures": ["Instant messaging", "Typing indicators", "Presence status", "Live activities"]
+    },
+    "voice": {
+      "tech": "WebRTC + Janus Gateway + Opus codec",
+      "rationale": "WebRTC for browser-based voice, Janus for media server, Opus for high-quality audio compression.",
+      "alternatives": ["Agora.io", "Twilio Video"],
+      "keyFeatures": ["Voice channels", "Video calls", "Screen sharing", "Audio processing"]
+    },
+    "bots": {
+      "tech": "Node.js SDK + Webhook system",
+      "rationale": "JavaScript SDK for easy bot development, webhook system for external integrations and automation.",
+      "alternatives": ["Python SDK", "REST API only"],
+      "keyFeatures": ["Bot framework", "Command handling", "Permission system", "Integration marketplace"]
+    }
+  },
+  "questions": [
+    {
+      "id": "community-focus",
+      "type": "choice",
+      "text": "What type of community platform will you build?",
+      "choices": [
+        {
+          "value": "gaming",
+          "label": "Gaming communities (Discord style)",
+          "impact": "Voice chat priority, game integrations, streaming features"
+        },
+        {
+          "value": "professional",
+          "label": "Professional communities (Slack style)",
+          "impact": "File sharing, integrations, thread organization, enterprise features"
+        },
+        {
+          "value": "general",
+          "label": "General communities (Reddit + Discord hybrid)",
+          "impact": "Forums, real-time chat, content discovery, moderation tools"
+        },
+        {
+          "value": "educational",
+          "label": "Educational communities (learning-focused)",
+          "impact": "Study groups, resource sharing, progress tracking, instructor tools"
+        }
+      ],
+      "category": "functional",
+      "priority": 1,
+      "impact": "Determines core feature priorities, UI design, and target user experience"
+    },
+    {
+      "id": "voice-video-priority",
+      "type": "choice",
+      "text": "How important are voice and video features?",
+      "choices": [
+        {
+          "value": "essential",
+          "label": "Essential (core feature like Discord)",
+          "impact": "WebRTC infrastructure, voice servers, audio processing"
+        },
+        {
+          "value": "important",
+          "label": "Important but secondary (Slack style)",
+          "impact": "Basic calling features, meeting rooms, screen sharing"
+        },
+        {
+          "value": "optional",
+          "label": "Optional (text-first platform)",
+          "impact": "Simple voice integration, focus on messaging features"
+        },
+        {
+          "value": "none",
+          "label": "Not needed (text-only platform)",
+          "impact": "Simplified architecture, no voice infrastructure needed"
+        }
+      ],
+      "category": "functional",
+      "priority": 1,
+      "impact": "Affects infrastructure complexity, development timeline, and feature priorities"
+    },
+    {
+      "id": "scale-expectations",
+      "type": "choice",
+      "text": "What scale of concurrent users do you expect?",
+      "choices": [
+        {
+          "value": "small",
+          "label": "Small scale (100-1K concurrent users)",
+          "impact": "Simple infrastructure, basic real-time features"
+        },
+        {
+          "value": "medium",
+          "label": "Medium scale (1K-50K concurrent users)",
+          "impact": "Horizontal scaling, message queuing, performance optimization"
+        },
+        {
+          "value": "large",
+          "label": "Large scale (50K+ concurrent users)",
+          "impact": "Microservices, advanced caching, global infrastructure"
+        }
+      ],
+      "category": "technical",
+      "priority": 2,
+      "impact": "Determines infrastructure architecture, scaling strategies, and technology choices"
+    },
+    {
+      "id": "bot-ecosystem",
+      "type": "boolean",
+      "text": "Do you need a bot ecosystem and third-party integrations?",
+      "category": "functional",
+      "priority": 2,
+      "impact": "Requires bot API, webhook system, integration marketplace, and developer tools"
+    },
+    {
+      "id": "monetization-features",
+      "type": "multiple",
+      "text": "What monetization features do you need?",
+      "choices": [
+        { "value": "premium-subscriptions", "label": "Premium user subscriptions" },
+        { "value": "server-boosting", "label": "Server boosting and perks" },
+        { "value": "custom-emojis", "label": "Custom emojis and cosmetics" },
+        { "value": "enhanced-features", "label": "Enhanced features (file size, quality)" },
+        { "value": "enterprise", "label": "Enterprise plans with admin features" },
+        { "value": "none", "label": "No monetization planned" }
+      ],
+      "category": "business",
+      "priority": 3,
+      "impact": "Affects feature gating, payment integration, and premium feature development"
+    }
+  ],
+  "outcomes": {
+    "timeline": {
+      "mvp": "12-16 weeks",
+      "v1": "20-28 weeks",
+      "scale": "32-44 weeks"
+    },
+    "team": {
+      "minimum": "3-4 developers",
+      "recommended": "5-7 developers + 1 DevOps + 1 designer",
+      "enterprise": "8-12 developers + 2 DevOps + 2 designers"
+    },
+    "costs": {
+      "development": {
+        "mvp": "$60,000-$120,000",
+        "v1": "$125,000-$250,000",
+        "enterprise": "$300,000-$600,000"
+      },
+      "monthly": {
+        "startup": "$1,500-$6,000",
+        "growth": "$6,000-$25,000",
+        "scale": "$25,000-$100,000"
+      }
+    },
+    "metrics": {
+      "engagement": "Daily active users, messages per day, voice session duration",
+      "growth": "Server creation rate, user retention, invitation acceptance",
+      "technical": "Message delivery time, voice quality, connection stability",
+      "business": "Premium subscriptions, server boosting revenue, enterprise adoption"
+    }
+  },
+  "risks": [
+    {
+      "type": "technical",
+      "risk": "Real-time messaging reliability and scaling",
+      "severity": 8,
+      "probability": 7,
+      "mitigation": "Message queuing, horizontal scaling, monitoring and alerting"
+    },
+    {
+      "type": "technical",
+      "risk": "Voice/video quality and latency issues",
+      "severity": 7,
+      "probability": 6,
+      "mitigation": "WebRTC optimization, multiple voice servers, adaptive quality"
+    },
+    {
+      "type": "business",
+      "risk": "User retention and community building",
+      "severity": 8,
+      "probability": 5,
+      "mitigation": "Onboarding optimization, community features, engagement tools"
+    },
+    {
+      "type": "moderation",
+      "risk": "Content moderation and abuse prevention",
+      "severity": 7,
+      "probability": 7,
+      "mitigation": "Automated moderation, reporting tools, moderation APIs"
+    },
+    {
+      "type": "technical",
+      "risk": "Mobile app performance and battery optimization",
+      "severity": 6,
+      "probability": 6,
+      "mitigation": "React Native optimization, background processing limits, testing"
+    }
+  ],
+  "successFactors": [
+    "Reliable real-time messaging with minimal latency",
+    "High-quality voice and video communication",
+    "Intuitive server organization and moderation tools",
+    "Strong mobile experience for on-the-go communication",
+    "Vibrant bot ecosystem and third-party integrations"
+  ],
+  "marketData": {
+    "totalAddressableMarket": "$40B+ (communication and collaboration software)",
+    "competitorAnalysis": {
+      "Discord": "Gaming focus, excellent voice quality, strong community features",
+      "Slack": "Professional focus, extensive integrations, enterprise features",
+      "Telegram": "Privacy focus, large groups, cross-platform consistency"
+    },
+    "differentiationOpportunities": [
+      "Industry-specific community features",
+      "Enhanced mobile-first experience",
+      "AI-powered moderation and community insights",
+      "Better content discovery and recommendation systems"
+    ]
+  }
+}

@@ -1,0 +1,264 @@
+{
+  "id": "posthog-analytics",
+  "metadata": {
+    "name": "PostHog-style Product Analytics Platform",
+    "category": "analytics",
+    "complexity": "medium-high",
+    "successRate": 0.69,
+    "avgTimeToPMF": "11.2 months",
+    "examples": ["PostHog", "Mixpanel", "Amplitude"],
+    "tags": ["product-analytics", "event-tracking", "feature-flags", "a-b-testing"],
+    "businessModel": ["freemium", "usage-based", "enterprise"],
+    "lastUpdated": "2025-01-20"
+  },
+  "description": "Build a comprehensive product analytics platform with event tracking, user behavior analysis, feature flags, and A/B testing - following PostHog's open-source and developer-first approach.",
+  "architecture": {
+    "frontend": {
+      "tech": "React 18 + TypeScript + Ant Design",
+      "rationale": "PostHog uses React with Ant Design for rapid development and consistent UI. TypeScript ensures data accuracy in analytics dashboards.",
+      "alternatives": ["Vue 3 + Element Plus", "Next.js"],
+      "keyFeatures": ["Dashboard builder", "Real-time charts", "Funnel analysis", "Cohort analysis"]
+    },
+    "backend": {
+      "tech": "Django + Celery + Redis",
+      "rationale": "PostHog's proven architecture: Django for web framework, Celery for async processing, Redis for queuing and caching.",
+      "alternatives": ["Node.js + Bull", "Python + FastAPI"],
+      "keyFeatures": ["Event ingestion", "Query engine", "Feature flag service", "A/B test management"]
+    },
+    "database": {
+      "tech": "ClickHouse + PostgreSQL + Redis",
+      "rationale": "ClickHouse for high-volume event storage and analytics queries. PostgreSQL for relational data. Redis for caching and queues.",
+      "alternatives": ["BigQuery + PostgreSQL", "TimescaleDB + PostgreSQL"],
+      "keyFeatures": ["Event storage", "User profiles", "Feature flag state", "Query result caching"]
+    },
+    "eventIngestion": {
+      "tech": "Kafka + ClickHouse + Custom ingestion API",
+      "rationale": "Kafka for reliable event streaming, custom ingestion API for client libraries, ClickHouse for fast storage.",
+      "alternatives": ["Apache Pulsar", "AWS Kinesis"],
+      "keyFeatures": ["High-volume ingestion", "Event deduplication", "Real-time processing", "Batch processing"]
+    },
+    "analytics": {
+      "tech": "ClickHouse SQL + Custom query engine",
+      "rationale": "ClickHouse provides excellent performance for analytical queries. Custom query layer for product-specific analytics.",
+      "alternatives": ["Apache Druid", "TimescaleDB"],
+      "keyFeatures": ["Funnel analysis", "Retention queries", "Cohort analysis", "Custom events"]
+    },
+    "realtime": {
+      "tech": "WebSocket + Redis Pub/Sub",
+      "rationale": "Real-time dashboard updates and live event monitoring. Redis Pub/Sub for efficient message distribution.",
+      "alternatives": ["Socket.io", "Server-sent events"],
+      "keyFeatures": ["Live dashboards", "Real-time alerts", "Live user sessions", "Feature flag updates"]
+    }
+  },
+  "questions": [
+    {
+      "id": "analytics-scope",
+      "type": "choice",
+      "text": "What type of analytics platform will you build?",
+      "choices": [
+        {
+          "value": "product-analytics",
+          "label": "Product analytics (user behavior, funnels, retention)",
+          "impact": "Event tracking, user journey analysis, conversion optimization"
+        },
+        {
+          "value": "full-platform",
+          "label": "Full analytics platform (PostHog style with feature flags)",
+          "impact": "Complete product suite, feature management, A/B testing"
+        },
+        {
+          "value": "business-intelligence",
+          "label": "Business intelligence (dashboards, reporting)",
+          "impact": "Custom dashboards, data visualization, business metrics"
+        },
+        {
+          "value": "real-time-analytics",
+          "label": "Real-time analytics (live monitoring, alerts)",
+          "impact": "Streaming data, real-time dashboards, instant alerts"
+        }
+      ],
+      "category": "functional",
+      "priority": 1,
+      "impact": "Determines core feature set, data architecture, and product complexity"
+    },
+    {
+      "id": "data-volume",
+      "type": "choice",
+      "text": "What scale of data processing do you expect?",
+      "choices": [
+        {
+          "value": "low",
+          "label": "Low volume (< 1M events/month)",
+          "impact": "Simple database setup, basic analytics queries"
+        },
+        {
+          "value": "medium",
+          "label": "Medium volume (1M - 100M events/month)",
+          "impact": "Optimized database, event aggregation, caching strategies"
+        },
+        {
+          "value": "high",
+          "label": "High volume (100M+ events/month)",
+          "impact": "Distributed architecture, real-time processing, advanced optimization"
+        }
+      ],
+      "category": "technical",
+      "priority": 1,
+      "impact": "Affects database choice, infrastructure requirements, and processing architecture"
+    },
+    {
+      "id": "feature-management",
+      "type": "choice",
+      "text": "Do you need feature flag and experimentation capabilities?",
+      "choices": [
+        {
+          "value": "none",
+          "label": "No feature management (analytics only)",
+          "impact": "Simplified architecture, focus on analytics features"
+        },
+        {
+          "value": "basic-flags",
+          "label": "Basic feature flags (on/off toggles)",
+          "impact": "Feature flag service, simple percentage rollouts"
+        },
+        {
+          "value": "advanced-experimentation",
+          "label": "Advanced A/B testing and experimentation",
+          "impact": "Experiment framework, statistical analysis, multivariate testing"
+        }
+      ],
+      "category": "functional",
+      "priority": 2,
+      "impact": "Determines additional services needed and product complexity"
+    },
+    {
+      "id": "deployment-model",
+      "type": "choice",
+      "text": "How will customers deploy your analytics platform?",
+      "choices": [
+        {
+          "value": "cloud-only",
+          "label": "Cloud-hosted (SaaS model)",
+          "impact": "Managed infrastructure, subscription pricing, multi-tenancy"
+        },
+        {
+          "value": "self-hosted",
+          "label": "Self-hosted (PostHog open source style)",
+          "impact": "Docker/Kubernetes deployment, installation documentation"
+        },
+        {
+          "value": "hybrid",
+          "label": "Both cloud and self-hosted options",
+          "impact": "Dual deployment strategy, feature parity maintenance"
+        }
+      ],
+      "category": "business",
+      "priority": 2,
+      "impact": "Affects infrastructure design, pricing model, and go-to-market strategy"
+    },
+    {
+      "id": "privacy-compliance",
+      "type": "multiple",
+      "text": "What privacy and compliance requirements do you need?",
+      "choices": [
+        { "value": "gdpr", "label": "GDPR compliance (European users)" },
+        { "value": "ccpa", "label": "CCPA compliance (California users)" },
+        { "value": "data-anonymization", "label": "Data anonymization and pseudonymization" },
+        { "value": "data-retention", "label": "Configurable data retention policies" },
+        { "value": "consent-management", "label": "User consent management" },
+        { "value": "none", "label": "No specific privacy requirements" }
+      ],
+      "category": "compliance",
+      "priority": 3,
+      "impact": "Determines data handling procedures, user controls, and legal compliance features"
+    }
+  ],
+  "outcomes": {
+    "timeline": {
+      "mvp": "10-14 weeks",
+      "v1": "18-24 weeks",
+      "enterprise": "28-36 weeks"
+    },
+    "team": {
+      "minimum": "3-4 developers",
+      "recommended": "4-6 developers + 1 data engineer + 1 designer",
+      "enterprise": "6-10 developers + 2 data engineers + 2 designers"
+    },
+    "costs": {
+      "development": {
+        "mvp": "$50,000-$100,000",
+        "v1": "$100,000-$200,000",
+        "enterprise": "$250,000-$500,000"
+      },
+      "monthly": {
+        "startup": "$1,000-$5,000",
+        "growth": "$5,000-$20,000",
+        "scale": "$20,000-$80,000"
+      }
+    },
+    "metrics": {
+      "product": "Events processed per day, query response times, dashboard load times",
+      "business": "Customer retention, usage growth, revenue per customer",
+      "technical": "Data ingestion rate, query performance, system uptime",
+      "engagement": "Dashboard views, feature adoption, API usage"
+    }
+  },
+  "risks": [
+    {
+      "type": "technical",
+      "risk": "High-volume data ingestion and processing",
+      "severity": 8,
+      "probability": 7,
+      "mitigation": "Horizontal scaling, event queuing, batch processing optimization"
+    },
+    {
+      "type": "technical",
+      "risk": "Query performance on large datasets",
+      "severity": 7,
+      "probability": 6,
+      "mitigation": "Database optimization, query caching, pre-aggregation strategies"
+    },
+    {
+      "type": "business",
+      "risk": "Competition from established analytics platforms",
+      "severity": 8,
+      "probability": 8,
+      "mitigation": "Focus on developer experience, competitive pricing, unique features"
+    },
+    {
+      "type": "compliance",
+      "risk": "Privacy regulations and data handling",
+      "severity": 7,
+      "probability": 6,
+      "mitigation": "Privacy by design, compliance automation, legal review"
+    },
+    {
+      "type": "technical",
+      "risk": "Real-time processing reliability",
+      "severity": 6,
+      "probability": 5,
+      "mitigation": "Fault-tolerant architecture, monitoring, graceful degradation"
+    }
+  ],
+  "successFactors": [
+    "Fast and reliable event ingestion without data loss",
+    "Intuitive dashboard builder with powerful visualization options",
+    "Sub-second query performance even on large datasets",
+    "Developer-friendly APIs and SDKs for easy integration",
+    "Strong privacy controls and compliance features"
+  ],
+  "marketData": {
+    "totalAddressableMarket": "$25B+ (business intelligence and analytics)",
+    "competitorAnalysis": {
+      "PostHog": "Open source, developer-focused, all-in-one product suite",
+      "Mixpanel": "Mature platform, strong enterprise features, event-focused",
+      "Amplitude": "Product intelligence focus, advanced analytics, cohort analysis"
+    },
+    "differentiationOpportunities": [
+      "Real-time analytics with sub-second latency",
+      "Privacy-first analytics with built-in compliance",
+      "AI-powered insights and anomaly detection",
+      "Industry-specific analytics templates and dashboards"
+    ]
+  }
+}

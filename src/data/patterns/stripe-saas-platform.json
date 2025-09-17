@@ -1,0 +1,236 @@
+{
+  "id": "stripe-saas-platform",
+  "metadata": {
+    "name": "Stripe-style SaaS Platform",
+    "category": "saas",
+    "complexity": "medium-high",
+    "successRate": 0.68,
+    "avgTimeToPMF": "10.5 months",
+    "examples": ["Stripe", "Twilio", "SendGrid"],
+    "tags": ["api-first", "developer-tools", "billing", "payments"],
+    "businessModel": ["usage-based", "subscription", "freemium"],
+    "lastUpdated": "2025-01-20"
+  },
+  "description": "Build a developer-focused SaaS platform with robust API, usage-based billing, comprehensive documentation, and enterprise-grade reliability - following Stripe's proven architecture.",
+  "architecture": {
+    "frontend": {
+      "tech": "Next.js 14 + TypeScript",
+      "rationale": "Stripe uses React-based framework for SEO-friendly marketing pages and complex dashboard UIs. Next.js provides excellent developer experience.",
+      "alternatives": ["Remix", "SvelteKit"],
+      "keyFeatures": ["Marketing site", "Dashboard UI", "Documentation site", "API explorer"]
+    },
+    "backend": {
+      "tech": "Node.js + Express/Fastify + tRPC",
+      "rationale": "JavaScript consistency across stack. tRPC for type-safe APIs. Stripe-level API design principles.",
+      "alternatives": ["Python + FastAPI", "Go + Gin", "Ruby on Rails"],
+      "keyFeatures": ["RESTful APIs", "Webhook system", "Rate limiting", "API versioning"]
+    },
+    "database": {
+      "tech": "PostgreSQL + Redis",
+      "rationale": "PostgreSQL for transactional data and complex queries. Redis for caching, rate limiting, and session management.",
+      "alternatives": ["MySQL + Redis", "MongoDB + Redis"],
+      "keyFeatures": ["Usage tracking", "Billing data", "API analytics", "User management"]
+    },
+    "billing": {
+      "tech": "Stripe Billing + Custom Metering",
+      "rationale": "Use Stripe's own billing infrastructure for payments, add custom metering for usage-based pricing.",
+      "alternatives": ["Chargebee", "Recurly", "Custom billing"],
+      "keyFeatures": ["Usage metering", "Invoice generation", "Tax calculation", "Payment retry logic"]
+    },
+    "monitoring": {
+      "tech": "DataDog + Sentry",
+      "rationale": "Comprehensive monitoring and error tracking essential for developer-facing products with SLA requirements.",
+      "alternatives": ["New Relic", "Grafana + Prometheus"],
+      "keyFeatures": ["API performance", "Error tracking", "Custom metrics", "Alerting"]
+    },
+    "infrastructure": {
+      "tech": "AWS + Terraform",
+      "rationale": "Multi-region deployment for global availability. Infrastructure as code for consistency and compliance.",
+      "alternatives": ["Google Cloud", "Azure", "Railway"],
+      "keyFeatures": ["Auto-scaling", "Load balancing", "Global CDN", "Disaster recovery"]
+    },
+    "auth": {
+      "tech": "Custom JWT + API Keys",
+      "rationale": "Developer-focused authentication with API keys for machine-to-machine communication and JWT for user sessions.",
+      "alternatives": ["Auth0", "Supabase Auth"],
+      "keyFeatures": ["API key management", "Team access", "Rate limiting", "Webhook signatures"]
+    }
+  },
+  "questions": [
+    {
+      "id": "pricing-model",
+      "type": "choice",
+      "text": "What pricing model best fits your SaaS platform?",
+      "choices": [
+        {
+          "value": "usage-based",
+          "label": "Usage-based (pay per API call/transaction)",
+          "impact": "Requires metering infrastructure, complex billing calculations"
+        },
+        {
+          "value": "subscription",
+          "label": "Subscription tiers (monthly/annual plans)",
+          "impact": "Simpler billing, feature gating, user tier management"
+        },
+        {
+          "value": "hybrid",
+          "label": "Hybrid (base subscription + usage overages)",
+          "impact": "Most complex billing, combines both approaches"
+        },
+        {
+          "value": "freemium",
+          "label": "Freemium (free tier + paid features)",
+          "impact": "User conversion tracking, usage limit enforcement"
+        }
+      ],
+      "category": "business",
+      "priority": 1,
+      "impact": "Determines billing architecture complexity and metering requirements"
+    },
+    {
+      "id": "api-complexity",
+      "type": "choice",
+      "text": "How complex will your API offerings be?",
+      "choices": [
+        {
+          "value": "simple",
+          "label": "Simple REST API (basic CRUD operations)",
+          "impact": "Standard REST architecture, basic documentation"
+        },
+        {
+          "value": "comprehensive",
+          "label": "Comprehensive API suite (multiple products/services)",
+          "impact": "API versioning, extensive documentation, SDKs"
+        },
+        {
+          "value": "platform",
+          "label": "Full platform (APIs + webhooks + marketplace)",
+          "impact": "Complex architecture, partner ecosystem, app marketplace"
+        }
+      ],
+      "category": "technical",
+      "priority": 1,
+      "impact": "Affects API design complexity, documentation needs, and SDK requirements"
+    },
+    {
+      "id": "compliance-requirements",
+      "type": "multiple",
+      "text": "What compliance standards do you need to meet?",
+      "choices": [
+        { "value": "gdpr", "label": "GDPR (European data protection)" },
+        { "value": "ccpa", "label": "CCPA (California privacy)" },
+        { "value": "soc2", "label": "SOC 2 (security and availability)" },
+        { "value": "hipaa", "label": "HIPAA (healthcare data)" },
+        { "value": "pci", "label": "PCI DSS (payment processing)" },
+        { "value": "none", "label": "No specific compliance requirements" }
+      ],
+      "category": "security",
+      "priority": 2,
+      "impact": "Determines security architecture, audit requirements, and data handling procedures"
+    },
+    {
+      "id": "global-scale",
+      "type": "boolean",
+      "text": "Do you need global deployment with regional data residency?",
+      "category": "technical",
+      "priority": 3,
+      "impact": "Requires multi-region architecture, data localization, and compliance considerations"
+    },
+    {
+      "id": "webhook-system",
+      "type": "boolean",
+      "text": "Will you need a comprehensive webhook system for customer integrations?",
+      "category": "functional",
+      "priority": 2,
+      "impact": "Requires event system, retry logic, webhook signature verification, and delivery guarantees"
+    }
+  ],
+  "outcomes": {
+    "timeline": {
+      "mvp": "12-16 weeks",
+      "v1": "20-28 weeks",
+      "enterprise": "32-48 weeks"
+    },
+    "team": {
+      "minimum": "3-4 developers",
+      "recommended": "5-7 developers + 1 DevOps + 1 designer",
+      "enterprise": "8-12 developers + 2 DevOps + 2 designers"
+    },
+    "costs": {
+      "development": {
+        "mvp": "$50,000-$100,000",
+        "v1": "$125,000-$250,000",
+        "enterprise": "$300,000-$600,000"
+      },
+      "monthly": {
+        "startup": "$1,000-$5,000",
+        "growth": "$5,000-$20,000",
+        "scale": "$20,000-$100,000"
+      }
+    },
+    "metrics": {
+      "apiUsage": "API calls per day, unique integrations",
+      "revenue": "Monthly recurring revenue, average revenue per user",
+      "growth": "Developer signups, API adoption rate",
+      "quality": "API uptime, response times, error rates"
+    }
+  },
+  "risks": [
+    {
+      "type": "technical",
+      "risk": "API performance and scalability",
+      "severity": 9,
+      "probability": 7,
+      "mitigation": "Load testing, caching strategies, auto-scaling infrastructure"
+    },
+    {
+      "type": "business",
+      "risk": "Complex billing and metering accuracy",
+      "severity": 8,
+      "probability": 6,
+      "mitigation": "Thorough testing of billing logic, audit trails, reconciliation processes"
+    },
+    {
+      "type": "technical",
+      "risk": "Webhook delivery reliability",
+      "severity": 7,
+      "probability": 5,
+      "mitigation": "Retry mechanisms, dead letter queues, delivery status tracking"
+    },
+    {
+      "type": "security",
+      "risk": "API security and rate limiting",
+      "severity": 8,
+      "probability": 6,
+      "mitigation": "Comprehensive rate limiting, API key management, security headers"
+    },
+    {
+      "type": "compliance",
+      "risk": "Data privacy and regulatory compliance",
+      "severity": 7,
+      "probability": 4,
+      "mitigation": "Privacy by design, regular compliance audits, legal review"
+    }
+  ],
+  "successFactors": [
+    "Exceptional API documentation and developer experience",
+    "Rock-solid uptime and performance (99.9%+ SLA)",
+    "Transparent and fair pricing model",
+    "Comprehensive monitoring and alerting",
+    "Strong developer community and ecosystem"
+  ],
+  "marketData": {
+    "totalAddressableMarket": "$100B+ (developer tools and APIs)",
+    "competitorAnalysis": {
+      "Stripe": "Payments focus, excellent DX, complex pricing at scale",
+      "Twilio": "Communications APIs, broad portfolio, enterprise focus",
+      "SendGrid": "Email focus, acquired by Twilio, strong deliverability"
+    },
+    "differentiationOpportunities": [
+      "Better pricing transparency",
+      "Faster onboarding experience",
+      "Industry-specific solutions",
+      "Enhanced developer tools and SDKs"
+    ]
+  }
+}

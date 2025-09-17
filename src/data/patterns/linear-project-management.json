@@ -1,0 +1,247 @@
+{
+  "id": "linear-project-management",
+  "metadata": {
+    "name": "Linear-style Project Management Platform",
+    "category": "productivity",
+    "complexity": "medium",
+    "successRate": 0.76,
+    "avgTimeToPMF": "7.4 months",
+    "examples": ["Linear", "Asana", "Monday.com"],
+    "tags": ["project-management", "issue-tracking", "team-collaboration", "developer-tools"],
+    "businessModel": ["subscription", "per-seat"],
+    "lastUpdated": "2025-01-20"
+  },
+  "description": "Build a fast, intuitive project management platform with issue tracking, sprint planning, and team collaboration - following Linear's performance-first and developer-focused approach.",
+  "architecture": {
+    "frontend": {
+      "tech": "React 18 + TypeScript + Framer Motion",
+      "rationale": "Linear is famous for React-based performance optimization and smooth animations. TypeScript ensures data integrity in complex project hierarchies.",
+      "alternatives": ["Svelte + TypeScript", "Vue 3"],
+      "keyFeatures": ["Issue tracking", "Project boards", "Sprint planning", "Team management"]
+    },
+    "backend": {
+      "tech": "Node.js + GraphQL + Apollo Server",
+      "rationale": "GraphQL provides efficient data fetching for complex project relationships. Apollo Server offers excellent caching and subscription support.",
+      "alternatives": ["Python + GraphQL", "Go + GraphQL"],
+      "keyFeatures": ["Issue management", "Project hierarchy", "Time tracking", "Notification system"]
+    },
+    "database": {
+      "tech": "PostgreSQL + Redis",
+      "rationale": "PostgreSQL for relational project data with excellent JSON support. Redis for real-time updates and caching.",
+      "alternatives": ["MongoDB + Redis", "CockroachDB"],
+      "keyFeatures": ["Issue storage", "Project hierarchy", "User management", "Activity logs"]
+    },
+    "realtime": {
+      "tech": "GraphQL Subscriptions + WebSocket",
+      "rationale": "GraphQL subscriptions provide type-safe real-time updates. WebSocket for efficient real-time collaboration.",
+      "alternatives": ["Socket.io", "Server-sent events"],
+      "keyFeatures": ["Live updates", "Collaboration indicators", "Status changes", "Comment notifications"]
+    },
+    "search": {
+      "tech": "PostgreSQL Full-text + Elasticsearch (optional)",
+      "rationale": "PostgreSQL full-text search for simplicity. Optional Elasticsearch for advanced search features and analytics.",
+      "alternatives": ["Algolia", "Typesense"],
+      "keyFeatures": ["Issue search", "Project search", "Advanced filters", "Saved searches"]
+    },
+    "integrations": {
+      "tech": "REST API + Webhooks + OAuth",
+      "rationale": "RESTful API for external integrations. Webhooks for event-driven workflows. OAuth for secure third-party access.",
+      "alternatives": ["GraphQL API only", "Custom SDK"],
+      "keyFeatures": ["Git integration", "Slack notifications", "Time tracking apps", "CI/CD pipelines"]
+    }
+  },
+  "questions": [
+    {
+      "id": "project-methodology",
+      "type": "choice",
+      "text": "What project management methodology will you focus on?",
+      "choices": [
+        {
+          "value": "agile-scrum",
+          "label": "Agile/Scrum (sprints, story points, burndown)",
+          "impact": "Sprint planning, story point estimation, velocity tracking"
+        },
+        {
+          "value": "kanban",
+          "label": "Kanban (continuous flow, WIP limits)",
+          "impact": "Workflow columns, WIP limits, cycle time tracking"
+        },
+        {
+          "value": "hybrid",
+          "label": "Hybrid approach (flexible methodologies)",
+          "impact": "Configurable workflows, multiple board views, custom fields"
+        },
+        {
+          "value": "simple",
+          "label": "Simple task management (to-do lists, basic tracking)",
+          "impact": "Basic task creation, simple status tracking, minimal complexity"
+        }
+      ],
+      "category": "functional",
+      "priority": 1,
+      "impact": "Determines core workflow features, UI complexity, and target user base"
+    },
+    {
+      "id": "team-scale",
+      "type": "choice",
+      "text": "What team size will you primarily target?",
+      "choices": [
+        {
+          "value": "small",
+          "label": "Small teams (2-10 members)",
+          "impact": "Simple permission model, basic reporting, focus on ease of use"
+        },
+        {
+          "value": "medium",
+          "label": "Medium teams (10-50 members)",
+          "impact": "Role-based permissions, advanced reporting, team hierarchy"
+        },
+        {
+          "value": "enterprise",
+          "label": "Enterprise teams (50+ members)",
+          "impact": "Complex permissions, advanced analytics, multi-project management"
+        }
+      ],
+      "category": "business",
+      "priority": 1,
+      "impact": "Affects permission system complexity, reporting features, and pricing model"
+    },
+    {
+      "id": "developer-focus",
+      "type": "boolean",
+      "text": "Will you focus specifically on software development teams (like Linear)?",
+      "category": "functional",
+      "priority": 2,
+      "impact": "Requires Git integration, code review workflows, deployment tracking, and developer-specific features"
+    },
+    {
+      "id": "customization-level",
+      "type": "choice",
+      "text": "How much customization will you offer?",
+      "choices": [
+        {
+          "value": "minimal",
+          "label": "Minimal customization (Linear style - opinionated)",
+          "impact": "Simplified UI, faster development, consistent experience"
+        },
+        {
+          "value": "moderate",
+          "label": "Moderate customization (custom fields, workflows)",
+          "impact": "Configurable workflows, custom fields, team preferences"
+        },
+        {
+          "value": "extensive",
+          "label": "Extensive customization (Jira style)",
+          "impact": "Complex configuration system, workflow builder, custom UI"
+        }
+      ],
+      "category": "functional",
+      "priority": 2,
+      "impact": "Determines UI complexity, development timeline, and maintenance overhead"
+    },
+    {
+      "id": "integrations-priority",
+      "type": "multiple",
+      "text": "What integrations are most important?",
+      "choices": [
+        { "value": "git", "label": "Git repositories (GitHub, GitLab)" },
+        { "value": "communication", "label": "Communication tools (Slack, Teams)" },
+        { "value": "design", "label": "Design tools (Figma, Sketch)" },
+        { "value": "development", "label": "Development tools (CI/CD, monitoring)" },
+        { "value": "time-tracking", "label": "Time tracking and billing" },
+        { "value": "none", "label": "No integrations initially" }
+      ],
+      "category": "functional",
+      "priority": 3,
+      "impact": "Affects API development priority, integration marketplace, and feature complexity"
+    }
+  ],
+  "outcomes": {
+    "timeline": {
+      "mvp": "8-12 weeks",
+      "v1": "16-20 weeks",
+      "enterprise": "24-32 weeks"
+    },
+    "team": {
+      "minimum": "2-3 developers",
+      "recommended": "3-4 developers + 1 designer",
+      "enterprise": "5-8 developers + 2 designers"
+    },
+    "costs": {
+      "development": {
+        "mvp": "$40,000-$80,000",
+        "v1": "$80,000-$160,000",
+        "enterprise": "$200,000-$400,000"
+      },
+      "monthly": {
+        "startup": "$500-$2,500",
+        "growth": "$2,500-$10,000",
+        "scale": "$10,000-$40,000"
+      }
+    },
+    "metrics": {
+      "usage": "Daily active users, issues created/resolved, project velocity",
+      "engagement": "Session duration, feature adoption, collaboration frequency",
+      "business": "Seat growth, team retention, upgrade conversion",
+      "performance": "Page load times, search speed, real-time update latency"
+    }
+  },
+  "risks": [
+    {
+      "type": "business",
+      "risk": "High competition from established tools",
+      "severity": 8,
+      "probability": 9,
+      "mitigation": "Focus on specific niche, superior performance, unique workflow approach"
+    },
+    {
+      "type": "technical",
+      "risk": "Performance optimization for large datasets",
+      "severity": 7,
+      "probability": 6,
+      "mitigation": "Database optimization, caching strategies, pagination, virtual scrolling"
+    },
+    {
+      "type": "user-experience",
+      "risk": "Feature bloat and complexity creep",
+      "severity": 6,
+      "probability": 7,
+      "mitigation": "Maintain opinionated design philosophy, user testing, progressive disclosure"
+    },
+    {
+      "type": "business",
+      "risk": "User adoption and team migration challenges",
+      "severity": 7,
+      "probability": 5,
+      "mitigation": "Excellent onboarding, data import tools, migration assistance"
+    },
+    {
+      "type": "technical",
+      "risk": "Real-time collaboration conflicts",
+      "severity": 5,
+      "probability": 4,
+      "mitigation": "Conflict resolution strategies, optimistic updates, proper error handling"
+    }
+  ],
+  "successFactors": [
+    "Exceptional performance and responsive UI",
+    "Intuitive workflow that reduces friction",
+    "Reliable real-time collaboration features",
+    "Strong keyboard shortcuts and power user features",
+    "Seamless integrations with developer tools"
+  ],
+  "marketData": {
+    "totalAddressableMarket": "$45B+ (project management and collaboration software)",
+    "competitorAnalysis": {
+      "Linear": "Developer-focused, exceptional performance, opinionated design",
+      "Asana": "General project management, extensive features, team collaboration",
+      "Monday.com": "Visual project management, customizable workflows, enterprise focus"
+    },
+    "differentiationOpportunities": [
+      "AI-powered project insights and predictions",
+      "Industry-specific workflow templates",
+      "Advanced performance optimization",
+      "Better mobile experience for project management"
+    ]
+  }
+}

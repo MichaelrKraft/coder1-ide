@@ -1,0 +1,252 @@
+{
+  "id": "airbnb-marketplace",
+  "metadata": {
+    "name": "Airbnb-style Marketplace Platform",
+    "category": "marketplace",
+    "complexity": "high",
+    "successRate": 0.67,
+    "avgTimeToPMF": "13.5 months",
+    "examples": ["Airbnb", "Uber", "Etsy"],
+    "tags": ["two-sided-market", "payments", "booking", "reviews"],
+    "businessModel": ["commission", "booking-fees", "subscription"],
+    "lastUpdated": "2025-01-20"
+  },
+  "description": "Build a comprehensive two-sided marketplace with booking management, payment processing, review systems, and trust/safety features - following Airbnb's proven marketplace architecture.",
+  "architecture": {
+    "frontend": {
+      "tech": "React 18 + Next.js 14 + TypeScript",
+      "rationale": "Airbnb uses React-based architecture for complex booking flows and dynamic pricing. Next.js provides excellent SEO for listing discovery.",
+      "alternatives": ["Vue 3 + Nuxt", "Angular"],
+      "keyFeatures": ["Search and discovery", "Booking flow", "Host dashboard", "Guest management"]
+    },
+    "backend": {
+      "tech": "Node.js + Express + GraphQL",
+      "rationale": "Node.js for high-concurrency booking requests. GraphQL for flexible data fetching across complex booking relationships.",
+      "alternatives": ["Ruby on Rails", "Python + Django"],
+      "keyFeatures": ["Booking engine", "Payment processing", "Search API", "Notification system"]
+    },
+    "database": {
+      "tech": "PostgreSQL + Redis + Elasticsearch",
+      "rationale": "PostgreSQL for transactional booking data, Redis for search caching, Elasticsearch for location-based search and filtering.",
+      "alternatives": ["MongoDB + Redis", "CockroachDB"],
+      "keyFeatures": ["Listing data", "Booking management", "User profiles", "Search indexing"]
+    },
+    "payments": {
+      "tech": "Stripe Connect + PayPal + Regional processors",
+      "rationale": "Stripe Connect for marketplace payments with automatic splits. Multiple processors for global coverage and payout flexibility.",
+      "alternatives": ["Adyen for Platforms", "Mangopay"],
+      "keyFeatures": ["Split payments", "Escrow system", "Global payouts", "Fraud prevention"]
+    },
+    "search": {
+      "tech": "Elasticsearch + Redis + ML recommendations",
+      "rationale": "Elasticsearch for complex location and filter searches. Redis for search result caching. ML for personalized recommendations.",
+      "alternatives": ["Algolia", "Amazon CloudSearch"],
+      "keyFeatures": ["Geo search", "Filter combinations", "Availability search", "Recommendation engine"]
+    },
+    "messaging": {
+      "tech": "Socket.io + Redis + Push notifications",
+      "rationale": "Real-time messaging between hosts and guests. Redis for message queuing. Push notifications for mobile engagement.",
+      "alternatives": ["WebSocket + RabbitMQ", "Firebase Cloud Messaging"],
+      "keyFeatures": ["Host-guest messaging", "Booking updates", "Review notifications", "Mobile push"]
+    }
+  },
+  "questions": [
+    {
+      "id": "marketplace-type",
+      "type": "choice",
+      "text": "What type of marketplace will you build?",
+      "choices": [
+        {
+          "value": "accommodation",
+          "label": "Accommodation marketplace (Airbnb style)",
+          "impact": "Booking calendar, property management, guest screening, cleaning coordination"
+        },
+        {
+          "value": "services",
+          "label": "Service marketplace (TaskRabbit/Uber style)",
+          "impact": "Real-time matching, service provider tracking, instant booking"
+        },
+        {
+          "value": "products",
+          "label": "Product marketplace (Etsy/Amazon style)",
+          "impact": "Inventory management, shipping integration, product catalogs"
+        },
+        {
+          "value": "events",
+          "label": "Event marketplace (Eventbrite style)",
+          "impact": "Event scheduling, ticket management, capacity planning"
+        }
+      ],
+      "category": "business",
+      "priority": 1,
+      "impact": "Determines core business logic, booking system complexity, and feature priorities"
+    },
+    {
+      "id": "booking-complexity",
+      "type": "choice",
+      "text": "How complex should your booking system be?",
+      "choices": [
+        {
+          "value": "simple",
+          "label": "Simple booking (instant booking, fixed pricing)",
+          "impact": "Basic calendar integration, simple payment flow"
+        },
+        {
+          "value": "advanced",
+          "label": "Advanced booking (availability, dynamic pricing)",
+          "impact": "Complex availability engine, pricing algorithms, booking rules"
+        },
+        {
+          "value": "enterprise",
+          "label": "Enterprise booking (multi-property, bulk booking)",
+          "impact": "Multi-unit management, group bookings, enterprise features"
+        }
+      ],
+      "category": "functional",
+      "priority": 1,
+      "impact": "Affects booking engine complexity, pricing system, and calendar management"
+    },
+    {
+      "id": "payment-complexity",
+      "type": "choice",
+      "text": "What payment model will you use?",
+      "choices": [
+        {
+          "value": "commission",
+          "label": "Commission-based (Airbnb style)",
+          "impact": "Split payments, escrow system, commission calculation"
+        },
+        {
+          "value": "subscription",
+          "label": "Subscription + transaction fees",
+          "impact": "Subscription billing, reduced transaction fees, tier management"
+        },
+        {
+          "value": "listing-fees",
+          "label": "Listing fees + optional features",
+          "impact": "Upfront listing charges, premium feature payments"
+        },
+        {
+          "value": "freemium",
+          "label": "Free with premium upgrades",
+          "impact": "Feature gating, premium listing promotion, enhanced tools"
+        }
+      ],
+      "category": "business",
+      "priority": 1,
+      "impact": "Determines payment architecture, revenue calculation, and financial reporting needs"
+    },
+    {
+      "id": "trust-safety",
+      "type": "multiple",
+      "text": "What trust and safety features do you need?",
+      "choices": [
+        { "value": "identity-verification", "label": "Identity verification for users" },
+        { "value": "background-checks", "label": "Background checks for providers" },
+        { "value": "insurance", "label": "Insurance and damage protection" },
+        { "value": "review-system", "label": "Mutual review system" },
+        { "value": "dispute-resolution", "label": "Dispute resolution process" },
+        { "value": "fraud-detection", "label": "Automated fraud detection" }
+      ],
+      "category": "security",
+      "priority": 2,
+      "impact": "Affects user onboarding complexity, verification systems, and operational overhead"
+    },
+    {
+      "id": "global-scale",
+      "type": "boolean",
+      "text": "Do you need global marketplace features (multiple currencies, languages)?",
+      "category": "technical",
+      "priority": 3,
+      "impact": "Requires multi-currency support, localization, regional payment methods, and compliance"
+    }
+  ],
+  "outcomes": {
+    "timeline": {
+      "mvp": "16-20 weeks",
+      "v1": "28-36 weeks",
+      "scale": "40-52 weeks"
+    },
+    "team": {
+      "minimum": "4-5 developers",
+      "recommended": "6-8 developers + 2 DevOps + 1 designer",
+      "enterprise": "10-15 developers + 3 DevOps + 2 designers"
+    },
+    "costs": {
+      "development": {
+        "mvp": "$100,000-$200,000",
+        "v1": "$250,000-$500,000",
+        "enterprise": "$600,000-$1,200,000"
+      },
+      "monthly": {
+        "startup": "$2,500-$10,000",
+        "growth": "$10,000-$35,000",
+        "scale": "$35,000-$150,000"
+      }
+    },
+    "metrics": {
+      "marketplace": "Gross merchandise value (GMV), take rate, booking conversion",
+      "growth": "Supply growth, demand growth, market balance",
+      "quality": "Review scores, repeat usage, cancellation rates",
+      "operations": "Support ticket volume, dispute resolution time, fraud rate"
+    }
+  },
+  "risks": [
+    {
+      "type": "business",
+      "risk": "Chicken-and-egg problem (supply vs demand)",
+      "severity": 9,
+      "probability": 8,
+      "mitigation": "Focus on specific geographic markets, incentivize early adopters, manual curation"
+    },
+    {
+      "type": "technical",
+      "risk": "Payment processing complexity and fraud",
+      "severity": 8,
+      "probability": 6,
+      "mitigation": "Use established payment platforms, implement fraud detection, regular security audits"
+    },
+    {
+      "type": "operational",
+      "risk": "Trust and safety incidents",
+      "severity": 8,
+      "probability": 7,
+      "mitigation": "Robust verification processes, insurance partnerships, 24/7 support team"
+    },
+    {
+      "type": "technical",
+      "risk": "Search and matching algorithm performance",
+      "severity": 7,
+      "probability": 5,
+      "mitigation": "Search optimization, caching strategies, A/B testing of algorithms"
+    },
+    {
+      "type": "regulatory",
+      "risk": "Regulatory compliance across markets",
+      "severity": 7,
+      "probability": 6,
+      "mitigation": "Legal partnerships, compliance automation, market-specific features"
+    }
+  ],
+  "successFactors": [
+    "Strong supply and demand balance in initial markets",
+    "Excellent search and discovery experience",
+    "Seamless booking and payment flow",
+    "Robust trust and safety systems",
+    "Effective dispute resolution and customer support"
+  ],
+  "marketData": {
+    "totalAddressableMarket": "$300B+ (sharing economy and marketplaces)",
+    "competitorAnalysis": {
+      "Airbnb": "Accommodation focus, global scale, strong host tools",
+      "Uber": "Transportation, real-time matching, driver partnerships",
+      "Etsy": "Handmade products, creative community, seller tools"
+    },
+    "differentiationOpportunities": [
+      "Niche market specialization",
+      "Superior mobile experience",
+      "AI-powered matching and pricing",
+      "Enhanced host/provider tools and analytics"
+    ]
+  }
+}

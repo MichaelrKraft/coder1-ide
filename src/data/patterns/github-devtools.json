@@ -1,0 +1,252 @@
+{
+  "id": "github-devtools",
+  "metadata": {
+    "name": "GitHub-style Developer Tools Platform",
+    "category": "devtools",
+    "complexity": "medium-high",
+    "successRate": 0.75,
+    "avgTimeToPMF": "9.3 months",
+    "examples": ["GitHub", "GitLab", "Bitbucket"],
+    "tags": ["git", "collaboration", "ci-cd", "code-review"],
+    "businessModel": ["freemium", "subscription", "enterprise"],
+    "lastUpdated": "2025-01-20"
+  },
+  "description": "Build a comprehensive developer platform with Git hosting, code review, CI/CD pipelines, and team collaboration - following GitHub's proven developer-first architecture.",
+  "architecture": {
+    "frontend": {
+      "tech": "React 18 + TypeScript + Primer CSS",
+      "rationale": "GitHub uses React with their own Primer design system. TypeScript ensures code quality at enterprise scale.",
+      "alternatives": ["Vue 3", "Angular"],
+      "keyFeatures": ["Code viewer", "Pull request interface", "Issue tracking", "Project boards"]
+    },
+    "backend": {
+      "tech": "Ruby on Rails + Go microservices",
+      "rationale": "GitHub's proven architecture: Rails for web layer, Go for Git operations and high-performance services.",
+      "alternatives": ["Node.js + Express", "Python + Django"],
+      "keyFeatures": ["Git operations", "API gateway", "Webhook delivery", "Background jobs"]
+    },
+    "database": {
+      "tech": "PostgreSQL + MySQL + Redis",
+      "rationale": "Multi-database architecture: PostgreSQL for relational data, MySQL for Git metadata, Redis for caching and queues.",
+      "alternatives": ["PostgreSQL + Redis only", "MySQL + Redis"],
+      "keyFeatures": ["Repository metadata", "User management", "Issue tracking", "Git object storage"]
+    },
+    "git": {
+      "tech": "Git + libgit2 + Custom Git server",
+      "rationale": "Custom Git server implementation for performance, security, and feature control. libgit2 for Git operations.",
+      "alternatives": ["GitLab CE", "Gitea"],
+      "keyFeatures": ["Git repository hosting", "Branch protection", "Large file storage", "Git LFS"]
+    },
+    "cicd": {
+      "tech": "Docker + Kubernetes + GitHub Actions",
+      "rationale": "Container-based CI/CD with Kubernetes orchestration. GitHub Actions provides workflow automation.",
+      "alternatives": ["Jenkins", "GitLab CI", "CircleCI"],
+      "keyFeatures": ["Workflow automation", "Matrix builds", "Artifact storage", "Deploy keys"]
+    },
+    "search": {
+      "tech": "Elasticsearch + Sourcegraph",
+      "rationale": "Advanced code search across repositories. Elasticsearch for general search, specialized tools for code intelligence.",
+      "alternatives": ["Apache Solr", "Algolia"],
+      "keyFeatures": ["Code search", "Global search", "Advanced filters", "Search API"]
+    }
+  },
+  "questions": [
+    {
+      "id": "platform-scope",
+      "type": "choice",
+      "text": "What type of developer platform will you build?",
+      "choices": [
+        {
+          "value": "git-hosting",
+          "label": "Git hosting with basic collaboration (GitLab Core style)",
+          "impact": "Git server, basic UI, simple user management"
+        },
+        {
+          "value": "full-devtools",
+          "label": "Full developer platform (GitHub style)",
+          "impact": "Advanced features, CI/CD, project management, marketplace"
+        },
+        {
+          "value": "enterprise-focused",
+          "label": "Enterprise developer platform (GitHub Enterprise style)",
+          "impact": "SSO, audit logs, compliance, advanced security features"
+        },
+        {
+          "value": "specialized",
+          "label": "Specialized platform (specific language/framework)",
+          "impact": "Custom tooling, language-specific features, targeted integrations"
+        }
+      ],
+      "category": "business",
+      "priority": 1,
+      "impact": "Determines platform complexity, feature set, and target market"
+    },
+    {
+      "id": "git-scale",
+      "type": "choice",
+      "text": "What scale of Git operations do you need to support?",
+      "choices": [
+        {
+          "value": "small",
+          "label": "Small teams (up to 100 repositories)",
+          "impact": "Simple Git server, basic performance optimization"
+        },
+        {
+          "value": "medium",
+          "label": "Growing organizations (100-10K repositories)",
+          "impact": "Git server clustering, advanced caching, performance monitoring"
+        },
+        {
+          "value": "large",
+          "label": "Enterprise scale (10K+ repositories)",
+          "impact": "Distributed Git architecture, advanced optimization, global replication"
+        }
+      ],
+      "category": "technical",
+      "priority": 2,
+      "impact": "Affects Git server architecture, performance requirements, and infrastructure needs"
+    },
+    {
+      "id": "cicd-complexity",
+      "type": "choice",
+      "text": "How advanced should your CI/CD capabilities be?",
+      "choices": [
+        {
+          "value": "basic",
+          "label": "Basic CI/CD (simple build and test)",
+          "impact": "Basic workflow engine, simple job execution"
+        },
+        {
+          "value": "advanced",
+          "label": "Advanced CI/CD (matrix builds, environments)",
+          "impact": "Complex workflow engine, environment management, artifact storage"
+        },
+        {
+          "value": "enterprise",
+          "label": "Enterprise CI/CD (compliance, security scanning)",
+          "impact": "Security integrations, compliance reporting, audit trails"
+        },
+        {
+          "value": "none",
+          "label": "No CI/CD (Git hosting only)",
+          "impact": "Simplified architecture, focus on Git and collaboration features"
+        }
+      ],
+      "category": "functional",
+      "priority": 2,
+      "impact": "Determines CI/CD infrastructure complexity and feature development priority"
+    },
+    {
+      "id": "collaboration-features",
+      "type": "multiple",
+      "text": "What collaboration features do you need?",
+      "choices": [
+        { "value": "pull-requests", "label": "Pull requests with code review" },
+        { "value": "issues", "label": "Issue tracking and bug reports" },
+        { "value": "project-boards", "label": "Project management boards" },
+        { "value": "wikis", "label": "Documentation wikis" },
+        { "value": "discussions", "label": "Team discussions and Q&A" },
+        { "value": "releases", "label": "Release management" }
+      ],
+      "category": "functional",
+      "priority": 2,
+      "impact": "Affects UI complexity, database schema, and feature development timeline"
+    },
+    {
+      "id": "enterprise-features",
+      "type": "boolean",
+      "text": "Do you need enterprise features like SSO, audit logs, and advanced security?",
+      "category": "security",
+      "priority": 3,
+      "impact": "Requires enterprise authentication, logging infrastructure, and security compliance features"
+    }
+  ],
+  "outcomes": {
+    "timeline": {
+      "mvp": "12-16 weeks",
+      "v1": "24-32 weeks",
+      "enterprise": "36-48 weeks"
+    },
+    "team": {
+      "minimum": "3-4 developers",
+      "recommended": "5-7 developers + 2 DevOps + 1 designer",
+      "enterprise": "8-12 developers + 3 DevOps + 2 designers"
+    },
+    "costs": {
+      "development": {
+        "mvp": "$60,000-$120,000",
+        "v1": "$150,000-$300,000",
+        "enterprise": "$400,000-$800,000"
+      },
+      "monthly": {
+        "startup": "$1,500-$6,000",
+        "growth": "$6,000-$25,000",
+        "scale": "$25,000-$100,000"
+      }
+    },
+    "metrics": {
+      "usage": "Active repositories, commits per day, pull requests merged",
+      "collaboration": "Code review participation, issue resolution time",
+      "performance": "Git operation response times, CI/CD job completion rates",
+      "business": "Seat growth, enterprise customer acquisition, API usage"
+    }
+  },
+  "risks": [
+    {
+      "type": "technical",
+      "risk": "Git server performance and reliability",
+      "severity": 9,
+      "probability": 7,
+      "mitigation": "Load testing, Git server clustering, performance monitoring"
+    },
+    {
+      "type": "business",
+      "risk": "Competition from established platforms",
+      "severity": 8,
+      "probability": 9,
+      "mitigation": "Focus on specific niche, superior developer experience, competitive pricing"
+    },
+    {
+      "type": "technical",
+      "risk": "CI/CD complexity and resource management",
+      "severity": 7,
+      "probability": 6,
+      "mitigation": "Container orchestration, resource limits, queue management"
+    },
+    {
+      "type": "security",
+      "risk": "Code repository security and access control",
+      "severity": 8,
+      "probability": 5,
+      "mitigation": "Fine-grained permissions, security audits, vulnerability scanning"
+    },
+    {
+      "type": "scalability",
+      "risk": "Scaling Git operations for large repositories",
+      "severity": 7,
+      "probability": 6,
+      "mitigation": "Git LFS, partial clone, repository sharding strategies"
+    }
+  ],
+  "successFactors": [
+    "Exceptional Git performance and reliability",
+    "Intuitive code review and collaboration workflows",
+    "Robust CI/CD with excellent developer experience",
+    "Strong API ecosystem for integrations",
+    "Enterprise-grade security and compliance features"
+  ],
+  "marketData": {
+    "totalAddressableMarket": "$80B+ (developer tools and DevOps)",
+    "competitorAnalysis": {
+      "GitHub": "Market leader, extensive ecosystem, Microsoft-owned",
+      "GitLab": "All-in-one DevOps, strong enterprise features, open source core",
+      "Bitbucket": "Atlassian integration, team collaboration focus"
+    },
+    "differentiationOpportunities": [
+      "Language-specific optimizations",
+      "AI-powered code review and suggestions",
+      "Better mobile developer experience",
+      "Industry-specific compliance and workflows"
+    ]
+  }
+}

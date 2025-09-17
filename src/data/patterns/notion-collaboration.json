@@ -1,0 +1,219 @@
+{
+  "id": "notion-collaboration",
+  "metadata": {
+    "name": "Notion-style Collaboration Platform",
+    "category": "collaboration",
+    "complexity": "medium",
+    "successRate": 0.73,
+    "avgTimeToPMF": "8.2 months",
+    "examples": ["Notion", "Linear", "Coda"],
+    "tags": ["real-time", "collaboration", "productivity", "workspace"],
+    "businessModel": ["freemium", "subscription"],
+    "lastUpdated": "2025-01-20"
+  },
+  "description": "Build a real-time collaborative workspace platform with document editing, team management, and extensible blocks system - following Notion's proven architecture patterns.",
+  "architecture": {
+    "frontend": {
+      "tech": "React 18 + TypeScript",
+      "rationale": "Notion uses React for complex UI state management and real-time updates. TypeScript ensures code quality at scale.",
+      "alternatives": ["Vue 3", "Svelte"],
+      "keyFeatures": ["Real-time editor", "Block-based UI", "Drag-and-drop", "Collaborative cursors"]
+    },
+    "backend": {
+      "tech": "Node.js + Express/Fastify",
+      "rationale": "JavaScript ecosystem consistency and excellent WebSocket support for real-time features.",
+      "alternatives": ["Python + FastAPI", "Go + Gin"],
+      "keyFeatures": ["WebSocket handling", "Operational Transform", "Permission system", "API rate limiting"]
+    },
+    "database": {
+      "tech": "PostgreSQL + Redis",
+      "rationale": "PostgreSQL for complex relational data and ACID compliance. Redis for real-time collaboration state and caching.",
+      "alternatives": ["MongoDB + Redis", "Supabase"],
+      "keyFeatures": ["Block storage", "Version history", "User permissions", "Real-time state"]
+    },
+    "realtime": {
+      "tech": "Socket.io + Redis Adapter",
+      "rationale": "Proven WebSocket implementation with horizontal scaling support via Redis adapter.",
+      "alternatives": ["WebSocket + native Redis", "Pusher"],
+      "keyFeatures": ["Collaborative editing", "Live cursors", "Presence indicators", "Conflict resolution"]
+    },
+    "storage": {
+      "tech": "AWS S3 + CloudFront",
+      "rationale": "Scalable file storage with global CDN for images, documents, and media attachments.",
+      "alternatives": ["Google Cloud Storage", "Supabase Storage"],
+      "keyFeatures": ["File uploads", "Image optimization", "CDN delivery", "Access control"]
+    },
+    "auth": {
+      "tech": "Auth0 or Supabase Auth",
+      "rationale": "Enterprise-ready authentication with team management, SSO, and fine-grained permissions.",
+      "alternatives": ["Firebase Auth", "Custom JWT"],
+      "keyFeatures": ["Team workspaces", "Role-based access", "SSO integration", "API key management"]
+    }
+  },
+  "questions": [
+    {
+      "id": "collaboration-scope",
+      "type": "choice",
+      "text": "What level of real-time collaboration do you need?",
+      "choices": [
+        {
+          "value": "basic",
+          "label": "Basic collaboration (comments, sharing)",
+          "impact": "Simpler architecture, traditional database updates"
+        },
+        {
+          "value": "live-editing",
+          "label": "Live document editing (Google Docs style)",
+          "impact": "Requires operational transform, WebSocket architecture"
+        },
+        {
+          "value": "full-workspace",
+          "label": "Full workspace collaboration (Notion/Linear style)",
+          "impact": "Complex real-time system, presence indicators, live cursors"
+        }
+      ],
+      "category": "functional",
+      "priority": 1,
+      "impact": "Determines WebSocket requirements and collaboration complexity"
+    },
+    {
+      "id": "content-structure",
+      "type": "choice",
+      "text": "How will content be structured?",
+      "choices": [
+        {
+          "value": "documents",
+          "label": "Traditional documents (Google Docs style)",
+          "impact": "Document-based data model, simpler structure"
+        },
+        {
+          "value": "blocks",
+          "label": "Block-based content (Notion style)",
+          "impact": "Complex block system, extensible content types"
+        },
+        {
+          "value": "structured",
+          "label": "Structured data (Linear/database style)",
+          "impact": "Schema-based content, powerful querying"
+        }
+      ],
+      "category": "functional",
+      "priority": 1,
+      "impact": "Affects database design, editor complexity, and extensibility"
+    },
+    {
+      "id": "team-structure",
+      "type": "choice",
+      "text": "What team organization model do you need?",
+      "choices": [
+        {
+          "value": "simple",
+          "label": "Simple teams (basic workspaces)",
+          "impact": "Basic permission system, simple user management"
+        },
+        {
+          "value": "hierarchical",
+          "label": "Hierarchical teams (departments, roles)",
+          "impact": "Complex permission system, role-based access"
+        },
+        {
+          "value": "enterprise",
+          "label": "Enterprise organization (SSO, advanced admin)",
+          "impact": "Enterprise features, SSO integration, audit logs"
+        }
+      ],
+      "category": "business",
+      "priority": 2,
+      "impact": "Determines authentication complexity and permission system architecture"
+    },
+    {
+      "id": "extensibility",
+      "type": "boolean",
+      "text": "Do you need an extensible plugin/integration system?",
+      "category": "functional",
+      "priority": 3,
+      "impact": "Requires plugin architecture, API design, and integration framework"
+    }
+  ],
+  "outcomes": {
+    "timeline": {
+      "mvp": "8-12 weeks",
+      "v1": "16-20 weeks",
+      "scale": "24-32 weeks"
+    },
+    "team": {
+      "minimum": "2-3 developers",
+      "recommended": "3-4 developers + 1 designer",
+      "enterprise": "5-8 developers + 2 designers"
+    },
+    "costs": {
+      "development": {
+        "mvp": "$25,000-$50,000",
+        "v1": "$75,000-$125,000",
+        "enterprise": "$150,000-$300,000"
+      },
+      "monthly": {
+        "startup": "$500-$2,000",
+        "growth": "$2,000-$8,000",
+        "scale": "$8,000-$25,000"
+      }
+    },
+    "metrics": {
+      "userEngagement": "Daily active users, time spent in app",
+      "collaboration": "Real-time sessions, documents shared",
+      "growth": "Workspace creation rate, team invitations",
+      "revenue": "Subscription conversion, seat expansion"
+    }
+  },
+  "risks": [
+    {
+      "type": "technical",
+      "risk": "Real-time collaboration complexity",
+      "severity": 8,
+      "probability": 7,
+      "mitigation": "Start with basic collaboration, use proven libraries like Yjs or ShareJS"
+    },
+    {
+      "type": "technical",
+      "risk": "Operational transform conflicts",
+      "severity": 7,
+      "probability": 6,
+      "mitigation": "Implement conflict resolution early, extensive testing with concurrent users"
+    },
+    {
+      "type": "business",
+      "risk": "User adoption and engagement",
+      "severity": 8,
+      "probability": 5,
+      "mitigation": "Focus on core workflows first, gather user feedback early and often"
+    },
+    {
+      "type": "technical",
+      "risk": "Performance with large documents",
+      "severity": 6,
+      "probability": 6,
+      "mitigation": "Implement virtual scrolling, lazy loading, and document pagination"
+    }
+  ],
+  "successFactors": [
+    "Intuitive user experience that rivals Notion",
+    "Reliable real-time collaboration without conflicts",
+    "Fast performance even with large documents",
+    "Strong team/workspace management features",
+    "Mobile-responsive design for on-the-go access"
+  ],
+  "marketData": {
+    "totalAddressableMarket": "$50B+ (productivity software)",
+    "competitorAnalysis": {
+      "Notion": "Block-based, strong community, complex pricing",
+      "Linear": "Issue tracking focus, excellent UX, developer-oriented",
+      "Coda": "Database-document hybrid, powerful formulas"
+    },
+    "differentiationOpportunities": [
+      "Faster real-time performance",
+      "Better mobile experience",
+      "Industry-specific templates",
+      "Advanced automation features"
+    ]
+  }
+}

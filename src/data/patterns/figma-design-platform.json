@@ -1,0 +1,239 @@
+{
+  "id": "figma-design-platform",
+  "metadata": {
+    "name": "Figma-style Design Collaboration Platform",
+    "category": "design",
+    "complexity": "high",
+    "successRate": 0.64,
+    "avgTimeToPMF": "14.6 months",
+    "examples": ["Figma", "Sketch", "Adobe XD"],
+    "tags": ["design", "collaboration", "real-time", "vector-graphics"],
+    "businessModel": ["freemium", "subscription", "enterprise"],
+    "lastUpdated": "2025-01-20"
+  },
+  "description": "Build a browser-based collaborative design platform with real-time editing, vector graphics, design systems, and team collaboration - following Figma's revolutionary web-first approach.",
+  "architecture": {
+    "frontend": {
+      "tech": "WebGL + Canvas API + React",
+      "rationale": "Figma pioneered browser-based design tools using WebGL for high-performance graphics rendering. Canvas API for vector operations.",
+      "alternatives": ["WebAssembly + Canvas", "Three.js"],
+      "keyFeatures": ["Vector editor", "Real-time collaboration", "Design components", "Prototyping tools"]
+    },
+    "backend": {
+      "tech": "Node.js + C++ Native modules",
+      "rationale": "Node.js for web services, C++ modules for performance-critical operations like vector calculations and file processing.",
+      "alternatives": ["Go + gRPC", "Rust + WebAssembly"],
+      "keyFeatures": ["Real-time sync", "File processing", "Version control", "Asset management"]
+    },
+    "database": {
+      "tech": "PostgreSQL + Redis + Object Storage",
+      "rationale": "PostgreSQL for relational data, Redis for real-time collaboration state, Object storage for design files and assets.",
+      "alternatives": ["MongoDB + Redis", "CockroachDB"],
+      "keyFeatures": ["Design file storage", "Version history", "User management", "Real-time state"]
+    },
+    "realtime": {
+      "tech": "Operational Transform + WebSocket",
+      "rationale": "Operational Transform for conflict-free collaborative editing. WebSocket for low-latency real-time updates.",
+      "alternatives": ["CRDTs", "Y.js"],
+      "keyFeatures": ["Live cursors", "Collaborative editing", "Conflict resolution", "Presence indicators"]
+    },
+    "graphics": {
+      "tech": "WebGL + Custom Vector Engine",
+      "rationale": "WebGL for hardware-accelerated graphics. Custom vector engine optimized for design tools performance.",
+      "alternatives": ["Canvas 2D", "SVG"],
+      "keyFeatures": ["Vector rendering", "Layer management", "Effects processing", "Export pipeline"]
+    },
+    "fileFormats": {
+      "tech": "Custom binary format + SVG export",
+      "rationale": "Optimized binary format for fast loading and efficient storage. SVG export for compatibility.",
+      "alternatives": ["JSON-based", "Protocol Buffers"],
+      "keyFeatures": ["Fast file loading", "Compression", "Version compatibility", "Export formats"]
+    }
+  },
+  "questions": [
+    {
+      "id": "design-focus",
+      "type": "choice",
+      "text": "What type of design platform will you build?",
+      "choices": [
+        {
+          "value": "ui-ux",
+          "label": "UI/UX design (Figma style)",
+          "impact": "Component systems, prototyping, design tokens, developer handoff"
+        },
+        {
+          "value": "graphic-design",
+          "label": "Graphic design (Adobe Creative Suite style)",
+          "impact": "Advanced illustration tools, photo editing, print design features"
+        },
+        {
+          "value": "whiteboarding",
+          "label": "Collaborative whiteboarding (Miro style)",
+          "impact": "Infinite canvas, brainstorming tools, workshop templates"
+        },
+        {
+          "value": "presentation",
+          "label": "Presentation design (Canva style)",
+          "impact": "Template system, asset library, brand management"
+        }
+      ],
+      "category": "functional",
+      "priority": 1,
+      "impact": "Determines core feature set, tool complexity, and target user base"
+    },
+    {
+      "id": "collaboration-level",
+      "type": "choice",
+      "text": "How advanced should real-time collaboration be?",
+      "choices": [
+        {
+          "value": "basic",
+          "label": "Basic collaboration (sharing and comments)",
+          "impact": "Simple sharing, comment system, basic permission management"
+        },
+        {
+          "value": "real-time",
+          "label": "Real-time editing (Figma style)",
+          "impact": "Operational transform, live cursors, conflict resolution"
+        },
+        {
+          "value": "advanced",
+          "label": "Advanced collaboration (branching, merge conflicts)",
+          "impact": "Version control system, branch management, advanced conflict resolution"
+        }
+      ],
+      "category": "functional",
+      "priority": 1,
+      "impact": "Affects technical complexity, infrastructure requirements, and development timeline"
+    },
+    {
+      "id": "performance-requirements",
+      "type": "choice",
+      "text": "What performance level do you need for design files?",
+      "choices": [
+        {
+          "value": "basic",
+          "label": "Basic performance (small files, simple designs)",
+          "impact": "Standard web technologies, simple rendering pipeline"
+        },
+        {
+          "value": "high-performance",
+          "label": "High performance (large files, complex designs)",
+          "impact": "WebGL rendering, optimized data structures, performance monitoring"
+        },
+        {
+          "value": "enterprise",
+          "label": "Enterprise performance (huge files, real-time collaboration)",
+          "impact": "Advanced optimization, caching strategies, scalable architecture"
+        }
+      ],
+      "category": "technical",
+      "priority": 2,
+      "impact": "Determines rendering technology, optimization strategies, and infrastructure needs"
+    },
+    {
+      "id": "design-systems",
+      "type": "boolean",
+      "text": "Do you need advanced design system features (components, tokens, libraries)?",
+      "category": "functional",
+      "priority": 2,
+      "impact": "Requires component system, design token management, and library sharing features"
+    },
+    {
+      "id": "developer-handoff",
+      "type": "boolean",
+      "text": "Do you need developer handoff features (code generation, specs)?",
+      "category": "functional",
+      "priority": 3,
+      "impact": "Requires code generation engine, CSS export, and developer-focused features"
+    }
+  ],
+  "outcomes": {
+    "timeline": {
+      "mvp": "16-24 weeks",
+      "v1": "32-44 weeks",
+      "enterprise": "48-64 weeks"
+    },
+    "team": {
+      "minimum": "4-6 developers (including graphics specialists)",
+      "recommended": "6-10 developers + 2 graphics engineers + 2 designers",
+      "enterprise": "12-18 developers + 4 graphics engineers + 3 designers"
+    },
+    "costs": {
+      "development": {
+        "mvp": "$120,000-$250,000",
+        "v1": "$300,000-$600,000",
+        "enterprise": "$600,000-$1,200,000"
+      },
+      "monthly": {
+        "startup": "$3,000-$12,000",
+        "growth": "$12,000-$40,000",
+        "scale": "$40,000-$150,000"
+      }
+    },
+    "metrics": {
+      "usage": "Active designers, files created, collaboration sessions",
+      "performance": "File load times, rendering performance, real-time latency",
+      "engagement": "Session duration, feature adoption, sharing frequency",
+      "business": "Subscription conversion, team size growth, enterprise adoption"
+    }
+  },
+  "risks": [
+    {
+      "type": "technical",
+      "risk": "Browser performance limitations for complex designs",
+      "severity": 9,
+      "probability": 8,
+      "mitigation": "WebGL optimization, progressive loading, performance profiling"
+    },
+    {
+      "type": "technical",
+      "risk": "Real-time collaboration complexity and conflicts",
+      "severity": 8,
+      "probability": 7,
+      "mitigation": "Proven operational transform algorithms, extensive testing, graceful degradation"
+    },
+    {
+      "type": "business",
+      "risk": "High competition from established design tools",
+      "severity": 9,
+      "probability": 9,
+      "mitigation": "Focus on specific niche, superior collaboration features, competitive pricing"
+    },
+    {
+      "type": "technical",
+      "risk": "Cross-browser compatibility and performance",
+      "severity": 7,
+      "probability": 6,
+      "mitigation": "Progressive enhancement, feature detection, browser-specific optimizations"
+    },
+    {
+      "type": "user-experience",
+      "risk": "Complex UI overwhelming users",
+      "severity": 6,
+      "probability": 6,
+      "mitigation": "Progressive disclosure, onboarding flows, user testing"
+    }
+  ],
+  "successFactors": [
+    "Exceptional performance with large design files",
+    "Seamless real-time collaboration without conflicts",
+    "Intuitive interface that doesn't compromise on power",
+    "Strong design system and component management",
+    "Excellent developer handoff and code generation"
+  ],
+  "marketData": {
+    "totalAddressableMarket": "$15B+ (design software and collaboration tools)",
+    "competitorAnalysis": {
+      "Figma": "Market leader, web-first, strong collaboration, developer handoff",
+      "Sketch": "Mac-only, plugin ecosystem, design systems focus",
+      "Adobe XD": "Adobe ecosystem, voice prototyping, Creative Cloud integration"
+    },
+    "differentiationOpportunities": [
+      "AI-powered design assistance and automation",
+      "Advanced animation and micro-interaction tools",
+      "Industry-specific design templates and components",
+      "Better mobile design and prototyping experience"
+    ]
+  }
+}

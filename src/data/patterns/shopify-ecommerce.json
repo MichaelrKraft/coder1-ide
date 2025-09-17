@@ -1,0 +1,266 @@
+{
+  "id": "shopify-ecommerce",
+  "metadata": {
+    "name": "Shopify-style E-commerce Platform",
+    "category": "ecommerce",
+    "complexity": "high",
+    "successRate": 0.71,
+    "avgTimeToPMF": "12.8 months",
+    "examples": ["Shopify", "WooCommerce", "BigCommerce"],
+    "tags": ["multi-tenant", "payments", "inventory", "marketplace"],
+    "businessModel": ["subscription", "transaction-fees", "app-store"],
+    "lastUpdated": "2025-01-20"
+  },
+  "description": "Build a comprehensive multi-tenant e-commerce platform with merchant management, payment processing, inventory systems, and extensible app marketplace - following Shopify's proven architecture.",
+  "architecture": {
+    "frontend": {
+      "tech": "Next.js 14 + TypeScript + Tailwind",
+      "rationale": "Shopify uses React-based architecture for both admin and storefront. Next.js provides excellent SEO for merchant stores.",
+      "alternatives": ["Remix", "Nuxt.js"],
+      "keyFeatures": ["Admin dashboard", "Storefront themes", "Mobile-responsive", "PWA support"]
+    },
+    "backend": {
+      "tech": "Node.js + Express + GraphQL",
+      "rationale": "Shopify pioneered GraphQL for e-commerce APIs. Node.js provides excellent performance for high-traffic stores.",
+      "alternatives": ["Ruby on Rails", "Python + Django"],
+      "keyFeatures": ["Multi-tenant architecture", "GraphQL APIs", "Webhook system", "Background job processing"]
+    },
+    "database": {
+      "tech": "PostgreSQL + Redis + Elasticsearch",
+      "rationale": "PostgreSQL for transactional data, Redis for sessions/cart, Elasticsearch for product search and analytics.",
+      "alternatives": ["MySQL + Redis + Algolia", "MongoDB + Redis"],
+      "keyFeatures": ["Multi-tenant data isolation", "Product catalog", "Order management", "Search indexing"]
+    },
+    "payments": {
+      "tech": "Stripe + PayPal + Regional processors",
+      "rationale": "Multiple payment processors for global coverage and redundancy. Stripe for primary processing with fallbacks.",
+      "alternatives": ["Adyen", "Square", "Braintree"],
+      "keyFeatures": ["Multi-processor routing", "Split payments", "Subscription billing", "Fraud detection"]
+    },
+    "storage": {
+      "tech": "AWS S3 + CloudFront CDN",
+      "rationale": "Scalable file storage for product images, themes, and merchant uploads with global distribution.",
+      "alternatives": ["Google Cloud Storage", "Cloudinary"],
+      "keyFeatures": ["Image optimization", "Theme storage", "Backup systems", "Global CDN"]
+    },
+    "infrastructure": {
+      "tech": "Kubernetes + Docker + AWS",
+      "rationale": "Container orchestration for multi-tenant scaling. Auto-scaling for traffic spikes during sales events.",
+      "alternatives": ["Google Cloud Run", "Azure Container Apps"],
+      "keyFeatures": ["Auto-scaling", "Load balancing", "Health monitoring", "Blue-green deployment"]
+    }
+  },
+  "questions": [
+    {
+      "id": "marketplace-model",
+      "type": "choice",
+      "text": "What type of e-commerce model will you build?",
+      "choices": [
+        {
+          "value": "saas-platform",
+          "label": "SaaS platform (merchants pay monthly, like Shopify)",
+          "impact": "Multi-tenant architecture, subscription billing, merchant onboarding"
+        },
+        {
+          "value": "marketplace",
+          "label": "Marketplace (sellers and buyers, like Etsy)",
+          "impact": "Commission-based revenue, seller verification, dispute resolution"
+        },
+        {
+          "value": "white-label",
+          "label": "White-label solution (license to other companies)",
+          "impact": "Enterprise features, custom branding, dedicated instances"
+        },
+        {
+          "value": "single-store",
+          "label": "Single store platform (own inventory)",
+          "impact": "Simpler architecture, inventory management, direct fulfillment"
+        }
+      ],
+      "category": "business",
+      "priority": 1,
+      "impact": "Determines multi-tenancy requirements, billing model, and platform complexity"
+    },
+    {
+      "id": "payment-complexity",
+      "type": "choice",
+      "text": "How complex are your payment requirements?",
+      "choices": [
+        {
+          "value": "basic",
+          "label": "Basic payments (credit cards, PayPal)",
+          "impact": "Single payment processor, standard checkout flow"
+        },
+        {
+          "value": "global",
+          "label": "Global payments (multiple currencies, local methods)",
+          "impact": "Multi-processor setup, currency conversion, regional compliance"
+        },
+        {
+          "value": "marketplace",
+          "label": "Marketplace payments (split payments, escrow)",
+          "impact": "Complex payment flows, seller payouts, dispute handling"
+        },
+        {
+          "value": "subscription",
+          "label": "Subscription + one-time payments",
+          "impact": "Recurring billing, prorated charges, subscription management"
+        }
+      ],
+      "category": "business",
+      "priority": 1,
+      "impact": "Affects payment processor choice, checkout complexity, and compliance requirements"
+    },
+    {
+      "id": "inventory-management",
+      "type": "choice",
+      "text": "What level of inventory management do you need?",
+      "choices": [
+        {
+          "value": "basic",
+          "label": "Basic inventory (stock levels, simple tracking)",
+          "impact": "Simple stock counters, low stock alerts"
+        },
+        {
+          "value": "advanced",
+          "label": "Advanced inventory (variants, bundles, reservations)",
+          "impact": "Complex product variants, inventory reservations, bundle management"
+        },
+        {
+          "value": "multi-location",
+          "label": "Multi-location inventory (warehouses, stores)",
+          "impact": "Location-based inventory, transfer management, fulfillment routing"
+        },
+        {
+          "value": "dropshipping",
+          "label": "Dropshipping integration (supplier management)",
+          "impact": "Supplier APIs, automated ordering, inventory sync"
+        }
+      ],
+      "category": "functional",
+      "priority": 2,
+      "impact": "Determines inventory data model complexity and fulfillment system requirements"
+    },
+    {
+      "id": "scale-expectations",
+      "type": "choice",
+      "text": "What scale of merchants/traffic do you expect?",
+      "choices": [
+        {
+          "value": "small",
+          "label": "Small scale (10-100 merchants, <10K orders/month)",
+          "impact": "Simple hosting, basic database optimization"
+        },
+        {
+          "value": "medium",
+          "label": "Medium scale (100-1K merchants, 10K-100K orders/month)",
+          "impact": "Database optimization, caching, load balancing"
+        },
+        {
+          "value": "large",
+          "label": "Large scale (1K+ merchants, 100K+ orders/month)",
+          "impact": "Microservices, advanced caching, auto-scaling infrastructure"
+        }
+      ],
+      "category": "technical",
+      "priority": 2,
+      "impact": "Determines infrastructure needs, database optimization, and scaling strategy"
+    },
+    {
+      "id": "extensibility",
+      "type": "boolean",
+      "text": "Do you need an app marketplace for third-party integrations?",
+      "category": "functional",
+      "priority": 3,
+      "impact": "Requires API ecosystem, developer portal, app review process, and revenue sharing"
+    }
+  ],
+  "outcomes": {
+    "timeline": {
+      "mvp": "16-20 weeks",
+      "v1": "28-36 weeks",
+      "marketplace": "40-52 weeks"
+    },
+    "team": {
+      "minimum": "4-5 developers",
+      "recommended": "6-8 developers + 2 DevOps + 1 designer",
+      "enterprise": "10-15 developers + 3 DevOps + 2 designers"
+    },
+    "costs": {
+      "development": {
+        "mvp": "$80,000-$150,000",
+        "v1": "$200,000-$400,000",
+        "marketplace": "$500,000-$1,000,000"
+      },
+      "monthly": {
+        "startup": "$2,000-$8,000",
+        "growth": "$8,000-$30,000",
+        "scale": "$30,000-$150,000"
+      }
+    },
+    "metrics": {
+      "business": "Gross merchandise volume (GMV), take rate, merchant retention",
+      "technical": "Order processing time, uptime during sales events, API response times",
+      "growth": "Merchant acquisition rate, average revenue per merchant",
+      "quality": "Payment success rate, cart abandonment rate, customer satisfaction"
+    }
+  },
+  "risks": [
+    {
+      "type": "technical",
+      "risk": "Payment processing reliability and security",
+      "severity": 9,
+      "probability": 7,
+      "mitigation": "Multiple payment processors, PCI compliance, fraud detection systems"
+    },
+    {
+      "type": "business",
+      "risk": "High competition from established platforms",
+      "severity": 8,
+      "probability": 8,
+      "mitigation": "Focus on specific niche, superior developer experience, competitive pricing"
+    },
+    {
+      "type": "technical",
+      "risk": "Multi-tenant data isolation and security",
+      "severity": 8,
+      "probability": 6,
+      "mitigation": "Row-level security, comprehensive testing, security audits"
+    },
+    {
+      "type": "compliance",
+      "risk": "Global payment and tax compliance",
+      "severity": 7,
+      "probability": 7,
+      "mitigation": "Partner with compliance providers, legal review, automated tax calculation"
+    },
+    {
+      "type": "technical",
+      "risk": "Scaling during high-traffic events (Black Friday)",
+      "severity": 7,
+      "probability": 6,
+      "mitigation": "Load testing, auto-scaling infrastructure, CDN optimization"
+    }
+  ],
+  "successFactors": [
+    "Reliable payment processing with high success rates",
+    "Intuitive merchant onboarding and management experience",
+    "Fast, responsive storefronts with excellent SEO",
+    "Comprehensive analytics and reporting for merchants",
+    "Strong app ecosystem and developer community"
+  ],
+  "marketData": {
+    "totalAddressableMarket": "$200B+ (global e-commerce market)",
+    "competitorAnalysis": {
+      "Shopify": "Market leader, strong ecosystem, high pricing at scale",
+      "WooCommerce": "WordPress integration, open source, technical setup required",
+      "BigCommerce": "Enterprise focus, built-in features, less customizable"
+    },
+    "differentiationOpportunities": [
+      "Industry-specific solutions (fashion, electronics, etc.)",
+      "Better mobile-first experience",
+      "AI-powered merchant insights and recommendations",
+      "Lower transaction fees with transparent pricing"
+    ]
+  }
+}
