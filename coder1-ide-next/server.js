@@ -294,43 +294,38 @@ app.prepare().then(() => {
       }
     }
     
-    // Enhanced error handling and CSS serving fallback
+    // Enhanced error handling and smart CSS/JS serving
     const handleWithFallback = async () => {
       try {
-        // CSS serving monitoring - DISABLED: This was breaking Next.js image preloading
-        // The query parameter stripping caused resource.src undefined errors
-        // if (pathname?.startsWith('/_next/static/css/') || pathname?.startsWith('/_next/static/js/')) {
-        //   // Strip version query parameters that break asset serving
-        //   const cleanUrl = req.url.split('?')[0];
-        //   const cleanParsedUrl = parse(cleanUrl, true);
-        //   
-        //   // Log CSS/JS asset requests for monitoring
-        //   const startTime = Date.now();
-        //   
-        //   // Set proper headers for static assets
-        //   if (pathname.endsWith('.css') || cleanUrl.endsWith('.css')) {
-        //     res.setHeader('Content-Type', 'text/css');
-        //     res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
-        //   } else if (pathname.endsWith('.js') || cleanUrl.endsWith('.js')) {
-        //     res.setHeader('Content-Type', 'application/javascript');
-        //     res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
-        //   }
-        //   
-        //   // Handle request with cleaned URL to fix version query parameter issue
-        //   await handle(req, res, cleanParsedUrl);
-        //   
-        //   const duration = Date.now() - startTime;
-        //   if (duration > 1000) {
-        //     console.warn(`⚠️ Slow asset serving: ${pathname} took ${duration}ms`);
-        //   }
-        //   
-        // } else {
-        //   // Handle all other requests normally
-        //   await handle(req, res, parsedUrl);
-        // }
+        // Smart asset serving: Handle CSS/JS files with any query parameters from Next.js static serving
+        // This preserves image preloading while fixing CSS/JS 404 errors
+        const isCSSOrJS = pathname?.endsWith('.css') || pathname?.endsWith('.js');
+        const hasQueryParams = req.url.includes('?');
+        const isNextStaticAsset = pathname?.startsWith('/_next/static/');
         
-        // Let Next.js handle all requests normally without modification
-        await handle(req, res, parsedUrl);
+        if (isCSSOrJS && hasQueryParams && isNextStaticAsset) {
+          console.log(`🎯 Smart asset serving: ${pathname} with query params`);
+          
+          // Strip ALL query parameters that break CSS/JS serving (not just ?v=)
+          const cleanUrl = req.url.split('?')[0];
+          const cleanParsedUrl = parse(cleanUrl, true);
+          
+          // Set proper headers for static assets
+          if (pathname.endsWith('.css')) {
+            res.setHeader('Content-Type', 'text/css; charset=utf-8');
+            res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+          } else if (pathname.endsWith('.js')) {
+            res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
+            res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+          }
+          
+          // Handle request with cleaned URL to fix query parameter issues
+          await handle(req, res, cleanParsedUrl);
+          
+        } else {
+          // Handle all other requests normally (preserves image preloading)
+          await handle(req, res, parsedUrl);
+        }
         
       } catch (error) {
         console.error(`❌ Request handling error for ${pathname}:`, error.message);
@@ -462,6 +457,9 @@ app.prepare().then(() => {
   // Track command buffers globally for all sessions
   const commandBuffers = new Map();
   
+  // Track socket-to-session relationships for cleanup
+  const socketToSession = new Map();
+  
   // Initialize Socket.IO with authentication middleware
   const io = new Server(server, {
     cors: {
@@ -551,12 +549,48 @@ app.prepare().then(() => {
         // await initializeContextSession(sessionId);
         
         // Set up data forwarding for this socket with context capture
-        session.pty.onData((data) => {
-          // Forward to client
-          socket.emit('terminal:data', { id: sessionId, data });
-          // Buffer for context capture
-          bufferTerminalData(sessionId, 'terminal_output', data);
+        // Track connected sockets for this session
+        if (!session.connectedSockets) {
+          session.connectedSockets = new Set();
+        }
+        session.connectedSockets.add(socket);
+        
+        // Only set up PTY data handler once per session to avoid duplicates
+        if (!session.dataHandlerSetup) {
+          session.pty.onData((data) => {
+            // Forward to all connected sockets for this session
+            session.connectedSockets.forEach(connectedSocket => {
+              if (connectedSocket.connected) {
+                connectedSocket.emit('terminal:data', { id: sessionId, data });
+              }
+            });
+            // Buffer for context capture
+            bufferTerminalData(sessionId, 'terminal_output', data);
+          });
+          session.dataHandlerSetup = true;
+        }
+        
+        // Clean up socket reference when it disconnects
+        socket.on('disconnect', () => {
+          if (session.connectedSockets) {
+            session.connectedSockets.delete(socket);
+          }
+          
+          // Clean up command buffer for this session
+          const sessionId = socketToSession.get(socket.id);
+          if (sessionId && commandBuffers.has(sessionId)) {
+            commandBuffers.delete(sessionId);
+            if (process.env.NODE_ENV === 'production') {
+              console.log(`[Memory] Cleaned up command buffer for session: ${sessionId}`);
+            }
+          }
+          
+          // Clean up socket-to-session mapping
+          socketToSession.delete(socket.id);
         });
+        
+        // Track socket-to-session relationship for cleanup
+        socketToSession.set(socket.id, sessionId);
         
         socket.emit('terminal:created', { 
           sessionId, 
@@ -729,6 +763,18 @@ app.prepare().then(() => {
     // Clean up on disconnect
     socket.on('disconnect', () => {
       // REMOVED: // REMOVED: // REMOVED: console.log(`[Socket.IO] Client disconnected: ${socket.id}`);
+      
+      // Clean up command buffer for this socket's session
+      const sessionId = socketToSession.get(socket.id);
+      if (sessionId && commandBuffers.has(sessionId)) {
+        commandBuffers.delete(sessionId);
+        if (process.env.NODE_ENV === 'production') {
+          console.log(`[Memory] Cleaned up command buffer for session: ${sessionId} (socket: ${socket.id})`);
+        }
+      }
+      
+      // Clean up socket-to-session mapping
+      socketToSession.delete(socket.id);
       
       // Note: We keep terminal session alive for reconnection
       // Sessions are only destroyed explicitly or on timeout
