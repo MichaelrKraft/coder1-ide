@@ -75,6 +75,11 @@ export default function DiscoverPanel() {
   // Enhanced session creation modal state
   const [showEnhancedSessionModal, setShowEnhancedSessionModal] = useState<boolean>(false);
   
+  // Debug: Track modal state changes
+  useEffect(() => {
+    console.log('🔍 Debug: showEnhancedSessionModal changed to:', showEnhancedSessionModal);
+  }, [showEnhancedSessionModal]);
+  
   // Helper function: Get icon for wcygan category
   const getIconForCategory = (category: string) => {
     const iconMap: Record<string, any> = {
@@ -190,6 +195,9 @@ export default function DiscoverPanel() {
           
           // Log success
           console.log('✅ Sandbox created:', data.sandbox);
+          
+          // Show alert for immediate feedback
+          alert(`✅ Sandbox created successfully!\n\nID: ${data.sandbox.id}\nProject: ${data.sandbox.projectId}\nPath: ${data.sandbox.path}\n\nA new tab will open with your sandbox workspace.`);
           
           // Try to show toast (may fail with CSS issues)
           try {
@@ -739,8 +747,8 @@ export default function DiscoverPanel() {
                 <span>•</span>
                 <button 
                   onClick={() => {
-                    console.log('✨ Enhanced New Session button clicked!');
-                    setShowEnhancedSessionModal(true);
+                    console.log('✨ New Session button clicked - creating sandbox directly!');
+                    handleSandboxAction('new');
                   }}
                   className="transition-colors flex items-center gap-1 text-coder1-cyan hover:text-coder1-cyan-secondary"
                 >

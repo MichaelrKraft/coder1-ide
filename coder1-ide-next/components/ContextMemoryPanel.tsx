@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Brain, MessageSquare, Clock, RefreshCw, Copy, Search, ChevronDown, ChevronUp, CheckCircle, XCircle, FileText, Zap, X } from 'lucide-react';
+import { Brain, MessageSquare, Clock, RefreshCw, Copy, Search, ChevronDown, ChevronUp, CheckCircle, XCircle, FileText, Zap, X, PlayCircle, StopCircle } from 'lucide-react';
 
 interface Conversation {
   id: string;
@@ -51,6 +51,61 @@ export default function ContextMemoryPanel() {
   const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'tokens'>('newest');
 
   // REMOVED: // REMOVED: console.log('🧠 ContextMemoryPanel rendered');
+
+  const startLearningSession = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch('/api/context/stats', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          action: 'initialize',
+          projectPath: '/Users/michaelkraft/autonomous_vibe_interface' 
+        })
+      });
+      
+      if (response.ok) {
+        showToast('Learning session started!');
+        await loadData();
+      } else {
+        const error = await response.json();
+        showToast(`Failed to start session: ${error.error}`, 'error');
+      }
+    } catch (error) {
+      showToast('Failed to start learning session', 'error');
+      console.error('Error starting session:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const endLearningSession = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch('/api/context/stats', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          action: 'end_session',
+          summary: 'Session ended by user',
+          successRating: 0.8
+        })
+      });
+      
+      if (response.ok) {
+        showToast('Learning session ended!');
+        await loadData();
+      } else {
+        const error = await response.json();
+        showToast(`Failed to end session: ${error.error}`, 'error');
+      }
+    } catch (error) {
+      showToast('Failed to end learning session', 'error');
+      console.error('Error ending session:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const loadData = async () => {
     try {
@@ -250,13 +305,36 @@ export default function ContextMemoryPanel() {
               </div>
             )}
           </div>
-          <button
-            onClick={loadData}
-            className="p-2 hover:bg-bg-tertiary rounded-lg transition-colors group"
-            title="Refresh memory"
-          >
-            <RefreshCw className="w-5 h-5 text-text-muted group-hover:text-coder1-purple transition-colors" />
-          </button>
+          <div className="flex items-center gap-2">
+            {/* Session Control Buttons */}
+            {stats?.isLearning ? (
+              <button
+                onClick={endLearningSession}
+                className="flex items-center gap-1 px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 rounded-lg transition-colors group"
+                title="End learning session"
+              >
+                <StopCircle className="w-4 h-4 text-red-400" />
+                <span className="text-xs font-medium text-red-400 hidden sm:inline">End Session</span>
+              </button>
+            ) : (
+              <button
+                onClick={startLearningSession}
+                className="flex items-center gap-1 px-3 py-1.5 bg-green-500/10 hover:bg-green-500/20 border border-green-500/30 rounded-lg transition-colors group"
+                title="Start learning session"
+              >
+                <PlayCircle className="w-4 h-4 text-green-400" />
+                <span className="text-xs font-medium text-green-400 hidden sm:inline">Start Session</span>
+              </button>
+            )}
+            
+            <button
+              onClick={loadData}
+              className="p-2 hover:bg-bg-tertiary rounded-lg transition-colors group"
+              title="Refresh memory"
+            >
+              <RefreshCw className="w-5 h-5 text-text-muted group-hover:text-coder1-purple transition-colors" />
+            </button>
+          </div>
         </div>
         
         {/* Enhanced Stats */}

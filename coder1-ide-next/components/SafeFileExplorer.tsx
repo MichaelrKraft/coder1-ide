@@ -1,11 +1,11 @@
 'use client';
 
-import React, { useState, useCallback } from 'react';
-import { ChevronRight, ChevronDown, File, Folder, FolderOpen } from 'lucide-react';
+import React, { useState, useCallback, useEffect } from 'react';
+import { ChevronRight, ChevronDown, File, Folder, FolderOpen, Loader2 } from 'lucide-react';
 
 interface FileNode {
   name: string;
-  type: 'file' | 'folder';
+  type: 'file' | 'directory';
   path: string;
   children?: FileNode[];
 }
@@ -17,35 +17,45 @@ interface SafeFileExplorerProps {
 
 export default function SafeFileExplorer({ onFileSelect, activeFile }: SafeFileExplorerProps) {
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set(['/']));
-  
-  // Mock file structure - will be replaced with actual file system
-  const fileTree: FileNode = {
-    name: 'coder1-project',
-    type: 'folder',
-    path: '/',
-    children: [
-      {
-        name: 'src',
-        type: 'folder',
-        path: '/src',
-        children: [
-          { name: 'App.tsx', type: 'file', path: '/src/App.tsx' },
-          { name: 'index.tsx', type: 'file', path: '/src/index.tsx' },
-          {
-            name: 'components',
-            type: 'folder',
-            path: '/src/components',
-            children: [
-              { name: 'Header.tsx', type: 'file', path: '/src/components/Header.tsx' },
-              { name: 'Footer.tsx', type: 'file', path: '/src/components/Footer.tsx' },
-            ],
-          },
-        ],
-      },
-      { name: 'package.json', type: 'file', path: '/package.json' },
-      { name: 'README.md', type: 'file', path: '/README.md' },
-    ],
-  };
+  const [fileTree, setFileTree] = useState<FileNode | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Fetch real file tree from API
+  useEffect(() => {
+    const fetchFileTree = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        const response = await fetch('/api/files/tree');
+        if (!response.ok) {
+          throw new Error(`Failed to fetch files: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        if (data.success && data.tree) {
+          // Convert 'directory' type to 'folder' for UI consistency
+          const convertTreeTypes = (node: any): FileNode => ({
+            ...node,
+            type: node.type === 'directory' ? 'directory' : 'file',
+            children: node.children ? node.children.map(convertTreeTypes) : undefined
+          });
+          
+          setFileTree(convertTreeTypes(data.tree));
+        } else {
+          throw new Error('Invalid response format');
+        }
+      } catch (err) {
+        console.error('Failed to load file tree:', err);
+        setError(err instanceof Error ? err.message : 'Failed to load files');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchFileTree();
+  }, []);
 
   const toggleFolder = useCallback((path: string) => {
     setExpandedFolders(prev => {
@@ -84,6 +94,7 @@ export default function SafeFileExplorer({ onFileSelect, activeFile }: SafeFileE
       );
     }
 
+    // Handle directory type
     return (
       <div key={`folder-${node.path}`}>
         <div
@@ -113,6 +124,36 @@ export default function SafeFileExplorer({ onFileSelect, activeFile }: SafeFileE
       </div>
     );
   }, [expandedFolders, activeFile, onFileSelect, toggleFolder]);
+
+  // Loading state
+  if (loading) {
+    return (
+      <div className="h-full flex items-center justify-center">
+        <div className="flex items-center gap-2 text-text-secondary">
+          <Loader2 className="w-4 h-4 animate-spin" />
+          <span className="text-sm">Loading files...</span>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="h-full flex items-center justify-center p-4">
+        <div className="text-center">
+          <div className="text-red-400 text-sm mb-2">Failed to load files</div>
+          <div className="text-text-muted text-xs">{error}</div>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="mt-2 px-3 py-1 text-xs bg-bg-tertiary hover:bg-bg-secondary rounded transition-colors"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="h-full overflow-auto">
