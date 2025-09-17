@@ -175,8 +175,16 @@ export default function EnhancedSessionCreationModal({
     }
   };
 
-  if (!isOpen) return null;
+  // Debug logging
+  console.log('🔍 EnhancedSessionCreationModal render:', { isOpen, selectedType, sessionName });
+  
+  if (!isOpen) {
+    console.log('🔍 Modal not rendering - isOpen is false');
+    return null;
+  }
 
+  console.log('✅ Modal rendering - isOpen is true');
+  
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 animate-in fade-in-0 duration-300">
       <div className="bg-bg-primary border border-border-primary rounded-lg shadow-xl w-full max-w-lg mx-4 animate-in zoom-in-95 duration-300">

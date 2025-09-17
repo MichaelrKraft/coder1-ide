@@ -36,7 +36,8 @@ export default function SessionsPanel({ isVisible = true }: SessionsPanelProps) 
   const [sessionTime, setSessionTime] = useState('00:00:00');
   const [restoringSessionId, setRestoringSessionId] = useState<string | null>(null);
   const [restoringCheckpointId, setRestoringCheckpointId] = useState<string | null>(null);
-  const [lastAction, setLastAction] = useState<{type: 'success' | 'error', message: string} | null>(null);
+  const [restorationStage, setRestorationStage] = useState<string | null>(null);
+  const [lastAction, setLastAction] = useState<{type: 'success' | 'error' | 'info', message: string, details?: string} | null>(null);
   
   // Enhanced session loading with deduplication and intelligent naming
   const loadSessions = async () => {
@@ -160,11 +161,13 @@ export default function SessionsPanel({ isVisible = true }: SessionsPanelProps) 
     // REMOVED: // REMOVED: console.log('🔄 Starting checkpoint restoration for:', checkpoint.name, 'ID:', checkpoint.id);
     setRestoringCheckpointId(checkpoint.id);
     setLastAction(null);
+    setRestorationStage('Loading checkpoint data...');
     
     try {
       // REMOVED: // REMOVED: console.log('📡 Calling API: /api/sessions/' + checkpoint.sessionId + '/checkpoints/' + checkpoint.id + '/restore');
       
       // Restore checkpoint data
+      setRestorationStage('Fetching checkpoint from server...');
       const restoreResponse = await fetch(`/api/sessions/${checkpoint.sessionId}/checkpoints/${checkpoint.id}/restore`, {
         method: 'POST'
       });
@@ -178,32 +181,61 @@ export default function SessionsPanel({ isVisible = true }: SessionsPanelProps) 
         // Apply the restored state to the IDE with smooth transitions
         if (restoreData.checkpoint && restoreData.checkpoint.data) {
           const snapshot = restoreData.checkpoint.data.snapshot;
+          const conversationHistory = restoreData.checkpoint.data.conversationHistory;
+          
+          // Count what we're restoring
+          const conversationCount = conversationHistory?.length || 0;
+          const hasTerminalData = !!snapshot?.terminal;
+          const hasFileData = !!snapshot?.files;
+          const hasEditorData = !!snapshot?.editor;
+          
           // REMOVED: // REMOVED: console.log('📸 Applying checkpoint snapshot:', snapshot);
           
-          // Restore localStorage data
+          // Stage 1: Restore localStorage data
+          setRestorationStage('Restoring workspace data...');
           if (snapshot.files) localStorage.setItem('openFiles', snapshot.files);
           if (snapshot.terminal) localStorage.setItem('terminalHistory', snapshot.terminal);
           if (snapshot.editor) localStorage.setItem('editorContent', snapshot.editor);
           
-          // Switch to the checkpoint's session smoothly
+          // Stage 2: Switch to the checkpoint's session
+          setRestorationStage('Switching to checkpoint session...');
           const checkpointSession = sessions.find(s => s.id === checkpoint.sessionId);
           if (checkpointSession) {
             // REMOVED: // REMOVED: console.log('🔄 Switching to checkpoint session:', checkpointSession.name);
             switchSession(checkpointSession);
           }
           
-          // Dispatch restoration events for other components
+          // Stage 3: Dispatch restoration events for terminal and conversation history
+          setRestorationStage('Restoring terminal and conversation history...');
           window.dispatchEvent(new CustomEvent('checkpointRestored', {
-            detail: { checkpoint, snapshot }
+            detail: { checkpoint: restoreData.checkpoint, snapshot }
           }));
           
           window.dispatchEvent(new CustomEvent('ideStateChanged', {
-            detail: { type: 'checkpoint-restored', data: snapshot }
+            detail: { type: 'checkpoint-restored', data: snapshot, checkpoint: restoreData.checkpoint }
           }));
           
-          // Notify user with success
+          // Final stage: Show detailed success message
+          setRestorationStage('Finalizing restoration...');
+          
+          // Build detailed success message
+          const restoredItems = [];
+          if (conversationCount > 0) restoredItems.push(`${conversationCount} conversation${conversationCount !== 1 ? 's' : ''}`);
+          if (hasTerminalData) restoredItems.push('terminal session');
+          if (hasFileData) restoredItems.push('open files');
+          if (hasEditorData) restoredItems.push('editor content');
+          
+          const detailsText = restoredItems.length > 0 
+            ? `Restored: ${restoredItems.join(', ')}` 
+            : 'Basic checkpoint data restored';
+          
+          // Notify user with enhanced success message
           // REMOVED: // REMOVED: console.log('✅ Checkpoint restored successfully:', checkpoint.name);
-          setLastAction({ type: 'success', message: `Checkpoint "${checkpoint.name}" restored successfully` });
+          setLastAction({ 
+            type: 'success', 
+            message: `Checkpoint "${checkpoint.name}" restored successfully`,
+            details: detailsText
+          });
         } else {
           // REMOVED: // REMOVED: console.log('⚠️ Checkpoint data missing or invalid structure');
           setLastAction({ type: 'error', message: 'Checkpoint data not found or invalid' });
@@ -218,9 +250,10 @@ export default function SessionsPanel({ isVisible = true }: SessionsPanelProps) 
       setLastAction({ type: 'error', message: `Error restoring checkpoint: ${error instanceof Error ? error.message : 'Unknown error'}` });
     } finally {
       setRestoringCheckpointId(null);
-      // Clear success message after 3 seconds
+      setRestorationStage(null);
+      // Clear success message after 5 seconds (longer for enhanced message)
       if (lastAction?.type === 'success') {
-        setTimeout(() => setLastAction(null), 3000);
+        setTimeout(() => setLastAction(null), 5000);
       }
     }
   };
@@ -352,7 +385,7 @@ export default function SessionsPanel({ isVisible = true }: SessionsPanelProps) 
                         : 'bg-bg-primary hover:bg-bg-secondary cursor-pointer'
                     }`}
                     onClick={() => !isRestoring && handleRestoreCheckpoint(checkpoint)}
-                    title={isRestoring ? 'Restoring checkpoint...' : `Restore checkpoint: ${checkpoint.name}`}
+                    title={isRestoring ? (restorationStage || 'Restoring checkpoint...') : `Restore checkpoint: ${checkpoint.name}`}
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-1">
@@ -367,6 +400,11 @@ export default function SessionsPanel({ isVisible = true }: SessionsPanelProps) 
                         {isRestoring ? 'Restoring...' : new Date(checkpoint.timestamp).toLocaleTimeString()}
                       </span>
                     </div>
+                    {isRestoring && restorationStage && (
+                      <div className="mt-1 text-[10px] text-coder1-cyan/80 truncate">
+                        {restorationStage}
+                      </div>
+                    )}
                   </div>
                 );
               })}
@@ -492,17 +530,34 @@ export default function SessionsPanel({ isVisible = true }: SessionsPanelProps) 
       <div className="p-3 bg-bg-tertiary border-t border-border-default">
         {/* Action Status */}
         {lastAction && (
-          <div className={`mb-2 p-2 rounded text-xs flex items-center gap-2 ${
+          <div className={`mb-2 p-2 rounded text-xs ${
             lastAction.type === 'success' 
               ? 'bg-green-500/10 border border-green-500/20 text-green-400'
+              : lastAction.type === 'info'
+              ? 'bg-blue-500/10 border border-blue-500/20 text-blue-400'
               : 'bg-red-500/10 border border-red-500/20 text-red-400'
           }`}>
-            {lastAction.type === 'success' ? (
-              <CheckCircle className="w-3 h-3 flex-shrink-0" />
-            ) : (
-              <XCircle className="w-3 h-3 flex-shrink-0" />
+            <div className="flex items-center gap-2">
+              {lastAction.type === 'success' ? (
+                <CheckCircle className="w-3 h-3 flex-shrink-0" />
+              ) : lastAction.type === 'info' ? (
+                <Loader2 className="w-3 h-3 flex-shrink-0 animate-spin" />
+              ) : (
+                <XCircle className="w-3 h-3 flex-shrink-0" />
+              )}
+              <span className="flex-1">{lastAction.message}</span>
+            </div>
+            {lastAction.details && (
+              <div className={`mt-1 text-[10px] ${
+                lastAction.type === 'success' 
+                  ? 'text-green-400/80'
+                  : lastAction.type === 'info'
+                  ? 'text-blue-400/80'
+                  : 'text-red-400/80'
+              }`}>
+                {lastAction.details}
+              </div>
             )}
-            <span className="flex-1">{lastAction.message}</span>
           </div>
         )}
         

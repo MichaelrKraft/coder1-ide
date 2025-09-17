@@ -736,6 +736,124 @@ export default function Terminal({ onAgentsSpawn, onClaudeTyped, onTerminalData,
     };
   }, [terminalReady]);
 
+  // Listen for checkpoint restoration events
+  useEffect(() => {
+    const handleCheckpointRestored = (event: CustomEvent) => {
+      console.log('🔄 Terminal: Checkpoint restoration event received', event.detail);
+      
+      // For checkpointRestored event: { checkpoint, snapshot }
+      const snapshot = event.detail?.snapshot;
+      const terminalData = snapshot?.terminal;
+      const conversationHistory = snapshot?.conversationHistory;
+      
+      if (!xtermRef.current) {
+        console.log('⚠️ Terminal: Terminal not initialized yet');
+        return;
+      }
+      
+      // Clear current terminal
+      xtermRef.current.clear();
+      
+      // ENHANCED: Display conversation history first if available
+      if (conversationHistory && Array.isArray(conversationHistory) && conversationHistory.length > 0) {
+        console.log(`📚 Terminal: Restoring ${conversationHistory.length} previous conversations`);
+        
+        // Display conversation history header
+        xtermRef.current.write('\r\n\x1b[38;5;174m══════════════════════════════════════════════════════════════════════════════════════════════════════════\x1b[0m\r\n');
+        xtermRef.current.write('\x1b[38;5;174m📂 Session restored from checkpoint\x1b[0m\r\n');
+        xtermRef.current.write('\x1b[38;5;174m══════════════════════════════════════════════════════════════════════════════════════════════════════════\x1b[0m\r\n\r\n');
+        
+        // Display each conversation
+        conversationHistory.forEach((conversation: any, index: number) => {
+          if (conversation.user_input && conversation.claude_reply) {
+            // User input
+            xtermRef.current?.write(`\x1b[38;5;147m💬 You:\x1b[0m ${conversation.user_input}\r\n\r\n`);
+            
+            // Claude response (truncated for readability)
+            const response = conversation.claude_reply.length > 500 
+              ? conversation.claude_reply.substring(0, 500) + '...'
+              : conversation.claude_reply;
+            xtermRef.current?.write(`\x1b[38;5;174m🤖 Claude:\x1b[0m ${response}\r\n\r\n`);
+            
+            if (index < conversationHistory.length - 1) {
+              xtermRef.current?.write('\x1b[38;5;244m────────────────────────────────────────────────────────────────────────────────────────────────────────\x1b[0m\r\n\r\n');
+            }
+          }
+        });
+        
+        xtermRef.current.write('\x1b[38;5;174m══════════════════════════════════════════════════════════════════════════════════════════════════════════\x1b[0m\r\n');
+        xtermRef.current.write('\x1b[38;5;147m📅 Continuing from where you left off...\x1b[0m\r\n');
+        xtermRef.current.write('\x1b[38;5;174m══════════════════════════════════════════════════════════════════════════════════════════════════════════\x1b[0m\r\n\r\n');
+      }
+      
+      // Restore current terminal session (if available)
+      if (terminalData && typeof terminalData === 'string') {
+        console.log(`📜 Terminal: Restoring current terminal session from checkpoint`);
+        // Write the entire terminal string (contains ANSI escape sequences from Claude Code)
+        xtermRef.current.write(terminalData);
+      } else {
+        console.log('⚠️ Terminal: No current terminal data in checkpoint');
+        // Start fresh Claude CLI session
+        xtermRef.current.write('Terminal ready. Type \x1b[38;5;174mclaude\x1b[0m to start a new session.\r\n\r\n');
+      }
+      
+      // Add a separator to show where restoration ends
+      xtermRef.current.writeln('\r\n' + '='.repeat(50));
+      xtermRef.current.writeln('📂 Session restored from checkpoint');
+      xtermRef.current.writeln('='.repeat(50) + '\r\n');
+      
+      // Focus terminal after restoration
+      setTimeout(() => {
+        if (xtermRef.current) {
+          xtermRef.current.focus();
+        }
+      }, 100);
+    };
+    
+    const handleIdeStateChanged = (event: CustomEvent) => {
+      if (event.detail?.type === 'checkpoint-restored') {
+        // For ideStateChanged: event.detail.data IS the snapshot
+        const terminalData = event.detail?.data?.terminal;
+        
+        if (!terminalData || typeof terminalData !== 'string') {
+          console.log('⚠️ Terminal: No terminal data in ide state change');
+          return;
+        }
+        
+        if (!xtermRef.current) {
+          console.log('⚠️ Terminal: Terminal not initialized yet');
+          return;
+        }
+        
+        // Clear and restore terminal
+        xtermRef.current.clear();
+        console.log(`📜 Terminal: Restoring terminal from IDE state change`);
+        xtermRef.current.write(terminalData);
+        
+        // Add separator
+        xtermRef.current.writeln('\r\n' + '='.repeat(50));
+        xtermRef.current.writeln('📂 Session restored from checkpoint');
+        xtermRef.current.writeln('='.repeat(50) + '\r\n');
+        
+        // Focus terminal
+        setTimeout(() => {
+          if (xtermRef.current) {
+            xtermRef.current.focus();
+          }
+        }, 100);
+      }
+    };
+    
+    // Listen for both possible events
+    window.addEventListener('checkpointRestored', handleCheckpointRestored as any);
+    window.addEventListener('ideStateChanged', handleIdeStateChanged as any);
+    
+    return () => {
+      window.removeEventListener('checkpointRestored', handleCheckpointRestored as any);
+      window.removeEventListener('ideStateChanged', handleIdeStateChanged as any);
+    };
+  }, []);
+
   // Initialize speech recognition
   useEffect(() => {
     if (typeof window !== 'undefined' && ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
