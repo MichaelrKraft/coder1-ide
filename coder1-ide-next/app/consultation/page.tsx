@@ -85,8 +85,8 @@ export default function AIConsultationPage() {
   };
 
   const handleSkipQuestions = () => {
-    // Skip consultation and go directly to IDE with AI assistance ready
-    router.push('/ide-beta?skipConsultation=true');
+    // Skip consultation and go directly to main IDE with AI assistance ready
+    router.push('/ide?skipConsultation=true');
   };
 
   const progress = ((currentQuestion + 1) / questions.length) * 100;

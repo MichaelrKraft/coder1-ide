@@ -321,6 +321,11 @@ app.use('/public', express.static(path.join(__dirname, '../public')));
 app.use('/css', express.static(path.join(__dirname, '../public/css')));
 app.use('/js', express.static(path.join(__dirname, '../public/js')));
 
+// Smart PRD Generator route
+app.get('/smart-prd-generator', (req, res) => {
+    res.sendFile(path.join(__dirname, '../CANONICAL/smart-prd-generator.html'));
+});
+
 // Welcome page route (for licensing flow)
 app.get('/welcome', (req, res) => {
     res.sendFile(path.join(__dirname, '../public/welcome.html'));
@@ -413,6 +418,8 @@ app.use('/api/agents-context', require('./routes/agents-context'));  // AGENTS.m
 // app.use('/api/workflows', require('./routes/workflows'));  // Revolutionary Workflow Automation System - TEMPORARILY DISABLED
 app.use('/api/mcp-prompts', require('./routes/mcp-prompts'));  // MCP Ambient Prompt Display System
 app.use('/api/experimental', require('./routes/experimental-mcp'));  // MCP Agent Framework (Experimental) - Zero conflicts
+app.use('/api/smart-prd', require('./routes/smart-prd-questionnaire'));  // Smart Repository Patterns PRD Generator
+app.use('/api/coder1-handoff', require('./routes/coder1-handoff'));  // Coder1 Integration and Handoff System
 app.use('/api', require('./routes/prettier-config'));
 // Remove duplicate terminal-rest route - using terminal-rest-api.js instead
 // app.use('/api/terminal-rest', require('./routes/terminal-rest'));

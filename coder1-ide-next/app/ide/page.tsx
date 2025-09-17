@@ -685,23 +685,46 @@ export default App;
   };
 
   // Handle file selection from explorer
-  const handleFileSelect = (fileName: string) => {
-    setActiveFile(fileName);
-    
-    // Create IDEFile object if not already in openFiles
-    if (!openFiles.some(f => f.path === fileName)) {
-      const newFile: IDEFile = {
-        id: `file_${Date.now()}`,
-        path: fileName,
-        name: fileName,
-        content: localStorage.getItem(`file_${fileName}`) || '',
-        isDirty: false,
-        isOpen: true,
-        language: fileName.endsWith('.tsx') ? 'typescript' : fileName.endsWith('.js') ? 'javascript' : 'text',
-        type: fileName.endsWith('.tsx') ? 'typescript' : fileName.endsWith('.js') ? 'javascript' : 'text',
-        lastModified: new Date()
-      };
-      setOpenFiles([...openFiles, newFile]);
+  const handleFileSelect = async (fileName: string) => {
+    try {
+      setActiveFile(fileName);
+      
+      // Fetch file content from API
+      const response = await fetch(`/api/files/read?path=${encodeURIComponent(fileName)}`);
+      const data = await response.json();
+      
+      if (data.success) {
+        // Load content into editor
+        setEditorContent(data.content);
+        setShowHero(false); // Hide hero section when file is opened
+        
+        // Create IDEFile object if not already in openFiles
+        if (!openFiles.some(f => f.path === fileName)) {
+          const newFile: IDEFile = {
+            id: `file_${Date.now()}`,
+            path: fileName,
+            name: fileName,
+            content: data.content,
+            isDirty: false,
+            isOpen: true,
+            language: fileName.endsWith('.tsx') ? 'typescript' : fileName.endsWith('.js') ? 'javascript' : 'text',
+            type: fileName.endsWith('.tsx') ? 'typescript' : fileName.endsWith('.js') ? 'javascript' : 'text',
+            lastModified: new Date()
+          };
+          setOpenFiles([...openFiles, newFile]);
+        }
+      } else {
+        // Handle API error
+        console.error('Failed to load file:', data.error);
+        setToast(`Failed to load file: ${fileName}`);
+        // Still set the file as active but with empty content
+        setEditorContent('// Failed to load file content');
+      }
+    } catch (error) {
+      // Handle network/fetch error
+      console.error('Error loading file:', error);
+      setToast(`Error loading file: ${fileName}`);
+      setEditorContent('// Error loading file content');
     }
   };
 
