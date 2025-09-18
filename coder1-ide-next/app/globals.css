@@ -108,8 +108,9 @@ body {
 
 /* Terminal styles */
 .xterm {
-  height: 100%;
-  padding: 8px;
+  min-height: 100%;
+  /* Let xterm handle its own dimensions - no padding */
+  padding: 0;
 }
 
 /* Ensure xterm viewport allows scrolling */

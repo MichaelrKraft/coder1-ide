@@ -26,15 +26,15 @@ const MonacoEditor = dynamic(() => import('../../components/editor/LazyMonacoEdi
   ssr: false
 });
 
-const Terminal = dynamic(() => import('@/components/terminal/LazyTerminal'), {
+const Terminal = dynamic(() => import('@/components/terminal/LazyTerminalContainer'), {
   ssr: false,
-  loading: () => <div className="h-full flex items-center justify-center">Loading Terminal...</div>
+  loading: () => <div className="h-full flex items-center justify-center">Loading Terminal System...</div>
 });
 
 export default function IDEPage() {
   const [activeFile, setActiveFile] = useState<string | null>(null);
   const [agentsActive, setAgentsActive] = useState(false);
-  const [terminalHeight, setTerminalHeight] = useState(52); // 52% (increased by 30% from 40%)
+  const [terminalHeight, setTerminalHeight] = useState(60); // 60% (balanced editor/terminal split)
   const [showExplorer, setShowExplorer] = useState(true);
   const [showTerminal, setShowTerminal] = useState(true);
   const [showOutput, setShowOutput] = useState(false);
@@ -806,6 +806,7 @@ export default App;
         <div style={{ height: `${terminalHeight}%` }} data-tour="terminal">
           <Terminal 
             onAgentsSpawn={() => setAgentsActive(true)}
+            onTerminalClick={() => setShowHero(false)}
             onClaudeTyped={() => setShowHero(false)}
             onTerminalData={(data) => {
               // Capture terminal output (limit to last 10KB to avoid memory issues)

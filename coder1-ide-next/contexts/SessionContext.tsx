@@ -45,6 +45,10 @@ export function SessionProvider({ children }: SessionProviderProps) {
   const isCreatingSession = useRef(false);
   const hasInitialized = useRef(false);
   const initializationPromise = useRef<Promise<void> | null>(null);
+  
+  // Add mutex to prevent concurrent cleanup operations
+  const isCleaningUp = useRef(false);
+  const lastCleanupTime = useRef(0);
 
   // Initialize session on mount
   useEffect(() => {
@@ -133,8 +137,9 @@ export function SessionProvider({ children }: SessionProviderProps) {
       if (data.success) {
         const loadedSessions = data.sessions || [];
         
-        // Automatically clean up old sessions (keep only last 10)
-        await cleanupOldSessions(loadedSessions);
+        // DISABLED: Session cleanup to prevent DELETE cascade crashes
+        // TODO: Re-implement cleanup with proper safeguards
+        // await cleanupOldSessions(loadedSessions);
         
         setSessions(loadedSessions);
         
@@ -156,33 +161,58 @@ export function SessionProvider({ children }: SessionProviderProps) {
   };
 
   const cleanupOldSessions = async (sessions: Session[]) => {
+    // Prevent concurrent cleanup operations with mutex and rate limiting
+    if (isCleaningUp.current) {
+      console.log('🔒 Cleanup already in progress, skipping...');
+      return;
+    }
+    
+    // Rate limiting: Don't cleanup more than once every 30 seconds
+    const now = Date.now();
+    const CLEANUP_COOLDOWN = 30000; // 30 seconds
+    if (now - lastCleanupTime.current < CLEANUP_COOLDOWN) {
+      console.log('⏰ Cleanup on cooldown, skipping...');
+      return;
+    }
+    
     const SESSION_LIMIT = 10; // Keep only 10 most recent sessions
     
     if (sessions.length > SESSION_LIMIT) {
-      // Sort by creation date and get sessions to delete
-      const sortedSessions = sessions.sort((a, b) => {
-        const timeA = typeof a.createdAt === 'string' ? new Date(a.createdAt).getTime() : a.createdAt;
-        const timeB = typeof b.createdAt === 'string' ? new Date(b.createdAt).getTime() : b.createdAt;
-        return timeB - timeA; // Most recent first
-      });
+      isCleaningUp.current = true;
+      lastCleanupTime.current = now;
       
-      const sessionsToDelete = sortedSessions.slice(SESSION_LIMIT);
-      const currentSessionId = localStorage.getItem('currentSessionId');
-      
-      console.log(`🧹 Cleaning up ${sessionsToDelete.length} old sessions (keeping ${SESSION_LIMIT} most recent)`);
-      
-      for (const session of sessionsToDelete) {
-        // Don't delete the current session
-        if (session.id !== currentSessionId) {
-          try {
-            console.log('🗑️ Deleting old session:', session.name, session.id);
-            await fetch(`/api/sessions?sessionId=${session.id}`, {
-              method: 'DELETE'
-            });
-          } catch (error) {
-            console.error('❌ Failed to delete session:', session.id, error);
+      try {
+        // Sort by creation date and get sessions to delete
+        const sortedSessions = sessions.sort((a, b) => {
+          const timeA = typeof a.createdAt === 'string' ? new Date(a.createdAt).getTime() : a.createdAt;
+          const timeB = typeof b.createdAt === 'string' ? new Date(b.createdAt).getTime() : b.createdAt;
+          return timeB - timeA; // Most recent first
+        });
+        
+        const sessionsToDelete = sortedSessions.slice(SESSION_LIMIT);
+        const currentSessionId = localStorage.getItem('currentSessionId');
+        
+        console.log(`🧹 Cleaning up ${sessionsToDelete.length} old sessions (keeping ${SESSION_LIMIT} most recent)`);
+        
+        // Process deletions with delays to prevent overwhelming the server
+        for (const session of sessionsToDelete) {
+          // Don't delete the current session
+          if (session.id !== currentSessionId) {
+            try {
+              console.log('🗑️ Deleting old session:', session.name, session.id);
+              await fetch(`/api/sessions?sessionId=${session.id}`, {
+                method: 'DELETE'
+              });
+              // Add small delay between deletions to prevent overwhelming
+              await new Promise(resolve => setTimeout(resolve, 100));
+            } catch (error) {
+              console.error('❌ Failed to delete session:', session.id, error);
+            }
           }
         }
+      } finally {
+        // Always release the mutex
+        isCleaningUp.current = false;
       }
     }
   };
@@ -195,13 +225,21 @@ export function SessionProvider({ children }: SessionProviderProps) {
     const startTime = performance.now();
     
     try {
-      // Generate unique session name with timestamp and counter
+      // Generate intelligent session name based on time and context
       const now = new Date();
+      const hour = now.getHours();
+      const timeOfDay = hour < 6 ? 'Late Night' : 
+                       hour < 12 ? 'Morning' : 
+                       hour < 17 ? 'Afternoon' : 
+                       hour < 21 ? 'Evening' : 'Night';
+      
       const timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
       const dateStr = now.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
       const sessionCount = sessions.length + 1;
-      const sessionName = name || `Session ${sessionCount} - ${dateStr} ${timeStr}`;
-      const sessionDescription = description || 'Coder1 IDE development session';
+      
+      // Generate descriptive name based on context
+      const sessionName = name || `💻 ${timeOfDay} Coding Session - ${dateStr} ${timeStr}`;
+      const sessionDescription = description || `Coder1 IDE ${timeOfDay.toLowerCase()} development session`;
       
       console.log('📝 Creating session with name:', sessionName);
       

@@ -5,6 +5,7 @@ import { Clock, Play, Pause, Save, FileText, DollarSign, RefreshCw, Loader2, Che
 import { useSession } from '@/contexts/SessionContext';
 import { sessionEnhancementService } from '@/services/session-enhancement-service';
 import { getSessionTypeById } from '@/lib/session-types';
+import { filterThinkingAnimations } from '@/lib/checkpoint-utils';
 
 interface Session {
   id: string;
@@ -179,9 +180,12 @@ export default function SessionsPanel({ isVisible = true }: SessionsPanelProps) 
         // REMOVED: // REMOVED: console.log('📦 Checkpoint API Response Data:', restoreData);
         
         // Apply the restored state to the IDE with smooth transitions
+        console.log('🎯 Restore data structure:', JSON.stringify(restoreData, null, 2));
         if (restoreData.checkpoint && restoreData.checkpoint.data) {
           const snapshot = restoreData.checkpoint.data.snapshot;
           const conversationHistory = restoreData.checkpoint.data.conversationHistory;
+          console.log('📸 Snapshot data:', snapshot);
+          console.log('💬 Conversation history:', conversationHistory);
           
           // Count what we're restoring
           const conversationCount = conversationHistory?.length || 0;
@@ -213,6 +217,94 @@ export default function SessionsPanel({ isVisible = true }: SessionsPanelProps) 
           
           window.dispatchEvent(new CustomEvent('ideStateChanged', {
             detail: { type: 'checkpoint-restored', data: snapshot, checkpoint: restoreData.checkpoint }
+          }));
+          
+          // Stage 4: Create sandbox for checkpoint exploration
+          setRestorationStage('Creating checkpoint sandbox...');
+          // Parse files data properly
+          let filesArray = [];
+          if (snapshot?.files) {
+            try {
+              const parsed = JSON.parse(snapshot.files);
+              filesArray = Array.isArray(parsed) ? parsed : [];
+              // Ensure we have file names
+              filesArray = filesArray.map((f: any) => 
+                typeof f === 'string' ? f : (f.name || f.path || 'unknown file')
+              );
+            } catch (e) {
+              console.log('Failed to parse files:', e);
+              filesArray = [];
+            }
+          }
+          
+          // Parse commands from terminal history if no conversation history
+          let commandsArray = [];
+          if (conversationHistory && Array.isArray(conversationHistory) && conversationHistory.length > 0) {
+            commandsArray = conversationHistory
+              .slice(-10) // Get last 10 commands
+              .filter((conv: any) => conv && conv.input)
+              .map((conv: any) => conv.input);
+          } else if (snapshot?.terminal) {
+            // Extract commands from terminal history
+            const terminalLines = snapshot.terminal.split('\n');
+            // Look for bash prompt lines (bash-3.2$) followed by commands
+            const promptRegex = /(?:bash-\d+\.\d+\$|╰─\$|\$)\s+(.+)/;
+            commandsArray = terminalLines
+              .map(line => {
+                const match = line.match(promptRegex);
+                return match ? match[1].trim() : null;
+              })
+              .filter(cmd => cmd && cmd.length > 0)
+              .slice(-5); // Get last 5 commands
+          }
+          
+          // Don't use fallback text - show actual state
+          if (filesArray.length === 0 && snapshot?.files === '[]') {
+            filesArray = ['No files were open at checkpoint'];
+          } else if (filesArray.length === 0) {
+            filesArray = ['Workspace state preserved'];
+          }
+          
+          if (commandsArray.length === 0 && snapshot?.terminal) {
+            commandsArray = ['Session in progress (see terminal below)'];
+          } else if (commandsArray.length === 0) {
+            commandsArray = ['No command history'];
+          }
+          
+          // Clean the terminal history from thinking animations
+          const cleanedTerminalHistory = snapshot?.terminal 
+            ? filterThinkingAnimations(snapshot.terminal)
+            : '';
+          
+          const sandboxData = {
+            name: restoreData.checkpoint.name || `Checkpoint ${new Date(restoreData.checkpoint.timestamp).toLocaleString()}`,
+            files: filesArray,
+            commands: commandsArray,
+            timestamp: restoreData.checkpoint.timestamp,
+            description: restoreData.checkpoint.description || 'Restored checkpoint for safe exploration',
+            originalCheckpoint: restoreData.checkpoint,
+            terminalHistory: cleanedTerminalHistory, // Use cleaned terminal content
+            checkpointData: {
+              files: filesArray,
+              commands: commandsArray,
+              timestamp: restoreData.checkpoint.timestamp,
+              terminalHistory: cleanedTerminalHistory // Use cleaned here too
+            }
+          };
+          
+          console.log('🏖️ Creating sandbox with data:', {
+            name: sandboxData.name,
+            filesCount: filesArray.length,
+            files: filesArray,
+            commandsCount: commandsArray.length,
+            commands: commandsArray,
+            terminalHistoryLength: sandboxData.terminalHistory?.length || 0,
+            hasTerminalHistory: !!sandboxData.terminalHistory
+          });
+          
+          // Dispatch sandbox creation event for terminal container
+          window.dispatchEvent(new CustomEvent('terminal:createSandbox', {
+            detail: sandboxData
           }));
           
           // Final stage: Show detailed success message
@@ -317,11 +409,45 @@ export default function SessionsPanel({ isVisible = true }: SessionsPanelProps) 
     return currentSession?.id === session.id ? 'active' : 'completed';
   };
   
-  const formatDuration = (createdAt: number, updatedAt: number): string => {
-    const duration = updatedAt - createdAt;
-    const hours = Math.floor(duration / 3600000);
-    const minutes = Math.floor((duration % 3600000) / 60000);
-    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:00`;
+  const formatDuration = (createdAt: number | null | undefined, updatedAt: number | null | undefined): string => {
+    try {
+      // Handle null or undefined inputs
+      if (!createdAt || !updatedAt) {
+        return '00:00:00';
+      }
+      
+      // Ensure we have valid numbers
+      const start = Number(createdAt);
+      const end = Number(updatedAt);
+      
+      // Check for invalid numbers (NaN)
+      if (isNaN(start) || isNaN(end)) {
+        console.warn('Invalid timestamps in formatDuration:', { createdAt, updatedAt });
+        return '00:00:00';
+      }
+      
+      // Calculate duration (ensure non-negative)
+      const duration = Math.max(0, end - start);
+      
+      // If duration is 0 or very small, return minimum
+      if (duration < 1000) {
+        return '00:00:00';
+      }
+      
+      const hours = Math.floor(duration / 3600000);
+      const minutes = Math.floor((duration % 3600000) / 60000);
+      const seconds = Math.floor((duration % 60000) / 1000);
+      
+      // Handle very long durations
+      if (hours > 999) {
+        return '999:59:59'; // Cap at maximum displayable
+      }
+      
+      return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    } catch (error) {
+      console.error('Error formatting duration:', error, { createdAt, updatedAt });
+      return '00:00:00'; // Always return a valid string
+    }
   };
   
   if (loading) {
@@ -379,29 +505,48 @@ export default function SessionsPanel({ isVisible = true }: SessionsPanelProps) 
                 return (
                   <div 
                     key={checkpoint.id}
-                    className={`text-xs rounded p-1 transition-all ${
+                    className={`text-xs rounded p-2 transition-all border ${
                       isRestoring 
-                        ? 'bg-coder1-cyan/10 border border-coder1-cyan/20' 
-                        : 'bg-bg-primary hover:bg-bg-secondary cursor-pointer'
+                        ? 'bg-coder1-cyan/10 border-coder1-cyan/30' 
+                        : 'bg-bg-primary hover:bg-bg-secondary border-border-default hover:border-coder1-cyan/30'
                     }`}
-                    onClick={() => !isRestoring && handleRestoreCheckpoint(checkpoint)}
-                    title={isRestoring ? (restorationStage || 'Restoring checkpoint...') : `Restore checkpoint: ${checkpoint.name}`}
                   >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-1">
+                    <div className="flex items-center justify-between mb-1">
+                      <div className="flex items-center gap-1 flex-1">
                         {isRestoring && <Loader2 className="w-3 h-3 animate-spin text-coder1-cyan" />}
                         <span className={`truncate ${
-                          isRestoring ? 'text-coder1-cyan' : 'text-text-secondary'
+                          isRestoring ? 'text-coder1-cyan font-medium' : 'text-text-primary'
                         }`}>
-                          {checkpoint.name}
+                          📌 {checkpoint.name}
                         </span>
                       </div>
-                      <span className="text-text-muted text-[10px]">
-                        {isRestoring ? 'Restoring...' : new Date(checkpoint.timestamp).toLocaleTimeString()}
+                      <span className="text-text-muted text-[10px] ml-2">
+                        {new Date(checkpoint.timestamp).toLocaleTimeString()}
                       </span>
                     </div>
+                    <button
+                      onClick={() => !isRestoring && handleRestoreCheckpoint(checkpoint)}
+                      disabled={isRestoring}
+                      className={`w-full mt-1 px-2 py-1 rounded text-[11px] font-medium transition-all ${
+                        isRestoring 
+                          ? 'bg-coder1-cyan/20 text-coder1-cyan cursor-not-allowed'
+                          : 'bg-coder1-cyan/10 hover:bg-coder1-cyan/20 text-coder1-cyan cursor-pointer active:scale-95'
+                      }`}
+                      title={isRestoring ? (restorationStage || 'Restoring checkpoint...') : 'Click to restore this checkpoint'}
+                    >
+                      {isRestoring ? (
+                        <span className="flex items-center justify-center gap-1">
+                          <Loader2 className="w-3 h-3 animate-spin" />
+                          Restoring...
+                        </span>
+                      ) : (
+                        <span className="flex items-center justify-center gap-1">
+                          ↩️ Restore Checkpoint
+                        </span>
+                      )}
+                    </button>
                     {isRestoring && restorationStage && (
-                      <div className="mt-1 text-[10px] text-coder1-cyan/80 truncate">
+                      <div className="mt-1 text-[10px] text-coder1-cyan/80 truncate text-center">
                         {restorationStage}
                       </div>
                     )}

@@ -54,7 +54,7 @@ const tourSteps: TourStep[] = [
   {
     id: 'file-explorer',
     title: 'File Explorer',
-    content: 'Navigate your project files, sessions, and memory. Everything is organized in tabs for easy access.',
+    content: 'Navigate your project files and sessions. Everything is organized in tabs for easy access.',
     target: 'file-explorer',
     position: 'middle-top', // Move to middle-top
     highlightColor: 'turquoise'
@@ -194,10 +194,33 @@ export default function InteractiveTour({ onClose, onStepChange, onTourComplete 
   const [subHighlightRect, setSubHighlightRect] = useState<DOMRect | null>(null);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isDiscoverMenuOpen, setIsDiscoverMenuOpen] = useState(false);
+  const [dontShowAgain, setDontShowAgain] = useState(false);
 
   const currentStepData = tourSteps[currentStep];
   const isOnSubStep = currentStepData.hasSubSteps && currentSubStep > 0;
   const currentSubStepData = isOnSubStep ? currentStepData.subSteps?.[currentSubStep - 1] : null;
+  
+  // Check if tour was already completed or dismissed
+  useEffect(() => {
+    const tourStatus = localStorage.getItem('coder1-tour-status');
+    if (tourStatus === 'completed' || tourStatus === 'dismissed') {
+      // Immediately close if tour was already completed or dismissed
+      onClose();
+      return;
+    }
+  }, [onClose]);
+  
+  // Add ESC key handler for quick dismissal
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        handleDismissTour();
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [dontShowAgain]);
   
   // Dispatch tour:start event when tour mounts
   useEffect(() => {
@@ -209,6 +232,15 @@ export default function InteractiveTour({ onClose, onStepChange, onTourComplete 
       document.body.removeAttribute('data-tour-active');
     };
   }, []);
+  
+  // Handle dismissing the tour
+  const handleDismissTour = () => {
+    if (dontShowAgain) {
+      localStorage.setItem('coder1-tour-status', 'dismissed');
+      localStorage.setItem('coder1-tour-timestamp', new Date().toISOString());
+    }
+    onClose();
+  };
 
   // Add creative code to Monaco editor when on Step 4
   useEffect(() => {
@@ -406,6 +438,19 @@ export default function InteractiveTour({ onClose, onStepChange, onTourComplete 
   }, [isSettingsOpen]);
 
   // Handle step changes
+  const handleTourComplete = () => {
+    // Mark tour as completed
+    localStorage.setItem('coder1-tour-status', 'completed');
+    localStorage.setItem('coder1-tour-timestamp', new Date().toISOString());
+    
+    // Call the original complete handler
+    if (onTourComplete) {
+      onTourComplete();
+    }
+    
+    onClose();
+  };
+  
   const handleNext = () => {
     console.log(`[InteractiveTour] handleNext called - Current: Step ${currentStep + 1}, SubStep: ${currentSubStep}`);
     
@@ -464,11 +509,8 @@ export default function InteractiveTour({ onClose, onStepChange, onTourComplete 
         setIsDiscoverMenuOpen(false);
       }
       
-      // Call tour completion callback to clean up editor state
-      if (onTourComplete) {
-        onTourComplete();
-      }
-      onClose();
+      // Use our new tour completion handler that saves state
+      handleTourComplete();
     }
   };
 
@@ -849,8 +891,9 @@ export default function InteractiveTour({ onClose, onStepChange, onTourComplete 
       >
         {/* Close Button */}
         <button
-          onClick={onClose}
+          onClick={handleDismissTour}
           className="absolute top-2 right-2 p-1 rounded-md hover:bg-bg-tertiary transition-colors"
+          title="Dismiss tour (ESC)"
         >
           <X className="w-4 h-4 text-text-muted" />
         </button>
@@ -869,6 +912,20 @@ export default function InteractiveTour({ onClose, onStepChange, onTourComplete 
         <p className="text-text-secondary mb-4">
           {isOnSubStep && currentSubStepData ? currentSubStepData.content : currentStepData.content}
         </p>
+
+        {/* Don't show again checkbox */}
+        <div className="mb-4 flex items-center gap-2">
+          <input
+            type="checkbox"
+            id="dont-show-tour"
+            checked={dontShowAgain}
+            onChange={(e) => setDontShowAgain(e.target.checked)}
+            className="w-4 h-4 rounded border-border-default bg-bg-secondary text-coder1-cyan focus:ring-1 focus:ring-coder1-cyan"
+          />
+          <label htmlFor="dont-show-tour" className="text-xs text-text-muted cursor-pointer select-none hover:text-text-secondary">
+            Don't show this tour again
+          </label>
+        </div>
 
         {/* Navigation Buttons */}
         <div className="flex justify-between">

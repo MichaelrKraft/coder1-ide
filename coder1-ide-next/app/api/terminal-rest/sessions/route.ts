@@ -57,40 +57,28 @@ export async function POST(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
+  // DISABLED: Terminal session deletion is handled by unified server in-memory management
+  // The context processor calls and REST API cleanup were causing DELETE cascades that
+  // overwhelmed the server and caused EMFILE errors. Sessions are now managed entirely
+  // by the unified server's automatic cleanup system.
   try {
     const url = new URL(request.url);
     const sessionId = url.pathname.split('/').pop();
     
-    if (sessionId && sessionCounter.has(sessionId)) {
-      // End the context processor session
-      try {
-        await contextProcessor.endSession(`Terminal session ${sessionId} closed`, 1.0);
-        logger.info(`🧠 Context processor session ended for: ${sessionId}`);
-      } catch (error) {
-        logger.warn('Context processor session end failed:', error);
-        // Continue even if context processor fails
-      }
-      
-      sessionCounter.delete(sessionId);
-      // REMOVED: // REMOVED: console.log(`✅ Terminal session deleted (unified): ${sessionId}`);
-      
-      return NextResponse.json({
-        sessionId,
-        status: 'deleted',
-        message: 'Session cleaned up, actual terminal managed by unified server'
-      });
-    } else {
-      return NextResponse.json(
-        { error: 'Session not found' },
-        { status: 404 }
-      );
-    }
+    logger.info(`Terminal session deletion disabled - managed by unified server: ${sessionId}`);
+    
+    return NextResponse.json({
+      sessionId,
+      status: 'deletion-disabled',
+      message: 'Terminal session cleanup disabled - managed by unified server memory management',
+      note: 'Sessions are automatically cleaned up by the unified server to prevent server crashes'
+    });
     
   } catch (error) {
-    // logger?.error('Error deleting terminal session:', error);
+    logger.error('Error in disabled DELETE endpoint:', error);
     return NextResponse.json(
-      { error: 'Failed to delete terminal session' },
-      { status: 500 }
+      { error: 'Terminal session deletion disabled for stability' },
+      { status: 200 } // Return 200 instead of 500 to prevent cascades
     );
   }
 }

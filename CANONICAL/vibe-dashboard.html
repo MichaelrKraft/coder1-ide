@@ -897,6 +897,304 @@
             gap: 12px;
         }
 
+        /* AI Memory & Context Card Styles */
+        .memory-card {
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.05), rgba(6, 182, 212, 0.05));
+        }
+
+        .memory-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex: 1;
+        }
+
+        .memory-icon {
+            font-size: 20px;
+            flex-shrink: 0;
+        }
+
+        .memory-info {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .memory-name {
+            color: var(--text-primary);
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .memory-status {
+            color: var(--text-secondary);
+            font-size: 11px;
+        }
+
+        .memory-controls {
+            display: flex;
+            gap: 8px;
+        }
+
+        .memory-btn {
+            padding: 6px 8px;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 6px;
+            color: var(--text-primary);
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .memory-btn:hover {
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(6, 182, 212, 0.2));
+            border-color: var(--accent-primary);
+            transform: translateY(-1px);
+        }
+
+        .memory-btn.secondary {
+            background: var(--glass-bg);
+            color: var(--text-secondary);
+        }
+
+        .memory-content {
+            margin-top: 16px;
+        }
+
+        .memory-stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .memory-stat {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            padding: 12px;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 8px;
+        }
+
+        .memory-stat-label {
+            color: var(--text-secondary);
+            font-size: 11px;
+            font-weight: 500;
+            text-transform: uppercase;
+        }
+
+        .memory-stat-value {
+            color: var(--text-primary);
+            font-size: 18px;
+            font-weight: 700;
+        }
+
+        .memory-session-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            padding: 12px;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 8px;
+        }
+
+        .session-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .session-indicator {
+            font-size: 12px;
+        }
+
+        .session-text {
+            color: var(--text-secondary);
+            font-size: 12px;
+        }
+
+        .session-buttons {
+            display: flex;
+            gap: 8px;
+        }
+
+        .memory-action-btn {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 6px;
+            color: var(--text-primary);
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .memory-action-btn:hover {
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(6, 182, 212, 0.2));
+            border-color: var(--accent-primary);
+            transform: translateY(-1px);
+        }
+
+        .memory-action-btn.start-session {
+            border-color: rgba(16, 185, 129, 0.3);
+        }
+
+        .memory-action-btn.start-session:hover {
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(16, 185, 129, 0.2));
+            border-color: var(--success);
+        }
+
+        .memory-action-btn.end-session {
+            border-color: rgba(239, 68, 68, 0.3);
+        }
+
+        .memory-action-btn.end-session:hover {
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(239, 68, 68, 0.2));
+            border-color: var(--error);
+        }
+
+        .context-injection-section {
+            margin-bottom: 16px;
+            padding: 12px;
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(6, 182, 212, 0.05));
+            border: 1px solid rgba(139, 92, 246, 0.2);
+            border-radius: 8px;
+        }
+
+        .context-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .context-label {
+            color: var(--accent-primary);
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .context-count {
+            color: var(--text-secondary);
+            font-size: 11px;
+        }
+
+        .context-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .context-btn {
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .context-btn.primary {
+            background: var(--accent-primary);
+            color: white;
+            border: 1px solid var(--accent-primary);
+        }
+
+        .context-btn.primary:hover {
+            background: var(--accent-secondary);
+            border-color: var(--accent-secondary);
+            transform: translateY(-1px);
+        }
+
+        .context-btn.secondary {
+            background: var(--glass-bg);
+            color: var(--text-secondary);
+            border: 1px solid var(--glass-border);
+        }
+
+        .context-btn.secondary:hover {
+            background: var(--glass-border);
+            color: var(--text-primary);
+        }
+
+        .recent-conversations {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 8px;
+            padding: 12px;
+        }
+
+        .conversations-title {
+            color: var(--text-primary);
+            font-size: 12px;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+
+        .conversations-list {
+            margin-bottom: 12px;
+        }
+
+        .conversation-item {
+            padding: 8px;
+            border-bottom: 1px solid var(--glass-border);
+            transition: background 0.2s ease;
+        }
+
+        .conversation-item:last-child {
+            border-bottom: none;
+        }
+
+        .conversation-item:hover {
+            background: rgba(139, 92, 246, 0.05);
+        }
+
+        .conversation-time {
+            color: var(--text-secondary);
+            font-size: 10px;
+            margin-bottom: 4px;
+        }
+
+        .conversation-preview {
+            color: var(--text-primary);
+            font-size: 11px;
+            line-height: 1.3;
+        }
+
+        .view-all-btn {
+            width: 100%;
+            padding: 8px;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 6px;
+            color: var(--text-secondary);
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .view-all-btn:hover {
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(6, 182, 212, 0.1));
+            border-color: var(--accent-primary);
+            color: var(--text-primary);
+        }
+
         .step-item {
             display: flex;
             align-items: flex-start;
@@ -4402,6 +4700,95 @@
                         <div id="ambient-prompt-container">
                             <!-- Ambient Prompt Display will be initialized here -->
                         </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- AI Memory & Context Card -->
+            <div class="card memory-card">
+                <div class="card-title">
+                    <div class="memory-header">
+                        <div class="memory-icon">🧠</div>
+                        <div class="memory-info">
+                            <span class="memory-name">AI Memory & Context</span>
+                            <span class="memory-status" id="memoryStatus">Loading...</span>
+                        </div>
+                    </div>
+                    <div class="memory-controls">
+                        <button class="memory-btn secondary" id="refreshMemoryBtn" title="Refresh memory stats">
+                            ↻
+                        </button>
+                        <button class="memory-btn" id="viewMemoryDetailsBtn" title="View detailed memory">
+                            📊
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="memory-content" id="memoryContent">
+                    <!-- Memory Stats Grid -->
+                    <div class="memory-stats-grid">
+                        <div class="memory-stat">
+                            <span class="memory-stat-label">Sessions</span>
+                            <span class="memory-stat-value" id="totalSessions">0</span>
+                        </div>
+                        <div class="memory-stat">
+                            <span class="memory-stat-label">Conversations</span>
+                            <span class="memory-stat-value" id="totalConversations">0</span>
+                        </div>
+                        <div class="memory-stat">
+                            <span class="memory-stat-label">Success Rate</span>
+                            <span class="memory-stat-value" id="successRate">0%</span>
+                        </div>
+                        <div class="memory-stat">
+                            <span class="memory-stat-label">Patterns</span>
+                            <span class="memory-stat-value" id="totalPatterns">0</span>
+                        </div>
+                    </div>
+
+                    <!-- Session Controls -->
+                    <div class="memory-session-controls">
+                        <div class="session-status">
+                            <span class="session-indicator" id="sessionIndicator">⚫</span>
+                            <span class="session-text" id="sessionText">No active session</span>
+                        </div>
+                        <div class="session-buttons">
+                            <button class="memory-action-btn start-session" id="startSessionBtn" style="display: inline-flex;">
+                                <span>🟢</span> Start Learning
+                            </button>
+                            <button class="memory-action-btn end-session" id="endSessionBtn" style="display: none;">
+                                <span>🔴</span> End Session
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Context Injection Section -->
+                    <div class="context-injection-section" id="contextInjectionSection" style="display: none;">
+                        <div class="context-header">
+                            <span class="context-label">Context Ready</span>
+                            <span class="context-count" id="contextCount">0 conversations</span>
+                        </div>
+                        <div class="context-actions">
+                            <button class="context-btn primary" id="copyContextBtn">
+                                📋 Copy for Claude Code
+                            </button>
+                            <button class="context-btn secondary" id="previewContextBtn">
+                                👁️ Preview
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Recent Conversations Preview -->
+                    <div class="recent-conversations" id="recentConversations">
+                        <h6 class="conversations-title">Recent Activity</h6>
+                        <div class="conversations-list" id="conversationsList">
+                            <div class="conversation-item">
+                                <div class="conversation-time">Loading...</div>
+                                <div class="conversation-preview">Fetching recent conversations...</div>
+                            </div>
+                        </div>
+                        <button class="view-all-btn" id="viewAllConversationsBtn">
+                            View All Conversations
+                        </button>
                     </div>
                 </div>
             </div>
@@ -8230,6 +8617,335 @@ Execute as a single Task with multiple sub-agents working in parallel.`;
             window.vibeDashboard.showInfoDialog('Export Hooks', 'Hooks export feature will be available soon! This will export all your automation hooks as a JSON file.');
         };
 
+        // AI Memory & Context Management Functions
+        VibeDashboard.prototype.initializeMemory = function() {
+            this.loadMemoryStats();
+            this.loadRecentConversations();
+            this.setupMemoryEventListeners();
+            
+            // Start periodic updates every 30 seconds
+            setInterval(() => {
+                this.loadMemoryStats();
+                this.loadRecentConversations();
+            }, 30000);
+        };
+
+        VibeDashboard.prototype.setupMemoryEventListeners = function() {
+            const refreshMemoryBtn = document.getElementById('refreshMemoryBtn');
+            const viewMemoryDetailsBtn = document.getElementById('viewMemoryDetailsBtn');
+            const startSessionBtn = document.getElementById('startSessionBtn');
+            const endSessionBtn = document.getElementById('endSessionBtn');
+            const copyContextBtn = document.getElementById('copyContextBtn');
+            const previewContextBtn = document.getElementById('previewContextBtn');
+            const viewAllConversationsBtn = document.getElementById('viewAllConversationsBtn');
+
+            if (refreshMemoryBtn) {
+                refreshMemoryBtn.addEventListener('click', () => {
+                    this.refreshMemoryData();
+                });
+            }
+
+            if (viewMemoryDetailsBtn) {
+                viewMemoryDetailsBtn.addEventListener('click', () => {
+                    this.showMemoryDetails();
+                });
+            }
+
+            if (startSessionBtn) {
+                startSessionBtn.addEventListener('click', () => {
+                    this.startLearningSession();
+                });
+            }
+
+            if (endSessionBtn) {
+                endSessionBtn.addEventListener('click', () => {
+                    this.endLearningSession();
+                });
+            }
+
+            if (copyContextBtn) {
+                copyContextBtn.addEventListener('click', () => {
+                    this.copyContextForClaude();
+                });
+            }
+
+            if (previewContextBtn) {
+                previewContextBtn.addEventListener('click', () => {
+                    this.previewContext();
+                });
+            }
+
+            if (viewAllConversationsBtn) {
+                viewAllConversationsBtn.addEventListener('click', () => {
+                    this.viewAllConversations();
+                });
+            }
+        };
+
+        VibeDashboard.prototype.loadMemoryStats = async function() {
+            try {
+                const response = await fetch('/api/context/stats');
+                if (response.ok) {
+                    const stats = await response.json();
+                    this.updateMemoryDisplay(stats);
+                } else {
+                    console.warn('Failed to load memory stats');
+                    this.showMemoryError('Failed to load memory statistics');
+                }
+            } catch (error) {
+                console.error('Error loading memory stats:', error);
+                this.showMemoryError('Error connecting to memory system');
+            }
+        };
+
+        VibeDashboard.prototype.updateMemoryDisplay = function(stats) {
+            // Update memory status
+            const memoryStatus = document.getElementById('memoryStatus');
+            if (memoryStatus) {
+                memoryStatus.textContent = stats.isLearning ? '🟢 Learning Active' : '⚫ Idle';
+            }
+
+            // Update stats values
+            document.getElementById('totalSessions').textContent = stats.totalSessions || 0;
+            document.getElementById('totalConversations').textContent = stats.totalConversations || 0;
+            document.getElementById('successRate').textContent = Math.round(stats.successRate || 0) + '%';
+            document.getElementById('totalPatterns').textContent = stats.totalPatterns || 0;
+
+            // Update session controls
+            const sessionIndicator = document.getElementById('sessionIndicator');
+            const sessionText = document.getElementById('sessionText');
+            const startSessionBtn = document.getElementById('startSessionBtn');
+            const endSessionBtn = document.getElementById('endSessionBtn');
+
+            if (stats.isLearning) {
+                if (sessionIndicator) sessionIndicator.textContent = '🟢';
+                if (sessionText) sessionText.textContent = 'Learning session active';
+                if (startSessionBtn) startSessionBtn.style.display = 'none';
+                if (endSessionBtn) endSessionBtn.style.display = 'inline-flex';
+            } else {
+                if (sessionIndicator) sessionIndicator.textContent = '⚫';
+                if (sessionText) sessionText.textContent = 'No active session';
+                if (startSessionBtn) startSessionBtn.style.display = 'inline-flex';
+                if (endSessionBtn) endSessionBtn.style.display = 'none';
+            }
+
+            // Check for context injection
+            this.checkContextInjection();
+        };
+
+        VibeDashboard.prototype.checkContextInjection = async function() {
+            try {
+                const response = await fetch('/api/context/inject?limit=3');
+                if (response.ok) {
+                    const contextData = await response.json();
+                    if (contextData.hasContext) {
+                        this.showContextInjectionSection(contextData);
+                    } else {
+                        this.hideContextInjectionSection();
+                    }
+                }
+            } catch (error) {
+                console.error('Error checking context injection:', error);
+            }
+        };
+
+        VibeDashboard.prototype.showContextInjectionSection = function(contextData) {
+            const contextSection = document.getElementById('contextInjectionSection');
+            const contextCount = document.getElementById('contextCount');
+
+            if (contextSection) {
+                contextSection.style.display = 'block';
+            }
+
+            if (contextCount) {
+                contextCount.textContent = `${contextData.conversationCount} conversations`;
+            }
+
+            // Store context data for copying
+            this.currentContextData = contextData;
+        };
+
+        VibeDashboard.prototype.hideContextInjectionSection = function() {
+            const contextSection = document.getElementById('contextInjectionSection');
+            if (contextSection) {
+                contextSection.style.display = 'none';
+            }
+        };
+
+        VibeDashboard.prototype.loadRecentConversations = async function() {
+            try {
+                const response = await fetch('/api/context/conversations?limit=3');
+                if (response.ok) {
+                    const data = await response.json();
+                    this.updateConversationsDisplay(data.conversations || []);
+                }
+            } catch (error) {
+                console.error('Error loading recent conversations:', error);
+            }
+        };
+
+        VibeDashboard.prototype.updateConversationsDisplay = function(conversations) {
+            const conversationsList = document.getElementById('conversationsList');
+            if (!conversationsList) return;
+
+            if (conversations.length === 0) {
+                conversationsList.innerHTML = `
+                    <div class="conversation-item">
+                        <div class="conversation-time">No recent activity</div>
+                        <div class="conversation-preview">Start a conversation to see it here</div>
+                    </div>
+                `;
+                return;
+            }
+
+            conversationsList.innerHTML = conversations.map(conv => `
+                <div class="conversation-item">
+                    <div class="conversation-time">${new Date(conv.timestamp).toLocaleString()}</div>
+                    <div class="conversation-preview">${this.truncateText(conv.userInput, 60)}</div>
+                </div>
+            `).join('');
+        };
+
+        VibeDashboard.prototype.refreshMemoryData = function() {
+            this.loadMemoryStats();
+            this.loadRecentConversations();
+            this.showToast('Memory data refreshed', 'success');
+        };
+
+        VibeDashboard.prototype.startLearningSession = async function() {
+            try {
+                const response = await fetch('/api/context/stats', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        action: 'initialize',
+                        projectPath: '/Users/michaelkraft/autonomous_vibe_interface' 
+                    })
+                });
+                
+                if (response.ok) {
+                    this.showToast('Learning session started!', 'success');
+                    this.loadMemoryStats();
+                } else {
+                    const error = await response.json();
+                    this.showToast(`Failed to start session: ${error.error}`, 'error');
+                }
+            } catch (error) {
+                this.showToast('Failed to start learning session', 'error');
+                console.error('Error starting session:', error);
+            }
+        };
+
+        VibeDashboard.prototype.endLearningSession = async function() {
+            try {
+                const response = await fetch('/api/context/stats', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        action: 'end_session',
+                        summary: 'Session ended by user',
+                        successRating: 0.8
+                    })
+                });
+                
+                if (response.ok) {
+                    this.showToast('Learning session ended!', 'success');
+                    this.loadMemoryStats();
+                } else {
+                    const error = await response.json();
+                    this.showToast(`Failed to end session: ${error.error}`, 'error');
+                }
+            } catch (error) {
+                this.showToast('Failed to end learning session', 'error');
+                console.error('Error ending session:', error);
+            }
+        };
+
+        VibeDashboard.prototype.copyContextForClaude = async function() {
+            if (this.currentContextData?.contextMessage) {
+                try {
+                    await navigator.clipboard.writeText(this.currentContextData.contextMessage);
+                    this.showToast('Context copied to clipboard!', 'success');
+                } catch (error) {
+                    console.error('Failed to copy to clipboard:', error);
+                    this.showToast('Failed to copy to clipboard', 'error');
+                }
+            } else {
+                this.showToast('No context available to copy', 'warning');
+            }
+        };
+
+        VibeDashboard.prototype.previewContext = function() {
+            if (this.currentContextData?.contextMessage) {
+                this.showInfoDialog('Context Preview', 
+                    `<div style="max-height: 300px; overflow-y: auto; font-family: monospace; font-size: 12px; white-space: pre-wrap;">${this.currentContextData.contextMessage}</div>`
+                );
+            } else {
+                this.showToast('No context available to preview', 'warning');
+            }
+        };
+
+        VibeDashboard.prototype.showMemoryDetails = function() {
+            // Navigate to a detailed memory view (could be a modal or separate page)
+            this.showInfoDialog('Memory Details', 'Detailed memory management interface coming soon! This will show advanced memory analytics, conversation search, and pattern analysis.');
+        };
+
+        VibeDashboard.prototype.viewAllConversations = function() {
+            // Navigate to full conversation list
+            this.showInfoDialog('All Conversations', 'Full conversation history interface coming soon! This will show searchable, filterable conversation history with export options.');
+        };
+
+        VibeDashboard.prototype.showMemoryError = function(message) {
+            const memoryStatus = document.getElementById('memoryStatus');
+            if (memoryStatus) {
+                memoryStatus.textContent = '❌ Error';
+                memoryStatus.style.color = 'var(--error)';
+            }
+            this.showToast(message, 'error');
+        };
+
+        VibeDashboard.prototype.showToast = function(message, type = 'info') {
+            // Create toast notification
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            toast.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 12px 16px;
+                border-radius: 8px;
+                color: white;
+                font-size: 14px;
+                font-weight: 500;
+                z-index: 10000;
+                transition: all 0.3s ease;
+                backdrop-filter: blur(10px);
+                ${type === 'success' ? 'background: rgba(16, 185, 129, 0.9);' : 
+                  type === 'error' ? 'background: rgba(239, 68, 68, 0.9);' : 
+                  type === 'warning' ? 'background: rgba(245, 158, 11, 0.9);' : 
+                  'background: rgba(139, 92, 246, 0.9);'}
+            `;
+            toast.textContent = message;
+            
+            document.body.appendChild(toast);
+            
+            // Auto remove after 3 seconds
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateX(100%)';
+                setTimeout(() => {
+                    if (document.body.contains(toast)) {
+                        document.body.removeChild(toast);
+                    }
+                }, 300);
+            }, 3000);
+        };
+
+        VibeDashboard.prototype.truncateText = function(text, maxLength) {
+            if (!text) return '';
+            return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
+        };
+
         // AI Team Dashboard Global Functions
         window.showAITeam = function(requirements = "Build a modern web application with React and Node.js") {
             if (window.vibeDashboard) {
@@ -8270,6 +8986,9 @@ Execute as a single Task with multiple sub-agents working in parallel.`;
         // Initialize dashboard when page loads
         document.addEventListener('DOMContentLoaded', () => {
             window.vibeDashboard = new VibeDashboard();
+            
+            // Initialize memory functionality
+            window.vibeDashboard.initializeMemory();
             
             // Setup AI Coach buttons
             const refreshCoachBtn = document.getElementById('refreshCoachBtn');

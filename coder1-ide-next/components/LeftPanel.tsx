@@ -1,10 +1,9 @@
 'use client';
 
 import React, { useState } from 'react';
-import { FolderTree, Clock, Brain } from 'lucide-react';
+import { FolderTree, Clock } from 'lucide-react';
 import SafeFileExplorer from './SafeFileExplorer';
 import SessionsPanel from './SessionsPanel';
-import ContextMemoryPanel from './ContextMemoryPanel';
 
 interface LeftPanelProps {
   onFileSelect: (path: string) => void;
@@ -12,22 +11,9 @@ interface LeftPanelProps {
 }
 
 export default function LeftPanel({ onFileSelect, activeFile }: LeftPanelProps) {
-  const [activeTab, setActiveTab] = useState<'explorer' | 'sessions' | 'memory'>('explorer');
+  const [activeTab, setActiveTab] = useState<'explorer' | 'sessions'>('explorer');
   
   // REMOVED: // REMOVED: console.log('🔄 LeftPanel rendered with activeTab:', activeTab);
-  
-  // Listen for event from footer to open Memory tab
-  React.useEffect(() => {
-    const handleOpenMemoryTab = () => {
-      setActiveTab('memory');
-    };
-    
-    window.addEventListener('openExplorerMemoryTab', handleOpenMemoryTab);
-    
-    return () => {
-      window.removeEventListener('openExplorerMemoryTab', handleOpenMemoryTab);
-    };
-  }, []);
   
   return (
     <div className="h-full flex flex-col bg-bg-secondary relative">
@@ -118,28 +104,14 @@ export default function LeftPanel({ onFileSelect, activeFile }: LeftPanelProps) 
           <Clock className="w-3 h-3" />
           <span>Sessions</span>
         </button>
-        <button
-          className={`flex-1 px-3 py-2 text-xs font-semibold uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 ${
-            activeTab === 'memory'
-              ? 'text-coder1-cyan border-b-2 border-coder1-cyan bg-bg-tertiary'
-              : 'text-text-muted hover:text-text-secondary hover:bg-bg-tertiary'
-          }`}
-          onClick={() => setActiveTab('memory')}
-          title="Memory - AI context folders with conversation history and patterns"
-        >
-          <Brain className="w-3 h-3" />
-          <span>Memory</span>
-        </button>
       </div>
       
       {/* Tab Content - Takes remaining space but leaves room for Discover */}
       <div className="flex-1 min-h-0 relative z-10">
         {activeTab === 'explorer' ? (
           <SafeFileExplorer onFileSelect={onFileSelect} activeFile={activeFile} />
-        ) : activeTab === 'sessions' ? (
-          <SessionsPanel isVisible={true} />
         ) : (
-          <ContextMemoryPanel />
+          <SessionsPanel isVisible={true} />
         )}
       </div>
       

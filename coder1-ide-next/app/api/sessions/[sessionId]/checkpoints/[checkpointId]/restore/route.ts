@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import path from 'path';
 import fs from 'fs/promises';
+import { processCheckpointDataForRestore } from '@/lib/checkpoint-utils';
 
 export async function POST(
   request: NextRequest,
@@ -17,10 +18,13 @@ export async function POST(
     try {
       const checkpointData = JSON.parse(await fs.readFile(checkpointFile, 'utf8'));
       
+      // Apply filtering to ensure clean restore data
+      const filteredCheckpoint = processCheckpointDataForRestore(checkpointData);
+      
       return NextResponse.json({
         success: true,
-        checkpoint: checkpointData,
-        message: 'Checkpoint data retrieved for restoration'
+        checkpoint: filteredCheckpoint,
+        message: 'Checkpoint data retrieved for restoration (filtered)'
       });
       
     } catch (error) {

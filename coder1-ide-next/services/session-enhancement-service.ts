@@ -341,18 +341,50 @@ export class SessionEnhancementService {
     return null;
   }
 
-  private calculateDuration(start: Date | string, end: Date | string): string {
-    const startTime = new Date(start).getTime();
-    const endTime = new Date(end).getTime();
-    const diff = endTime - startTime;
-    
-    const hours = Math.floor(diff / (1000 * 60 * 60));
-    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-    
-    if (hours > 0) {
-      return `${hours}h ${minutes}m`;
+  private calculateDuration(start: Date | string | null | undefined, end: Date | string | null | undefined): string {
+    try {
+      // Handle null or undefined inputs
+      if (!start || !end) {
+        return '0m';
+      }
+      
+      // Convert to timestamps
+      const startTime = new Date(start).getTime();
+      const endTime = new Date(end).getTime();
+      
+      // Check for invalid dates (NaN)
+      if (isNaN(startTime) || isNaN(endTime)) {
+        console.warn('Invalid date in calculateDuration:', { start, end });
+        return '0m';
+      }
+      
+      // Handle negative durations (end before start)
+      const diff = Math.max(0, endTime - startTime);
+      
+      // If duration is 0 or very small (less than 1 minute), show 0m
+      if (diff < 60000) {
+        return '0m';
+      }
+      
+      // Calculate hours and minutes
+      const hours = Math.floor(diff / (1000 * 60 * 60));
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      
+      // Format output
+      if (hours > 24) {
+        // For very long sessions, show days
+        const days = Math.floor(hours / 24);
+        const remainingHours = hours % 24;
+        return `${days}d ${remainingHours}h`;
+      } else if (hours > 0) {
+        return `${hours}h ${minutes}m`;
+      }
+      
+      return `${minutes}m`;
+    } catch (error) {
+      console.error('Error calculating duration:', error, { start, end });
+      return '0m'; // Always return a valid string
     }
-    return `${minutes}m`;
   }
 
   private generateTags(session: any): string[] {

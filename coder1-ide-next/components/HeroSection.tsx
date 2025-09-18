@@ -239,7 +239,6 @@ export default function HeroSection({ onTourStart }: HeroSectionProps = {}) {
             (e.currentTarget.style as any).WebkitBackdropFilter = 'blur(4px)';
           }}
         >
-          <span className="text-xl sm:text-2xl">🎯</span>
           <span className="text-gray-300 text-left text-sm sm:text-base">
             Start Interactive Tour
           </span>
@@ -275,7 +274,6 @@ export default function HeroSection({ onTourStart }: HeroSectionProps = {}) {
             (e.currentTarget.style as any).WebkitBackdropFilter = 'blur(4px)';
           }}
         >
-          <span className="text-xl sm:text-2xl">📝</span>
           <span className="text-gray-300 text-left text-sm sm:text-base">
             Automate your PRD documentation
           </span>
@@ -309,7 +307,6 @@ export default function HeroSection({ onTourStart }: HeroSectionProps = {}) {
             (e.currentTarget.style as any).WebkitBackdropFilter = 'blur(4px)';
           }}
         >
-          <span className="text-xl sm:text-2xl">🤖</span>
           <span className="text-gray-300 text-left text-sm sm:text-base">
             Claude Code integration ready
           </span>

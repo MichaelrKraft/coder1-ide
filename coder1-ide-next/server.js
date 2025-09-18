@@ -781,19 +781,74 @@ app.prepare().then(() => {
     });
   });
   
-  // Session cleanup (remove inactive sessions after 1 hour)
+  // Enhanced session cleanup with queue system to prevent memory cascades
+  const cleanupQueue = [];
+  const MAX_SESSIONS = 10; // Limit total sessions
+  const CLEANUP_BATCH_SIZE = 2; // Process 2 cleanups at a time
+  const SESSION_TIMEOUT = 60 * 60 * 1000; // 1 hour
+  const activeCleanups = new Set(); // Track active cleanup operations
+  
+  // Process cleanup queue gradually to prevent cascades
   setInterval(() => {
-    const now = Date.now();
-    const timeout = 60 * 60 * 1000; // 1 hour
+    // Process queued cleanups
+    if (cleanupQueue.length > 0 && activeCleanups.size < CLEANUP_BATCH_SIZE) {
+      const batch = cleanupQueue.splice(0, CLEANUP_BATCH_SIZE - activeCleanups.size);
+      batch.forEach(sessionId => {
+        if (!activeCleanups.has(sessionId)) {
+          activeCleanups.add(sessionId);
+          
+          const session = terminalSessions.get(sessionId);
+          if (session) {
+            try {
+              session.destroy();
+              terminalSessions.delete(sessionId);
+              sessionMetadata.delete(sessionId);
+              console.log(`♻️ Session cleaned up: ${sessionId}`);
+            } catch (error) {
+              console.error(`⚠️ Error cleaning session ${sessionId}:`, error.message);
+            }
+          }
+          
+          // Remove from active cleanups after a delay
+          setTimeout(() => {
+            activeCleanups.delete(sessionId);
+          }, 1000);
+        }
+      });
+    }
     
+    // Check for sessions that need cleanup
+    const now = Date.now();
+    
+    // First, enforce maximum session limit
+    if (terminalSessions.size > MAX_SESSIONS) {
+      const sortedSessions = Array.from(terminalSessions.entries())
+        .sort((a, b) => a[1].lastActivity.getTime() - b[1].lastActivity.getTime());
+      
+      const sessionsToRemove = sortedSessions.slice(0, terminalSessions.size - MAX_SESSIONS);
+      sessionsToRemove.forEach(([id]) => {
+        if (!cleanupQueue.includes(id) && !activeCleanups.has(id)) {
+          cleanupQueue.push(id);
+          console.log(`🧹 Queueing session for cleanup (max limit): ${id}`);
+        }
+      });
+    }
+    
+    // Then check for timeout sessions
     for (const [id, session] of terminalSessions.entries()) {
-      if (now - session.lastActivity.getTime() > timeout) {
-        // REMOVED: // REMOVED: // REMOVED: console.log(`[Terminal] Cleaning up inactive session: ${id}`);
-        session.destroy();
-        terminalSessions.delete(id);
+      if (now - session.lastActivity.getTime() > SESSION_TIMEOUT) {
+        if (!cleanupQueue.includes(id) && !activeCleanups.has(id)) {
+          cleanupQueue.push(id);
+          console.log(`⏰ Queueing session for cleanup (timeout): ${id}`);
+        }
       }
     }
-  }, 5 * 60 * 1000); // Check every 5 minutes
+    
+    // Log memory status if sessions are accumulating
+    if (terminalSessions.size > 5 || cleanupQueue.length > 3) {
+      console.log(`📊 Session status: Active: ${terminalSessions.size}, Queued for cleanup: ${cleanupQueue.length}`);
+    }
+  }, 10 * 1000); // Check every 10 seconds (more frequent for better control)
   
   // Start memory optimizer monitoring
   memoryOptimizer.startMonitoring();

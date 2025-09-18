@@ -103,19 +103,12 @@
 /* Terminal content padding for visibility */
 .terminal-content {
   position: relative;
-  height: 100%; /* Use full height available */
+  min-height: 100%; /* Allow expansion beyond container */
   z-index: 10; /* Ensure proper stacking context */
 }
 
-/* Add scroll padding to terminal viewport for better visibility */
-.terminal-content .xterm-viewport {
-  scroll-padding-bottom: 20px; /* Small padding for visual comfort */
-}
-
-/* Terminal screen container */
-.terminal-content .xterm-screen {
-  padding-bottom: 10px; /* Small padding for visual comfort */
-}
+/* Remove any custom viewport/screen modifications that might interfere with xterm's scrolling */
+/* xterm.js manages its own viewport scrolling internally */
 
 /* Scroll to Follow button styles */
 .scroll-to-follow-btn {

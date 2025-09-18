@@ -5,6 +5,7 @@
 ### 🚨 Critical Information
 - [🚨 GitHub Repository Information](#-critical-github-repository-information-for-all-ai-agents)
 - [📖 Essential Reading](#-essential-reading-for-all-ai-agents)
+- [🔍 Discover Panel Link Issues](#-discover-panel-link-issues-critical-recurring-issue)
 - [📁 Documentation Organization](#-documentation-organization-updated-september-2025)
 
 ### 🎯 Getting Started
@@ -101,6 +102,50 @@ This document contains:
 - Emergency procedures and common issues
 
 **Why this matters**: Multiple agents have worked on this project with different understandings. The MASTER_CONTEXT.md provides the complete picture to ensure continuity and prevent conflicting approaches.
+
+---
+
+## 🔍 **DISCOVER PANEL LINK ISSUES (CRITICAL RECURRING ISSUE)**
+
+**⚠️ URGENT FOR ALL CLAUDE AGENTS**: The Discover panel AI Tools links break frequently due to port configuration issues.
+
+### Quick Diagnosis & Fix
+
+**Symptoms**:
+- "Site can't be reached" when clicking AI Hooks, Templates, or Components links
+- 404 errors on AI Tools pages
+- Spinning loading circles that never resolve
+
+**Immediate Solution**:
+```bash
+# 1. Run automated detection
+node scripts/detect-server-ports.js
+
+# 2. Update DiscoverPanel.tsx with correct port
+# File: /components/status-bar/DiscoverPanel.tsx (lines ~490-515)
+```
+
+**Root Cause**: Hardcoded port numbers in Discover panel that don't match actual unified server port.
+
+### Required Files & Expected URLs
+All 5 AI Tools must be accessible:
+- **AI Hooks**: `/hooks-v3.html` (3D animated React hooks interface)
+- **AI Templates**: `/templates-hub.html` (3D animated templates gallery)  
+- **AI Components**: `/components-capture.html` (Chrome extension page)
+- **AI PRD**: `/smart-prd-generator-standalone.html` (Requirements generator)
+- **AI Workflows**: `/workflow-dashboard.html` (Process automation)
+
+### Architecture Notes
+- **Unified Server**: Typically runs on port 3002 (but can vary)
+- **Static Files**: Served from `/public/` via symlinks to `/CANONICAL/`
+- **File Locations**: Source files in `/CANONICAL/`, symlinks in `/coder1-ide-next/public/`
+
+### Documentation
+- **Complete Guide**: `docs/DISCOVER_PANEL_TROUBLESHOOTING.md`
+- **Detection Script**: `scripts/detect-server-ports.js`
+- **Last Working Port**: 3001 (verified September 18, 2025)
+
+**⚠️ IMPORTANT**: Always run the detection script and update this documentation when fixing links!
 
 ---
 

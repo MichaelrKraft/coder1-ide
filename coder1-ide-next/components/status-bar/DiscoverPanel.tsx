@@ -63,14 +63,6 @@ export default function DiscoverPanel() {
   const [wcyganCommands, setWcyganCommands] = useState<WcyganCommand[]>([]);
   const [isLoadingWcygan, setIsLoadingWcygan] = useState(false);
   
-  // Sandbox state
-  const [showSandboxDialog, setShowSandboxDialog] = useState(false);
-  const [sandboxAction, setSandboxAction] = useState<'new' | 'load'>('new');
-  
-  // Sandbox creation feedback states
-  const [sandboxCreationStatus, setSandboxCreationStatus] = useState<'idle' | 'creating' | 'success' | 'error'>('idle');
-  const [sandboxCreationMessage, setSandboxCreationMessage] = useState<string>('');
-  const [createdSandboxId, setCreatedSandboxId] = useState<string>('');
   
   // Enhanced session creation modal state
   const [showEnhancedSessionModal, setShowEnhancedSessionModal] = useState<boolean>(false);
@@ -155,126 +147,6 @@ export default function DiscoverPanel() {
     }
   };
 
-  // Handle sandbox actions with improved feedback
-  const handleSandboxAction = async (action: 'new' | 'load') => {
-    console.log('🎯 handleSandboxAction called with:', action);
-    setSandboxAction(action);
-    
-    if (action === 'new') {
-      // Reset previous status
-      console.log('🔄 Setting status to: creating');
-      setSandboxCreationStatus('creating');
-      setSandboxCreationMessage('');
-      setCreatedSandboxId('');
-      
-      // Add console logging for debugging
-      console.log('🚀 Creating new sandbox...');
-      
-      const projectName = `sandbox-${Date.now().toString(36).slice(-6)}`;
-      
-      try {
-        const response = await fetch('/api/sandbox', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-user-id': 'default-user'
-          },
-          body: JSON.stringify({
-            projectId: projectName
-          })
-        });
-        
-        const data = await response.json();
-        console.log('📦 Sandbox API response:', data);
-        
-        if (data.success) {
-          console.log('🔄 Setting status to: success');
-          setSandboxCreationStatus('success');
-          setSandboxCreationMessage(`✅ Sandbox "${projectName}" created successfully!`);
-          setCreatedSandboxId(data.sandbox.id);
-          
-          // Log success
-          console.log('✅ Sandbox created:', data.sandbox);
-          
-          // Show alert for immediate feedback
-          alert(`✅ Sandbox created successfully!\n\nID: ${data.sandbox.id}\nProject: ${data.sandbox.projectId}\nPath: ${data.sandbox.path}\n\nA new tab will open with your sandbox workspace.`);
-          
-          // Try to show toast (may fail with CSS issues)
-          try {
-            addToast({
-              message: `✅ Sandbox "${projectName}" created!`,
-              type: 'success'
-            });
-          } catch (e) {
-            console.warn('Toast notification failed:', e);
-          }
-          
-          // Emit event for other components
-          window.dispatchEvent(new CustomEvent('sandbox:created', {
-            detail: { sandboxId: data.sandbox.id }
-          }));
-          
-          // Navigate to consultation workspace after short delay
-          setTimeout(() => {
-            console.log('🔄 Opening sandbox workspace:', data.sandbox.id);
-            // Open consultation page with sandbox ID as parameter
-            const workspaceUrl = `/consultation?sandbox=${data.sandbox.id}`;
-            window.open(workspaceUrl, '_blank');
-            
-            // Reset status after navigation
-            setSandboxCreationStatus('idle');
-            setSandboxCreationMessage('');
-          }, 2000); // Shorter delay before opening
-          
-        } else {
-          throw new Error(data.error || 'Unknown error');
-        }
-      } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-        
-        setSandboxCreationStatus('error');
-        setSandboxCreationMessage(`❌ Failed: ${errorMessage}`);
-        
-        // Console error for debugging
-        console.error('❌ Sandbox creation failed:', error);
-        
-        // Try toast (may fail)
-        try {
-          addToast({
-            message: `❌ Failed to create sandbox: ${errorMessage}`,
-            type: 'error'
-          });
-        } catch (e) {
-          console.warn('Toast notification failed:', e);
-        }
-        
-        // For critical errors, use browser alert as fallback
-        if (errorMessage.includes('Maximum sandbox limit')) {
-          alert(`Cannot create sandbox: ${errorMessage}`);
-        }
-        
-        // Keep error visible for 5 seconds
-        setTimeout(() => {
-          setSandboxCreationStatus('idle');
-          setSandboxCreationMessage('');
-        }, 5000);
-      }
-    } else {
-      // Show sandbox management dialog
-      console.log('🧪 Opening sandbox management panel...');
-      
-      try {
-        addToast({
-          message: '🧪 Opening sandbox management panel...',
-          type: 'info'
-        });
-      } catch (e) {
-        console.warn('Toast notification failed:', e);
-      }
-      
-      setShowSandboxDialog(true);
-    }
-  };
 
   // Handle tour events
   useEffect(() => {
@@ -611,29 +483,32 @@ export default function DiscoverPanel() {
             </div>
           </div>
 
+          {/* Separator */}
+          <div className="border-t border-border-default my-6"></div>
+
           {/* AI Tools Section */}
           <div className="mb-4 p-3 border-2 border-coder1-purple rounded-lg bg-coder1-purple/5">
             <h4 className="text-xs font-semibold text-coder1-purple uppercase tracking-wider mb-3">✨ AI TOOLS</h4>
             <div className="grid grid-cols-2 gap-2 text-sm text-text-secondary">
               <div className="flex items-center gap-2">
                 <span>•</span>
-                <a href="/" className="text-coder1-cyan hover:text-coder1-cyan-secondary transition-colors">Home / PRD Generator</a>
+                <a href="http://localhost:3001/hooks-v3.html" target="_blank" className="text-coder1-cyan hover:text-coder1-cyan-secondary transition-colors">AI Hooks</a>
               </div>
               <div className="flex items-center gap-2">
                 <span>•</span>
-                <a href="/hooks" className="text-coder1-cyan hover:text-coder1-cyan-secondary transition-colors">AI Hooks Manager</a>
+                <a href="http://localhost:3001/templates-hub.html" target="_blank" className="text-coder1-cyan hover:text-coder1-cyan-secondary transition-colors">AI Templates</a>
               </div>
               <div className="flex items-center gap-2">
                 <span>•</span>
-                <a href="/consultation" className="text-coder1-cyan hover:text-coder1-cyan-secondary transition-colors">AI Consultation</a>
+                <a href="http://localhost:3001/components-capture.html" target="_blank" className="text-coder1-cyan hover:text-coder1-cyan-secondary transition-colors">AI Components</a>
               </div>
               <div className="flex items-center gap-2">
                 <span>•</span>
-                <a href="/timeline" className="text-coder1-cyan hover:text-coder1-cyan-secondary transition-colors">Timeline View</a>
+                <a href="http://localhost:3001/smart-prd-generator-standalone.html" target="_blank" className="text-coder1-cyan hover:text-coder1-cyan-secondary transition-colors">AI PRD</a>
               </div>
               <div className="flex items-center gap-2">
                 <span>•</span>
-                <a href="/ide" className="text-coder1-cyan hover:text-coder1-cyan-secondary transition-colors">Back to IDE</a>
+                <a href="http://localhost:3001/workflow-dashboard.html" target="_blank" className="text-coder1-cyan hover:text-coder1-cyan-secondary transition-colors">AI Workflows</a>
               </div>
             </div>
           </div>
@@ -736,116 +611,8 @@ export default function DiscoverPanel() {
             </div>
           </div>
 
-          {/* Separator */}
-          <div className="border-t border-border-default my-4"></div>
-
-          {/* Sandbox Section */}
-          <div>
-            <h4 className="text-xs font-semibold text-coder1-cyan uppercase tracking-wider mb-3">🧪 SANDBOX</h4>
-            <div className="text-sm text-text-secondary space-y-1">
-              <div className="flex items-center gap-2">
-                <span>•</span>
-                <button 
-                  onClick={() => {
-                    console.log('✨ New Session button clicked - creating sandbox directly!');
-                    handleSandboxAction('new');
-                  }}
-                  className="transition-colors flex items-center gap-1 text-coder1-cyan hover:text-coder1-cyan-secondary"
-                >
-                  ✨ New Session
-                </button>
-                <span className="text-text-muted">Create contextual workspace</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span>•</span>
-                <button 
-                  onClick={() => setShowSandboxDialog(true)}
-                  className="text-coder1-cyan hover:text-coder1-cyan-secondary transition-colors"
-                >
-                  Load Session
-                </button>
-                <span className="text-text-muted">Continue previous work</span>
-              </div>
-            </div>
-            
-            {/* Sandbox Creation Status */}
-            {sandboxCreationStatus !== 'idle' && (
-              <div className={`mt-3 p-2 rounded text-xs border ${
-                sandboxCreationStatus === 'creating' ? 'bg-blue-500/20 text-blue-400 border-blue-500/30' :
-                sandboxCreationStatus === 'success' ? 'bg-green-500/20 text-green-400 border-green-500/30' :
-                'bg-red-500/20 text-red-400 border-red-500/30'
-              }`}>
-                {sandboxCreationStatus === 'creating' && (
-                  <div className="flex items-center gap-2">
-                    <div 
-                      className="w-3 h-3 border-2 border-blue-400 border-t-transparent rounded-full animate-spin"
-                      style={{
-                        borderColor: 'rgba(96, 165, 250, 0.3)',
-                        borderTopColor: '#60a5fa'
-                      }}
-                    />
-                    Creating sandbox...
-                  </div>
-                )}
-                {sandboxCreationMessage && (
-                  <div className={sandboxCreationStatus === 'creating' ? 'mt-1' : ''}>{sandboxCreationMessage}</div>
-                )}
-                {sandboxCreationStatus === 'success' && createdSandboxId && (
-                  <div className="text-xs text-text-muted mt-1">
-                    ID: {createdSandboxId.slice(-8)}
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
         </div>
       </div>
-
-      {/* Sandbox Management Modal */}
-      {showSandboxDialog && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={() => setShowSandboxDialog(false)}>
-          <div className="bg-bg-secondary border border-border-default rounded-lg p-4 max-w-md w-full mx-4" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-text-primary">Sandbox Management</h3>
-              <button onClick={() => setShowSandboxDialog(false)} className="text-text-muted hover:text-text-primary">
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-            
-            <div className="space-y-3">
-              <div className="text-sm text-text-secondary">
-                <p>🚧 <strong>Feature in Development</strong></p>
-                <p className="mt-2 text-text-muted">
-                  The full sandbox management interface is being built. For now, you can:
-                </p>
-                <ul className="mt-2 ml-4 space-y-1 text-text-muted">
-                  <li>• Click "New Session" to create a sandbox instantly</li>
-                  <li>• View sandboxes in the right sidebar (coming soon)</li>
-                  <li>• Use the comparison view when you have 2+ sandboxes</li>
-                </ul>
-              </div>
-              
-              <div className="flex gap-2 pt-3">
-                <button 
-                  onClick={() => {
-                    setShowSandboxDialog(false);
-                    handleSandboxAction('new');
-                  }}
-                  className="px-3 py-2 bg-coder1-cyan text-black rounded hover:bg-coder1-cyan-secondary transition-colors text-sm"
-                >
-                  Create New Sandbox
-                </button>
-                <button 
-                  onClick={() => setShowSandboxDialog(false)}
-                  className="px-3 py-2 bg-bg-primary border border-border-default rounded hover:bg-bg-secondary text-text-secondary transition-colors text-sm"
-                >
-                  Close
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Enhanced Session Creation Modal */}
       <EnhancedSessionCreationModal

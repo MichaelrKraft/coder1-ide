@@ -214,10 +214,10 @@ export default function StatusBarCore({
           {contextStats.isActive && (
             <div 
               className="flex items-center gap-1 cursor-pointer hover:opacity-80 transition-opacity" 
-              title={`Context Memory: ${contextStats.totalMemories} memories, ${contextStats.totalSessions} contexts - Click to view AI memory in Explorer`}
+              title={`Context Memory: ${contextStats.totalMemories} memories, ${contextStats.totalSessions} contexts - Click to view AI memory in AI Dashboard`}
               onClick={() => {
-                // Dispatch event to open Memory tab in Explorer panel
-                window.dispatchEvent(new CustomEvent('openExplorerMemoryTab'));
+                // Navigate to AI dashboard memory section
+                window.open('/vibe-dashboard', '_blank');
               }}
             >
               <Brain className={`w-3 h-3 ${contextStats.totalMemories > 0 ? 'text-purple-400' : 'text-text-muted'}`} />

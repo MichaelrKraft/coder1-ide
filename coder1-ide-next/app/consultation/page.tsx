@@ -103,7 +103,7 @@ export default function AIConsultationPage() {
             </div>
           </div>
           <h1 className="text-4xl font-bold mb-4 bg-gradient-to-r from-coder1-cyan to-coder1-purple bg-clip-text text-transparent">
-            AI Development Consultation
+            AI Sandbox Consultation
           </h1>
           <p className="text-lg text-text-secondary">
             Let&apos;s understand your project needs
