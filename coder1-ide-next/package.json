@@ -10,6 +10,7 @@
     "dev:alpha": "NODE_ENV=production NODE_OPTIONS='--max-old-space-size=400' ALPHA_MODE_ENABLED=true ALPHA_INVITE_CODE=CODER1ALPHA2025 MAX_ALPHA_USERS=5 DEPLOYMENT_MODE=alpha-limited node server.js",
     "prebuild": "[ ! -d node_modules ] && npm install || echo 'Dependencies already installed'",
     "build": "next build",
+    "build:render": "npm rebuild node-pty --update-binary && next build",
     "build:unified": "NEXT_CONFIG_FILE=next.config.unified.js next build --experimental-build-mode=experimental-compile",
     "build:alpha": "npm run build",
     "build:standalone": "next build && cp -r public .next/standalone/public && cp -r .next/static .next/standalone/.next/static",

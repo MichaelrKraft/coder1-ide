@@ -73,7 +73,14 @@ export const getSocket = async (sessionId?: string, bridgeAuth: boolean = false)
         }
       } catch (ioError) {
         console.error('❌ Socket.IO initialization failed:', ioError);
-        // Use mock socket as fallback
+        // DON'T fallback to mock in production - throw error instead
+        if (typeof window !== 'undefined' && window.location.hostname !== 'localhost') {
+          console.error('🚨 CRITICAL: Socket.IO connection required in production!');
+          console.error('Terminal will not work without Socket.IO connection.');
+          throw new Error('Socket.IO connection required in production');
+        }
+        // Only use mock socket in development
+        console.warn('⚠️ Using mock socket in development mode');
         newSocket = createMockSocket();
       }
 

@@ -50,6 +50,22 @@ try {
   WebSocketEventBridge = null;
 }
 
+// Test PTY compatibility on startup
+const testPtyCompatibility = () => {
+  try {
+    const testPty = pty.spawn('echo', ['test'], {});
+    testPty.kill();
+    console.log('✅ PTY COMPATIBILITY: Working on this environment');
+    return true;
+  } catch (error) {
+    console.error('❌ PTY COMPATIBILITY: Failed -', error.message);
+    console.error('  This means terminal sessions will NOT work!');
+    console.error('  Potential fix: npm rebuild node-pty --update-binary');
+    return false;
+  }
+};
+const ptyCompatible = testPtyCompatibility();
+
 // Environment validation
 let envValidator;
 try {
@@ -155,7 +171,14 @@ class TerminalSession {
         }
       });
       
-      console.log(`[Terminal] PTY session ${id} created successfully with PID: ${this.pty.pid}`);
+      // Critical diagnostic: Verify PTY was actually created
+      console.log(`🎯 PTY SPAWN TEST: ${this.pty ? '✅ SUCCESS' : '❌ FAILED'} for session ${id}`);
+      if (this.pty) {
+        console.log(`[Terminal] PTY session ${id} created successfully with PID: ${this.pty.pid}`);
+      } else {
+        console.error(`[Terminal] PTY is null after spawn for session ${id}!`);
+        throw new Error('PTY spawn returned null');
+      }
       
       // Set a cleaner prompt after terminal starts (overrides .bashrc)
       const isProduction = process.env.RENDER === 'true' || process.env.NODE_ENV === 'production' || process.env.PORT === '10000';
@@ -229,6 +252,26 @@ function getOrCreateSession(sessionId, userId = 'default') {
 // Helper function for health check endpoint
 function handleHealthCheck(req, res) {
   const stats = memoryOptimizer.getStats();
+  
+  // Get Socket.IO stats if available
+  let socketStats = {
+    available: false,
+    connectedClients: 0,
+    transport: 'unknown',
+    ptyCompatible: false
+  };
+  
+  if (global.io) {
+    socketStats = {
+      available: true,
+      connectedClients: global.io.engine?.clientsCount || 0,
+      transports: global.io.engine?.transports || [],
+      ptyCompatible: ptyCompatible || false,
+      activeSessions: terminalSessions.size,
+      namespace: '/'
+    };
+  }
+  
   const health = {
     status: stats.status,
     uptime: Date.now() - (global.serverStartTime || Date.now()),
@@ -237,6 +280,7 @@ function handleHealthCheck(req, res) {
       limit: 400,
       percentage: stats.percentage
     },
+    socketio: socketStats,
     sessions: {
       terminal: terminalSessions.size,
       alpha: alphaActiveSessions.size,
@@ -246,6 +290,11 @@ function handleHealthCheck(req, res) {
       enabled: isAlphaMode,
       mode: deploymentMode,
       slotsAvailable: maxAlphaUsers - alphaActiveSessions.size
+    },
+    pty: {
+      compatible: ptyCompatible || false,
+      platform: os.platform(),
+      shell: os.platform() === 'win32' ? 'powershell.exe' : 'bash'
     },
     timestamp: new Date().toISOString()
   };
@@ -472,7 +521,7 @@ app.prepare().then(() => {
   // Track socket-to-session relationships for cleanup
   const socketToSession = new Map();
   
-  // Initialize Socket.IO with authentication middleware
+  // Initialize Socket.IO with Render-specific configuration
   const io = new Server(server, {
     cors: {
       origin: dev 
@@ -481,11 +530,20 @@ app.prepare().then(() => {
             'http://localhost:3000',
             'http://localhost:3001'
           ]
-        : true, // In production, allow all origins (Render handles this)
+        : process.env.NODE_ENV === 'production'
+          ? ['https://*.onrender.com', process.env.RENDER_EXTERNAL_URL || '*']
+          : true,
       credentials: true
     },
     path: '/socket.io/',
-    transports: ['polling', 'websocket'] // Ensure polling is available for Render
+    transports: ['polling', 'websocket'], // Start with polling, upgrade to websocket
+    allowEIO3: true, // Support older clients
+    pingTimeout: 60000, // Increase for Render's proxy (default is 20000)
+    pingInterval: 25000, // How often to ping (default is 25000)
+    upgradeTimeout: 30000, // Time to wait for upgrade from polling to websocket
+    allowUpgrades: true, // Allow upgrade from polling to websocket
+    perMessageDeflate: false, // Disable compression for better reliability on Render
+    httpCompression: false // Disable HTTP compression for better reliability
   });
 
   // Add WebSocket authentication middleware (if available)
@@ -513,12 +571,31 @@ app.prepare().then(() => {
   
   // Socket.IO connection handling
   io.on('connection', (socket) => {
-    // REMOVED: // REMOVED: // REMOVED: console.log(`[Socket.IO] Client connected: ${socket.id}`);
+    // Comprehensive connection logging for debugging
+    console.log(`🔌 PRODUCTION SOCKET CONNECTED: ${socket.id}`);
+    console.log('  Transport:', socket.conn.transport.name);
+    console.log('  Remote IP:', socket.handshake.address);
+    console.log('  User-Agent:', socket.handshake.headers['user-agent']);
+    console.log('  PTY Compatible:', ptyCompatible);
+    
+    // Test echo to verify bidirectional communication
+    socket.emit('test:echo', { time: Date.now() });
+    socket.on('test:echo:response', (data) => {
+      console.log('✅ Socket bidirectional test passed:', data);
+    });
     
     let currentSessionId = null;
     
     // Handle terminal creation
     socket.on('terminal:create', async (data) => {
+      console.log('📟 TERMINAL CREATE REQUEST:', {
+        sessionId: data?.id,
+        transport: socket.conn.transport.name,
+        socketId: socket.id,
+        ptyCompatible,
+        timestamp: new Date().toISOString()
+      });
+      
       try {
         const { id, cols = 80, rows = 30, workingDirectory } = data || {};
         
@@ -623,6 +700,8 @@ app.prepare().then(() => {
     
     // Handle terminal input
     socket.on('terminal:input', ({ id, data }) => {
+      console.log(`⌨️ TERMINAL INPUT: Session ${id}, Data length: ${data?.length}, First char: ${data?.[0]?.charCodeAt(0)}`);
+      
       const sessionId = id || currentSessionId;
       const session = terminalSessions.get(sessionId);
       if (session) {

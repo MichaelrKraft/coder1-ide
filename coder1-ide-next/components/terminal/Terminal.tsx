@@ -447,9 +447,11 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
       // REMOVED: // REMOVED: console.log('🚀 CREATING TERMINAL SESSION...');
       
       try {
-        // In production, skip REST API and use Socket.IO directly
-        // This fixes the issue where REST API doesn't work properly on Render
-        const isProduction = typeof window !== 'undefined' && window.location.hostname !== 'localhost';
+        // Better production detection for Render deployment
+        const isProduction = process.env.NODE_ENV === 'production' || 
+                           (typeof window !== 'undefined' && 
+                            (window.location.hostname.includes('onrender.com') ||
+                             window.location.hostname !== 'localhost'));
         
         if (isProduction) {
           // For production, just generate a session ID and let Socket.IO create it
@@ -1524,6 +1526,21 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
     const socket = await getSocket();
     // REMOVED: // REMOVED: console.log('✅ Socket.IO instance obtained:', socket.connected ? 'CONNECTED' : 'DISCONNECTED');
     socketRef.current = socket;
+    
+    // Critical diagnostic: Check if we're using mock socket
+    if (socket?.io?.engine?.transport?.name === 'mock' || socket?.id === 'mock-socket') {
+      console.error('⚠️ CRITICAL: USING MOCK SOCKET - Terminal will NOT work!');
+      console.error('This means Socket.IO connection failed completely.');
+      console.error('Check browser console and server logs for connection errors.');
+      
+      // Visual warning for users
+      if (xtermRef.current) {
+        xtermRef.current.writeln('\x1b[31m⚠️ ERROR: Socket connection failed - Terminal is offline\x1b[0m');
+        xtermRef.current.writeln('\x1b[33mPlease refresh the page or contact support\x1b[0m');
+      }
+    } else {
+      console.log('✅ Using real Socket.IO connection');
+    }
     
     // Focus terminal immediately when backend is connected
     const focusOnConnect = () => {
