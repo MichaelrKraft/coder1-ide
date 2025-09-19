@@ -623,27 +623,29 @@ app.prepare().then(() => {
       const sessionId = id || currentSessionId;
       const session = terminalSessions.get(sessionId);
       if (session) {
-        // Write the user input to terminal
-        session.write(data);
-        
-        // Build up command buffer
+        // Build up command buffer BEFORE writing to terminal
         if (!commandBuffers.has(sessionId)) {
           commandBuffers.set(sessionId, '');
         }
         
         let buffer = commandBuffers.get(sessionId);
-        buffer += data;
         
-        // Check if Enter was pressed (command complete)
+        // Check if Enter is being pressed (command complete)
         if (data.includes('\r') || data.includes('\n')) {
           const command = buffer.trim().toLowerCase();
           console.log('[Terminal] Command completed:', command);
           
-          // Check if user typed 'claude'
+          // Check if user typed 'claude' - INTERCEPT before sending to shell
           if (command === 'claude' || command.startsWith('claude ')) {
-            console.log('[Terminal] Claude command detected, showing help message');
-            // Show help message after a short delay (after "command not found" appears)
-            setTimeout(() => {
+            console.log('[Terminal] Claude command intercepted, showing help instead');
+            
+            // Clear the line (simulate pressing Enter without running the command)
+            socket.emit('terminal:data', { 
+              id: sessionId, 
+              data: '\r\n' 
+            });
+            
+            // Show help message immediately (no delay needed since we're not running the command)
               const helpMessage = [
                 '\r\n',
                 '╔═══════════════════════════════════════════════════════════════════╗\r\n',
@@ -675,11 +677,14 @@ app.prepare().then(() => {
                 '\r\n'
               ].join('');
               
-              socket.emit('terminal:data', { 
-                id: sessionId, 
-                data: helpMessage 
-              });
-            }, 500); // Wait for "command not found" to appear first
+            socket.emit('terminal:data', { 
+              id: sessionId, 
+              data: helpMessage 
+            });
+            
+            // Clear the command buffer and return early to prevent PTY write
+            commandBuffers.set(sessionId, '');
+            return; // Exit early - don't send the command to PTY!
           }
           
           // Clear buffer after command
