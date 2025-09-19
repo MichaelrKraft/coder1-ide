@@ -282,9 +282,10 @@ export default function HeroSection({ onTourStart }: HeroSectionProps = {}) {
         <button 
           onClick={(e) => {
             e.stopPropagation();
+            router.push('/vibe-dashboard');
           }}
           className="glass-button flex items-center gap-3 sm:gap-4 px-4 sm:px-6 py-3 sm:py-4 rounded-lg transition-all duration-300 w-full transform hover:translate-y-[-2px]"
-          title="Open File - Browse and open project files to start coding with AI assistance"
+          title="View your AI dashboard - Access AI tools, templates, and workflow management"
           style={{
             background: 'linear-gradient(135deg, rgba(125, 211, 252, 0.1) 0%, rgba(187, 154, 247, 0.1) 100%)',
           backdropFilter: 'blur(4px)',
@@ -308,7 +309,7 @@ export default function HeroSection({ onTourStart }: HeroSectionProps = {}) {
           }}
         >
           <span className="text-gray-300 text-left text-sm sm:text-base">
-            Claude Code integration ready
+            View your AI dashboard
           </span>
         </button>
       </div>

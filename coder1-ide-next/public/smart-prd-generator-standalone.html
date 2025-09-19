@@ -762,13 +762,24 @@
             // When currentQuestion = 1, we want questions[1] (second item)
             // When currentQuestion = 2, we want questions[2] (third item), etc.
             const questionData = questions[currentQuestion];
-            const questionContainer = document.querySelector('.bg-white\\/5.rounded-2xl.shadow-xl .space-y-3').parentElement;
+            console.log('Showing question:', currentQuestion, questionData);
             
-            // Update question title
-            questionContainer.querySelector('h3').textContent = questionData.question;
+            // Better selector - use the questionnaire section and find the question card
+            const questionnaireSection = document.getElementById('questionnaire-section');
+            const questionCard = questionnaireSection.querySelector('.rounded-2xl.shadow-xl');
+            
+            // Update question title - find the h3 inside the question card
+            const questionTitle = questionCard.querySelector('h3');
+            console.log('Found h3 element:', questionTitle);
+            if (questionTitle) {
+                questionTitle.textContent = questionData.question;
+                console.log('Updated question text to:', questionData.question);
+            } else {
+                console.error('Could not find h3 element for question title');
+            }
             
             // Update question content
-            const questionContent = questionContainer.querySelector('.space-y-3');
+            const questionContent = questionCard.querySelector('.space-y-3');
             
             if (questionData.type === 'text') {
                 questionContent.innerHTML = `

@@ -45,20 +45,20 @@ export const getSocket = async (sessionId?: string, bridgeAuth: boolean = false)
       console.log(`🔌 CREATING SOCKET CONNECTION (attempt ${connectionAttempts})`);
       
       // Connect to the unified server (Next.js custom server)
-      // In production, use undefined for same origin (Socket.IO auto-detects)
+      // In production, explicitly use window.location.origin for Render compatibility
       // In dev, use the current port or default to 3001
       const unifiedUrl = typeof window !== 'undefined' && window.location.hostname !== 'localhost'
-        ? undefined // undefined tells Socket.IO to use the current origin
+        ? window.location.origin // Use explicit origin for production (Render needs this)
         : (process.env.NEXT_PUBLIC_UNIFIED_SERVER_URL || 
            (typeof window !== 'undefined' ? `http://localhost:${window.location.port || '3001'}` : 'http://localhost:3001'));
-      console.log(`🎯 CONNECTING TO UNIFIED SERVER: ${unifiedUrl || 'same-origin'}`);
+      console.log(`🎯 CONNECTING TO UNIFIED SERVER: ${unifiedUrl}`);
       
       let newSocket: Socket;
       
       try {
         newSocket = io(unifiedUrl, {
           path: '/socket.io/',
-          transports: ['websocket', 'polling'],
+          transports: ['polling', 'websocket'], // Start with polling for Render compatibility
           reconnection: true,
           reconnectionAttempts: 10,
           reconnectionDelay: 1000,

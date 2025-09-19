@@ -1,5 +1,75 @@
 [
   {
+    "sessionId": "alpha_session_1758304472551",
+    "filename": "2025-09-19T17-54-32-637Z.json",
+    "startTime": "2025-09-19T17:54:32.637Z",
+    "endTime": "2025-09-19T18:06:07.563Z",
+    "platform": "Claude Code",
+    "totalTokens": 0,
+    "interactionCount": 0,
+    "summary": "Claude Code session (0 interactions): "
+  },
+  {
+    "sessionId": "alpha_session_1758304515458",
+    "filename": "2025-09-19T17-55-15-505Z.json",
+    "startTime": "2025-09-19T17:55:15.505Z",
+    "endTime": "2025-09-19T18:06:07.528Z",
+    "platform": "Claude Code",
+    "totalTokens": 0,
+    "interactionCount": 0,
+    "summary": "Claude Code session (0 interactions): "
+  },
+  {
+    "sessionId": "session_1758304501134_obdk3nvwnuq",
+    "filename": "2025-09-19T17-55-01-154Z.json",
+    "startTime": "2025-09-19T17:55:01.154Z",
+    "endTime": "2025-09-19T17:55:15.442Z",
+    "platform": "Claude Code",
+    "totalTokens": 0,
+    "interactionCount": 0,
+    "summary": "Claude Code session (0 interactions): "
+  },
+  {
+    "sessionId": "session_1758304501134_obdk3nvwnuq",
+    "filename": "2025-09-19T17-55-01-154Z.json",
+    "startTime": "2025-09-19T17:55:01.154Z",
+    "endTime": "2025-09-19T17:55:15.442Z",
+    "platform": "Claude Code",
+    "totalTokens": 0,
+    "interactionCount": 0,
+    "summary": "Claude Code session (0 interactions): "
+  },
+  {
+    "sessionId": "session_1758304501134_obdk3nvwnuq",
+    "filename": "2025-09-19T17-55-01-154Z.json",
+    "startTime": "2025-09-19T17:55:01.154Z",
+    "endTime": "2025-09-19T17:55:15.442Z",
+    "platform": "Claude Code",
+    "totalTokens": 0,
+    "interactionCount": 0,
+    "summary": "Claude Code session (0 interactions): "
+  },
+  {
+    "sessionId": "alpha_session_1758304480067",
+    "filename": "2025-09-19T17-54-40-148Z.json",
+    "startTime": "2025-09-19T17:54:40.148Z",
+    "endTime": "2025-09-19T17:55:00.740Z",
+    "platform": "Claude Code",
+    "totalTokens": 0,
+    "interactionCount": 0,
+    "summary": "Claude Code session (0 interactions): "
+  },
+  {
+    "sessionId": "alpha_session_1758304480067",
+    "filename": "2025-09-19T17-54-40-148Z.json",
+    "startTime": "2025-09-19T17:54:40.148Z",
+    "endTime": "2025-09-19T17:55:00.740Z",
+    "platform": "Claude Code",
+    "totalTokens": 0,
+    "interactionCount": 0,
+    "summary": "Claude Code session (0 interactions): "
+  },
+  {
     "sessionId": "alpha_session_1758258768452",
     "filename": "2025-09-19T05-12-48-474Z.json",
     "startTime": "2025-09-19T05:12:48.474Z",

@@ -475,14 +475,17 @@ app.prepare().then(() => {
   // Initialize Socket.IO with authentication middleware
   const io = new Server(server, {
     cors: {
-      origin: [
-        `http://localhost:${port}`,
-        'http://localhost:3000',
-        'http://localhost:3001'
-      ],
+      origin: dev 
+        ? [
+            `http://localhost:${port}`,
+            'http://localhost:3000',
+            'http://localhost:3001'
+          ]
+        : true, // In production, allow all origins (Render handles this)
       credentials: true
     },
-    path: '/socket.io/'
+    path: '/socket.io/',
+    transports: ['polling', 'websocket'] // Ensure polling is available for Render
   });
 
   // Add WebSocket authentication middleware (if available)
