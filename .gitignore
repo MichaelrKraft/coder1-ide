@@ -132,7 +132,7 @@ ide-old*/
 
 # Prevent accidental inclusion of other project directories
 /backup_*/
-/Coder1-*/
+# /Coder1-*/  # DISABLED - was excluding coder1-ide-next directory!
 /Desktop/
 /Documents/
 /Downloads/.coder1/

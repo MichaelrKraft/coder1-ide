@@ -1,0 +1,1 @@
+../../CANONICAL/templates-hub-fix.js

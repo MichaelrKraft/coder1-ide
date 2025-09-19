@@ -1,0 +1,1102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Coder1 IDE - The Native Claude Code Development Environment with Infinite Memory</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --dark-bg: #0a0e27;
+            --darker-bg: #050714;
+            --card-bg: rgba(16, 20, 40, 0.8);
+            --card-hover: rgba(16, 20, 40, 0.95);
+            --text-primary: #ffffff;
+            --text-secondary: #a0aec0;
+            --accent-purple: #9f7aea;
+            --accent-cyan: #4fd1c5;
+            --accent-pink: #f687b3;
+            --border-subtle: rgba(255, 255, 255, 0.1);
+            --glow-purple: rgba(159, 122, 234, 0.5);
+            --glow-cyan: rgba(79, 209, 197, 0.5);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: var(--darker-bg);
+            color: var(--text-primary);
+            overflow-x: hidden;
+            line-height: 1.6;
+        }
+
+        /* Animated Background */
+        .background-animation {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 0;
+            overflow: hidden;
+            pointer-events: none;
+        }
+
+        .gradient-orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(100px);
+            opacity: 0.3;
+            animation: float 20s ease-in-out infinite;
+        }
+
+        .orb-1 {
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, var(--accent-purple) 0%, transparent 70%);
+            top: -300px;
+            left: -300px;
+            animation-duration: 25s;
+        }
+
+        .orb-2 {
+            width: 800px;
+            height: 800px;
+            background: radial-gradient(circle, var(--accent-cyan) 0%, transparent 70%);
+            bottom: -400px;
+            right: -400px;
+            animation-duration: 30s;
+            animation-delay: -5s;
+        }
+
+        .orb-3 {
+            width: 500px;
+            height: 500px;
+            background: radial-gradient(circle, var(--accent-pink) 0%, transparent 70%);
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            animation-duration: 35s;
+            animation-delay: -10s;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            25% { transform: translate(50px, -30px) scale(1.05); }
+            50% { transform: translate(-30px, 50px) scale(0.95); }
+            75% { transform: translate(-50px, -20px) scale(1.02); }
+        }
+
+        /* Grid Background */
+        .grid-background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: 
+                linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+            background-size: 50px 50px;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        /* Main Container */
+        .container {
+            position: relative;
+            z-index: 2;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* Navigation */
+        nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            backdrop-filter: blur(20px);
+            background: rgba(10, 14, 39, 0.8);
+            border-bottom: 1px solid var(--border-subtle);
+            transition: all 0.3s ease;
+        }
+
+        .nav-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 1.2rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--accent-purple), var(--accent-cyan));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            background: var(--primary-gradient);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            box-shadow: 0 0 30px var(--glow-purple);
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            list-style: none;
+        }
+
+        .nav-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            transition: all 0.3s ease;
+            font-size: 0.95rem;
+            position: relative;
+        }
+
+        .nav-links a:hover {
+            color: var(--text-primary);
+        }
+
+        .nav-links a::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: var(--accent-cyan);
+            transition: width 0.3s ease;
+        }
+
+        .nav-links a:hover::after {
+            width: 100%;
+        }
+
+        /* Hero Section */
+        .hero {
+            padding: 140px 0 100px;
+            text-align: center;
+            position: relative;
+        }
+
+        .claude-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: linear-gradient(135deg, rgba(159, 122, 234, 0.1), rgba(79, 209, 197, 0.1));
+            border: 1px solid var(--accent-purple);
+            border-radius: 50px;
+            padding: 8px 20px;
+            margin-bottom: 2rem;
+            font-size: 0.9rem;
+            animation: pulse-glow 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 20px rgba(159, 122, 234, 0.3); }
+            50% { box-shadow: 0 0 40px rgba(159, 122, 234, 0.6); }
+        }
+
+        .claude-badge .badge-icon {
+            width: 20px;
+            height: 20px;
+            background: var(--accent-purple);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+        }
+
+        h1 {
+            font-size: 4rem;
+            font-weight: 800;
+            line-height: 1.2;
+            margin-bottom: 1.5rem;
+            background: linear-gradient(135deg, #fff 0%, var(--accent-cyan) 50%, var(--accent-purple) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: gradient-shift 5s ease infinite;
+            background-size: 200% 200%;
+        }
+
+        @keyframes gradient-shift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .hero-subtitle {
+            font-size: 1.4rem;
+            color: var(--text-secondary);
+            margin-bottom: 3rem;
+            max-width: 700px;
+            margin-left: auto;
+            margin-right: auto;
+            line-height: 1.6;
+        }
+
+        .hero-subtitle .highlight {
+            color: var(--accent-cyan);
+            font-weight: 600;
+        }
+
+        /* Memory Stats Cards */
+        .memory-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin: 4rem 0;
+        }
+
+        .stat-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-subtle);
+            border-radius: 16px;
+            padding: 2rem;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .stat-card:hover {
+            background: var(--card-hover);
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            border-color: var(--accent-purple);
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, var(--accent-purple), var(--accent-cyan));
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .stat-card:hover::before {
+            opacity: 1;
+        }
+
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--accent-purple), var(--accent-cyan));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .stat-icon {
+            position: absolute;
+            top: 1.5rem;
+            right: 1.5rem;
+            font-size: 1.5rem;
+            opacity: 0.5;
+        }
+
+        /* CTA Buttons */
+        .cta-group {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin: 3rem 0;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 14px 32px;
+            border-radius: 12px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent-purple), var(--accent-cyan));
+            color: white;
+            border: none;
+            box-shadow: 0 10px 30px rgba(159, 122, 234, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 40px rgba(159, 122, 234, 0.5);
+        }
+
+        .btn-primary::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+
+        .btn-primary:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: var(--text-primary);
+            border: 2px solid var(--accent-purple);
+            position: relative;
+            overflow: hidden;
+            z-index: 1;
+        }
+
+        .btn-secondary::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, var(--accent-purple), var(--accent-cyan));
+            transition: left 0.3s ease;
+            z-index: -1;
+        }
+
+        .btn-secondary:hover::before {
+            left: 0;
+        }
+
+        .btn-secondary:hover {
+            border-color: transparent;
+            transform: translateY(-2px);
+        }
+
+        /* Features Grid */
+        .features {
+            padding: 80px 0;
+        }
+
+        .section-header {
+            text-align: center;
+            margin-bottom: 4rem;
+        }
+
+        .section-title {
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, var(--text-primary), var(--accent-cyan));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .section-subtitle {
+            font-size: 1.2rem;
+            color: var(--text-secondary);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 2rem;
+        }
+
+        .feature-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-subtle);
+            border-radius: 20px;
+            padding: 2.5rem;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            background: var(--card-hover);
+        }
+
+        .feature-icon {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, var(--accent-purple), var(--accent-cyan));
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 10px 30px rgba(159, 122, 234, 0.3);
+        }
+
+        .feature-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: var(--text-primary);
+        }
+
+        .feature-description {
+            color: var(--text-secondary);
+            line-height: 1.6;
+            margin-bottom: 1.5rem;
+        }
+
+        .feature-link {
+            color: var(--accent-cyan);
+            text-decoration: none;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            transition: gap 0.3s ease;
+        }
+
+        .feature-link:hover {
+            gap: 10px;
+        }
+
+        /* Memory Timeline */
+        .memory-timeline {
+            padding: 80px 0;
+            background: linear-gradient(180deg, transparent, rgba(159, 122, 234, 0.05), transparent);
+        }
+
+        .timeline-container {
+            position: relative;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .timeline-line {
+            position: absolute;
+            left: 50%;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: linear-gradient(180deg, var(--accent-purple), var(--accent-cyan));
+            transform: translateX(-50%);
+        }
+
+        .timeline-item {
+            position: relative;
+            padding: 2rem 0;
+            display: flex;
+            align-items: center;
+        }
+
+        .timeline-item:nth-child(odd) {
+            flex-direction: row-reverse;
+        }
+
+        .timeline-content {
+            flex: 1;
+            padding: 0 3rem;
+        }
+
+        .timeline-dot {
+            width: 20px;
+            height: 20px;
+            background: var(--accent-purple);
+            border-radius: 50%;
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            box-shadow: 0 0 20px var(--glow-purple);
+        }
+
+        .timeline-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: var(--accent-cyan);
+        }
+
+        .timeline-description {
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        /* Claude Code Integration Section */
+        .claude-section {
+            padding: 80px 0;
+            text-align: center;
+        }
+
+        .claude-features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-top: 3rem;
+        }
+
+        .claude-feature {
+            background: linear-gradient(135deg, rgba(159, 122, 234, 0.1), rgba(79, 209, 197, 0.1));
+            border: 1px solid var(--accent-purple);
+            border-radius: 16px;
+            padding: 2rem;
+            transition: all 0.3s ease;
+        }
+
+        .claude-feature:hover {
+            transform: scale(1.05);
+            box-shadow: 0 20px 40px rgba(159, 122, 234, 0.3);
+        }
+
+        .claude-feature-icon {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .claude-feature-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: var(--accent-cyan);
+        }
+
+        /* Terminal Demo */
+        .terminal-demo {
+            background: #0a0e27;
+            border: 1px solid var(--border-subtle);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin: 3rem auto;
+            max-width: 800px;
+            font-family: 'Monaco', 'Menlo', monospace;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        }
+
+        .terminal-header {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 1rem;
+        }
+
+        .terminal-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .dot-red { background: #ff5f56; }
+        .dot-yellow { background: #ffbd2e; }
+        .dot-green { background: #27c93f; }
+
+        .terminal-content {
+            color: var(--accent-cyan);
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+
+        .terminal-prompt {
+            color: var(--accent-purple);
+        }
+
+        .terminal-output {
+            color: var(--text-secondary);
+            margin: 1rem 0;
+        }
+
+        /* Footer */
+        footer {
+            padding: 60px 0 40px;
+            border-top: 1px solid var(--border-subtle);
+            margin-top: 100px;
+        }
+
+        .footer-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 2rem;
+        }
+
+        .footer-links {
+            display: flex;
+            gap: 2rem;
+            list-style: none;
+        }
+
+        .footer-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        .footer-links a:hover {
+            color: var(--accent-cyan);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2.5rem;
+            }
+
+            .hero-subtitle {
+                font-size: 1.1rem;
+            }
+
+            .features-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .timeline-line {
+                left: 20px;
+            }
+
+            .timeline-item,
+            .timeline-item:nth-child(odd) {
+                flex-direction: column;
+                padding-left: 50px;
+            }
+
+            .timeline-dot {
+                left: 20px;
+            }
+
+            .nav-links {
+                display: none;
+            }
+        }
+
+        /* Bonus Features Section */
+        .bonus-features {
+            padding: 60px 0;
+            background: linear-gradient(135deg, rgba(159, 122, 234, 0.05), rgba(79, 209, 197, 0.05));
+            border-radius: 30px;
+            margin: 60px 0;
+        }
+
+        .bonus-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+
+        .bonus-item {
+            text-align: center;
+            padding: 1.5rem;
+            background: var(--card-bg);
+            border-radius: 12px;
+            border: 1px solid var(--border-subtle);
+            transition: all 0.3s ease;
+        }
+
+        .bonus-item:hover {
+            transform: scale(1.05);
+            border-color: var(--accent-purple);
+        }
+
+        .bonus-icon {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .bonus-name {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+    </style>
+</head>
+<body>
+    <!-- Animated Background -->
+    <div class="background-animation">
+        <div class="gradient-orb orb-1"></div>
+        <div class="gradient-orb orb-2"></div>
+        <div class="gradient-orb orb-3"></div>
+    </div>
+
+    <!-- Grid Background -->
+    <div class="grid-background"></div>
+
+    <!-- Navigation -->
+    <nav>
+        <div class="nav-container">
+            <div class="logo">
+                <div class="logo-icon">🧠</div>
+                <span>Coder1</span>
+            </div>
+            <ul class="nav-links">
+                <li><a href="#features">Features</a></li>
+                <li><a href="#memory">Memory</a></li>
+                <li><a href="#claude">Claude Code</a></li>
+                <li><a href="#demo">Demo</a></li>
+                <li><a href="http://localhost:3001/ide">Launch IDE</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="container">
+            <div class="claude-badge">
+                <div class="badge-icon">⚡</div>
+                <span>Built Exclusively for Claude Code Users</span>
+            </div>
+
+            <h1>The First IDE That Never Forgets</h1>
+            
+            <p class="hero-subtitle">
+                Coder1 revolutionizes development with <span class="highlight">infinite contextual memory</span>. 
+                Every command, every file change, every decision - permanently captured and instantly recallable. 
+                Built from the ground up for Claude Code native development.
+            </p>
+
+            <!-- Memory Stats -->
+            <div class="memory-stats">
+                <div class="stat-card">
+                    <span class="stat-icon">∞</span>
+                    <div class="stat-number">∞</div>
+                    <div class="stat-label">Context Retention</div>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-icon">⚡</span>
+                    <div class="stat-number">&lt;10ms</div>
+                    <div class="stat-label">Memory Recall</div>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-icon">🧠</span>
+                    <div class="stat-number">100%</div>
+                    <div class="stat-label">Session Memory</div>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-icon">🔄</span>
+                    <div class="stat-number">24/7</div>
+                    <div class="stat-label">Active Learning</div>
+                </div>
+            </div>
+
+            <div class="cta-group">
+                <a href="http://localhost:3001/ide" class="btn btn-primary">
+                    <span>Launch Coder1 IDE</span>
+                    <span>→</span>
+                </a>
+                <a href="#demo" class="btn btn-secondary">
+                    <span>Watch Demo</span>
+                    <span>▶</span>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="features" id="features">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">Revolutionary Memory Features</h2>
+                <p class="section-subtitle">What makes Coder1 the most intelligent IDE ever created</p>
+            </div>
+
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">🧠</div>
+                    <h3 class="feature-title">Complete Session Memory</h3>
+                    <p class="feature-description">
+                        Every keystroke, command, and file change is captured in real-time. Your entire development 
+                        journey is preserved forever, creating an unbreakable chain of context.
+                    </p>
+                    <a href="#" class="feature-link">Learn more →</a>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">🔮</div>
+                    <h3 class="feature-title">Contextual Understanding</h3>
+                    <p class="feature-description">
+                        AI that truly understands your project's evolution. It knows why you made changes, 
+                        what you tried, and what worked - building deep project intelligence over time.
+                    </p>
+                    <a href="#" class="feature-link">Explore AI →</a>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">⚡</div>
+                    <h3 class="feature-title">Instant Recall</h3>
+                    <p class="feature-description">
+                        Ask "What did I change last Tuesday?" or "How did I fix that bug?" and get instant, 
+                        accurate answers. Your development history becomes a searchable knowledge base.
+                    </p>
+                    <a href="#" class="feature-link">See examples →</a>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">🤖</div>
+                    <h3 class="feature-title">Claude Code Native</h3>
+                    <p class="feature-description">
+                        Designed specifically for Claude Code CLI integration. Seamless handoffs between 
+                        human and AI coding sessions with full context preservation.
+                    </p>
+                    <a href="#" class="feature-link">Claude integration →</a>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">📊</div>
+                    <h3 class="feature-title">Pattern Detection</h3>
+                    <p class="feature-description">
+                        Automatically identifies coding patterns, common fixes, and optimization opportunities 
+                        from your historical data, making you more efficient over time.
+                    </p>
+                    <a href="#" class="feature-link">View patterns →</a>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">🔄</div>
+                    <h3 class="feature-title">Knowledge Transfer</h3>
+                    <p class="feature-description">
+                        Export your entire project context as intelligent summaries. Perfect for team handoffs, 
+                        documentation, or continuing work after breaks.
+                    </p>
+                    <a href="#" class="feature-link">Export options →</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Memory Timeline -->
+    <section class="memory-timeline" id="memory">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">How Memory Works</h2>
+                <p class="section-subtitle">A continuous learning system that evolves with your code</p>
+            </div>
+
+            <div class="timeline-container">
+                <div class="timeline-line"></div>
+                
+                <div class="timeline-item">
+                    <div class="timeline-dot"></div>
+                    <div class="timeline-content">
+                        <h3 class="timeline-title">Real-Time Capture</h3>
+                        <p class="timeline-description">
+                            Every action in your terminal and editor is captured instantly, creating a complete record of your development process.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="timeline-item">
+                    <div class="timeline-dot"></div>
+                    <div class="timeline-content">
+                        <h3 class="timeline-title">Context Building</h3>
+                        <p class="timeline-description">
+                            AI analyzes your actions to understand not just what you did, but why you did it, building deep contextual understanding.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="timeline-item">
+                    <div class="timeline-dot"></div>
+                    <div class="timeline-content">
+                        <h3 class="timeline-title">Pattern Recognition</h3>
+                        <p class="timeline-description">
+                            Machine learning identifies recurring patterns, common solutions, and optimization opportunities from your coding history.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="timeline-item">
+                    <div class="timeline-dot"></div>
+                    <div class="timeline-content">
+                        <h3 class="timeline-title">Intelligent Assistance</h3>
+                        <p class="timeline-description">
+                            Claude Code uses this accumulated knowledge to provide increasingly personalized and context-aware assistance.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Claude Code Integration -->
+    <section class="claude-section" id="claude">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">Built for Claude Code</h2>
+                <p class="section-subtitle">The only IDE designed from the ground up for AI-native development</p>
+            </div>
+
+            <div class="claude-features">
+                <div class="claude-feature">
+                    <div class="claude-feature-icon">🤝</div>
+                    <h3 class="claude-feature-title">Seamless Handoffs</h3>
+                    <p>Switch between human and AI coding with zero context loss</p>
+                </div>
+
+                <div class="claude-feature">
+                    <div class="claude-feature-icon">👁️</div>
+                    <h3 class="claude-feature-title">AI Supervision</h3>
+                    <p>Claude watches your terminal and offers proactive assistance</p>
+                </div>
+
+                <div class="claude-feature">
+                    <div class="claude-feature-icon">📝</div>
+                    <h3 class="claude-feature-title">Smart Summaries</h3>
+                    <p>One-click session summaries for perfect AI context</p>
+                </div>
+            </div>
+
+            <!-- Terminal Demo -->
+            <div class="terminal-demo" id="demo">
+                <div class="terminal-header">
+                    <div class="terminal-dot dot-red"></div>
+                    <div class="terminal-dot dot-yellow"></div>
+                    <div class="terminal-dot dot-green"></div>
+                </div>
+                <div class="terminal-content">
+                    <div><span class="terminal-prompt">$</span> claude remember what we did yesterday</div>
+                    <div class="terminal-output">
+                        Yesterday at 3:45 PM, you were working on the authentication system.<br>
+                        You fixed the JWT token expiration bug by updating the refresh logic.<br>
+                        The solution involved modifying auth.js lines 45-52.<br>
+                        Would you like me to show you the exact changes?
+                    </div>
+                    <div><span class="terminal-prompt">$</span> yes, and apply similar fix to the API endpoints</div>
+                    <div class="terminal-output">
+                        Applying the same pattern to 3 API endpoints...<br>
+                        ✓ Updated /api/users/profile<br>
+                        ✓ Updated /api/posts/create<br>
+                        ✓ Updated /api/settings/save<br>
+                        All endpoints now use the improved token refresh logic.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Bonus Features -->
+    <section class="bonus-features">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">Plus Everything You Love</h2>
+                <p class="section-subtitle">All the features from our original IDE, enhanced with memory</p>
+            </div>
+
+            <div class="bonus-grid">
+                <div class="bonus-item">
+                    <div class="bonus-icon">📊</div>
+                    <div class="bonus-name">Smart PRD Generator</div>
+                </div>
+                <div class="bonus-item">
+                    <div class="bonus-icon">🎨</div>
+                    <div class="bonus-name">Wireframe Creation</div>
+                </div>
+                <div class="bonus-item">
+                    <div class="bonus-icon">🤖</div>
+                    <div class="bonus-name">AI Agent Teams</div>
+                </div>
+                <div class="bonus-item">
+                    <div class="bonus-icon">💻</div>
+                    <div class="bonus-name">Monaco Editor</div>
+                </div>
+                <div class="bonus-item">
+                    <div class="bonus-icon">🖥️</div>
+                    <div class="bonus-name">Integrated Terminal</div>
+                </div>
+                <div class="bonus-item">
+                    <div class="bonus-icon">📁</div>
+                    <div class="bonus-name">File Explorer</div>
+                </div>
+                <div class="bonus-item">
+                    <div class="bonus-icon">🎯</div>
+                    <div class="bonus-name">Task Management</div>
+                </div>
+                <div class="bonus-item">
+                    <div class="bonus-icon">📚</div>
+                    <div class="bonus-name">Documentation AI</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Final CTA -->
+    <section class="hero">
+        <div class="container">
+            <h2 class="section-title">Ready to Never Forget?</h2>
+            <p class="hero-subtitle">
+                Join the revolution. Experience an IDE that truly understands your development journey.
+            </p>
+            <div class="cta-group">
+                <a href="http://localhost:3001/ide" class="btn btn-primary">
+                    <span>Start Using Coder1</span>
+                    <span>→</span>
+                </a>
+                <a href="http://localhost:3001" class="btn btn-secondary">
+                    <span>Explore Features</span>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <div class="footer-content">
+                <div class="logo">
+                    <div class="logo-icon">🧠</div>
+                    <span>Coder1</span>
+                </div>
+                <ul class="footer-links">
+                    <li><a href="https://github.com/yourusername/coder1">GitHub</a></li>
+                    <li><a href="/documentation">Documentation</a></li>
+                    <li><a href="/api">API Reference</a></li>
+                    <li><a href="/support">Support</a></li>
+                </ul>
+            </div>
+            <div style="text-align: center; margin-top: 2rem; color: var(--text-secondary); font-size: 0.9rem;">
+                Built with ❤️ for Claude Code users everywhere
+            </div>
+        </div>
+    </footer>
+</body>
+</html>

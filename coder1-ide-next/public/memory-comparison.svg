@@ -1,0 +1,124 @@
+<svg width="1200" height="800" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="redGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#ef4444;stop-opacity:0.1" />
+      <stop offset="100%" style="stop-color:#dc2626;stop-opacity:0.2" />
+    </linearGradient>
+    <linearGradient id="greenGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#10b981;stop-opacity:0.1" />
+      <stop offset="100%" style="stop-color:#059669;stop-opacity:0.2" />
+    </linearGradient>
+    <linearGradient id="cyanGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#00d9ff;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#00b4d8;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="purpleGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#8b5cf6;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#7c3aed;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="1200" height="800" fill="#0a0a0a"/>
+  
+  <!-- Divider Line -->
+  <line x1="600" y1="0" x2="600" y2="800" stroke="#333" stroke-width="2"/>
+  
+  <!-- Without Memory Side -->
+  <g>
+    <!-- Header -->
+    <rect x="20" y="20" width="560" height="60" rx="8" fill="url(#redGradient)" stroke="#ef4444" stroke-width="1"/>
+    <circle cx="60" cy="50" r="8" fill="#ef4444"/>
+    <text x="85" y="45" fill="#ef4444" font-family="Arial, sans-serif" font-size="14" font-weight="bold">Without Memory</text>
+    <text x="85" y="62" fill="#dc2626" font-family="Arial, sans-serif" font-size="12">Context lost every session</text>
+    
+    <!-- Chat Messages -->
+    <!-- User message -->
+    <rect x="250" y="120" width="310" height="40" rx="20" fill="#3b82f6" fill-opacity="0.3"/>
+    <text x="265" y="145" fill="#60a5fa" font-family="Arial, sans-serif" font-size="12">Let's continue working on the auth bug we discussed</text>
+    
+    <!-- Claude response -->
+    <rect x="40" y="180" width="400" height="55" rx="20" fill="#ffffff" fill-opacity="0.1"/>
+    <text x="55" y="200" fill="#ffffff" font-family="Arial, sans-serif" font-size="12">I'm not familiar with that bug. What project is this</text>
+    <text x="55" y="217" fill="#ffffff" font-family="Arial, sans-serif" font-size="12">regarding?</text>
+    
+    <!-- User response -->
+    <rect x="200" y="260" width="360" height="40" rx="20" fill="#3b82f6" fill-opacity="0.3"/>
+    <text x="215" y="285" fill="#60a5fa" font-family="Arial, sans-serif" font-size="12">My application for lawyer databases</text>
+    
+    <!-- Claude confused response -->
+    <rect x="40" y="320" width="450" height="70" rx="20" fill="#ffffff" fill-opacity="0.1"/>
+    <text x="55" y="340" fill="#ffffff" font-family="Arial, sans-serif" font-size="12">You have three projects. Do you know which project</text>
+    <text x="55" y="357" fill="#ffffff" font-family="Arial, sans-serif" font-size="12">the bug we discussed is in?</text>
+    
+    <!-- Frustration indicator -->
+    <rect x="100" y="420" width="400" height="45" rx="20" fill="#ef4444" fill-opacity="0.2" stroke="#ef4444" stroke-width="1"/>
+    <text x="115" y="435" fill="#dc2626" font-family="Arial, sans-serif" font-size="12" font-weight="bold">😤 Frustrating context loss...</text>
+    <text x="115" y="452" fill="#dc2626" font-family="Arial, sans-serif" font-size="11">Starting over AGAIN</text>
+    
+    <!-- Time wasted -->
+    <rect x="150" y="500" width="300" height="80" rx="12" fill="#1a1a1a" stroke="#ef4444" stroke-width="2"/>
+    <text x="165" y="525" fill="#ef4444" font-family="Arial, sans-serif" font-size="16" font-weight="bold">⏱️ Time Wasted</text>
+    <text x="165" y="545" fill="#ffffff" font-family="Arial, sans-serif" font-size="14">• 15 min re-explaining</text>
+    <text x="165" y="562" fill="#ffffff" font-family="Arial, sans-serif" font-size="14">• Context rebuilding</text>
+    <text x="165" y="579" fill="#ffffff" font-family="Arial, sans-serif" font-size="14">• Lost productivity</text>
+    
+    <!-- Bottom problems -->
+    <rect x="50" y="620" width="500" height="120" rx="12" fill="#ef4444" fill-opacity="0.1" stroke="#ef4444" stroke-width="1"/>
+    <text x="70" y="650" fill="#ef4444" font-family="Arial, sans-serif" font-size="14" font-weight="bold">Common Problems:</text>
+    <text x="70" y="670" fill="#ffffff" font-family="Arial, sans-serif" font-size="12">❌ Lose everything when you close IDE</text>
+    <text x="70" y="690" fill="#ffffff" font-family="Arial, sans-serif" font-size="12">❌ AI forgets project context</text>
+    <text x="70" y="710" fill="#ffffff" font-family="Arial, sans-serif" font-size="12">❌ Repeat explanations endlessly</text>
+    <text x="70" y="730" fill="#ffffff" font-family="Arial, sans-serif" font-size="12">❌ No continuity between sessions</text>
+  </g>
+  
+  <!-- With Memory Side -->
+  <g>
+    <!-- Header -->
+    <rect x="620" y="20" width="560" height="60" rx="8" fill="url(#greenGradient)" stroke="#10b981" stroke-width="1"/>
+    <circle cx="660" cy="50" r="8" fill="#10b981"/>
+    <text x="685" y="45" fill="#10b981" font-family="Arial, sans-serif" font-size="14" font-weight="bold">With Memory</text>
+    <text x="685" y="62" fill="#059669" font-family="Arial, sans-serif" font-size="12">Perfect context retention</text>
+    
+    <!-- Chat Messages -->
+    <!-- User message (same) -->
+    <rect x="850" y="120" width="310" height="40" rx="20" fill="#3b82f6" fill-opacity="0.3"/>
+    <text x="865" y="145" fill="#60a5fa" font-family="Arial, sans-serif" font-size="12">Let's continue working on the auth bug we discussed</text>
+    
+    <!-- Claude intelligent response -->
+    <rect x="640" y="180" width="500" height="85" rx="20" fill="#ffffff" fill-opacity="0.1"/>
+    <text x="655" y="200" fill="#ffffff" font-family="Arial, sans-serif" font-size="12">I see the JWT timeout issue from 3 hours ago in your</text>
+    <text x="655" y="217" fill="#ffffff" font-family="Arial, sans-serif" font-size="12">LawyerDB project. The token was expiring after 15</text>
+    <text x="655" y="234" fill="#ffffff" font-family="Arial, sans-serif" font-size="12">minutes instead of 24 hours. Let me apply the fix...</text>
+    
+    <!-- Code fix -->
+    <rect x="640" y="290" width="520" height="100" rx="20" fill="#8b5cf6" fill-opacity="0.2"/>
+    <text x="655" y="315" fill="#00d9ff" font-family="Monaco, monospace" font-size="11">// Fixing /lawyerdb/api/auth/route.ts</text>
+    <text x="655" y="335" fill="#00d9ff" font-family="Monaco, monospace" font-size="11">// Line 47: Changed from 900000 to 86400000</text>
+    <text x="655" y="355" fill="#00d9ff" font-family="Monaco, monospace" font-size="11">const TOKEN_EXPIRY = 24 * 60 * 60 * 1000;</text>
+    
+    <!-- Success indicator -->
+    <rect x="700" y="420" width="400" height="45" rx="20" fill="#10b981" fill-opacity="0.2" stroke="#10b981" stroke-width="1"/>
+    <text x="715" y="435" fill="#059669" font-family="Arial, sans-serif" font-size="12" font-weight="bold">✅ Instantly back to work!</text>
+    <text x="715" y="452" fill="#059669" font-family="Arial, sans-serif" font-size="11">No time wasted explaining</text>
+    
+    <!-- Time saved -->
+    <rect x="750" y="500" width="300" height="80" rx="12" fill="#1a1a1a" stroke="#10b981" stroke-width="2"/>
+    <text x="765" y="525" fill="#10b981" font-family="Arial, sans-serif" font-size="16" font-weight="bold">⚡ Time Saved</text>
+    <text x="765" y="545" fill="#ffffff" font-family="Arial, sans-serif" font-size="14">• Instant context recall</text>
+    <text x="765" y="562" fill="#ffffff" font-family="Arial, sans-serif" font-size="14">• Zero re-explanation</text>
+    <text x="765" y="579" fill="#ffffff" font-family="Arial, sans-serif" font-size="14">• Continuous workflow</text>
+    
+    <!-- Bottom benefits -->
+    <rect x="650" y="620" width="500" height="120" rx="12" fill="#10b981" fill-opacity="0.1" stroke="#10b981" stroke-width="1"/>
+    <text x="670" y="650" fill="#10b981" font-family="Arial, sans-serif" font-size="14" font-weight="bold">Memory Benefits:</text>
+    <text x="670" y="670" fill="#ffffff" font-family="Arial, sans-serif" font-size="12">✅ Remember every decision &amp; pattern</text>
+    <text x="670" y="690" fill="#ffffff" font-family="Arial, sans-serif" font-size="12">✅ Perfect context across sessions</text>
+    <text x="670" y="710" fill="#ffffff" font-family="Arial, sans-serif" font-size="12">✅ AI learns your preferences</text>
+    <text x="670" y="730" fill="#ffffff" font-family="Arial, sans-serif" font-size="12">✅ Seamless workflow continuation</text>
+  </g>
+  
+  <!-- Central VS indicator -->
+  <circle cx="600" cy="400" r="30" fill="url(#cyanGradient)"/>
+  <text x="592" y="408" fill="#ffffff" font-family="Arial, sans-serif" font-size="16" font-weight="bold">VS</text>
+</svg>

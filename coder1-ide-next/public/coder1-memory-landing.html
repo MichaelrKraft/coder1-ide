@@ -1,0 +1,821 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Coder1 IDE - The first IDE with true contextual memory. Never lose your coding context again. Claude remembers everything about your project.">
+    <meta name="keywords" content="Contextual Memory IDE, AI Memory, Persistent Context, Intelligent Code Editor, Coder1">
+    <title>Coder1 - The IDE That Never Forgets | Revolutionary Context Memory</title>
+    
+    <!-- Fonts & Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    
+    <style>
+        :root {
+            /* Coder1 cyan/teal color scheme matching the logo */
+            --primary-cyan: #00D9FF;
+            --secondary-cyan: #00B4D8;
+            --light-cyan: #90E0EF;
+            --accent-cyan: #0077B6;
+            --dark-text: #030303;
+            --light-text: #666666;
+            --background-white: #FFFFFF;
+            --background-light: #FAFAFA;
+            --border-color: rgba(144, 224, 239, 0.6);
+            
+            /* Background gradients */
+            --bg-gradient: linear-gradient(135deg, #f0fafe 0%, #caf0f8 100%);
+            --card-bg: rgba(255, 255, 255, 0.95);
+            --hero-gradient: radial-gradient(ellipse at center, rgba(0, 217, 255, 0.1) 0%, transparent 70%);
+            --glass-effect: rgba(255, 255, 255, 0.1);
+            
+            /* Memory-focused colors */
+            --memory-purple: #8B5CF6;
+            --memory-glow: rgba(139, 92, 246, 0.3);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--background-white);
+            color: var(--dark-text);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        /* Navigation */
+        nav {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(0, 217, 255, 0.1);
+            z-index: 1000;
+            padding: 1rem 0;
+        }
+
+        .nav-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            text-decoration: none;
+            color: var(--dark-text);
+        }
+
+        .logo-text {
+            font-size: 1.5rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--primary-cyan), var(--secondary-cyan));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+        }
+
+        .nav-links a {
+            text-decoration: none;
+            color: var(--light-text);
+            font-weight: 500;
+            transition: color 0.3s ease;
+        }
+
+        .nav-links a:hover {
+            color: var(--primary-cyan);
+        }
+
+        .memory-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.4rem 1rem;
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(0, 217, 255, 0.1));
+            border: 1px solid var(--memory-purple);
+            border-radius: 50px;
+            color: var(--memory-purple);
+            font-weight: 600;
+            font-size: 0.85rem;
+            animation: pulse-glow 2s infinite;
+        }
+
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 10px var(--memory-glow); }
+            50% { box-shadow: 0 0 20px var(--memory-glow); }
+        }
+
+        /* Hero Section */
+        .hero {
+            padding: 8rem 0 5rem;
+            background: linear-gradient(135deg, rgba(0, 217, 255, 0.03) 0%, rgba(139, 92, 246, 0.03) 100%);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: var(--hero-gradient);
+            animation: rotate-slow 30s linear infinite;
+        }
+
+        @keyframes rotate-slow {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .hero-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 2rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .hero-content {
+            text-align: center;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1.5rem;
+            background: linear-gradient(135deg, var(--memory-purple), var(--primary-cyan));
+            border-radius: 50px;
+            color: white;
+            font-weight: 600;
+            margin-bottom: 2rem;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .brain-icon {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        .hero-title {
+            font-size: 4rem;
+            font-weight: 900;
+            margin-bottom: 1.5rem;
+            line-height: 1.1;
+            background: linear-gradient(135deg, var(--dark-text) 0%, var(--memory-purple) 50%, var(--primary-cyan) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero-subtitle {
+            font-size: 1.5rem;
+            color: var(--light-text);
+            margin-bottom: 3rem;
+            font-weight: 400;
+            line-height: 1.6;
+        }
+
+        .hero-highlight {
+            color: var(--memory-purple);
+            font-weight: 600;
+        }
+
+        .cta-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 1rem 2.5rem;
+            border-radius: 50px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--memory-purple), var(--primary-cyan));
+            color: white;
+            border: none;
+            box-shadow: 0 10px 30px rgba(139, 92, 246, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 40px rgba(139, 92, 246, 0.4);
+        }
+
+        .btn-secondary {
+            background: white;
+            color: var(--memory-purple);
+            border: 2px solid var(--memory-purple);
+        }
+
+        .btn-secondary:hover {
+            background: var(--memory-purple);
+            color: white;
+            transform: translateY(-3px);
+        }
+
+        /* Memory Stats */
+        .memory-stats {
+            display: flex;
+            justify-content: center;
+            gap: 3rem;
+            margin-top: 4rem;
+            flex-wrap: wrap;
+        }
+
+        .stat-card {
+            text-align: center;
+            padding: 1.5rem;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            min-width: 150px;
+        }
+
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--memory-purple), var(--primary-cyan));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .stat-label {
+            color: var(--light-text);
+            font-size: 0.9rem;
+            margin-top: 0.5rem;
+        }
+
+        /* Features Section */
+        .features {
+            padding: 5rem 0;
+            background: white;
+        }
+
+        .section-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 2rem;
+        }
+
+        .section-header {
+            text-align: center;
+            margin-bottom: 4rem;
+        }
+
+        .section-badge {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            background: rgba(139, 92, 246, 0.1);
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            border-radius: 50px;
+            color: var(--memory-purple);
+            font-weight: 600;
+            margin-bottom: 1rem;
+            text-transform: uppercase;
+            font-size: 0.85rem;
+            letter-spacing: 1px;
+        }
+
+        .section-title {
+            font-size: 3rem;
+            font-weight: 800;
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, var(--dark-text), var(--memory-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .section-subtitle {
+            color: var(--light-text);
+            font-size: 1.2rem;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 2rem;
+        }
+
+        .feature-card {
+            background: white;
+            border: 1px solid rgba(139, 92, 246, 0.2);
+            border-radius: 16px;
+            padding: 2rem;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            text-align: center;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+        }
+
+        .feature-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(135deg, var(--memory-purple), var(--primary-cyan));
+            transform: scaleX(0);
+            transition: transform 0.3s ease;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-8px);
+            border-color: var(--memory-purple);
+            box-shadow: 0 20px 40px rgba(139, 92, 246, 0.2);
+        }
+
+        .feature-card:hover::before {
+            transform: scaleX(1);
+        }
+
+        .feature-icon {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, var(--memory-purple), var(--primary-cyan));
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1.5rem;
+            font-size: 1.5rem;
+            color: white;
+        }
+
+        .feature-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: var(--dark-text);
+        }
+
+        .feature-description {
+            color: var(--light-text);
+            line-height: 1.7;
+        }
+
+        /* Memory Showcase */
+        .memory-showcase {
+            padding: 5rem 0;
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.05), rgba(0, 217, 255, 0.05));
+        }
+
+        .showcase-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4rem;
+            align-items: center;
+            margin-top: 3rem;
+        }
+
+        .showcase-content h3 {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            color: var(--dark-text);
+        }
+
+        .showcase-content p {
+            color: var(--light-text);
+            line-height: 1.8;
+            margin-bottom: 1.5rem;
+        }
+
+        .memory-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .memory-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+            padding: 1rem;
+            background: white;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .memory-item:hover {
+            transform: translateX(10px);
+            box-shadow: 0 5px 20px rgba(139, 92, 246, 0.2);
+        }
+
+        .memory-item i {
+            color: var(--memory-purple);
+            font-size: 1.2rem;
+        }
+
+        .showcase-visual {
+            position: relative;
+            padding: 2rem;
+        }
+
+        .memory-diagram {
+            background: white;
+            border-radius: 16px;
+            padding: 2rem;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+            position: relative;
+        }
+
+        .memory-flow {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .flow-item {
+            padding: 1rem;
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(0, 217, 255, 0.1));
+            border-radius: 8px;
+            border-left: 3px solid var(--memory-purple);
+            transition: all 0.3s ease;
+        }
+
+        .flow-item:hover {
+            transform: translateX(10px);
+            border-left-width: 5px;
+        }
+
+        /* CTA Section */
+        .cta-section {
+            padding: 5rem 0;
+            background: linear-gradient(135deg, var(--memory-purple), var(--primary-cyan));
+            text-align: center;
+            color: white;
+        }
+
+        .cta-title {
+            font-size: 3rem;
+            font-weight: 800;
+            margin-bottom: 1.5rem;
+        }
+
+        .cta-subtitle {
+            font-size: 1.3rem;
+            margin-bottom: 2rem;
+            opacity: 0.9;
+        }
+
+        .cta-buttons-bottom {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn-white {
+            background: white;
+            color: var(--memory-purple);
+            padding: 1rem 2.5rem;
+            border-radius: 50px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-white:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Footer */
+        footer {
+            padding: 3rem 0;
+            background: var(--dark-text);
+            color: white;
+            text-align: center;
+        }
+
+        .footer-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 2rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .hero-title {
+                font-size: 2.5rem;
+            }
+            
+            .hero-subtitle {
+                font-size: 1.2rem;
+            }
+            
+            .features-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .showcase-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .memory-stats {
+                gap: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav>
+        <div class="nav-container">
+            <a href="#" class="logo">
+                <span class="logo-text">Coder1</span>
+                <span class="memory-badge">
+                    <i class="fas fa-brain brain-icon"></i>
+                    Context Memory
+                </span>
+            </a>
+            <div class="nav-links">
+                <a href="#features">Features</a>
+                <a href="#memory">Memory System</a>
+                <a href="#pricing">Pricing</a>
+                <a href="/ide" class="btn btn-primary">Launch IDE</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-container">
+            <div class="hero-content">
+                <div class="hero-badge">
+                    <i class="fas fa-sparkles"></i>
+                    Revolutionary IDE Technology
+                </div>
+                <h1 class="hero-title">The First IDE That<br>Never Forgets</h1>
+                <p class="hero-subtitle">
+                    Introducing <span class="hero-highlight">Contextual Memory</span> — a revolutionary feature that remembers 
+                    every conversation, every decision, and every line of code you've written. 
+                    <br><br>
+                    <strong>No other IDE has this.</strong>
+                </p>
+                <div class="cta-buttons">
+                    <a href="/ide" class="btn btn-primary">
+                        <i class="fas fa-rocket"></i>
+                        Experience Memory-Powered Coding
+                    </a>
+                    <a href="#memory" class="btn btn-secondary">
+                        <i class="fas fa-brain"></i>
+                        See How Memory Works
+                    </a>
+                </div>
+                
+                <!-- Memory Stats -->
+                <div class="memory-stats">
+                    <div class="stat-card">
+                        <div class="stat-number">∞</div>
+                        <div class="stat-label">Context Retention</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">100%</div>
+                        <div class="stat-label">Memory Recall</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">0</div>
+                        <div class="stat-label">Lost Contexts</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">24/7</div>
+                        <div class="stat-label">Learning</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features" class="features">
+        <div class="section-container">
+            <div class="section-header">
+                <span class="section-badge">Game-Changing Features</span>
+                <h2 class="section-title">Memory That Transforms<br>How You Code</h2>
+                <p class="section-subtitle">
+                    Every IDE forgets. Coder1 remembers. Forever.
+                </p>
+            </div>
+            
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-history"></i>
+                    </div>
+                    <h3 class="feature-title">Complete Session Memory</h3>
+                    <p class="feature-description">
+                        Every terminal command, every file change, every Claude conversation — 
+                        all stored in an intelligent memory system that learns from your patterns.
+                    </p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-brain"></i>
+                    </div>
+                    <h3 class="feature-title">Contextual Understanding</h3>
+                    <p class="feature-description">
+                        Claude doesn't just remember what you did — it understands why you did it. 
+                        Your coding context evolves and improves over time.
+                    </p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-search"></i>
+                    </div>
+                    <h3 class="feature-title">Instant Context Recall</h3>
+                    <p class="feature-description">
+                        "Remember when we fixed that bug last week?" Yes, Claude remembers. 
+                        Search through your entire coding history instantly.
+                    </p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-sync"></i>
+                    </div>
+                    <h3 class="feature-title">Pattern Recognition</h3>
+                    <p class="feature-description">
+                        Automatically detects your coding patterns, preferences, and workflows. 
+                        The IDE adapts to how YOU like to code.
+                    </p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <h3 class="feature-title">Team Memory Sharing</h3>
+                    <p class="feature-description">
+                        Share context between team members. New developer joining? 
+                        They inherit the entire project's memory instantly.
+                    </p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-shield-alt"></i>
+                    </div>
+                    <h3 class="feature-title">Private & Secure</h3>
+                    <p class="feature-description">
+                        Your memory stays yours. Local-first architecture with optional 
+                        encrypted cloud sync. You control your data.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Memory Showcase Section -->
+    <section id="memory" class="memory-showcase">
+        <div class="section-container">
+            <div class="section-header">
+                <span class="section-badge">How It Works</span>
+                <h2 class="section-title">Your Code, Your Context,<br>Never Lost Again</h2>
+                <p class="section-subtitle">
+                    See how Coder1's memory system revolutionizes development
+                </p>
+            </div>
+            
+            <div class="showcase-grid">
+                <div class="showcase-content">
+                    <h3>Memory That Grows With You</h3>
+                    <p>
+                        Unlike traditional IDEs that lose context the moment you close them, 
+                        Coder1 maintains a persistent, intelligent memory of your entire development journey.
+                    </p>
+                    
+                    <ul class="memory-list">
+                        <li class="memory-item">
+                            <i class="fas fa-check-circle"></i>
+                            <span><strong>Terminal History:</strong> Every command, output, and error</span>
+                        </li>
+                        <li class="memory-item">
+                            <i class="fas fa-check-circle"></i>
+                            <span><strong>File Changes:</strong> What changed, when, and why</span>
+                        </li>
+                        <li class="memory-item">
+                            <i class="fas fa-check-circle"></i>
+                            <span><strong>Conversations:</strong> All Claude interactions preserved</span>
+                        </li>
+                        <li class="memory-item">
+                            <i class="fas fa-check-circle"></i>
+                            <span><strong>Decisions:</strong> Why you chose one approach over another</span>
+                        </li>
+                        <li class="memory-item">
+                            <i class="fas fa-check-circle"></i>
+                            <span><strong>Solutions:</strong> How you solved problems, ready to reuse</span>
+                        </li>
+                    </ul>
+                </div>
+                
+                <div class="showcase-visual">
+                    <div class="memory-diagram">
+                        <h4 style="text-align: center; margin-bottom: 1.5rem; color: var(--memory-purple);">
+                            Live Memory Flow
+                        </h4>
+                        <div class="memory-flow">
+                            <div class="flow-item">
+                                <strong>You:</strong> "Claude, help me fix this authentication bug"
+                            </div>
+                            <div class="flow-item">
+                                <strong>Claude:</strong> "I remember we implemented JWT auth last week. Let me check..."
+                            </div>
+                            <div class="flow-item">
+                                <strong>Memory:</strong> ✓ Retrieved 3 related conversations<br>
+                                ✓ Found 5 similar patterns<br>
+                                ✓ Located previous solution
+                            </div>
+                            <div class="flow-item">
+                                <strong>Result:</strong> Bug fixed in seconds, not hours
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="cta-section">
+        <div class="section-container">
+            <h2 class="cta-title">Stop Losing Your Coding Context</h2>
+            <p class="cta-subtitle">
+                Join thousands of developers who never have to explain their project again
+            </p>
+            <div class="cta-buttons-bottom">
+                <a href="/ide" class="btn-white">
+                    <i class="fas fa-bolt"></i>
+                    Start Coding With Memory
+                </a>
+                <a href="#" class="btn-white">
+                    <i class="fas fa-play-circle"></i>
+                    Watch Demo (2 min)
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="footer-container">
+            <p>&copy; 2025 Coder1 IDE. The future of context-aware development.</p>
+            <p style="margin-top: 1rem; opacity: 0.7;">
+                <i class="fas fa-brain"></i> Powered by Revolutionary Context Memory Technology
+            </p>
+        </div>
+    </footer>
+</body>
+</html>

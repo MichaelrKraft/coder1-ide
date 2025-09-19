@@ -1,0 +1,2062 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Coder1 - The Only IDE That Never Forgets. Your context, decisions, and preferences remembered forever. AI that actually understands your project.">
+    <meta name="keywords" content="Contextual Memory IDE, AI Development, Voice Coding, Intelligent IDE, Coder1">
+    <title>Coder1 - The Only IDE That Never Forgets | Revolutionary Memory-First Development</title>
+    
+    <!-- Fonts & Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    
+    <style>
+        :root {
+            /* Coder1 cyan color scheme */
+            --primary-cyan: #00D9FF;
+            --secondary-cyan: #00B4D8;
+            --light-cyan: #90E0EF;
+            --accent-cyan: #0077B6;
+            
+            /* Memory purple accent */
+            --memory-purple: #8B5CF6;
+            --memory-glow: rgba(139, 92, 246, 0.3);
+            
+            /* Text colors */
+            --dark-text: #030303;
+            --light-text: #666666;
+            --muted-text: #999999;
+            
+            /* Backgrounds */
+            --background-white: #FFFFFF;
+            --background-light: #FAFAFA;
+            --background-dark: #0A0A0A;
+            
+            /* Gradients */
+            --gradient-primary: linear-gradient(135deg, #00D9FF, #00B4D8);
+            --gradient-memory: linear-gradient(135deg, #8B5CF6, #00D9FF);
+            --gradient-dark: linear-gradient(135deg, #0A0A0A, #1A1A1A);
+            
+            /* Effects */
+            --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.07);
+            --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.1);
+            --shadow-xl: 0 20px 40px rgba(0, 0, 0, 0.15);
+            
+            --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: var(--font-family);
+            background: var(--background-white);
+            color: var(--dark-text);
+            overflow-x: hidden;
+            line-height: 1.6;
+        }
+
+        /* Container */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* Navigation */
+        nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(0, 217, 255, 0.1);
+            z-index: 1000;
+            transition: all 0.3s ease;
+        }
+
+        .nav-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 0;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 1.5rem;
+            font-weight: 800;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-decoration: none;
+        }
+
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            background: var(--gradient-primary);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 20px rgba(0, 217, 255, 0.3);
+        }
+
+        .logo-icon i {
+            color: white;
+            font-size: 1.2rem;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+        }
+
+        .nav-link {
+            color: var(--light-text);
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .nav-link:hover {
+            color: var(--primary-cyan);
+        }
+
+        .nav-cta {
+            padding: 0.75rem 1.5rem;
+            background: var(--gradient-primary);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 217, 255, 0.3);
+        }
+
+        .nav-cta:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 25px rgba(0, 217, 255, 0.4);
+        }
+
+        /* Hero Section */
+        .hero {
+            padding: 8rem 0 5rem;
+            background: linear-gradient(135deg, rgba(0, 217, 255, 0.05) 0%, rgba(139, 92, 246, 0.05) 100%);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero-content {
+            text-align: center;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1.5rem;
+            background: var(--gradient-memory);
+            border-radius: 50px;
+            color: white;
+            font-weight: 600;
+            margin-bottom: 2rem;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .hero-title {
+            font-size: 4rem;
+            font-weight: 900;
+            margin-bottom: 1.5rem;
+            line-height: 1.1;
+            background: var(--gradient-memory);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero-subtitle {
+            font-size: 1.5rem;
+            color: var(--light-text);
+            margin-bottom: 2rem;
+            font-weight: 400;
+        }
+
+        .audience-hooks {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2rem;
+            margin: 3rem 0;
+        }
+
+        .hook-card {
+            padding: 1.5rem;
+            background: white;
+            border-radius: 12px;
+            box-shadow: var(--shadow-md);
+            transition: all 0.3s ease;
+        }
+
+        .hook-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-xl);
+        }
+
+        .hook-audience {
+            font-size: 0.9rem;
+            color: var(--memory-purple);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 0.5rem;
+        }
+
+        .hook-message {
+            font-size: 1.1rem;
+            color: var(--dark-text);
+            font-weight: 600;
+        }
+
+        .hero-demo {
+            margin: 3rem 0;
+            padding: 2rem;
+            background: white;
+            border-radius: 16px;
+            box-shadow: var(--shadow-xl);
+            min-height: 500px;
+        }
+
+        .memory-demo-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .memory-demo-header h3 {
+            font-size: 2rem;
+            font-weight: 700;
+            background: var(--gradient-memory);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+        }
+
+        .memory-demo-header p {
+            color: var(--light-text);
+            font-size: 1rem;
+        }
+
+        .demo-container {
+            position: relative;
+        }
+
+        .demo-split {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2px;
+            background: #e5e5e5;
+            border-radius: 12px;
+            overflow: hidden;
+            height: 380px;
+            margin-bottom: 1rem;
+        }
+
+        .demo-side {
+            padding: 1.5rem;
+            position: relative;
+        }
+
+        .demo-side.without-memory {
+            background: #1a1a1a;
+            border-right: 2px solid rgba(255,0,0,0.3);
+        }
+
+        .demo-side.with-memory {
+            background: #1a1a1a;
+        }
+
+        .demo-side-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            font-weight: 600;
+        }
+
+        .demo-side.without-memory .demo-side-header {
+            color: #ef4444;
+        }
+
+        .demo-side.with-memory .demo-side-header {
+            color: #10b981;
+        }
+
+        .demo-side-header h4 {
+            margin: 0;
+            font-size: 1.1rem;
+        }
+
+        .chat-messages {
+            height: 300px;
+            overflow-y: auto;
+        }
+
+        .chat-message {
+            margin-bottom: 0.75rem;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        .chat-message.user {
+            text-align: right;
+        }
+
+        .chat-bubble {
+            display: inline-block;
+            padding: 0.75rem 1rem;
+            border-radius: 12px;
+            max-width: 85%;
+            font-size: 0.9rem;
+            line-height: 1.4;
+        }
+
+        .chat-message.user .chat-bubble {
+            background: rgba(59, 130, 246, 0.3);
+            color: #60a5fa;
+        }
+
+        .chat-message.claude .chat-bubble {
+            background: rgba(255, 255, 255, 0.1);
+            color: #ffffff;
+        }
+
+        .chat-message.indicator .chat-bubble {
+            background: rgba(239, 68, 68, 0.2);
+            color: #dc2626;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .chat-message.with-memory.indicator .chat-bubble {
+            background: rgba(16, 185, 129, 0.2);
+            color: #059669;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .chat-message.code .chat-bubble {
+            background: rgba(139, 92, 246, 0.2);
+            color: var(--primary-cyan);
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 0.8rem;
+            white-space: pre-wrap;
+        }
+
+        .demo-controls {
+            text-align: center;
+            margin: 1rem 0;
+        }
+
+        .demo-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            background: var(--gradient-primary);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
+
+        .demo-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 217, 255, 0.3);
+        }
+
+        .demo-button.replay {
+            background: var(--gradient-memory);
+        }
+
+        .demo-progress {
+            height: 4px;
+            background: var(--background-light);
+            border-radius: 2px;
+            overflow: hidden;
+            margin: 1rem 0;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: var(--gradient-primary);
+            width: 0%;
+            transition: width linear;
+        }
+
+        .metrics-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        .metrics-overlay h3 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary-cyan);
+            margin-bottom: 2rem;
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .metric {
+            text-align: center;
+        }
+
+        .metric-value {
+            font-size: 2rem;
+            font-weight: 800;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+        }
+
+        .metric-label {
+            font-size: 0.8rem;
+            color: var(--light-text);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .hero-cta-container {
+            margin-top: 3rem;
+        }
+
+        .hero-cta {
+            display: inline-block;
+            padding: 1.2rem 3rem;
+            background: var(--gradient-primary);
+            color: white;
+            border-radius: 50px;
+            font-size: 1.2rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 30px rgba(0, 217, 255, 0.3);
+        }
+
+        .hero-cta:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 40px rgba(0, 217, 255, 0.4);
+        }
+
+        .hero-cta-subtext {
+            margin-top: 1rem;
+            color: var(--muted-text);
+            font-size: 0.9rem;
+        }
+
+        /* Trust Indicators */
+        .trust-section {
+            padding: 3rem 0;
+            background: var(--background-light);
+            border-top: 1px solid rgba(0, 217, 255, 0.1);
+            border-bottom: 1px solid rgba(0, 217, 255, 0.1);
+        }
+
+        .trust-content {
+            text-align: center;
+        }
+
+        .trust-headline {
+            font-size: 1.2rem;
+            color: var(--light-text);
+            margin-bottom: 2rem;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 2rem;
+        }
+
+        .stat-card {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: 800;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .stat-label {
+            color: var(--light-text);
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* Problem Section */
+        .problem-section {
+            padding: 5rem 0;
+            background: white;
+        }
+
+        .section-header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .section-title {
+            font-size: 3rem;
+            font-weight: 800;
+            margin-bottom: 1rem;
+            color: var(--dark-text);
+        }
+
+        .section-subtitle {
+            font-size: 1.2rem;
+            color: var(--light-text);
+        }
+
+        .problems-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2rem;
+            margin-top: 3rem;
+        }
+
+        .problem-card {
+            padding: 2rem;
+            background: var(--background-light);
+            border-radius: 12px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .problem-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-xl);
+        }
+
+        .problem-icon {
+            font-size: 3rem;
+            color: var(--memory-purple);
+            margin-bottom: 1rem;
+        }
+
+        .problem-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--dark-text);
+            margin-bottom: 1rem;
+        }
+
+        .problem-description {
+            color: var(--light-text);
+            line-height: 1.7;
+        }
+
+        /* Features Section */
+        .features-section {
+            padding: 5rem 0;
+            background: linear-gradient(135deg, rgba(0, 217, 255, 0.02) 0%, rgba(139, 92, 246, 0.02) 100%);
+        }
+
+        .features-grid {
+            display: grid;
+            gap: 3rem;
+            margin-top: 3rem;
+        }
+
+        .feature-card {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 3rem;
+            align-items: center;
+            padding: 3.5rem 3rem 3rem;
+            background: white;
+            border-radius: 16px;
+            box-shadow: var(--shadow-md);
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .feature-card:hover {
+            transform: translateX(10px);
+            box-shadow: var(--shadow-xl);
+        }
+
+        .feature-card:nth-child(even) {
+            direction: rtl;
+        }
+
+        .feature-card:nth-child(even) .feature-content {
+            direction: ltr;
+        }
+
+        .feature-number {
+            position: absolute;
+            top: -60px;
+            left: -10px;
+            background: var(--gradient-memory);
+            color: white;
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 1.3rem;
+            z-index: 10;
+            box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+            border: 2px solid white;
+        }
+
+        .feature-content {
+            position: relative;
+        }
+
+        .feature-name {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--dark-text);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .feature-icon {
+            color: var(--memory-purple);
+        }
+
+        .feature-problem {
+            padding: 1rem;
+            background: rgba(239, 68, 68, 0.05);
+            border-left: 3px solid #EF4444;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+        }
+
+        .feature-problem-label {
+            font-size: 0.85rem;
+            color: #EF4444;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 0.5rem;
+        }
+
+        .feature-problem-text {
+            color: var(--dark-text);
+            font-weight: 500;
+        }
+
+        .feature-solution {
+            padding: 1rem;
+            background: rgba(16, 185, 129, 0.05);
+            border-left: 3px solid #10B981;
+            border-radius: 8px;
+        }
+
+        .feature-solution-label {
+            font-size: 0.85rem;
+            color: #10B981;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 0.5rem;
+        }
+
+        .feature-solution-text {
+            color: var(--dark-text);
+            font-weight: 500;
+        }
+
+        .feature-demo {
+            padding: 2rem;
+            background: var(--background-light);
+            border: 2px dashed var(--light-cyan);
+            border-radius: 12px;
+            min-height: 300px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--muted-text);
+            text-align: center;
+        }
+
+        /* Comparison Section */
+        .comparison-section {
+            padding: 5rem 0;
+            background: var(--background-dark);
+            color: white;
+        }
+
+        .comparison-section .section-title {
+            color: white;
+        }
+
+        .comparison-section .section-subtitle {
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .comparison-table {
+            margin-top: 3rem;
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        th {
+            padding: 1.5rem;
+            background: rgba(255, 255, 255, 0.1);
+            font-weight: 600;
+            text-align: left;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        th:first-child {
+            text-align: left;
+        }
+
+        td {
+            padding: 1.5rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        .check {
+            color: #10B981;
+            font-size: 1.5rem;
+        }
+
+        .cross {
+            color: #EF4444;
+            font-size: 1.5rem;
+        }
+
+        .infinity {
+            color: var(--primary-cyan);
+            font-size: 1.5rem;
+        }
+
+        .coder1-column {
+            background: rgba(0, 217, 255, 0.1);
+        }
+
+        /* Use Cases Section */
+        .use-cases-section {
+            padding: 5rem 0;
+            background: white;
+        }
+
+        .use-cases-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2rem;
+            margin-top: 3rem;
+        }
+
+        .use-case-card {
+            padding: 2rem;
+            background: var(--background-light);
+            border-radius: 12px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .use-case-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-xl);
+        }
+
+        .use-case-icon {
+            font-size: 3rem;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 1rem;
+        }
+
+        .use-case-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--dark-text);
+            margin-bottom: 1rem;
+        }
+
+        .use-case-description {
+            color: var(--light-text);
+            margin-bottom: 1.5rem;
+        }
+
+        .use-case-demo {
+            padding: 1.5rem;
+            background: white;
+            border: 2px dashed var(--light-cyan);
+            border-radius: 8px;
+            min-height: 150px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--muted-text);
+            font-size: 0.9rem;
+        }
+
+        /* Pricing Section */
+        .pricing-section {
+            padding: 5rem 0;
+            background: linear-gradient(135deg, rgba(0, 217, 255, 0.05) 0%, rgba(139, 92, 246, 0.05) 100%);
+        }
+
+        .pricing-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2rem;
+            margin-top: 3rem;
+        }
+
+        .pricing-card {
+            padding: 2.5rem;
+            background: white;
+            border-radius: 16px;
+            box-shadow: var(--shadow-md);
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .pricing-card:hover {
+            transform: translateY(-10px);
+            box-shadow: var(--shadow-xl);
+        }
+
+        .pricing-card.featured {
+            border: 2px solid var(--primary-cyan);
+            transform: scale(1.05);
+        }
+
+        .pricing-badge {
+            position: absolute;
+            top: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 0.5rem 1.5rem;
+            background: var(--gradient-primary);
+            color: white;
+            border-radius: 50px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .pricing-tier {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--dark-text);
+            margin-bottom: 0.5rem;
+        }
+
+        .pricing-price {
+            font-size: 3rem;
+            font-weight: 800;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+        }
+
+        .pricing-price sup {
+            font-size: 1.5rem;
+        }
+
+        .pricing-period {
+            color: var(--light-text);
+            margin-bottom: 2rem;
+        }
+
+        .pricing-features {
+            list-style: none;
+            padding: 0;
+            margin-bottom: 2rem;
+        }
+
+        .pricing-features li {
+            padding: 0.75rem 0;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .pricing-features li:last-child {
+            border-bottom: none;
+        }
+
+        .pricing-features i {
+            color: var(--primary-cyan);
+        }
+
+        .pricing-cta {
+            display: block;
+            width: 100%;
+            padding: 1rem;
+            background: var(--gradient-primary);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            font-weight: 600;
+            text-decoration: none;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .pricing-cta:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(0, 217, 255, 0.3);
+        }
+
+        .pricing-cta.outline {
+            background: transparent;
+            border: 2px solid var(--primary-cyan);
+            color: var(--primary-cyan);
+        }
+
+        .pricing-cta.outline:hover {
+            background: var(--gradient-primary);
+            color: white;
+        }
+
+        /* Final CTA Section */
+        .final-cta-section {
+            padding: 5rem 0;
+            background: var(--gradient-memory);
+            text-align: center;
+            color: white;
+        }
+
+        .final-cta-title {
+            font-size: 3rem;
+            font-weight: 800;
+            margin-bottom: 1rem;
+        }
+
+        .final-cta-subtitle {
+            font-size: 1.3rem;
+            margin-bottom: 2rem;
+            opacity: 0.9;
+        }
+
+        .final-cta-button {
+            display: inline-block;
+            padding: 1.5rem 4rem;
+            background: white;
+            color: var(--memory-purple);
+            border-radius: 50px;
+            font-size: 1.2rem;
+            font-weight: 700;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .final-cta-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .trust-elements {
+            display: flex;
+            justify-content: center;
+            gap: 3rem;
+            margin-top: 2rem;
+            opacity: 0.9;
+        }
+
+        .trust-element {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        /* Footer */
+        footer {
+            padding: 3rem 0;
+            background: var(--background-dark);
+            color: white;
+        }
+
+        .footer-content {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .footer-column h4 {
+            margin-bottom: 1rem;
+            color: var(--primary-cyan);
+        }
+
+        .footer-column a {
+            display: block;
+            color: rgba(255, 255, 255, 0.7);
+            text-decoration: none;
+            padding: 0.25rem 0;
+            transition: color 0.3s ease;
+        }
+
+        .footer-column a:hover {
+            color: white;
+        }
+
+        .footer-bottom {
+            text-align: center;
+            padding-top: 2rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .hero-title {
+                font-size: 2.5rem;
+            }
+
+            .audience-hooks {
+                grid-template-columns: 1fr;
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .problems-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .feature-card {
+                grid-template-columns: 1fr;
+            }
+
+            .feature-card:nth-child(even) {
+                direction: ltr;
+            }
+
+            .use-cases-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .pricing-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .footer-content {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav>
+        <div class="container">
+            <div class="nav-container">
+                <a href="/" class="logo">
+                    <div class="logo-icon">
+                        <i class="fas fa-code"></i>
+                    </div>
+                    Coder1
+                </a>
+                <div class="nav-links">
+                    <a href="#features" class="nav-link">Features</a>
+                    <a href="#pricing" class="nav-link">Pricing</a>
+                    <a href="/docs" class="nav-link">Docs</a>
+                    <a href="/blog" class="nav-link">Blog</a>
+                    <a href="/ide" class="nav-cta">Start for Free</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="container">
+            <div class="hero-content">
+                <div class="hero-badge">
+                    <i class="fas fa-brain"></i>
+                    <span>Revolutionary Memory Technology</span>
+                </div>
+                
+                <h1 class="hero-title">The Only IDE That Never Forgets</h1>
+                <p class="hero-subtitle">Your context, decisions, and preferences - remembered forever</p>
+                
+                <div class="audience-hooks">
+                    <div class="hook-card">
+                        <div class="hook-audience">Vibe Coders</div>
+                        <div class="hook-message">AI that actually understands your project</div>
+                    </div>
+                    <div class="hook-card">
+                        <div class="hook-audience">Entrepreneurs</div>
+                        <div class="hook-message">No technical co-founder needed</div>
+                    </div>
+                    <div class="hook-card">
+                        <div class="hook-audience">Developers</div>
+                        <div class="hook-message">10x productivity with perfect memory</div>
+                    </div>
+                </div>
+                
+                <div class="hero-demo" id="memory-demo">
+                    <div class="memory-demo-header">
+                        <h3>Watch Claude Remember Everything</h3>
+                        <p>See the dramatic difference memory persistence makes in your development workflow</p>
+                    </div>
+                    
+                    <div class="demo-container">
+                        <div class="demo-split">
+                            <!-- Without Memory Side -->
+                            <div class="demo-side without-memory">
+                                <div class="demo-side-header">
+                                    <i class="fas fa-times-circle"></i>
+                                    <h4>Without Memory</h4>
+                                </div>
+                                <div class="chat-messages" id="without-messages"></div>
+                            </div>
+                            
+                            <!-- With Memory Side -->
+                            <div class="demo-side with-memory">
+                                <div class="demo-side-header">
+                                    <i class="fas fa-check-circle"></i>
+                                    <h4>With Memory</h4>
+                                </div>
+                                <div class="chat-messages" id="with-messages"></div>
+                            </div>
+                        </div>
+                        
+                        <!-- Control Button -->
+                        <div class="demo-controls">
+                            <button class="demo-button" id="demo-control">
+                                <i class="fas fa-play"></i>
+                                Start Demo
+                            </button>
+                        </div>
+                        
+                        <!-- Progress Bar -->
+                        <div class="demo-progress" id="demo-progress">
+                            <div class="progress-bar"></div>
+                        </div>
+                        
+                        <!-- Metrics Overlay -->
+                        <div class="metrics-overlay" id="metrics-overlay" style="display: none;">
+                            <h3>The Impact of Memory Persistence</h3>
+                            <div class="metrics-grid">
+                                <div class="metric">
+                                    <div class="metric-value">2.3 hrs</div>
+                                    <div class="metric-label">Saved per week</div>
+                                </div>
+                                <div class="metric">
+                                    <div class="metric-value">100%</div>
+                                    <div class="metric-label">Context retention</div>
+                                </div>
+                                <div class="metric">
+                                    <div class="metric-value">Zero</div>
+                                    <div class="metric-label">Re-explanations</div>
+                                </div>
+                            </div>
+                            <button class="demo-button replay" id="replay-button">
+                                <i class="fas fa-redo"></i>
+                                Watch Again
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="hero-cta-container">
+                    <a href="/ide" class="hero-cta">Start for Free - No Credit Card Required</a>
+                    <p class="hero-cta-subtext">Free forever. Upgrade when you need more power.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Trust Indicators -->
+    <section class="trust-section">
+        <div class="container">
+            <div class="trust-content">
+                <p class="trust-headline">Join 10,000+ developers building with cognitive superpowers</p>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-value">50K+</div>
+                        <div class="stat-label">Projects Created</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">2M+</div>
+                        <div class="stat-label">Lines Generated</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">100K+</div>
+                        <div class="stat-label">Hours Saved</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">24/7</div>
+                        <div class="stat-label">Active Sessions</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Problem Section -->
+    <section class="problem-section">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">Every Developer Knows This Pain</h2>
+                <p class="section-subtitle">The daily frustrations that slow you down</p>
+            </div>
+            
+            <div class="problems-grid">
+                <div class="problem-card">
+                    <div class="problem-icon">😫</div>
+                    <h3 class="problem-title">Starting Fresh Hell</h3>
+                    <p class="problem-description">Explaining your project for the 100th time to yet another AI that forgot everything</p>
+                </div>
+                <div class="problem-card">
+                    <div class="problem-icon">🧠</div>
+                    <h3 class="problem-title">Context Amnesia</h3>
+                    <p class="problem-description">AI that forgets everything after each session, making you repeat yourself endlessly</p>
+                </div>
+                <div class="problem-card">
+                    <div class="problem-icon">🔧</div>
+                    <h3 class="problem-title">Tool Fragmentation</h3>
+                    <p class="problem-description">20 different tools that don't talk to each other, creating chaos instead of code</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="features-section" id="features">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">14 Revolutionary Features That Change Everything</h2>
+                <p class="section-subtitle">Each solving a real problem you face every day</p>
+            </div>
+            
+            <div class="features-grid">
+                <!-- Feature 1: Contextual Memory -->
+                <div class="feature-card">
+                    <div class="feature-content">
+                        <div class="feature-number">1</div>
+                        <h3 class="feature-name">
+                            <i class="fas fa-brain feature-icon"></i>
+                            CONTEXTUAL MEMORY
+                        </h3>
+                        <div class="feature-problem">
+                            <div class="feature-problem-label">Problem</div>
+                            <div class="feature-problem-text">Lose everything when you close your IDE</div>
+                        </div>
+                        <div class="feature-solution">
+                            <div class="feature-solution-label">Solution</div>
+                            <div class="feature-solution-text">Every decision, pattern, and preference saved forever</div>
+                        </div>
+                    </div>
+                    <div class="feature-demo">
+                        <p>[Demo: Memory persisting across sessions]</p>
+                    </div>
+                </div>
+
+                <!-- Feature 2: Voice-to-Text -->
+                <div class="feature-card">
+                    <div class="feature-content">
+                        <div class="feature-number">2</div>
+                        <h3 class="feature-name">
+                            <i class="fas fa-microphone feature-icon"></i>
+                            VOICE-TO-TEXT
+                        </h3>
+                        <div class="feature-problem">
+                            <div class="feature-problem-label">Problem</div>
+                            <div class="feature-problem-text">Typing slows down your thinking</div>
+                        </div>
+                        <div class="feature-solution">
+                            <div class="feature-solution-label">Solution</div>
+                            <div class="feature-solution-text">Describe it. Watch it appear. Ship it.</div>
+                        </div>
+                    </div>
+                    <div class="feature-demo">
+                        <p>[Demo: Voice describing code that appears]</p>
+                    </div>
+                </div>
+
+                <!-- Feature 3: Supervision -->
+                <div class="feature-card">
+                    <div class="feature-content">
+                        <div class="feature-number">3</div>
+                        <h3 class="feature-name">
+                            <i class="fas fa-eye feature-icon"></i>
+                            SUPERVISION
+                        </h3>
+                        <div class="feature-problem">
+                            <div class="feature-problem-label">Problem</div>
+                            <div class="feature-problem-text">Errors you catch 20 minutes later</div>
+                        </div>
+                        <div class="feature-solution">
+                            <div class="feature-solution-label">Solution</div>
+                            <div class="feature-solution-text">AI watching and fixing as you type</div>
+                        </div>
+                    </div>
+                    <div class="feature-demo">
+                        <p>[Demo: Real-time error prevention]</p>
+                    </div>
+                </div>
+
+                <!-- Feature 4: AI Team -->
+                <div class="feature-card">
+                    <div class="feature-content">
+                        <div class="feature-number">4</div>
+                        <h3 class="feature-name">
+                            <i class="fas fa-users feature-icon"></i>
+                            AI TEAM
+                        </h3>
+                        <div class="feature-problem">
+                            <div class="feature-problem-label">Problem</div>
+                            <div class="feature-problem-text">You're coding alone at 2 AM</div>
+                        </div>
+                        <div class="feature-solution">
+                            <div class="feature-solution-label">Solution</div>
+                            <div class="feature-solution-text">14 specialized agents working 24/7</div>
+                        </div>
+                    </div>
+                    <div class="feature-demo">
+                        <p>[Demo: Multiple agents collaborating]</p>
+                    </div>
+                </div>
+
+                <!-- Feature 5: Templates & Hooks -->
+                <div class="feature-card">
+                    <div class="feature-content">
+                        <div class="feature-number">5</div>
+                        <h3 class="feature-name">
+                            <i class="fas fa-rocket feature-icon"></i>
+                            TEMPLATES & HOOKS
+                        </h3>
+                        <div class="feature-problem">
+                            <div class="feature-problem-label">Problem</div>
+                            <div class="feature-problem-text">Repeating the same patterns endlessly</div>
+                        </div>
+                        <div class="feature-solution">
+                            <div class="feature-solution-label">Solution</div>
+                            <div class="feature-solution-text">Intelligent automation that learns your style</div>
+                        </div>
+                    </div>
+                    <div class="feature-demo">
+                        <p>[Demo: Template system in action]</p>
+                    </div>
+                </div>
+
+                <!-- Feature 6: Codebase Wiki -->
+                <div class="feature-card">
+                    <div class="feature-content">
+                        <div class="feature-number">6</div>
+                        <h3 class="feature-name">
+                            <i class="fas fa-book feature-icon"></i>
+                            CODEBASE WIKI
+                        </h3>
+                        <div class="feature-problem">
+                            <div class="feature-problem-label">Problem</div>
+                            <div class="feature-problem-text">What does this code even do?</div>
+                        </div>
+                        <div class="feature-solution">
+                            <div class="feature-solution-label">Solution</div>
+                            <div class="feature-solution-text">Living documentation that writes itself</div>
+                        </div>
+                    </div>
+                    <div class="feature-demo">
+                        <p>[Demo: Auto-generated documentation]</p>
+                    </div>
+                </div>
+
+                <!-- Feature 7: /Commands -->
+                <div class="feature-card">
+                    <div class="feature-content">
+                        <div class="feature-number">7</div>
+                        <h3 class="feature-name">
+                            <i class="fas fa-terminal feature-icon"></i>
+                            /COMMANDS
+                        </h3>
+                        <div class="feature-problem">
+                            <div class="feature-problem-label">Problem</div>
+                            <div class="feature-problem-text">Clicking through menus like it's 1995</div>
+                        </div>
+                        <div class="feature-solution">
+                            <div class="feature-solution-label">Solution</div>
+                            <div class="feature-solution-text">Everything at slash-command speed</div>
+                        </div>
+                    </div>
+                    <div class="feature-demo">
+                        <p>[Demo: Command palette in action]</p>
+                    </div>
+                </div>
+
+                <!-- Feature 8: Component Studio -->
+                <div class="feature-card">
+                    <div class="feature-content">
+                        <div class="feature-number">8</div>
+                        <h3 class="feature-name">
+                            <i class="fas fa-puzzle-piece feature-icon"></i>
+                            COMPONENT STUDIO
+                        </h3>
+                        <div class="feature-problem">
+                            <div class="feature-problem-label">Problem</div>
+                            <div class="feature-problem-text">Code-first when you think visually</div>
+                        </div>
+                        <div class="feature-solution">
+                            <div class="feature-solution-label">Solution</div>
+                            <div class="feature-solution-text">Build visually, export production code</div>
+                        </div>
+                    </div>
+                    <div class="feature-demo">
+                        <p>[Demo: Visual component builder]</p>
+                    </div>
+                </div>
+
+                <!-- Feature 9: Sandbox -->
+                <div class="feature-card">
+                    <div class="feature-content">
+                        <div class="feature-number">9</div>
+                        <h3 class="feature-name">
+                            <i class="fas fa-flask feature-icon"></i>
+                            SANDBOX
+                        </h3>
+                        <div class="feature-problem">
+                            <div class="feature-problem-label">Problem</div>
+                            <div class="feature-problem-text">Scared to experiment and break things</div>
+                        </div>
+                        <div class="feature-solution">
+                            <div class="feature-solution-label">Solution</div>
+                            <div class="feature-solution-text">Unlimited isolated playgrounds</div>
+                        </div>
+                    </div>
+                    <div class="feature-demo">
+                        <p>[Demo: Sandbox environments]</p>
+                    </div>
+                </div>
+
+                <!-- Feature 10: Dashboard -->
+                <div class="feature-card">
+                    <div class="feature-content">
+                        <div class="feature-number">10</div>
+                        <h3 class="feature-name">
+                            <i class="fas fa-chart-line feature-icon"></i>
+                            DASHBOARD
+                        </h3>
+                        <div class="feature-problem">
+                            <div class="feature-problem-label">Problem</div>
+                            <div class="feature-problem-text">No idea what your AI team is doing</div>
+                        </div>
+                        <div class="feature-solution">
+                            <div class="feature-solution-label">Solution</div>
+                            <div class="feature-solution-text">Mission control for your entire project</div>
+                        </div>
+                    </div>
+                    <div class="feature-demo">
+                        <p>[Demo: Project dashboard]</p>
+                    </div>
+                </div>
+
+                <!-- Feature 11: Checkpoints -->
+                <div class="feature-card">
+                    <div class="feature-content">
+                        <div class="feature-number">11</div>
+                        <h3 class="feature-name">
+                            <i class="fas fa-save feature-icon"></i>
+                            CHECKPOINTS
+                        </h3>
+                        <div class="feature-problem">
+                            <div class="feature-problem-label">Problem</div>
+                            <div class="feature-problem-text">Can't go back to when it worked</div>
+                        </div>
+                        <div class="feature-solution">
+                            <div class="feature-solution-label">Solution</div>
+                            <div class="feature-solution-text">Save states like a video game</div>
+                        </div>
+                    </div>
+                    <div class="feature-demo">
+                        <p>[Demo: Checkpoint system]</p>
+                    </div>
+                </div>
+
+                <!-- Feature 12: Session Summary -->
+                <div class="feature-card">
+                    <div class="feature-content">
+                        <div class="feature-number">12</div>
+                        <h3 class="feature-name">
+                            <i class="fas fa-clipboard-list feature-icon"></i>
+                            SESSION SUMMARY
+                        </h3>
+                        <div class="feature-problem">
+                            <div class="feature-problem-label">Problem</div>
+                            <div class="feature-problem-text">Where did I leave off?</div>
+                        </div>
+                        <div class="feature-solution">
+                            <div class="feature-solution-label">Solution</div>
+                            <div class="feature-solution-text">AI-written development journals</div>
+                        </div>
+                    </div>
+                    <div class="feature-demo">
+                        <p>[Demo: Session summary generation]</p>
+                    </div>
+                </div>
+
+                <!-- Feature 13: Documents -->
+                <div class="feature-card">
+                    <div class="feature-content">
+                        <div class="feature-number">13</div>
+                        <h3 class="feature-name">
+                            <i class="fas fa-file-alt feature-icon"></i>
+                            DOCUMENTS
+                        </h3>
+                        <div class="feature-problem">
+                            <div class="feature-problem-label">Problem</div>
+                            <div class="feature-problem-text">Documentation in 50 browser tabs</div>
+                        </div>
+                        <div class="feature-solution">
+                            <div class="feature-solution-label">Solution</div>
+                            <div class="feature-solution-text">Everything accessible to you and AI</div>
+                        </div>
+                    </div>
+                    <div class="feature-demo">
+                        <p>[Demo: Integrated documentation]</p>
+                    </div>
+                </div>
+
+                <!-- Feature 14: One-Click MCP -->
+                <div class="feature-card">
+                    <div class="feature-content">
+                        <div class="feature-number">14</div>
+                        <h3 class="feature-name">
+                            <i class="fas fa-plug feature-icon"></i>
+                            ONE-CLICK MCP
+                        </h3>
+                        <div class="feature-problem">
+                            <div class="feature-problem-label">Problem</div>
+                            <div class="feature-problem-text">Days configuring AI connections</div>
+                        </div>
+                        <div class="feature-solution">
+                            <div class="feature-solution-label">Solution</div>
+                            <div class="feature-solution-text">Any AI service, instantly connected</div>
+                        </div>
+                    </div>
+                    <div class="feature-demo">
+                        <p>[Demo: MCP instant connection]</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Comparison Section -->
+    <section class="comparison-section">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">Why Developers Are Switching</h2>
+                <p class="section-subtitle">See how Coder1 compares to other AI coding tools</p>
+            </div>
+            
+            <div class="comparison-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Feature</th>
+                            <th class="coder1-column">Coder1</th>
+                            <th>Cursor</th>
+                            <th>GitHub Copilot</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Contextual Memory</td>
+                            <td class="coder1-column"><span class="infinity">∞</span></td>
+                            <td><span class="cross">✗</span></td>
+                            <td><span class="cross">✗</span></td>
+                        </tr>
+                        <tr>
+                            <td>Voice Coding</td>
+                            <td class="coder1-column"><span class="check">✓</span></td>
+                            <td><span class="cross">✗</span></td>
+                            <td><span class="cross">✗</span></td>
+                        </tr>
+                        <tr>
+                            <td>AI Team Size</td>
+                            <td class="coder1-column">14 Agents</td>
+                            <td>1 Agent</td>
+                            <td>1 Agent</td>
+                        </tr>
+                        <tr>
+                            <td>Real-time Supervision</td>
+                            <td class="coder1-column"><span class="check">✓</span></td>
+                            <td><span class="cross">✗</span></td>
+                            <td><span class="cross">✗</span></td>
+                        </tr>
+                        <tr>
+                            <td>Free Forever Plan</td>
+                            <td class="coder1-column"><span class="check">✓</span></td>
+                            <td><span class="cross">✗</span></td>
+                            <td><span class="cross">✗</span></td>
+                        </tr>
+                        <tr>
+                            <td>Component Studio</td>
+                            <td class="coder1-column"><span class="check">✓</span></td>
+                            <td><span class="cross">✗</span></td>
+                            <td><span class="cross">✗</span></td>
+                        </tr>
+                        <tr>
+                            <td>Session Summaries</td>
+                            <td class="coder1-column"><span class="check">✓</span></td>
+                            <td><span class="cross">✗</span></td>
+                            <td><span class="cross">✗</span></td>
+                        </tr>
+                        <tr>
+                            <td>Integrated Documentation</td>
+                            <td class="coder1-column"><span class="check">✓</span></td>
+                            <td><span class="cross">✗</span></td>
+                            <td><span class="cross">✗</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <!-- Use Cases Section -->
+    <section class="use-cases-section">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">See Coder1 in Action</h2>
+                <p class="section-subtitle">Real developers, real results</p>
+            </div>
+            
+            <div class="use-cases-grid">
+                <div class="use-case-card">
+                    <div class="use-case-icon">
+                        <i class="fas fa-lightbulb"></i>
+                    </div>
+                    <h3 class="use-case-title">Entrepreneur</h3>
+                    <p class="use-case-description">Idea to MVP in 48 hours</p>
+                    <div class="use-case-demo">
+                        [Video: Building a SaaS in 48 hours]
+                    </div>
+                </div>
+                
+                <div class="use-case-card">
+                    <div class="use-case-icon">
+                        <i class="fas fa-code-branch"></i>
+                    </div>
+                    <h3 class="use-case-title">Developer</h3>
+                    <p class="use-case-description">Refactoring with perfect context</p>
+                    <div class="use-case-demo">
+                        [Video: Complex refactoring made simple]
+                    </div>
+                </div>
+                
+                <div class="use-case-card">
+                    <div class="use-case-icon">
+                        <i class="fas fa-magic"></i>
+                    </div>
+                    <h3 class="use-case-title">Vibe Coder</h3>
+                    <p class="use-case-description">Building by describing</p>
+                    <div class="use-case-demo">
+                        [Video: Voice to production app]
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pricing Section -->
+    <section class="pricing-section" id="pricing">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">Start Free. Scale When Ready.</h2>
+                <p class="section-subtitle">No credit card required. Free forever plan available.</p>
+            </div>
+            
+            <div class="pricing-grid">
+                <div class="pricing-card">
+                    <h3 class="pricing-tier">FREE FOREVER</h3>
+                    <div class="pricing-price">$0</div>
+                    <div class="pricing-period">Perfect for getting started</div>
+                    <ul class="pricing-features">
+                        <li><i class="fas fa-check"></i> Contextual Memory</li>
+                        <li><i class="fas fa-check"></i> Voice-to-Text</li>
+                        <li><i class="fas fa-check"></i> 5 AI Agents</li>
+                        <li><i class="fas fa-check"></i> Basic Supervision</li>
+                        <li><i class="fas fa-check"></i> 10 Checkpoints</li>
+                        <li><i class="fas fa-check"></i> Community Support</li>
+                    </ul>
+                    <a href="/ide" class="pricing-cta">Start for Free</a>
+                </div>
+                
+                <div class="pricing-card featured">
+                    <div class="pricing-badge">MOST POPULAR</div>
+                    <h3 class="pricing-tier">PRO</h3>
+                    <div class="pricing-price">$29<sup>/mo</sup></div>
+                    <div class="pricing-period">For serious developers</div>
+                    <ul class="pricing-features">
+                        <li><i class="fas fa-check"></i> Everything in Free</li>
+                        <li><i class="fas fa-check"></i> Unlimited Memory</li>
+                        <li><i class="fas fa-check"></i> All 14 AI Agents</li>
+                        <li><i class="fas fa-check"></i> Advanced Supervision</li>
+                        <li><i class="fas fa-check"></i> Unlimited Checkpoints</li>
+                        <li><i class="fas fa-check"></i> Priority Support</li>
+                    </ul>
+                    <a href="/ide" class="pricing-cta">Start Pro Trial</a>
+                </div>
+                
+                <div class="pricing-card">
+                    <h3 class="pricing-tier">ENTERPRISE</h3>
+                    <div class="pricing-price">Custom</div>
+                    <div class="pricing-period">For teams and organizations</div>
+                    <ul class="pricing-features">
+                        <li><i class="fas fa-check"></i> Everything in Pro</li>
+                        <li><i class="fas fa-check"></i> Team Collaboration</li>
+                        <li><i class="fas fa-check"></i> Custom AI Agents</li>
+                        <li><i class="fas fa-check"></i> SSO/SAML</li>
+                        <li><i class="fas fa-check"></i> On-Premise Option</li>
+                        <li><i class="fas fa-check"></i> Dedicated Support</li>
+                    </ul>
+                    <a href="/contact" class="pricing-cta outline">Contact Sales</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Final CTA Section -->
+    <section class="final-cta-section">
+        <div class="container">
+            <h2 class="final-cta-title">Your IDE Should Remember You</h2>
+            <p class="final-cta-subtitle">Stop repeating yourself. Start building faster.</p>
+            
+            <a href="/ide" class="final-cta-button">Start for Free - Keep Your Memory Forever</a>
+            
+            <div class="trust-elements">
+                <div class="trust-element">
+                    <i class="fas fa-check-circle"></i>
+                    <span>No credit card required</span>
+                </div>
+                <div class="trust-element">
+                    <i class="fas fa-infinity"></i>
+                    <span>Free forever plan</span>
+                </div>
+                <div class="trust-element">
+                    <i class="fas fa-clock"></i>
+                    <span>5-minute setup</span>
+                </div>
+                <div class="trust-element">
+                    <i class="fas fa-code"></i>
+                    <span>Works with your code</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-column">
+                    <h4>Product</h4>
+                    <a href="/features">Features</a>
+                    <a href="/pricing">Pricing</a>
+                    <a href="/changelog">Changelog</a>
+                    <a href="/roadmap">Roadmap</a>
+                </div>
+                <div class="footer-column">
+                    <h4>Resources</h4>
+                    <a href="/docs">Documentation</a>
+                    <a href="/blog">Blog</a>
+                    <a href="/tutorials">Tutorials</a>
+                    <a href="/api">API</a>
+                </div>
+                <div class="footer-column">
+                    <h4>Company</h4>
+                    <a href="/about">About</a>
+                    <a href="/careers">Careers</a>
+                    <a href="/contact">Contact</a>
+                    <a href="/press">Press Kit</a>
+                </div>
+                <div class="footer-column">
+                    <h4>Connect</h4>
+                    <a href="https://github.com/coder1">GitHub</a>
+                    <a href="https://discord.gg/coder1">Discord</a>
+                    <a href="https://twitter.com/coder1">Twitter</a>
+                    <a href="https://youtube.com/coder1">YouTube</a>
+                </div>
+            </div>
+            
+            <div class="footer-bottom">
+                <p>&copy; 2025 Coder1. All rights reserved. | 
+                <a href="/privacy" style="color: inherit;">Privacy</a> | 
+                <a href="/terms" style="color: inherit;">Terms</a> | 
+                <a href="/security" style="color: inherit;">Security</a> | 
+                <a href="/status" style="color: inherit;">Status</a></p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Add scroll effect to navigation
+        window.addEventListener('scroll', function() {
+            const nav = document.querySelector('nav');
+            if (window.scrollY > 50) {
+                nav.style.background = 'rgba(255, 255, 255, 0.98)';
+                nav.style.boxShadow = '0 2px 20px rgba(0, 0, 0, 0.1)';
+            } else {
+                nav.style.background = 'rgba(255, 255, 255, 0.95)';
+                nav.style.boxShadow = 'none';
+            }
+        });
+
+        // Smooth scroll for anchor links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            });
+        });
+
+        // Add animation on scroll
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.opacity = '1';
+                    entry.target.style.transform = 'translateY(0)';
+                }
+            });
+        }, observerOptions);
+
+        // Observe all feature cards
+        document.querySelectorAll('.feature-card').forEach(card => {
+            card.style.opacity = '0';
+            card.style.transform = 'translateY(20px)';
+            card.style.transition = 'all 0.6s ease';
+            observer.observe(card);
+        });
+
+        // Memory Persistence Demo
+        const demoScript = [
+            // Without Memory Flow
+            { type: 'user', text: "Let's continue working on the auth bug we discussed", delay: 2000, side: 'without' },
+            { type: 'claude', text: "I'm not familiar with that bug. What project is this regarding?", delay: 4000, side: 'without' },
+            { type: 'user', text: 'My application for lawyer databases', delay: 6000, side: 'without' },
+            { type: 'claude', text: 'You have three projects. Do you know which project the bug we discussed is in?', delay: 8000, side: 'without' },
+            { type: 'user', text: 'The one I was working on three hours ago', delay: 10000, side: 'without' },
+            { type: 'claude', text: 'I apologize, I do not have session memory. Can you give me some hints or keywords that may have been in your project?', delay: 12000, side: 'without' },
+            { type: 'indicator', text: '😤 Frustrating context loss...', delay: 14000, side: 'without' },
+            
+            // With Memory Flow
+            { type: 'user', text: "Let's continue working on the auth bug we discussed", delay: 16000, side: 'with' },
+            { type: 'claude', text: 'I see the JWT timeout issue from 3 hours ago in your LawyerDB project. The token was expiring after 15 minutes instead of 24 hours. Let me apply the fix we identified...', delay: 18000, side: 'with' },
+            { type: 'code', text: '// Fixing /lawyerdb/api/auth/route.ts\n// Line 47: Changed from 900000 to 86400000\nconst TOKEN_EXPIRY = 24 * 60 * 60 * 1000;', delay: 21000, side: 'with' },
+            { type: 'indicator', text: '✅ Instantly back to work!', delay: 24000, side: 'with' }
+        ];
+
+        let currentMessages = [];
+        let isPlaying = false;
+        let demoTimeout = null;
+
+        function createMessageElement(message) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `chat-message ${message.type}`;
+            
+            if (message.side === 'with' && message.type === 'indicator') {
+                messageDiv.classList.add('with-memory');
+            }
+            
+            const bubbleDiv = document.createElement('div');
+            bubbleDiv.className = 'chat-bubble';
+            bubbleDiv.textContent = message.text;
+            
+            messageDiv.appendChild(bubbleDiv);
+            return messageDiv;
+        }
+
+        function addMessage(message) {
+            const container = message.side === 'without' ? 
+                document.getElementById('without-messages') : 
+                document.getElementById('with-messages');
+            
+            const messageElement = createMessageElement(message);
+            container.appendChild(messageElement);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function clearMessages() {
+            document.getElementById('without-messages').innerHTML = '';
+            document.getElementById('with-messages').innerHTML = '';
+            currentMessages = [];
+        }
+
+        function showMetrics() {
+            document.getElementById('metrics-overlay').style.display = 'flex';
+        }
+
+        function hideMetrics() {
+            document.getElementById('metrics-overlay').style.display = 'none';
+        }
+
+        function updateProgressBar(progress) {
+            const progressBar = document.querySelector('.progress-bar');
+            progressBar.style.width = progress + '%';
+        }
+
+        function startDemo() {
+            if (isPlaying) return;
+            
+            isPlaying = true;
+            clearMessages();
+            hideMetrics();
+            
+            const demoControl = document.getElementById('demo-control');
+            demoControl.innerHTML = '<i class="fas fa-stop"></i> Stop Demo';
+            
+            // Start progress bar
+            const progressBar = document.querySelector('.progress-bar');
+            progressBar.style.transitionDuration = '35s';
+            updateProgressBar(100);
+            
+            // Schedule messages
+            demoScript.forEach((message, index) => {
+                setTimeout(() => {
+                    addMessage(message);
+                }, message.delay);
+            });
+            
+            // Show metrics after messages
+            setTimeout(showMetrics, 27000);
+            
+            // Reset and loop
+            demoTimeout = setTimeout(() => {
+                resetDemo();
+                startDemo(); // Auto-loop
+            }, 35000);
+        }
+
+        function resetDemo() {
+            if (demoTimeout) {
+                clearTimeout(demoTimeout);
+                demoTimeout = null;
+            }
+            
+            isPlaying = false;
+            clearMessages();
+            hideMetrics();
+            updateProgressBar(0);
+            
+            const progressBar = document.querySelector('.progress-bar');
+            progressBar.style.transitionDuration = '0s';
+            
+            const demoControl = document.getElementById('demo-control');
+            demoControl.innerHTML = '<i class="fas fa-play"></i> Start Demo';
+        }
+
+        // Demo controls
+        document.getElementById('demo-control').addEventListener('click', function() {
+            if (isPlaying) {
+                resetDemo();
+            } else {
+                startDemo();
+            }
+        });
+
+        document.getElementById('replay-button').addEventListener('click', function() {
+            hideMetrics();
+            startDemo();
+        });
+
+        // Auto-play on scroll into view
+        const demoObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting && !isPlaying) {
+                    setTimeout(startDemo, 1000); // Small delay for better UX
+                }
+            });
+        }, { threshold: 0.3 });
+
+        const memoryDemo = document.getElementById('memory-demo');
+        if (memoryDemo) {
+            demoObserver.observe(memoryDemo);
+        }
+    </script>
+</body>
+</html>

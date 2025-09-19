@@ -1,0 +1,647 @@
+/* PRD Genius - Conversational Wizard Styles */
+
+.prd-genius-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: fadeIn 0.3s ease-in-out;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.prd-wizard {
+    background: white;
+    border-radius: 24px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    max-width: 800px;
+    width: 90%;
+    max-height: 90vh;
+    overflow-y: auto;
+    animation: slideUp 0.4s ease-out;
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(50px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.prd-wizard-header {
+    padding: 32px;
+    border-bottom: 1px solid #f0f0f0;
+    position: relative;
+}
+
+.prd-wizard-title {
+    font-size: 28px;
+    font-weight: 700;
+    color: #1a202c;
+    margin: 0 0 8px 0;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.prd-wizard-title .logo {
+    width: 40px;
+    height: 40px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    color: white;
+    font-size: 18px;
+}
+
+.prd-wizard-subtitle {
+    color: #718096;
+    font-size: 16px;
+    margin: 0;
+}
+
+.prd-close-btn {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background: none;
+    border: none;
+    font-size: 28px;
+    color: #a0aec0;
+    cursor: pointer;
+    transition: color 0.2s;
+    padding: 8px;
+    line-height: 1;
+}
+
+.prd-close-btn:hover {
+    color: #4a5568;
+}
+
+.prd-wizard-progress {
+    padding: 0 32px 24px;
+}
+
+.prd-progress-bar {
+    height: 6px;
+    background: #e2e8f0;
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.prd-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+    border-radius: 3px;
+    transition: width 0.4s ease-out;
+}
+
+.prd-progress-label {
+    margin-top: 12px;
+    font-size: 14px;
+    color: #718096;
+    display: flex;
+    justify-content: space-between;
+}
+
+.prd-wizard-content {
+    padding: 32px;
+}
+
+.prd-question {
+    margin-bottom: 32px;
+}
+
+.prd-question h3 {
+    font-size: 24px;
+    font-weight: 600;
+    color: #2d3748;
+    margin: 0 0 24px 0;
+    line-height: 1.4;
+}
+
+.prd-choices-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.prd-choice-card {
+    background: #f7fafc;
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 20px;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+}
+
+.prd-choice-card:hover {
+    background: #edf2f7;
+    border-color: #cbd5e0;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.prd-choice-card.selected {
+    background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%);
+    border-color: #667eea;
+}
+
+.prd-choice-card.selected::after {
+    content: '✓';
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 24px;
+    height: 24px;
+    background: #667eea;
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: bold;
+}
+
+.prd-choice-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: #2d3748;
+    margin: 0 0 8px 0;
+}
+
+.prd-choice-description {
+    font-size: 14px;
+    color: #718096;
+    margin: 0;
+    line-height: 1.5;
+}
+
+.prd-text-input {
+    width: 100%;
+    padding: 16px;
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    font-size: 16px;
+    font-family: inherit;
+    transition: border-color 0.2s;
+    resize: vertical;
+    min-height: 120px;
+}
+
+.prd-text-input:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.prd-wizard-actions {
+    padding: 24px 32px;
+    border-top: 1px solid #f0f0f0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.prd-btn {
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: none;
+    font-family: inherit;
+}
+
+.prd-btn-secondary {
+    background: #f7fafc;
+    color: #4a5568;
+}
+
+.prd-btn-secondary:hover:not(:disabled) {
+    background: #e2e8f0;
+}
+
+.prd-btn-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.prd-btn-primary:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.prd-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* PRD Result Display */
+.prd-result-container {
+    padding: 32px;
+}
+
+.prd-result-header {
+    margin-bottom: 32px;
+    text-align: center;
+}
+
+.prd-result-header h2 {
+    font-size: 32px;
+    font-weight: 700;
+    color: #2d3748;
+    margin: 0 0 12px 0;
+}
+
+.prd-result-header p {
+    font-size: 18px;
+    color: #718096;
+    margin: 0;
+}
+
+.prd-output-tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 24px;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.prd-tab {
+    padding: 12px 20px;
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: #718096;
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.prd-tab.active {
+    color: #667eea;
+    border-bottom-color: #667eea;
+}
+
+.prd-tab:hover {
+    color: #4a5568;
+}
+
+.prd-output-content {
+    background: #f7fafc;
+    border-radius: 12px;
+    padding: 24px;
+    max-height: 400px;
+    overflow-y: auto;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    font-size: 14px;
+    line-height: 1.6;
+    color: #2d3748; /* Dark text color */
+}
+
+.prd-output-content pre {
+    font-family: 'Monaco', 'Menlo', monospace;
+    white-space: pre-wrap;
+    color: #2d3748; /* Dark text for code blocks */
+    background: #ffffff;
+    padding: 16px;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+}
+
+.prd-output-content h1 {
+    color: #1a202c;
+    font-size: 24px;
+    font-weight: 700;
+    margin: 20px 0 16px 0;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #e2e8f0;
+}
+
+.prd-output-content h2 {
+    color: #2d3748;
+    font-size: 20px;
+    font-weight: 600;
+    margin: 16px 0 12px 0;
+}
+
+.prd-output-content h3 {
+    color: #4a5568;
+    font-size: 16px;
+    font-weight: 600;
+    margin: 12px 0 8px 0;
+}
+
+.prd-output-content p {
+    color: #4a5568;
+    margin: 8px 0;
+    line-height: 1.6;
+}
+
+.prd-output-content ul {
+    margin: 12px 0;
+    padding-left: 24px;
+}
+
+.prd-output-content li {
+    color: #4a5568;
+    margin: 6px 0;
+    line-height: 1.6;
+}
+
+.prd-output-content strong {
+    color: #2d3748;
+    font-weight: 600;
+}
+
+.prd-output-actions {
+    margin-top: 24px;
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.prd-btn-export {
+    background: #48bb78;
+    color: white;
+}
+
+.prd-btn-export:hover {
+    background: #38a169;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(72, 187, 120, 0.3);
+}
+
+.prd-btn-github {
+    background: #2d3748;
+    color: white;
+}
+
+.prd-btn-github:hover {
+    background: #1a202c;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(45, 55, 72, 0.3);
+}
+
+/* Loading States */
+.prd-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 48px;
+}
+
+.prd-spinner {
+    width: 48px;
+    height: 48px;
+    border: 4px solid #e2e8f0;
+    border-top-color: #667eea;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.prd-loading-text {
+    margin-left: 20px;
+    font-size: 16px;
+    color: #718096;
+}
+
+/* Feature Unlock Badges */
+.prd-feature-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    background: linear-gradient(135deg, #f6d365 0%, #fda085 100%);
+    border-radius: 20px;
+    color: white;
+    font-size: 12px;
+    font-weight: 600;
+    margin-left: 8px;
+}
+
+.prd-feature-badge svg {
+    width: 14px;
+    height: 14px;
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+    .prd-wizard {
+        width: 100%;
+        max-height: 100vh;
+        border-radius: 0;
+    }
+    
+    .prd-choices-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .prd-wizard-header,
+    .prd-wizard-content,
+    .prd-wizard-actions {
+        padding: 20px;
+    }
+    
+    .prd-wizard-title {
+        font-size: 24px;
+    }
+    
+    .prd-question h3 {
+        font-size: 20px;
+    }
+}
+
+/* Choice Screen Styles */
+.prd-choice-container {
+    padding: 32px;
+}
+
+.prd-choice-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 24px;
+    margin-bottom: 24px;
+}
+
+.prd-depth-card {
+    background: white;
+    border: 2px solid #e2e8f0;
+    border-radius: 16px;
+    padding: 28px;
+    position: relative;
+    transition: all 0.3s;
+}
+
+.prd-depth-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 40px rgba(0,0,0,0.12);
+    border-color: #cbd5e0;
+}
+
+.prd-depth-card.basic-card {
+    background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
+}
+
+.prd-depth-card.comprehensive-card {
+    background: linear-gradient(135deg, #fef5e7 0%, #fdebd0 100%);
+    border-color: #f6d365;
+}
+
+.prd-depth-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+    display: block;
+}
+
+.prd-depth-card h3 {
+    font-size: 24px;
+    font-weight: 700;
+    color: #2d3748;
+    margin: 0 0 8px 0;
+}
+
+.prd-depth-subtitle {
+    color: #718096;
+    font-size: 14px;
+    margin: 0 0 20px 0;
+}
+
+.prd-depth-features {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 20px 0;
+}
+
+.prd-depth-features li {
+    padding: 8px 0;
+    color: #4a5568;
+    font-size: 14px;
+    line-height: 1.5;
+    position: relative;
+    padding-left: 24px;
+}
+
+.prd-depth-features li::before {
+    content: '✓';
+    position: absolute;
+    left: 0;
+    color: #48bb78;
+    font-weight: bold;
+}
+
+.prd-depth-time {
+    display: inline-block;
+    padding: 6px 12px;
+    background: #edf2f7;
+    border-radius: 20px;
+    font-size: 13px;
+    color: #4a5568;
+    margin-bottom: 16px;
+}
+
+.prd-choice-tip {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 16px 20px;
+    background: linear-gradient(135deg, #f0f4f8 0%, #d9e2ec 100%);
+    border-radius: 12px;
+    color: #4a5568;
+    font-size: 14px;
+}
+
+.tip-icon {
+    font-size: 20px;
+}
+
+/* Rainbow button for comprehensive option */
+.rainbow-btn {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+    background-size: 200% 200%;
+    animation: gradientShift 3s ease infinite;
+}
+
+@keyframes gradientShift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+.rainbow-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(102, 126, 234, 0.4);
+}
+
+/* Integration with Orchestrator */
+.prd-genius-toggle {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    padding: 16px 24px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 4px 20px rgba(102, 126, 234, 0.4);
+    transition: all 0.3s;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.prd-genius-toggle:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 30px rgba(102, 126, 234, 0.5);
+}
+
+.prd-genius-toggle svg {
+    width: 20px;
+    height: 20px;
+}
+
+/* Animations for phase transitions */
+.prd-phase-transition {
+    animation: phaseChange 0.5s ease-out;
+}
+
+@keyframes phaseChange {
+    0% {
+        opacity: 0;
+        transform: translateX(20px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
