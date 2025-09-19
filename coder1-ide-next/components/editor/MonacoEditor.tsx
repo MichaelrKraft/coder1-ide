@@ -2,7 +2,7 @@
 
 import React, { useRef, useEffect } from 'react';
 import Editor, { OnMount } from '@monaco-editor/react';
-import { editor } from 'monaco-editor';
+import type * as monaco from 'monaco-editor';
 
 interface MonacoEditorProps {
   file: string | null;
@@ -17,7 +17,7 @@ export default function MonacoEditor({
   fontSize = 14,
   onChange 
 }: MonacoEditorProps) {
-  const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
+  const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
 
   // Update font size when prop changes
   useEffect(() => {
