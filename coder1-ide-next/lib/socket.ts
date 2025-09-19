@@ -1,5 +1,29 @@
 import { io, Socket } from 'socket.io-client';
 
+// Check if Socket.IO is available (either from bundle or CDN)
+const getSocketIO = () => {
+  // First try the bundled version
+  if (typeof io !== 'undefined') {
+    console.log('✅ Using bundled Socket.IO client');
+    return io;
+  }
+  
+  // Fallback to CDN version if available
+  if (typeof window !== 'undefined' && (window as any).socketIOFallback) {
+    console.log('✅ Using Socket.IO CDN fallback');
+    return (window as any).socketIOFallback;
+  }
+  
+  // Last resort - try global io
+  if (typeof window !== 'undefined' && (window as any).io) {
+    console.log('✅ Using global Socket.IO');
+    return (window as any).io;
+  }
+  
+  console.error('❌ Socket.IO not available from any source!');
+  return null;
+};
+
 let socket: Socket | null = null;
 let connectionAttempts = 0;
 
@@ -56,7 +80,13 @@ export const getSocket = async (sessionId?: string, bridgeAuth: boolean = false)
       let newSocket: Socket;
       
       try {
-        newSocket = io(unifiedUrl, {
+        const socketIO = getSocketIO();
+        
+        if (!socketIO) {
+          throw new Error('Socket.IO library not loaded');
+        }
+        
+        newSocket = socketIO(unifiedUrl, {
           path: '/socket.io/',
           transports: ['polling', 'websocket'], // Start with polling for Render compatibility
           reconnection: true,
@@ -73,14 +103,16 @@ export const getSocket = async (sessionId?: string, bridgeAuth: boolean = false)
         }
       } catch (ioError) {
         console.error('❌ Socket.IO initialization failed:', ioError);
-        // DON'T fallback to mock in production - throw error instead
+        
+        // In production, log the error but still provide a mock socket to prevent crashes
         if (typeof window !== 'undefined' && window.location.hostname !== 'localhost') {
-          console.error('🚨 CRITICAL: Socket.IO connection required in production!');
-          console.error('Terminal will not work without Socket.IO connection.');
-          throw new Error('Socket.IO connection required in production');
+          console.error('🚨 WARNING: Socket.IO connection failed in production!');
+          console.error('Terminal functionality will be limited.');
+          console.error('Error details:', ioError);
+          // Don't throw - gracefully fallback to mock
         }
-        // Only use mock socket in development
-        console.warn('⚠️ Using mock socket in development mode');
+        
+        console.warn('⚠️ Using mock socket as fallback');
         newSocket = createMockSocket();
       }
 

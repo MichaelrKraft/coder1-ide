@@ -1,5 +1,95 @@
 [
   {
+    "sessionId": "alpha_session_1758319524737",
+    "filename": "2025-09-19T22-05-24-793Z.json",
+    "startTime": "2025-09-19T22:05:24.793Z",
+    "endTime": "2025-09-19T22:05:43.691Z",
+    "platform": "Claude Code",
+    "totalTokens": 0,
+    "interactionCount": 0,
+    "summary": "Claude Code session (0 interactions): "
+  },
+  {
+    "sessionId": "alpha_session_1758319524737",
+    "filename": "2025-09-19T22-05-24-793Z.json",
+    "startTime": "2025-09-19T22:05:24.793Z",
+    "endTime": "2025-09-19T22:05:43.691Z",
+    "platform": "Claude Code",
+    "totalTokens": 0,
+    "interactionCount": 0,
+    "summary": "Claude Code session (0 interactions): "
+  },
+  {
+    "sessionId": "alpha_session_1758319524737",
+    "filename": "2025-09-19T22-05-24-793Z.json",
+    "startTime": "2025-09-19T22:05:24.793Z",
+    "endTime": "2025-09-19T22:05:43.691Z",
+    "platform": "Claude Code",
+    "totalTokens": 0,
+    "interactionCount": 0,
+    "summary": "Claude Code session (0 interactions): "
+  },
+  {
+    "sessionId": "session_1758319506602_u1bcysklkze",
+    "filename": "2025-09-19T22-05-07-481Z.json",
+    "startTime": "2025-09-19T22:05:07.481Z",
+    "endTime": "2025-09-19T22:05:24.625Z",
+    "platform": "Claude Code",
+    "totalTokens": 0,
+    "interactionCount": 0,
+    "summary": "Claude Code session (0 interactions): "
+  },
+  {
+    "sessionId": "session_1758319506602_u1bcysklkze",
+    "filename": "2025-09-19T22-05-07-481Z.json",
+    "startTime": "2025-09-19T22:05:07.481Z",
+    "endTime": "2025-09-19T22:05:24.625Z",
+    "platform": "Claude Code",
+    "totalTokens": 0,
+    "interactionCount": 0,
+    "summary": "Claude Code session (0 interactions): "
+  },
+  {
+    "sessionId": "session_1758319506602_u1bcysklkze",
+    "filename": "2025-09-19T22-05-07-481Z.json",
+    "startTime": "2025-09-19T22:05:07.481Z",
+    "endTime": "2025-09-19T22:05:24.625Z",
+    "platform": "Claude Code",
+    "totalTokens": 0,
+    "interactionCount": 0,
+    "summary": "Claude Code session (0 interactions): "
+  },
+  {
+    "sessionId": "alpha_session_1758318296108",
+    "filename": "2025-09-19T21-44-56-208Z.json",
+    "startTime": "2025-09-19T21:44:56.208Z",
+    "endTime": "2025-09-19T22:05:06.139Z",
+    "platform": "Claude Code",
+    "totalTokens": 0,
+    "interactionCount": 0,
+    "summary": "Claude Code session (0 interactions): "
+  },
+  {
+    "sessionId": "alpha_session_1758318296108",
+    "filename": "2025-09-19T21-44-56-208Z.json",
+    "startTime": "2025-09-19T21:44:56.208Z",
+    "endTime": "2025-09-19T22:05:06.139Z",
+    "platform": "Claude Code",
+    "totalTokens": 0,
+    "interactionCount": 0,
+    "summary": "Claude Code session (0 interactions): "
+  },
+  {
+    "sessionId": "alpha_session_1758318296108",
+    "filename": "2025-09-19T21-44-56-208Z.json",
+    "startTime": "2025-09-19T21:44:56.208Z",
+    "endTime": "2025-09-19T22:05:06.139Z",
+    "platform": "Claude Code",
+    "totalTokens": 0,
+    "interactionCount": 0,
+    "summary": "Claude Code session (0 interactions): "
+  },
+  {
     "sessionId": "alpha_session_1758316806545",
     "filename": "2025-09-19T21-20-07-406Z.json",
     "startTime": "2025-09-19T21:20:07.406Z",
