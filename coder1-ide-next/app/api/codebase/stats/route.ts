@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import path from 'path';
 
 // Import the CodebaseWiki service from src/services
-const CodebaseWiki = require('../../../../../src/services/codebase-wiki.js');
+const CodebaseWiki = require('@/services/codebase-wiki.js');
 
 // Singleton instance of CodebaseWiki
 let codebaseWiki: any = null;
