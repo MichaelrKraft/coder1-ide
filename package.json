@@ -4,7 +4,9 @@
   "description": "An autonomous vibe coding agent that transforms natural language into code using AI",
   "main": "coder1-ide-next/server.js",
   "scripts": {
-    "start": "cd coder1-ide-next && npm run start",
+    "postinstall": "cd coder1-ide-next && npm install",
+    "build": "cd coder1-ide-next && npm run build",
+    "start": "cd coder1-ide-next && npm start",
     "dev": "cd coder1-ide-next && npm run dev",
     "start:legacy": "echo 'Legacy Express server archived - use npm run dev instead'",
     "dev:legacy": "echo 'Legacy Express server archived - use npm run dev instead'",

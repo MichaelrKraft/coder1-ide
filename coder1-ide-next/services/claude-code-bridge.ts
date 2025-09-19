@@ -502,8 +502,8 @@ export class ClaudeCodeBridgeService extends EventEmitter {
         '--print',
         '--output-format', 'json',
         '--session-id', agentSessionId,
-        '--dangerously-skip-permissions', // For automation
-        prompt
+        '--dangerously-skip-permissions' // For automation
+        // Note: prompt will be sent via stdin, not as CLI argument
       ], {
         cwd: agent.workTreePath,
         stdio: ['pipe', 'pipe', 'pipe'],
@@ -516,6 +516,10 @@ export class ClaudeCodeBridgeService extends EventEmitter {
           CLAUDE_WORK_TREE: agent.workTreePath
         }
       });
+
+      // Send prompt via stdin (CRITICAL FIX for file creation)
+      claudeProcess.stdin.write(prompt + '\n');
+      claudeProcess.stdin.end();
 
       // Track the process
       this.claudeProcesses.set(agent.id, claudeProcess);
