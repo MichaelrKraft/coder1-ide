@@ -22,6 +22,39 @@ const nextConfig = {
     cssChunking: 'loose',
   },
   webpack: (config, { isServer, dev }) => {
+    // Add path alias resolution first
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      '@': __dirname,
+    };
+    
+    // CRITICAL: Exclude browser-only libraries from SSR to prevent "self is not defined" errors
+    if (isServer) {
+      // Replace browser-only modules with empty stubs during SSR
+      config.resolve.alias = {
+        ...config.resolve.alias,
+        '@xterm/xterm': false,
+        '@xterm/addon-fit': false,
+        'monaco-editor': false,
+        '@monaco-editor/react': false,
+        'three': false,
+        '@react-three/fiber': false,
+        'ogl': false,
+        'd3': false,
+      };
+      
+      // Use webpack NormalModuleReplacementPlugin to handle these modules
+      const webpack = require('webpack');
+      config.plugins.push(
+        new webpack.NormalModuleReplacementPlugin(
+          /^(@xterm\/xterm|@xterm\/addon-fit|monaco-editor|three|ogl|d3)$/,
+          (resource) => {
+            resource.request = false;
+          }
+        )
+      );
+    }
+    
     // Only apply heavy optimizations in production
     if (!dev) {
       // Production webpack stability improvements
@@ -52,12 +85,6 @@ const nextConfig = {
       };
     }
     
-    // Add path alias resolution for standalone mode
-    config.resolve.alias = {
-      ...config.resolve.alias,
-      '@': __dirname,
-    };
-    
     // Monaco Editor fix and client-side externals
     if (!isServer) {
       config.resolve.fallback = {
@@ -85,7 +112,16 @@ const nextConfig = {
         'better-sqlite3',
         'chokidar',
         'fsevents',
-        'node-pty'
+        'node-pty',
+        // Add browser-only libraries to externals as well
+        '@xterm/xterm',
+        '@xterm/addon-fit',
+        'monaco-editor',
+        '@monaco-editor/react',
+        'three',
+        '@react-three/fiber',
+        'ogl',
+        'd3'
       ];
     }
     
