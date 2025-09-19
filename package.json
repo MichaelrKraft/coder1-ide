@@ -5,7 +5,7 @@
   "main": "coder1-ide-next/server.js",
   "scripts": {
     "postinstall": "cd coder1-ide-next && npm install",
-    "build": "cd coder1-ide-next && npm run build",
+    "build": "cd coder1-ide-next && npm ci && npm run build",
     "start": "cd coder1-ide-next && npm start",
     "dev": "cd coder1-ide-next && npm run dev",
     "start:legacy": "echo 'Legacy Express server archived - use npm run dev instead'",
