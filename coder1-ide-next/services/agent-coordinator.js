@@ -66,6 +66,23 @@ class AgentCoordinator extends EventEmitter {
   }
 
   /**
+   * Helper method to list files in a directory
+   * @param {string} dirPath - Directory path
+   * @returns {Promise<Array<string>>} Array of file names
+   */
+  async listDirectoryFiles(dirPath) {
+    try {
+      const entries = await fs.readdir(dirPath, { withFileTypes: true });
+      return entries
+        .filter(entry => entry.isFile())
+        .map(entry => entry.name);
+    } catch (error) {
+      console.log(`📁 Directory ${dirPath} not accessible: ${error.message}`);
+      return [];
+    }
+  }
+
+  /**
    * Initialize agent role definitions with capabilities and personas
    */
   initializeAgentRoles() {
@@ -422,15 +439,24 @@ class AgentCoordinator extends EventEmitter {
     console.log(`🚀 Starting workflow: ${template.name}`);
     console.log(`📋 Requirement: ${requirement}`);
     console.log(`⏱️ Estimated time: ${template.estimatedTime} minutes`);
+    console.log(`🆔 Session ID: ${sessionId}`);
+    console.log(`📁 Work tree root: ${workflowSession.options.workTreeRoot}`);
+    console.log(`📊 Template phases: ${template.phases.length}`);
 
     try {
       // Initialize puppeteer service
       if (!this.puppeteer.isInitialized) {
+        console.log(`🔧 Initializing CLI Puppeteer service...`);
         await this.puppeteer.initialize();
+        console.log(`✅ CLI Puppeteer service initialized`);
+      } else {
+        console.log(`♻️ CLI Puppeteer service already initialized`);
       }
 
       // Create work tree directory
+      console.log(`📁 Creating work tree directory: ${workflowSession.options.workTreeRoot}`);
       await fs.mkdir(workflowSession.options.workTreeRoot, { recursive: true });
+      console.log(`✅ Work tree directory created successfully`);
 
       // Execute phases sequentially
       for (let i = 0; i < template.phases.length; i++) {
@@ -439,12 +465,24 @@ class AgentCoordinator extends EventEmitter {
         workflowSession.currentPhaseIndex = i;
         
         console.log(`📍 Phase ${i + 1}/${template.phases.length}: ${phase.name}`);
+        console.log(`👥 Phase agents: ${phase.agents.join(', ')}`);
+        console.log(`🔄 Phase mode: ${phase.mode}`);
+        console.log(`📝 Phase tasks: ${phase.tasks?.length || 0} tasks`);
         
+        const phaseStartTime = new Date();
         const phaseResult = await this.executePhase(workflowSession, phase);
+        const phaseEndTime = new Date();
+        const phaseDuration = phaseEndTime - phaseStartTime;
+        
+        console.log(`✅ Phase ${phase.name} completed in ${phaseDuration}ms`);
+        console.log(`📊 Phase outputs: ${phaseResult.outputs?.length || 0} results`);
+        console.log(`🤖 Phase agents used: ${phaseResult.agents?.length || 0} agents`);
+        
         workflowSession.progress.phases.push(phaseResult);
         
         // Update overall progress
         workflowSession.progress.overall = ((i + 1) / template.phases.length) * 100;
+        console.log(`📈 Overall progress: ${workflowSession.progress.overall.toFixed(1)}%`);
         
         this.emit('phaseCompleted', {
           sessionId,
@@ -512,8 +550,14 @@ class AgentCoordinator extends EventEmitter {
     };
 
     try {
+      console.log(`🔄 Starting phase: ${phase.name}`);
+      console.log(`📋 Phase requirement context: "${requirement}"`);
+      console.log(`📁 Phase work tree: ${options.workTreeRoot}`);
+      
       // Spawn agents for this phase if not already active
       const activeAgents = [];
+      console.log(`👥 Processing ${phase.agents.length} required agents...`);
+      
       for (const roleId of phase.agents) {
         let agent = workflowSession.agents.get(roleId);
         
@@ -521,27 +565,68 @@ class AgentCoordinator extends EventEmitter {
           const agentId = `${sessionId}-${roleId}`;
           const roleDefinition = this.agentRoleDefinitions.get(roleId);
           
-          console.log(`🤖 Spawning agent: ${roleDefinition.name}`);
+          console.log(`🤖 Spawning NEW agent: ${roleDefinition?.name || roleId} (ID: ${agentId})`);
+          console.log(`📝 Agent role definition found: ${!!roleDefinition}`);
           
+          const agentContext = `${requirement}\n\nPhase: ${phase.name}`;
+          console.log(`📋 Agent context: "${agentContext}"`);
+          
+          const agentSpawnStart = new Date();
           agent = await this.puppeteer.spawnAgent(
             agentId,
             roleId,
-            `${requirement}\n\nPhase: ${phase.name}`,
+            agentContext,
             options.workTreeRoot
           );
+          const agentSpawnTime = new Date() - agentSpawnStart;
+          
+          console.log(`✅ Agent ${agentId} spawned successfully in ${agentSpawnTime}ms`);
+          console.log(`🏠 Agent work tree: ${agent.workTreePath}`);
+          console.log(`📊 Agent status: ${agent.status}`);
           
           workflowSession.agents.set(roleId, agent);
+        } else {
+          console.log(`♻️ Reusing existing agent: ${agent.agentId} (status: ${agent.status})`);
         }
         
         activeAgents.push(agent);
         phaseResult.agents.push(agent.agentId);
       }
+      
+      console.log(`✅ All phase agents ready: ${activeAgents.length} active agents`);
 
       // Execute tasks based on mode
+      console.log(`🔄 Executing ${phase.tasks?.length || 0} tasks in ${phase.mode} mode...`);
+      console.log(`📝 Tasks: ${phase.tasks?.join(', ') || 'No tasks defined'}`);
+      
+      const taskExecutionStart = new Date();
+      
       if (phase.mode === 'parallel') {
+        console.log(`⚡ Running tasks in PARALLEL across ${activeAgents.length} agents`);
         phaseResult.outputs = await this.executeTasksInParallel(activeAgents, phase.tasks, requirement);
       } else {
+        console.log(`🔄 Running tasks SEQUENTIALLY across ${activeAgents.length} agents`);
         phaseResult.outputs = await this.executeTasksSequentially(activeAgents, phase.tasks, requirement);
+      }
+      
+      const taskExecutionTime = new Date() - taskExecutionStart;
+      console.log(`✅ Task execution completed in ${taskExecutionTime}ms`);
+      console.log(`📊 Task results: ${phaseResult.outputs?.length || 0} outputs received`);
+      
+      // Log each task result summary
+      if (phaseResult.outputs?.length > 0) {
+        phaseResult.outputs.forEach((output, index) => {
+          console.log(`📄 Result ${index + 1}: Agent ${output.agent || 'unknown'} - ${output.success ? '✅ SUCCESS' : '❌ FAILED'}`);
+          if (output.success && output.output) {
+            console.log(`   📝 Output length: ${output.output.length} chars`);
+            console.log(`   🗂️ Task: ${output.task || 'unknown'}`);
+          }
+          if (!output.success && output.error) {
+            console.log(`   ❌ Error: ${output.error}`);
+          }
+        });
+      } else {
+        console.log(`⚠️ WARNING: No task outputs received!`);
       }
 
       phaseResult.status = 'completed';
@@ -645,14 +730,39 @@ Role: ${roleDefinition.persona}`;
     const startTime = Date.now();
     
     try {
-      console.log(`📤 ${agent.role} agent: ${taskName}`);
+      console.log(`📤 Sending task to ${agent.role} agent (${agent.agentId}): "${taskName}"`);
+      console.log(`🏠 Agent work directory: ${agent.workTreePath}`);
+      console.log(`📋 Agent status: ${agent.status}`);
+      console.log(`💬 Prompt length: ${prompt.length} chars`);
+      console.log(`📝 Prompt preview: "${prompt.substring(0, 200)}..."`);
       
+      console.log(`🔄 Sending message to agent via puppeteer.sendToAgent()...`);
       const response = await this.puppeteer.sendToAgent(agent.agentId, prompt);
+      
+      console.log(`📥 Received response from ${agent.role} agent`);
+      console.log(`📊 Response length: ${response?.length || 0} chars`);
+      console.log(`📝 Response preview: "${response?.substring(0, 300) || 'No response'}..."`);
+      
       const parsed = this.outputParser.parseContent(response);
+      console.log(`🔧 Parsed content: ${parsed ? 'Success' : 'Failed'}`);
       
       const executionTime = Date.now() - startTime;
       
-      console.log(`📥 ${agent.role} completed: ${taskName} (${executionTime}ms)`);
+      console.log(`✅ ${agent.role} completed: ${taskName} (${executionTime}ms)`);
+      
+      // Check if the agent created any files
+      const workTreePath = agent.workTreePath;
+      try {
+        const files = await this.listDirectoryFiles(workTreePath);
+        console.log(`📁 Files in agent work tree (${workTreePath}): ${files.length} files`);
+        if (files.length > 0) {
+          console.log(`📄 Created files: ${files.slice(0, 5).join(', ')}${files.length > 5 ? '...' : ''}`);
+        } else {
+          console.log(`⚠️ WARNING: No files created in agent work tree!`);
+        }
+      } catch (fileError) {
+        console.log(`⚠️ Could not check agent work tree files: ${fileError.message}`);
+      }
       
       return {
         agent: agent.role,

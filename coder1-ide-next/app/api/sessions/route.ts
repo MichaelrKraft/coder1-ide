@@ -169,25 +169,26 @@ export async function DELETE(request: NextRequest) {
       );
     }
     
+    // Delete from memory if exists
     if (activeSessions.has(sessionId)) {
       activeSessions.delete(sessionId);
-      // REMOVED: // REMOVED: console.log(`✅ [Unified] Session deleted: ${sessionId}`);
-      
-      return NextResponse.json({
-        success: true,
-        sessionId,
-        status: 'deleted'
-      });
-    } else {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Session not found'
-        },
-        { status: 404 }
-      );
     }
     
+    // Also delete from file system
+    const sessionDir = path.join(process.cwd(), 'data', 'sessions', sessionId);
+    try {
+      await fs.rm(sessionDir, { recursive: true, force: true });
+      console.log(`✅ Session directory deleted: ${sessionDir}`);
+    } catch (error) {
+      console.log(`⚠️ Could not delete session directory: ${sessionDir}`, error);
+      // Continue even if directory doesn't exist
+    }
+    
+    return NextResponse.json({
+      success: true,
+      sessionId,
+      status: 'deleted'
+    });
   } catch (error) {
     // logger?.error('❌ [Unified] Sessions DELETE error:', error);
     return NextResponse.json(

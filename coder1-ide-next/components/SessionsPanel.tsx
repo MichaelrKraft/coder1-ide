@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Clock, Play, Pause, Save, FileText, DollarSign, RefreshCw, Loader2, CheckCircle, XCircle } from 'lucide-react';
+import { Clock, Play, Pause, Save, FileText, DollarSign, RefreshCw, Loader2, CheckCircle, XCircle, X, ChevronDown, ChevronUp } from 'lucide-react';
 import { useSession } from '@/contexts/SessionContext';
 import { sessionEnhancementService } from '@/services/session-enhancement-service';
 import { getSessionTypeById } from '@/lib/session-types';
@@ -39,6 +39,7 @@ export default function SessionsPanel({ isVisible = true }: SessionsPanelProps) 
   const [restoringCheckpointId, setRestoringCheckpointId] = useState<string | null>(null);
   const [restorationStage, setRestorationStage] = useState<string | null>(null);
   const [lastAction, setLastAction] = useState<{type: 'success' | 'error' | 'info', message: string, details?: string} | null>(null);
+  const [showAllSessions, setShowAllSessions] = useState(false);
   
   // Enhanced session loading with deduplication and intelligent naming
   const loadSessions = async () => {
@@ -277,7 +278,7 @@ export default function SessionsPanel({ isVisible = true }: SessionsPanelProps) 
             : '';
           
           const sandboxData = {
-            name: restoreData.checkpoint.name || `Checkpoint ${new Date(restoreData.checkpoint.timestamp).toLocaleString()}`,
+            name: restoreData.checkpoint.name || `Checkpoint ${new Date(restoreData.checkpoint.timestamp).toLocaleDateString('en-US')} ${new Date(restoreData.checkpoint.timestamp).toLocaleTimeString()}`,
             files: filesArray,
             commands: commandsArray,
             timestamp: restoreData.checkpoint.timestamp,
@@ -403,6 +404,34 @@ export default function SessionsPanel({ isVisible = true }: SessionsPanelProps) 
   const handleEndSession = () => {
     endSession();
     localStorage.removeItem('currentSessionId');
+  };
+
+  const handleDeleteSession = async (sessionId: string) => {
+    try {
+      setLastAction({ type: 'info', message: 'Deleting session...' });
+      
+      const response = await fetch(`/api/sessions?sessionId=${sessionId}`, {
+        method: 'DELETE',
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to delete session');
+      }
+      
+      // Refresh sessions list
+      await refreshSessions();
+      setLastAction({ type: 'success', message: 'Session deleted successfully' });
+      
+      // Clear success message after 3 seconds
+      setTimeout(() => setLastAction(null), 3000);
+    } catch (error) {
+      console.error('Failed to delete session:', error);
+      setLastAction({ 
+        type: 'error', 
+        message: 'Failed to delete session',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
   };
   
   const getSessionStatus = (session: Session): 'active' | 'completed' => {
@@ -606,14 +635,17 @@ export default function SessionsPanel({ isVisible = true }: SessionsPanelProps) 
             </button>
           </div>
           
-          <div className="space-y-2 pb-4">
-            {sessions.filter(s => s.id !== currentSession?.id).map(session => {
+          <div className="space-y-2 pb-2">
+            {sessions
+              .filter(s => s.id !== currentSession?.id)
+              .slice(0, showAllSessions ? undefined : 6)
+              .map(session => {
               const isRestoring = restoringSessionId === session.id;
               const enhanced = getEnhancedSession(session);
               return (
                 <div
                   key={session.id}
-                  className={`p-2 rounded transition-all ${
+                  className={`group relative p-2 rounded transition-all ${
                     isRestoring 
                       ? 'bg-coder1-cyan/10 border border-coder1-cyan/20' 
                       : 'bg-bg-primary hover:bg-bg-tertiary cursor-pointer'
@@ -639,6 +671,18 @@ export default function SessionsPanel({ isVisible = true }: SessionsPanelProps) 
                       {isRestoring ? 'Restoring...' : enhanced.duration}
                     </span>
                   </div>
+                  
+                  {/* Delete button - visible on hover */}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeleteSession(session.id);
+                    }}
+                    className="absolute top-1 right-1 p-1 rounded opacity-0 group-hover:opacity-100 hover:bg-red-500/20 text-text-muted hover:text-red-400 transition-all"
+                    title="Delete session"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
                   
                   <div className="flex items-center gap-3 text-xs text-text-secondary">
                     <div className="flex items-center gap-1">
@@ -668,6 +712,26 @@ export default function SessionsPanel({ isVisible = true }: SessionsPanelProps) 
               );
             })}
           </div>
+          
+          {/* Show more/less button if there are more than 6 sessions */}
+          {sessions.filter(s => s.id !== currentSession?.id).length > 6 && (
+            <button
+              onClick={() => setShowAllSessions(!showAllSessions)}
+              className="w-full px-3 py-2 flex items-center justify-center gap-2 text-xs text-text-secondary hover:text-text-primary hover:bg-bg-tertiary transition-colors rounded"
+            >
+              {showAllSessions ? (
+                <>
+                  <ChevronUp className="w-3 h-3" />
+                  Show less
+                </>
+              ) : (
+                <>
+                  <ChevronDown className="w-3 h-3" />
+                  Show {sessions.filter(s => s.id !== currentSession?.id).length - 6} more
+                </>
+              )}
+            </button>
+          )}
         </div>
       </div>
       

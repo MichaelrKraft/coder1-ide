@@ -635,8 +635,19 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
                   // Clean the terminal history to remove thinking animations and control sequences
                   const cleanedHistory = filterThinkingAnimations(sandboxSession.terminalHistory);
                   
-                  // Write header
-                  term.writeln('\x1b[38;5;214m🏖️ Sandbox Terminal - ' + (sandboxSession?.name || 'Checkpoint Session') + '\x1b[0m');
+                  // Write header - format checkpoint name to include date if not already present
+                  let displayName = sandboxSession?.name || 'Checkpoint Session';
+                  // Check if the name already has a date (contains /) or if we need to add it
+                  if (sandboxSession?.checkpointData?.timestamp && !displayName.includes('/')) {
+                    const checkpointDate = new Date(sandboxSession.checkpointData.timestamp);
+                    const dateStr = checkpointDate.toLocaleDateString('en-US');
+                    // Extract the time part from the existing name (e.g., "Checkpoint 2:58:28 PM" -> "2:58:28 PM")
+                    const timePart = displayName.replace('Checkpoint ', '').replace('Auto-checkpoint ', '');
+                    displayName = displayName.startsWith('Auto') 
+                      ? `Auto-checkpoint ${dateStr} ${timePart}`
+                      : `Checkpoint ${dateStr} ${timePart}`;
+                  }
+                  term.writeln('\x1b[38;5;214m' + displayName + '\x1b[0m');
                   term.writeln('\x1b[38;5;240m' + '─'.repeat(80) + '\x1b[0m');
                   term.writeln('\x1b[38;5;245mThis is a read-only view of the checkpoint. Use action buttons to interact.\x1b[0m');
                   term.writeln('\x1b[38;5;240m' + '─'.repeat(80) + '\x1b[0m');
@@ -650,8 +661,19 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
                   term.writeln('\x1b[38;5;240m' + '─'.repeat(80) + '\x1b[0m');
                   term.writeln('\x1b[38;5;245m[End of checkpoint data]\x1b[0m');
                 } else {
-                  // No terminal history available
-                  term.writeln('🏖️ Sandbox Terminal - ' + (sandboxSession?.name || 'Checkpoint Session'));
+                  // No terminal history available - format checkpoint name to include date if not already present
+                  let displayName = sandboxSession?.name || 'Checkpoint Session';
+                  // Check if the name already has a date (contains /) or if we need to add it
+                  if (sandboxSession?.checkpointData?.timestamp && !displayName.includes('/')) {
+                    const checkpointDate = new Date(sandboxSession.checkpointData.timestamp);
+                    const dateStr = checkpointDate.toLocaleDateString('en-US');
+                    // Extract the time part from the existing name (e.g., "Checkpoint 2:58:28 PM" -> "2:58:28 PM")
+                    const timePart = displayName.replace('Checkpoint ', '').replace('Auto-checkpoint ', '');
+                    displayName = displayName.startsWith('Auto') 
+                      ? `Auto-checkpoint ${dateStr} ${timePart}`
+                      : `Checkpoint ${dateStr} ${timePart}`;
+                  }
+                  term.writeln(displayName);
                   term.writeln('──────────────────────────────────────────────');
                   term.writeln('\x1b[38;5;245mNo terminal history available in this checkpoint.\x1b[0m');
                 }

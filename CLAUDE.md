@@ -227,7 +227,20 @@ cp -r build/* ../../public/ide/
 
 ## 🔧 Terminal Issues
 
-**Terminal display problems?** See the comprehensive [Terminal Display Fix Guide](./docs/guides/terminal-display-fix.md) for detailed troubleshooting, including the September 2025 fix for prompt visibility issues.
+### 🚨 CRITICAL: Terminal Scrolling Problem (January 21, 2025)
+
+**⚠️ BEFORE ATTEMPTING ANY TERMINAL FIXES**: Read [Terminal Complete Guide](./coder1-ide-next/docs/guides/terminal-complete-guide.md)
+
+**Current Status**: TEMPORARILY FIXED with 200px padding workaround
+- **Problem**: Terminal text gets cut off at bottom, cannot scroll to see all output
+- **Temporary Solution**: Added `paddingBottom: '200px'` to terminal container (creates black buffer zone)
+- **Location**: `/components/terminal/Terminal.tsx` lines 2222-2229
+- **Why It's Complex**: Involves xterm.js internal scrolling, CSS conflicts, and layout constraints
+- **Time Wasted by Previous Agents**: 10+ hours across multiple sessions since September 2025
+
+**Quick Test**: Run `for i in {1..50}; do echo "Line $i"; done` - Can you see line 50?
+
+**Other Terminal Issues**: See the [Terminal Complete Guide](./coder1-ide-next/docs/guides/terminal-complete-guide.md) for comprehensive troubleshooting.
 
 ---
 

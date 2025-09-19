@@ -278,6 +278,110 @@
                         inset 0 0 20px rgba(249, 115, 22, 0.05);
             transform: translateY(-2px);
         }
+        
+        /* Service Status Card Styles */
+        .service-status-card {
+            min-height: 320px;
+        }
+        
+        .service-status-container {
+            margin: 15px 0;
+            min-height: 200px;
+        }
+        
+        .service-status-loading {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+            color: var(--text-secondary);
+            gap: 10px;
+        }
+        
+        .service-status-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--glass-border);
+        }
+        
+        .service-status-item:last-child {
+            border-bottom: none;
+        }
+        
+        .service-name {
+            font-size: 14px;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .service-status-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+        
+        .status-active {
+            background: var(--success);
+            box-shadow: 0 0 10px var(--success);
+            animation: pulse 2s infinite;
+        }
+        
+        .status-degraded {
+            background: var(--warning);
+            box-shadow: 0 0 10px var(--warning);
+        }
+        
+        .status-offline {
+            background: var(--error);
+            box-shadow: 0 0 10px var(--error);
+        }
+        
+        .service-latency {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+        
+        .service-status-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid var(--glass-border);
+        }
+        
+        .last-check {
+            font-size: 11px;
+            color: var(--text-secondary);
+        }
+        
+        .refresh-btn {
+            padding: 5px 10px;
+            font-size: 12px;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 6px;
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .refresh-btn:hover {
+            background: rgba(139, 92, 246, 0.1);
+            border-color: var(--accent-primary);
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
 
         .card-title {
             font-size: 14px;
@@ -450,95 +554,9 @@
             color: var(--gold);
         }
 
-        /* Project Progress */
-        .progress-ring-container {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 200px;
-            position: relative;
-        }
-
-        .progress-ring {
-            transform: rotate(-90deg);
-        }
-
-        .progress-ring-bg {
-            fill: none;
-            stroke: rgba(255, 255, 255, 0.05);
-            stroke-width: 12;
-        }
-
-        .progress-ring-fill {
-            fill: none;
-            stroke: url(#gradient);
-            stroke-width: 12;
-            stroke-linecap: round;
-            transition: stroke-dasharray 1s ease;
-        }
-
-        .progress-percentage {
-            position: absolute;
-            font-size: 48px;
-            font-weight: bold;
-            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        .progress-phase {
-            text-align: center;
-            margin-top: 16px;
-            padding: 8px 16px;
-            background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(6, 182, 212, 0.1));
-            border-radius: 20px;
-            border: 1px solid rgba(139, 92, 246, 0.2);
-            display: inline-block;
-            font-size: 13px;
-            font-weight: 600;
-            color: var(--accent-primary);
-            cursor: default;
-            user-select: none;
-        }
-
-        .milestones {
-            margin-top: 20px;
-        }
-
-        .milestone {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 8px;
-            margin-bottom: 8px;
-            background: rgba(16, 185, 129, 0.05);
-            border-radius: 8px;
-            color: var(--text-secondary);
-        }
-
-        .milestone.completed {
-            background: rgba(16, 185, 129, 0.1);
-            color: var(--success);
-        }
-
-        .milestone-check {
-            width: 20px;
-            height: 20px;
-            border: 2px solid var(--glass-border);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .milestone.completed .milestone-check {
-            background: var(--success);
-            border-color: var(--success);
-        }
 
         /* AI Coach */
         .coach-card {
-            grid-column: span 2;
             background: linear-gradient(135deg, rgba(139, 92, 246, 0.05), rgba(6, 182, 212, 0.05));
         }
 
@@ -1498,9 +1516,6 @@
                 grid-template-columns: 1fr;
             }
             
-            .coach-card {
-                grid-column: span 1;
-            }
             
             .time-display {
                 font-size: 36px;
@@ -2504,10 +2519,10 @@
             }
         }
 
-        /* Third Row Container - 3 columns for Project Progress, AI Workflows, AI Coach */
+        /* Third Row Container - 2 columns for AI Memory & Context, AI Coach */
         .third-row-container {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
+            grid-template-columns: repeat(2, 1fr);
             gap: 30px;
             margin: 40px auto;
             max-width: 1400px;
@@ -2515,29 +2530,10 @@
             align-items: start;
         }
 
-        /* Ensure coach card doesn't span multiple columns in third row */
-        .third-row-container .coach-card {
-            grid-column: span 1 !important;
-        }
-
         /* Responsive for third row */
         @media (max-width: 1100px) {
             .third-row-container {
                 grid-template-columns: 1fr;
-            }
-            
-            .third-row-container .coach-card {
-                grid-column: span 1 !important;
-            }
-        }
-
-        @media (min-width: 1100px) and (max-width: 1200px) {
-            .third-row-container {
-                grid-template-columns: repeat(2, 1fr);
-            }
-            
-            .third-row-container .coach-card {
-                grid-column: span 1 !important;
             }
         }
 
@@ -4196,6 +4192,23 @@
 
         <!-- Vertical Cards Grid -->
         <div class="vertical-cards-grid">
+            <!-- Service Status Card -->
+            <div class="card service-status-card">
+                <div class="card-title">🛠️ Service Status</div>
+                <div class="service-status-container" id="serviceStatusContainer">
+                    <div class="service-status-loading">
+                        <div class="loading-spinner"></div>
+                        <span>Checking services...</span>
+                    </div>
+                </div>
+                <div class="service-status-footer">
+                    <span class="last-check" id="lastCheckTime">Never checked</span>
+                    <button class="refresh-btn" onclick="window.vibeDashboard.checkServiceHealth()">
+                        <span style="display: inline-block; transition: transform 0.3s;">↻</span> Refresh
+                    </button>
+                </div>
+            </div>
+            
             <!-- Token Usage Card -->
             <div class="card token-usage-card">
                 <div class="card-title">Token Usage</div>
@@ -4524,185 +4537,8 @@
 
         </div>
 
-        <!-- Third Row: Project Progress, AI Workflows, and AI Coach -->
+        <!-- Third Row: AI Memory & Context and AI Coach -->
         <div class="third-row-container">
-            <!-- Project Progress Card -->
-            <div class="card">
-                <div class="card-title">Project Progress</div>
-                <div class="progress-ring-container">
-                    <svg width="180" height="180" class="progress-ring">
-                        <defs>
-                            <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                                <stop offset="0%" style="stop-color:#8b5cf6;stop-opacity:1" />
-                                <stop offset="100%" style="stop-color:#06b6d4;stop-opacity:1" />
-                            </linearGradient>
-                        </defs>
-                        <circle cx="90" cy="90" r="80" class="progress-ring-bg"></circle>
-                        <circle cx="90" cy="90" r="80" class="progress-ring-fill" 
-                                stroke-dasharray="0 502" id="progressRing"></circle>
-                    </svg>
-                    <div class="progress-percentage" id="progressPercent">0%</div>
-                </div>
-                <div style="text-align: center;">
-                    <span class="progress-phase" id="projectPhase" title="Current project phase - Updates automatically based on progress">Getting Started</span>
-                </div>
-                <div class="milestones">
-                    <div class="milestone" id="milestone1">
-                        <div class="milestone-check">✓</div>
-                        <span>Project initialized</span>
-                    </div>
-                    <div class="milestone" id="milestone2">
-                        <div class="milestone-check"></div>
-                        <span>Core features built</span>
-                    </div>
-                    <div class="milestone" id="milestone3">
-                        <div class="milestone-check"></div>
-                        <span>Testing complete</span>
-                    </div>
-                </div>
-            </div>
-            <!-- Workflows Panel -->
-            <div class="card workflows-panel">
-                <div class="card-title">
-                    <span>AI Workflows</span>
-                    <button class="new-workflow-btn" onclick="window.location.href='/workflow-dashboard.html'">
-                        <span>⚡</span> Manage Workflows
-                    </button>
-                </div>
-                <div class="workflows-container">
-                    <div class="workflow-item active">
-                        <div class="workflow-icon">🎯</div>
-                        <div class="workflow-info">
-                            <div class="workflow-name">Smart PRD Generation</div>
-                            <div class="workflow-status">Ready</div>
-                        </div>
-                        <button class="workflow-action" onclick="window.location.href='/prd-generator-v2-test.html'">Launch</button>
-                    </div>
-                    <div class="workflow-item">
-                        <div class="workflow-icon">🎨</div>
-                        <div class="workflow-info">
-                            <div class="workflow-name">Component Builder</div>
-                            <div class="workflow-status">Available</div>
-                        </div>
-                        <button class="workflow-action" onclick="window.location.href='/component-studio.html'">Open</button>
-                    </div>
-                    <div class="workflow-item">
-                        <div class="workflow-icon">🔧</div>
-                        <div class="workflow-info">
-                            <div class="workflow-name">Smart Hooks</div>
-                            <div class="workflow-status">Configured</div>
-                        </div>
-                        <button class="workflow-action" onclick="window.location.href='/hooks-v3.html'">Configure</button>
-                    </div>
-                    <div class="workflow-item">
-                        <div class="workflow-icon">📊</div>
-                        <div class="workflow-info">
-                            <div class="workflow-name">Project Analysis</div>
-                            <div class="workflow-status">Ready</div>
-                        </div>
-                        <button class="workflow-action" onclick="window.vibeDashboard.runAnalysis()">Analyze</button>
-                    </div>
-                    <div class="workflow-stats">
-                        <div class="stat-item">
-                            <span class="stat-label">Active Workflows</span>
-                            <span class="stat-value">4</span>
-                        </div>
-                        <div class="stat-item">
-                            <span class="stat-label">Automations Run</span>
-                            <span class="stat-value" id="automationCount">0</span>
-                        </div>
-                        <div class="stat-item">
-                            <span class="stat-label">Time Saved</span>
-                            <span class="stat-value" id="timeSaved">0h</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- AI Coach Card -->
-            <div class="card coach-card">
-                <div class="card-title">
-                    <div class="coach-header">
-                        <div class="coach-avatar">🤖</div>
-                        <div class="coach-info">
-                            <span class="coach-name">AI Development Coach</span>
-                            <span class="coach-status">Ready to help</span>
-                        </div>
-                    </div>
-                    <div class="coach-controls">
-                        <button class="coach-btn secondary" id="refreshCoachBtn" title="Get new suggestions">
-                            ↻
-                        </button>
-                        <button class="coach-btn" id="askCoachBtn" title="Ask for specific help">
-                            💬
-                        </button>
-                    </div>
-                </div>
-                
-                <div class="coach-content" id="coachContent">
-                    <!-- Current Focus Section -->
-                    <div class="focus-section">
-                        <div class="focus-header">
-                            <span class="focus-label">Current Focus</span>
-                            <span class="focus-progress">Step 1 of 3</span>
-                        </div>
-                        <div class="focus-card">
-                            <div class="focus-icon">🚀</div>
-                            <div class="focus-details">
-                                <h4 class="focus-title">Project Setup & Foundation</h4>
-                                <p class="focus-description">Let's get your development environment ready and create your first project structure.</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Smart Recommendations -->
-                    <div class="recommendations-section">
-                        <h5 class="section-title">Smart Recommendations</h5>
-                        <div class="recommendation-list">
-                            <div class="recommendation-item priority-high">
-                                <div class="rec-indicator"></div>
-                                <div class="rec-content">
-                                    <h6>Initialize Git Repository</h6>
-                                    <p>Start tracking your code changes from day one</p>
-                                </div>
-                                <button class="rec-action" onclick="window.vibeDashboard.executeRecommendation('init-git')">
-                                    Do it
-                                </button>
-                            </div>
-                            
-                            <div class="recommendation-item priority-medium">
-                                <div class="rec-indicator"></div>
-                                <div class="rec-content">
-                                    <h6>Set Up Environment</h6>
-                                    <p>Configure your development tools and dependencies</p>
-                                </div>
-                                <button class="rec-action" onclick="window.vibeDashboard.executeRecommendation('setup-env')">
-                                    Guide me
-                                </button>
-                            </div>
-                            
-                            <div class="recommendation-item priority-low">
-                                <div class="rec-indicator"></div>
-                                <div class="rec-content">
-                                    <h6>Learn Keyboard Shortcuts</h6>
-                                    <p>Speed up your coding with essential shortcuts</p>
-                                </div>
-                                <button class="rec-action secondary" onclick="window.vibeDashboard.executeRecommendation('learn-shortcuts')">
-                                    Later
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Ambient Prompt Display -->
-                    <div class="quick-actions-section">
-                        <h5 class="section-title">💡 Discover MCP Commands</h5>
-                        <div id="ambient-prompt-container">
-                            <!-- Ambient Prompt Display will be initialized here -->
-                        </div>
-                    </div>
-                </div>
-            </div>
 
             <!-- AI Memory & Context Card -->
             <div class="card memory-card">
@@ -4789,6 +4625,91 @@
                         <button class="view-all-btn" id="viewAllConversationsBtn">
                             View All Conversations
                         </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- AI Coach Card -->
+            <div class="card coach-card">
+                <div class="card-title">
+                    <div class="coach-header">
+                        <div class="coach-avatar">🤖</div>
+                        <div class="coach-info">
+                            <span class="coach-name">AI Development Coach</span>
+                            <span class="coach-status">Ready to help</span>
+                        </div>
+                    </div>
+                    <div class="coach-controls">
+                        <button class="coach-btn secondary" id="refreshCoachBtn" title="Get new suggestions">
+                            ↻
+                        </button>
+                        <button class="coach-btn" id="askCoachBtn" title="Ask for specific help">
+                            💬
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="coach-content" id="coachContent">
+                    <!-- Current Focus Section -->
+                    <div class="focus-section">
+                        <div class="focus-header">
+                            <span class="focus-label">Current Focus</span>
+                            <span class="focus-progress">Step 1 of 3</span>
+                        </div>
+                        <div class="focus-card">
+                            <div class="focus-icon">🚀</div>
+                            <div class="focus-details">
+                                <h4 class="focus-title">Project Setup & Foundation</h4>
+                                <p class="focus-description">Let's get your development environment ready and create your first project structure.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Smart Recommendations -->
+                    <div class="recommendations-section">
+                        <h5 class="section-title">Smart Recommendations</h5>
+                        <div class="recommendation-list">
+                            <div class="recommendation-item priority-high">
+                                <div class="rec-indicator"></div>
+                                <div class="rec-content">
+                                    <h6>Initialize Git Repository</h6>
+                                    <p>Start tracking your code changes from day one</p>
+                                </div>
+                                <button class="rec-action" onclick="window.vibeDashboard.executeRecommendation('init-git')">
+                                    Do it
+                                </button>
+                            </div>
+                            
+                            <div class="recommendation-item priority-medium">
+                                <div class="rec-indicator"></div>
+                                <div class="rec-content">
+                                    <h6>Set Up Environment</h6>
+                                    <p>Configure your development tools and dependencies</p>
+                                </div>
+                                <button class="rec-action" onclick="window.vibeDashboard.executeRecommendation('setup-env')">
+                                    Guide me
+                                </button>
+                            </div>
+                            
+                            <div class="recommendation-item priority-low">
+                                <div class="rec-indicator"></div>
+                                <div class="rec-content">
+                                    <h6>Learn Keyboard Shortcuts</h6>
+                                    <p>Speed up your coding with essential shortcuts</p>
+                                </div>
+                                <button class="rec-action secondary" onclick="window.vibeDashboard.executeRecommendation('learn-shortcuts')">
+                                    Later
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Ambient Prompt Display -->
+                    <div class="quick-actions-section">
+                        <h5 class="section-title">💡 Discover MCP Commands</h5>
+                        <div id="ambient-prompt-container">
+                            <!-- Ambient Prompt Display will be initialized here -->
+                        </div>
                     </div>
                 </div>
             </div>
@@ -5966,8 +5887,6 @@ Execute as a single Task with multiple sub-agents working in parallel.`;
                         `Amazing! Your code is safe in the cloud! 🚀`;
                 }
                 
-                // Update project progress
-                this.updateProjectProgress();
                 
                 // Trigger celebration for achievements
                 if (this.gitPushes === 1) {
@@ -6049,33 +5968,6 @@ Execute as a single Task with multiple sub-agents working in parallel.`;
                 document.getElementById('levelUpTip').textContent = tip;
             }
 
-            updateProjectProgress() {
-                const percent = this.projectProgress;
-                const circumference = 2 * Math.PI * 80;
-                const offset = circumference * (percent / 100);
-                
-                document.getElementById('progressRing').style.strokeDasharray = `${offset} ${circumference}`;
-                document.getElementById('progressPercent').textContent = `${percent}%`;
-                
-                // Update phase based on progress
-                let phase = 'Getting Started';
-                if (percent > 75) phase = 'Final Polish';
-                else if (percent > 50) phase = 'Building Features';
-                else if (percent > 25) phase = 'Setting Up';
-                
-                document.getElementById('projectPhase').textContent = phase;
-                
-                // Update milestones
-                if (percent > 0) {
-                    document.getElementById('milestone1').classList.add('completed');
-                }
-                if (percent > 50) {
-                    document.getElementById('milestone2').classList.add('completed');
-                }
-                if (percent > 80) {
-                    document.getElementById('milestone3').classList.add('completed');
-                }
-            }
 
             startTimeTracking() {
                 this.codingStartTime = Date.now();
@@ -8812,6 +8704,111 @@ Execute as a single Task with multiple sub-agents working in parallel.`;
             this.showToast('Memory data refreshed', 'success');
         };
 
+        VibeDashboard.prototype.checkServiceHealth = async function() {
+            const container = document.getElementById('serviceStatusItems');
+            const loadingState = document.getElementById('statusLoadingState');
+            const lastCheckElement = document.getElementById('lastCheckTime');
+            const refreshBtn = document.querySelector('.refresh-btn span');
+            
+            // Show loading state
+            if (loadingState) loadingState.style.display = 'block';
+            if (container) container.innerHTML = '';
+            if (refreshBtn) {
+                refreshBtn.style.transform = 'rotate(360deg)';
+                setTimeout(() => refreshBtn.style.transform = '', 300);
+            }
+            
+            try {
+                const response = await fetch('/api/service-health');
+                const data = await response.json();
+                
+                if (!data.success) {
+                    throw new Error(data.error || 'Health check failed');
+                }
+                
+                // Hide loading state
+                if (loadingState) loadingState.style.display = 'none';
+                
+                // Update last check time
+                if (lastCheckElement) {
+                    lastCheckElement.textContent = `Last check: ${new Date().toLocaleTimeString()}`;
+                }
+                
+                // Render service status items
+                if (container && data.services) {
+                    const statusIcons = {
+                        'active': '🟢',
+                        'degraded': '🟡',
+                        'offline': '🔴'
+                    };
+                    
+                    const statusColors = {
+                        'active': '#10b981',
+                        'degraded': '#f59e0b',
+                        'offline': '#ef4444'
+                    };
+                    
+                    container.innerHTML = data.services.map(service => `
+                        <div class="status-item">
+                            <div class="status-indicator">
+                                <span style="color: ${statusColors[service.status]}; font-size: 12px;">
+                                    ${statusIcons[service.status]}
+                                </span>
+                                <span class="status-name">${service.name}</span>
+                            </div>
+                            <div class="status-details">
+                                ${service.latency ? `<span class="latency">${service.latency}ms</span>` : ''}
+                                ${service.error ? `<span class="error" style="color: #ef4444; font-size: 11px;">${service.error}</span>` : ''}
+                            </div>
+                        </div>
+                    `).join('');
+                    
+                    // Update overall status indicator
+                    const overallStatus = data.overall || 'unknown';
+                    const statusCard = document.querySelector('.service-status-card');
+                    if (statusCard) {
+                        statusCard.classList.remove('status-healthy', 'status-degraded', 'status-critical');
+                        statusCard.classList.add(`status-${overallStatus}`);
+                    }
+                    
+                    // Show toast notification
+                    const activeCount = data.services.filter(s => s.status === 'active').length;
+                    const totalCount = data.services.length;
+                    
+                    if (overallStatus === 'healthy') {
+                        this.showToast(`✅ All ${totalCount} services are healthy`, 'success');
+                    } else if (overallStatus === 'degraded') {
+                        this.showToast(`⚠️ ${activeCount}/${totalCount} services active`, 'warning');
+                    } else {
+                        this.showToast(`❌ System health critical - ${activeCount}/${totalCount} services active`, 'error');
+                    }
+                }
+                
+            } catch (error) {
+                console.error('Health check error:', error);
+                
+                // Hide loading state
+                if (loadingState) loadingState.style.display = 'none';
+                
+                // Show error state
+                if (container) {
+                    container.innerHTML = `
+                        <div class="status-item" style="color: #ef4444;">
+                            <div class="status-indicator">
+                                <span>🔴</span>
+                                <span class="status-name">Health Check Failed</span>
+                            </div>
+                            <div class="status-details">
+                                <span class="error">${error.message}</span>
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                this.showToast('❌ Failed to check service health', 'error');
+            }
+        };
+
         VibeDashboard.prototype.startLearningSession = async function() {
             try {
                 const response = await fetch('/api/context/stats', {
@@ -8989,6 +8986,14 @@ Execute as a single Task with multiple sub-agents working in parallel.`;
             
             // Initialize memory functionality
             window.vibeDashboard.initializeMemory();
+            
+            // Initialize service health monitoring
+            window.vibeDashboard.checkServiceHealth();
+            
+            // Set up automatic health checks every 30 seconds
+            setInterval(() => {
+                window.vibeDashboard.checkServiceHealth();
+            }, 30000);
             
             // Setup AI Coach buttons
             const refreshCoachBtn = document.getElementById('refreshCoachBtn');

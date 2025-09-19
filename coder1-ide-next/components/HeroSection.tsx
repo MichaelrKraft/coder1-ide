@@ -137,9 +137,9 @@ export default function HeroSection({ onTourStart }: HeroSectionProps = {}) {
         <div className="hero-cone-right"></div>
       </div> */}
       {/* Logo - responsive sizing with zoom-in from back animation */}
-      <div className="relative z-10 mb-2 mt-2">
+      <div className="relative z-10 mb-0 mt-2">
         <div 
-          className={`relative w-24 h-24 sm:w-32 sm:h-32 lg:w-44 lg:h-44 transition-all duration-1000 ease-out ${
+          className={`relative w-20 h-20 sm:w-28 sm:h-28 lg:w-36 lg:h-36 transition-all duration-1000 ease-out ${
             logoAnimated 
               ? 'opacity-100 scale-100' 
               : 'opacity-0 scale-[0.01]'
@@ -173,7 +173,7 @@ export default function HeroSection({ onTourStart }: HeroSectionProps = {}) {
 
       {/* Title with typewriter effect - responsive */}
       <h1 
-        className="relative z-10 shimmer-text mb-2 text-[clamp(1.5rem,5vw,3.5rem)] text-center"
+        className="relative z-10 shimmer-text mb-0 text-[clamp(1.5rem,5vw,3.5rem)] text-center"
         style={{
           fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
           fontWeight: 800,
@@ -194,7 +194,7 @@ export default function HeroSection({ onTourStart }: HeroSectionProps = {}) {
 
       {/* Subtitle - right under typewriter text */}
       <p 
-        className="relative z-10 text-[clamp(0.875rem,2vw,1.125rem)] mb-6 text-center max-w-[90%] font-semibold px-2"
+        className="relative z-10 text-[clamp(0.875rem,2vw,1.125rem)] mb-2 text-center max-w-[90%] font-semibold px-2"
         style={{
           background: 'linear-gradient(90deg, #FCD34D 0%, #FB923C 50%, #F97316 100%)',
           WebkitBackgroundClip: 'text',
@@ -206,7 +206,7 @@ export default function HeroSection({ onTourStart }: HeroSectionProps = {}) {
       </p>
 
       {/* Action buttons - responsive */}
-      <div className="relative z-10 flex flex-col gap-2 mb-3 w-full max-w-[min(90%,500px)] px-2">
+      <div className="relative z-10 flex flex-col gap-3 mb-2 w-full max-w-[min(90%,360px)] px-2">
         <button 
           data-tour="start-tour-button"
           onClick={(e) => {
@@ -247,7 +247,7 @@ export default function HeroSection({ onTourStart }: HeroSectionProps = {}) {
         <button 
           onClick={(e) => {
             e.stopPropagation();
-            router.push('/orchestrator');
+            router.push('/smart-prd-generator-standalone.html');
           }}
           className="glass-button flex items-center gap-3 sm:gap-4 px-4 sm:px-6 py-3 sm:py-4 rounded-lg transition-all duration-300 w-full transform hover:translate-y-[-2px]"
           data-tour="prd-generator-button"
@@ -314,7 +314,7 @@ export default function HeroSection({ onTourStart }: HeroSectionProps = {}) {
       </div>
 
       {/* Hint text - responsive positioning */}
-      <div className="relative z-10 mt-2 mb-4">
+      <div className="relative z-10 mt-1 mb-2">
         <p className="text-gray-500 text-[clamp(0.75rem,1.5vw,0.875rem)] italic text-center">
           Type claude in the terminal below to begin
         </p>
