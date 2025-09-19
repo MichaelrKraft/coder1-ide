@@ -210,10 +210,9 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
         companion.on('status-changed', (status: any) => {
           setCompanionConnected(status.connected);
           
-          if (!status.connected && xtermRef.current && process.env.NODE_ENV === 'production') {
-            // Show helpful message only in production if companion is not running
-            xtermRef.current.writeln('\r\n\x1b[33m💡 Tip: Install Coder1 Companion for local Claude Code CLI access\x1b[0m');
-          } else if (status.connected && xtermRef.current) {
+          // Only show success message when Companion IS connected
+          // Don't show installation tip - the server.js help message is better
+          if (status.connected && xtermRef.current) {
             xtermRef.current.writeln('\r\n\x1b[32m✅ Claude Code CLI connected via Companion!\x1b[0m\r\n');
           }
         });

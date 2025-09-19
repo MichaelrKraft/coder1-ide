@@ -842,6 +842,28 @@
     </style>
 </head>
 <body>
+    <!-- Back to IDE Button -->
+    <div style="position: fixed; top: 20px; left: 20px; z-index: 1000;">
+        <a href="http://localhost:3001/ide" style="
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            background: rgba(139, 92, 246, 0.2);
+            border: 1px solid rgba(139, 92, 246, 0.5);
+            border-radius: 8px;
+            color: #8b5cf6;
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        " onmouseover="this.style.background='rgba(139, 92, 246, 0.3)'; this.style.transform='translateX(-2px)';" onmouseout="this.style.background='rgba(139, 92, 246, 0.2)'; this.style.transform='translateX(0)';">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="15 18 9 12 15 6"></polyline>
+            </svg>
+            Back to IDE
+        </a>
+    </div>
+
     <div class="dashboard">
         <!-- Advanced Hero Section with Floating Cards -->
         <div class="hero-section">

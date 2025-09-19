@@ -120,6 +120,76 @@ const defaultPatterns = [
         }
       ]
     }
+  },
+  {
+    "id": "shopify-ecommerce",
+    "name": "Shopify-style E-commerce Platform",
+    "category": "ecommerce",
+    "description": "Full-featured e-commerce platform with storefront and admin",
+    "successRate": 71,
+    "timeToMarket": "11.2 months",
+    "complexity": "high",
+    "technical": {
+      "architecture": "Multi-tenant SaaS with templating engine",
+      "primaryTech": ["Ruby on Rails", "React", "MySQL", "Liquid"],
+      "scalingStrategy": "Sharded database with CDN for storefronts"
+    }
+  },
+  {
+    "id": "linkedin-social",
+    "name": "LinkedIn-style Professional Network",
+    "category": "social",
+    "description": "Professional networking and career development platform",
+    "successRate": 62,
+    "timeToMarket": "13.5 months",
+    "complexity": "high",
+    "technical": {
+      "architecture": "Graph database with activity feeds",
+      "primaryTech": ["Java", "React", "Kafka", "Neo4j"],
+      "scalingStrategy": "Distributed graph with event streaming"
+    }
+  },
+  {
+    "id": "airbnb-marketplace",
+    "name": "Airbnb-style Marketplace",
+    "category": "marketplace",
+    "description": "Two-sided marketplace with booking and payments",
+    "successRate": 65,
+    "timeToMarket": "10.8 months",
+    "complexity": "medium",
+    "technical": {
+      "architecture": "Service-oriented with booking engine",
+      "primaryTech": ["Ruby on Rails", "React", "PostgreSQL", "Redis"],
+      "scalingStrategy": "Geographic distribution with regional databases"
+    }
+  },
+  {
+    "id": "slack-communication",
+    "name": "Slack-style Communication Platform",
+    "category": "communication",
+    "description": "Real-time team messaging and collaboration",
+    "successRate": 73,
+    "timeToMarket": "8.7 months",
+    "complexity": "medium",
+    "technical": {
+      "architecture": "WebSocket-based real-time messaging",
+      "primaryTech": ["Node.js", "React", "Cassandra", "WebSocket"],
+      "scalingStrategy": "Channel-based sharding with WebSocket clusters"
+    }
+  },
+  {
+    "id": "trello-productivity",
+    "name": "Trello-style Project Management",
+    "category": "productivity",
+    "description": "Visual task management with boards and cards",
+    "successRate": 78,
+    "timeToMarket": "6.5 months",
+    "complexity": "low",
+    "technical": {
+      "architecture": "REST API with real-time updates",
+      "primaryTech": ["Node.js", "React", "MongoDB", "Socket.io"],
+      "scalingStrategy": "Document database with caching layer"
+    }
   }
 ];
 

@@ -758,6 +758,9 @@
 
         // Show current question
         function showCurrentQuestion() {
+            // Fix: currentQuestion is 1-indexed but questions array is 0-indexed
+            // When currentQuestion = 1, we want questions[1] (second item)
+            // When currentQuestion = 2, we want questions[2] (third item), etc.
             const questionData = questions[currentQuestion];
             const questionContainer = document.querySelector('.bg-white\\/5.rounded-2xl.shadow-xl .space-y-3').parentElement;
             
