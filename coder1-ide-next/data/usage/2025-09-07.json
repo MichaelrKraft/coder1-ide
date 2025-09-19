@@ -1,0 +1,192 @@
+{
+  "date": "2025-09-07",
+  "snapshots": [
+    {
+      "timestamp": "2025-09-07T06:21:57.758Z",
+      "tokens": 0,
+      "cost": 0,
+      "model": "claude-3-5-sonnet",
+      "sessionId": "session_1757225718158_56eydf492"
+    },
+    {
+      "timestamp": "2025-09-07T06:21:57.763Z",
+      "tokens": 0,
+      "cost": 0,
+      "model": "claude-3-5-sonnet",
+      "sessionId": "session_1757225996981"
+    },
+    {
+      "timestamp": "2025-09-07T06:22:57.775Z",
+      "tokens": 0,
+      "cost": 0,
+      "model": "claude-3-5-sonnet",
+      "sessionId": "session_1757225718158_56eydf492"
+    },
+    {
+      "timestamp": "2025-09-07T06:22:57.783Z",
+      "tokens": 0,
+      "cost": 0,
+      "model": "claude-3-5-sonnet",
+      "sessionId": "session_1757225996981"
+    },
+    {
+      "timestamp": "2025-09-07T06:23:57.737Z",
+      "tokens": 0,
+      "cost": 0,
+      "model": "claude-3-5-sonnet",
+      "sessionId": "session_1757225718158_56eydf492"
+    },
+    {
+      "timestamp": "2025-09-07T06:23:57.746Z",
+      "tokens": 0,
+      "cost": 0,
+      "model": "claude-3-5-sonnet",
+      "sessionId": "session_1757225996981"
+    },
+    {
+      "timestamp": "2025-09-07T06:24:57.723Z",
+      "tokens": 0,
+      "cost": 0,
+      "model": "claude-3-5-sonnet",
+      "sessionId": "session_1757225718158_56eydf492"
+    },
+    {
+      "timestamp": "2025-09-07T06:24:57.733Z",
+      "tokens": 0,
+      "cost": 0,
+      "model": "claude-3-5-sonnet",
+      "sessionId": "session_1757225996981"
+    },
+    {
+      "timestamp": "2025-09-07T06:25:57.728Z",
+      "tokens": 0,
+      "cost": 0,
+      "model": "claude-3-5-sonnet",
+      "sessionId": "session_1757225718158_56eydf492"
+    },
+    {
+      "timestamp": "2025-09-07T06:25:57.734Z",
+      "tokens": 0,
+      "cost": 0,
+      "model": "claude-3-5-sonnet",
+      "sessionId": "session_1757225996981"
+    },
+    {
+      "timestamp": "2025-09-07T06:26:57.727Z",
+      "tokens": 0,
+      "cost": 0,
+      "model": "claude-3-5-sonnet",
+      "sessionId": "session_1757225718158_56eydf492"
+    },
+    {
+      "timestamp": "2025-09-07T06:26:57.732Z",
+      "tokens": 0,
+      "cost": 0,
+      "model": "claude-3-5-sonnet",
+      "sessionId": "session_1757225996981"
+    },
+    {
+      "timestamp": "2025-09-07T06:27:57.721Z",
+      "tokens": 0,
+      "cost": 0,
+      "model": "claude-3-5-sonnet",
+      "sessionId": "session_1757225718158_56eydf492"
+    },
+    {
+      "timestamp": "2025-09-07T06:27:57.727Z",
+      "tokens": 0,
+      "cost": 0,
+      "model": "claude-3-5-sonnet",
+      "sessionId": "session_1757225996981"
+    },
+    {
+      "timestamp": "2025-09-07T06:28:57.728Z",
+      "tokens": 0,
+      "cost": 0,
+      "model": "claude-3-5-sonnet",
+      "sessionId": "session_1757225718158_56eydf492"
+    },
+    {
+      "timestamp": "2025-09-07T06:28:57.735Z",
+      "tokens": 0,
+      "cost": 0,
+      "model": "claude-3-5-sonnet",
+      "sessionId": "session_1757225996981"
+    },
+    {
+      "timestamp": "2025-09-07T06:29:57.729Z",
+      "tokens": 0,
+      "cost": 0,
+      "model": "claude-3-5-sonnet",
+      "sessionId": "session_1757225718158_56eydf492"
+    },
+    {
+      "timestamp": "2025-09-07T06:29:57.740Z",
+      "tokens": 0,
+      "cost": 0,
+      "model": "claude-3-5-sonnet",
+      "sessionId": "session_1757225996981"
+    },
+    {
+      "timestamp": "2025-09-07T06:30:30.764Z",
+      "tokens": 0,
+      "cost": 0,
+      "model": "claude-3-5-sonnet",
+      "sessionId": "session_1757225997719_c040rg8dr"
+    },
+    {
+      "timestamp": "2025-09-07T06:30:30.817Z",
+      "tokens": 0,
+      "cost": 0,
+      "model": "claude-3-5-sonnet",
+      "sessionId": "session_1757226629969"
+    },
+    {
+      "timestamp": "2025-09-07T06:31:01.546Z",
+      "tokens": 0,
+      "cost": 0,
+      "model": "claude-3-5-sonnet",
+      "sessionId": "session_1757226630778_m2ep6rujn"
+    },
+    {
+      "timestamp": "2025-09-07T06:31:01.569Z",
+      "tokens": 0,
+      "cost": 0,
+      "model": "claude-3-5-sonnet",
+      "sessionId": "session_1757226661506"
+    },
+    {
+      "timestamp": "2025-09-07T06:32:01.570Z",
+      "tokens": 0,
+      "cost": 0,
+      "model": "claude-3-5-sonnet",
+      "sessionId": "session_1757226630778_m2ep6rujn"
+    },
+    {
+      "timestamp": "2025-09-07T06:32:01.594Z",
+      "tokens": 0,
+      "cost": 0,
+      "model": "claude-3-5-sonnet",
+      "sessionId": "session_1757226661506"
+    },
+    {
+      "timestamp": "2025-09-07T06:33:01.569Z",
+      "tokens": 0,
+      "cost": 0,
+      "model": "claude-3-5-sonnet",
+      "sessionId": "session_1757226630778_m2ep6rujn"
+    },
+    {
+      "timestamp": "2025-09-07T06:33:01.591Z",
+      "tokens": 0,
+      "cost": 0,
+      "model": "claude-3-5-sonnet",
+      "sessionId": "session_1757226661506"
+    }
+  ],
+  "totalTokens": 0,
+  "totalCost": 0,
+  "sessions": 6,
+  "peakBurnRate": 0,
+  "averageBurnRate": 0
+}

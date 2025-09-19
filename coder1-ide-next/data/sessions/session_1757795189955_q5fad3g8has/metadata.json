@@ -1,0 +1,47 @@
+{
+  "id": "session_1757795189955_q5fad3g8has",
+  "name": "testy",
+  "description": "testy",
+  "createdAt": "2025-09-13T20:26:29.955Z",
+  "lastUpdated": "2025-09-13T20:26:29.955Z",
+  "metadata": {
+    "ide": true,
+    "version": "1.0.0",
+    "createdFrom": "coder1-ide-enhanced",
+    "createdAt": "2025-09-13T20:26:29.283Z",
+    "preventDuplicates": true,
+    "sessionType": "bugfix",
+    "context": {
+      "sessionType": "bugfix",
+      "gitContext": {
+        "branch": "master",
+        "recentCommits": [
+          "fix: Set cleaner terminal prompt for production",
+          "fix: Improve claude command handling in terminal",
+          "fix: Improve logo size and header layout"
+        ],
+        "modifiedFiles": [
+          "oder1-ide-next/app/api/sessions/route.ts",
+          "oder1-ide-next/components/ContextMemoryPanel.tsx",
+          "oder1-ide-next/components/layout/ThreePanelLayout.tsx",
+          "oder1-ide-next/contexts/SessionContext.tsx",
+          "oder1-ide-next/services/session-enhancement-service.ts"
+        ],
+        "workingDirectory": "/Users/michaelkraft/autonomous_vibe_interface/coder1-ide-next",
+        "repositoryRoot": "/Users/michaelkraft/autonomous_vibe_interface",
+        "hasUncommittedChanges": true,
+        "lastCommitHash": "945461c85891d0b7a5bcfae66675ed2511295f07"
+      },
+      "workingDirectory": "/Users/michaelkraft/autonomous_vibe_interface/coder1-ide-next",
+      "createdAt": "2025-09-13T20:26:29.282Z"
+    },
+    "tags": [
+      "bugfix"
+    ],
+    "progress": {
+      "status": "planning",
+      "completionPercentage": 0,
+      "milestones": []
+    }
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "files": [
+    {
+      "path": ".next/static/js/*.js",
+      "maxSize": "400 kB",
+      "compression": "gzip"
+    },
+    {
+      "path": ".next/static/css/*.css", 
+      "maxSize": "100 kB",
+      "compression": "gzip"
+    },
+    {
+      "path": "public/js/orchestrator-loader.js",
+      "maxSize": "15 kB",
+      "compression": "gzip"
+    },
+    {
+      "path": "public/js/prd-genius-optimized.js",
+      "maxSize": "20 kB", 
+      "compression": "gzip"
+    },
+    {
+      "path": "public/js/orchestrator-modules/*.js",
+      "maxSize": "30 kB",
+      "compression": "gzip"
+    }
+  ],
+  "defaultCompression": "gzip",
+  "trackBranches": ["main", "master", "develop"],
+  "ci": {
+    "githubAccessToken": "$BUNDLESIZE_GITHUB_TOKEN",
+    "repoBranchBase": "main"
+  }
+}

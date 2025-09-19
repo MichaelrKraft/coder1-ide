@@ -1,0 +1,7 @@
+.next/
+node_modules/
+out/
+dist/
+build/
+next.config.js
+postcss.config.js

@@ -1,0 +1,56 @@
+{
+  "name": "coder1-bridge",
+  "version": "1.0.0-alpha.1",
+  "description": "Coder1 Bridge Service - Connect your local Claude CLI to Coder1 web IDE",
+  "main": "index.js",
+  "bin": {
+    "coder1-bridge": "./index.js"
+  },
+  "scripts": {
+    "start": "node index.js",
+    "dev": "DEBUG=1 node index.js",
+    "build": "pkg . --targets node18-win-x64,node18-macos-x64,node18-linux-x64 --out-path dist",
+    "test": "echo \"Tests not implemented yet\" && exit 1",
+    "install-global": "npm install -g .",
+    "uninstall-global": "npm uninstall -g coder1-bridge"
+  },
+  "keywords": [
+    "claude",
+    "ai",
+    "ide",
+    "bridge",
+    "development",
+    "automation"
+  ],
+  "author": "Coder1 Team",
+  "license": "MIT",
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "dependencies": {
+    "ws": "^8.16.0"
+  },
+  "devDependencies": {
+    "pkg": "^5.8.1"
+  },
+  "pkg": {
+    "scripts": [
+      "index.js"
+    ],
+    "assets": [
+      "config/**/*",
+      "README.md"
+    ],
+    "outputPath": "dist"
+  },
+  "preferGlobal": true,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/MichaelrKraft/coder1-ide.git",
+    "directory": "coder1-bridge"
+  },
+  "bugs": {
+    "url": "https://github.com/MichaelrKraft/coder1-ide/issues"
+  },
+  "homepage": "https://coder1.app/bridge"
+}

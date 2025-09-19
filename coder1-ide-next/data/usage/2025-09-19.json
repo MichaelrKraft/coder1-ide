@@ -1,0 +1,38 @@
+{
+  "date": "2025-09-19",
+  "snapshots": [
+    {
+      "timestamp": "2025-09-19T03:43:04.256Z",
+      "tokens": 0,
+      "cost": 0,
+      "model": "claude-3-5-sonnet",
+      "sessionId": "session_1758253381631"
+    },
+    {
+      "timestamp": "2025-09-19T04:22:56.483Z",
+      "tokens": 0,
+      "cost": 0,
+      "model": "claude-3-5-sonnet",
+      "sessionId": "session_1758255774025"
+    },
+    {
+      "timestamp": "2025-09-19T04:35:48.506Z",
+      "tokens": 0,
+      "cost": 0,
+      "model": "claude-3-5-sonnet",
+      "sessionId": "session_1758256546984"
+    },
+    {
+      "timestamp": "2025-09-19T04:36:49.004Z",
+      "tokens": 0,
+      "cost": 0,
+      "model": "claude-3-5-sonnet",
+      "sessionId": "session_1758256546984"
+    }
+  ],
+  "totalTokens": 0,
+  "totalCost": 0,
+  "sessions": 3,
+  "peakBurnRate": 0,
+  "averageBurnRate": 0
+}

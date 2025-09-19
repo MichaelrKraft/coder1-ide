@@ -1,0 +1,46 @@
+# Dependencies
+node_modules
+
+# Development files
+.env.local
+.env.development
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Testing
+coverage
+*.test.ts
+*.test.tsx
+*.test.js
+*.test.jsx
+__tests__
+
+# Development artifacts
+.DS_Store
+.vscode
+.idea
+
+# Large files
+*.mp4
+*.avi
+*.mov
+*.mkv
+
+# Documentation
+*.md
+!README.md
+
+# Backup files
+*.backup
+*.bak
+
+# Temporary files
+tmp
+temp
+.tmp
+.temp
+
+# Build caches
+.next/cache

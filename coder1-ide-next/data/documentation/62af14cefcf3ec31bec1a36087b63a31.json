@@ -1,0 +1,122 @@
+{
+  "id": "62af14cefcf3ec31bec1a36087b63a31",
+  "url": "https://docs.anthropic.com/en/docs/claude-code",
+  "title": "Claude Code overview - Anthropic",
+  "description": "Learn about Claude Code, Anthropic's agentic coding tool that lives in your terminal and helps you turn ideas into code faster than ever before.",
+  "category": "Claude Code",
+  "addedAt": "2025-09-04T22:08:22.960Z",
+  "wordCount": 474,
+  "headings": [
+    {
+      "level": 5,
+      "text": "Getting started"
+    },
+    {
+      "level": 5,
+      "text": "Build with Claude Code"
+    },
+    {
+      "level": 5,
+      "text": "Claude Code SDK"
+    },
+    {
+      "level": 5,
+      "text": "Deployment"
+    },
+    {
+      "level": 5,
+      "text": "Administration"
+    },
+    {
+      "level": 5,
+      "text": "Configuration"
+    },
+    {
+      "level": 5,
+      "text": "Reference"
+    },
+    {
+      "level": 5,
+      "text": "Resources"
+    },
+    {
+      "level": 2,
+      "text": "​Get started in 30 seconds"
+    },
+    {
+      "level": 2,
+      "text": "​What Claude Code does for you"
+    },
+    {
+      "level": 2,
+      "text": "​Why developers love Claude Code"
+    },
+    {
+      "level": 2,
+      "text": "​Next steps"
+    },
+    {
+      "level": 2,
+      "text": "Quickstart"
+    },
+    {
+      "level": 2,
+      "text": "Common workflows"
+    },
+    {
+      "level": 2,
+      "text": "Troubleshooting"
+    },
+    {
+      "level": 2,
+      "text": "IDE setup"
+    },
+    {
+      "level": 2,
+      "text": "​Additional resources"
+    },
+    {
+      "level": 2,
+      "text": "Host on AWS or GCP"
+    },
+    {
+      "level": 2,
+      "text": "Settings"
+    },
+    {
+      "level": 2,
+      "text": "Commands"
+    },
+    {
+      "level": 2,
+      "text": "Reference implementation"
+    },
+    {
+      "level": 2,
+      "text": "Security"
+    },
+    {
+      "level": 2,
+      "text": "Privacy and data usage"
+    }
+  ],
+  "codeBlocks": [
+    "# Install Claude Code\nnpm install -g @anthropic-ai/claude-code\n\n# Navigate to your project\ncd your-awesome-project\n\n# Start coding with Claude\nclaude\n# You'll be prompted to log in on first use",
+    "tail -f app.log | claude -p \"Slack me if you see any anomalies appear in this log stream\"",
+    "claude -p \"If there are new text strings, translate them into French and raise a PR for @lang-fr-team to review\""
+  ],
+  "chunks": [
+    {
+      "id": "9d50fcf34be88cedf17a1ee3490ee082",
+      "content": "Anthropic home pageEnglishSearch...Search...NavigationGetting startedClaude Code overviewWelcomeDeveloper PlatformClaude CodeModel Context Protocol (MCP)API ReferenceResourcesRelease NotesGetting startedOverviewQuickstartCommon workflowsBuild with Claude CodeSubagentsOutput stylesHooksGitHub ActionsModel Context Protocol (MCP)TroubleshootingClaude Code SDKOverviewHeadless modePythonTypeScriptDeploymentOverviewAmazon BedrockGoogle Vertex AICorporate proxyLLM gatewayDevelopment containersAdministrationAdvanced installationIdentity and Access ManagementSecurityData usageMonitoringCostsAnalyticsConfigurationSettingsAdd Claude Code to your IDETerminal configurationModel configurationMemory managementStatus line configurationReferenceCLI referenceInteractive modeSlash commandsHooks referenceResourcesLegal and compliance​Get started in 30 seconds Prerequisites: Node.js 18 or newer A Claude.ai (recommended) or Anthropic Console account # Install Claude Code npm install -g @anthropic-ai/claude-code # Navigate to your project cd your-awesome-project # Start coding with Claude claude # You'll be prompted to log in on first use That’s it! You’re ready to start coding with Claude. Continue with Quickstart (5 mins) → (Got specific setup needs or hit issues? See advanced setup or troubleshooting.) ​What Claude Code does for you Build features from descriptions: Tell Claude what you want to build in plain English. It will make a plan, write the code, and ensure it works. Debug and fix issues: Describe a bug or paste an error message. Claude Code will analyze your codebase, identify the problem, and implement a fix. Navigate any codebase: Ask anything about your team’s codebase, and get a thoughtful answer back. Claude Code maintains awareness of your entire project structure, can find up-to-date information from the web, and with MCP can pull from external datasources like Google Drive, Figma, and Slack. Automate tedious tasks: Fix fiddly lint issues, resolve merge conflicts, and write release notes. Do all this in a single command from your developer machines, or automatically in CI. ​Why developers love Claude Code Works in your terminal: Not another chat window. Not another IDE. Claude Code meets you where you already work, with the tools you already love. Takes action: Claude Code can directly edit files, run commands, and create commits. Need more? MCP lets Claude read your design docs in Google Drive, update your tickets in Jira, or use your custom developer tooling. Unix philosophy: Claude Code is composable and scriptable. tail -f app.log | claude -p \"Slack me if you see any anomalies appear in this log stream\" works. Your CI can run claude -p \"If there are new text strings, translate them into French and raise a PR for @lang-fr-team to review\". Enterprise-ready: Use Anthropic’s API, or host on AWS or GCP. Enterprise-grade security, privacy, and compliance is built-in. ​Next steps QuickstartSee Claude Code in action with practical examplesCommon workflowsStep-by-step guides for common workflowsTroubleshootingSolutions for common issues with Claude CodeIDE setupAdd Claude Code to your IDE ​Additional resources Host on AWS or GCPConfigure Claude Code with Amazon Bedrock or Google Vertex AISettingsCustomize Claude Code for your workflowCommandsLearn about CLI commands and controlsReference implementationClone our development container reference implementationSecurityDiscover Claude Code’s safeguards and best practices for safe usagePrivacy and data usageUnderstand how Claude Code handles your dataWas this page helpful?YesNoQuickstartOn this page",
+      "headings": [
+        "Getting started",
+        "Build with Claude Code",
+        "Claude Code SDK"
+      ],
+      "wordCount": 474
+    }
+  ],
+  "extractedWith": "main",
+  "content": "Anthropic home pageEnglishSearch...Search...NavigationGetting startedClaude Code overviewWelcomeDeveloper PlatformClaude CodeModel Context Protocol (MCP)API ReferenceResourcesRelease NotesGetting startedOverviewQuickstartCommon workflowsBuild with Claude CodeSubagentsOutput stylesHooksGitHub ActionsModel Context Protocol (MCP)TroubleshootingClaude Code SDKOverviewHeadless modePythonTypeScriptDeploymentOverviewAmazon BedrockGoogle Vertex AICorporate proxyLLM gatewayDevelopment containersAdministrationAdvanced installationIdentity and Access ManagementSecurityData usageMonitoringCostsAnalyticsConfigurationSettingsAdd Claude Code to your IDETerminal configurationModel configurationMemory managementStatus line configurationReferenceCLI referenceInteractive modeSlash commandsHooks referenceResourcesLegal and compliance​Get started in 30 seconds Prerequisites: Node.js 18 or newer A Claude.ai (recommended) or Anthropic Console account # Install Claude Code npm install -g @anthropic-ai/claude-code # Navigate to your project cd your-awesome-project # Start coding with Claude claude # You'll be prompted to log in on first use That’s it! You’re ready to start coding with Claude. Continue with Quickstart (5 mins) → (Got specific setup needs or hit issues? See advanced setup or troubleshooting.) ​What Claude Code does for you Build features from descriptions: Tell Claude what you want to build in plain English. It will make a plan, write the code, and ensure it works. Debug and fix issues: Describe a bug or paste an error message. Claude Code will analyze your codebase, identify the problem, and implement a fix. Navigate any codebase: Ask anything about your team’s codebase, and get a thoughtful answer back. Claude Code maintains awareness of your entire project structure, can find up-to-date information from the web, and with MCP can pull from external datasources like Google Drive, Figma, and Slack. Automate tedious tasks: Fix fiddly lint issues, resolve merge conflicts, and write release notes. Do all this in a single command from your developer machines, or automatically in CI. ​Why developers love Claude Code Works in your terminal: Not another chat window. Not another IDE. Claude Code meets you where you already work, with the tools you already love. Takes action: Claude Code can directly edit files, run commands, and create commits. Need more? MCP lets Claude read your design docs in Google Drive, update your tickets in Jira, or use your custom developer tooling. Unix philosophy: Claude Code is composable and scriptable. tail -f app.log | claude -p \"Slack me if you see any anomalies appear in this log stream\" works. Your CI can run claude -p \"If there are new text strings, translate them into French and raise a PR for @lang-fr-team to review\". Enterprise-ready: Use Anthropic’s API, or host on AWS or GCP. Enterprise-grade security, privacy, and compliance is built-in. ​Next steps QuickstartSee Claude Code in action with practical examplesCommon workflowsStep-by-step guides for common workflowsTroubleshootingSolutions for common issues with Claude CodeIDE setupAdd Claude Code to your IDE ​Additional resources Host on AWS or GCPConfigure Claude Code with Amazon Bedrock or Google Vertex AISettingsCustomize Claude Code for your workflowCommandsLearn about CLI commands and controlsReference implementationClone our development container reference implementationSecurityDiscover Claude Code’s safeguards and best practices for safe usagePrivacy and data usageUnderstand how Claude Code handles your dataWas this page helpful?YesNoQuickstartOn this page"
+}

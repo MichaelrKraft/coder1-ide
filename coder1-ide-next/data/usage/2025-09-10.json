@@ -1,0 +1,94 @@
+{
+  "date": "2025-09-10",
+  "snapshots": [
+    {
+      "timestamp": "2025-09-10T04:11:18.939Z",
+      "tokens": 0,
+      "cost": 0,
+      "model": "claude-3-5-sonnet",
+      "sessionId": "session_1757475968961_abcm8rlpu"
+    },
+    {
+      "timestamp": "2025-09-10T04:11:18.941Z",
+      "tokens": 0,
+      "cost": 0,
+      "model": "claude-3-5-sonnet",
+      "sessionId": "session_1757477418729"
+    },
+    {
+      "timestamp": "2025-09-10T04:12:18.943Z",
+      "tokens": 0,
+      "cost": 0,
+      "model": "claude-3-5-sonnet",
+      "sessionId": "session_1757475968961_abcm8rlpu"
+    },
+    {
+      "timestamp": "2025-09-10T04:12:18.946Z",
+      "tokens": 0,
+      "cost": 0,
+      "model": "claude-3-5-sonnet",
+      "sessionId": "session_1757477418729"
+    },
+    {
+      "timestamp": "2025-09-10T04:13:18.951Z",
+      "tokens": 0,
+      "cost": 0,
+      "model": "claude-3-5-sonnet",
+      "sessionId": "session_1757475968961_abcm8rlpu"
+    },
+    {
+      "timestamp": "2025-09-10T04:13:18.951Z",
+      "tokens": 0,
+      "cost": 0,
+      "model": "claude-3-5-sonnet",
+      "sessionId": "session_1757477418729"
+    },
+    {
+      "timestamp": "2025-09-10T14:16:52.694Z",
+      "tokens": 0,
+      "cost": 0,
+      "model": "claude-3-5-sonnet",
+      "sessionId": "session_1757513797894"
+    },
+    {
+      "timestamp": "2025-09-10T14:17:52.811Z",
+      "tokens": 0,
+      "cost": 0,
+      "model": "claude-3-5-sonnet",
+      "sessionId": "session_1757513797894"
+    },
+    {
+      "timestamp": "2025-09-10T14:18:52.798Z",
+      "tokens": 0,
+      "cost": 0,
+      "model": "claude-3-5-sonnet",
+      "sessionId": "session_1757513797894"
+    },
+    {
+      "timestamp": "2025-09-10T14:19:52.765Z",
+      "tokens": 0,
+      "cost": 0,
+      "model": "claude-3-5-sonnet",
+      "sessionId": "session_1757513797894"
+    },
+    {
+      "timestamp": "2025-09-10T14:20:52.777Z",
+      "tokens": 0,
+      "cost": 0,
+      "model": "claude-3-5-sonnet",
+      "sessionId": "session_1757513797894"
+    },
+    {
+      "timestamp": "2025-09-10T14:21:52.764Z",
+      "tokens": 0,
+      "cost": 0,
+      "model": "claude-3-5-sonnet",
+      "sessionId": "session_1757513797909"
+    }
+  ],
+  "totalTokens": 0,
+  "totalCost": 0,
+  "sessions": 4,
+  "peakBurnRate": 0,
+  "averageBurnRate": 0
+}

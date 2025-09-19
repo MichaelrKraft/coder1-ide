@@ -1,0 +1,7 @@
+{
+  "id": "test_session_$(date +%s)",
+  "name": "IDE Session 9/16/2025, 11:20:59 PM",
+  "description": "Created from Coder1 IDE",
+  "createdAt": "2025-09-17T05:20:59.857Z",
+  "lastUpdated": "2025-09-17T05:20:59.858Z"
+}

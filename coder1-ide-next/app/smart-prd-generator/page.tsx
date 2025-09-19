@@ -19,6 +19,39 @@ export default function SmartPRDGeneratorPage() {
   const [patterns, setPatterns] = useState<any[]>([]);
   const [currentQuestion, setCurrentQuestion] = useState(0);
   
+  // Define the 5 different questions with their options
+  const questions = [
+    {
+      text: "What type of application are you building?",
+      options: ['SaaS Platform', 'E-commerce Platform', 'Developer Tools', 'Social Platform']
+    },
+    {
+      text: "Who is your primary target audience?",
+      options: ['Developers', 'Business Users', 'Consumers', 'Enterprise Clients']
+    },
+    {
+      text: "What is your monetization strategy?",
+      options: ['Subscription (SaaS)', 'One-time Purchase', 'Freemium', 'Marketplace/Commission']
+    },
+    {
+      text: "What is your expected timeline to launch?",
+      options: ['< 1 month', '1-3 months', '3-6 months', '6+ months']
+    },
+    {
+      text: "What is your team size?",
+      options: ['Solo founder', '2-5 people', '5-10 people', '10+ people']
+    }
+  ];
+  
+  // Debug log whenever currentQuestion changes
+  useEffect(() => {
+    console.log('Current question changed to:', currentQuestion);
+    if (currentQuestion >= 1 && currentQuestion <= 5) {
+      console.log('Question text:', questions[currentQuestion - 1].text);
+      console.log('Question options:', questions[currentQuestion - 1].options);
+    }
+  }, [currentQuestion]);
+  
   useEffect(() => {
     // Load patterns on mount
     fetch('/api/smart-prd/patterns')
@@ -83,9 +116,22 @@ export default function SmartPRDGeneratorPage() {
   };
 
   const selectPattern = (patternId: string) => {
+    console.log('Pattern selected, setting question to 1');
     setShowPatterns(false);
     setShowQuestionnaire(true);
     setCurrentQuestion(1);
+  };
+  
+  const handleNextQuestion = () => {
+    const nextQ = Math.min(5, currentQuestion + 1);
+    console.log('Next clicked, changing from', currentQuestion, 'to', nextQ);
+    setCurrentQuestion(nextQ);
+  };
+  
+  const handlePrevQuestion = () => {
+    const prevQ = Math.max(1, currentQuestion - 1);
+    console.log('Prev clicked, changing from', currentQuestion, 'to', prevQ);
+    setCurrentQuestion(prevQ);
   };
 
   const handleLaunchCoder1 = () => {
@@ -328,13 +374,22 @@ export default function SmartPRDGeneratorPage() {
               </div>
             </div>
 
+            {/* Debug Info */}
+            <div className="bg-yellow-100 p-2 mb-4 rounded text-sm text-gray-800">
+              Debug: currentQuestion = {currentQuestion}, Array index = {currentQuestion - 1}, 
+              Question: {questions[currentQuestion - 1]?.text || 'No question found'}
+            </div>
+            
             {/* Question Card */}
             <div className="bg-white rounded-2xl shadow-xl p-8 mb-6">
               <h3 className="text-xl font-semibold mb-4 question-text" style={{ color: '#111827' }}>
-                What type of application are you building?
+                {currentQuestion >= 1 && currentQuestion <= 5 
+                  ? questions[currentQuestion - 1].text 
+                  : 'Invalid question index'}
               </h3>
               <div className="space-y-3">
-                {['SaaS Platform', 'E-commerce Platform', 'Developer Tools', 'Social Platform'].map((option) => (
+                {currentQuestion >= 1 && currentQuestion <= 5 
+                  ? questions[currentQuestion - 1].options.map((option) => (
                   <button 
                     key={option}
                     className="w-full text-left p-4 border-2 border-gray-200 rounded-lg hover:border-indigo-500 hover:bg-indigo-50 transition-all option-button"
@@ -342,14 +397,15 @@ export default function SmartPRDGeneratorPage() {
                   >
                     {option}
                   </button>
-                ))}
+                  ))
+                  : <div>Please select a question</div>}
               </div>
             </div>
 
             {/* Navigation Buttons */}
             <div className="flex justify-between">
               <button 
-                onClick={() => setCurrentQuestion(Math.max(1, currentQuestion - 1))}
+                onClick={handlePrevQuestion}
                 className={`px-6 py-3 border border-indigo-500 rounded-lg hover:bg-indigo-500 transition-all nav-button ${
                   currentQuestion <= 1 ? 'opacity-50 cursor-not-allowed' : ''
                 }`}
@@ -358,11 +414,12 @@ export default function SmartPRDGeneratorPage() {
                 ← Previous
               </button>
               <button 
-                onClick={() => setCurrentQuestion(Math.min(5, currentQuestion + 1))}
+                onClick={handleNextQuestion}
                 className="ml-auto px-8 py-3 text-white rounded-lg hover:shadow-lg transition-all"
                 style={{ background: 'linear-gradient(135deg, #6366f1, #ec4899)' }}
+                disabled={currentQuestion >= 5}
               >
-                Next Question →
+                {currentQuestion < 5 ? 'Next Question →' : 'Complete →'}
               </button>
             </div>
             

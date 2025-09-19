@@ -1,0 +1,17 @@
+{
+  "date": "2025-09-14",
+  "snapshots": [
+    {
+      "timestamp": "2025-09-14T19:03:19.782Z",
+      "tokens": 0,
+      "cost": 0,
+      "model": "claude-3-5-sonnet",
+      "sessionId": "session_1757876599014"
+    }
+  ],
+  "totalTokens": 0,
+  "totalCost": 0,
+  "sessions": 1,
+  "peakBurnRate": 0,
+  "averageBurnRate": 0
+}

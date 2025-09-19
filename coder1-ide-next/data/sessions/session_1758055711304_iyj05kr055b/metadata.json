@@ -1,0 +1,55 @@
+{
+  "id": "session_1758055711304_iyj05kr055b",
+  "name": "test",
+  "description": "test",
+  "createdAt": "2025-09-16T20:48:31.304Z",
+  "lastUpdated": "2025-09-16T20:48:31.304Z",
+  "metadata": {
+    "ide": true,
+    "version": "1.0.0",
+    "createdFrom": "coder1-ide-enhanced",
+    "createdAt": "2025-09-16T20:48:30.889Z",
+    "preventDuplicates": true,
+    "sessionType": "bugfix",
+    "context": {
+      "sessionType": "bugfix",
+      "gitContext": {
+        "branch": "master",
+        "recentCommits": [
+          "fix: Correct JSX structure in ContextMemoryPanel.tsx",
+          "fix: Resolve JSX syntax error in ContextMemoryPanel - Fixed missing closing div tags",
+          "fix: Move command buffer to global scope"
+        ],
+        "modifiedFiles": [
+          "ANONICAL/component-studio.html",
+          "ANONICAL/hooks-v3.html",
+          "ANONICAL/product-creation-hub.js",
+          "ANONICAL/templates-hub.html",
+          "oder1-ide-next/app/globals.css",
+          "oder1-ide-next/components/status-bar/DiscoverPanel.tsx",
+          "oder1-ide-next/components/terminal/Terminal.css",
+          "oder1-ide-next/components/terminal/Terminal.tsx",
+          "oder1-ide-next/package.json",
+          "oder1-ide-next/server.js",
+          "FIREBASE_STUDIO_COMPETITIVE_ANALYSIS.md",
+          "FIREBASE_STUDIO_EXECUTIVE_SUMMARY.md",
+          "src/services/sub-agent-manager.js"
+        ],
+        "workingDirectory": "/Users/michaelkraft/autonomous_vibe_interface/coder1-ide-next",
+        "repositoryRoot": "/Users/michaelkraft/autonomous_vibe_interface",
+        "hasUncommittedChanges": true,
+        "lastCommitHash": "3e06796849465c8e907ddeddb2ee14f24a3e198e"
+      },
+      "workingDirectory": "/Users/michaelkraft/autonomous_vibe_interface/coder1-ide-next",
+      "createdAt": "2025-09-16T20:48:30.888Z"
+    },
+    "tags": [
+      "bugfix"
+    ],
+    "progress": {
+      "status": "planning",
+      "completionPercentage": 0,
+      "milestones": []
+    }
+  }
+}

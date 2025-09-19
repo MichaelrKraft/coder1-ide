@@ -1,0 +1,22 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+echo "🔍 Running pre-commit checks..."
+
+# Run linting
+echo "📋 Checking code style..."
+npm run lint || exit 1
+
+# Run type checking
+echo "🔧 Checking TypeScript types..."
+npm run type-check || exit 1
+
+# Run unit tests for changed files
+echo "🧪 Running relevant tests..."
+npm run test:unit -- --bail --findRelatedTests $(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(ts|tsx)$' | tr '\n' ' ') || exit 1
+
+# Check bundle size impact
+echo "📦 Checking bundle size impact..."
+npm run test:bundle-size || echo "⚠️  Bundle size check failed - review before merging"
+
+echo "✅ Pre-commit checks passed!"

@@ -1,0 +1,31 @@
+{
+  "date": "2025-09-11",
+  "snapshots": [
+    {
+      "timestamp": "2025-09-11T23:58:20.876Z",
+      "tokens": 0,
+      "cost": 0,
+      "model": "claude-3-5-sonnet",
+      "sessionId": "session_1757632558403"
+    },
+    {
+      "timestamp": "2025-09-11T23:59:20.892Z",
+      "tokens": 0,
+      "cost": 0,
+      "model": "claude-3-5-sonnet",
+      "sessionId": "session_1757631512252_ml2tlswog"
+    },
+    {
+      "timestamp": "2025-09-11T23:59:20.883Z",
+      "tokens": 0,
+      "cost": 0,
+      "model": "claude-3-5-sonnet",
+      "sessionId": "session_1757632558401"
+    }
+  ],
+  "totalTokens": 0,
+  "totalCost": 0,
+  "sessions": 3,
+  "peakBurnRate": 0,
+  "averageBurnRate": 0
+}

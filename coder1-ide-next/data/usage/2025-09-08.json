@@ -1,0 +1,25 @@
+{
+  "date": "2025-09-08",
+  "snapshots": [
+    {
+      "timestamp": "2025-09-08T23:58:51.710Z",
+      "tokens": 0,
+      "cost": 0,
+      "model": "claude-3-5-sonnet",
+      "sessionId": "session_1757374242906_ldebm3ilt"
+    },
+    {
+      "timestamp": "2025-09-08T23:59:51.718Z",
+      "tokens": 0,
+      "cost": 0,
+      "model": "claude-3-5-sonnet",
+      "sessionId": "session_1757374255563"
+    }
+  ],
+  "totalTokens": 0,
+  "totalCost": 0,
+  "sessions": 2,
+  "peakBurnRate": 0,
+  "averageBurnRate": 0
+}Rate": 0
+}

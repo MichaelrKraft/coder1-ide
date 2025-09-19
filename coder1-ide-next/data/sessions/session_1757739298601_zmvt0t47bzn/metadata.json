@@ -1,0 +1,50 @@
+{
+  "id": "session_1757739298601_zmvt0t47bzn",
+  "name": "TEST",
+  "description": "TESTES",
+  "createdAt": "2025-09-13T04:54:58.601Z",
+  "lastUpdated": "2025-09-13T04:54:58.601Z",
+  "metadata": {
+    "ide": true,
+    "version": "1.0.0",
+    "createdFrom": "coder1-ide-enhanced",
+    "createdAt": "2025-09-13T04:54:58.569Z",
+    "preventDuplicates": true,
+    "sessionType": "review",
+    "context": {
+      "sessionType": "review",
+      "gitContext": {
+        "branch": "master",
+        "recentCommits": [
+          "fix: Fix WebSocket connection for production deployment",
+          "feat: Add alpha onboarding page and fix session modal",
+          "fix: Update start script to use custom server instead of standalone"
+        ],
+        "modifiedFiles": [
+          "oder1-ide-next/app/ide/page.tsx",
+          "oder1-ide-next/components/ContextMemoryPanel.tsx",
+          "oder1-ide-next/components/session/EnhancedSessionCreationModal.tsx",
+          "oder1-ide-next/components/status-bar/DiscoverPanel.tsx",
+          "oder1-ide-next/components/terminal/Terminal.tsx",
+          "oder1-ide-next/contexts/EnhancedSupervisionContext.tsx",
+          "oder1-ide-next/contexts/SessionContext.tsx",
+          "oder1-ide-next/contexts/TerminalCommandContext.tsx"
+        ],
+        "workingDirectory": "/Users/michaelkraft/autonomous_vibe_interface/coder1-ide-next",
+        "repositoryRoot": "/Users/michaelkraft/autonomous_vibe_interface",
+        "hasUncommittedChanges": true,
+        "lastCommitHash": "f436d5fd066c926512e6f56d028b0ed92f39e291"
+      },
+      "workingDirectory": "/Users/michaelkraft/autonomous_vibe_interface/coder1-ide-next",
+      "createdAt": "2025-09-13T04:54:58.569Z"
+    },
+    "tags": [
+      "review"
+    ],
+    "progress": {
+      "status": "planning",
+      "completionPercentage": 0,
+      "milestones": []
+    }
+  }
+}
