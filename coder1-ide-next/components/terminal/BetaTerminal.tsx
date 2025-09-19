@@ -1,9 +1,19 @@
 'use client';
 
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { Terminal as XTerm } from '@xterm/xterm';
-import { FitAddon } from '@xterm/addon-fit';
-import '@xterm/xterm/css/xterm.css';
+import dynamic from 'next/dynamic';
+
+// Dynamic imports for xterm to prevent SSR issues
+let XTerm: any;
+let FitAddon: any;
+
+if (typeof window !== 'undefined') {
+  const xtermModule = require('@xterm/xterm');
+  const fitModule = require('@xterm/addon-fit');
+  XTerm = xtermModule.Terminal;
+  FitAddon = fitModule.FitAddon;
+  require('@xterm/xterm/css/xterm.css');
+}
 import './Terminal.css';
 import { Users, Zap, StopCircle, Brain, Eye, Code2, Mic, MicOff, Speaker, ChevronDown, RefreshCw, Check, Grid } from '@/lib/icons';
 import { Cpu } from 'lucide-react';
@@ -609,6 +619,11 @@ function BetaTerminal({
   useEffect(() => {
     if (!terminalRef.current || xtermRef.current) return;
 
+    if (!XTerm) {
+      console.error('XTerm not loaded - running in SSR environment');
+      return;
+    }
+
     const term = new XTerm({
       theme: {
         background: '#1a1b26',    // Tokyo Night background
@@ -639,6 +654,10 @@ function BetaTerminal({
       allowProposedApi: true,
     });
 
+    if (!FitAddon) {
+      console.error('FitAddon not loaded - running in SSR environment');
+      return;
+    }
     const fitAddon = new FitAddon();
     term.loadAddon(fitAddon);
 
