@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { claudeCliService } from '@/services/claude-cli-service';
 
+// Mark as dynamic since this uses request data
+export const dynamic = 'force-dynamic';
+
 // CORS configuration for security - only allow specific origins
 const ALLOWED_ORIGINS = [
   'https://coder1.app',

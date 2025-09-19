@@ -1,0 +1,218 @@
+.voice-interface {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.voice-interface.unsupported {
+  opacity: 0.6;
+}
+
+.voice-button {
+  width: 32px;
+  height: 32px;
+  border-radius: 4px;
+  border: 1px solid var(--tokyo-blue);
+  background: transparent;
+  color: var(--tokyo-fg-dark);
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+  outline: none;
+  padding: 0;
+}
+
+.voice-button:hover:not(.disabled) {
+  transform: scale(1.05);
+  box-shadow: 0 0 8px rgba(255, 158, 100, 0.5);
+  border-color: var(--tokyo-orange, #ff9e64);
+}
+
+.voice-button:active:not(.disabled) {
+  transform: scale(0.95);
+}
+
+.voice-button.listening {
+  animation: pulse 1.5s infinite;
+  background: linear-gradient(135deg, #ff9e64 0%, #e0af68 100%);
+  border-color: #ff9e64;
+  box-shadow: 0 0 20px rgba(255, 158, 100, 0.6);
+}
+
+.voice-button.processing {
+  background: linear-gradient(135deg, #9ece6a 0%, #7dcfff 100%);
+  animation: spin 1s linear infinite;
+}
+
+.voice-button.error {
+  background: linear-gradient(135deg, #f7768e 0%, #ff9e64 100%);
+  animation: shake 0.5s ease-in-out;
+}
+
+.voice-button.disabled {
+  background: #414868;
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.voice-icon {
+  display: block;
+  line-height: 1;
+}
+
+.voice-status {
+  margin-top: 8px;
+  text-align: center;
+  min-height: 40px;
+}
+
+.status-text {
+  color: #c0caf5;
+  font-size: 12px;
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+
+.transcript {
+  color: #7aa2f7;
+  font-size: 11px;
+  font-style: italic;
+  max-width: 160px;
+  word-wrap: break-word;
+  text-align: center;
+  background: rgba(122, 162, 247, 0.1);
+  padding: 4px 8px;
+  border-radius: 4px;
+  margin-top: 4px;
+}
+
+.confidence {
+  color: #9ece6a;
+  font-size: 10px;
+  margin-left: 4px;
+}
+
+.voice-commands-help {
+  margin-top: 10px;
+  width: 100%;
+}
+
+.voice-commands-help details {
+  background: rgba(65, 72, 104, 0.3);
+  border-radius: 4px;
+  padding: 6px;
+}
+
+.voice-commands-help summary {
+  color: #bb9af7;
+  font-size: 11px;
+  cursor: pointer;
+  user-select: none;
+  outline: none;
+}
+
+.voice-commands-help summary:hover {
+  color: #c0caf5;
+}
+
+.voice-commands-help ul {
+  list-style: none;
+  padding: 0;
+  margin: 6px 0 0 0;
+}
+
+.voice-commands-help li {
+  color: #a9b1d6;
+  font-size: 10px;
+  margin: 4px 0;
+  padding-left: 12px;
+  position: relative;
+}
+
+.voice-commands-help li:before {
+  content: "•";
+  color: #7aa2f7;
+  position: absolute;
+  left: 0;
+}
+
+.voice-commands-help strong {
+  color: #7dcfff;
+  font-weight: 600;
+}
+
+/* Animations */
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(255, 158, 100, 0.7);
+  }
+  70% {
+    transform: scale(1.05);
+    box-shadow: 0 0 0 10px rgba(255, 158, 100, 0);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(255, 158, 100, 0);
+  }
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-2px); }
+  75% { transform: translateX(2px); }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .voice-interface {
+    min-width: 140px;
+    padding: 8px;
+  }
+  
+  .voice-button {
+    width: 40px;
+    height: 40px;
+    font-size: 16px;
+  }
+  
+  .voice-commands-help {
+    font-size: 10px;
+  }
+}
+
+/* Dark theme compatibility */
+@media (prefers-color-scheme: dark) {
+  .voice-interface {
+    background: rgba(21, 22, 30, 0.95);
+    border-color: rgba(122, 162, 247, 0.4);
+  }
+}
+
+/* Focus accessibility */
+.voice-button:focus-visible {
+  outline: 2px solid #7aa2f7;
+  outline-offset: 2px;
+}
+
+/* Touch device optimizations */
+@media (hover: none) and (pointer: coarse) {
+  .voice-button {
+    width: 60px;
+    height: 60px;
+    font-size: 24px;
+  }
+  
+  .voice-button:active {
+    transform: scale(0.9);
+  }
+}

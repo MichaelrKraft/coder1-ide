@@ -1,0 +1,361 @@
+.thinking-mode-toggle {
+  background: var(--bg-secondary, #1e1e1e);
+  border: 1px solid var(--border-color, #333);
+  border-radius: 8px;
+  padding: 16px;
+  min-width: 280px;
+  font-family: inherit;
+}
+
+.thinking-mode-toggle.disabled {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.thinking-mode-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  font-weight: 600;
+  color: var(--text-primary, #fff);
+}
+
+.thinking-icon {
+  font-size: 18px;
+}
+
+.thinking-label {
+  font-size: 14px;
+}
+
+.thinking-mode-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.thinking-mode-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px;
+  background: var(--bg-primary, #252526);
+  border: 1px solid var(--border-color, #333);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: var(--text-primary, #fff);
+  position: relative;
+}
+
+.thinking-mode-option:hover {
+  background: var(--hover-bg, #2a2d2e);
+  border-color: var(--primary-color, #007acc);
+}
+
+.thinking-mode-option.active {
+  background: var(--primary-color, #007acc);
+  border-color: var(--primary-color, #007acc);
+  color: white;
+}
+
+.thinking-mode-option.active .mode-details {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.mode-content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mode-icon {
+  font-size: 16px;
+}
+
+.mode-label {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.mode-details {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 12px;
+  color: var(--text-secondary, #999);
+}
+
+.mode-time,
+.mode-tokens {
+  padding: 2px 6px;
+  background: var(--bg-tertiary, #333);
+  border-radius: 3px;
+  font-weight: 500;
+}
+
+.thinking-mode-option.active .mode-time,
+.thinking-mode-option.active .mode-tokens {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+}
+
+.thinking-mode-info {
+  padding-top: 12px;
+  border-top: 1px solid var(--border-color, #333);
+}
+
+.current-mode {
+  font-size: 13px;
+  color: var(--text-primary, #fff);
+  margin-bottom: 4px;
+}
+
+.mode-description {
+  font-size: 12px;
+  color: var(--text-secondary, #999);
+  line-height: 1.4;
+}
+
+/* Compact mode styles */
+.thinking-mode-compact {
+  position: relative;
+  display: inline-block;
+  z-index: 10001;
+  pointer-events: auto;
+  overflow: visible !important;
+}
+
+/* Dropdown styles */
+.thinking-mode-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: auto;
+  background: #1a1b26;
+  background: var(--tokyo-bg-dark, #1a1b26);
+  border: 1px solid #414868;
+  border: 1px solid var(--tokyo-fg-gutter, #414868);
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  z-index: 10002;
+  min-width: 180px;
+  width: max-content;
+  max-width: 200px;
+  animation: dropdownFadeIn 0.2s ease-out;
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  overflow: visible;
+}
+
+@keyframes dropdownFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.thinking-mode-dropdown-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 8px 12px;
+  background: transparent;
+  border: none;
+  color: var(--tokyo-fg-dark, #c0caf5);
+  font-size: 12px;
+  font-family: 'JetBrains Mono', monospace;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+}
+
+.thinking-mode-dropdown-item:hover {
+  background: var(--tokyo-bg-highlight, #283457);
+  color: var(--tokyo-fg, #c0caf5);
+}
+
+.thinking-mode-dropdown-item.active {
+  background: var(--tokyo-blue, #7aa2f7);
+  color: white;
+}
+
+.thinking-mode-dropdown-item:first-child {
+  border-radius: 6px 6px 0 0;
+}
+
+.thinking-mode-dropdown-item:last-child {
+  border-radius: 0 0 6px 6px;
+}
+
+.dropdown-item-content {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.dropdown-item-details {
+  font-size: 10px;
+  opacity: 0.7;
+}
+
+.thinking-mode-indicator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: var(--bg-secondary, #1e1e1e);
+  border: 1px solid var(--tokyo-blue, #7aa2f7);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: var(--text-primary, #fff);
+  font-size: 12px;
+  z-index: 10001;
+  position: relative;
+  pointer-events: auto;
+}
+
+.thinking-mode-indicator:hover {
+  background: var(--hover-bg, #2a2d2e);
+  border-color: var(--tokyo-orange, #ff9e64);
+  box-shadow: 0 0 8px rgba(255, 158, 100, 0.5);
+}
+
+.thinking-mode-indicator.disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.thinking-mode-indicator .mode-icon {
+  font-size: 14px;
+}
+
+.thinking-mode-indicator .mode-label {
+  font-weight: 500;
+}
+
+/* Tooltip styles */
+.thinking-mode-tooltip {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--bg-tooltip, #2d2d30);
+  border: 1px solid var(--border-color, #444);
+  border-radius: 6px;
+  padding: 12px;
+  min-width: 200px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  z-index: 10000;
+  animation: tooltipFadeIn 0.2s ease-out;
+}
+
+.thinking-mode-tooltip::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-top-color: var(--bg-tooltip, #2d2d30);
+}
+
+@keyframes tooltipFadeIn {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+.tooltip-header {
+  font-weight: 600;
+  color: var(--text-primary, #fff);
+  margin-bottom: 6px;
+  font-size: 13px;
+}
+
+.tooltip-description {
+  color: var(--text-secondary, #ccc);
+  font-size: 12px;
+  line-height: 1.4;
+  margin-bottom: 8px;
+}
+
+.tooltip-stats {
+  display: flex;
+  gap: 12px;
+  font-size: 11px;
+  color: var(--text-secondary, #999);
+}
+
+.tooltip-stats > div,
+.tooltip-stats > span {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Animation for mode changes */
+.thinking-mode-option {
+  transform: scale(1);
+}
+
+.thinking-mode-option.active {
+  transform: scale(1.02);
+  animation: modeActivate 0.3s ease-out;
+}
+
+@keyframes modeActivate {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1.02);
+  }
+}
+
+/* Responsive design */
+@media (max-width: 480px) {
+  .thinking-mode-toggle {
+    min-width: auto;
+    width: 100%;
+  }
+  
+  .thinking-mode-option {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  
+  .mode-details {
+    align-self: flex-end;
+  }
+  
+  .thinking-mode-tooltip {
+    left: 0;
+    right: 0;
+    transform: none;
+    margin: 0 16px;
+  }
+  
+  .thinking-mode-tooltip::after {
+    left: 24px;
+    transform: none;
+  }
+}

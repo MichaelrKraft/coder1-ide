@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Coder1 IDE with Terminal</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        
+        #ide-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        
+        #ide-frame {
+            flex: 1;
+            width: 100%;
+            border: none;
+        }
+        
+        #terminal-container {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 0;
+            background-color: #1e1e1e;
+            border-top: 1px solid #444;
+            transition: height 0.3s ease;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        #terminal-container.open {
+            height: 40vh;
+        }
+        
+        .terminal-header {
+            background-color: #2d2d2d;
+            padding: 8px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #444;
+            flex-shrink: 0;
+        }
+        
+        .terminal-close {
+            background: none;
+            border: none;
+            color: #d4d4d4;
+            cursor: pointer;
+            font-size: 20px;
+        }
+        
+        .terminal-close:hover {
+            color: #ff6b6b;
+        }
+        
+        #terminal {
+            flex: 1;
+            overflow: auto;
+            padding: 10px;
+            background-color: #1e1e1e;
+            color: #d4d4d4;
+            font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+            font-size: 14px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        
+        #terminal-input {
+            display: flex;
+            padding: 10px;
+            background-color: #2d2d2d;
+            border-top: 1px solid #444;
+        }
+        
+        #terminal-prompt {
+            color: #d4d4d4;
+            margin-right: 5px;
+        }
+        
+        #terminal-command {
+            flex: 1;
+            background: none;
+            border: none;
+            color: #d4d4d4;
+            font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+            font-size: 14px;
+            outline: none;
+        }
+        
+        .terminal-button {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background-color: #007acc;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 12px 24px;
+            font-size: 16px;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+            z-index: 1000;
+            transition: all 0.3s ease;
+        }
+        
+        .terminal-button:hover {
+            background-color: #005a9e;
+        }
+        
+        .terminal-button.terminal-open {
+            bottom: calc(40vh + 20px);
+        }
+    </style>
+    <script src="/node_modules/@tauri-apps/api/dist/index.min.js"></script>
+</head>
+<body>
+    <div id="ide-container">
+        <iframe id="ide-frame" src="http://localhost:10000/ide"></iframe>
+    </div>
+    
+    <button class="terminal-button" id="terminal-toggle">Open Terminal</button>
+    
+    <div id="terminal-container">
+        <div class="terminal-header">
+            <span>Terminal - Claude CLI Ready</span>
+            <button class="terminal-close" id="terminal-close">×</button>
+        </div>
+        <div id="terminal"></div>
+        <div id="terminal-input">
+            <span id="terminal-prompt">$</span>
+            <input type="text" id="terminal-command" autofocus>
+        </div>
+    </div>
+
+    <script>
+        // Get Tauri API
+        const { invoke } = window.__TAURI__ || {};
+        
+        const terminalButton = document.getElementById('terminal-toggle');
+        const terminalContainer = document.getElementById('terminal-container');
+        const terminalClose = document.getElementById('terminal-close');
+        const terminalOutput = document.getElementById('terminal');
+        const terminalCommand = document.getElementById('terminal-command');
+        let terminalOpen = false;
+        let commandHistory = [];
+        let historyIndex = -1;
+        
+        // Check if Tauri is available
+        if (!window.__TAURI__) {
+            console.error('Tauri API not found!');
+            terminalOutput.innerHTML = '<div style="color: #ff6b6b;">Error: Tauri API not available. Running in demo mode.</div>';
+        } else {
+            console.log('Tauri API loaded successfully');
+        }
+        
+        function addOutput(text, type = 'normal') {
+            const line = document.createElement('div');
+            if (type === 'error') {
+                line.style.color = '#ff6b6b';
+            } else if (type === 'success') {
+                line.style.color = '#50fa7b';
+            }
+            line.textContent = text;
+            terminalOutput.appendChild(line);
+            terminalOutput.scrollTop = terminalOutput.scrollHeight;
+        }
+        
+        async function executeCommand(cmd) {
+            if (!cmd.trim()) return;
+            
+            // Add command to output
+            addOutput(`$ ${cmd}`);
+            
+            // Add to history
+            commandHistory.push(cmd);
+            historyIndex = commandHistory.length;
+            
+            // Clear input
+            terminalCommand.value = '';
+            
+            // Special handling for 'clear' command
+            if (cmd.trim() === 'clear') {
+                terminalOutput.innerHTML = '';
+                return;
+            }
+            
+            // Check if Tauri is available
+            if (!invoke) {
+                addOutput('Terminal not available in demo mode', 'error');
+                return;
+            }
+            
+            try {
+                // Execute command via Tauri
+                const output = await invoke('execute_command', { command: cmd });
+                if (output) {
+                    addOutput(output);
+                }
+            } catch (error) {
+                console.error('Command execution error:', error);
+                addOutput(`Error: ${error}`, 'error');
+            }
+        }
+        
+        // Terminal toggle button
+        terminalButton.addEventListener('click', () => {
+            console.log('Terminal button clicked');
+            if (!terminalOpen) {
+                terminalContainer.classList.add('open');
+                terminalButton.classList.add('terminal-open');
+                terminalButton.textContent = 'Close Terminal';
+                terminalOpen = true;
+                terminalCommand.focus();
+                
+                if (terminalOutput.children.length === 0) {
+                    addOutput('🚀 Coder1 IDE Terminal', 'success');
+                    addOutput('Type commands and press Enter. Try "claude" to start Claude CLI.');
+                    addOutput('');
+                }
+            } else {
+                terminalContainer.classList.remove('open');
+                terminalButton.classList.remove('terminal-open');
+                terminalButton.textContent = 'Open Terminal';
+                terminalOpen = false;
+            }
+        });
+        
+        // Terminal close button
+        terminalClose.addEventListener('click', () => {
+            terminalContainer.classList.remove('open');
+            terminalButton.classList.remove('terminal-open');
+            terminalButton.textContent = 'Open Terminal';
+            terminalOpen = false;
+        });
+        
+        // Handle command input
+        terminalCommand.addEventListener('keydown', async (e) => {
+            if (e.key === 'Enter') {
+                await executeCommand(terminalCommand.value);
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                if (historyIndex > 0) {
+                    historyIndex--;
+                    terminalCommand.value = commandHistory[historyIndex];
+                }
+            } else if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                if (historyIndex < commandHistory.length - 1) {
+                    historyIndex++;
+                    terminalCommand.value = commandHistory[historyIndex];
+                } else {
+                    historyIndex = commandHistory.length;
+                    terminalCommand.value = '';
+                }
+            }
+        });
+    </script>
+</body>
+</html>

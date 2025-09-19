@@ -1,0 +1,452 @@
+/**
+ * SessionHistoryPanel Styles
+ * Professional IDE styling with clean, modern design
+ */
+
+.session-history-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: transparent;
+  color: var(--tokyo-fg);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  font-size: 13px;
+}
+
+/* Header */
+.session-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  background: transparent;
+}
+
+.header-title {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  color: var(--tokyo-fg-dark);
+  opacity: 0.6;
+}
+
+.header-refresh {
+  background: transparent;
+  border: none;
+  color: var(--tokyo-fg-dark);
+  cursor: pointer;
+  padding: 2px;
+  font-size: 14px;
+  opacity: 0.5;
+  transition: opacity 0.15s;
+}
+
+.header-refresh:hover {
+  opacity: 1;
+}
+
+/* Sessions Container */
+.sessions-container {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 0;
+}
+
+/* Empty State */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 48px 24px;
+  text-align: center;
+}
+
+.empty-icon {
+  font-size: 32px;
+  margin-bottom: 12px;
+  opacity: 0.3;
+}
+
+.empty-text {
+  font-size: 13px;
+  color: var(--tokyo-fg);
+  margin-bottom: 4px;
+  opacity: 0.7;
+}
+
+.empty-hint {
+  font-size: 12px;
+  color: var(--tokyo-fg-dark);
+  opacity: 0.5;
+}
+
+/* Session Row */
+.session-group {
+  margin: 0;
+  position: relative;
+}
+
+.session-row {
+  display: flex;
+  align-items: flex-start;
+  padding: 8px 12px;
+  cursor: pointer;
+  transition: background 0.1s;
+  user-select: none;
+  min-height: 44px;
+}
+
+.session-row:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.session-row.expanded {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.session-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  width: 100%;
+  gap: 8px;
+}
+
+.session-main {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+  padding-top: 2px;
+}
+
+.session-chevron {
+  font-size: 9px;
+  color: var(--tokyo-fg-dark);
+  opacity: 0.4;
+  width: 10px;
+  flex-shrink: 0;
+  transition: opacity 0.15s;
+  margin-top: 1px;
+}
+
+.session-row:hover .session-chevron {
+  opacity: 0.7;
+}
+
+.session-details {
+  flex: 1;
+  min-width: 0;
+  line-height: 1.2;
+}
+
+.session-title {
+  font-size: 12px;
+  color: var(--tokyo-fg);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 1px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 500;
+  min-width: 0;
+}
+
+.session-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.current-indicator {
+  color: var(--tokyo-cyan);
+  font-size: 6px;
+  margin-top: 1px;
+  flex-shrink: 0;
+}
+
+.session-subtitle {
+  display: none; /* Hide subtitle in collapsed view */
+}
+
+/* Session Meta */
+.session-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  flex-shrink: 0;
+  padding-top: 2px;
+}
+
+.session-time {
+  font-size: 9px;
+  color: var(--tokyo-fg-dark);
+  opacity: 0.4;
+  white-space: nowrap;
+  font-weight: 400;
+  min-width: fit-content;
+}
+
+.session-actions {
+  display: flex;
+  gap: 2px;
+  align-items: center;
+}
+
+/* Action Buttons - Compact for narrow space */
+.action-btn {
+  background: transparent;
+  border: none;
+  padding: 2px;
+  cursor: pointer;
+  color: var(--tokyo-fg-dark);
+  opacity: 0.3;
+  transition: all 0.15s;
+  border-radius: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+}
+
+.action-btn:hover:not(:disabled) {
+  opacity: 1;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.action-btn.restore {
+  font-size: 12px;
+}
+
+.action-btn.delete svg {
+  width: 10px;
+  height: 10px;
+}
+
+.action-btn.delete:hover:not(:disabled) {
+  color: var(--tokyo-red);
+  opacity: 1;
+}
+
+.action-btn:disabled {
+  opacity: 0.15;
+  cursor: not-allowed;
+}
+
+/* Current Session Styling */
+.session-group.current .session-row {
+  background: rgba(139, 233, 253, 0.05);
+  position: relative;
+}
+
+.session-group.current .session-row::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--tokyo-cyan);
+}
+
+/* Checkpoints Container */
+.checkpoints-container {
+  background: rgba(0, 0, 0, 0.2);
+  border-top: 1px solid rgba(255, 255, 255, 0.04);
+  padding: 8px 8px 8px 20px;
+}
+
+.checkpoints-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.checkpoints-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--tokyo-fg-dark);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  opacity: 0.6;
+}
+
+.checkpoints-count {
+  font-size: 10px;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 2px 6px;
+  border-radius: 10px;
+  color: var(--tokyo-fg-dark);
+  opacity: 0.6;
+}
+
+.checkpoint-list {
+  display: flex;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+
+.checkpoint-row {
+  display: inline-block;
+  margin-right: 8px;
+  margin-bottom: 8px;
+  vertical-align: top;
+}
+
+.checkpoint-row:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.checkpoint-column {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 4px;
+  transition: all 0.15s;
+  min-width: 70px;
+}
+
+.checkpoint-column:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.checkpoint-type {
+  font-size: 10px;
+  color: var(--tokyo-fg-dark);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  opacity: 0.7;
+  font-weight: 600;
+}
+
+.checkpoint-time {
+  font-size: 9px;
+  color: var(--tokyo-fg-dark);
+  opacity: 0.5;
+  white-space: nowrap;
+}
+
+.checkpoint-restore {
+  padding: 3px 8px;
+  background: transparent;
+  border: 1px solid rgba(139, 233, 253, 0.3);
+  color: var(--tokyo-cyan);
+  border-radius: 3px;
+  font-size: 10px;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.checkpoint-restore:hover {
+  background: rgba(139, 233, 253, 0.1);
+  border-color: var(--tokyo-cyan);
+}
+
+.checkpoints-empty {
+  padding: 16px;
+  text-align: center;
+  font-size: 11px;
+  color: var(--tokyo-fg-dark);
+  opacity: 0.5;
+  font-style: italic;
+}
+
+/* Loading & Error States */
+.session-loading,
+.session-error {
+  padding: 24px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--tokyo-fg-dark);
+  opacity: 0.6;
+}
+
+.session-error {
+  color: var(--tokyo-red);
+}
+
+
+/* Narrow view optimizations */
+@media (max-width: 250px), (max-width: 100vw) {
+  .session-row {
+    padding: 6px 8px;
+    min-height: 36px;
+  }
+  
+  .session-chevron {
+    font-size: 8px;
+    width: 8px;
+  }
+  
+  .session-title {
+    font-size: 11px;
+  }
+  
+  .checkpoint-column {
+    min-width: 60px;
+    padding: 6px 8px;
+  }
+  
+  .checkpoint-type {
+    font-size: 9px;
+  }
+  
+  .checkpoint-restore {
+    font-size: 9px;
+    padding: 2px 6px;
+  }
+  
+  .checkpoint-time {
+    font-size: 8px;
+  }
+  
+  .action-btn {
+    width: 16px;
+    height: 16px;
+  }
+}
+
+/* Container query for narrow sidebar */
+@container (max-width: 200px) {
+  .session-content {
+    gap: 4px;
+  }
+  
+  .session-main {
+    gap: 4px;
+  }
+  
+  .checkpoints-container {
+    padding: 6px 6px 6px 16px;
+  }
+}
+
+/* Scrollbar Styling */
+.sessions-container::-webkit-scrollbar {
+  width: 6px;
+}
+
+.sessions-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sessions-container::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+}
+
+.sessions-container::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.15);
+}

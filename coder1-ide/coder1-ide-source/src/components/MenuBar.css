@@ -1,0 +1,166 @@
+.menu-bar {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  position: relative;
+}
+
+.menu-container {
+  position: relative;
+}
+
+.menu-button {
+  background: none;
+  border: none;
+  color: #cccccc;
+  padding: 4px 12px;
+  cursor: pointer;
+  font-size: 13px;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.menu-button:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.menu-button.active {
+  background-color: rgba(255, 255, 255, 0.15);
+}
+
+.menu-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  min-width: 200px;
+  background: #252526;
+  border: 1px solid #454545;
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+  padding: 4px 0;
+  z-index: 25000;
+  margin-top: 2px;
+}
+
+.menu-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 20px;
+  cursor: pointer;
+  font-size: 13px;
+  color: #cccccc;
+  transition: background-color 0.2s;
+}
+
+.menu-item:hover {
+  background-color: #094771;
+}
+
+.menu-label {
+  flex: 1;
+}
+
+.menu-shortcut {
+  color: #999999;
+  font-size: 11px;
+  margin-left: 20px;
+}
+
+.menu-separator {
+  height: 1px;
+  background-color: #454545;
+  margin: 4px 0;
+}
+
+/* Settings Dropdown Specific Styles */
+.settings-dropdown {
+  right: 0;
+  left: auto; /* Right-align the settings dropdown */
+}
+
+.settings-header {
+  padding: 6px 20px;
+  font-weight: bold;
+  color: #cccccc;
+  border-bottom: 1px solid #454545;
+}
+
+.settings-section-header {
+  font-weight: 500;
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.settings-section-header:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.settings-expand-icon {
+  color: #999999;
+  font-size: 10px;
+  margin-left: 8px;
+}
+
+.settings-section-content {
+  background: transparent; /* Transparent background as requested */
+  border-left: 2px solid #094771;
+  margin-left: 10px;
+}
+
+.settings-control-item {
+  cursor: default;
+  padding-left: 32px;
+}
+
+.settings-control-item:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.settings-button-item:hover {
+  background-color: #094771;
+}
+
+.settings-item-control {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.settings-item-label {
+  flex: 1;
+  color: #cccccc;
+  font-size: 13px;
+}
+
+.settings-select {
+  background: #3c3c3c;
+  border: 1px solid #454545;
+  color: #cccccc;
+  padding: 2px 8px;
+  border-radius: 3px;
+  font-size: 12px;
+  min-width: 80px;
+}
+
+.settings-select:focus {
+  outline: none;
+  border-color: #094771;
+}
+
+.settings-checkbox-label {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  width: 100%;
+}
+
+.settings-checkbox-label input[type="checkbox"] {
+  margin-right: 8px;
+  accent-color: #094771;
+}
+
+.settings-checkbox-label span {
+  flex: 1;
+  color: #cccccc;
+}

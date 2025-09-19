@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { contextProcessor } from '@/services/context-processor';
 import { logger } from '@/lib/logger';
 
+// Mark as dynamic since this manages stateful terminal sessions
+export const dynamic = 'force-dynamic';
+
 // Simple in-memory session tracking for REST API compatibility
 const sessionCounter = new Map();
 

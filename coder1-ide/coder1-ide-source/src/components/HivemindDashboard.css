@@ -1,0 +1,358 @@
+.hivemind-dashboard {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: #1e1e1e;
+  color: #d4d4d4;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  font-family: 'Consolas', 'Monaco', monospace;
+}
+
+.hivemind-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  background: #252526;
+  border-bottom: 1px solid #3e3e42;
+}
+
+.hivemind-header h2 {
+  margin: 0;
+  font-size: 24px;
+  color: #ffffff;
+}
+
+.close-button {
+  background: none;
+  border: none;
+  color: #cccccc;
+  font-size: 28px;
+  cursor: pointer;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.close-button:hover {
+  background-color: #3e3e42;
+}
+
+/* Start Screen */
+.hivemind-start {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.hivemind-start h3 {
+  font-size: 28px;
+  margin-bottom: 10px;
+  color: #ffffff;
+}
+
+.hivemind-start p {
+  font-size: 16px;
+  color: #cccccc;
+  margin-bottom: 30px;
+}
+
+.start-button {
+  background: #0e639c;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  font-size: 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.start-button:hover:not(:disabled) {
+  background: #1177bb;
+}
+
+.start-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Queen Status Bar */
+.queen-status {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  background: #2d2d30;
+  border-bottom: 1px solid #3e3e42;
+}
+
+.queen-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.crown {
+  font-size: 24px;
+}
+
+.queen-name {
+  font-size: 16px;
+  font-weight: bold;
+  color: #ffffff;
+}
+
+.coordination-mode {
+  background: #0e639c;
+  color: white;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+}
+
+.stop-button {
+  background: #f44336;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.stop-button:hover {
+  background: #d32f2f;
+}
+
+/* Agents Grid */
+.agents-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  padding: 20px;
+}
+
+.agent-card {
+  background: #252526;
+  border: 1px solid #3e3e42;
+  border-radius: 8px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.agent-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.agent-header h4 {
+  margin: 0;
+  font-size: 18px;
+  color: #ffffff;
+}
+
+.status-indicator {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  transition: background-color 0.3s;
+}
+
+.agent-role {
+  font-size: 12px;
+  color: #cccccc;
+  font-style: italic;
+}
+
+.progress-container {
+  height: 8px;
+  background: #3e3e42;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progress-bar {
+  height: 100%;
+  background: #0e639c;
+  transition: width 0.3s ease;
+}
+
+.agent-task {
+  font-size: 14px;
+  min-height: 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.task-label {
+  color: #cccccc;
+  font-weight: bold;
+}
+
+.task-description {
+  color: #d4d4d4;
+}
+
+.idle-text {
+  color: #858585;
+  font-style: italic;
+}
+
+.agent-stats {
+  font-size: 12px;
+  color: #858585;
+  margin-top: auto;
+}
+
+/* Hivemind Info Section */
+.hivemind-info {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 20px;
+  padding: 0 20px 20px;
+}
+
+.task-queue, .shared-context {
+  background: #252526;
+  border: 1px solid #3e3e42;
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.task-queue h4, .shared-context h4 {
+  margin: 0 0 12px 0;
+  font-size: 16px;
+  color: #ffffff;
+}
+
+.queue-items {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 8px 0;
+}
+
+.queue-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.arrow {
+  color: #858585;
+  font-size: 14px;
+}
+
+.task-item {
+  background: #3e3e42;
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.empty-queue {
+  color: #858585;
+  font-style: italic;
+}
+
+.context-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.stat-item {
+  display: flex;
+  justify-content: space-between;
+  font-size: 14px;
+}
+
+.stat-label {
+  color: #cccccc;
+}
+
+.stat-value {
+  font-weight: bold;
+  color: #0e639c;
+}
+
+/* Discoveries Feed */
+.discoveries-feed {
+  margin: 0 20px 20px;
+  background: #252526;
+  border: 1px solid #3e3e42;
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.discoveries-feed h4 {
+  margin: 0 0 12px 0;
+  font-size: 16px;
+  color: #ffffff;
+}
+
+.discoveries-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 150px;
+  overflow-y: auto;
+}
+
+.discovery-item {
+  font-size: 13px;
+  padding: 4px 0;
+  border-bottom: 1px solid #3e3e42;
+}
+
+.discovery-item:last-child {
+  border-bottom: none;
+}
+
+.discovery-agent {
+  color: #0e639c;
+  font-weight: bold;
+  margin-right: 8px;
+}
+
+.discovery-content {
+  color: #d4d4d4;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #1e1e1e;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #424242;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #4e4e4e;
+}

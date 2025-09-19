@@ -1,0 +1,277 @@
+.dot-grid-background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: linear-gradient(135deg, #1a1b26 0%, #24283b 50%, #1a1b26 100%);
+  cursor: pointer;
+}
+
+.dot-grid-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.dot-grid {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: 
+    radial-gradient(circle, rgba(125, 211, 252, 0.4) 1px, transparent 1px),
+    radial-gradient(circle, rgba(187, 154, 247, 0.3) 1px, transparent 1px);
+  background-size: 
+    32px 32px,
+    48px 48px;
+  background-position: 
+    0 0,
+    16px 16px;
+  opacity: 0.8;
+  animation: dotGridMove 20s linear infinite;
+}
+
+.dot-grid-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: 
+    radial-gradient(ellipse at center, transparent 30%, rgba(26, 27, 38, 0.1) 70%),
+    radial-gradient(ellipse at 20% 80%, rgba(125, 211, 252, 0.05) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 20%, rgba(187, 154, 247, 0.05) 0%, transparent 50%),
+    radial-gradient(ellipse at 40% 40%, rgba(125, 211, 252, 0.03) 0%, transparent 50%);
+  animation: overlayPulse 8s ease-in-out infinite alternate;
+}
+
+/* Additional dot patterns for depth */
+.dot-grid::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0.5px, transparent 0.5px);
+  background-size: 16px 16px;
+  background-position: 8px 8px;
+  opacity: 0.6;
+  animation: dotGridMove 15s linear infinite reverse;
+}
+
+.dot-grid::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: radial-gradient(circle, rgba(125, 211, 252, 0.2) 1.5px, transparent 1.5px);
+  background-size: 64px 64px;
+  background-position: 32px 32px;
+  opacity: 0.4;
+  animation: dotGridMove 25s linear infinite;
+}
+
+/* Animations */
+@keyframes dotGridMove {
+  0% {
+    transform: translate(0, 0);
+  }
+  100% {
+    transform: translate(32px, 32px);
+  }
+}
+
+@keyframes overlayPulse {
+  0% {
+    opacity: 0.8;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .dot-grid {
+    background-size: 
+      24px 24px,
+      36px 36px;
+    background-position: 
+      0 0,
+      12px 12px;
+  }
+  
+  .dot-grid::before {
+    background-size: 12px 12px;
+    background-position: 6px 6px;
+  }
+  
+  .dot-grid::after {
+    background-size: 48px 48px;
+    background-position: 24px 24px;
+  }
+}
+
+/* Subtle glow effect */
+@media (prefers-reduced-motion: no-preference) {
+  .dot-grid-background::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 400px;
+    height: 400px;
+    transform: translate(-50%, -50%);
+    background: radial-gradient(circle, rgba(125, 211, 252, 0.05) 0%, transparent 70%);
+    border-radius: 50%;
+    animation: subtleGlow 6s ease-in-out infinite alternate;
+  }
+}
+
+@keyframes subtleGlow {
+  0% {
+    opacity: 0.3;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  100% {
+    opacity: 0.6;
+    transform: translate(-50%, -50%) scale(1.1);
+  }
+}
+
+/* Interactive Layer */
+.interactive-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 2;
+  --mouse-x: 50%;
+  --mouse-y: 50%;
+}
+
+/* Mouse hover effect */
+.interactive-layer.mouse-active::before {
+  content: '';
+  position: absolute;
+  width: 200px;
+  height: 200px;
+  background: radial-gradient(
+    circle,
+    rgba(125, 211, 252, 0.3) 0%,
+    rgba(125, 211, 252, 0.15) 30%,
+    rgba(125, 211, 252, 0.05) 60%,
+    transparent 100%
+  );
+  border-radius: 50%;
+  left: var(--mouse-x);
+  top: var(--mouse-y);
+  transform: translate(-50%, -50%);
+  animation: mouseFade 0.3s ease-out;
+  pointer-events: none;
+}
+
+/* Enhanced dot visibility on hover */
+.interactive-layer.mouse-active::after {
+  content: '';
+  position: absolute;
+  width: 300px;
+  height: 300px;
+  background-image: 
+    radial-gradient(circle, rgba(125, 211, 252, 0.6) 1px, transparent 1px),
+    radial-gradient(circle, rgba(187, 154, 247, 0.4) 0.5px, transparent 0.5px);
+  background-size: 20px 20px, 10px 10px;
+  background-position: 0 0, 10px 10px;
+  left: var(--mouse-x);
+  top: var(--mouse-y);
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  animation: mouseDotsEnhance 0.3s ease-out;
+  pointer-events: none;
+}
+
+/* Click ripple effect */
+.click-ripple {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  background: radial-gradient(
+    circle,
+    rgba(125, 211, 252, 0.8) 0%,
+    rgba(125, 211, 252, 0.4) 30%,
+    rgba(125, 211, 252, 0.1) 60%,
+    transparent 100%
+  );
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  animation: rippleExpand 1s ease-out forwards;
+  pointer-events: none;
+}
+
+/* Animation keyframes for interactions */
+@keyframes mouseFade {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.5);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+@keyframes mouseDotsEnhance {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.8);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+@keyframes rippleExpand {
+  0% {
+    width: 4px;
+    height: 4px;
+    opacity: 1;
+  }
+  100% {
+    width: 100px;
+    height: 100px;
+    opacity: 0;
+  }
+}
+
+/* Enhance dots on mouse interaction */
+.dot-grid-background:hover .dot-grid {
+  animation-duration: 15s;
+  opacity: 1;
+}
+
+.dot-grid-background:hover .dot-grid::before {
+  opacity: 0.8;
+}
+
+.dot-grid-background:hover .dot-grid::after {
+  opacity: 0.6;
+}
+
+/* Disable interactions on reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  .interactive-layer.mouse-active::before,
+  .interactive-layer.mouse-active::after,
+  .click-ripple {
+    animation: none;
+    opacity: 0;
+  }
+}

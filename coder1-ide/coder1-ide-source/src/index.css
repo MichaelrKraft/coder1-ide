@@ -1,0 +1,86 @@
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap');
+
+/* Import Design System CSS Variables */
+@import './design-system/css-variables.css';
+
+/* Tokyo Night Color Scheme */
+:root {
+  --tokyo-bg: #1a1b26;
+  --tokyo-bg-dark: #16161e;
+  --tokyo-bg-highlight: #292e42;
+  --tokyo-terminal: #1a1b26;
+  --tokyo-fg: #c0caf5;
+  --tokyo-fg-dark: #a9b1d6;
+  --tokyo-fg-gutter: #3b4261;
+  --tokyo-dark3: #545c7e;
+  --tokyo-comment: #565f89;
+  --tokyo-dark5: #737aa2;
+  --tokyo-blue: #7aa2f7;
+  --tokyo-cyan: #7dcfff;
+  --tokyo-blue1: #2ac3de;
+  --tokyo-blue2: #0db9d7;
+  --tokyo-blue5: #89ddff;
+  --tokyo-blue6: #b4f9f8;
+  --tokyo-magenta: #bb9af7;
+  --tokyo-magenta2: #ff007c;
+  --tokyo-purple: #9d7cd8;
+  --tokyo-orange: #ff9e64;
+  --tokyo-yellow: #e0af68;
+  --tokyo-green: #9ece6a;
+  --tokyo-green1: #73daca;
+  --tokyo-green2: #41a6b5;
+  --tokyo-teal: #1abc9c;
+  --tokyo-red: #f7768e;
+  --tokyo-red1: #db4b4b;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'JetBrains Mono', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: var(--tokyo-bg);
+  color: var(--tokyo-fg);
+  overflow: hidden;
+}
+
+code {
+  font-family: 'JetBrains Mono', source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
+}
+
+/* Orange glow effect for buttons */
+.orange-glow {
+  box-shadow: 0 0 0 1px var(--tokyo-orange),
+              0 0 10px rgba(255, 158, 100, 0.5);
+  transition: all 0.2s ease;
+}
+
+.orange-glow:hover {
+  box-shadow: 0 0 0 2px var(--tokyo-orange),
+              0 0 20px rgba(255, 158, 100, 0.7);
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--tokyo-bg-dark);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--tokyo-dark3);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--tokyo-comment);
+}

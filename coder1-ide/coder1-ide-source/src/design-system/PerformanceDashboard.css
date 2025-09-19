@@ -1,0 +1,586 @@
+/* Professional Performance Dashboard Styles */
+/* Uses CSS custom properties from design tokens */
+
+/* Overlay styles */
+.performance-dashboard-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(8px);
+  z-index: 9997;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-4);
+  animation: dashboard-overlay-enter var(--duration-normal) var(--easing-out);
+}
+
+@keyframes dashboard-overlay-enter {
+  from {
+    opacity: 0;
+    backdrop-filter: blur(0px);
+  }
+  to {
+    opacity: 1;
+    backdrop-filter: blur(8px);
+  }
+}
+
+/* Main dashboard container */
+.performance-dashboard {
+  width: 1000px;
+  max-width: 95vw;
+  max-height: 90vh;
+  background: var(--color-background);
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-xl);
+  animation: dashboard-enter var(--duration-normal) var(--easing-out);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.performance-dashboard--compact {
+  width: 800px;
+}
+
+@keyframes dashboard-enter {
+  from {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Header section */
+.performance-dashboard__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-4);
+  border-bottom: 1px solid var(--color-border-subtle);
+  background: var(--color-surface);
+  flex-shrink: 0;
+}
+
+.performance-dashboard__title h2 {
+  margin: 0;
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.performance-dashboard__title p {
+  margin: var(--spacing-1) 0 0 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.performance-dashboard__controls {
+  display: flex;
+  gap: var(--spacing-2);
+  align-items: center;
+}
+
+.performance-dashboard__controls button {
+  transition: all var(--duration-fast) var(--easing-out);
+}
+
+.performance-dashboard__controls button:hover {
+  transform: translateY(-1px);
+}
+
+.performance-dashboard__controls button:active {
+  transform: translateY(0) scale(0.95);
+}
+
+/* Alerts section */
+.performance-dashboard__alerts {
+  padding: var(--spacing-3);
+  border-bottom: 1px solid var(--color-border-subtle);
+  background: rgba(255, 193, 7, 0.1);
+  flex-shrink: 0;
+}
+
+.performance-dashboard__alerts h3 {
+  margin: 0 0 var(--spacing-2) 0;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
+}
+
+.performance-dashboard__alert {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-2);
+  margin-bottom: var(--spacing-1);
+  background: var(--color-surface);
+  border-radius: var(--border-radius-base);
+  border: 1px solid var(--color-border);
+  border-left-width: 3px;
+  animation: alert-slide-in var(--duration-fast) var(--easing-out);
+}
+
+@keyframes alert-slide-in {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.performance-dashboard__alert:last-child {
+  margin-bottom: 0;
+}
+
+.performance-dashboard__alert button {
+  background: transparent;
+  border: none;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  padding: var(--spacing-1);
+  border-radius: var(--border-radius-base);
+  transition: all var(--duration-fast) var(--easing-out);
+}
+
+.performance-dashboard__alert button:hover {
+  background: var(--color-surface-hover);
+  color: var(--color-text-primary);
+}
+
+/* Filters section */
+.performance-dashboard__filters {
+  padding: var(--spacing-3);
+  border-bottom: 1px solid var(--color-border-subtle);
+  background: var(--color-surface);
+  flex-shrink: 0;
+}
+
+.performance-dashboard__filters > div {
+  display: flex;
+  gap: var(--spacing-2);
+  flex-wrap: wrap;
+}
+
+.performance-dashboard__filters button {
+  padding: var(--spacing-1) var(--spacing-3);
+  border-radius: var(--border-radius-base);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  transition: all var(--duration-fast) var(--easing-out);
+  white-space: nowrap;
+  text-transform: capitalize;
+}
+
+.performance-dashboard__filters button:hover {
+  background: var(--color-surface-hover);
+  border-color: var(--color-border-hover);
+}
+
+.performance-dashboard__filters button.active {
+  background: var(--color-primary-500);
+  border-color: var(--color-primary-500);
+  color: #ffffff;
+}
+
+/* Content section */
+.performance-dashboard__content {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--spacing-4);
+  
+  /* Custom scrollbar */
+  &::-webkit-scrollbar {
+    width: 8px;
+  }
+  
+  &::-webkit-scrollbar-track {
+    background: var(--color-surface);
+  }
+  
+  &::-webkit-scrollbar-thumb {
+    background: var(--color-border);
+    border-radius: var(--border-radius-base);
+    
+    &:hover {
+      background: var(--color-border-hover);
+    }
+  }
+  
+  /* Firefox scrollbar */
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border) var(--color-surface);
+}
+
+.performance-dashboard__empty {
+  text-align: center;
+  color: var(--color-text-secondary);
+  padding: var(--spacing-8);
+  font-style: italic;
+}
+
+.performance-dashboard__metrics {
+  display: grid;
+  gap: var(--spacing-4);
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+}
+
+.performance-dashboard--compact .performance-dashboard__metrics {
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+}
+
+/* Individual metric card */
+.performance-dashboard__metric {
+  padding: var(--spacing-4);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--border-radius-base);
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--easing-out);
+  border-left-width: 3px;
+  position: relative;
+  overflow: hidden;
+}
+
+.performance-dashboard__metric--compact {
+  padding: var(--spacing-3);
+}
+
+.performance-dashboard__metric:hover {
+  background: var(--color-surface-hover);
+  border-color: var(--color-border);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+.performance-dashboard__metric:active {
+  transform: translateY(0) scale(0.98);
+}
+
+.performance-dashboard__metric-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--spacing-2);
+}
+
+.performance-dashboard__metric-header span {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
+}
+
+.performance-dashboard__metric-value {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+  margin-bottom: var(--spacing-1);
+  font-variant-numeric: tabular-nums;
+}
+
+.performance-dashboard__metric--compact .performance-dashboard__metric-value {
+  font-size: var(--font-size-lg);
+}
+
+.performance-dashboard__metric-threshold {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+  margin-bottom: var(--spacing-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.performance-dashboard__metric-chart {
+  margin-top: var(--spacing-2);
+  border-radius: var(--border-radius-sm);
+  overflow: hidden;
+  background: var(--color-background);
+}
+
+/* Status indicator */
+.performance-dashboard__status {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+}
+
+/* Footer section */
+.performance-dashboard__footer {
+  border-top: 1px solid var(--color-border-subtle);
+  padding: var(--spacing-3);
+  background: var(--color-surface);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.performance-dashboard__footer kbd {
+  background: var(--color-background);
+  color: var(--color-text-secondary);
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-family: var(--font-family-mono);
+  border: 1px solid var(--color-border);
+}
+
+/* Metric status colors */
+.performance-dashboard__metric[style*="border-left-color: var(--color-success)"] {
+  border-left-color: var(--color-success-500) !important;
+}
+
+.performance-dashboard__metric[style*="border-left-color: var(--color-warning)"] {
+  border-left-color: var(--color-warning-500) !important;
+}
+
+.performance-dashboard__metric[style*="border-left-color: var(--color-error)"] {
+  border-left-color: var(--color-error-500) !important;
+}
+
+/* Pulse animation for critical metrics */
+.performance-dashboard__metric[style*="border-left-color: var(--color-error)"] {
+  animation: metric-critical-pulse 2s ease-in-out infinite;
+}
+
+@keyframes metric-critical-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 10px rgba(239, 68, 68, 0);
+  }
+}
+
+/* Responsive design */
+@media (max-width: 1024px) {
+  .performance-dashboard {
+    width: 90vw;
+  }
+  
+  .performance-dashboard--compact {
+    width: 85vw;
+  }
+  
+  .performance-dashboard__metrics {
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  }
+  
+  .performance-dashboard--compact .performance-dashboard__metrics {
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .performance-dashboard {
+    width: 95vw;
+    max-height: 85vh;
+  }
+  
+  .performance-dashboard__header {
+    padding: var(--spacing-3);
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--spacing-2);
+  }
+  
+  .performance-dashboard__controls {
+    align-self: flex-end;
+  }
+  
+  .performance-dashboard__filters {
+    padding: var(--spacing-3);
+  }
+  
+  .performance-dashboard__content {
+    padding: var(--spacing-3);
+  }
+  
+  .performance-dashboard__metrics {
+    grid-template-columns: 1fr;
+    gap: var(--spacing-3);
+  }
+  
+  .performance-dashboard__metric {
+    padding: var(--spacing-3);
+  }
+  
+  .performance-dashboard__metric-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--spacing-1);
+  }
+}
+
+@media (max-width: 480px) {
+  .performance-dashboard-overlay {
+    padding: var(--spacing-2);
+  }
+  
+  .performance-dashboard {
+    width: 100%;
+    max-height: 90vh;
+  }
+  
+  .performance-dashboard__header {
+    padding: var(--spacing-2);
+  }
+  
+  .performance-dashboard__title h2 {
+    font-size: var(--font-size-lg);
+  }
+  
+  .performance-dashboard__filters {
+    padding: var(--spacing-2);
+  }
+  
+  .performance-dashboard__content {
+    padding: var(--spacing-2);
+  }
+  
+  .performance-dashboard__alerts {
+    padding: var(--spacing-2);
+  }
+  
+  .performance-dashboard__metric {
+    padding: var(--spacing-2);
+  }
+  
+  .performance-dashboard__metric-value {
+    font-size: var(--font-size-lg);
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .performance-dashboard {
+    border-width: 2px;
+  }
+  
+  .performance-dashboard__metric {
+    border-width: 2px;
+    border-left-width: 4px;
+  }
+  
+  .performance-dashboard__metric:hover {
+    border-color: var(--color-text-primary);
+  }
+  
+  .performance-dashboard__alert {
+    border-width: 2px;
+    border-left-width: 4px;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .performance-dashboard-overlay,
+  .performance-dashboard,
+  .performance-dashboard__metric,
+  .performance-dashboard__alert,
+  .performance-dashboard__controls button,
+  .performance-dashboard__filters button {
+    animation: none;
+    transition: none;
+  }
+  
+  .performance-dashboard__metric:hover,
+  .performance-dashboard__controls button:hover,
+  .performance-dashboard__controls button:active {
+    transform: none;
+  }
+  
+  .performance-dashboard__metric[style*="border-left-color: var(--color-error)"] {
+    animation: none;
+  }
+}
+
+/* Dark mode specific adjustments */
+@media (prefers-color-scheme: dark) {
+  .performance-dashboard-overlay {
+    background: rgba(0, 0, 0, 0.8);
+  }
+  
+  .performance-dashboard {
+    box-shadow: 
+      var(--shadow-xl),
+      0 0 0 1px rgba(255, 255, 255, 0.1);
+  }
+  
+  .performance-dashboard__metric-chart {
+    background: rgba(255, 255, 255, 0.05);
+  }
+  
+  .performance-dashboard__footer kbd {
+    box-shadow: 
+      0 1px 2px rgba(0, 0, 0, 0.3),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  }
+}
+
+/* Print styles */
+@media print {
+  .performance-dashboard-overlay,
+  .performance-dashboard {
+    display: none !important;
+  }
+}
+
+/* Focus styles for accessibility */
+.performance-dashboard__controls button:focus-visible,
+.performance-dashboard__filters button:focus-visible,
+.performance-dashboard__metric:focus-visible,
+.performance-dashboard__alert button:focus-visible {
+  outline: 2px solid var(--color-primary-500);
+  outline-offset: 2px;
+}
+
+/* Loading state for metrics */
+.performance-dashboard__metric--loading {
+  position: relative;
+  overflow: hidden;
+}
+
+.performance-dashboard__metric--loading::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.1),
+    transparent
+  );
+  animation: metric-loading-shimmer 2s ease-in-out infinite;
+}
+
+@keyframes metric-loading-shimmer {
+  0% {
+    left: -100%;
+  }
+  100% {
+    left: 100%;
+  }
+}
+
+/* Chart hover effects */
+.performance-dashboard__metric-chart:hover svg {
+  transform: scale(1.02);
+  transition: transform var(--duration-fast) var(--easing-out);
+}

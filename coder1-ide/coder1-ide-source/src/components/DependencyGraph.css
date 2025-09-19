@@ -1,0 +1,291 @@
+.dependency-graph {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    background: #1a1a1a;
+    overflow: hidden;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.dependency-graph canvas {
+    display: block;
+    background: #1a1a1a;
+    border: 1px solid #333;
+}
+
+/* Controls */
+.graph-controls {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    z-index: 10;
+    background: rgba(42, 42, 42, 0.9);
+    padding: 8px 12px;
+    border-radius: 6px;
+    border: 1px solid #444;
+    backdrop-filter: blur(10px);
+}
+
+.control-btn {
+    padding: 4px 8px;
+    background: #444;
+    border: 1px solid #555;
+    border-radius: 4px;
+    color: #e0e0e0;
+    cursor: pointer;
+    font-size: 12px;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.control-btn:hover {
+    background: #555;
+    border-color: #666;
+}
+
+.zoom-info {
+    color: #ccc;
+    font-size: 12px;
+    margin-left: 8px;
+    padding-left: 8px;
+    border-left: 1px solid #555;
+}
+
+/* Tooltip */
+.node-tooltip {
+    background: rgba(42, 42, 42, 0.95);
+    border: 1px solid #555;
+    border-radius: 6px;
+    padding: 8px 12px;
+    color: #e0e0e0;
+    font-size: 12px;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    z-index: 20;
+    max-width: 200px;
+}
+
+.tooltip-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 4px;
+    font-weight: 500;
+}
+
+.node-type-icon {
+    font-size: 14px;
+}
+
+.tooltip-details {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    color: #ccc;
+    font-size: 11px;
+}
+
+/* Legend */
+.graph-legend {
+    position: absolute;
+    bottom: 10px;
+    left: 10px;
+    background: rgba(42, 42, 42, 0.9);
+    border: 1px solid #444;
+    border-radius: 6px;
+    padding: 12px;
+    backdrop-filter: blur(10px);
+    z-index: 10;
+}
+
+.graph-legend h4 {
+    margin: 0 0 8px 0;
+    color: #fff;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.legend-items {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    color: #ccc;
+}
+
+.legend-node {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.legend-node.file {
+    background: #4a90e2;
+}
+
+.legend-node.function {
+    background: #7ed321;
+}
+
+.legend-node.class {
+    background: #f5a623;
+}
+
+.legend-edge {
+    width: 20px;
+    height: 2px;
+    flex-shrink: 0;
+    position: relative;
+}
+
+.legend-edge.imports {
+    background: #666;
+}
+
+.legend-edge.calls {
+    background: #0066cc;
+    height: 3px;
+}
+
+.legend-edge::after {
+    content: '';
+    position: absolute;
+    right: -2px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 0;
+    height: 0;
+    border-left: 4px solid currentColor;
+    border-top: 2px solid transparent;
+    border-bottom: 2px solid transparent;
+}
+
+.legend-edge.imports::after {
+    border-left-color: #666;
+}
+
+.legend-edge.calls::after {
+    border-left-color: #0066cc;
+}
+
+/* Loading state */
+.dependency-graph.loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #ccc;
+    font-size: 14px;
+}
+
+.dependency-graph.loading::before {
+    content: '⏳';
+    margin-right: 8px;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* Empty state */
+.dependency-graph.empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    color: #ccc;
+    font-size: 14px;
+    text-align: center;
+}
+
+.dependency-graph.empty .empty-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+    opacity: 0.5;
+}
+
+.dependency-graph.empty .empty-title {
+    font-weight: 500;
+    margin-bottom: 8px;
+    color: #fff;
+}
+
+.dependency-graph.empty .empty-description {
+    font-size: 12px;
+    max-width: 300px;
+    line-height: 1.4;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .graph-controls {
+        position: relative;
+        top: auto;
+        right: auto;
+        margin-bottom: 10px;
+        justify-content: center;
+    }
+    
+    .graph-legend {
+        position: relative;
+        bottom: auto;
+        left: auto;
+        margin-top: 10px;
+    }
+    
+    .node-tooltip {
+        position: fixed !important;
+        bottom: 20px !important;
+        left: 50% !important;
+        transform: translateX(-50%) !important;
+        top: auto !important;
+    }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+    .dependency-graph canvas {
+        border-color: #fff;
+    }
+    
+    .graph-controls,
+    .node-tooltip,
+    .graph-legend {
+        background: rgba(0, 0, 0, 0.95);
+        border-color: #fff;
+    }
+    
+    .control-btn {
+        background: #000;
+        border-color: #fff;
+        color: #fff;
+    }
+    
+    .control-btn:hover {
+        background: #333;
+    }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+    .control-btn {
+        transition: none;
+    }
+    
+    .dependency-graph.loading::before {
+        animation: none;
+    }
+}

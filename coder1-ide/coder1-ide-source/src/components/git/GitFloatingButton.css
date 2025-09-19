@@ -1,0 +1,179 @@
+/**
+ * GitFloatingButton Styles - Compact and Non-Intrusive
+ */
+
+.git-floating-button {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 100;
+    
+    /* Button styling */
+    background: var(--tokyo-bg-dark);
+    border: 1px solid var(--tokyo-fg-gutter);
+    border-radius: 12px;
+    padding: 8px 12px;
+    cursor: pointer;
+    
+    /* Typography */
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    font-weight: 500;
+    
+    /* Layout */
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 120px;
+    
+    /* Transitions */
+    transition: all 0.2s ease;
+    
+    /* Shadow for depth */
+    box-shadow: 
+        0 4px 12px rgba(0, 0, 0, 0.15),
+        0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Hover states */
+.git-floating-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 
+        0 6px 20px rgba(0, 0, 0, 0.2),
+        0 3px 6px rgba(0, 0, 0, 0.15);
+    border-color: var(--tokyo-cyan);
+}
+
+.git-floating-button:active {
+    transform: translateY(0);
+}
+
+/* Button content layout */
+.git-button-content {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex: 1;
+}
+
+.git-button-emoji {
+    font-size: 14px;
+    line-height: 1;
+}
+
+.git-button-text {
+    color: var(--tokyo-fg);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* State-specific styling */
+.git-floating-button.has-changes {
+    border-color: var(--tokyo-orange);
+    background: linear-gradient(135deg, var(--tokyo-bg-dark) 0%, rgba(255, 158, 100, 0.1) 100%);
+}
+
+.git-floating-button.has-changes:hover {
+    border-color: var(--tokyo-orange);
+    background: linear-gradient(135deg, var(--tokyo-bg-dark) 0%, rgba(255, 158, 100, 0.2) 100%);
+}
+
+.git-floating-button.has-changes .git-button-text {
+    color: var(--tokyo-orange);
+}
+
+.git-floating-button.up-to-date {
+    border-color: var(--tokyo-green);
+    background: linear-gradient(135deg, var(--tokyo-bg-dark) 0%, rgba(158, 206, 106, 0.1) 100%);
+}
+
+.git-floating-button.up-to-date:hover {
+    border-color: var(--tokyo-green);
+    background: linear-gradient(135deg, var(--tokyo-bg-dark) 0%, rgba(158, 206, 106, 0.2) 100%);
+}
+
+.git-floating-button.up-to-date .git-button-text {
+    color: var(--tokyo-green);
+}
+
+/* Pulse indicator for changes */
+.git-pulse-indicator {
+    position: absolute;
+    top: -3px;
+    right: -3px;
+    width: 8px;
+    height: 8px;
+    background: var(--tokyo-orange);
+    border-radius: 50%;
+    border: 2px solid var(--tokyo-bg-dark);
+    animation: git-pulse 2s ease-in-out infinite;
+}
+
+@keyframes git-pulse {
+    0%, 100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 0.7;
+        transform: scale(1.2);
+    }
+}
+
+/* Disabled state */
+.git-floating-button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none !important;
+}
+
+.git-floating-button:disabled:hover {
+    transform: none !important;
+    box-shadow: 
+        0 4px 12px rgba(0, 0, 0, 0.15),
+        0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .git-floating-button {
+        bottom: 16px;
+        right: 16px;
+        min-width: 100px;
+        padding: 6px 10px;
+        font-size: 11px;
+    }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+    .git-floating-button {
+        border-width: 2px;
+    }
+    
+    .git-floating-button.has-changes {
+        background: var(--tokyo-bg-dark);
+        border-color: var(--tokyo-orange);
+    }
+    
+    .git-floating-button.up-to-date {
+        background: var(--tokyo-bg-dark);
+        border-color: var(--tokyo-green);
+    }
+}
+
+/* Reduce motion for accessibility */
+@media (prefers-reduced-motion: reduce) {
+    .git-floating-button {
+        transition: none;
+    }
+    
+    .git-pulse-indicator {
+        animation: none;
+    }
+    
+    .git-floating-button:hover {
+        transform: none;
+    }
+}

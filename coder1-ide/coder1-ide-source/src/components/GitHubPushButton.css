@@ -1,0 +1,565 @@
+/**
+ * GitHubPushButton Styles - Friendly and Educational Design
+ * Designed to be approachable for new developers
+ */
+
+.github-push-container {
+    padding: 16px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 12px;
+    margin: 12px 0;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    position: relative;
+    overflow: hidden;
+}
+
+/* Confetti Animation */
+.confetti-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 10;
+}
+
+.confetti-piece {
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    animation: confetti-fall 2s ease-out forwards;
+}
+
+@keyframes confetti-fall {
+    0% {
+        transform: translateY(-100px) rotate(0deg);
+        opacity: 1;
+    }
+    100% {
+        transform: translateY(300px) rotate(360deg);
+        opacity: 0;
+    }
+}
+
+/* Main Push Button */
+.push-button-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.github-push-button {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 24px;
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    color: white;
+    border: none;
+    border-radius: 50px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+    min-width: 250px;
+    justify-content: center;
+    position: relative;
+}
+
+.github-push-button:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(40, 167, 69, 0.4);
+    background: linear-gradient(135deg, #218838 0%, #1e9a8c 100%);
+}
+
+.github-push-button.no-changes {
+    background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
+    cursor: not-allowed;
+    box-shadow: 0 2px 8px rgba(108, 117, 125, 0.3);
+}
+
+.github-push-button.pushing {
+    background: linear-gradient(135deg, #007bff 0%, #6610f2 100%);
+    cursor: not-allowed;
+}
+
+.button-emoji {
+    font-size: 20px;
+    animation: pulse 2s infinite;
+}
+
+.button-text {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+}
+
+.loading-spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid transparent;
+    border-top: 2px solid white;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Education Toggle */
+.education-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: white;
+    font-size: 14px;
+}
+
+.education-toggle label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+}
+
+.education-toggle input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    accent-color: #28a745;
+}
+
+.toggle-text {
+    user-select: none;
+}
+
+/* Git Status Panel */
+.git-status-panel {
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 16px;
+    color: #333;
+}
+
+.status-header h3 {
+    margin: 0 0 8px 0;
+    color: #2c3e50;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.status-header p {
+    margin: 0;
+    color: #6c757d;
+    font-size: 14px;
+}
+
+.changed-files {
+    margin-top: 16px;
+}
+
+.changed-files h4 {
+    margin: 0 0 12px 0;
+    color: #495057;
+    font-size: 16px;
+}
+
+.changed-files ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.file-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background: #f8f9fa;
+    border-radius: 6px;
+    margin-bottom: 6px;
+    font-family: 'Monaco', 'Menlo', monospace;
+    font-size: 13px;
+}
+
+.file-emoji {
+    font-size: 16px;
+}
+
+.file-name {
+    flex: 1;
+    color: #495057;
+}
+
+.file-status {
+    font-size: 11px;
+    padding: 2px 8px;
+    background: #e9ecef;
+    border-radius: 12px;
+    color: #6c757d;
+    font-weight: 500;
+}
+
+.file-item-summary {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background: #f1f3f4;
+    border-radius: 6px;
+    margin-bottom: 6px;
+    font-family: 'Monaco', 'Menlo', monospace;
+    font-size: 13px;
+    font-style: italic;
+    color: #6c757d;
+}
+
+/* Push Progress Steps */
+.push-progress {
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 16px;
+    color: #333;
+}
+
+.push-progress h3 {
+    margin: 0 0 16px 0;
+    color: #2c3e50;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.steps-container {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.step {
+    padding: 12px;
+    border-radius: 8px;
+    border-left: 4px solid #dee2e6;
+    background: #f8f9fa;
+    transition: all 0.3s ease;
+}
+
+.step.step-completed {
+    border-left-color: #28a745;
+    background: #d4edda;
+}
+
+.step.step-in_progress {
+    border-left-color: #007bff;
+    background: #cce5ff;
+    animation: progress-pulse 1.5s infinite;
+}
+
+.step.step-error {
+    border-left-color: #dc3545;
+    background: #f8d7da;
+}
+
+@keyframes progress-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.8; }
+}
+
+.step-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 6px;
+}
+
+.step-number {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    background: #6c757d;
+    color: white;
+    border-radius: 50%;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.step-completed .step-number {
+    background: #28a745;
+}
+
+.step-in_progress .step-number {
+    background: #007bff;
+}
+
+.step-error .step-number {
+    background: #dc3545;
+}
+
+.step-title {
+    flex: 1;
+    font-weight: 600;
+    color: #495057;
+}
+
+.step-status-icon {
+    font-size: 16px;
+}
+
+.step-description {
+    margin: 0;
+    color: #6c757d;
+    font-size: 14px;
+    margin-left: 36px;
+}
+
+/* Educational Content */
+.step-education {
+    margin-top: 12px;
+    margin-left: 36px;
+    padding: 12px;
+    background: rgba(255, 255, 255, 0.8);
+    border-radius: 6px;
+    border: 1px solid #e9ecef;
+}
+
+.education-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.education-emoji {
+    font-size: 18px;
+}
+
+.education-header h4 {
+    margin: 0;
+    color: #495057;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.education-explanation {
+    margin: 0 0 8px 0;
+    color: #6c757d;
+    font-size: 13px;
+    line-height: 1.4;
+}
+
+.education-analogy {
+    margin: 0;
+    color: #8e44ad;
+    font-size: 12px;
+    line-height: 1.3;
+}
+
+/* Success Education */
+.success-education {
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 16px;
+    color: #333;
+    border: 2px solid #28a745;
+}
+
+.celebration {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.celebration h2 {
+    margin: 0 0 8px 0;
+    color: #28a745;
+    font-size: 24px;
+}
+
+.celebration p {
+    margin: 0;
+    color: #6c757d;
+    font-size: 16px;
+}
+
+.benefits-section {
+    margin-bottom: 20px;
+}
+
+.benefits-section h3 {
+    margin: 0 0 12px 0;
+    color: #2c3e50;
+    font-size: 18px;
+}
+
+.benefits-section ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.benefits-section li {
+    padding: 6px 0;
+    color: #495057;
+    font-size: 14px;
+    line-height: 1.4;
+}
+
+.next-steps h3 {
+    margin: 0 0 12px 0;
+    color: #2c3e50;
+    font-size: 18px;
+}
+
+.next-steps ol {
+    padding-left: 20px;
+    margin: 0;
+}
+
+.next-steps li {
+    margin-bottom: 8px;
+    color: #495057;
+    font-size: 14px;
+    line-height: 1.4;
+}
+
+/* Last Push Info */
+.last-push-info {
+    text-align: center;
+    padding: 8px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 12px;
+}
+
+.last-push-emoji {
+    margin-right: 6px;
+}
+
+/* Setup Wizard Modal */
+.setup-wizard-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.setup-wizard {
+    background: white;
+    border-radius: 12px;
+    padding: 24px;
+    max-width: 500px;
+    width: 90%;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+}
+
+.setup-wizard h2 {
+    margin: 0 0 16px 0;
+    color: #2c3e50;
+    text-align: center;
+}
+
+.setup-wizard p {
+    margin: 0 0 20px 0;
+    color: #6c757d;
+    text-align: center;
+}
+
+.setup-steps h3 {
+    margin: 0 0 12px 0;
+    color: #495057;
+}
+
+.setup-steps ol {
+    padding-left: 20px;
+    margin: 0 0 20px 0;
+}
+
+.setup-steps li {
+    margin-bottom: 8px;
+    color: #6c757d;
+    line-height: 1.4;
+}
+
+.setup-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+}
+
+.setup-close-button {
+    padding: 10px 16px;
+    background: #6c757d;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.2s ease;
+}
+
+.setup-close-button:hover {
+    background: #5a6268;
+}
+
+.setup-github-button {
+    padding: 10px 20px;
+    background: #28a745;
+    color: white;
+    text-decoration: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    transition: all 0.2s ease;
+}
+
+.setup-github-button:hover {
+    background: #218838;
+    text-decoration: none;
+    color: white;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .github-push-container {
+        padding: 12px;
+        margin: 8px 0;
+    }
+    
+    .github-push-button {
+        min-width: 200px;
+        padding: 14px 20px;
+        font-size: 14px;
+    }
+    
+    .setup-wizard {
+        padding: 20px;
+        margin: 20px;
+    }
+    
+    .file-item {
+        font-size: 12px;
+    }
+    
+    .step-education {
+        margin-left: 20px;
+    }
+}

@@ -3,6 +3,9 @@ import fs from 'fs/promises';
 import path from 'path';
 import { withAPIMiddleware } from '@/lib/api-middleware';
 
+// Mark as dynamic since this uses request data
+export const dynamic = 'force-dynamic';
+
 async function sessionSummaryHandler({ req }: { req: NextRequest }): Promise<NextResponse> {
   const request = req;
   try {

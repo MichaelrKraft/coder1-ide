@@ -1,0 +1,520 @@
+/**
+ * GitCLISetupWizard Styles - Educational and friendly design
+ */
+
+/* Overlay */
+.git-cli-setup-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1100;
+    backdrop-filter: blur(4px);
+    padding: 20px;
+}
+
+/* Wizard Container */
+.git-cli-setup-wizard {
+    background: var(--tokyo-bg);
+    border: 1px solid var(--tokyo-fg-gutter);
+    border-radius: 16px;
+    width: 100%;
+    max-width: 700px;
+    max-height: 85vh;
+    overflow: hidden;
+    box-shadow: 
+        0 20px 40px rgba(0, 0, 0, 0.3),
+        0 10px 20px rgba(0, 0, 0, 0.2);
+    animation: wizard-slide-in 0.3s ease-out;
+}
+
+@keyframes wizard-slide-in {
+    from {
+        opacity: 0;
+        transform: scale(0.95) translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+/* Wizard Header */
+.wizard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 24px;
+    background: var(--tokyo-bg-dark);
+    border-bottom: 1px solid var(--tokyo-fg-gutter);
+}
+
+.wizard-header h2 {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--tokyo-fg);
+}
+
+.wizard-close {
+    background: none;
+    border: 1px solid var(--tokyo-fg-gutter);
+    color: var(--tokyo-fg-dark);
+    font-size: 18px;
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.wizard-close:hover {
+    background: var(--tokyo-red);
+    color: var(--tokyo-bg);
+    border-color: var(--tokyo-red);
+}
+
+/* Wizard Content */
+.wizard-content {
+    padding: 24px;
+    max-height: calc(85vh - 80px);
+    overflow-y: auto;
+}
+
+/* Status Checking */
+.checking-status {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    padding: 40px 20px;
+    color: var(--tokyo-fg-dark);
+}
+
+.loading-spinner {
+    width: 24px;
+    height: 24px;
+    border: 3px solid var(--tokyo-fg-gutter);
+    border-top: 3px solid var(--tokyo-cyan);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Progress Indicator */
+.setup-progress {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 32px;
+    position: relative;
+}
+
+.setup-progress::before {
+    content: '';
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    right: 20px;
+    height: 2px;
+    background: var(--tokyo-fg-gutter);
+    z-index: 0;
+}
+
+.progress-step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    position: relative;
+    z-index: 1;
+    cursor: pointer;
+    flex: 1;
+}
+
+.progress-dot {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--tokyo-bg-dark);
+    border: 2px solid var(--tokyo-fg-gutter);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: bold;
+    color: var(--tokyo-fg-dark);
+    transition: all 0.3s ease;
+}
+
+.progress-step.completed .progress-dot {
+    background: var(--tokyo-green);
+    border-color: var(--tokyo-green);
+    color: var(--tokyo-bg);
+}
+
+.progress-step.in_progress .progress-dot {
+    background: var(--tokyo-cyan);
+    border-color: var(--tokyo-cyan);
+    color: var(--tokyo-bg);
+    animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+}
+
+.progress-label {
+    font-size: 12px;
+    color: var(--tokyo-fg-dark);
+    text-align: center;
+    max-width: 100px;
+}
+
+/* Current Step */
+.current-step {
+    margin-bottom: 24px;
+}
+
+.current-step h3 {
+    margin: 0 0 12px 0;
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--tokyo-fg);
+}
+
+.current-step p {
+    margin: 0 0 16px 0;
+    color: var(--tokyo-fg-dark);
+    font-size: 14px;
+}
+
+/* Install Instructions */
+.install-instructions {
+    background: var(--tokyo-bg-dark);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 16px;
+}
+
+.install-instructions h3 {
+    margin: 0 0 16px 0;
+    font-size: 16px;
+    color: var(--tokyo-cyan);
+}
+
+.install-methods {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.install-method {
+    background: var(--tokyo-bg);
+    border-radius: 6px;
+    padding: 12px;
+    border: 1px solid var(--tokyo-fg-gutter);
+}
+
+.install-method h4 {
+    margin: 0 0 8px 0;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--tokyo-fg);
+}
+
+.install-method p {
+    margin: 0 0 8px 0;
+    font-size: 12px;
+    color: var(--tokyo-fg-dark);
+}
+
+/* Auth Instructions */
+.auth-instructions {
+    background: var(--tokyo-bg-dark);
+    border-radius: 8px;
+    padding: 16px;
+}
+
+.auth-instructions h3 {
+    margin: 0 0 16px 0;
+    font-size: 16px;
+    color: var(--tokyo-cyan);
+}
+
+.auth-steps {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.auth-step {
+    background: var(--tokyo-bg);
+    border-radius: 6px;
+    padding: 12px;
+    border-left: 3px solid var(--tokyo-cyan);
+}
+
+.step-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 8px;
+}
+
+.step-number {
+    background: var(--tokyo-cyan);
+    color: var(--tokyo-bg);
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.step-header h4 {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--tokyo-fg);
+}
+
+.auth-step p {
+    margin: 0 0 8px 0;
+    font-size: 12px;
+    color: var(--tokyo-fg-dark);
+}
+
+/* Command Box */
+.command-box {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--tokyo-bg-dark);
+    border: 1px solid var(--tokyo-fg-gutter);
+    border-radius: 4px;
+    padding: 8px 12px;
+    margin: 8px 0;
+}
+
+.command-box code {
+    flex: 1;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    color: var(--tokyo-green);
+}
+
+.copy-button {
+    background: none;
+    border: none;
+    font-size: 16px;
+    cursor: pointer;
+    opacity: 0.7;
+    transition: opacity 0.2s ease;
+    padding: 4px;
+}
+
+.copy-button:hover {
+    opacity: 1;
+}
+
+/* Step Education */
+.step-education {
+    margin-top: 12px;
+    padding: 12px;
+    background: rgba(69, 183, 209, 0.1);
+    border-radius: 6px;
+    border: 1px solid rgba(69, 183, 209, 0.2);
+}
+
+.education-emoji {
+    font-size: 16px;
+    margin-right: 8px;
+}
+
+.step-education p {
+    margin: 4px 0;
+    font-size: 12px;
+    color: var(--tokyo-fg);
+}
+
+.education-analogy {
+    font-style: italic;
+    color: var(--tokyo-fg-dark);
+}
+
+/* Verify Step */
+.verify-step {
+    background: var(--tokyo-bg-dark);
+    border-radius: 8px;
+    padding: 16px;
+}
+
+.verify-hint {
+    margin-top: 12px;
+    padding: 8px 12px;
+    background: rgba(158, 206, 106, 0.1);
+    border-radius: 4px;
+    border: 1px solid rgba(158, 206, 106, 0.2);
+    color: var(--tokyo-green);
+    font-size: 12px;
+}
+
+/* Wizard Education */
+.wizard-education {
+    background: var(--tokyo-bg-dark);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 24px;
+}
+
+.wizard-education h4 {
+    margin: 0 0 12px 0;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--tokyo-cyan);
+}
+
+.wizard-education ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.wizard-education li {
+    padding: 6px 0;
+    font-size: 13px;
+    color: var(--tokyo-fg);
+}
+
+/* Wizard Actions */
+.wizard-actions {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding-top: 16px;
+    border-top: 1px solid var(--tokyo-fg-gutter);
+}
+
+.wizard-skip {
+    background: none;
+    border: 1px solid var(--tokyo-fg-gutter);
+    color: var(--tokyo-fg-dark);
+    padding: 10px 20px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    transition: all 0.2s ease;
+}
+
+.wizard-skip:hover {
+    background: var(--tokyo-bg-highlight);
+}
+
+.wizard-check {
+    background: var(--tokyo-bg-dark);
+    border: 1px solid var(--tokyo-cyan);
+    color: var(--tokyo-cyan);
+    padding: 10px 20px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    transition: all 0.2s ease;
+}
+
+.wizard-check:hover {
+    background: rgba(69, 183, 209, 0.1);
+}
+
+.wizard-next {
+    background: linear-gradient(135deg, var(--tokyo-blue) 0%, var(--tokyo-cyan) 100%);
+    border: none;
+    color: var(--tokyo-bg);
+    padding: 10px 24px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.wizard-next:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(69, 183, 209, 0.3);
+}
+
+.wizard-next:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .git-cli-setup-wizard {
+        max-width: 95vw;
+        margin: 10px;
+    }
+    
+    .setup-progress {
+        flex-direction: column;
+        gap: 16px;
+    }
+    
+    .setup-progress::before {
+        display: none;
+    }
+    
+    .wizard-actions {
+        flex-direction: column;
+    }
+    
+    .wizard-actions button {
+        width: 100%;
+    }
+}
+
+/* High contrast mode */
+@media (prefers-contrast: high) {
+    .git-cli-setup-wizard {
+        border-width: 2px;
+    }
+    
+    .progress-dot {
+        border-width: 3px;
+    }
+    
+    .command-box {
+        border-width: 2px;
+    }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+    .git-cli-setup-wizard {
+        animation: none;
+    }
+    
+    .progress-step.in_progress .progress-dot {
+        animation: none;
+    }
+    
+    .loading-spinner {
+        animation: none;
+        border-top-color: var(--tokyo-cyan);
+    }
+}

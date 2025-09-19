@@ -1,0 +1,447 @@
+/* Professional Status Bar Component Styles */
+/* Uses CSS custom properties from design tokens */
+
+/* Base status bar styles */
+.status-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-2) var(--spacing-4);
+  background: var(--color-surface);
+  border-top: 1px solid var(--color-border-subtle);
+  font-size: var(--font-size-sm);
+  line-height: 1.4;
+  min-height: 32px;
+  position: relative;
+  z-index: 100;
+  user-select: none;
+}
+
+/* Position variants */
+.status-bar--top {
+  border-top: none;
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.status-bar--bottom {
+  border-bottom: none;
+  border-top: 1px solid var(--color-border-subtle);
+}
+
+/* Compact variant */
+.status-bar--compact {
+  min-height: 24px;
+  padding: var(--spacing-1) var(--spacing-3);
+  font-size: var(--font-size-xs);
+}
+
+/* Status indicator */
+.status-bar__indicator {
+  display: flex;
+  align-items: center;
+  margin-right: var(--spacing-3);
+  flex-shrink: 0;
+}
+
+.status-bar__status-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.status-bar__status-indicator--loading {
+  animation: status-pulse 2s ease-in-out infinite;
+}
+
+@keyframes status-pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(1.2);
+  }
+}
+
+/* Main content area */
+.status-bar__content {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-4);
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+/* Section styles */
+.status-bar__section {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+}
+
+.status-bar__section--collapsible {
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.status-bar__section-toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  background: transparent;
+  border: none;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  padding: var(--spacing-1);
+  border-radius: var(--border-radius-base);
+  transition: all var(--duration-fast) var(--easing-out);
+}
+
+.status-bar__section-toggle:hover {
+  background: var(--color-surface-hover);
+  color: var(--color-text-primary);
+}
+
+.status-bar__section-title {
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
+  white-space: nowrap;
+}
+
+.status-bar__section-items {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  margin-top: var(--spacing-1);
+  margin-left: var(--spacing-3);
+}
+
+/* Individual item styles */
+.status-bar__item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  padding: var(--spacing-1) var(--spacing-2);
+  border-radius: var(--border-radius-base);
+  transition: all var(--duration-fast) var(--easing-out);
+  white-space: nowrap;
+  position: relative;
+}
+
+.status-bar__item:hover {
+  background: var(--color-surface-hover);
+}
+
+.status-bar__item--loading {
+  animation: status-item-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes status-item-pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+.status-bar__item--error {
+  color: var(--color-error-500);
+}
+
+.status-bar__item--warning {
+  color: var(--color-warning-500);
+}
+
+.status-bar__item--success {
+  color: var(--color-success-500);
+}
+
+/* Item content */
+.status-bar__item-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.status-bar__item-spinner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.status-bar__item-content {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.status-bar__item-label {
+  font-weight: var(--font-weight-medium);
+}
+
+.status-bar__item-value {
+  font-weight: var(--font-weight-normal);
+  color: var(--color-text-secondary);
+}
+
+.status-bar__item-progress {
+  margin-left: var(--spacing-2);
+  flex-shrink: 0;
+}
+
+/* Progress bar */
+.status-bar__progress {
+  position: relative;
+  overflow: hidden;
+}
+
+.status-bar__progress-fill {
+  position: relative;
+  background: linear-gradient(
+    90deg,
+    var(--color-primary-500),
+    var(--color-primary-400)
+  );
+}
+
+.status-bar__progress-fill::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.2),
+    transparent
+  );
+  animation: progress-shimmer 2s ease-in-out infinite;
+}
+
+@keyframes progress-shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* Recent activity */
+.status-bar__recent {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-xs);
+}
+
+.status-bar__recent-label {
+  font-weight: var(--font-weight-medium);
+}
+
+.status-bar__recent-item {
+  padding: 2px var(--spacing-1);
+  background: var(--color-surface);
+  border-radius: var(--border-radius-sm);
+  white-space: nowrap;
+}
+
+/* Actions area */
+.status-bar__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+  flex-shrink: 0;
+  margin-left: var(--spacing-4);
+}
+
+.status-bar__action-items {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+}
+
+.status-bar__count {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  white-space: nowrap;
+}
+
+.status-bar__count--error {
+  color: var(--color-error-500);
+}
+
+.status-bar__count--warning {
+  color: var(--color-warning-500);
+}
+
+.status-bar__count--loading {
+  color: var(--color-warning-500);
+  animation: status-count-pulse 1s ease-in-out infinite;
+}
+
+@keyframes status-count-pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+
+/* Spinner animation */
+.status-bar__spinner {
+  animation: status-bar-spin 1s linear infinite;
+}
+
+@keyframes status-bar-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .status-bar {
+    padding: var(--spacing-1) var(--spacing-2);
+    min-height: 28px;
+  }
+  
+  .status-bar__content {
+    gap: var(--spacing-2);
+  }
+  
+  .status-bar__section {
+    gap: var(--spacing-1);
+  }
+  
+  .status-bar__recent {
+    display: none; /* Hide recent activity on mobile */
+  }
+  
+  .status-bar__item-value {
+    display: none; /* Hide values on mobile for space */
+  }
+}
+
+@media (max-width: 480px) {
+  .status-bar--compact {
+    min-height: 20px;
+    padding: 2px var(--spacing-2);
+  }
+  
+  .status-bar__section-title {
+    font-size: var(--font-size-xs);
+  }
+  
+  .status-bar__actions {
+    margin-left: var(--spacing-2);
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .status-bar {
+    border-width: 2px;
+  }
+  
+  .status-bar__item {
+    border: 1px solid transparent;
+  }
+  
+  .status-bar__item:hover {
+    border-color: currentColor;
+  }
+  
+  .status-bar__status-indicator {
+    border: 1px solid currentColor;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .status-bar__status-indicator--loading,
+  .status-bar__item--loading,
+  .status-bar__count--loading,
+  .status-bar__spinner,
+  .status-bar__progress-fill::after {
+    animation: none;
+  }
+  
+  .status-bar__section-toggle,
+  .status-bar__item,
+  .status-bar__progress-fill {
+    transition: none;
+  }
+}
+
+/* Dark mode specific adjustments */
+@media (prefers-color-scheme: dark) {
+  .status-bar {
+    background: var(--color-surface);
+    border-color: var(--color-border-subtle);
+  }
+  
+  .status-bar__progress {
+    background: rgba(255, 255, 255, 0.1);
+  }
+  
+  .status-bar__recent-item {
+    background: rgba(255, 255, 255, 0.05);
+  }
+}
+
+/* Print styles */
+@media print {
+  .status-bar {
+    display: none !important;
+  }
+}
+
+/* Focus styles for accessibility */
+.status-bar__section-toggle:focus-visible,
+.status-bar__item:focus-visible {
+  outline: 2px solid var(--color-primary-500);
+  outline-offset: 2px;
+}
+
+/* Tooltip styles (if using native title attribute) */
+.status-bar__item[title]:hover::after {
+  content: attr(title);
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--color-neutral-900);
+  color: var(--color-neutral-100);
+  padding: var(--spacing-1) var(--spacing-2);
+  border-radius: var(--border-radius-base);
+  font-size: var(--font-size-xs);
+  white-space: nowrap;
+  z-index: 1000;
+  box-shadow: var(--shadow-lg);
+  animation: tooltip-fade-in 0.2s ease-out;
+}
+
+@keyframes tooltip-fade-in {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-2px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}

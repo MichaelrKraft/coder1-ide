@@ -1,0 +1,58 @@
+{
+  "name": "@coder1/companion",
+  "version": "1.0.0",
+  "description": "Coder1 IDE Companion Service - Bridge between web IDE and local Claude Code",
+  "main": "src/index.js",
+  "bin": {
+    "coder1-companion": "./bin/coder1-companion.js"
+  },
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js",
+    "build": "node scripts/build.js",
+    "install-global": "npm install -g",
+    "test": "jest",
+    "test:integration": "jest --config jest.integration.config.js"
+  },
+  "keywords": ["coder1", "claude-code", "ide", "companion", "bridge"],
+  "author": "Coder1 Team",
+  "license": "MIT",
+  "dependencies": {
+    "ws": "^8.14.2",
+    "chokidar": "^3.5.3",
+    "node-pty": "^1.0.0",
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "uuid": "^9.0.1",
+    "glob": "^10.3.10",
+    "jsonwebtoken": "^9.0.2",
+    "bcrypt": "^5.1.1",
+    "axios": "^1.6.2",
+    "commander": "^11.1.0",
+    "inquirer": "^9.2.12",
+    "chalk": "^5.3.0",
+    "ora": "^7.0.1",
+    "boxen": "^7.1.1",
+    "update-notifier": "^7.0.0",
+    "cheerio": "^1.0.0-rc.12",
+    "node-fetch": "^3.3.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2",
+    "jest": "^29.7.0",
+    "@types/node": "^20.10.4",
+    "eslint": "^8.56.0",
+    "prettier": "^3.1.1"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "preferGlobal": true,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/MichaelrKraft/coder1-ide.git"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

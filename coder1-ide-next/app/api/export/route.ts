@@ -4,6 +4,9 @@ import { promisify } from 'util';
 import fs from 'fs/promises';
 import path from 'path';
 
+// Mark as dynamic since this uses request data
+export const dynamic = 'force-dynamic';
+
 const execAsync = promisify(exec);
 
 export async function POST(request: NextRequest) {

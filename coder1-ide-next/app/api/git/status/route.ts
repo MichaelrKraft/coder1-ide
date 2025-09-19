@@ -2,18 +2,25 @@ import { NextResponse } from 'next/server';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import { logger } from '@/lib/logger';
+import path from 'path';
+
+// Mark as dynamic since this accesses local filesystem
+export const dynamic = 'force-dynamic';
 
 const execAsync = promisify(exec);
 
 export async function GET() {
   try {
+    // Get project root directory (2 levels up from app/api/)
+    const projectRoot = path.resolve(process.cwd());
+    
     // Get git branch and status information
     const [branchResult, statusResult] = await Promise.all([
       execAsync('git branch --show-current', {
-        cwd: '/Users/michaelkraft/autonomous_vibe_interface'
+        cwd: projectRoot
       }),
       execAsync('git status --porcelain', {
-        cwd: '/Users/michaelkraft/autonomous_vibe_interface'
+        cwd: projectRoot
       })
     ]);
     

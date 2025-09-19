@@ -1,0 +1,938 @@
+import React, { useState } from 'react';
+import './App.css';
+import ThreePanelLayout from './components/layout/ThreePanelLayout';
+import EditorTerminalSplit from './components/layout/EditorTerminalSplit';
+import Terminal from './components/Terminal';
+import FileExplorer from './components/FileExplorer';
+import Preview from './components/Preview';
+import ReactBits from './components/ReactBits';
+import HivemindDashboard from './components/HivemindDashboard';
+import FileSearch from './components/FileSearch';
+import ThinkingModeToggle, { ThinkingMode } from './components/ThinkingModeToggle';
+import CheckpointTimeline from './components/CheckpointTimeline';
+import CodeEditor from './components/CodeEditor';
+import FileTabs from './components/FileTabs';
+import MenuBar from './components/MenuBar';
+import Documentation from './components/Documentation';
+import { useFeatureFlag } from './hooks/useFeatureFlag';
+import { useCheckpoints, useAutoCheckpoints } from './hooks/useCheckpoints';
+import { CheckpointData } from './services/checkpoints';
+import { fileSystemService } from './services/fileSystem';
+
+function App() {
+  // Force rebuild - timestamp: 1234567890
+  const [activeView, setActiveView] = useState<'explorer' | 'terminal' | 'preview'>('terminal');
+  const [isSleepMode, setIsSleepMode] = useState(false);
+  const [isSupervisionOn, setIsSupervisionOn] = useState(false);
+  const [isInfiniteLoop, setIsInfiniteLoop] = useState(false);
+  const [isParallelAgents, setIsParallelAgents] = useState(false);
+  const [showHivemind, setShowHivemind] = useState(false);
+  const [hivemindSessionId] = useState<string | null>(null);
+  const [activeAgentCount] = useState(0);
+  
+  // New feature states
+  const [showFileSearch, setShowFileSearch] = useState(false);
+  const [showCheckpointTimeline, setShowCheckpointTimeline] = useState(false);
+  const [showReactBits, setShowReactBits] = useState(false);
+  const [showDocumentation, setShowDocumentation] = useState(false);
+  const [thinkingMode, setThinkingMode] = useState<ThinkingMode>('normal');
+  
+  // View states for menu toggles
+  const [showExplorer, setShowExplorer] = useState(true);
+  const [showTerminal, setShowTerminal] = useState(true);
+  const [showOutput, setShowOutput] = useState(false);
+  const [showKeyboardShortcuts, setShowKeyboardShortcuts] = useState(false);
+  const [sessionId] = useState(() => `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
+  
+  // Editor state
+  const [activeFile, setActiveFile] = useState<string | null>(null);
+  const [fileContent, setFileContent] = useState<string>('// Welcome to Coder1 IDE\n// Open a file to start coding');
+  const [isDirty, setIsDirty] = useState(false);
+  
+  // File tabs state
+  interface OpenFile {
+    path: string;
+    name: string;
+    content: string;
+    isDirty: boolean;
+  }
+  const [openFiles, setOpenFiles] = useState<OpenFile[]>([]);
+  const [activeFilePath, setActiveFilePath] = useState<string | null>(null);
+  const [editorInstance, setEditorInstance] = useState<any>(null);
+  
+  // Feature flags
+  const fileSearchEnabled = useFeatureFlag('FILE_SEARCH');
+  const thinkingModeEnabled = useFeatureFlag('THINKING_MODE_TOGGLE');
+  console.log('🚀 App.tsx - thinkingModeEnabled:', thinkingModeEnabled);
+  const checkpointEnabled = useFeatureFlag('SESSION_CHECKPOINTS');
+  
+  // Checkpoint management
+  const { createCheckpoint } = useCheckpoints(sessionId);
+
+  // Get current application state for checkpoints
+  const getCurrentState = (): CheckpointData => {
+    return {
+      messages: [], // TODO: Get from actual chat/conversation state
+      currentContext: '',
+      activeFiles: [], // TODO: Get from file explorer/editor
+      thinkingMode,
+      activeView,
+      sidebarCollapsed: false,
+      terminalVisible: activeView === 'terminal',
+      projectFiles: [],
+      modifiedFiles: [],
+    };
+  };
+
+  // Auto-checkpoints every 10 minutes
+  useAutoCheckpoints(sessionId, getCurrentState, { 
+    interval: 10, 
+    enabled: checkpointEnabled 
+  });
+
+  // Keyboard shortcuts
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // F1 - Open documentation
+      if (e.key === 'F1') {
+        e.preventDefault();
+        setShowDocumentation(true);
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  // Handlers
+  const handleFileSelect = async (filePath: string, fileName: string) => {
+    // Check if file is already open
+    const existingFile = openFiles.find(f => f.path === filePath);
+    if (existingFile) {
+      // Switch to existing tab
+      setActiveFilePath(filePath);
+      setActiveFile(fileName);
+      setFileContent(existingFile.content);
+      setIsDirty(existingFile.isDirty);
+      return;
+    }
+
+    try {
+      const content = await fileSystemService.readFile(filePath);
+      
+      // Add new file to open files
+      const newFile: OpenFile = {
+        path: filePath,
+        name: fileName,
+        content,
+        isDirty: false
+      };
+      
+      setOpenFiles(prev => [...prev, newFile]);
+      setActiveFilePath(filePath);
+      setActiveFile(fileName);
+      setFileContent(content);
+      setIsDirty(false);
+    } catch (error) {
+      console.error('Failed to read file:', error);
+    }
+  };
+
+  const handleTabClick = (filePath: string) => {
+    const file = openFiles.find(f => f.path === filePath);
+    if (file) {
+      setActiveFilePath(filePath);
+      setActiveFile(file.name);
+      setFileContent(file.content);
+      setIsDirty(file.isDirty);
+    }
+  };
+
+  const handleTabClose = (filePath: string) => {
+    const fileIndex = openFiles.findIndex(f => f.path === filePath);
+    if (fileIndex === -1) return;
+
+    const newOpenFiles = openFiles.filter(f => f.path !== filePath);
+    setOpenFiles(newOpenFiles);
+
+    // If closing the active file, switch to another file or show welcome
+    if (filePath === activeFilePath) {
+      if (newOpenFiles.length > 0) {
+        const nextFile = newOpenFiles[Math.max(0, fileIndex - 1)];
+        setActiveFilePath(nextFile.path);
+        setActiveFile(nextFile.name);
+        setFileContent(nextFile.content);
+        setIsDirty(nextFile.isDirty);
+      } else {
+        setActiveFilePath(null);
+        setActiveFile(null);
+        setFileContent('// Welcome to Coder1 IDE\n// Open a file to start coding');
+        setIsDirty(false);
+      }
+    }
+  };
+
+  const handleSaveFile = async () => {
+    if (!activeFilePath || !isDirty) return;
+    
+    try {
+      const success = await fileSystemService.writeFile(activeFilePath, fileContent);
+      if (success) {
+        setIsDirty(false);
+        setOpenFiles(prev => prev.map(file => 
+          file.path === activeFilePath 
+            ? { ...file, isDirty: false }
+            : file
+        ));
+        console.log('File saved successfully:', activeFilePath);
+      } else {
+        console.error('Failed to save file');
+        alert('Failed to save file. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error saving file:', error);
+      alert('Error saving file. Please check console for details.');
+    }
+  };
+
+  const handleContentChange = (value: string | undefined) => {
+    const newContent = value || '';
+    setFileContent(newContent);
+    setIsDirty(true);
+
+    // Update the content in openFiles
+    if (activeFilePath) {
+      setOpenFiles(prev => prev.map(file => 
+        file.path === activeFilePath 
+          ? { ...file, content: newContent, isDirty: true }
+          : file
+      ));
+    }
+  };
+
+  const handleCreateCheckpoint = async () => {
+    const name = `Manual Checkpoint ${new Date().toLocaleTimeString()}`;
+    const state = getCurrentState();
+    await createCheckpoint(name, state, 'User-created checkpoint', ['manual']);
+  };
+
+  const handleCheckpointRestore = (checkpoint: any) => {
+    // TODO: Implement state restoration
+    console.log('Restoring checkpoint:', checkpoint);
+    setThinkingMode(checkpoint.data.thinkingMode);
+    setActiveView(checkpoint.data.activeView);
+  };
+
+  const handleReactBitsClick = () => {
+    setShowReactBits(true);
+  };
+
+  const handleReactBitsClose = () => {
+    setShowReactBits(false);
+  };
+
+  const handleEditorMount = (editor: any) => {
+    console.log('Editor mounted:', editor);
+    setEditorInstance(editor);
+  };
+
+  // Menu action handlers
+  const handleNewFile = () => {
+    const fileName = prompt('Enter file name:');
+    if (fileName) {
+      const newFile: OpenFile = {
+        path: `/new/${fileName}`,
+        name: fileName,
+        content: '',
+        isDirty: true
+      };
+      setOpenFiles(prev => [...prev, newFile]);
+      setActiveFilePath(newFile.path);
+      setActiveFile(newFile.name);
+      setFileContent(newFile.content);
+      setIsDirty(true);
+    }
+  };
+
+  const handleOpenFile = () => {
+    // Toggle file explorer and focus on search
+    setShowExplorer(true);
+    setTimeout(() => {
+      const searchInput = document.querySelector('.file-search-input') as HTMLInputElement;
+      if (searchInput) searchInput.focus();
+    }, 100);
+  };
+
+  const handleSaveAs = async () => {
+    if (!activeFilePath) return;
+    const newName = prompt('Save as:', activeFile || 'untitled.js');
+    if (newName) {
+      const newPath = activeFilePath.replace(/[^/]+$/, newName);
+      const success = await fileSystemService.writeFile(newPath, fileContent);
+      if (success) {
+        // Update the file in open files
+        setOpenFiles(prev => prev.map(file => 
+          file.path === activeFilePath 
+            ? { ...file, path: newPath, name: newName, isDirty: false }
+            : file
+        ));
+        setActiveFilePath(newPath);
+        setActiveFile(newName);
+        setIsDirty(false);
+      }
+    }
+  };
+
+  const handleCloseEditor = () => {
+    if (activeFilePath) {
+      handleTabClose(activeFilePath);
+    }
+  };
+
+  const handleUndo = () => {
+    if (editorInstance) {
+      editorInstance.trigger('keyboard', 'undo', null);
+    }
+  };
+
+  const handleRedo = () => {
+    if (editorInstance) {
+      editorInstance.trigger('keyboard', 'redo', null);
+    }
+  };
+
+  const handleCut = () => {
+    if (editorInstance) {
+      editorInstance.focus();
+      document.execCommand('cut');
+    }
+  };
+
+  const handleCopy = () => {
+    if (editorInstance) {
+      editorInstance.focus();
+      document.execCommand('copy');
+    }
+  };
+
+  const handlePaste = () => {
+    if (editorInstance) {
+      editorInstance.focus();
+      document.execCommand('paste');
+    }
+  };
+
+  const handleReplace = () => {
+    if (editorInstance) {
+      editorInstance.trigger('keyboard', 'editor.action.startFindReplaceAction', null);
+    }
+  };
+
+  const handleToggleExplorer = () => {
+    setShowExplorer(!showExplorer);
+  };
+
+  const handleToggleTerminal = () => {
+    setShowTerminal(!showTerminal);
+  };
+
+  const handleToggleOutput = () => {
+    setShowOutput(!showOutput);
+    if (showOutput) {
+      // Show output panel in terminal area
+      console.log('Output panel toggled');
+    }
+  };
+
+  const handleZoomIn = () => {
+    const currentZoom = parseFloat((document.body.style as any).zoom || '100');
+    (document.body.style as any).zoom = `${Math.min(currentZoom + 10, 200)}%`;
+  };
+
+  const handleZoomOut = () => {
+    const currentZoom = parseFloat((document.body.style as any).zoom || '100');
+    (document.body.style as any).zoom = `${Math.max(currentZoom - 10, 50)}%`;
+  };
+
+  const handleZoomReset = () => {
+    (document.body.style as any).zoom = '100%';
+  };
+
+  const handleRunCode = () => {
+    if (activeFilePath && fileContent) {
+      // Send code to terminal for execution
+      const terminal = document.querySelector('.terminal-input') as HTMLInputElement;
+      if (terminal) {
+        // Determine language from file extension
+        const ext = activeFilePath.split('.').pop()?.toLowerCase();
+        let command = '';
+        
+        switch (ext) {
+          case 'js':
+            command = `node ${activeFilePath}`;
+            break;
+          case 'py':
+            command = `python ${activeFilePath}`;
+            break;
+          case 'ts':
+            command = `ts-node ${activeFilePath}`;
+            break;
+          case 'sh':
+            command = `bash ${activeFilePath}`;
+            break;
+          default:
+            command = `# Run ${activeFilePath}`;
+        }
+        
+        // Save file first if dirty
+        if (isDirty) {
+          handleSaveFile();
+        }
+        
+        // Send command to terminal
+        terminal.value = command;
+        terminal.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
+      }
+    }
+  };
+
+  const handleDebug = () => {
+    console.log('Debug mode not yet implemented');
+    alert('Debug mode coming soon!');
+  };
+
+  const handleStop = () => {
+    // Send Ctrl+C to terminal
+    const terminal = document.querySelector('.terminal-input') as HTMLInputElement;
+    if (terminal) {
+      terminal.dispatchEvent(new KeyboardEvent('keydown', { key: 'c', ctrlKey: true }));
+    }
+  };
+
+  const handleKeyboardShortcuts = () => {
+    setShowKeyboardShortcuts(true);
+  };
+
+  const handleAbout = () => {
+    alert(`Coder1 IDE v2.0\n\nAI-powered development environment\nBuilt with React, Monaco Editor, and xterm.js\n\n© 2024 Autonomous Vibe Interface`);
+  };
+
+  const insertComponentCode = (componentName: string) => {
+    console.log('insertComponentCode called with:', componentName);
+    console.log('editorInstance:', editorInstance);
+    
+    if (!editorInstance) {
+      alert('Editor not initialized. Please make sure a file is open in the editor.');
+      return;
+    }
+
+    // Component templates
+    const templates: Record<string, string> = {
+      Button: `const Button = ({ onClick, children, variant = 'primary' }) => {
+  return (
+    <button 
+      className={\`btn btn-\${variant}\`}
+      onClick={onClick}
+    >
+      {children}
+    </button>
+  );
+};
+
+export default Button;`,
+      Form: `const Form = ({ onSubmit }) => {
+  const [formData, setFormData] = useState({
+    name: '',
+    email: ''
+  });
+
+  const handleChange = (e) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value
+    });
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    onSubmit(formData);
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <input
+        type="text"
+        name="name"
+        value={formData.name}
+        onChange={handleChange}
+        placeholder="Name"
+      />
+      <input
+        type="email"
+        name="email"
+        value={formData.email}
+        onChange={handleChange}
+        placeholder="Email"
+      />
+      <button type="submit">Submit</button>
+    </form>
+  );
+};`,
+      Card: `const Card = ({ title, children, className = '' }) => {
+  return (
+    <div className={\`card \${className}\`}>
+      {title && (
+        <div className="card-header">
+          <h3>{title}</h3>
+        </div>
+      )}
+      <div className="card-body">
+        {children}
+      </div>
+    </div>
+  );
+};
+
+export default Card;`,
+      Chart: `import { useEffect, useRef } from 'react';
+
+const Chart = ({ data, type = 'bar' }) => {
+  const canvasRef = useRef(null);
+
+  useEffect(() => {
+    if (!canvasRef.current || !data) return;
+
+    const ctx = canvasRef.current.getContext('2d');
+    // Simple bar chart rendering
+    const width = canvasRef.current.width;
+    const height = canvasRef.current.height;
+    const barWidth = width / data.length;
+    
+    ctx.clearRect(0, 0, width, height);
+    
+    data.forEach((value, index) => {
+      const barHeight = (value / Math.max(...data)) * height * 0.8;
+      ctx.fillStyle = '#4299e1';
+      ctx.fillRect(
+        index * barWidth + barWidth * 0.1,
+        height - barHeight,
+        barWidth * 0.8,
+        barHeight
+      );
+    });
+  }, [data]);
+
+  return (
+    <canvas 
+      ref={canvasRef}
+      width={400}
+      height={300}
+      className="chart"
+    />
+  );
+};
+
+export default Chart;`
+    };
+
+    const template = templates[componentName];
+    if (!template) {
+      console.warn(`No template found for component: ${componentName}`);
+      return;
+    }
+
+    // Get current position
+    const position = editorInstance.getPosition();
+    console.log('Cursor position:', position);
+    
+    // Insert the component code at cursor position
+    const edit = {
+      range: {
+        startLineNumber: position.lineNumber,
+        startColumn: position.column,
+        endLineNumber: position.lineNumber,
+        endColumn: position.column
+      },
+      text: template + '\n\n',
+      forceMoveMarkers: true
+    };
+    
+    console.log('Executing edit:', edit);
+    editorInstance.executeEdits('insert-component', [edit]);
+    
+    // Focus the editor to show the insertion
+    editorInstance.focus();
+    
+    // Move cursor to end of inserted content
+    const lines = template.split('\n');
+    const newPosition = {
+      lineNumber: position.lineNumber + lines.length + 1,
+      column: 1
+    };
+    editorInstance.setPosition(newPosition);
+    editorInstance.revealPositionInCenter(newPosition);
+
+    // Show success message
+    const statusElement = document.querySelector('.status-text');
+    if (statusElement) {
+      const originalText = statusElement.textContent;
+      statusElement.textContent = `✅ ${componentName} component inserted!`;
+      setTimeout(() => {
+        statusElement.textContent = originalText;
+      }, 3000);
+    }
+
+    // Close the modal
+    setShowReactBits(false);
+  };
+
+  
+  return (
+    <div className="app-container">
+      
+      {/* Header Bar */}
+      <div className="header-bar">
+        <div className="header-left">
+          <div className="logo-container">
+            <img 
+              src={process.env.PUBLIC_URL + "/Claude Coder1 Logo.png"} 
+              alt="Claude Coder1 Logo" 
+              className="logo-image"
+              onError={(e) => {
+                e.currentTarget.style.display = 'none';
+                document.getElementById('logo-fallback')!.style.display = 'block';
+              }}
+            />
+            <span id="logo-fallback" className="logo-text" style={{display: 'none'}}>Coder1</span>
+          </div>
+          <MenuBar
+            onNewFile={handleNewFile}
+            onOpenFile={handleOpenFile}
+            onSave={handleSaveFile}
+            onSaveAs={handleSaveAs}
+            onUndo={handleUndo}
+            onRedo={handleRedo}
+            onCut={handleCut}
+            onCopy={handleCopy}
+            onPaste={handlePaste}
+            onFind={() => setShowFileSearch(true)}
+            onReplace={handleReplace}
+            onToggleExplorer={handleToggleExplorer}
+            onToggleTerminal={handleToggleTerminal}
+            onToggleOutput={handleToggleOutput}
+            onRunCode={handleRunCode}
+            onDebug={handleDebug}
+            onStop={handleStop}
+            onAbout={handleAbout}
+            onDocumentation={() => setShowDocumentation(true)}
+            onKeyboardShortcuts={handleKeyboardShortcuts}
+          />
+        </div>
+        <div className="header-center">
+        </div>
+        <div className="header-right">
+          <button 
+            className="header-button docs-button"
+            onClick={() => setShowDocumentation(true)}
+            title="Documentation (F1)"
+          >
+            📚 Docs
+          </button>
+        </div>
+      </div>
+      
+      <ThreePanelLayout
+        leftPanel={
+          showExplorer ? (
+            <div className="explorer-content">
+              <div className="file-explorer-wrapper">
+                <FileExplorer 
+                  onFileSelect={handleFileSelect}
+                  onSearchClick={fileSearchEnabled ? () => setShowFileSearch(true) : undefined}
+                />
+              </div>
+              <div className="explorer-future-component">
+                {/* Placeholder for future component - 25% height */}
+                <div className="placeholder-content">
+                  <span className="placeholder-text">Future Component Area</span>
+                </div>
+              </div>
+            </div>
+          ) : null
+        }
+        centerPanel={
+          <EditorTerminalSplit
+            editor={
+              <div className="editor-with-tabs">
+                <FileTabs
+                  tabs={openFiles.map(file => ({
+                    path: file.path,
+                    name: file.name,
+                    isDirty: file.isDirty,
+                    language: file.name.split('.').pop()
+                  }))}
+                  activeTab={activeFilePath}
+                  onTabClick={handleTabClick}
+                  onTabClose={handleTabClose}
+                />
+                <CodeEditor
+                  value={fileContent}
+                  fileName={activeFile || 'untitled.js'}
+                  onChange={handleContentChange}
+                  onEditorMount={handleEditorMount}
+                  onSave={handleSaveFile}
+                />
+              </div>
+            }
+            terminal={
+              showTerminal ? (
+                (() => {
+                  console.log('🎨 Rendering Terminal with:', {
+                    thinkingMode,
+                    thinkingModeEnabled,
+                    onThinkingModeChange: thinkingModeEnabled ? 'setThinkingMode' : 'undefined'
+                  });
+                  return (
+                    <Terminal 
+                      thinkingMode={thinkingMode}
+                      onThinkingModeChange={thinkingModeEnabled ? setThinkingMode : undefined}
+                    />
+                  );
+                })()
+              ) : null
+            }
+          />
+        }
+        rightPanel={
+          <div className="right-panel-content" style={{ pointerEvents: 'auto' }}>
+            <div style={{ pointerEvents: 'auto', zIndex: 999, position: 'relative' }}>
+              <button 
+                className="react-bits-button orange-glow"
+                onClick={handleReactBitsClick}
+                type="button"
+                style={{ pointerEvents: 'auto', cursor: 'pointer' }}
+              >
+                ⚛️ React Bits
+              </button>
+            </div>
+            <div className="preview-section">
+              <Preview />
+            </div>
+          </div>
+        }
+      />
+      
+      {/* Status Bar */}
+      <div className="status-bar">
+        <div className="status-left">
+          <span className="status-text">Ready</span>
+        </div>
+        
+        <div className="status-center">
+          {checkpointEnabled && (
+            <div className="status-checkpoint-buttons">
+              <button 
+                className="status-button"
+                onClick={handleCreateCheckpoint}
+                title="Create checkpoint"
+              >
+                Checkpoint
+              </button>
+              <button 
+                className="status-button"
+                onClick={() => setShowCheckpointTimeline(true)}
+                title="View timeline"
+              >
+                Timeline
+              </button>
+            </div>
+          )}
+        </div>
+        
+        <div className="status-right">
+          <span className="status-text">JavaScript</span>
+        </div>
+      </div>
+      
+      {/* Feature overlays */}
+      {showFileSearch && fileSearchEnabled && (
+        <FileSearch 
+          onFileSelect={(filePath: string) => {
+            const fileName = filePath.split('/').pop() || filePath;
+            handleFileSelect(filePath, fileName);
+          }}
+          onClose={() => setShowFileSearch(false)}
+        />
+      )}
+      
+      {showCheckpointTimeline && checkpointEnabled && (
+        <CheckpointTimeline
+          sessionId={sessionId}
+          onCheckpointRestore={handleCheckpointRestore}
+          onClose={() => setShowCheckpointTimeline(false)}
+        />
+      )}
+      
+      {showHivemind && (
+        <HivemindDashboard 
+          onClose={() => setShowHivemind(false)}
+          sessionId={hivemindSessionId || undefined}
+        />
+      )}
+      
+      {showDocumentation && (
+        <Documentation 
+          onClose={() => setShowDocumentation(false)}
+        />
+      )}
+      
+      {showKeyboardShortcuts && (
+        <div 
+          className="modal-overlay" 
+          onClick={() => setShowKeyboardShortcuts(false)}
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 10000
+          }}
+        >
+          <div 
+            className="modal-content" 
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              backgroundColor: '#1a1b26',
+              border: '2px solid #bb9af7',
+              borderRadius: '8px',
+              padding: '24px',
+              maxWidth: '600px',
+              maxHeight: '80vh',
+              overflow: 'auto',
+              position: 'relative',
+              zIndex: 10001
+            }}
+          >
+            <h2 style={{ color: '#bb9af7', marginBottom: '16px' }}>Keyboard Shortcuts</h2>
+            <div style={{ color: '#a9b1d6' }}>
+              <h3 style={{ color: '#7aa2f7', marginTop: '16px' }}>File</h3>
+              <div>Ctrl+N - New File</div>
+              <div>Ctrl+O - Open File</div>
+              <div>Ctrl+S - Save</div>
+              <div>Ctrl+Shift+S - Save As</div>
+              <div>Ctrl+W - Close Editor</div>
+              
+              <h3 style={{ color: '#7aa2f7', marginTop: '16px' }}>Edit</h3>
+              <div>Ctrl+Z - Undo</div>
+              <div>Ctrl+Y - Redo</div>
+              <div>Ctrl+X - Cut</div>
+              <div>Ctrl+C - Copy</div>
+              <div>Ctrl+V - Paste</div>
+              <div>Ctrl+F - Find</div>
+              <div>Ctrl+H - Replace</div>
+              
+              <h3 style={{ color: '#7aa2f7', marginTop: '16px' }}>View</h3>
+              <div>Ctrl+Shift+E - Toggle Explorer</div>
+              <div>Ctrl+` - Toggle Terminal</div>
+              <div>Ctrl+= - Zoom In</div>
+              <div>Ctrl+- - Zoom Out</div>
+              <div>Ctrl+0 - Reset Zoom</div>
+              
+              <h3 style={{ color: '#7aa2f7', marginTop: '16px' }}>Run</h3>
+              <div>F5 - Run Code</div>
+              <div>F9 - Debug</div>
+              <div>Shift+F5 - Stop</div>
+              
+              <h3 style={{ color: '#7aa2f7', marginTop: '16px' }}>Help</h3>
+              <div>F1 - Documentation</div>
+              <div>Ctrl+K Ctrl+S - Keyboard Shortcuts</div>
+            </div>
+            <button 
+              className="modal-close" 
+              onClick={() => setShowKeyboardShortcuts(false)}
+              style={{
+                position: 'absolute',
+                top: '10px',
+                right: '10px',
+                background: '#bb9af7',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                width: '30px',
+                height: '30px',
+                cursor: 'pointer',
+                fontSize: '18px'
+              }}
+            >
+              ×
+            </button>
+          </div>
+        </div>
+      )}
+      
+      {showReactBits && (
+        <div 
+          className="modal-overlay" 
+          onClick={handleReactBitsClose}
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 99999,
+            pointerEvents: 'auto'
+          }}
+        >
+          <div 
+            className="modal-content" 
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              backgroundColor: '#1a1b26',
+              border: '2px solid #ff9e64',
+              borderRadius: '8px',
+              padding: '20px',
+              zIndex: 100000,
+              pointerEvents: 'auto',
+              position: 'relative'
+            }}
+          >
+            <button 
+              className="modal-close" 
+              onClick={handleReactBitsClose}
+              style={{
+                position: 'absolute',
+                top: '10px',
+                right: '10px',
+                background: '#ff9e64',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                width: '30px',
+                height: '30px',
+                cursor: 'pointer',
+                fontSize: '18px',
+                zIndex: 100001,
+                pointerEvents: 'auto'
+              }}
+            >
+              ×
+            </button>
+            <ReactBits onSelectComponent={insertComponentCode} />
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default App;

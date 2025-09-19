@@ -1,0 +1,653 @@
+.terminal {
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--tokyo-terminal);
+  color: var(--tokyo-fg);
+  font-family: 'JetBrains Mono', 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  overflow: hidden;
+}
+
+.terminal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 16px;
+  background: #24283b;
+  border-bottom: 1px solid #414868;
+  min-height: 40px;
+  gap: 8px;
+  position: relative;
+  z-index: 1;
+}
+
+.terminal-header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 0 0 auto;
+  min-width: 0;
+}
+
+.terminal-header-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  position: relative;
+  z-index: 10001;
+  overflow: visible;
+}
+
+.terminal-header-right {
+  display: flex;
+  gap: 8px;
+  flex: 1;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  align-items: center;
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: visible;
+  max-height: 40px;
+}
+
+.terminal-control-btn {
+  padding: 8px 16px;
+  background: linear-gradient(135deg, rgba(125, 211, 252, 0.1) 0%, rgba(187, 154, 247, 0.1) 100%);
+  border: 1px solid rgba(125, 211, 252, 0.3);
+  color: #c0caf5;
+  font-size: 13px;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  font-weight: 500;
+  box-shadow: 0 4px 15px rgba(125, 211, 252, 0.1);
+  white-space: nowrap;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 1;
+  min-height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(4px);
+  overflow: hidden;
+}
+
+/* Sweep animation effect */
+.terminal-control-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+  transition: left 0.5s;
+}
+
+.terminal-control-btn:hover {
+  background: linear-gradient(135deg, rgba(125, 211, 252, 0.1) 0%, rgba(187, 154, 247, 0.1) 100%);
+  transform: translateY(-2px) scale(1.02);
+  border-color: rgba(255, 158, 0, 0.8);
+  box-shadow: 0 0 20px rgba(255, 158, 0, 0.5), 0 0 40px rgba(255, 158, 0, 0.3);
+  color: #a9b1d6;
+}
+
+.terminal-control-btn:hover::before {
+  left: 100%;
+}
+
+/* Active state enhancements */
+.terminal-control-btn:active {
+  transform: translateY(-1px) scale(1.01);
+  transition: all 0.1s;
+}
+
+.terminal-control-btn.active {
+  background: linear-gradient(135deg, rgba(125, 211, 252, 0.2) 0%, rgba(187, 154, 247, 0.2) 100%);
+  color: #a9b1d6;
+  border-color: rgba(125, 211, 252, 0.5);
+  box-shadow: 0 8px 25px rgba(125, 211, 252, 0.2);
+  backdrop-filter: blur(6px);
+}
+
+.terminal-control-btn.active::before {
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+}
+
+.terminal-control-btn.stopping {
+  background: linear-gradient(135deg, rgba(125, 211, 252, 0.2) 0%, rgba(187, 154, 247, 0.2) 100%);
+  color: #a9b1d6;
+  border-color: rgba(125, 211, 252, 0.5);
+  box-shadow: 0 8px 25px rgba(125, 211, 252, 0.2);
+  animation: pulse 1s infinite;
+  backdrop-filter: blur(6px);
+}
+
+.terminal-control-btn.stopping::before {
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+}
+
+.terminal-control-btn.playing {
+  background: linear-gradient(135deg, rgba(125, 211, 252, 0.2) 0%, rgba(187, 154, 247, 0.2) 100%);
+  color: #a9b1d6;
+  border-color: rgba(125, 211, 252, 0.5);
+  box-shadow: 0 8px 25px rgba(125, 211, 252, 0.2);
+  animation: soundPulse 0.6s ease-in-out;
+  backdrop-filter: blur(6px);
+}
+
+.terminal-control-btn.playing::before {
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+}
+
+/* Sound toggle specific styling to match other buttons */
+.terminal-control-btn.sound-toggle-compact {
+  border-width: 1px;
+  box-shadow: 0 0 8px rgba(122, 162, 247, 0.3);
+  min-height: 32px;
+}
+
+.terminal-control-btn.sound-toggle-compact:hover {
+  box-shadow: 0 0 10px rgba(122, 162, 247, 0.4);
+}
+
+.terminal-control-btn.sound-toggle-compact.sound-enabled {
+  border-color: #7aa2f7;
+  background: #2a2e42;
+  color: #7aa2f7;
+}
+
+.terminal-control-btn.sound-toggle-compact.playing {
+  box-shadow: 0 0 12px rgba(16, 185, 129, 0.5);
+}
+
+.terminal-control-btn:disabled {
+  opacity: 1 !important;
+  box-shadow: 0 0 15px rgba(122, 162, 247, 0.7) !important;
+  cursor: not-allowed;
+}
+
+.terminal-control-btn:disabled:hover {
+  box-shadow: 0 0 20px rgba(255, 158, 0, 0.8) !important;
+  transform: translateY(-1px) !important;
+  background: #363a52 !important;
+  border-color: #ff9e00 !important;
+}
+
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 20px rgba(247, 118, 142, 0.8);
+  }
+  50% {
+    box-shadow: 0 0 30px rgba(247, 118, 142, 1);
+  }
+  100% {
+    box-shadow: 0 0 20px rgba(247, 118, 142, 0.8);
+  }
+}
+
+@keyframes soundPulse {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 20px rgba(16, 185, 129, 0.8);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 0 30px rgba(16, 185, 129, 1);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 20px rgba(16, 185, 129, 0.8);
+  }
+}
+
+/* Compact sound toggle styling */
+.terminal-control-btn.sound-toggle-compact {
+  min-width: 36px;
+  padding: 8px 10px;
+  font-size: 14px;
+}
+
+/* Sound preset dropdown styling */
+.sound-preset-dropdown {
+  animation: fadeInDown 0.2s ease-out;
+}
+
+@keyframes fadeInDown {
+  0% {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.sound-preset-dropdown button:active {
+  transform: scale(0.98);
+}
+
+.terminal-content {
+  flex: 1;
+  padding: 0 0 100px 0; /* Add 100px bottom padding for plan mode visibility */
+  overflow: hidden;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.xterm-container {
+  width: 100%;
+  height: calc(100% - 100px); /* Respect bottom padding for plan mode visibility */
+  flex: 1;
+  overflow: hidden;
+  background-color: #1a1b26;
+  position: relative;
+}
+
+/* xterm.js specific styling */
+.xterm {
+  font-feature-settings: "liga" 0;
+  position: relative;
+  user-select: none;
+  -ms-user-select: none;
+  -webkit-user-select: none;
+  height: 100%;
+  width: 100%;
+  min-width: 1200px;
+}
+
+.xterm.focus,
+.xterm:focus {
+  outline: none;
+}
+
+.xterm .xterm-helpers {
+  position: absolute;
+  top: 0;
+  z-index: 5;
+  pointer-events: none;
+}
+
+.xterm .xterm-helper-textarea {
+  position: absolute;
+  opacity: 0;
+  left: -9999em;
+  top: 0;
+  width: 0;
+  height: 0;
+  z-index: -5;
+  white-space: nowrap;
+  overflow: hidden;
+  resize: none;
+}
+
+.xterm .composition-view {
+  background: #000;
+  color: #FFF;
+  display: none;
+  position: absolute;
+  white-space: nowrap;
+  z-index: 1;
+}
+
+.xterm .composition-view.active {
+  display: block;
+}
+
+.xterm .xterm-viewport {
+  background-color: transparent;
+  overflow-y: scroll;
+  cursor: default;
+  position: absolute;
+  right: 0;
+  left: 0;
+  top: 0;
+  bottom: 0;
+}
+
+.xterm .xterm-screen {
+  position: relative;
+}
+
+.xterm .xterm-screen canvas {
+  position: absolute;
+  left: 0;
+  top: 0;
+}
+
+/* Force tooltip CSS to be included in build by adding non-purged selector */
+.terminal-control-btn[data-tooltip] {
+  position: relative;
+}
+
+/* Custom instant tooltips for terminal control buttons */
+/* Tooltip text that appears below button */
+.terminal-control-btn::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  top: calc(100% + 15px);
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 8px 12px;
+  background: rgba(0, 0, 0, 0.9);
+  color: white;
+  font-size: 12px;
+  font-weight: normal;
+  white-space: nowrap;
+  border-radius: 4px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+  z-index: 99999;
+}
+
+/* Arrow pointing up to button */
+.terminal-control-btn::before {
+  content: '';
+  position: absolute;
+  top: calc(100% + 9px);
+  left: 50%;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-bottom-color: rgba(0, 0, 0, 0.9);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+  z-index: 99999;
+}
+
+/* Show tooltip instantly on hover */
+.terminal-control-btn:hover::after,
+.terminal-control-btn:hover::before {
+  opacity: 1;
+}
+
+/* Show tooltip on hover only */
+.terminal-control-btn:hover::after,
+.terminal-control-btn:hover::before {
+  opacity: 1;
+}
+
+.xterm .xterm-scroll-area {
+  visibility: hidden;
+}
+
+.xterm-char-measure-element {
+  display: inline-block;
+  visibility: hidden;
+  position: absolute;
+  top: 0;
+  left: -9999em;
+  line-height: normal;
+}
+
+.xterm.enable-mouse-events {
+  cursor: default;
+}
+
+.xterm.xterm-cursor-pointer {
+  cursor: pointer;
+}
+
+.xterm.column-select.focus {
+  cursor: crosshair;
+}
+
+.xterm .xterm-accessibility,
+.xterm .xterm-message {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  z-index: 10;
+  color: transparent;
+  pointer-events: none;
+}
+
+.xterm .live-region {
+  position: absolute;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+.xterm-dim {
+  opacity: 0.5;
+}
+
+.xterm-underline-1 { text-decoration: underline; }
+.xterm-underline-2 { text-decoration: double underline; }
+.xterm-underline-3 { text-decoration: wavy underline; }
+.xterm-underline-4 { text-decoration: dotted underline; }
+.xterm-underline-5 { text-decoration: dashed underline; }
+
+.xterm-overline {
+  text-decoration: overline;
+}
+
+.xterm-overline.xterm-underline-1 { text-decoration: overline underline; }
+.xterm-overline.xterm-underline-2 { text-decoration: overline double underline; }
+.xterm-overline.xterm-underline-3 { text-decoration: overline wavy underline; }
+.xterm-overline.xterm-underline-4 { text-decoration: overline dotted underline; }
+.xterm-overline.xterm-underline-5 { text-decoration: overline dashed underline; }
+
+.xterm-strikethrough {
+  text-decoration: line-through;
+}
+
+.xterm-screen .xterm-decoration-container .xterm-decoration {
+  z-index: 6;
+  position: absolute;
+}
+
+.xterm-screen .xterm-decoration-container .xterm-decoration.xterm-decoration-top-layer {
+  z-index: 7;
+}
+
+.xterm-decoration-overview-ruler {
+  z-index: 8;
+  position: absolute;
+  top: 0;
+  right: 0;
+  pointer-events: none;
+}
+
+.xterm-decoration-top {
+  z-index: 2;
+  position: relative;
+}
+
+/* Specific styling for the xterm container inside Terminal component */
+.terminal .terminal-container {
+  margin-left: 0;
+  height: 100%;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  width: 100%;
+}
+
+/* Connection status styles */
+.terminal-connection-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.connection-indicator {
+  font-size: 12px;
+}
+
+.connection-text {
+  color: #a9b1d6;
+}
+
+.reconnect-btn {
+  padding: 4px 8px;
+  background: #ff9e00;
+  color: #1a1b26;
+  border: none;
+  border-radius: 4px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.reconnect-btn:hover {
+  background: #ffb84d;
+  transform: translateY(-1px);
+}
+
+/* Terminal status in content area */
+.terminal-status {
+  padding: 4px 12px;
+  background: rgba(36, 40, 59, 0.95);
+  border-bottom: 1px solid #414868;
+  font-size: 11px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-shrink: 0;
+  min-height: 24px;
+  height: 24px;
+}
+
+.terminal-status-connected {
+  color: #9ece6a;
+}
+
+.terminal-status-disconnected {
+  color: #f7768e;
+}
+
+/* Voice interface in terminal header */
+.terminal-header-left .voice-interface {
+  background: transparent;
+  border: none;
+  margin: 0;
+  padding: 0;
+  min-width: auto;
+}
+
+.terminal-header-left .voice-interface .voice-button {
+  width: 32px;
+  height: 32px;
+  font-size: 14px;
+}
+
+/* Removed voice status styling since we're only showing the button */
+
+/* Scrollbar styling */
+.terminal-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.terminal-content::-webkit-scrollbar-track {
+  background: #1a1b26;
+}
+
+.terminal-content::-webkit-scrollbar-thumb {
+  background: #414868;
+  border-radius: 4px;
+}
+
+/* Container query for responsive terminal header */
+.terminal {
+  container-type: inline-size;
+  container-name: terminal;
+}
+
+/* Responsive styles based on terminal panel width */
+@container terminal (max-width: 800px) {
+  .terminal-control-btn {
+    padding: 5px 10px;
+    font-size: 12px;
+  }
+  
+  .terminal-header {
+    padding: 6px 12px;
+  }
+}
+
+@container terminal (max-width: 600px) {
+  .terminal-control-btn {
+    padding: 4px 8px;
+    font-size: 11px;
+  }
+  
+  .terminal-header-right {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: thin;
+    scrollbar-color: #414868 #1a1b26;
+  }
+  
+  .terminal-header-right::-webkit-scrollbar {
+    height: 4px;
+  }
+  
+  .terminal-header-right::-webkit-scrollbar-track {
+    background: #1a1b26;
+  }
+  
+  .terminal-header-right::-webkit-scrollbar-thumb {
+    background: #414868;
+    border-radius: 2px;
+  }
+  
+  /* Hide mode toggle text on very narrow panels */
+  .thinking-mode-indicator .mode-label {
+    display: none;
+  }
+  
+  .thinking-mode-indicator .mode-icon {
+    margin-right: 0;
+  }
+}
+
+.terminal-content::-webkit-scrollbar-thumb:hover {
+  background: #565f89;
+}
+
+/* Enhanced styles for ThinkingModeToggle in terminal header */
+.terminal-header-center > div {
+  pointer-events: auto !important;
+  position: relative;
+  z-index: 10001 !important;
+}
+
+.terminal-header-center .thinking-mode-compact {
+  pointer-events: auto !important;
+  position: relative;
+  z-index: 10001 !important;
+}
+
+.terminal-header-center .thinking-mode-indicator {
+  pointer-events: auto !important;
+  cursor: pointer !important;
+  user-select: none;
+}
+
+.terminal-header-center .thinking-mode-dropdown {
+  pointer-events: auto !important;
+  z-index: 99999 !important;
+  position: absolute !important;
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+/* Ensure nothing in terminal header blocks interactions */
+.terminal-header * {
+  pointer-events: inherit;
+}

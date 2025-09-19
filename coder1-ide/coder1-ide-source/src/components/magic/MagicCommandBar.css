@@ -1,0 +1,428 @@
+/* Magic Command Bar Overlay */
+.magic-command-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  z-index: 1000;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 20vh;
+  animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Magic Command Bar Container */
+.magic-command-bar {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(139, 92, 246, 0.2);
+  border-radius: 16px;
+  box-shadow: 
+    0 20px 40px rgba(139, 92, 246, 0.1),
+    0 1px 3px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  max-width: 600px;
+  margin: 0 20px;
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from { 
+    transform: translateY(-20px);
+    opacity: 0;
+  }
+  to { 
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Input Container */
+.magic-input-container {
+  display: flex;
+  align-items: center;
+  padding: 16px 20px;
+  gap: 12px;
+}
+
+.magic-icon {
+  font-size: 20px;
+  animation: sparkle 2s ease-in-out infinite;
+}
+
+@keyframes sparkle {
+  0%, 100% { transform: scale(1) rotate(0deg); }
+  50% { transform: scale(1.1) rotate(5deg); }
+}
+
+.magic-input {
+  flex: 1;
+  border: none;
+  outline: none;
+  font-size: 16px;
+  background: transparent;
+  color: #374151;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+.magic-input::placeholder {
+  color: #9CA3AF;
+}
+
+.magic-generate-btn {
+  background: linear-gradient(135deg, #8B5CF6 0%, #A855F7 100%);
+  border: none;
+  border-radius: 8px;
+  color: white;
+  font-size: 16px;
+  padding: 8px 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-weight: 500;
+}
+
+.magic-generate-btn:hover:not(:disabled) {
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+}
+
+.magic-generate-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.magic-close-btn {
+  background: rgba(139, 92, 246, 0.1);
+  border: none;
+  border-radius: 6px;
+  color: #8B5CF6;
+  font-size: 18px;
+  width: 32px;
+  height: 32px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.magic-close-btn:hover {
+  background: rgba(139, 92, 246, 0.2);
+  transform: scale(1.1);
+}
+
+.magic-context-btn {
+  background: rgba(59, 130, 246, 0.1);
+  border: none;
+  border-radius: 6px;
+  color: #3B82F6;
+  font-size: 16px;
+  width: 32px;
+  height: 32px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 4px;
+}
+
+.magic-context-btn:hover {
+  background: rgba(59, 130, 246, 0.2);
+  transform: scale(1.1);
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.2);
+}
+
+.magic-page-btn {
+  background: rgba(34, 197, 94, 0.1);
+  border: none;
+  border-radius: 6px;
+  color: #22c55e;
+  font-size: 16px;
+  width: 32px;
+  height: 32px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 4px;
+}
+
+.magic-page-btn:hover {
+  background: rgba(34, 197, 94, 0.2);
+  transform: scale(1.1);
+  box-shadow: 0 2px 8px rgba(34, 197, 94, 0.2);
+}
+
+.magic-library-btn {
+  background: rgba(251, 191, 36, 0.1);
+  border: none;
+  border-radius: 6px;
+  color: #f59e0b;
+  font-size: 16px;
+  width: 32px;
+  height: 32px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 4px;
+}
+
+.magic-library-btn:hover {
+  background: rgba(251, 191, 36, 0.2);
+  transform: scale(1.1);
+  box-shadow: 0 2px 8px rgba(251, 191, 36, 0.2);
+}
+
+/* Progress Indicator */
+.magic-progress {
+  border-top: 1px solid rgba(139, 92, 246, 0.1);
+  padding: 16px 20px;
+  background: rgba(139, 92, 246, 0.05);
+}
+
+.progress-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.progress-message {
+  font-size: 14px;
+  color: #6B7280;
+  font-weight: 500;
+}
+
+.magic-progress.generating .progress-message {
+  color: #8B5CF6;
+}
+
+.magic-progress.complete .progress-message {
+  color: #10B981;
+}
+
+.magic-progress.error .progress-message {
+  color: #EF4444;
+}
+
+.progress-spinner {
+  display: flex;
+  align-items: center;
+}
+
+.spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(139, 92, 246, 0.2);
+  border-top: 2px solid #8B5CF6;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Suggestions */
+.magic-suggestions {
+  border-top: 1px solid rgba(139, 92, 246, 0.1);
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.suggestions-header {
+  padding: 12px 20px 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #8B5CF6;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.magic-suggestion {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 20px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  border-left: 3px solid transparent;
+}
+
+.magic-suggestion:hover {
+  background: rgba(139, 92, 246, 0.05);
+  border-left-color: #8B5CF6;
+}
+
+.suggestion-icon {
+  font-size: 16px;
+  width: 20px;
+  text-align: center;
+}
+
+.suggestion-text {
+  flex: 1;
+  font-size: 14px;
+  color: #374151;
+}
+
+.suggestion-arrow {
+  color: #9CA3AF;
+  font-size: 12px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.magic-suggestion:hover .suggestion-arrow {
+  opacity: 1;
+}
+
+/* Quick Tips */
+.magic-tips {
+  border-top: 1px solid rgba(139, 92, 246, 0.1);
+  padding: 16px 20px;
+  background: rgba(139, 92, 246, 0.02);
+}
+
+.tips-header {
+  font-size: 12px;
+  font-weight: 600;
+  color: #8B5CF6;
+  margin-bottom: 8px;
+}
+
+.tips-content {
+  font-size: 13px;
+  color: #6B7280;
+  line-height: 1.4;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.tip-section {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.tip-category {
+  font-weight: 600;
+  color: #374151;
+  flex-shrink: 0;
+}
+
+/* AGENTS.md Button */
+.magic-agents-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: none;
+  background: rgba(187, 154, 247, 0.1);
+  color: #BB9AF7;
+  font-size: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  margin-right: 4px;
+}
+
+.magic-agents-btn:hover {
+  background: rgba(187, 154, 247, 0.2);
+  transform: scale(1.1);
+  box-shadow: 0 2px 8px rgba(187, 154, 247, 0.2);
+}
+
+/* Integrations Button */
+.magic-integrations-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: none;
+  background: rgba(107, 114, 128, 0.1);
+  color: #6B7280;
+  font-size: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  margin-right: 4px;
+}
+
+.magic-integrations-btn:hover {
+  background: rgba(107, 114, 128, 0.2);
+  transform: scale(1.1);
+  box-shadow: 0 2px 8px rgba(107, 114, 128, 0.2);
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .magic-command-bar {
+    background: rgba(17, 24, 39, 0.95);
+    border-color: rgba(139, 92, 246, 0.3);
+  }
+  
+  .magic-input {
+    color: #F9FAFB;
+  }
+  
+  .magic-input::placeholder {
+    color: #6B7280;
+  }
+  
+  .suggestion-text {
+    color: #F9FAFB;
+  }
+  
+  .magic-progress {
+    background: rgba(139, 92, 246, 0.1);
+    border-top-color: rgba(139, 92, 246, 0.2);
+  }
+  
+  .magic-suggestions {
+    border-top-color: rgba(139, 92, 246, 0.2);
+  }
+  
+  .magic-tips {
+    background: rgba(139, 92, 246, 0.05);
+    border-top-color: rgba(139, 92, 246, 0.2);
+  }
+}
+
+/* Mobile responsive */
+@media (max-width: 640px) {
+  .magic-command-overlay {
+    padding-top: 10vh;
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+  
+  .magic-command-bar {
+    max-width: none;
+    margin: 0;
+  }
+  
+  .magic-input-container {
+    padding: 14px 16px;
+    gap: 10px;
+  }
+  
+  .magic-input {
+    font-size: 16px; /* Prevent zoom on iOS */
+  }
+}

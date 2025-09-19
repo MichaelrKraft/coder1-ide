@@ -11,13 +11,12 @@ Status: PRODUCTION - Created: January 20, 2025
 'use client';
 
 import { useEffect, useState } from 'react';
-import Script from 'next/script';
 
 export default function SmartPRDGeneratorPage() {
   const [showPatterns, setShowPatterns] = useState(false);
   const [showQuestionnaire, setShowQuestionnaire] = useState(false);
   const [patterns, setPatterns] = useState<any[]>([]);
-  const [currentQuestion, setCurrentQuestion] = useState(0);
+  const [currentQuestion, setCurrentQuestion] = useState(1);
   
   // Define the 5 different questions with their options
   const questions = [
@@ -143,7 +142,7 @@ export default function SmartPRDGeneratorPage() {
       background: 'linear-gradient(to bottom right, #eff6ff, #ffffff, #fdf4ff)',
       color: '#111827'
     }}>
-      <Script src="https://cdn.tailwindcss.com" />
+      {/* Removed Tailwind CDN - using local Tailwind */}
       
       <style jsx global>{`
         .glassmorphism {
@@ -374,12 +373,6 @@ export default function SmartPRDGeneratorPage() {
               </div>
             </div>
 
-            {/* Debug Info */}
-            <div className="bg-yellow-100 p-2 mb-4 rounded text-sm text-gray-800">
-              Debug: currentQuestion = {currentQuestion}, Array index = {currentQuestion - 1}, 
-              Question: {questions[currentQuestion - 1]?.text || 'No question found'}
-            </div>
-            
             {/* Question Card */}
             <div className="bg-white rounded-2xl shadow-xl p-8 mb-6">
               <h3 className="text-xl font-semibold mb-4 question-text" style={{ color: '#111827' }}>

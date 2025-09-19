@@ -1,0 +1,658 @@
+/**
+ * GitModal Styles - Educational and User-Friendly Design
+ */
+
+/* Modal Overlay */
+.git-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    backdrop-filter: blur(4px);
+    padding: 20px;
+}
+
+/* Main Modal */
+.git-modal {
+    background: var(--tokyo-bg);
+    border: 1px solid var(--tokyo-fg-gutter);
+    border-radius: 16px;
+    width: 100%;
+    max-width: 600px;
+    max-height: 90vh;
+    overflow: hidden;
+    position: relative;
+    box-shadow: 
+        0 20px 40px rgba(0, 0, 0, 0.3),
+        0 10px 20px rgba(0, 0, 0, 0.2);
+    animation: modal-slide-in 0.3s ease-out;
+}
+
+@keyframes modal-slide-in {
+    from {
+        opacity: 0;
+        transform: scale(0.9) translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+/* Modal Header */
+.git-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 24px;
+    background: var(--tokyo-bg-dark);
+    border-bottom: 1px solid var(--tokyo-fg-gutter);
+}
+
+.modal-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.git-icon {
+    font-size: 24px;
+}
+
+.modal-title h2 {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--tokyo-fg);
+}
+
+.modal-controls {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.education-level-select {
+    background: var(--tokyo-bg);
+    border: 1px solid var(--tokyo-fg-gutter);
+    border-radius: 6px;
+    padding: 6px 8px;
+    color: var(--tokyo-fg);
+    font-size: 12px;
+    font-family: 'JetBrains Mono', monospace;
+}
+
+.modal-close {
+    background: none;
+    border: 1px solid var(--tokyo-fg-gutter);
+    color: var(--tokyo-fg-dark);
+    font-size: 18px;
+    font-weight: bold;
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.modal-close:hover {
+    background: var(--tokyo-red);
+    color: var(--tokyo-bg);
+    border-color: var(--tokyo-red);
+}
+
+/* Modal Content */
+.git-modal-content {
+    padding: 24px;
+    max-height: calc(90vh - 100px);
+    overflow-y: auto;
+}
+
+/* Loading State */
+.loading-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    padding: 40px 20px;
+    color: var(--tokyo-fg-dark);
+}
+
+.loading-spinner {
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--tokyo-fg-gutter);
+    border-top: 2px solid var(--tokyo-cyan);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Git Status Section */
+.git-status-section {
+    margin-bottom: 24px;
+}
+
+.status-header h3 {
+    margin: 0 0 8px 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--tokyo-fg);
+}
+
+.status-header p {
+    margin: 0;
+    color: var(--tokyo-fg-dark);
+    font-size: 14px;
+}
+
+/* File List */
+.git-file-list {
+    margin-top: 16px;
+}
+
+.git-file-list h4 {
+    margin: 0 0 12px 0;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--tokyo-fg);
+}
+
+.file-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    background: var(--tokyo-bg-dark);
+    border-radius: 8px;
+    padding: 12px;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.git-file-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px;
+    border-radius: 4px;
+    margin-bottom: 4px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    transition: background-color 0.2s ease;
+}
+
+.git-file-item:hover {
+    background: var(--tokyo-bg-highlight);
+}
+
+.file-emoji {
+    font-size: 14px;
+}
+
+.file-name {
+    flex: 1;
+    color: var(--tokyo-fg);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.file-status {
+    color: var(--tokyo-orange);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.git-file-item-summary {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px;
+    font-style: italic;
+    color: var(--tokyo-fg-dark);
+    font-size: 12px;
+}
+
+/* Action Section */
+.git-action-section {
+    margin: 24px 0;
+    display: flex;
+    justify-content: center;
+}
+
+.git-push-button {
+    background: linear-gradient(135deg, var(--tokyo-blue) 0%, var(--tokyo-cyan) 100%);
+    border: none;
+    border-radius: 12px;
+    padding: 16px 32px;
+    color: var(--tokyo-bg);
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    transition: all 0.2s ease;
+    min-width: 200px;
+    justify-content: center;
+}
+
+.git-push-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(69, 183, 209, 0.3);
+}
+
+.git-push-button:active {
+    transform: translateY(0);
+}
+
+.git-push-button.no-changes {
+    background: linear-gradient(135deg, var(--tokyo-green) 0%, #4a9d4a 100%);
+    cursor: default;
+}
+
+.git-push-button.no-changes:hover {
+    transform: none;
+    box-shadow: none;
+}
+
+.git-push-button.pushing {
+    background: linear-gradient(135deg, var(--tokyo-orange) 0%, #ff8c42 100%);
+    cursor: not-allowed;
+}
+
+.button-emoji {
+    font-size: 18px;
+}
+
+.button-text {
+    font-family: 'JetBrains Mono', monospace;
+}
+
+/* Push Progress */
+.push-progress {
+    margin-top: 24px;
+    border: 1px solid var(--tokyo-fg-gutter);
+    border-radius: 8px;
+    padding: 16px;
+    background: var(--tokyo-bg-dark);
+}
+
+.push-progress h3 {
+    margin: 0 0 16px 0;
+    font-size: 16px;
+    color: var(--tokyo-fg);
+}
+
+.steps-container {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.step {
+    padding: 12px;
+    border-radius: 6px;
+    border-left: 4px solid var(--tokyo-fg-gutter);
+    background: var(--tokyo-bg);
+}
+
+.step-pending {
+    border-left-color: var(--tokyo-fg-gutter);
+}
+
+.step-in_progress {
+    border-left-color: var(--tokyo-orange);
+    background: rgba(255, 158, 100, 0.1);
+}
+
+.step-completed {
+    border-left-color: var(--tokyo-green);
+    background: rgba(158, 206, 106, 0.1);
+}
+
+.step-error {
+    border-left-color: var(--tokyo-red);
+    background: rgba(249, 51, 87, 0.1);
+}
+
+.step-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 4px;
+}
+
+.step-number {
+    background: var(--tokyo-fg-gutter);
+    color: var(--tokyo-bg);
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.step-title {
+    font-weight: 500;
+    color: var(--tokyo-fg);
+    flex: 1;
+}
+
+.step-status-icon {
+    font-size: 14px;
+}
+
+.step-description {
+    margin: 8px 0 0 0;
+    color: var(--tokyo-fg-dark);
+    font-size: 14px;
+}
+
+/* Educational Content */
+.step-education {
+    margin-top: 12px;
+    padding: 12px;
+    background: rgba(69, 183, 209, 0.1);
+    border-radius: 6px;
+    border: 1px solid rgba(69, 183, 209, 0.2);
+}
+
+.education-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.education-emoji {
+    font-size: 16px;
+}
+
+.education-header h4 {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--tokyo-cyan);
+}
+
+.education-explanation {
+    margin: 8px 0;
+    color: var(--tokyo-fg);
+    font-size: 13px;
+    line-height: 1.4;
+}
+
+.education-analogy {
+    margin: 8px 0 0 0;
+    color: var(--tokyo-fg-dark);
+    font-size: 12px;
+    font-style: italic;
+    line-height: 1.4;
+}
+
+/* Success Education */
+.success-education {
+    margin-top: 24px;
+    padding: 20px;
+    background: linear-gradient(135deg, rgba(158, 206, 106, 0.1) 0%, rgba(69, 183, 209, 0.1) 100%);
+    border-radius: 12px;
+    border: 1px solid rgba(158, 206, 106, 0.3);
+}
+
+.celebration {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.celebration h2 {
+    margin: 0 0 8px 0;
+    font-size: 24px;
+    color: var(--tokyo-green);
+}
+
+.celebration p {
+    margin: 0;
+    color: var(--tokyo-fg);
+    font-size: 16px;
+}
+
+.benefits-section h3 {
+    margin: 0 0 12px 0;
+    font-size: 16px;
+    color: var(--tokyo-fg);
+}
+
+.benefits-section ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.benefits-section li {
+    padding: 6px 0;
+    color: var(--tokyo-fg);
+    font-size: 14px;
+    line-height: 1.4;
+}
+
+/* Last Push Info */
+.last-push-info {
+    margin-top: 16px;
+    padding: 12px;
+    background: var(--tokyo-bg-dark);
+    border-radius: 6px;
+    text-align: center;
+}
+
+.last-push-info p {
+    margin: 0;
+    color: var(--tokyo-fg-dark);
+    font-size: 12px;
+}
+
+.last-push-emoji {
+    margin-right: 6px;
+}
+
+/* Setup Wizard */
+.setup-wizard-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.setup-wizard {
+    background: var(--tokyo-bg);
+    border: 1px solid var(--tokyo-fg-gutter);
+    border-radius: 12px;
+    padding: 24px;
+    max-width: 400px;
+    width: 100%;
+}
+
+.setup-wizard h2 {
+    margin: 0 0 16px 0;
+    font-size: 18px;
+    color: var(--tokyo-fg);
+}
+
+.setup-steps {
+    margin: 16px 0;
+}
+
+.setup-steps h3 {
+    margin: 0 0 12px 0;
+    font-size: 14px;
+    color: var(--tokyo-fg);
+}
+
+.setup-steps ol {
+    margin: 0;
+    padding-left: 20px;
+    color: var(--tokyo-fg-dark);
+    font-size: 13px;
+}
+
+.setup-steps li {
+    margin: 6px 0;
+}
+
+.setup-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 20px;
+}
+
+.setup-close-button {
+    background: none;
+    border: 1px solid var(--tokyo-fg-gutter);
+    color: var(--tokyo-fg-dark);
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12px;
+    transition: all 0.2s ease;
+}
+
+.setup-close-button:hover {
+    background: var(--tokyo-bg-highlight);
+}
+
+.setup-github-button {
+    background: linear-gradient(135deg, var(--tokyo-blue) 0%, var(--tokyo-cyan) 100%);
+    border: none;
+    color: var(--tokyo-bg);
+    padding: 8px 16px;
+    border-radius: 6px;
+    text-decoration: none;
+    font-size: 12px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.setup-github-button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(69, 183, 209, 0.3);
+}
+
+/* Confetti Animation */
+.confetti-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 10;
+    overflow: hidden;
+}
+
+.confetti-piece {
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    animation: confetti-fall 2s ease-out forwards;
+}
+
+@keyframes confetti-fall {
+    0% {
+        transform: translateY(-100px) rotate(0deg);
+        opacity: 1;
+    }
+    100% {
+        transform: translateY(400px) rotate(360deg);
+        opacity: 0;
+    }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .git-modal {
+        max-width: 95vw;
+        margin: 10px;
+    }
+    
+    .git-modal-header {
+        padding: 16px 20px;
+    }
+    
+    .git-modal-content {
+        padding: 20px;
+    }
+    
+    .git-push-button {
+        padding: 14px 24px;
+        font-size: 14px;
+        min-width: 160px;
+    }
+    
+    .modal-controls {
+        flex-direction: column;
+        gap: 8px;
+        align-items: flex-end;
+    }
+}
+
+/* High contrast mode */
+@media (prefers-contrast: high) {
+    .git-modal {
+        border-width: 2px;
+    }
+    
+    .git-push-button {
+        border: 2px solid currentColor;
+    }
+    
+    .step {
+        border-left-width: 6px;
+    }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+    .git-modal {
+        animation: none;
+    }
+    
+    .confetti-piece {
+        animation: none;
+    }
+    
+    .git-push-button:hover {
+        transform: none;
+    }
+    
+    .loading-spinner {
+        animation: none;
+        border-top-color: var(--tokyo-cyan);
+    }
+}

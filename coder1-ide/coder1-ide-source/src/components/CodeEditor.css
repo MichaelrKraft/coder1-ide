@@ -1,0 +1,148 @@
+.code-editor {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  background-color: var(--tokyo-bg);
+}
+
+/* Monaco Editor overrides */
+.monaco-editor {
+  font-family: 'JetBrains Mono', Monaco, Menlo, 'Courier New', monospace !important;
+}
+
+.monaco-editor .margin-view-overlays .line-numbers {
+  color: var(--tokyo-fg-gutter) !important;
+}
+
+.monaco-editor .current-line ~ .line-numbers {
+  color: var(--tokyo-fg-dark) !important;
+}
+
+/* Custom scrollbar styling for Monaco */
+.monaco-editor .scrollbar .slider {
+  background: rgba(122, 162, 247, 0.1) !important;
+}
+
+.monaco-editor .scrollbar .slider:hover {
+  background: rgba(122, 162, 247, 0.2) !important;
+}
+
+.monaco-editor .scrollbar .slider.active {
+  background: rgba(122, 162, 247, 0.3) !important;
+}
+
+/* Minimap styling */
+.monaco-editor .minimap {
+  border-left: none;
+}
+
+.monaco-editor .minimap-slider {
+  background: rgba(122, 162, 247, 0.1) !important;
+}
+
+.monaco-editor .minimap-slider:hover {
+  background: rgba(122, 162, 247, 0.2) !important;
+}
+
+/* Bracket matching */
+.monaco-editor .bracket-match {
+  background-color: rgba(122, 162, 247, 0.1);
+  border: 1px solid var(--tokyo-blue);
+}
+
+/* Selection styling */
+.monaco-editor .selected-text {
+  background-color: rgba(122, 162, 247, 0.2) !important;
+}
+
+/* Find widget styling */
+.monaco-editor .find-widget {
+  background-color: var(--tokyo-bg-dark) !important;
+  border: 1px solid var(--tokyo-fg-gutter) !important;
+}
+
+/* Suggest widget styling */
+.monaco-editor .suggest-widget {
+  background-color: var(--tokyo-bg-dark) !important;
+  border: 1px solid var(--tokyo-fg-gutter) !important;
+}
+
+.monaco-editor .suggest-widget .monaco-list-row.focused {
+  background-color: var(--tokyo-bg-highlight) !important;
+}
+
+/* Hover widget styling */
+.monaco-editor .monaco-hover {
+  background-color: var(--tokyo-bg-dark) !important;
+  border: 1px solid var(--tokyo-fg-gutter) !important;
+}
+
+/* Context menu styling */
+.monaco-menu {
+  background-color: var(--tokyo-bg-dark) !important;
+  border: 1px solid var(--tokyo-fg-gutter) !important;
+}
+
+.monaco-menu .monaco-action-bar .action-item.focused .action-label {
+  background-color: var(--tokyo-bg-highlight) !important;
+}
+
+/* Prettier format error banner */
+.format-error-banner {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  background: #ff5555;
+  color: white;
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  z-index: 100;
+  font-size: 14px;
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    transform: translateY(-100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+.format-error-banner .error-message {
+  flex: 1;
+}
+
+.format-error-banner .auto-fix-button {
+  background: white;
+  color: #ff5555;
+  border: none;
+  padding: 4px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: opacity 0.2s;
+}
+
+.format-error-banner .auto-fix-button:hover {
+  opacity: 0.9;
+}
+
+.format-error-banner .dismiss-button {
+  background: transparent;
+  color: white;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  padding: 0 8px;
+  opacity: 0.8;
+  transition: opacity 0.2s;
+}
+
+.format-error-banner .dismiss-button:hover {
+  opacity: 1;
+}

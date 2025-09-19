@@ -1,0 +1,527 @@
+/**
+ * Ambient Prompt Display Styles for IDE
+ * Optimized for narrow left panel with minimal space usage
+ */
+
+.ambient-prompt-container {
+  background: linear-gradient(135deg, 
+    rgba(139, 92, 246, 0.03) 0%, 
+    rgba(6, 182, 212, 0.03) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 12px;
+  margin: 8px;
+  position: relative;
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  font-size: 13px;
+  overflow: hidden;
+  animation: containerBreathe 8s ease-in-out infinite;
+}
+
+@keyframes containerBreathe {
+  0%, 100% {
+    border-color: rgba(255, 255, 255, 0.08);
+    box-shadow: 0 0 0 rgba(139, 92, 246, 0);
+  }
+  25% {
+    border-color: rgba(139, 92, 246, 0.15);
+    box-shadow: 0 0 8px rgba(139, 92, 246, 0.05);
+  }
+  50% {
+    border-color: rgba(6, 182, 212, 0.15);
+    box-shadow: 0 0 8px rgba(6, 182, 212, 0.05);
+  }
+  75% {
+    border-color: rgba(139, 92, 246, 0.15);
+    box-shadow: 0 0 8px rgba(139, 92, 246, 0.05);
+  }
+}
+
+.ambient-prompt-container:hover {
+  border-color: rgba(139, 92, 246, 0.3) !important;
+  box-shadow: 0 4px 16px rgba(139, 92, 246, 0.15) !important;
+  transform: translateY(-1px);
+  animation-play-state: paused;
+}
+
+.ambient-prompt-container.paused {
+  border-color: rgba(139, 92, 246, 0.3);
+}
+
+/* Header */
+.ambient-prompt-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.prompt-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.7);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.pause-btn {
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+  font-size: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.pause-btn:hover {
+  background: rgba(139, 92, 246, 0.1);
+  color: rgba(255, 255, 255, 0.9);
+}
+
+/* Prompt Card */
+.prompt-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 10px;
+  animation: gentleSlideIn 1.5s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+}
+
+@keyframes gentleSlideIn {
+  0% {
+    opacity: 0;
+    transform: translateX(20px);
+    filter: blur(4px);
+  }
+  50% {
+    opacity: 0.5;
+    filter: blur(2px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+    filter: blur(0);
+  }
+}
+
+/* Add a subtle glow effect during transition */
+.prompt-card::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  background: linear-gradient(90deg, 
+    transparent,
+    rgba(139, 92, 246, 0.3),
+    transparent
+  );
+  border-radius: 8px;
+  opacity: 0;
+  animation: glowPulse 1.5s ease-out;
+  pointer-events: none;
+}
+
+@keyframes glowPulse {
+  0% {
+    opacity: 0;
+    transform: scaleX(0);
+  }
+  50% {
+    opacity: 1;
+    transform: scaleX(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scaleX(1);
+  }
+}
+
+.prompt-icon {
+  font-size: 20px;
+  line-height: 1;
+  flex-shrink: 0;
+  animation: gentleFloat 4s ease-in-out infinite, iconFadeIn 1.5s ease-out;
+  transition: all 0.3s ease;
+}
+
+@keyframes gentleFloat {
+  0%, 100% {
+    transform: translateY(0) scale(1);
+  }
+  25% {
+    transform: translateY(-1px) scale(1.02);
+  }
+  50% {
+    transform: translateY(-2px) scale(1.05);
+  }
+  75% {
+    transform: translateY(-1px) scale(1.02);
+  }
+}
+
+@keyframes iconFadeIn {
+  0% {
+    opacity: 0;
+    transform: rotate(-10deg) scale(0.8);
+  }
+  50% {
+    opacity: 0.7;
+    transform: rotate(5deg) scale(1.1);
+  }
+  100% {
+    opacity: 1;
+    transform: rotate(0deg) scale(1);
+  }
+}
+
+.prompt-content {
+  flex: 1;
+  min-width: 0; /* Allow text truncation */
+  animation: contentSlideIn 1.5s ease-out 0.3s both;
+}
+
+.prompt-command {
+  font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
+  font-size: 12px;
+  font-weight: 600;
+  color: #8b5cf6;
+  margin-bottom: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  animation: commandTypeIn 1.2s ease-out 0.6s both;
+  position: relative;
+}
+
+.prompt-description {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.6);
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  animation: descriptionFadeIn 1s ease-out 0.9s both;
+}
+
+@keyframes contentSlideIn {
+  0% {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes commandTypeIn {
+  0% {
+    opacity: 0;
+    max-width: 0;
+  }
+  50% {
+    opacity: 0.7;
+  }
+  100% {
+    opacity: 1;
+    max-width: 100%;
+  }
+}
+
+@keyframes descriptionFadeIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  100% {
+    opacity: 0.6;
+    transform: scale(1);
+  }
+}
+
+/* Actions */
+.prompt-actions {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.try-now-btn {
+  flex: 0.5;
+  padding: 5px 8px;
+  background: linear-gradient(135deg, 
+    rgba(139, 92, 246, 0.15) 0%, 
+    rgba(6, 182, 212, 0.15) 100%);
+  border: 1px solid rgba(139, 92, 246, 0.25);
+  border-radius: 6px;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.try-now-btn:hover {
+  background: linear-gradient(135deg, 
+    rgba(139, 92, 246, 0.25) 0%, 
+    rgba(6, 182, 212, 0.25) 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(139, 92, 246, 0.2);
+}
+
+.info-btn {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 10px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.info-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.8);
+}
+
+/* Rotation Indicators */
+.rotation-indicators {
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+  margin-top: 8px;
+  animation: indicatorsFadeIn 2s ease-out 1.2s both;
+}
+
+.rotation-indicators .dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  cursor: pointer;
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  animation: dotPulse 3s ease-in-out infinite;
+}
+
+.rotation-indicators .dot:hover {
+  background: rgba(255, 255, 255, 0.4);
+  transform: scale(1.5);
+  animation-play-state: paused;
+}
+
+.rotation-indicators .dot.active {
+  width: 12px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, 
+    rgba(139, 92, 246, 0.7) 0%, 
+    rgba(6, 182, 212, 0.7) 100%);
+  animation: activeIndicatorGlow 2s ease-in-out infinite, 
+             activeDotExpand 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes indicatorsFadeIn {
+  0% {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes dotPulse {
+  0%, 100% {
+    opacity: 0.2;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.4;
+    transform: scale(1.1);
+  }
+}
+
+@keyframes activeIndicatorGlow {
+  0%, 100% {
+    box-shadow: 0 0 0 rgba(139, 92, 246, 0);
+  }
+  50% {
+    box-shadow: 0 0 8px rgba(139, 92, 246, 0.4);
+  }
+}
+
+@keyframes activeDotExpand {
+  0% {
+    width: 4px;
+    border-radius: 50%;
+  }
+  100% {
+    width: 12px;
+    border-radius: 2px;
+  }
+}
+
+/* Preview */
+.prompt-preview {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  right: 0;
+  background: rgba(0, 0, 0, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  padding: 8px;
+  margin-bottom: 4px;
+  z-index: 100;
+  animation: slideUp 0.2s ease;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.preview-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.6);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.preview-header button {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 14px;
+  cursor: pointer;
+  padding: 0;
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.preview-header button:hover {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.prompt-preview ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.prompt-preview li {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.7);
+  padding: 3px 0;
+  padding-left: 12px;
+  position: relative;
+}
+
+.prompt-preview li::before {
+  content: '→';
+  position: absolute;
+  left: 0;
+  color: rgba(139, 92, 246, 0.7);
+}
+
+/* Keyboard hint */
+.keyboard-hint {
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  text-align: center;
+  font-size: 9px;
+  color: rgba(255, 255, 255, 0.3);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.ambient-prompt-container:hover .keyboard-hint {
+  opacity: 1;
+}
+
+/* Loading state */
+.ambient-prompt-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  gap: 8px;
+}
+
+.loading-spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  border-top-color: rgba(139, 92, 246, 0.7);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.ambient-prompt-loading span {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+/* Responsive adjustments for very narrow panels */
+@media (max-width: 250px) {
+  .ambient-prompt-container {
+    padding: 8px;
+    margin: 4px;
+  }
+  
+  .prompt-command {
+    font-size: 10px;
+  }
+  
+  .prompt-description {
+    font-size: 10px;
+    -webkit-line-clamp: 1;
+  }
+  
+  .try-now-btn {
+    padding: 4px 8px;
+    font-size: 10px;
+  }
+  
+  .keyboard-hint {
+    display: none;
+  }
+}

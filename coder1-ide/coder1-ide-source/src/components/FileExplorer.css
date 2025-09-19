@@ -1,0 +1,251 @@
+.file-explorer {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  color: var(--tokyo-fg);
+}
+
+.file-explorer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--tokyo-bg-highlight);
+  background-color: var(--tokyo-bg-dark);
+  min-height: 32px;
+}
+
+.explorer-title {
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 11px;
+  letter-spacing: 0.5px;
+  color: var(--tokyo-fg-dark);
+}
+
+.search-button {
+  background: var(--tokyo-bg-highlight);
+  border: 1px solid var(--tokyo-blue);
+  color: var(--tokyo-fg);
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  font-size: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  height: 24px;
+}
+
+.search-button:hover {
+  background-color: var(--tokyo-blue);
+  color: var(--tokyo-bg);
+  border-color: var(--tokyo-blue);
+}
+
+.file-explorer.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.loading-message {
+  color: var(--tokyo-fg-dark);
+  font-style: italic;
+}
+
+.file-tree {
+  padding: 8px 0;
+  flex: 1;
+  overflow-y: auto;
+}
+
+.file-tree-item {
+  width: 100%;
+}
+
+.file-explorer .file-item {
+  display: flex;
+  align-items: center;
+  padding: 4px 8px;
+  cursor: pointer;
+  border-radius: 4px;
+  margin: 1px 4px;
+  transition: background-color 0.2s ease;
+  user-select: none;
+  min-height: 24px;
+}
+
+.file-explorer .file-item:hover {
+  background-color: var(--tokyo-bg-highlight);
+}
+
+.file-explorer .file-item.file:hover {
+  background-color: rgba(122, 162, 247, 0.1);
+}
+
+.file-explorer .file-item.directory {
+  font-weight: 500;
+}
+
+.expand-icon {
+  margin-right: 4px;
+  font-size: 10px;
+  color: var(--tokyo-fg-dark);
+  transition: transform 0.2s ease;
+  width: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.expand-icon.expanded {
+  transform: rotate(90deg);
+}
+
+.file-icon {
+  margin-right: 8px;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.file-name {
+  flex: 1;
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.file-explorer .file-item.directory .file-name {
+  color: var(--tokyo-fg);
+}
+
+.file-explorer .file-item.file .file-name {
+  color: var(--tokyo-fg-dark);
+}
+
+.file-children {
+  border-left: 1px solid rgba(65, 72, 104, 0.3);
+  margin-left: 16px;
+}
+
+/* File type specific colors */
+.file-explorer .file-item.file .file-name {
+  color: var(--tokyo-fg-dark);
+}
+
+.file-explorer .file-item.file[data-extension="tsx"] .file-name,
+.file-explorer .file-item.file[data-extension="jsx"] .file-name {
+  color: var(--tokyo-blue);
+}
+
+.file-explorer .file-item.file[data-extension="ts"] .file-name,
+.file-explorer .file-item.file[data-extension="js"] .file-name {
+  color: var(--tokyo-yellow);
+}
+
+.file-explorer .file-item.file[data-extension="css"] .file-name,
+.file-explorer .file-item.file[data-extension="scss"] .file-name {
+  color: var(--tokyo-purple);
+}
+
+.file-explorer .file-item.file[data-extension="json"] .file-name {
+  color: var(--tokyo-orange);
+}
+
+.file-explorer .file-item.file[data-extension="md"] .file-name {
+  color: var(--tokyo-green);
+}
+
+.file-explorer .file-item.file[data-extension="html"] .file-name {
+  color: var(--tokyo-red);
+}
+
+/* Scrollbar styling */
+.file-explorer::-webkit-scrollbar {
+  width: 6px;
+}
+
+.file-explorer::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.file-explorer::-webkit-scrollbar-thumb {
+  background: var(--tokyo-fg-gutter);
+  border-radius: 3px;
+}
+
+.file-explorer::-webkit-scrollbar-thumb:hover {
+  background: var(--tokyo-fg-dark);
+}
+
+/* AGENTS.md file special styling */
+.file-explorer .file-item.agents-file {
+  background-color: rgba(187, 154, 247, 0.1);
+  border: 1px solid rgba(187, 154, 247, 0.3);
+  border-radius: 4px;
+  margin: 2px;
+}
+
+.file-explorer .file-item.agents-file:hover {
+  background-color: rgba(187, 154, 247, 0.15);
+  border-color: rgba(187, 154, 247, 0.5);
+}
+
+.file-explorer .agents-file-name {
+  color: var(--tokyo-purple) !important;
+  font-weight: 600;
+}
+
+.agents-badge {
+  background: var(--tokyo-purple);
+  color: var(--tokyo-bg);
+  font-size: 10px;
+  font-weight: bold;
+  padding: 2px 6px;
+  border-radius: 10px;
+  margin-left: 8px;
+  opacity: 0.8;
+}
+
+/* Context menu styling */
+.context-menu {
+  animation: fadeInScale 0.15s ease-out;
+}
+
+.context-menu-item {
+  transition: background-color 0.15s ease;
+}
+
+.context-menu-item:hover {
+  background-color: var(--tokyo-bg-highlight) !important;
+}
+
+/* Claude Activity Indicator Animations */
+@keyframes pulse {
+  0% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.6;
+  }
+}
+
+@keyframes fadeInScale {
+  0% {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}

@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Terminal Integration Test</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background: #1a1b26;
+            color: #c0caf5;
+            font-family: Arial, sans-serif;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: #8b5cf6;
+        }
+        .info {
+            background: rgba(139, 92, 246, 0.1);
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .terminal-container {
+            width: 100%;
+            height: 600px;
+            background: #000;
+            border-radius: 8px;
+            overflow: hidden;
+            margin: 20px 0;
+        }
+        button {
+            background: rgba(139, 92, 246, 0.2);
+            border: 1px solid rgba(139, 92, 246, 0.5);
+            color: #c0caf5;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background: rgba(139, 92, 246, 0.3);
+        }
+        .error {
+            color: #f7768e;
+            padding: 10px;
+            background: rgba(247, 118, 142, 0.1);
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .success {
+            color: #9ece6a;
+            padding: 10px;
+            background: rgba(158, 206, 106, 0.1);
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🖥️ Terminal Integration Test</h1>
+        
+        <div class="info">
+            <h2>Status</h2>
+            <p>This page tests the terminal integration without needing the full IDE.</p>
+            <p>Due to the macOS/Node.js issue, we're serving this via Python HTTP server.</p>
+        </div>
+        
+        <div>
+            <button onclick="testConnection()">Test Connection</button>
+            <button onclick="initTerminal()">Initialize Terminal</button>
+            <button onclick="clearTerminal()">Clear</button>
+        </div>
+        
+        <div id="status"></div>
+        
+        <div id="terminal" class="terminal-container"></div>
+    </div>
+    
+    <!-- Load required libraries -->
+    <script src="https://cdn.jsdelivr.net/npm/xterm@5.3.0/lib/xterm.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm@5.3.0/css/xterm.css">
+    <script src="https://cdn.jsdelivr.net/npm/xterm-addon-fit@0.8.0/lib/xterm-addon-fit.js"></script>
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+    
+    <script>
+        let term = null;
+        let socket = null;
+        let fitAddon = null;
+        
+        function showStatus(message, type = 'info') {
+            const statusDiv = document.getElementById('status');
+            statusDiv.innerHTML = `<div class="${type}">${message}</div>`;
+        }
+        
+        async function testConnection() {
+            showStatus('Testing connection to terminal server...');
+            
+            // Try different URLs
+            const urls = [
+                'http://127.0.0.1:10000/api/terminal/test',
+                'http://localhost:10000/api/terminal/test'
+            ];
+            
+            let success = false;
+            for (const url of urls) {
+                try {
+                    const response = await fetch(url);
+                    if (response.ok) {
+                        const data = await response.json();
+                        showStatus(`✅ Connected to ${url}<br>Mode: ${data.mode || 'unknown'}<br>Platform: ${data.platform}`, 'success');
+                        success = true;
+                        break;
+                    }
+                } catch (error) {
+                    console.log(`Failed to connect to ${url}:`, error);
+                }
+            }
+            
+            if (!success) {
+                showStatus('❌ Cannot connect to terminal server. Make sure the server is running on port 10000.', 'error');
+            }
+        }
+        
+        function initTerminal() {
+            if (term) {
+                showStatus('Terminal already initialized', 'info');
+                return;
+            }
+            
+            showStatus('Initializing terminal...');
+            
+            // Create terminal
+            term = new Terminal({
+                theme: {
+                    background: '#1a1b26',
+                    foreground: '#c0caf5',
+                    cursor: '#c0caf5'
+                },
+                fontFamily: 'Monaco, Menlo, monospace',
+                fontSize: 14,
+                cursorBlink: true
+            });
+            
+            // Add fit addon
+            fitAddon = new FitAddon.FitAddon();
+            term.loadAddon(fitAddon);
+            
+            // Open terminal
+            const container = document.getElementById('terminal');
+            container.innerHTML = '';
+            term.open(container);
+            fitAddon.fit();
+            
+            // Connect to WebSocket
+            connectWebSocket();
+        }
+        
+        function connectWebSocket() {
+            showStatus('Connecting to WebSocket...');
+            
+            // Try connecting
+            socket = io('http://127.0.0.1:10000/terminal', {
+                transports: ['websocket'],
+                reconnectionAttempts: 3
+            });
+            
+            socket.on('connect', () => {
+                showStatus('✅ Connected to terminal server!', 'success');
+                
+                // Create terminal session
+                socket.emit('terminal:create', {
+                    cols: term.cols,
+                    rows: term.rows
+                });
+            });
+            
+            socket.on('terminal:created', (data) => {
+                console.log('Terminal created:', data);
+                if (data.mode === 'demo') {
+                    term.write('\x1b[33m⚠️ Running in demo mode (node-pty issue)\x1b[0m\r\n');
+                }
+            });
+            
+            socket.on('terminal:data', (data) => {
+                term.write(data);
+            });
+            
+            socket.on('connect_error', (error) => {
+                showStatus(`❌ WebSocket connection failed: ${error.message}`, 'error');
+                term.write('\x1b[31mConnection failed. The terminal server may not be accessible due to macOS/Node.js issues.\x1b[0m\r\n');
+                term.write('\r\nYou can still use the terminal in demo mode locally.\r\n');
+            });
+            
+            // Handle terminal input
+            term.onData((data) => {
+                if (socket && socket.connected) {
+                    socket.emit('terminal:data', data);
+                }
+            });
+            
+            // Handle resize
+            term.onResize((size) => {
+                if (socket && socket.connected) {
+                    socket.emit('terminal:resize', {
+                        cols: size.cols,
+                        rows: size.rows
+                    });
+                }
+            });
+        }
+        
+        function clearTerminal() {
+            if (term) {
+                term.clear();
+            }
+        }
+        
+        // Auto-resize
+        window.addEventListener('resize', () => {
+            if (fitAddon) {
+                fitAddon.fit();
+            }
+        });
+    </script>
+</body>
+</html>

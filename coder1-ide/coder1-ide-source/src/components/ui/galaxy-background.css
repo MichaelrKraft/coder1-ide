@@ -1,0 +1,164 @@
+.galaxy-background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: radial-gradient(ellipse at center, #1e1b4b 0%, #0f0a2e 40%, #050014 100%);
+}
+
+.galaxy-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+/* Nebula effects */
+.nebula {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(1px);
+  opacity: 0.6;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+  animation-direction: alternate;
+}
+
+.nebula-1 {
+  width: 200px;
+  height: 150px;
+  background: radial-gradient(ellipse, rgba(147, 51, 234, 0.4) 0%, rgba(147, 51, 234, 0.1) 50%, transparent 100%);
+  top: 20%;
+  left: 15%;
+  animation: nebula-drift 8s ease-in-out infinite alternate;
+}
+
+.nebula-2 {
+  width: 300px;
+  height: 200px;
+  background: radial-gradient(ellipse, rgba(59, 130, 246, 0.3) 0%, rgba(59, 130, 246, 0.1) 50%, transparent 100%);
+  top: 60%;
+  right: 20%;
+  animation: nebula-drift 12s ease-in-out infinite alternate-reverse;
+}
+
+.nebula-3 {
+  width: 150px;
+  height: 100px;
+  background: radial-gradient(ellipse, rgba(236, 72, 153, 0.3) 0%, rgba(236, 72, 153, 0.1) 50%, transparent 100%);
+  top: 40%;
+  left: 60%;
+  animation: nebula-drift 10s ease-in-out infinite alternate;
+}
+
+/* Star layers */
+.stars {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: 
+    radial-gradient(2px 2px at 20px 30px, white, transparent),
+    radial-gradient(2px 2px at 40px 70px, white, transparent),
+    radial-gradient(1px 1px at 90px 40px, white, transparent),
+    radial-gradient(1px 1px at 130px 80px, white, transparent),
+    radial-gradient(2px 2px at 160px 30px, white, transparent);
+  background-repeat: repeat;
+  background-size: 200px 100px;
+}
+
+.stars-1 {
+  background-size: 250px 250px;
+  animation: twinkle 4s ease-in-out infinite alternate;
+}
+
+.stars-2 {
+  background-size: 300px 300px;
+  animation: twinkle 6s ease-in-out infinite alternate-reverse;
+  opacity: 0.8;
+}
+
+.stars-3 {
+  background-size: 200px 200px;
+  animation: twinkle 8s ease-in-out infinite alternate;
+  opacity: 0.6;
+}
+
+/* Galaxy spiral effect */
+.galaxy-spiral {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 800px;
+  height: 400px;
+  transform: translate(-50%, -50%);
+  background: conic-gradient(
+    from 0deg,
+    transparent 0deg,
+    rgba(147, 51, 234, 0.1) 60deg,
+    rgba(59, 130, 246, 0.1) 120deg,
+    transparent 180deg,
+    rgba(236, 72, 153, 0.1) 240deg,
+    rgba(147, 51, 234, 0.1) 300deg,
+    transparent 360deg
+  );
+  border-radius: 50%;
+  animation: galaxy-rotate 20s linear infinite;
+  opacity: 0.4;
+  filter: blur(2px);
+}
+
+/* Animations */
+@keyframes nebula-drift {
+  0% {
+    transform: translate(0, 0) scale(1);
+    opacity: 0.6;
+  }
+  100% {
+    transform: translate(20px, 10px) scale(1.1);
+    opacity: 0.4;
+  }
+}
+
+@keyframes twinkle {
+  0% {
+    opacity: 0.3;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes galaxy-rotate {
+  0% {
+    transform: translate(-50%, -50%) rotate(0deg);
+  }
+  100% {
+    transform: translate(-50%, -50%) rotate(360deg);
+  }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .nebula-1 {
+    width: 150px;
+    height: 100px;
+  }
+  
+  .nebula-2 {
+    width: 200px;
+    height: 150px;
+  }
+  
+  .nebula-3 {
+    width: 100px;
+    height: 75px;
+  }
+  
+  .galaxy-spiral {
+    width: 600px;
+    height: 300px;
+  }
+}
