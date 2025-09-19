@@ -90,10 +90,8 @@ class ClaudeCLIPuppeteer extends EventEmitter {
             this.isInitialized = true;
             console.log('✅ Claude CLI Puppeteer initialized successfully');
             
-            // Start health monitoring if interactive mode is enabled
-            if (process.env.ENABLE_INTERACTIVE_CLI === 'true') {
-              this.startSessionHealthMonitoring();
-            }
+            // Start basic session health monitoring for --print mode
+            this.startSessionHealthMonitoring();
             
             resolve();
           }
@@ -654,8 +652,8 @@ Context: ${agentSession.context}`;
       pattern.test(buffer)
     );
     
-    // Silence detection - no output for specified time
-    const SILENCE_THRESHOLD = agentSession.isInteractive ? 3000 : 2000; // 3s for interactive, 2s for print
+    // Silence detection - no output for specified time (--print mode)
+    const SILENCE_THRESHOLD = 2000; // 2s for print mode
     const hasSilence = timeSinceLastOutput > SILENCE_THRESHOLD;
     
     // Increase silence count if we have silence
@@ -669,22 +667,13 @@ Context: ${agentSession.context}`;
     let isComplete = false;
     
     if (buffer.length > 50) {
-      // For interactive mode, be more patient
-      if (agentSession.isInteractive) {
-        isComplete = (
-          (hasConversationalEnding || hasToolCompletion) ||
-          (hasCompletionPattern && agentSession.silenceCount >= 2) || // Need 2 silence periods
-          (timeSinceLastOutput > 5000) // 5 second hard timeout
-        );
-      } else {
-        // For print mode, be quicker
-        isComplete = (
-          hasCompletionPattern || 
-          hasSilence ||
-          hasConversationalEnding ||
-          hasToolCompletion
-        );
-      }
+      // For --print mode, be responsive but reliable
+      isComplete = (
+        hasCompletionPattern || 
+        hasSilence ||
+        hasConversationalEnding ||
+        hasToolCompletion
+      );
     }
     
     if (isComplete) {
@@ -1050,19 +1039,9 @@ Respond with "Ready to work as ${role} agent" to confirm.`;
    * @returns {Promise<boolean>} True if responsive
    */
   async pingSession(agentSession) {
-    if (!agentSession.isInteractive || !agentSession.pty || agentSession.pty.killed) {
-      throw new Error('Session is not interactive or PTY is dead');
-    }
-    
-    // Send a simple echo command
-    const pingMessage = '# Health check - please respond with "alive"';
-    
-    try {
-      const response = await this.sendToAgentInteractive(agentSession.agentId, pingMessage, 5000);
-      return response && response.toLowerCase().includes('alive');
-    } catch (error) {
-      return false;
-    }
+    // For --print mode, just check if we have an active session reference
+    // No interactive pinging needed since each task spawns a fresh process
+    return agentSession && agentSession.status !== 'terminated';
   }
   
   /**
@@ -1103,7 +1082,7 @@ Respond with "Ready to work as ${role} agent" to confirm.`;
       activeTeams: this.activeTeams.size,
       isInitialized: this.isInitialized,
       uptime: Date.now() - (this.startTime || Date.now()),
-      interactiveSessions: Array.from(this.agents.values()).filter(s => s.isInteractive).length
+      printModeSessions: this.agents.size // All sessions now use --print mode
     };
   }
 }

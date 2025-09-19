@@ -26,7 +26,7 @@ const MonacoEditor = dynamic(() => import('../../components/editor/LazyMonacoEdi
   ssr: false
 });
 
-const Terminal = dynamic(() => import('../../components/terminal/LazyTerminalContainer'), {
+const Terminal = dynamic(() => import('@/components/terminal/LazyTerminalContainer'), {
   ssr: false,
   loading: () => <div className="h-full flex items-center justify-center">Loading Terminal System...</div>
 });
