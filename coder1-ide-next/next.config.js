@@ -28,35 +28,34 @@ const nextConfig = {
       '@': __dirname,
     };
     
-    // CRITICAL: Exclude browser-only libraries from SSR to prevent "self is not defined" errors
+    // CRITICAL FIX: Replace browser-only libraries with stubs during SSR
     if (isServer) {
-      // Replace browser-only modules with empty stubs during SSR
+      const path = require('path');
+      const stubPath = path.resolve(__dirname, 'lib/stubs/browser-stub.js');
+      
+      // Replace ALL browser-only modules with our stub
       config.resolve.alias = {
         ...config.resolve.alias,
-        '@xterm/xterm': false,
-        '@xterm/addon-fit': false,
-        'monaco-editor': false,
-        '@monaco-editor/react': false,
-        'three': false,
-        '@react-three/fiber': false,
-        'ogl': false,
-        'd3': false,
+        '@xterm/xterm': stubPath,
+        '@xterm/addon-fit': stubPath,
+        'monaco-editor': stubPath,
+        '@monaco-editor/react': stubPath,
+        'three': stubPath,
+        '@react-three/fiber': stubPath,
+        'ogl': stubPath,
+        'd3': stubPath,
+        'cheerio': stubPath,
       };
       
-      // Use webpack NormalModuleReplacementPlugin to handle these modules
-      const webpack = require('webpack');
-      config.plugins.push(
-        new webpack.NormalModuleReplacementPlugin(
-          /^(@xterm\/xterm|@xterm\/addon-fit|monaco-editor|three|ogl|d3)$/,
-          (resource) => {
-            resource.request = false;
-          }
-        )
-      );
+      // DISABLE vendor chunk splitting entirely for SSR
+      config.optimization = {
+        ...config.optimization,
+        splitChunks: false,
+      };
     }
     
-    // Only apply heavy optimizations in production
-    if (!dev) {
+    // Only apply optimizations for CLIENT production builds
+    if (!isServer && !dev) {
       // Production webpack stability improvements
       config.cache = {
         type: 'filesystem',
@@ -112,16 +111,8 @@ const nextConfig = {
         'better-sqlite3',
         'chokidar',
         'fsevents',
-        'node-pty',
-        // Add browser-only libraries to externals as well
-        '@xterm/xterm',
-        '@xterm/addon-fit',
-        'monaco-editor',
-        '@monaco-editor/react',
-        'three',
-        '@react-three/fiber',
-        'ogl',
-        'd3'
+        'node-pty'
+        // Browser-only libraries are now handled by stub replacement above
       ];
     }
     
