@@ -3,7 +3,7 @@ import path from 'path';
 import { logger } from '@/lib/logger';
 
 // Import the CodebaseWiki service
-const CodebaseWiki = require('../../../../../src/services/codebase-wiki.js');
+const CodebaseWiki = require('@/services/codebase-wiki.js');
 
 // Singleton instance of CodebaseWiki
 let codebaseWiki: any = null;

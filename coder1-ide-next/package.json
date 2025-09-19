@@ -44,6 +44,7 @@
     "events": "^3.3.0",
     "express": "^5.1.0",
     "framer-motion": "^12.23.12",
+    "glob": "^11.0.3",
     "jsonwebtoken": "^9.0.2",
     "lucide-react": "^0.539.0",
     "monaco-editor": "^0.52.2",
@@ -79,7 +80,6 @@
     "@types/three": "^0.180.0",
     "eslint": "^8",
     "eslint-config-next": "14.2.5",
-    "glob": "^11.0.3",
     "node-fetch": "^3.3.2"
   }
 }
