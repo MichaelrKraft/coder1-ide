@@ -447,42 +447,50 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
       // REMOVED: // REMOVED: console.log('🚀 CREATING TERMINAL SESSION...');
       
       try {
-        // Create a real terminal session via the backend
-        // REMOVED: // REMOVED: console.log('📡 Calling /api/terminal-rest/sessions...');
-        const response = await fetch('/api/terminal-rest/sessions', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            cols: 130,
-            rows: 30,
-            sandbox: sandboxMode,
-            checkpointName: sandboxSession?.name || 'Sandbox Session'
-          }),
-        });
+        // In production, skip REST API and use Socket.IO directly
+        // This fixes the issue where REST API doesn't work properly on Render
+        const isProduction = typeof window !== 'undefined' && window.location.hostname !== 'localhost';
         
-        // REMOVED: // REMOVED: console.log('📡 Session response status:', response.status);
-        
-        if (response.ok) {
-          const data = await response.json();
-          // REMOVED: // REMOVED: console.log('📡 Session response data:', data);
-          setSessionId(data.sessionId);
-          // Immediately update the ref for voice recognition
-          sessionIdForVoiceRef.current = data.sessionId;
-          setTerminalReady(true);
-          // Notify parent component - performance-safe callback
-          notifyTerminalReady(data.sessionId, true);
-          // REMOVED: // REMOVED: console.log('✅ Terminal session created:', data.sessionId);
-        } else {
-          // logger?.error('Failed to create terminal session:', response.status);
-          // Fallback to simulated mode
-          const simulatedId = 'simulated-' + Date.now();
+        if (isProduction) {
+          // For production, just generate a session ID and let Socket.IO create it
+          const simulatedId = `session_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
+          console.log('🚀 Production mode: Using Socket.IO for session creation:', simulatedId);
           setSessionId(simulatedId);
           sessionIdForVoiceRef.current = simulatedId;
           setTerminalReady(true);
-          // Notify parent component - performance-safe callback
           notifyTerminalReady(simulatedId, true);
+        } else {
+          // For development, use the REST API as before
+          const response = await fetch('/api/terminal-rest/sessions', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              cols: 130,
+              rows: 30,
+              sandbox: sandboxMode,
+              checkpointName: sandboxSession?.name || 'Sandbox Session'
+            }),
+          });
+          
+          if (response.ok) {
+            const data = await response.json();
+            setSessionId(data.sessionId);
+            // Immediately update the ref for voice recognition
+            sessionIdForVoiceRef.current = data.sessionId;
+            setTerminalReady(true);
+            // Notify parent component - performance-safe callback
+            notifyTerminalReady(data.sessionId, true);
+          } else {
+            // Fallback to simulated mode
+            const simulatedId = 'simulated-' + Date.now();
+            setSessionId(simulatedId);
+            sessionIdForVoiceRef.current = simulatedId;
+            setTerminalReady(true);
+            // Notify parent component - performance-safe callback
+            notifyTerminalReady(simulatedId, true);
+          }
         }
       } catch (error) {
         // logger?.error('Error creating terminal session:', error);
