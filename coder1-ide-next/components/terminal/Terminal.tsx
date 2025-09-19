@@ -1,9 +1,19 @@
 'use client';
 
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { Terminal as XTerm } from '@xterm/xterm';
-import { FitAddon } from '@xterm/addon-fit';
-import '@xterm/xterm/css/xterm.css';
+import dynamic from 'next/dynamic';
+
+// Dynamic imports for xterm to prevent SSR issues
+let XTerm: any;
+let FitAddon: any;
+
+if (typeof window !== 'undefined') {
+  const xtermModule = require('@xterm/xterm');
+  const fitModule = require('@xterm/addon-fit');
+  XTerm = xtermModule.Terminal;
+  FitAddon = fitModule.FitAddon;
+  require('@xterm/xterm/css/xterm.css');
+}
 import './Terminal.css'; // Re-enabled - critical for xterm viewport fixes
 import { Users, Zap, StopCircle, Brain, Eye, Code2, Mic, MicOff, Speaker, ChevronDown, Plus } from '@/lib/icons';
 import TerminalSettings, { TerminalSettingsState } from './TerminalSettings';
@@ -577,6 +587,10 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
     try {
       // REMOVED: // REMOVED: console.log('🔧 Creating XTerm instance...');
       // Initialize terminal with performance-optimized settings
+      if (!XTerm) {
+        console.error('XTerm not loaded - running in SSR environment');
+        return;
+      }
       const term = new XTerm({
         theme: {
           background: '#0a0a0a',
@@ -601,6 +615,10 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
         allowTransparency: false, // Improve rendering consistency
       });
 
+      if (!FitAddon) {
+        console.error('FitAddon not loaded - running in SSR environment');
+        return;
+      }
       const fitAddon = new FitAddon();
       term.loadAddon(fitAddon);
       
