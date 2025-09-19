@@ -447,62 +447,42 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
       // REMOVED: // REMOVED: console.log('🚀 CREATING TERMINAL SESSION...');
       
       try {
-        // Better production detection for Render deployment
-        const isProduction = process.env.NODE_ENV === 'production' || 
-                           (typeof window !== 'undefined' && 
-                            (window.location.hostname.includes('onrender.com') ||
-                             window.location.hostname !== 'localhost'));
+        // Always try REST API first, regardless of environment
+        // This ensures proper session creation on the server
+        const response = await fetch('/api/terminal-rest/sessions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            cols: 130,
+            rows: 30,
+            sandbox: sandboxMode,
+            checkpointName: sandboxSession?.name || 'Sandbox Session'
+          }),
+        });
         
-        if (isProduction) {
-          // For production, just generate a session ID and let Socket.IO create it
-          const simulatedId = `session_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
-          console.log('🚀 Production mode: Using Socket.IO for session creation:', simulatedId);
-          setSessionId(simulatedId);
-          sessionIdForVoiceRef.current = simulatedId;
+        if (response.ok) {
+          const data = await response.json();
+          console.log('✅ Session created via REST API:', data.sessionId);
+          setSessionId(data.sessionId);
+          // Immediately update the ref for voice recognition
+          sessionIdForVoiceRef.current = data.sessionId;
           setTerminalReady(true);
-          notifyTerminalReady(simulatedId, true);
+          // Notify parent component - performance-safe callback
+          notifyTerminalReady(data.sessionId, true);
         } else {
-          // For development, use the REST API as before
-          const response = await fetch('/api/terminal-rest/sessions', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              cols: 130,
-              rows: 30,
-              sandbox: sandboxMode,
-              checkpointName: sandboxSession?.name || 'Sandbox Session'
-            }),
-          });
-          
-          if (response.ok) {
-            const data = await response.json();
-            setSessionId(data.sessionId);
-            // Immediately update the ref for voice recognition
-            sessionIdForVoiceRef.current = data.sessionId;
-            setTerminalReady(true);
-            // Notify parent component - performance-safe callback
-            notifyTerminalReady(data.sessionId, true);
-          } else {
-            // Fallback to simulated mode
-            const simulatedId = 'simulated-' + Date.now();
-            setSessionId(simulatedId);
-            sessionIdForVoiceRef.current = simulatedId;
-            setTerminalReady(true);
-            // Notify parent component - performance-safe callback
-            notifyTerminalReady(simulatedId, true);
-          }
+          // Fallback: let server generate session ID via Socket.IO
+          console.log('⚠️ REST API failed, will use Socket.IO session creation');
+          // Don't set a session ID here - let the server generate one
+          setTerminalReady(true);
+          notifyTerminalReady(null, true);
         }
       } catch (error) {
-        // logger?.error('Error creating terminal session:', error);
-        // Fallback to simulated mode
-        const simulatedId = 'simulated-' + Date.now();
-        setSessionId(simulatedId);
-        sessionIdForVoiceRef.current = simulatedId;
+        console.log('⚠️ REST API error, will use Socket.IO session creation:', error);
+        // Don't set a session ID here - let the server generate one via Socket.IO
         setTerminalReady(true);
-        // Notify parent component - performance-safe callback
-        notifyTerminalReady(simulatedId, true);
+        notifyTerminalReady(null, true);
       }
     };
     
@@ -979,8 +959,9 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
       return;
     }
     
-    if (sessionId && terminalReady && xtermRef.current && !isConnected && !connectionInProgressRef.current) {
-      // REMOVED: // REMOVED: console.log('🚀 Both terminal and session ready, connecting to backend...');
+    // Connect when terminal is ready (session ID can be created by server if needed)
+    if (terminalReady && xtermRef.current && !isConnected && !connectionInProgressRef.current) {
+      console.log('🚀 Terminal ready, connecting to backend...', { sessionId });
       connectToBackend(xtermRef.current);
     }
   }, [sessionId, terminalReady, isConnected, sandboxMode]);
@@ -1482,13 +1463,15 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
   // Function to process buffered input (moved to component scope)
   const processInputBuffer = useCallback(() => {
     const socket = socketRef.current;
-    if (!isProcessingBufferRef.current && inputBufferRef.current.length > 0 && socket?.connected && sessionId) {
+    const currentSessionId = sessionIdForVoiceRef.current || sessionId;
+    
+    if (!isProcessingBufferRef.current && inputBufferRef.current.length > 0 && socket?.connected && currentSessionId) {
       isProcessingBufferRef.current = true;
       while (inputBufferRef.current.length > 0) {
         const bufferedData = inputBufferRef.current.shift();
         if (bufferedData) {
           socket.emit('terminal:input', { 
-            id: sessionId, 
+            id: currentSessionId, 
             data: bufferedData,
             thinkingMode 
           });
@@ -1507,15 +1490,16 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
       return;
     }
     
-    if (!sessionId || !terminalReady) {
-      console.log('❌ Session not ready yet:', { sessionId, terminalReady });
+    // Allow connection even without sessionId (server will generate one)
+    if (!terminalReady) {
+      console.log('❌ Terminal not ready yet');
       return;
     }
     
-    // Validate session before attempting connection
-    if (!validateCurrentSession()) {
-      console.log('❌ Invalid session, cannot connect to backend:', sessionId);
-      return;
+    // If we have a session ID, validate it
+    if (sessionId && !validateCurrentSession()) {
+      console.log('❌ Invalid session, will let server generate new one');
+      // Don't return - continue and let server generate a new session
     }
     
     // Mark connection as in progress
@@ -1567,6 +1551,18 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
       }
     });
     
+    // Handle terminal created response from server
+    socket.on('terminal:created', ({ sessionId: serverSessionId, pid }) => {
+      console.log('✅ Terminal created on server:', { sessionId: serverSessionId, pid });
+      
+      // If we didn't have a session ID, use the one from the server
+      if (!sessionId || sessionId === 'undefined' || sessionId === 'null') {
+        console.log('📝 Updating session ID from server:', serverSessionId);
+        setSessionId(serverSessionId);
+        sessionIdForVoiceRef.current = serverSessionId;
+      }
+    });
+    
     socket.on('disconnect', (reason) => {
       // REMOVED: // REMOVED: console.log('🔴 Socket.IO DISCONNECTED:', reason);
       if (term) {
@@ -1579,9 +1575,16 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
     });
 
     // Join the terminal session
-    // REMOVED: // REMOVED: console.log('📡 Emitting terminal:create for session:', sessionId);
-    socket.emit('terminal:create', { id: sessionId });
-    // REMOVED: // REMOVED: console.log('📡 Connecting to Express backend terminal:', sessionId);
+    console.log('📡 Emitting terminal:create for session:', sessionId, 'Type:', typeof sessionId);
+    
+    // Critical fix: Don't send undefined or null as the session ID
+    // Let the server generate one if we don't have a valid ID
+    if (sessionId && sessionId !== 'undefined' && sessionId !== 'null') {
+      socket.emit('terminal:create', { id: sessionId });
+    } else {
+      console.log('⚠️ No valid session ID, letting server generate one');
+      socket.emit('terminal:create', {}); // Let server generate ID
+    }
 
     // Flush buffered output to terminal (performance optimization)
     const flushOutput = () => {
@@ -1852,14 +1855,17 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
     
     // Create new handler and store the disposable
     onDataDisposableRef.current = term.onData((data) => {
+      // Use the ref for most current session ID
+      const currentSessionId = sessionIdForVoiceRef.current || sessionId;
+      
       // Check session validity first
-      if (!sessionId) {
+      if (!currentSessionId) {
         term.writeln('\r\n⚠️ Terminal session not initialized. Please refresh the page.');
         return;
       }
       
-      // Validate session before processing input
-      if (!validateCurrentSession()) {
+      // Validate session before processing input (updated to use current session)
+      if (!isValidSession(currentSessionId)) {
         term.writeln('\r\n⚠️ Terminal session is invalid. Please refresh the page.');
         return;
       }
@@ -1877,9 +1883,10 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
         return;
       }
       
-      // Send input to backend via Socket.IO
+      // Send input to backend via Socket.IO with current session ID
+      console.log('📤 Sending terminal input for session:', currentSessionId);
       socket.emit('terminal:input', { 
-        id: sessionId, 
+        id: currentSessionId, 
         data,
         thinkingMode 
       });
