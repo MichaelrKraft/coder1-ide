@@ -90,7 +90,7 @@ export class ClaudeCodeBridgeService extends EventEmitter {
 
   constructor() {
     super();
-    this.projectRoot = '/Users/michaelkraft/autonomous_vibe_interface';
+    this.projectRoot = process.env.PROJECT_ROOT || process.cwd();
     this.workTreeRoot = path.join(this.projectRoot, '.claude-parallel-dev'); // Unified directory
     this.tmuxService = getEnhancedTmuxService();
     this.initialize().catch(error => {

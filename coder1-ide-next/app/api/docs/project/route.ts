@@ -2,7 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { promises as fs } from 'fs';
 import path from 'path';
 
-const PROJECT_ROOT = '/Users/michaelkraft/autonomous_vibe_interface';
+// Force dynamic rendering for this route
+export const dynamic = 'force-dynamic';
+
+const PROJECT_ROOT = process.env.PROJECT_ROOT || path.join(process.cwd(), '..');
 
 // List of markdown files to include
 const PROJECT_DOCS = [

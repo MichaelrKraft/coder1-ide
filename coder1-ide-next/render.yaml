@@ -12,13 +12,13 @@ services:
     region: oregon # or your preferred region
     plan: starter # $7/month plan - sufficient for alpha testing
     
-    # Build configuration with enhanced memory for Starter plan
+    # Build configuration for unified server with dynamic routes
     # Install build tools for native dependencies (node-pty)
     buildCommand: |
       apt-get update && apt-get install -y python3 make g++ build-essential
       cd coder1-ide-next
       NODE_OPTIONS="--max-old-space-size=1200" npm ci
-      NODE_OPTIONS="--max-old-space-size=1200" npm run build
+      NODE_OPTIONS="--max-old-space-size=1200" npm run build:standalone
       rm -rf .next/cache node_modules/.cache
       npm prune --production
     
@@ -47,15 +47,16 @@ services:
       - key: MEMORY_PANIC_THRESHOLD_MB
         value: 380
         
-      # Service URLs (Render will auto-generate)
-      - key: NEXT_PUBLIC_API_URL
-        generateValue: true
+      # Project paths for dynamic routes
+      - key: PROJECT_ROOT
+        value: /opt/render/project/src/coder1-ide-next
         
-      - key: NEXT_PUBLIC_UNIFIED_SERVER_URL
-        generateValue: true
+      - key: SUMMARIES_DIR
+        value: /data/summaries
         
-      - key: NEXT_PUBLIC_WEBSOCKET_URL
-        generateValue: true
+      # Service URLs (will use origin detection in production)
+      - key: NEXT_PUBLIC_UNIFIED_SERVER
+        value: true
         
       # Claude Code OAuth Integration (NO API KEYS!)
       - key: CLAUDE_CODE_OAUTH_ENABLED

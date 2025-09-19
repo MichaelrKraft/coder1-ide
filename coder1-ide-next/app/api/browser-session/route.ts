@@ -8,6 +8,9 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { contextDatabase } from '@/services/context-database';
+
+// Force dynamic rendering for this route
+export const dynamic = 'force-dynamic';
 import { contextProcessor } from '@/services/context-processor';
 import { contextFileWatcher } from '@/services/context-file-watcher';
 

@@ -8,6 +8,9 @@ import fs from 'fs/promises';
 import path from 'path';
 import { logger } from '@/lib/logger';
 
+// Force dynamic rendering for this route
+export const dynamic = 'force-dynamic';
+
 interface UsageSnapshot {
   timestamp: string;
   tokens: number;

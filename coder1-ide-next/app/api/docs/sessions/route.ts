@@ -2,7 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { promises as fs } from 'fs';
 import path from 'path';
 
-const SUMMARIES_DIR = '/Users/michaelkraft/autonomous_vibe_interface/coder1-ide-next/summaries';
+// Force dynamic rendering for this route
+export const dynamic = 'force-dynamic';
+
+const SUMMARIES_DIR = process.env.SUMMARIES_DIR || path.join(process.cwd(), 'summaries');
 
 export async function GET(request: NextRequest) {
   try {
