@@ -131,6 +131,17 @@ class TerminalSession {
       
       console.log(`[Terminal] Creating PTY session ${id} with shell: ${shell}, cwd: ${finalWorkingDir}`);
       
+      // Ensure PATH includes common locations for Claude CLI
+      const enhancedPath = [
+        '/opt/homebrew/bin',
+        '/usr/local/bin', 
+        '/usr/bin',
+        '/bin',
+        '/usr/sbin',
+        '/sbin',
+        process.env.PATH
+      ].filter(Boolean).join(':');
+      
       this.pty = pty.spawn(shell, [], {
         name: 'xterm-color',
         cols: 80,
@@ -138,6 +149,7 @@ class TerminalSession {
         cwd: finalWorkingDir,
         env: {
           ...process.env,
+          PATH: enhancedPath,
           CODER1_IDE: 'true',
           TERMINAL_SESSION_ID: id
         }

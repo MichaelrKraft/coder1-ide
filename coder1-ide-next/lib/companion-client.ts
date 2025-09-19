@@ -73,39 +73,59 @@ export class CompanionClient extends EventEmitter {
   async checkInstallation(): Promise<CompanionStatus> {
     this.status.lastCheck = Date.now();
 
-    try {
-      // Try to detect connection file
-      const response = await fetch('/api/companion/detect', {
-        method: 'GET',
-        headers: { 'Content-Type': 'application/json' }
-      });
+    // Possible ports the companion might be running on
+    const possiblePorts = [57132, 57133, 57134, 57135];
+    
+    for (const port of possiblePorts) {
+      try {
+        // Try to connect directly to localhost from the browser
+        // This works because the companion service has CORS enabled
+        const response = await fetch(`http://localhost:${port}/health`, {
+          method: 'GET',
+          headers: { 
+            'Content-Type': 'application/json',
+            'Origin': window.location.origin
+          },
+          // Short timeout since it's local
+          signal: AbortSignal.timeout(1000)
+        });
 
-      if (response.ok) {
-        this.connectionInfo = await response.json();
-        this.status.installed = true;
-        this.status.version = this.connectionInfo.version;
-        this.status.port = this.connectionInfo.port;
+        if (response.ok) {
+          const healthData = await response.json();
+          
+          this.connectionInfo = {
+            version: healthData.version || '1.0.0',
+            port: port,
+            pid: healthData.pid || 0,
+            startTime: healthData.startTime || new Date().toISOString(),
+            security: {
+              allowedOrigins: healthData.allowedOrigins || ['*']
+            }
+          };
+          
+          this.status.installed = true;
+          this.status.version = this.connectionInfo.version;
+          this.status.port = port;
 
-        // Try to establish WebSocket connection
-        if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
-          await this.connect();
+          // Try to establish WebSocket connection
+          if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
+            await this.connect();
+          }
+
+          this.emit('status-changed', this.status);
+          return this.status;
         }
-
-        this.emit('status-changed', this.status);
-        return this.status;
+      } catch (error) {
+        // This port didn't work, try the next one
+        continue;
       }
-
-      // Not installed or not running
-      this.status.installed = false;
-      this.status.connected = false;
-      this.status.error = 'Companion service not detected';
-      
-    } catch (error) {
-      this.status.installed = false;
-      this.status.connected = false;
-      this.status.error = error instanceof Error ? error.message : 'Unknown error';
     }
 
+    // No companion service found on any port
+    this.status.installed = false;
+    this.status.connected = false;
+    this.status.error = 'Coder1 Companion not detected. Please install and run the companion service.';
+    
     this.emit('status-changed', this.status);
     return this.status;
   }

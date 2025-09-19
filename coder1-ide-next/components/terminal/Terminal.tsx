@@ -26,6 +26,7 @@ import SupervisionConfigModal from '@/components/supervision/SupervisionConfigMo
 import { useSessionMemory } from '@/hooks/useSessionMemory';
 import { useUIStore } from '@/stores/useUIStore';
 import { filterThinkingAnimations, extractClaudeCommands } from '@/lib/checkpoint-utils';
+import { getCompanionClient } from '@/lib/companion-client';
 
 // TypeScript declarations for Web Speech API
 declare global {
@@ -75,6 +76,9 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
   const [isConnected, setIsConnected] = useState(false);
   const [agentsRunning, setAgentsRunning] = useState(false);
   const [voiceListening, setVoiceListening] = useState(false);
+  const [companionConnected, setCompanionConnected] = useState(false);
+  const companionClientRef = useRef<any>(null);
+  const currentCommandBuffer = useRef<string>('');
   
   // Use enhanced supervision context
   const { 
@@ -191,6 +195,51 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
       // Save defaults on first run
       localStorage.setItem('coder1-terminal-settings', JSON.stringify(defaultTerminalSettings));
     }
+  }, []);
+
+  // Initialize companion service connection for Claude Code CLI access
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
+    const initCompanion = async () => {
+      try {
+        const companion = getCompanionClient();
+        companionClientRef.current = companion;
+        
+        // Listen for companion status changes
+        companion.on('status-changed', (status: any) => {
+          setCompanionConnected(status.connected);
+          
+          if (!status.connected && xtermRef.current && process.env.NODE_ENV === 'production') {
+            // Show helpful message only in production if companion is not running
+            xtermRef.current.writeln('\r\n\x1b[33m💡 Tip: Install Coder1 Companion for local Claude Code CLI access\x1b[0m');
+          } else if (status.connected && xtermRef.current) {
+            xtermRef.current.writeln('\r\n\x1b[32m✅ Claude Code CLI connected via Companion!\x1b[0m\r\n');
+          }
+        });
+        
+        // Check companion status
+        await companion.checkInstallation();
+      } catch (error) {
+        console.error('Failed to initialize companion client:', error);
+      }
+    };
+    
+    initCompanion();
+    
+    // Check companion status periodically
+    const checkInterval = setInterval(() => {
+      if (companionClientRef.current) {
+        companionClientRef.current.checkInstallation();
+      }
+    }, 30000); // Check every 30 seconds
+    
+    return () => {
+      clearInterval(checkInterval);
+      if (companionClientRef.current) {
+        companionClientRef.current.disconnect();
+      }
+    };
   }, []);
 
   // Listen for terminal settings changes from TerminalSettings component
