@@ -710,13 +710,6 @@ app.prepare().then(() => {
         
         let buffer = commandBuffers.get(sessionId);
         
-        // Build up the buffer BEFORE writing to terminal
-        buffer += data;
-        commandBuffers.set(sessionId, buffer);
-        
-        // CRITICAL FIX: Write input to PTY so it appears in terminal
-        session.write(data);
-        
         // Check if Enter is being pressed (command complete)
         if (data.includes('\r') || data.includes('\n')) {
           const command = buffer.trim().toLowerCase();
@@ -726,7 +719,10 @@ app.prepare().then(() => {
           if (command === 'claude' || command.startsWith('claude ')) {
             console.log('[Terminal] Claude command intercepted, showing help instead');
             
-            // Show help message immediately after the command
+            // Send newline to move to next line (but not the command itself)
+            session.write('\r\n');
+            
+            // Show help message immediately
               const helpMessage = [
                 '\r\n',
                 '╔═══════════════════════════════════════════════════════════════════╗\r\n',
@@ -770,6 +766,16 @@ app.prepare().then(() => {
           
           // Clear buffer after command
           commandBuffers.set(sessionId, '');
+          
+          // Send the Enter key to execute the command (not intercepted)
+          session.write(data);
+        } else {
+          // For non-Enter keys, build buffer AND echo to terminal
+          buffer += data;
+          commandBuffers.set(sessionId, buffer);
+          
+          // Echo the character immediately
+          session.write(data);
         }
         
         // Buffer user input for context capture

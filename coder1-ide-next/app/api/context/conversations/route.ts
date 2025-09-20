@@ -7,6 +7,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { contextDatabase } from '@/services/context-database';
 import { logger } from '@/lib/logger';
 
+export const dynamic = 'force-dynamic'; // Prevent static generation
+
 // Helper function to clean ANSI escape codes and formatting characters
 function cleanDisplayText(text: string): string {
   if (!text) return text;
