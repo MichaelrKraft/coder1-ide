@@ -101,12 +101,13 @@ export default function IDEPage() {
                   <Panel defaultSize={terminalVisible ? 65 : 100} minSize={30}>
                     <div className="h-full overflow-hidden">
                       <MonacoEditor
-                        value={activeFile ? (files[activeFile] || '') : '// Welcome to Coder1 IDE\n// Type "claude" in the terminal below to get started!'}
+                        value={activeFile ? (files[activeFile] || '') : undefined}
                         onChange={(value) => {
                           if (activeFile && value !== undefined) {
                             handleFileChange(activeFile, value);
                           }
                         }}
+                        file={activeFile}
                         language="typescript"
                         theme="tokyo-night"
                       />
