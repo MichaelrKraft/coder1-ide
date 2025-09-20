@@ -2026,6 +2026,35 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
         xtermRef.current.writeln('\r\nAgents are now working in parallel. Updates will appear here.');
         xtermRef.current.write('\r\n$ ');
         
+        // Create agent terminal tabs (Phase 1) if feature flag enabled
+        const agentTabsEnabled = process.env.ENABLE_AGENT_TABS === 'true';
+        if (agentTabsEnabled && data.agents && data.agents.length > 0) {
+          xtermRef.current.writeln('\r\n📋 Creating agent terminal tabs...');
+          
+          data.agents.forEach((agent: any, index: number) => {
+            // Create agent session data
+            const agentSessionData = {
+              id: agent.id || `agent_${data.teamId}_${index}`,
+              name: agent.name || `${agent.role} Agent`,
+              role: agent.role?.toLowerCase() || 'fullstack',
+              teamId: data.teamId,
+              workTreePath: agent.workTreePath,
+              terminalHistory: `Agent initialized: ${agent.name}\nRole: ${agent.role}\nTeam: ${data.teamId}\n`,
+              status: agent.status || 'initializing',
+              progress: 0,
+              currentTask: agent.currentTask || 'Setting up workspace...',
+              processId: agent.processId
+            };
+            
+            // Dispatch event to create agent tab
+            window.dispatchEvent(new CustomEvent('terminal:createAgentSession', {
+              detail: agentSessionData
+            }));
+          });
+          
+          xtermRef.current.writeln(`✅ Created ${data.agents.length} agent terminal tabs`);
+        }
+        
         // Notify parent component
         if (onAgentsSpawn) {
           onAgentsSpawn();
