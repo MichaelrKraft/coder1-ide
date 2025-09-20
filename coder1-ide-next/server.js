@@ -719,7 +719,11 @@ app.prepare().then(() => {
           if (command === 'claude' || command.startsWith('claude ')) {
             console.log('[Terminal] Claude command intercepted, showing help instead');
             
-            // Send newline to move to next line (but not the command itself)
+            // Clear the current line first (remove "claude" text)
+            session.write('\r\x1b[K');  // Carriage return + clear line
+            // Then write the prompt again
+            session.write('coder1:coder1-ide-next$ ');
+            // Now move to next line
             session.write('\r\n');
             
             // Show help message immediately
@@ -759,9 +763,15 @@ app.prepare().then(() => {
               data: helpMessage 
             });
             
+            // Show a clean prompt after the help message
+            socket.emit('terminal:data', {
+              id: sessionId,
+              data: 'coder1:coder1-ide-next$ '
+            });
+            
             // Clear the command buffer 
             commandBuffers.set(sessionId, '');
-            return; // Exit early - command already sent to PTY above
+            return; // Exit early - don't send anything to PTY
           }
           
           // Clear buffer after command
