@@ -351,6 +351,21 @@ app.prepare().then(() => {
     const parsedUrl = parse(req.url, true);
     const { pathname } = parsedUrl;
     
+    // Add CORS headers for API routes when in development
+    if (dev && pathname?.startsWith('/api/')) {
+      res.setHeader('Access-Control-Allow-Origin', 'http://localhost:3000');
+      res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+      res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+      res.setHeader('Access-Control-Allow-Credentials', 'true');
+      
+      // Handle preflight requests
+      if (req.method === 'OPTIONS') {
+        res.writeHead(200);
+        res.end();
+        return;
+      }
+    }
+    
     // Health check endpoint
     if (pathname === '/api/health' || pathname === '/health') {
       return handleHealthCheck(req, res);

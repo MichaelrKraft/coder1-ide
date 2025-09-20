@@ -2023,8 +2023,9 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
     xtermRef.current.writeln('🤖 Connecting to AI Team Management System...');
     
     try {
-      // Call the new Claude Bridge API endpoint
-      const response = await fetch('/api/claude-bridge/spawn', {
+      // Call the new Claude Bridge API endpoint on the unified server
+      const unifiedServerUrl = process.env.NEXT_PUBLIC_UNIFIED_SERVER_URL || 'http://localhost:3001';
+      const response = await fetch(`${unifiedServerUrl}/api/claude-bridge/spawn`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

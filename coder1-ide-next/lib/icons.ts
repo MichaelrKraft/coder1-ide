@@ -15,7 +15,8 @@ export {
   Upload,
   RefreshCw,
   Loader2,
-  ExternalLink
+  ExternalLink,
+  Link
 } from 'lucide-react';
 
 // Development & Code

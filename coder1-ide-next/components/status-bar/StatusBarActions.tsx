@@ -8,7 +8,7 @@
 'use client';
 
 import React from 'react';
-import { Save, Clock, FileText, BookOpen, Loader2, Brain } from '@/lib/icons';
+import { Save, Clock, FileText, BookOpen, Loader2, Brain, Link } from '@/lib/icons';
 import StatusBarModals from './StatusBarModals';
 import { useIDEStore } from '@/stores/useIDEStore';
 import { useSessionStore } from '@/stores/useSessionStore';
@@ -240,6 +240,41 @@ const StatusBarActions = React.memo(function StatusBarActions({
     window.open('/docs-manager', '_blank');
   };
 
+  const handleConnectBridge = async () => {
+    try {
+      // Generate pairing code through the bridge manager
+      const response = await fetch('/api/bridge/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: sessionId // Use session ID as user ID
+        })
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        
+        // Show pairing code to user
+        addToast({
+          message: `🔑 Pairing code: ${data.code}`,
+          type: 'info',
+          duration: 60000 // Show for 1 minute
+        });
+        
+        // Also show in modal
+        alert(`🌉 Connect Coder1 Bridge\n\nPairing Code: ${data.code}\n\n1. Run: coder1-bridge start\n2. Enter this code when prompted\n3. Bridge will connect automatically\n\nCode expires in 5 minutes.`);
+        
+      } else {
+        throw new Error('Failed to generate pairing code');
+      }
+    } catch (error) {
+      addToast({
+        message: '⚠️ Failed to generate pairing code',
+        type: 'error'
+      });
+    }
+  };
+
   // ParaThinker handler - Only for Beta IDE
   const handleParaThinker = async () => {
     try {
@@ -370,6 +405,33 @@ const StatusBarActions = React.memo(function StatusBarActions({
           >
             <BookOpen className="w-4 h-4" />
             <span>Docs</span>
+          </button>
+        </div>
+
+        {/* Connect Bridge Button */}
+        <div className="p-[1px] rounded-md" style={{background: 'linear-gradient(135deg, #10b981, #3b82f6)'}}>
+          <button
+            onClick={handleConnectBridge}
+            disabled={isLoadingState('bridge')}
+            className="flex items-center gap-1.5 px-4 py-1.5 text-sm font-medium text-text-secondary hover:text-text-primary rounded transition-all duration-200 disabled:opacity-50 bg-bg-secondary w-full"
+            onMouseEnter={(e) => {
+              if (!isLoadingState('bridge')) {
+                e.currentTarget.style.boxShadow = glows.cyan.medium;
+                e.currentTarget.parentElement!.style.background = 'linear-gradient(135deg, #14b8a6, #60a5fa)';
+              }
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.boxShadow = 'none';
+              e.currentTarget.parentElement!.style.background = 'linear-gradient(135deg, #10b981, #3b82f6)';
+            }}
+            title="Connect Bridge - Link your local Claude CLI to the web IDE"
+          >
+            {isLoadingState('bridge') ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Link className="w-4 h-4" />
+            )}
+            <span>Connect Bridge</span>
           </button>
         </div>
 
