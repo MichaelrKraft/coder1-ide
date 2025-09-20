@@ -96,8 +96,8 @@ export default function IDEPage() {
               }
               centerPanel={
                 <div className="h-full flex flex-col">
-                  {/* Editor Area */}
-                  <div className="flex-1 min-h-0">
+                  {/* Editor Area - takes remaining space after terminal */}
+                  <div className={terminalVisible ? "flex-1 min-h-0 overflow-hidden" : "h-full"}>
                     <MonacoEditor
                       value={activeFile ? (files[activeFile] || '') : '// Welcome to Coder1 IDE\n// Type "claude" in the terminal below to get started!'}
                       onChange={(value) => {
@@ -110,9 +110,9 @@ export default function IDEPage() {
                     />
                   </div>
                   
-                  {/* Terminal Area - with Agent Terminal Tabs preserved */}
+                  {/* Terminal Area - fixed height at bottom */}
                   {terminalVisible && (
-                    <div className="h-[300px] border-t border-border-default">
+                    <div className="h-[350px] min-h-[200px] border-t-2 border-coder1-cyan/50 bg-bg-primary">
                       <LazyTerminalContainer
                         onAgentsSpawn={handleAgentsSpawn}
                         onTerminalClick={handleTerminalClick}
