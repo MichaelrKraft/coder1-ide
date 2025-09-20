@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import dynamic from 'next/dynamic';
 
 // Import core IDE components
-import { ThreePanelLayout } from '@/components/layout/ThreePanelLayout';
+import ThreePanelLayout from '@/components/layout/ThreePanelLayout';
 import LeftPanel from '@/components/LeftPanel';
 import MonacoEditor from '@/components/editor/MonacoEditor';
 import TerminalContainer from '@/components/terminal/TerminalContainer';
