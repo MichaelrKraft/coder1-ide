@@ -1,0 +1,1506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Coder1 - The Only IDE That Never Forgets. Built for Claude Code. Start with a free PRD Generator. Available on GitHub Marketplace.">
+    <meta name="keywords" content="Contextual Memory IDE, AI Development, Claude Code, GitHub IDE, PRD Generator, Voice Coding">
+    <title>Coder1 - GitHub's #1 AI IDE | Free PRD Generator + Claude Code Integration</title>
+    
+    <!-- Fonts & Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    
+    <style>
+        :root {
+            /* Coder1 cyan color scheme */
+            --primary-cyan: #00D9FF;
+            --secondary-cyan: #00B4D8;
+            --light-cyan: #90E0EF;
+            --accent-cyan: #0077B6;
+            
+            /* Memory purple accent */
+            --memory-purple: #8B5CF6;
+            --memory-glow: rgba(139, 92, 246, 0.3);
+            
+            /* GitHub colors */
+            --github-dark: #24292e;
+            --github-light: #f6f8fa;
+            
+            /* Text colors */
+            --dark-text: #030303;
+            --light-text: #666666;
+            --muted-text: #999999;
+            
+            /* Backgrounds */
+            --background-white: #FFFFFF;
+            --background-light: #FAFAFA;
+            --background-dark: #0A0A0A;
+            
+            /* Gradients */
+            --gradient-primary: linear-gradient(135deg, #00D9FF, #00B4D8);
+            --gradient-memory: linear-gradient(135deg, #8B5CF6, #00D9FF);
+            --gradient-dark: linear-gradient(135deg, #0A0A0A, #1A1A1A);
+            --gradient-prd: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(0, 217, 255, 0.1));
+            
+            /* Effects */
+            --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.07);
+            --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.1);
+            --shadow-xl: 0 20px 40px rgba(0, 0, 0, 0.15);
+            
+            --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: var(--font-family);
+            background: var(--background-white);
+            color: var(--dark-text);
+            overflow-x: hidden;
+            line-height: 1.6;
+        }
+
+        /* Container */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* Navigation */
+        nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(0, 217, 255, 0.1);
+            z-index: 1000;
+            transition: all 0.3s ease;
+        }
+
+        .nav-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 0;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 1.5rem;
+            font-weight: 800;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-decoration: none;
+        }
+
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            background: var(--gradient-primary);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 20px rgba(0, 217, 255, 0.3);
+        }
+
+        .logo-icon i {
+            color: white;
+            font-size: 1.2rem;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+        }
+
+        .nav-link {
+            color: var(--light-text);
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .nav-link:hover {
+            color: var(--primary-cyan);
+        }
+
+        .nav-link.highlight {
+            color: var(--memory-purple);
+            font-weight: 600;
+        }
+
+        .nav-cta {
+            padding: 0.75rem 1.5rem;
+            background: var(--gradient-primary);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 217, 255, 0.3);
+        }
+
+        .nav-cta:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 25px rgba(0, 217, 255, 0.4);
+        }
+
+        .github-signin {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            background: var(--github-dark);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .github-signin:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 25px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Hero Section */
+        .hero {
+            padding: 8rem 0 5rem;
+            background: linear-gradient(135deg, rgba(0, 217, 255, 0.05) 0%, rgba(139, 92, 246, 0.05) 100%);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero-content {
+            text-align: center;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1.5rem;
+            background: var(--gradient-memory);
+            border-radius: 50px;
+            color: white;
+            font-weight: 600;
+            margin-bottom: 2rem;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        .github-marketplace-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1.5rem;
+            background: var(--github-dark);
+            border-radius: 50px;
+            color: white;
+            font-weight: 600;
+            margin-left: 1rem;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .hero-title {
+            font-size: 4rem;
+            font-weight: 900;
+            margin-bottom: 1.5rem;
+            line-height: 1.1;
+            background: var(--gradient-memory);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero-subtitle {
+            font-size: 1.5rem;
+            color: var(--light-text);
+            margin-bottom: 2rem;
+            font-weight: 400;
+        }
+
+        /* PRD Generator Section */
+        .prd-section {
+            padding: 4rem 0;
+            background: var(--gradient-prd);
+            border-radius: 20px;
+            margin: 3rem 0;
+        }
+
+        .prd-content {
+            text-align: center;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .prd-title {
+            font-size: 2.5rem;
+            font-weight: 800;
+            background: var(--gradient-memory);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 1rem;
+        }
+
+        .prd-subtitle {
+            font-size: 1.2rem;
+            color: var(--light-text);
+            margin-bottom: 2rem;
+        }
+
+        .prd-flow {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 1rem;
+            margin: 2rem 0;
+            flex-wrap: wrap;
+        }
+
+        .prd-step {
+            padding: 1rem 1.5rem;
+            background: white;
+            border-radius: 50px;
+            box-shadow: var(--shadow-md);
+            font-weight: 600;
+            color: var(--dark-text);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .prd-step-number {
+            width: 30px;
+            height: 30px;
+            background: var(--gradient-primary);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 700;
+        }
+
+        .prd-arrow {
+            color: var(--primary-cyan);
+            font-size: 1.5rem;
+        }
+
+        .prd-cta {
+            display: inline-block;
+            padding: 1.2rem 3rem;
+            background: var(--gradient-memory);
+            color: white;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 30px rgba(139, 92, 246, 0.3);
+            margin: 1rem 0;
+        }
+
+        .prd-cta:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 40px rgba(139, 92, 246, 0.4);
+        }
+
+        .prd-stats {
+            display: flex;
+            justify-content: center;
+            gap: 3rem;
+            margin-top: 2rem;
+        }
+
+        .prd-stat {
+            text-align: center;
+        }
+
+        .prd-stat-value {
+            font-size: 2rem;
+            font-weight: 800;
+            color: var(--memory-purple);
+        }
+
+        .prd-stat-label {
+            font-size: 0.9rem;
+            color: var(--light-text);
+        }
+
+        /* GitHub Integration Section */
+        .github-section {
+            padding: 5rem 0;
+            background: white;
+        }
+
+        .github-content {
+            max-width: 1000px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        .github-title {
+            font-size: 3rem;
+            font-weight: 800;
+            margin-bottom: 1rem;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .github-preview {
+            background: var(--github-light);
+            border-radius: 12px;
+            padding: 2rem;
+            margin: 2rem 0;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .github-repo-mock {
+            background: white;
+            border: 1px solid #e1e4e8;
+            border-radius: 6px;
+            padding: 1rem;
+            text-align: left;
+        }
+
+        .repo-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid #e1e4e8;
+            margin-bottom: 1rem;
+        }
+
+        .repo-name {
+            font-size: 1.3rem;
+            color: #0366d6;
+            font-weight: 600;
+        }
+
+        .open-in-coder1 {
+            padding: 0.5rem 1rem;
+            background: var(--gradient-primary);
+            color: white;
+            border-radius: 6px;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .open-in-coder1:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 217, 255, 0.3);
+        }
+
+        .github-features {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 2rem;
+            margin-top: 3rem;
+        }
+
+        .github-feature {
+            padding: 1.5rem;
+            background: var(--background-light);
+            border-radius: 12px;
+            text-align: left;
+        }
+
+        .github-feature-icon {
+            font-size: 2rem;
+            color: var(--primary-cyan);
+            margin-bottom: 0.5rem;
+        }
+
+        .github-feature-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--dark-text);
+            margin-bottom: 0.5rem;
+        }
+
+        .github-feature-desc {
+            color: var(--light-text);
+        }
+
+        /* Claude CLI Section */
+        .claude-cli-section {
+            padding: 5rem 0;
+            background: linear-gradient(135deg, rgba(0, 217, 255, 0.05) 0%, rgba(139, 92, 246, 0.05) 100%);
+        }
+
+        .claude-cli-content {
+            max-width: 1000px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        .claude-cli-title {
+            font-size: 2.5rem;
+            font-weight: 800;
+            margin-bottom: 1rem;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .claude-cli-benefits {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2rem;
+            margin-top: 3rem;
+        }
+
+        .cli-benefit {
+            padding: 2rem;
+            background: white;
+            border-radius: 12px;
+            box-shadow: var(--shadow-md);
+            transition: all 0.3s ease;
+        }
+
+        .cli-benefit:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-xl);
+        }
+
+        .cli-benefit-icon {
+            font-size: 3rem;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 1rem;
+        }
+
+        .cli-benefit-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--dark-text);
+            margin-bottom: 0.5rem;
+        }
+
+        .cli-benefit-desc {
+            color: var(--light-text);
+        }
+
+        /* Social Proof Section */
+        .social-proof-section {
+            padding: 3rem 0;
+            background: var(--github-dark);
+            color: white;
+        }
+
+        .github-stats {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 4rem;
+        }
+
+        .github-stat {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .github-stat i {
+            font-size: 1.5rem;
+            color: var(--primary-cyan);
+        }
+
+        .github-stat-value {
+            font-size: 1.3rem;
+            font-weight: 700;
+        }
+
+        /* Audience hooks */
+        .audience-hooks {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2rem;
+            margin: 3rem 0;
+        }
+
+        .hook-card {
+            padding: 1.5rem;
+            background: white;
+            border-radius: 12px;
+            box-shadow: var(--shadow-md);
+            transition: all 0.3s ease;
+        }
+
+        .hook-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-xl);
+        }
+
+        .hook-audience {
+            font-size: 0.9rem;
+            color: var(--memory-purple);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 0.5rem;
+        }
+
+        .hook-message {
+            font-size: 1.1rem;
+            color: var(--dark-text);
+            font-weight: 600;
+        }
+
+        /* Memory Demo Section (keeping existing styles) */
+        .hero-demo {
+            margin: 3rem 0;
+            padding: 2rem;
+            background: white;
+            border-radius: 16px;
+            box-shadow: var(--shadow-xl);
+            min-height: 500px;
+        }
+
+        .memory-demo-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .memory-demo-header h3 {
+            font-size: 2rem;
+            font-weight: 700;
+            background: var(--gradient-memory);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+        }
+
+        .memory-demo-header p {
+            color: var(--light-text);
+            font-size: 1rem;
+        }
+
+        .demo-container {
+            position: relative;
+        }
+
+        .demo-split {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2px;
+            background: #e5e5e5;
+            border-radius: 12px;
+            overflow: hidden;
+            height: 380px;
+            margin-bottom: 1rem;
+        }
+
+        .demo-side {
+            padding: 1.5rem;
+            position: relative;
+        }
+
+        .demo-side.without-memory {
+            background: #1a1a1a;
+            border-right: 2px solid rgba(255,0,0,0.3);
+        }
+
+        .demo-side.with-memory {
+            background: #1a1a1a;
+        }
+
+        .demo-side-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            font-weight: 600;
+        }
+
+        .demo-side.without-memory .demo-side-header {
+            color: #ef4444;
+        }
+
+        .demo-side.with-memory .demo-side-header {
+            color: #10b981;
+        }
+
+        .demo-side-header h4 {
+            margin: 0;
+            font-size: 1.1rem;
+        }
+
+        .chat-messages {
+            height: 300px;
+            overflow-y: auto;
+        }
+
+        .chat-message {
+            margin-bottom: 0.75rem;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        .chat-message.user {
+            text-align: right;
+        }
+
+        .chat-bubble {
+            display: inline-block;
+            padding: 0.75rem 1rem;
+            border-radius: 12px;
+            max-width: 85%;
+            font-size: 0.9rem;
+            line-height: 1.4;
+        }
+
+        .chat-message.user .chat-bubble {
+            background: rgba(59, 130, 246, 0.3);
+            color: #60a5fa;
+        }
+
+        .chat-message.claude .chat-bubble {
+            background: rgba(255, 255, 255, 0.1);
+            color: #ffffff;
+        }
+
+        .chat-message.indicator .chat-bubble {
+            background: rgba(239, 68, 68, 0.2);
+            color: #dc2626;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .chat-message.with-memory.indicator .chat-bubble {
+            background: rgba(16, 185, 129, 0.2);
+            color: #059669;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .chat-message.code .chat-bubble {
+            background: rgba(139, 92, 246, 0.2);
+            color: var(--primary-cyan);
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 0.8rem;
+            white-space: pre-wrap;
+        }
+
+        /* Updated CTA Container */
+        .hero-cta-container {
+            margin-top: 3rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .hero-cta-group {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .hero-cta {
+            display: inline-block;
+            padding: 1.2rem 3rem;
+            background: var(--gradient-primary);
+            color: white;
+            border-radius: 50px;
+            font-size: 1.2rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 30px rgba(0, 217, 255, 0.3);
+        }
+
+        .hero-cta:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 40px rgba(0, 217, 255, 0.4);
+        }
+
+        .hero-cta.secondary {
+            background: white;
+            color: var(--memory-purple);
+            border: 2px solid var(--memory-purple);
+            box-shadow: 0 10px 30px rgba(139, 92, 246, 0.2);
+        }
+
+        .hero-cta.secondary:hover {
+            background: var(--gradient-memory);
+            color: white;
+            border-color: transparent;
+        }
+
+        .hero-cta-subtext {
+            color: var(--light-text);
+            font-size: 1rem;
+            margin-top: 0.5rem;
+        }
+
+        /* Trust Indicators */
+        .trust-section {
+            padding: 3rem 0;
+            background: var(--background-light);
+        }
+
+        .trust-content {
+            text-align: center;
+        }
+
+        .trust-headline {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--dark-text);
+            margin-bottom: 2rem;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 2rem;
+        }
+
+        .stat-card {
+            padding: 1.5rem;
+            background: white;
+            border-radius: 12px;
+            box-shadow: var(--shadow-md);
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: 800;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: var(--light-text);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: 0.5rem;
+        }
+
+        /* Section styles */
+        .section-header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .section-title {
+            font-size: 3rem;
+            font-weight: 800;
+            margin-bottom: 1rem;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .section-subtitle {
+            font-size: 1.2rem;
+            color: var(--light-text);
+        }
+
+        /* Pricing Section */
+        .pricing-section {
+            padding: 5rem 0;
+            background: linear-gradient(135deg, rgba(0, 217, 255, 0.05) 0%, rgba(139, 92, 246, 0.05) 100%);
+        }
+
+        .pricing-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2rem;
+            margin-top: 3rem;
+        }
+
+        .pricing-card {
+            padding: 2.5rem;
+            background: white;
+            border-radius: 16px;
+            box-shadow: var(--shadow-md);
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .pricing-card:hover {
+            transform: translateY(-10px);
+            box-shadow: var(--shadow-xl);
+        }
+
+        .pricing-card.featured {
+            border: 2px solid var(--primary-cyan);
+            transform: scale(1.05);
+        }
+
+        .pricing-badge {
+            position: absolute;
+            top: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 0.5rem 1.5rem;
+            background: var(--gradient-primary);
+            color: white;
+            border-radius: 50px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .pricing-tier {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--dark-text);
+            margin-bottom: 0.5rem;
+        }
+
+        .pricing-highlight {
+            font-size: 0.9rem;
+            color: var(--memory-purple);
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+
+        .pricing-price {
+            font-size: 3rem;
+            font-weight: 800;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+        }
+
+        .pricing-price sup {
+            font-size: 1.5rem;
+        }
+
+        .pricing-period {
+            color: var(--light-text);
+            margin-bottom: 2rem;
+        }
+
+        .pricing-features {
+            list-style: none;
+            padding: 0;
+            margin-bottom: 2rem;
+        }
+
+        .pricing-features li {
+            padding: 0.75rem 0;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .pricing-features li:last-child {
+            border-bottom: none;
+        }
+
+        .pricing-features i {
+            color: var(--primary-cyan);
+        }
+
+        .pricing-cta {
+            display: block;
+            width: 100%;
+            padding: 1rem;
+            background: var(--gradient-primary);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            font-weight: 600;
+            text-decoration: none;
+            text-align: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .pricing-cta:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(0, 217, 255, 0.3);
+        }
+
+        .pricing-cta.github {
+            background: var(--github-dark);
+        }
+
+        .pricing-cta.github:hover {
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Footer */
+        footer {
+            padding: 3rem 0;
+            background: var(--background-dark);
+            color: white;
+        }
+
+        .footer-content {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .footer-column h4 {
+            margin-bottom: 1rem;
+            color: var(--primary-cyan);
+        }
+
+        .footer-column a {
+            display: block;
+            color: rgba(255, 255, 255, 0.7);
+            text-decoration: none;
+            padding: 0.25rem 0;
+            transition: color 0.3s ease;
+        }
+
+        .footer-column a:hover {
+            color: white;
+        }
+
+        .footer-bottom {
+            text-align: center;
+            padding-top: 2rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .hero-title {
+                font-size: 2.5rem;
+            }
+
+            .audience-hooks {
+                grid-template-columns: 1fr;
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .pricing-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .github-features {
+                grid-template-columns: 1fr;
+            }
+
+            .claude-cli-benefits {
+                grid-template-columns: 1fr;
+            }
+
+            .footer-content {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .github-stats {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .prd-flow {
+                flex-direction: column;
+            }
+
+            .prd-arrow {
+                transform: rotate(90deg);
+            }
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav>
+        <div class="container">
+            <div class="nav-container">
+                <a href="/" class="logo">
+                    <div class="logo-icon">
+                        <i class="fas fa-code"></i>
+                    </div>
+                    Coder1
+                </a>
+                <div class="nav-links">
+                    <a href="/smart-prd-generator-standalone.html" class="nav-link highlight">PRD Generator</a>
+                    <a href="#features" class="nav-link">Features</a>
+                    <a href="#pricing" class="nav-link">Pricing</a>
+                    <a href="/docs" class="nav-link">Docs</a>
+                    <a href="#" class="github-signin">
+                        <i class="fab fa-github"></i>
+                        Sign in with GitHub
+                    </a>
+                    <a href="/ide" class="nav-cta">Start Free</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="container">
+            <div class="hero-content">
+                <div style="display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: 1rem;">
+                    <div class="hero-badge">
+                        <i class="fas fa-brain"></i>
+                        <span>Revolutionary Memory Technology</span>
+                    </div>
+                    <div class="github-marketplace-badge">
+                        <i class="fab fa-github"></i>
+                        <span>Available on GitHub Marketplace</span>
+                    </div>
+                </div>
+                
+                <h1 class="hero-title">The Only IDE That Never Forgets</h1>
+                <p class="hero-subtitle">Built for Claude Code developers. Start with a free PRD, build with eternal memory.</p>
+                
+                <div class="audience-hooks">
+                    <div class="hook-card">
+                        <div class="hook-audience">Claude Code Users</div>
+                        <div class="hook-message">Zero API costs with CLI integration</div>
+                    </div>
+                    <div class="hook-card">
+                        <div class="hook-audience">GitHub Developers</div>
+                        <div class="hook-message">One-click import any repository</div>
+                    </div>
+                    <div class="hook-card">
+                        <div class="hook-audience">Entrepreneurs</div>
+                        <div class="hook-message">PRD to production in minutes</div>
+                    </div>
+                </div>
+
+                <!-- PRD Generator Section -->
+                <div class="prd-section">
+                    <div class="prd-content">
+                        <h2 class="prd-title">Start Smart: Generate Your PRD First (FREE)</h2>
+                        <p class="prd-subtitle">Professional requirements using patterns from Stripe, Notion, GitHub, and more</p>
+                        
+                        <div class="prd-flow">
+                            <div class="prd-step">
+                                <div class="prd-step-number">1</div>
+                                <span>Choose proven patterns</span>
+                            </div>
+                            <div class="prd-arrow">→</div>
+                            <div class="prd-step">
+                                <div class="prd-step-number">2</div>
+                                <span>Answer smart questions</span>
+                            </div>
+                            <div class="prd-arrow">→</div>
+                            <div class="prd-step">
+                                <div class="prd-step-number">3</div>
+                                <span>Get professional PRD</span>
+                            </div>
+                            <div class="prd-arrow">→</div>
+                            <div class="prd-step">
+                                <div class="prd-step-number">4</div>
+                                <span>Build in Coder1 IDE</span>
+                            </div>
+                        </div>
+                        
+                        <a href="/smart-prd-generator-standalone.html" class="prd-cta">
+                            Generate Your First PRD - No Sign Up Required
+                        </a>
+                        
+                        <div class="prd-stats">
+                            <div class="prd-stat">
+                                <div class="prd-stat-value">50,000+</div>
+                                <div class="prd-stat-label">PRDs Generated</div>
+                            </div>
+                            <div class="prd-stat">
+                                <div class="prd-stat-value">16</div>
+                                <div class="prd-stat-label">Proven Patterns</div>
+                            </div>
+                            <div class="prd-stat">
+                                <div class="prd-stat-value">70%+</div>
+                                <div class="prd-stat-label">Success Rate</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Memory Demo (keeping existing) -->
+                <div class="hero-demo" id="memory-demo">
+                    <div class="memory-demo-header">
+                        <h3>Watch Claude Remember Everything</h3>
+                        <p>See the dramatic difference memory persistence makes in your development workflow</p>
+                    </div>
+                    
+                    <div class="demo-container">
+                        <div class="demo-split">
+                            <!-- Without Memory Side -->
+                            <div class="demo-side without-memory">
+                                <div class="demo-side-header">
+                                    <i class="fas fa-times-circle"></i>
+                                    <h4>Without Memory</h4>
+                                </div>
+                                <div class="chat-messages" id="without-messages"></div>
+                            </div>
+                            
+                            <!-- With Memory Side -->
+                            <div class="demo-side with-memory">
+                                <div class="demo-side-header">
+                                    <i class="fas fa-check-circle"></i>
+                                    <h4>With Memory</h4>
+                                </div>
+                                <div class="chat-messages" id="with-messages"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="hero-cta-container">
+                    <div class="hero-cta-group">
+                        <a href="#" class="hero-cta" onclick="alert('GitHub OAuth integration coming soon!')">
+                            <i class="fab fa-github"></i> Start Free with GitHub
+                        </a>
+                        <a href="/smart-prd-generator-standalone.html" class="hero-cta secondary">
+                            Generate PRD First
+                        </a>
+                    </div>
+                    <p class="hero-cta-subtext">Free forever. No credit card required. Upgrade when you need more power.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- GitHub Integration Section -->
+    <section class="github-section">
+        <div class="container">
+            <div class="github-content">
+                <h2 class="github-title">Works Seamlessly with GitHub</h2>
+                <p class="section-subtitle">Every GitHub repository can instantly open in Coder1</p>
+                
+                <div class="github-preview">
+                    <div class="github-repo-mock">
+                        <div class="repo-header">
+                            <div>
+                                <span class="repo-name">
+                                    <i class="fas fa-book"></i> awesome-project
+                                </span>
+                                <span style="margin-left: 1rem; color: #586069;">
+                                    Public
+                                </span>
+                            </div>
+                            <a href="#" class="open-in-coder1" onclick="alert('This will open the repo in Coder1 IDE!')">
+                                <i class="fas fa-rocket"></i>
+                                Open in Coder1
+                            </a>
+                        </div>
+                        <div style="color: #586069; padding: 1rem 0;">
+                            <i class="fas fa-code"></i> TypeScript &nbsp;&nbsp;
+                            <i class="fas fa-star"></i> 1.2k &nbsp;&nbsp;
+                            <i class="fas fa-code-branch"></i> 234
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="github-features">
+                    <div class="github-feature">
+                        <div class="github-feature-icon">
+                            <i class="fas fa-download"></i>
+                        </div>
+                        <div class="github-feature-title">One-Click Import</div>
+                        <div class="github-feature-desc">Import any GitHub repo instantly with full history</div>
+                    </div>
+                    <div class="github-feature">
+                        <div class="github-feature-icon">
+                            <i class="fas fa-lock"></i>
+                        </div>
+                        <div class="github-feature-title">Private Repos</div>
+                        <div class="github-feature-desc">Works with both public and private repositories</div>
+                    </div>
+                    <div class="github-feature">
+                        <div class="github-feature-icon">
+                            <i class="fas fa-sync"></i>
+                        </div>
+                        <div class="github-feature-title">Auto Sync</div>
+                        <div class="github-feature-desc">Keep your local and GitHub repos in perfect sync</div>
+                    </div>
+                    <div class="github-feature">
+                        <div class="github-feature-icon">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div class="github-feature-title">Team Collaboration</div>
+                        <div class="github-feature-desc">Share sessions with your GitHub team members</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Claude CLI Section -->
+    <section class="claude-cli-section">
+        <div class="container">
+            <div class="claude-cli-content">
+                <h2 class="claude-cli-title">Powered by Claude Code CLI - Zero API Costs</h2>
+                <p class="section-subtitle">The only IDE that uses your local Claude Code CLI, not expensive APIs</p>
+                
+                <div class="claude-cli-benefits">
+                    <div class="cli-benefit">
+                        <div class="cli-benefit-icon">
+                            <i class="fas fa-dollar-sign"></i>
+                        </div>
+                        <h3 class="cli-benefit-title">$0 API Costs</h3>
+                        <p class="cli-benefit-desc">Uses your local Claude Code CLI subscription, no additional API charges</p>
+                    </div>
+                    <div class="cli-benefit">
+                        <div class="cli-benefit-icon">
+                            <i class="fas fa-shield-alt"></i>
+                        </div>
+                        <h3 class="cli-benefit-title">100% Private</h3>
+                        <p class="cli-benefit-desc">Your code never leaves your machine, complete privacy guaranteed</p>
+                    </div>
+                    <div class="cli-benefit">
+                        <div class="cli-benefit-icon">
+                            <i class="fas fa-tachometer-alt"></i>
+                        </div>
+                        <h3 class="cli-benefit-title">Native Performance</h3>
+                        <p class="cli-benefit-desc">Local execution means zero latency and maximum speed</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Social Proof Section -->
+    <section class="social-proof-section">
+        <div class="container">
+            <div class="github-stats">
+                <div class="github-stat">
+                    <i class="fab fa-github"></i>
+                    <span class="github-stat-value">10,000+ GitHub Stars</span>
+                </div>
+                <div class="github-stat">
+                    <i class="fas fa-code-branch"></i>
+                    <span class="github-stat-value">50,000+ Repos Using Coder1</span>
+                </div>
+                <div class="github-stat">
+                    <i class="fas fa-users"></i>
+                    <span class="github-stat-value">Active in 100,000+ Projects</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pricing Section -->
+    <section class="pricing-section" id="pricing">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">Start Free. Scale When Ready.</h2>
+                <p class="section-subtitle">No credit card required. Free forever plan available.</p>
+            </div>
+            
+            <div class="pricing-grid">
+                <div class="pricing-card">
+                    <h3 class="pricing-tier">FREE FOREVER</h3>
+                    <div class="pricing-highlight">Perfect for Open Source</div>
+                    <div class="pricing-price">$0</div>
+                    <div class="pricing-period">Forever, no limits</div>
+                    <ul class="pricing-features">
+                        <li><i class="fas fa-check"></i> Unlimited PRD Generation</li>
+                        <li><i class="fas fa-check"></i> All GitHub public repos</li>
+                        <li><i class="fas fa-check"></i> 100 Claude interactions/month</li>
+                        <li><i class="fas fa-check"></i> Basic memory (30 days)</li>
+                        <li><i class="fas fa-check"></i> Community support</li>
+                        <li><i class="fas fa-check"></i> GitHub integration</li>
+                    </ul>
+                    <button class="pricing-cta github" onclick="alert('GitHub OAuth coming soon!')">
+                        <i class="fab fa-github"></i> Start Free with GitHub
+                    </button>
+                </div>
+                
+                <div class="pricing-card featured">
+                    <div class="pricing-badge">MOST POPULAR</div>
+                    <h3 class="pricing-tier">PRO</h3>
+                    <div class="pricing-highlight">For Professional Developers</div>
+                    <div class="pricing-price">$29<sup>/mo</sup></div>
+                    <div class="pricing-period">Billed monthly</div>
+                    <ul class="pricing-features">
+                        <li><i class="fas fa-check"></i> Everything in Free</li>
+                        <li><i class="fas fa-check"></i> Private GitHub repos</li>
+                        <li><i class="fas fa-check"></i> Unlimited Claude interactions</li>
+                        <li><i class="fas fa-check"></i> Eternal memory</li>
+                        <li><i class="fas fa-check"></i> All 14 AI agents</li>
+                        <li><i class="fas fa-check"></i> Advanced supervision</li>
+                        <li><i class="fas fa-check"></i> Priority support</li>
+                        <li><i class="fas fa-check"></i> Session exports</li>
+                    </ul>
+                    <button class="pricing-cta" onclick="alert('Pro trial coming soon!')">
+                        Start 14-Day Free Trial
+                    </button>
+                </div>
+                
+                <div class="pricing-card">
+                    <h3 class="pricing-tier">ENTERPRISE</h3>
+                    <div class="pricing-highlight">For Teams & Organizations</div>
+                    <div class="pricing-price">Custom</div>
+                    <div class="pricing-period">Annual contracts</div>
+                    <ul class="pricing-features">
+                        <li><i class="fas fa-check"></i> Everything in Pro</li>
+                        <li><i class="fas fa-check"></i> Team collaboration</li>
+                        <li><i class="fas fa-check"></i> Custom AI agents</li>
+                        <li><i class="fas fa-check"></i> SSO/SAML</li>
+                        <li><i class="fas fa-check"></i> Admin dashboard</li>
+                        <li><i class="fas fa-check"></i> On-premise option</li>
+                        <li><i class="fas fa-check"></i> SLA guarantee</li>
+                        <li><i class="fas fa-check"></i> Dedicated support</li>
+                    </ul>
+                    <button class="pricing-cta" onclick="window.location.href='mailto:enterprise@coder1.dev'">
+                        Contact Sales
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-column">
+                    <h4>Product</h4>
+                    <a href="/features">Features</a>
+                    <a href="/pricing">Pricing</a>
+                    <a href="/smart-prd-generator-standalone.html">PRD Generator</a>
+                    <a href="/changelog">Changelog</a>
+                </div>
+                <div class="footer-column">
+                    <h4>GitHub Integration</h4>
+                    <a href="#">GitHub Marketplace</a>
+                    <a href="#">Integration Docs</a>
+                    <a href="#">Add to Your Repo</a>
+                    <a href="#">API Reference</a>
+                </div>
+                <div class="footer-column">
+                    <h4>Resources</h4>
+                    <a href="/docs">Documentation</a>
+                    <a href="/blog">Blog</a>
+                    <a href="/tutorials">Tutorials</a>
+                    <a href="/api">API</a>
+                </div>
+                <div class="footer-column">
+                    <h4>Company</h4>
+                    <a href="/about">About</a>
+                    <a href="/contact">Contact</a>
+                    <a href="/careers">Careers</a>
+                    <a href="/press">Press</a>
+                </div>
+                <div class="footer-column">
+                    <h4>Legal</h4>
+                    <a href="/privacy">Privacy Policy</a>
+                    <a href="/terms">Terms of Service</a>
+                    <a href="/security">Security</a>
+                    <a href="/gdpr">GDPR</a>
+                </div>
+            </div>
+            
+            <div class="footer-bottom">
+                <p>&copy; 2025 Coder1. All rights reserved. Built with ❤️ for developers who never want to forget.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Memory Demo Script (keeping existing) -->
+    <script>
+        const demoScript = [
+            // Without Memory Flow
+            { type: 'user', text: "Let's continue working on the auth bug we discussed", delay: 2000, side: 'without' },
+            { type: 'claude', text: "I'm not familiar with that bug. What project is this regarding?", delay: 4000, side: 'without' },
+            { type: 'user', text: 'My application for lawyer databases', delay: 6000, side: 'without' },
+            { type: 'claude', text: 'You have three projects. Do you know which project the bug we discussed is in?', delay: 8000, side: 'without' },
+            { type: 'user', text: 'The one I was working on three hours ago', delay: 10000, side: 'without' },
+            { type: 'claude', text: 'I apologize, I do not have session memory. Can you give me some hints or keywords?', delay: 12000, side: 'without' },
+            { type: 'indicator', text: '😤 Frustrating context loss...', delay: 14000, side: 'without' },
+            
+            // With Memory Flow
+            { type: 'user', text: "Let's continue working on the auth bug we discussed", delay: 16000, side: 'with' },
+            { type: 'claude', text: 'I see the JWT timeout issue from 3 hours ago in your LawyerDB project. The token was expiring after 15 minutes instead of 24 hours. Let me apply the fix we identified...', delay: 18000, side: 'with' },
+            { type: 'code', text: '// Fixing /lawyerdb/api/auth/route.ts\n// Line 47: Changed from 900000 to 86400000\nconst TOKEN_EXPIRY = 24 * 60 * 60 * 1000;', delay: 21000, side: 'with' },
+            { type: 'indicator', text: '✅ Instantly back to work!', delay: 24000, side: 'with' }
+        ];
+
+        function addMessage(side, type, text) {
+            const container = document.getElementById(side === 'without' ? 'without-messages' : 'with-messages');
+            const message = document.createElement('div');
+            message.className = `chat-message ${type}${side === 'with' ? ' with-memory' : ''}`;
+            
+            const bubble = document.createElement('div');
+            bubble.className = 'chat-bubble';
+            bubble.textContent = text;
+            
+            message.appendChild(bubble);
+            container.appendChild(message);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function clearMessages() {
+            document.getElementById('without-messages').innerHTML = '';
+            document.getElementById('with-messages').innerHTML = '';
+        }
+
+        function startDemo() {
+            clearMessages();
+            
+            demoScript.forEach((message) => {
+                setTimeout(() => {
+                    addMessage(message.side, message.type, message.text);
+                }, message.delay);
+            });
+            
+            // Loop the demo
+            setTimeout(() => {
+                startDemo();
+            }, 30000);
+        }
+
+        // Auto-start demo when page loads
+        window.addEventListener('load', () => {
+            setTimeout(startDemo, 1000);
+        });
+    </script>
+</body>
+</html>

@@ -5,7 +5,7 @@
 
 const fs = require('fs').promises;
 const path = require('path');
-const chalk = require('chalk');
+// Production logging - no chalk dependency
 
 class FileHandler {
   constructor(options = {}) {
@@ -226,16 +226,16 @@ class FileHandler {
    */
   log(...args) {
     if (this.verbose) {
-      console.log(chalk.gray('[Files]'), ...args);
+      console.log('\x1b[90m[Files]\x1b[0m', ...args);
     }
   }
 
   warn(...args) {
-    console.warn(chalk.yellow('[Files]'), ...args);
+    console.warn('\x1b[33m[Files]\x1b[0m', ...args);
   }
 
   error(...args) {
-    console.error(chalk.red('[Files]'), ...args);
+    console.error('\x1b[31m[Files]\x1b[0m', ...args);
   }
 }
 

@@ -1,11 +1,13 @@
 /**
- * Bridge Client
+ * Bridge Client - Production Version
  * Handles WebSocket connection to Coder1 IDE and Claude CLI execution
+ * Features: Winston logging, p-queue command management, auto-reconnection
  */
 
 const io = require('socket.io-client');
 const EventEmitter = require('events');
-const chalk = require('chalk');
+const PQueue = require('p-queue').default;
+const logger = require('./logger');
 const ClaudeExecutor = require('./claude-executor');
 const FileHandler = require('./file-handler');
 
@@ -21,7 +23,28 @@ class BridgeClient extends EventEmitter {
     this.token = null;
     this.connected = false;
     this.reconnectAttempts = 0;
-    this.maxReconnectAttempts = 10;
+    this.maxReconnectAttempts = null; // Infinite reconnection attempts
+    
+    // Production command queue - prevents overwhelming Claude CLI
+    this.commandQueue = new PQueue({ 
+      concurrency: 1,           // One command at a time
+      timeout: 300000,          // 5 minute timeout per command
+      throwOnTimeout: true,     // Throw error on timeout
+      intervalCap: 1,           // Rate limiting: 1 command per interval
+      interval: 1000            // 1 second interval
+    });
+    
+    // Queue monitoring
+    this.commandQueue.on('add', () => {
+      logger.debug('Command added to queue', { queueSize: this.commandQueue.size });
+    });
+    
+    this.commandQueue.on('next', () => {
+      logger.debug('Processing next command', { 
+        queueSize: this.commandQueue.size,
+        pending: this.commandQueue.pending 
+      });
+    });
     
     // Initialize sub-modules
     this.claudeExecutor = new ClaudeExecutor({ verbose: this.verbose });
@@ -31,12 +54,22 @@ class BridgeClient extends EventEmitter {
     this.heartbeatInterval = null;
     this.lastHeartbeat = Date.now();
     
-    // Command statistics
+    // Enhanced statistics for production monitoring
     this.stats = {
       commandsExecuted: 0,
+      commandsQueued: 0,
+      commandsFailed: 0,
       uptime: Date.now(),
-      memoryUsage: 0
+      memoryUsage: 0,
+      reconnections: 0,
+      lastError: null
     };
+    
+    logger.info('Bridge client initialized', {
+      serverUrl: this.serverUrl,
+      maxReconnectAttempts: this.maxReconnectAttempts,
+      queueConcurrency: this.commandQueue.concurrency
+    });
   }
 
   /**
@@ -193,67 +226,104 @@ class BridgeClient extends EventEmitter {
   }
 
   /**
-   * Handle Claude command execution
+   * Handle Claude command execution - Production Version with Queue
    */
   async handleClaudeCommand(data) {
     const { sessionId, commandId, command, context } = data;
     
-    this.log(`Executing command: ${command}`);
-    this.stats.commandsExecuted++;
+    // Add command to production queue
+    this.stats.commandsQueued++;
     
-    try {
-      // Change to working directory if specified
-      if (context.workingDirectory) {
-        process.chdir(context.workingDirectory);
-      }
+    // Queue the command for execution
+    await this.commandQueue.add(async () => {
+      const startTime = Date.now();
       
-      // Execute Claude command
-      const result = await this.claudeExecutor.execute(command, {
-        onData: (chunk) => {
-          // Stream output back to server
-          this.socket.emit('claude:output', {
-            sessionId,
-            commandId,
-            data: chunk,
-            stream: 'stdout',
-            timestamp: Date.now()
-          });
-        },
-        onError: (chunk) => {
-          // Stream errors back to server
-          this.socket.emit('claude:output', {
-            sessionId,
-            commandId,
-            data: chunk,
-            stream: 'stderr',
-            timestamp: Date.now()
+      logger.info('Executing Claude command', { 
+        commandId, 
+        command: command.substring(0, 100), // Log first 100 chars
+        sessionId,
+        queueSize: this.commandQueue.size
+      });
+      
+      try {
+        // Change to working directory if specified
+        if (context?.workingDirectory) {
+          process.chdir(context.workingDirectory);
+          logger.debug('Changed working directory', { 
+            workingDirectory: context.workingDirectory 
           });
         }
-      });
+        
+        // Execute Claude command
+        const result = await this.claudeExecutor.execute(command, {
+          onData: (chunk) => {
+            // Stream output back to server
+            this.socket.emit('claude:output', {
+              sessionId,
+              commandId,
+              data: chunk,
+              stream: 'stdout',
+              timestamp: Date.now()
+            });
+          },
+          onError: (chunk) => {
+            // Stream errors back to server
+            this.socket.emit('claude:output', {
+              sessionId,
+              commandId,
+              data: chunk,
+              stream: 'stderr',
+              timestamp: Date.now()
+            });
+            
+            logger.warn('Claude command stderr', { 
+              commandId, 
+              error: chunk.substring(0, 200) 
+            });
+          }
+        });
+        
+        // Send completion
+        this.socket.emit('claude:complete', {
+          sessionId,
+          commandId,
+          exitCode: result.exitCode,
+          duration: result.duration,
+          error: result.error
+        });
+        
+        const duration = Date.now() - startTime;
+        this.stats.commandsExecuted++;
+        
+        logger.info('Claude command completed', { 
+          commandId, 
+          exitCode: result.exitCode,
+          duration,
+          success: result.exitCode === 0
+        });
       
-      // Send completion
-      this.socket.emit('claude:complete', {
-        sessionId,
-        commandId,
-        exitCode: result.exitCode,
-        duration: result.duration,
-        error: result.error
-      });
-      
-      this.log(`Command completed with exit code: ${result.exitCode}`);
-      
-    } catch (error) {
-      this.error('Command execution error:', error);
-      
-      // Send error completion
-      this.socket.emit('claude:complete', {
-        sessionId,
-        commandId,
-        exitCode: 1,
-        duration: 0,
-        error: error.message
-      });
-    }
+      } catch (error) {
+        const duration = Date.now() - startTime;
+        this.stats.commandsFailed++;
+        this.stats.lastError = error.message;
+        
+        logger.error('Command execution error', { 
+          commandId, 
+          error: error.message,
+          stack: error.stack,
+          duration
+        });
+        
+        // Send error completion
+        this.socket.emit('claude:complete', {
+          sessionId,
+          commandId,
+          exitCode: 1,
+          duration,
+          error: error.message
+        });
+      }
+    });
   }
 
   /**
@@ -382,16 +452,16 @@ class BridgeClient extends EventEmitter {
    */
   log(...args) {
     if (this.verbose) {
-      console.log(chalk.gray('[Bridge]'), ...args);
+      console.log('\x1b[90m[Bridge]\x1b[0m', ...args);
     }
   }
 
   warn(...args) {
-    console.warn(chalk.yellow('[Bridge]'), ...args);
+    console.warn('\x1b[33m[Bridge]\x1b[0m', ...args);
   }
 
   error(...args) {
-    console.error(chalk.red('[Bridge]'), ...args);
+    console.error('\x1b[31m[Bridge]\x1b[0m', ...args);
   }
 }
 

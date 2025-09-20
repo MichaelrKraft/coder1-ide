@@ -4,7 +4,7 @@
   "description": "Bridge service to connect Coder1 IDE with local Claude CLI",
   "main": "src/index.js",
   "bin": {
-    "coder1-bridge": "./src/index.js"
+    "coder1-bridge": "./bin/coder1-bridge"
   },
   "scripts": {
     "start": "node src/index.js",
@@ -22,11 +22,9 @@
   "license": "MIT",
   "dependencies": {
     "socket.io-client": "^4.8.1",
-    "chalk": "^4.1.2",
-    "commander": "^11.1.0",
-    "inquirer": "^8.2.6",
-    "ora": "^5.4.1",
-    "dotenv": "^16.3.1"
+    "p-queue": "^6.6.2",
+    "winston": "^3.11.0",
+    "commander": "^11.1.0"
   },
   "engines": {
     "node": ">=18.0.0"

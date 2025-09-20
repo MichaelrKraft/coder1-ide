@@ -1,75 +1,104 @@
-/**
- * Bridge Pairing API Endpoint
- * Handles pairing code validation and token generation
- */
-
 import { NextRequest, NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
-import { bridgeManager } from '@/services/bridge-manager';
+import crypto from 'crypto';
 
-// Get JWT secret from environment or generate one
-const JWT_SECRET = process.env.BRIDGE_JWT_SECRET || 'coder1-bridge-secret-change-in-production';
+// Import pairing codes from generate-code endpoint
+import { pairingCodes } from '../generate-code/route';
+
+// JWT secret (in production, use environment variable)
+const JWT_SECRET = process.env.JWT_SECRET || 'coder1-bridge-secret-2025';
+
+// Active bridges tracking
+const activeBridges = new Map<string, {
+  userId: string;
+  bridgeId: string;
+  connectedAt: number;
+  claudeVersion?: string;
+  platform?: string;
+}>();
 
 export async function POST(request: NextRequest) {
   try {
-    const { code, version, platform, claudeVersion } = await request.json();
+    const body = await request.json();
+    const { code, version, platform, claudeVersion } = body;
 
     if (!code) {
-      return NextResponse.json(
-        { error: 'Pairing code is required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ 
+        success: false,
+        error: 'Pairing code required' 
+      }, { status: 400 });
     }
 
-    // Validate pairing code
-    const userId = bridgeManager.validatePairingCode(code);
+    // Validate 6-digit code format
+    if (!/^\d{6}$/.test(code)) {
+      return NextResponse.json({ 
+        success: false,
+        error: 'Invalid code format' 
+      }, { status: 400 });
+    }
+
+    // Check if code exists and is valid
+    const pairingData = pairingCodes.get(code);
     
-    if (!userId) {
-      return NextResponse.json(
-        { error: 'Invalid or expired pairing code' },
-        { status: 401 }
-      );
+    if (!pairingData) {
+      return NextResponse.json({ 
+        success: false,
+        error: 'Invalid or expired pairing code' 
+      }, { status: 400 });
     }
 
-    // Generate JWT token for the bridge
+    // Check expiration
+    if (pairingData.expires < Date.now()) {
+      pairingCodes.delete(code);
+      return NextResponse.json({ 
+        success: false,
+        error: 'Pairing code expired' 
+      }, { status: 400 });
+    }
+
+    // Generate bridge ID
+    const bridgeId = crypto.randomBytes(16).toString('hex');
+
+    // Create JWT token for authentication
     const token = jwt.sign(
       {
-        userId,
-        type: 'bridge',
-        version,
+        userId: pairingData.userId,
+        bridgeId,
         platform,
         claudeVersion
       },
       JWT_SECRET,
-      {
-        expiresIn: '24h'
-      }
+      { expiresIn: '7d' }
     );
 
-    // Generate bridge ID (will be replaced when socket connects)
-    const bridgeId = `pending_${Date.now()}`;
+    // Store active bridge
+    activeBridges.set(bridgeId, {
+      userId: pairingData.userId,
+      bridgeId,
+      connectedAt: Date.now(),
+      claudeVersion,
+      platform
+    });
 
-    console.log(`[Bridge API] Pairing successful for user ${userId}`);
+    // Remove used pairing code
+    pairingCodes.delete(code);
 
     return NextResponse.json({
       success: true,
       token,
       bridgeId,
-      userId,
-      capabilities: ['claude', 'files', 'git'],
-      config: {
-        heartbeatInterval: 30000,
-        maxCommandTimeout: 60000,
-        reconnectDelay: 1000,
-        reconnectDelayMax: 30000
-      }
+      userId: pairingData.userId,
+      message: 'Bridge paired successfully'
     });
+
   } catch (error) {
-    console.error('[Bridge API] Pairing error:', error);
-    
-    return NextResponse.json(
-      { error: 'Failed to pair bridge' },
-      { status: 500 }
-    );
+    console.error('Pairing error:', error);
+    return NextResponse.json({ 
+      success: false,
+      error: 'Internal server error' 
+    }, { status: 500 });
   }
 }
+
+// Export for WebSocket authentication
+export { activeBridges, JWT_SECRET };

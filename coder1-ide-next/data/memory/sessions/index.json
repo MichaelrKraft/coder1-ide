@@ -1,5 +1,25 @@
 [
   {
+    "sessionId": "alpha_session_1758397792435",
+    "filename": "2025-09-20T19-49-52-468Z.json",
+    "startTime": "2025-09-20T19:49:52.468Z",
+    "endTime": "2025-09-20T19:51:02.498Z",
+    "platform": "Claude Code",
+    "totalTokens": 0,
+    "interactionCount": 0,
+    "summary": "Claude Code session (0 interactions): "
+  },
+  {
+    "sessionId": "alpha_session_1758397792435",
+    "filename": "2025-09-20T19-49-52-468Z.json",
+    "startTime": "2025-09-20T19:49:52.468Z",
+    "endTime": "2025-09-20T19:51:02.498Z",
+    "platform": "Claude Code",
+    "totalTokens": 0,
+    "interactionCount": 0,
+    "summary": "Claude Code session (0 interactions): "
+  },
+  {
     "sessionId": "alpha_session_1758391285785",
     "filename": "2025-09-20T18-01-25-787Z.json",
     "startTime": "2025-09-20T18:01:25.787Z",

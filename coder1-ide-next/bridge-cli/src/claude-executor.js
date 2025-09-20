@@ -5,7 +5,7 @@
 
 const { spawn } = require('child_process');
 const EventEmitter = require('events');
-const chalk = require('chalk');
+// Production logging - no chalk dependency
 
 class ClaudeExecutor extends EventEmitter {
   constructor(options = {}) {
@@ -213,16 +213,16 @@ class ClaudeExecutor extends EventEmitter {
    */
   log(...args) {
     if (this.verbose) {
-      console.log(chalk.gray('[Claude]'), ...args);
+      console.log('\x1b[90m[Claude]\x1b[0m', ...args);
     }
   }
 
   warn(...args) {
-    console.warn(chalk.yellow('[Claude]'), ...args);
+    console.warn('\x1b[33m[Claude]\x1b[0m', ...args);
   }
 
   error(...args) {
-    console.error(chalk.red('[Claude]'), ...args);
+    console.error('\x1b[31m[Claude]\x1b[0m', ...args);
   }
 }
 

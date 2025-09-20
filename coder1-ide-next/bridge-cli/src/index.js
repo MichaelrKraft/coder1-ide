@@ -6,11 +6,33 @@
  */
 
 const { program } = require('commander');
-const chalk = require('chalk');
-const ora = require('ora');
-const inquirer = require('inquirer');
+const readline = require('readline');
 const BridgeClient = require('./bridge-client');
+const logger = require('./logger');
 const packageJson = require('../package.json');
+
+// Helper function to get pairing code input
+async function askForPairingCode() {
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout
+  });
+
+  return new Promise((resolve) => {
+    const askCode = () => {
+      rl.question('Enter the 6-digit pairing code from the IDE: ', (answer) => {
+        if (!/^\d{6}$/.test(answer.trim())) {
+          console.log('\x1b[31mPlease enter a valid 6-digit code\x1b[0m');
+          askCode();
+        } else {
+          rl.close();
+          resolve(answer.trim());
+        }
+      });
+    };
+    askCode();
+  });
+}
 
 // ASCII Art Banner
 const banner = `
@@ -44,43 +66,31 @@ program
   .option('--no-banner', 'Skip banner display')
   .action(async (options) => {
     if (!options.banner === false) {
-      console.log(chalk.cyan(banner));
+      console.log('\x1b[36m%s\x1b[0m', banner); // Cyan color without chalk
     }
 
     // Development mode overrides
     if (options.dev) {
       options.server = 'http://localhost:3001';
-      console.log(chalk.yellow('🔧 Development mode enabled'));
+      console.log('\x1b[33m🔧 Development mode enabled\x1b[0m');
     }
 
-    console.log(chalk.blue(`📡 Connecting to: ${options.server}`));
+    console.log(`\x1b[34m📡 Connecting to: ${options.server}\x1b[0m`);
     
     // Check if Claude CLI is installed
     const claudeCheck = await checkClaudeCLI();
     if (!claudeCheck.installed) {
-      console.log(chalk.red('❌ Claude CLI not found!'));
-      console.log(chalk.yellow('Please install Claude Code from: https://claude.ai/download'));
+      console.log('\x1b[31m❌ Claude CLI not found!\x1b[0m');
+      console.log('\x1b[33mPlease install Claude Code from: https://claude.ai/download\x1b[0m');
       process.exit(1);
     }
-    console.log(chalk.green(`✅ Claude CLI detected: ${claudeCheck.version || 'Unknown version'}`));
+    console.log(`\x1b[32m✅ Claude CLI detected: ${claudeCheck.version || 'Unknown version'}\x1b[0m`);
 
-    // Get pairing code
-    const { pairingCode } = await inquirer.prompt([
-      {
-        type: 'input',
-        name: 'pairingCode',
-        message: 'Enter the 6-digit pairing code from the IDE:',
-        validate: (input) => {
-          if (!/^\d{6}$/.test(input)) {
-            return 'Please enter a valid 6-digit code';
-          }
-          return true;
-        }
-      }
-    ]);
+    // Get pairing code using readline
+    const pairingCode = await askForPairingCode();
 
-    // Start bridge client
-    const spinner = ora('Connecting to Coder1 IDE...').start();
+    // Start bridge client with simple status
+    console.log('🔄 Connecting to Coder1 IDE...');
     
     try {
       const bridge = new BridgeClient({
@@ -90,29 +100,29 @@ program
 
       await bridge.connect(pairingCode);
       
-      spinner.succeed(chalk.green('✅ Bridge connected successfully!'));
+      console.log('\x1b[32m✅ Bridge connected successfully!\x1b[0m');
       
       // Display connection info
-      console.log('\n' + chalk.bgGreen.black(' CONNECTION ESTABLISHED '));
-      console.log(chalk.gray('─'.repeat(40)));
-      console.log(chalk.white('Bridge ID:'), chalk.cyan(bridge.bridgeId));
-      console.log(chalk.white('User ID:'), chalk.cyan(bridge.userId));
-      console.log(chalk.white('Status:'), chalk.green('● Active'));
-      console.log(chalk.gray('─'.repeat(40)));
-      console.log(chalk.yellow('\n📝 You can now use Claude commands in the IDE terminal!'));
-      console.log(chalk.gray('Press Ctrl+C to disconnect\n'));
+      console.log('\n\x1b[42m\x1b[30m CONNECTION ESTABLISHED \x1b[0m');
+      console.log('\x1b[90m' + '─'.repeat(40) + '\x1b[0m');
+      console.log('\x1b[37mBridge ID:\x1b[0m \x1b[36m' + bridge.bridgeId + '\x1b[0m');
+      console.log('\x1b[37mUser ID:\x1b[0m \x1b[36m' + bridge.userId + '\x1b[0m');
+      console.log('\x1b[37mStatus:\x1b[0m \x1b[32m● Active\x1b[0m');
+      console.log('\x1b[90m' + '─'.repeat(40) + '\x1b[0m');
+      console.log('\x1b[33m\n📝 You can now use Claude commands in the IDE terminal!\x1b[0m');
+      console.log('\x1b[90mPress Ctrl+C to disconnect\x1b[0m\n');
 
       // Keep process alive and handle graceful shutdown
       process.on('SIGINT', async () => {
-        console.log(chalk.yellow('\n\n⏹️  Shutting down bridge...'));
+        console.log('\x1b[33m\n\n⏹️  Shutting down bridge...\x1b[0m');
         await bridge.disconnect();
-        console.log(chalk.gray('Bridge disconnected. Goodbye!'));
+        console.log('\x1b[90mBridge disconnected. Goodbye!\x1b[0m');
         process.exit(0);
       });
 
     } catch (error) {
-      spinner.fail(chalk.red('Failed to connect'));
-      console.error(chalk.red('Error:'), error.message);
+      console.log('\x1b[31m❌ Failed to connect\x1b[0m');
+      console.error('\x1b[31mError:\x1b[0m', error.message);
       
       if (options.verbose) {
         console.error(error.stack);
@@ -128,20 +138,20 @@ program
   .description('Check bridge connection status')
   .option('-s, --server <url>', 'Server URL', 'https://coder1-ide.onrender.com')
   .action(async (options) => {
-    console.log(chalk.blue('🔍 Checking bridge status...'));
+    console.log('\x1b[34m🔍 Checking bridge status...\x1b[0m');
     
     try {
       const response = await fetch(`${options.server}/api/bridge/generate-code?userId=test`);
       const data = await response.json();
       
       if (data.connected) {
-        console.log(chalk.green('✅ Bridge service is online'));
-        console.log(chalk.white('Connected bridges:'), data.bridges.length);
+        console.log('\x1b[32m✅ Bridge service is online\x1b[0m');
+        console.log('\x1b[37mConnected bridges:\x1b[0m', data.bridges.length);
       } else {
-        console.log(chalk.yellow('⚠️ No active bridges'));
+        console.log('\x1b[33m⚠️ No active bridges\x1b[0m');
       }
     } catch (error) {
-      console.log(chalk.red('❌ Cannot reach bridge service'));
+      console.log('\x1b[31m❌ Cannot reach bridge service\x1b[0m');
       if (options.verbose) {
         console.error(error);
       }
@@ -153,33 +163,33 @@ program
   .command('test')
   .description('Test Claude CLI installation')
   .action(async () => {
-    console.log(chalk.blue('🧪 Testing Claude CLI...'));
+    console.log('\x1b[34m🧪 Testing Claude CLI...\x1b[0m');
     
     const check = await checkClaudeCLI();
     
     if (check.installed) {
-      console.log(chalk.green('✅ Claude CLI is installed'));
-      console.log(chalk.white('Version:'), check.version || 'Unknown');
-      console.log(chalk.white('Path:'), check.path || 'In PATH');
+      console.log('\x1b[32m✅ Claude CLI is installed\x1b[0m');
+      console.log('\x1b[37mVersion:\x1b[0m', check.version || 'Unknown');
+      console.log('\x1b[37mPath:\x1b[0m', check.path || 'In PATH');
       
       // Try a test command
       const { spawn } = require('child_process');
       const claude = spawn('claude', ['--version']);
       
       claude.stdout.on('data', (data) => {
-        console.log(chalk.gray('Output:'), data.toString().trim());
+        console.log('\x1b[90mOutput:\x1b[0m', data.toString().trim());
       });
       
       claude.on('close', (code) => {
         if (code === 0) {
-          console.log(chalk.green('✅ Claude CLI is working correctly'));
+          console.log('\x1b[32m✅ Claude CLI is working correctly\x1b[0m');
         } else {
-          console.log(chalk.yellow('⚠️ Claude CLI returned non-zero exit code'));
+          console.log('\x1b[33m⚠️ Claude CLI returned non-zero exit code\x1b[0m');
         }
       });
     } else {
-      console.log(chalk.red('❌ Claude CLI not found'));
-      console.log(chalk.yellow('\nTo install Claude Code:'));
+      console.log('\x1b[31m❌ Claude CLI not found\x1b[0m');
+      console.log('\x1b[33m\nTo install Claude Code:\x1b[0m');
       console.log('1. Visit: https://claude.ai/download');
       console.log('2. Download and install for your platform');
       console.log('3. Restart your terminal');
@@ -222,6 +232,6 @@ program.parse(process.argv);
 
 // If no command specified, show help
 if (program.args.length === 0) {
-  console.log(chalk.cyan(banner));
+  console.log('\x1b[36m%s\x1b[0m', banner);
   program.help();
 }

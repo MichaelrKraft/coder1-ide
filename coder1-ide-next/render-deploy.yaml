@@ -1,0 +1,79 @@
+services:
+  # Coder1 IDE Web Service
+  - type: web
+    name: coder1-ide
+    runtime: node
+    region: oregon # or your preferred region
+    plan: free # or 'starter' for production
+    
+    buildCommand: |
+      # Install dependencies
+      npm install
+      
+      # Build Next.js application
+      npm run build
+      
+      # Rebuild native dependencies for Render environment
+      npm rebuild node-pty --update-binary
+      
+    startCommand: npm run start
+    
+    envVars:
+      - key: NODE_ENV
+        value: production
+      
+      - key: PORT
+        value: 3000
+      
+      - key: NEXTAUTH_URL
+        value: https://coder1-ide.onrender.com
+      
+      - key: NEXT_PUBLIC_API_URL
+        value: https://coder1-ide.onrender.com
+      
+      # Claude API Configuration (for Error Doctor, Session Summary)
+      - key: ANTHROPIC_API_KEY
+        sync: false # Set in Render dashboard for security
+      
+      # Bridge Configuration
+      - key: BRIDGE_SERVER_URL
+        value: https://coder1-ide.onrender.com
+      
+      - key: BRIDGE_PAIRING_TIMEOUT
+        value: 300000
+      
+      - key: ENABLE_BRIDGE
+        value: true
+      
+      # Session Configuration
+      - key: SESSION_TIMEOUT
+        value: 3600000
+      
+      - key: MAX_SESSIONS
+        value: 100
+      
+      # Terminal Configuration  
+      - key: TERMINAL_COLS
+        value: 80
+      
+      - key: TERMINAL_ROWS
+        value: 24
+      
+      # Feature Flags
+      - key: ENABLE_SESSION_SUMMARY
+        value: true
+      
+      - key: ENABLE_ERROR_DOCTOR
+        value: true
+      
+      - key: ENABLE_AI_SUPERVISION
+        value: true
+    
+    # Health check endpoint
+    healthCheckPath: /api/health
+    
+    # Disk for persistent storage (optional)
+    disk:
+      name: coder1-data
+      mountPath: /data
+      sizeGB: 1
