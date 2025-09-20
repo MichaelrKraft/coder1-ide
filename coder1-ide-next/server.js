@@ -50,6 +50,16 @@ try {
   WebSocketEventBridge = null;
 }
 
+// Agent Terminal Manager for Phase 2: Interactive Agent Terminals
+let agentTerminalManager;
+try {
+  const { getAgentTerminalManager } = require('./services/agent-terminal-manager');
+  agentTerminalManager = getAgentTerminalManager();
+} catch (error) {
+  console.warn('⚠️ Agent Terminal Manager not available:', error.message);
+  agentTerminalManager = null;
+}
+
 // Test PTY compatibility on startup
 const testPtyCompatibility = () => {
   try {
@@ -564,6 +574,97 @@ app.prepare().then(() => {
     }
   }
 
+  // Initialize Agent Terminal Manager with Socket.IO instance
+  if (agentTerminalManager) {
+    try {
+      agentTerminalManager.setSocketIO(io);
+      console.log('🤖 Agent Terminal Manager initialized for Phase 2');
+    } catch (error) {
+      console.warn('⚠️ Failed to initialize Agent Terminal Manager:', error.message);
+    }
+  }
+
+  // Initialize Coder1 Bridge Manager for local Claude CLI connections
+  let bridgeManager;
+  try {
+    const { bridgeManager: manager } = require('./services/bridge-manager');
+    bridgeManager = manager;
+    
+    // Set up bridge namespace
+    const bridgeNamespace = io.of('/bridge');
+    
+    // Bridge authentication middleware
+    bridgeNamespace.use(async (socket, next) => {
+      const token = socket.handshake.auth?.token;
+      if (!token) {
+        return next(new Error('Authentication required'));
+      }
+      
+      try {
+        const jwt = require('jsonwebtoken');
+        const JWT_SECRET = process.env.BRIDGE_JWT_SECRET || 'coder1-bridge-secret-change-in-production';
+        const decoded = jwt.verify(token, JWT_SECRET);
+        socket.userId = decoded.userId;
+        socket.bridgeMetadata = {
+          version: decoded.version,
+          platform: decoded.platform,
+          claudeVersion: decoded.claudeVersion
+        };
+        next();
+      } catch (error) {
+        next(new Error('Invalid token'));
+      }
+    });
+    
+    // Bridge connection handler
+    bridgeNamespace.on('connection', (socket) => {
+      console.log(`🌉 Bridge connected: User ${socket.userId}, Platform: ${socket.bridgeMetadata.platform}`);
+      
+      // Register bridge with manager
+      const bridgeId = bridgeManager.registerBridge(
+        socket,
+        socket.userId,
+        socket.bridgeMetadata
+      );
+      
+      // Send connection confirmation
+      socket.emit('connection:accepted', {
+        bridgeId,
+        capabilities: ['claude', 'files', 'git']
+      });
+      
+      // Listen for bridge manager events and forward to appropriate destinations
+      bridgeManager.on('command:output', (data) => {
+        // Forward to terminal session
+        const terminalSocket = io.sockets.sockets.get(data.sessionId);
+        if (terminalSocket) {
+          terminalSocket.emit('terminal:data', {
+            id: data.sessionId,
+            data: data.data
+          });
+        }
+      });
+      
+      bridgeManager.on('command:complete', (data) => {
+        // Forward completion to terminal session
+        const terminalSocket = io.sockets.sockets.get(data.sessionId);
+        if (terminalSocket) {
+          terminalSocket.emit('claude:complete', data);
+        }
+      });
+      
+      console.log(`✅ Coder1 Bridge registered: ${bridgeId}`);
+    });
+    
+    // Make bridge manager globally available for API routes
+    global.bridgeManager = bridgeManager;
+    console.log('🌉 Coder1 Bridge Manager initialized');
+    
+  } catch (error) {
+    console.warn('⚠️ Bridge Manager not available:', error.message);
+    bridgeManager = null;
+  }
+
   // Make Socket.IO server available globally for Express routes compatibility
   global.io = io;
   
@@ -717,7 +818,69 @@ app.prepare().then(() => {
           
           // Check if user typed 'claude' - INTERCEPT before sending to shell
           if (command === 'claude' || command.startsWith('claude ')) {
-            console.log('[Terminal] Claude command intercepted, showing help instead');
+            console.log('[Terminal] Claude command intercepted');
+            
+            // Check if a bridge is connected for this user
+            // Get user ID from socket or session (simplified for now)
+            const userId = session.userId || 'default';
+            const bridgeStatus = bridgeManager?.getBridgeStatus(userId);
+            
+            if (bridgeStatus?.connected) {
+              // Bridge is connected! Route command through bridge
+              console.log('[Terminal] Routing claude command through bridge');
+              
+              // Clear bash's input buffer
+              const backspaces = '\b'.repeat(buffer.length);
+              session.write(backspaces);
+              
+              // Clear the line visually
+              socket.emit('terminal:data', {
+                id: sessionId,
+                data: '\r\x1b[K'
+              });
+              
+              // Show command execution indicator
+              socket.emit('terminal:data', {
+                id: sessionId,
+                data: `\r\n🤖 Executing: ${buffer.trim()}\r\n`
+              });
+              
+              // Execute command through bridge
+              const commandRequest = {
+                sessionId,
+                commandId: `cmd_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+                command: buffer.trim(),
+                context: {
+                  workingDirectory: process.cwd(),
+                  currentFile: null,
+                  selection: null
+                },
+                timestamp: new Date()
+              };
+              
+              bridgeManager.executeCommand(userId, commandRequest)
+                .then(result => {
+                  if (!result.success) {
+                    socket.emit('terminal:data', {
+                      id: sessionId,
+                      data: `\r\n❌ Error: ${result.error}\r\n`
+                    });
+                  }
+                })
+                .catch(error => {
+                  socket.emit('terminal:data', {
+                    id: sessionId,
+                    data: `\r\n❌ Bridge error: ${error.message}\r\n`
+                  });
+                });
+              
+              // Clear command buffer and exit early
+              commandBuffers.set(sessionId, '');
+              return;
+            }
+            
+            // No bridge connected - show help message
+            console.log('[Terminal] No bridge connected, showing help instead');
             
             // CRITICAL: Clear bash's input buffer by sending backspaces
             // Send one backspace for each character that was typed
@@ -820,6 +983,73 @@ app.prepare().then(() => {
         socket.emit('terminal:destroyed', { id: id || currentSessionId });
       }
     });
+    
+    // Agent Terminal Handlers (Phase 2: Interactive Agent Terminals)
+    if (agentTerminalManager) {
+      // Create agent terminal session
+      socket.on('agent:terminal:create', ({ agentId, teamId, role }) => {
+        try {
+          console.log(`🤖 Creating agent terminal: ${agentId} (${role})`);
+          const session = agentTerminalManager.createAgentTerminalSession(agentId, teamId, role);
+          socket.emit('agent:terminal:created', { 
+            agentId, 
+            teamId, 
+            role,
+            isInteractive: session.isInteractive 
+          });
+        } catch (error) {
+          console.error(`❌ Failed to create agent terminal: ${error.message}`);
+          socket.emit('agent:terminal:error', { 
+            agentId,
+            message: error.message 
+          });
+        }
+      });
+      
+      // Connect to existing agent terminal
+      socket.on('agent:terminal:connect', ({ agentId }) => {
+        try {
+          const connected = agentTerminalManager.connectSocket(agentId, socket);
+          if (connected) {
+            socket.emit('agent:terminal:connected', { agentId });
+          } else {
+            socket.emit('agent:terminal:error', { 
+              agentId,
+              message: 'Agent terminal session not found' 
+            });
+          }
+        } catch (error) {
+          console.error(`❌ Failed to connect to agent terminal: ${error.message}`);
+          socket.emit('agent:terminal:error', { 
+            agentId,
+            message: error.message 
+          });
+        }
+      });
+      
+      // Handle agent terminal input (Phase 2: currently read-only)
+      socket.on('agent:terminal:input', ({ agentId, data }) => {
+        try {
+          agentTerminalManager.handleAgentInput(agentId, data);
+        } catch (error) {
+          console.error(`❌ Failed to handle agent input: ${error.message}`);
+          socket.emit('agent:terminal:error', { 
+            agentId,
+            message: error.message 
+          });
+        }
+      });
+      
+      // Clean up agent terminal
+      socket.on('agent:terminal:destroy', ({ agentId }) => {
+        try {
+          agentTerminalManager.cleanupSession(agentId);
+          socket.emit('agent:terminal:destroyed', { agentId });
+        } catch (error) {
+          console.error(`❌ Failed to destroy agent terminal: ${error.message}`);
+        }
+      });
+    }
     
     // Enhanced tmux handlers
     if (tmuxService) {

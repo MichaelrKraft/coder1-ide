@@ -1,0 +1,39 @@
+{
+  "name": "coder1-bridge",
+  "version": "1.0.0",
+  "description": "Bridge service to connect Coder1 IDE with local Claude CLI",
+  "main": "src/index.js",
+  "bin": {
+    "coder1-bridge": "./src/index.js"
+  },
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node src/index.js --dev",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "coder1",
+    "claude",
+    "cli",
+    "bridge",
+    "ide"
+  ],
+  "author": "Coder1 Team",
+  "license": "MIT",
+  "dependencies": {
+    "socket.io-client": "^4.8.1",
+    "chalk": "^4.1.2",
+    "commander": "^11.1.0",
+    "inquirer": "^8.2.6",
+    "ora": "^5.4.1",
+    "dotenv": "^16.3.1"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "preferGlobal": true,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/MichaelrKraft/coder1-ide.git"
+  }
+}

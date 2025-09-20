@@ -573,6 +573,18 @@ export class ClaudeCodeBridgeService extends EventEmitter {
    * Handle output from Claude Code process
    */
   private handleAgentOutput(agent: ClaudeCodeAgent, output: string): void {
+    // Phase 2: Send raw output to agent terminal manager
+    try {
+      const { getAgentTerminalManager } = require('./agent-terminal-manager');
+      const terminalManager = getAgentTerminalManager();
+      
+      // Send raw terminal output
+      terminalManager.appendToAgentTerminal(agent.id, output);
+    } catch (error) {
+      // Terminal manager not available - continue without it
+      logger.debug('Agent terminal manager not available:', error);
+    }
+    
     try {
       // Try to parse as JSON first (structured output)
       const parsed = JSON.parse(output);
@@ -745,6 +757,16 @@ Focus on:
 
       logger.info(`✅ Created unified work tree for ${agent.name}: ${agentWorkTreePath}`);
       logger.debug(`🏷️  Branch: ${branchName}, Sandbox: ${sandbox.id}`);
+
+      // Phase 2: Create agent terminal session
+      try {
+        const { getAgentTerminalManager } = require('./agent-terminal-manager');
+        const terminalManager = getAgentTerminalManager();
+        terminalManager.createAgentTerminalSession(agentId, teamId, role);
+        logger.info(`🤖 Created agent terminal session for ${agent.name}`);
+      } catch (error) {
+        logger.warn(`⚠️ Could not create agent terminal session: ${error}`);
+      }
 
       return agent;
     } catch (error) {

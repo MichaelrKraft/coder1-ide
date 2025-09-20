@@ -1768,25 +1768,52 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
         setIsConnected(true);
         
         // For sandbox mode, restore the terminal history from checkpoint
-        if (sandboxMode && sandboxSession?.terminalHistory && term) {
-          console.log('📜 Restoring terminal history for sandbox, length:', sandboxSession.terminalHistory.length);
+        if (sandboxMode && sandboxSession && term) {
+          // Check if this is an agent terminal (Phase 2)
+          const isAgentTerminal = !!(sandboxSession.checkpointData?.role || sandboxSession.checkpointData?.teamId);
           
-          // Write the historical terminal content
-          // Clean up any ANSI cursor movement sequences that might interfere
-          const cleanedHistory = sandboxSession.terminalHistory
-            .replace(/\x1b\[\?2004[hl]/g, '') // Remove bracketed paste mode
-            .replace(/\x1b\[\d+[A-D]/g, '') // Remove cursor movement
-            .replace(/\r\n\r\n\r\n+/g, '\r\n\r\n'); // Reduce excessive newlines
-          
-          // Write the history
-          term.write(cleanedHistory);
-          
-          // Add a separator to show where history ends and new session begins
-          term.write('\r\n\r\n');
-          term.write('\x1b[38;5;174m══════════════════════════════════════════════════════════════════════════════\x1b[0m\r\n');
-          term.write('\x1b[38;5;174m📂 Checkpoint restored - Continue from here\x1b[0m\r\n');
-          term.write('\x1b[38;5;174m══════════════════════════════════════════════════════════════════════════════\x1b[0m\r\n');
-          term.write('\r\n');
+          if (isAgentTerminal) {
+            console.log('🤖 Connecting to agent terminal:', sandboxSession.id);
+            
+            // Connect to agent terminal session via WebSocket
+            socket.emit('agent:terminal:connect', {
+              agentId: sandboxSession.id
+            });
+            
+            // Listen for agent terminal data
+            const handleAgentData = ({ agentId, data }: { agentId: string; data: string }) => {
+              if (agentId === sandboxSession.id && term) {
+                term.write(data);
+              }
+            };
+            
+            socket.on('agent:terminal:data', handleAgentData);
+            
+            // Clean up listener on unmount
+            return () => {
+              socket.off('agent:terminal:data', handleAgentData);
+            };
+          } else if (sandboxSession.terminalHistory) {
+            // Regular sandbox mode - restore history
+            console.log('📜 Restoring terminal history for sandbox, length:', sandboxSession.terminalHistory.length);
+            
+            // Write the historical terminal content
+            // Clean up any ANSI cursor movement sequences that might interfere
+            const cleanedHistory = sandboxSession.terminalHistory
+              .replace(/\x1b\[\?2004[hl]/g, '') // Remove bracketed paste mode
+              .replace(/\x1b\[\d+[A-D]/g, '') // Remove cursor movement
+              .replace(/\r\n\r\n\r\n+/g, '\r\n\r\n'); // Reduce excessive newlines
+            
+            // Write the history
+            term.write(cleanedHistory);
+            
+            // Add a separator to show where history ends and new session begins
+            term.write('\r\n\r\n');
+            term.write('\x1b[38;5;174m══════════════════════════════════════════════════════════════════════════════\x1b[0m\r\n');
+            term.write('\x1b[38;5;174m📂 Checkpoint restored - Continue from here\x1b[0m\r\n');
+            term.write('\x1b[38;5;174m══════════════════════════════════════════════════════════════════════════════\x1b[0m\r\n');
+            term.write('\r\n');
+          }
         } else if (!sandboxMode && term) {
           // Normal mode - just show connection message
           term.write('\r\n✅ Connected to backend terminal\r\n');
@@ -2050,6 +2077,16 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
             window.dispatchEvent(new CustomEvent('terminal:createAgentSession', {
               detail: agentSessionData
             }));
+            
+            // Phase 2: Also create agent terminal session via WebSocket
+            if (socket?.connected) {
+              socket.emit('agent:terminal:create', {
+                agentId: agentSessionData.id,
+                teamId: agentSessionData.teamId,
+                role: agentSessionData.role
+              });
+              console.log(`🤖 Created agent terminal session for ${agentSessionData.name}`);
+            }
           });
           
           xtermRef.current.writeln(`✅ Created ${data.agents.length} agent terminal tabs`);
