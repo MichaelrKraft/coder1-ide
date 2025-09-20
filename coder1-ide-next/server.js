@@ -831,16 +831,21 @@ app.prepare().then(() => {
           const command = buffer.trim().toLowerCase();
           console.log('[Terminal] Command completed:', command);
           
-          // Check if user typed 'claude' - INTERCEPT before sending to shell
+          // ALWAYS intercept claude commands, even if bridgeManager fails to load
+          // This prevents "claude: command not found" errors on the server
           if (command === 'claude' || command.startsWith('claude ')) {
-            console.log('[Terminal] Claude command intercepted');
+            console.log('[Terminal] Claude command intercepted, bridgeManager:', !!bridgeManager);
             
-            // Check if a bridge is connected for this user
-            // Get user ID from socket or session (simplified for now)
-            const userId = session.userId || 'default';
-            const bridgeStatus = bridgeManager?.getBridgeStatus(userId);
+            // Check if bridgeManager exists and if a bridge is connected
+            if (!bridgeManager) {
+              console.log('[Terminal] BridgeManager not available - showing help message');
+              // Jump straight to help message
+            } else {
+              // Get user ID from socket or session (simplified for now)
+              const userId = session.userId || 'default';
+              const bridgeStatus = bridgeManager.getBridgeStatus?.(userId);
             
-            if (bridgeStatus?.connected) {
+              if (bridgeStatus?.connected) {
               // Bridge is connected! Route command through bridge
               console.log('[Terminal] Routing claude command through bridge');
               
@@ -892,9 +897,10 @@ app.prepare().then(() => {
               // Clear command buffer and exit early
               commandBuffers.set(sessionId, '');
               return;
+              }
             }
             
-            // No bridge connected - show help message
+            // No bridge connected OR bridgeManager not available - show help message
             console.log('[Terminal] No bridge connected, showing help instead');
             
             // CRITICAL: Clear bash's input buffer by sending backspaces
@@ -912,32 +918,33 @@ app.prepare().then(() => {
               const helpMessage = [
                 '\r\n',
                 '╔═══════════════════════════════════════════════════════════════════╗\r\n',
-                '║                    🤖 Claude Code CLI Access                       ║\r\n',
+                '║              🌉 Connect Your Local Claude CLI                      ║\r\n',
                 '╠═══════════════════════════════════════════════════════════════════╣\r\n',
                 '║                                                                     ║\r\n',
-                '║  Claude Code CLI runs on YOUR computer, not on the web server.    ║\r\n',
+                '║  Claude CLI runs on YOUR computer, not on this server.            ║\r\n',
+                '║  To use Claude commands, connect your local CLI:                  ║\r\n',
                 '║                                                                     ║\r\n',
-                '║  Option 1: Local Development (Recommended)                        ║\r\n',
-                '║  ────────────────────────────────────────                         ║\r\n',
-                '║  1. Clone the repo locally:                                       ║\r\n',
-                '║     git clone https://github.com/MichaelrKraft/coder1-ide         ║\r\n',
+                '║  Quick Setup (2 minutes):                                         ║\r\n',
+                '║  ─────────────────────────                                        ║\r\n',
+                '║  1. Install the bridge on your computer:                          ║\r\n',
+                '║     curl -sL https://coder1-ide.onrender.com/install-bridge.sh \\  ║\r\n',
+                '║       | bash                                                       ║\r\n',
                 '║                                                                     ║\r\n',
-                '║  2. Install and run locally:                                      ║\r\n',
-                '║     cd coder1-ide/coder1-ide-next                                 ║\r\n',
-                '║     npm install                                                    ║\r\n',
-                '║     npm run dev                                                    ║\r\n',
+                '║  2. Connect to this IDE:                                          ║\r\n',
+                '║     coder1-bridge start                                           ║\r\n',
                 '║                                                                     ║\r\n',
-                '║  3. Install Claude Code from: https://claude.ai/download          ║\r\n',
+                '║  3. Enter the 6-digit code shown in the IDE                       ║\r\n',
                 '║                                                                     ║\r\n',
-                '║  4. Open http://localhost:3001 and Claude will work!              ║\r\n',
+                '║  Then Claude commands will work here! 🎉                          ║\r\n',
                 '║                                                                     ║\r\n',
-                '║  Option 2: Coder1 Bridge - Connect Your Claude CLI! 🌉            ║\r\n',
-                '║  ────────────────────────────────────────────────                 ║\r\n',
-                '║  1. Click "Connect Bridge" button in the status bar               ║\r\n',
-                '║  2. Get your 6-digit pairing code                                 ║\r\n',
-                '║  3. Install bridge: npm install -g coder1-bridge                  ║\r\n',
-                '║  4. Run: coder1-bridge start                                      ║\r\n',
-                '║  5. Enter pairing code and Claude works in your browser!          ║\r\n',
+                '║  Alternative: Run Locally                                         ║\r\n',
+                '║  ─────────────────────────                                        ║\r\n',
+                '║  git clone https://github.com/MichaelrKraft/coder1-ide            ║\r\n',
+                '║  cd coder1-ide/coder1-ide-next && npm install && npm run dev      ║\r\n',
+                '║                                                                     ║\r\n',
+                '║  Prerequisites:                                                    ║\r\n',
+                '║  • Claude Code CLI: https://claude.ai/download                    ║\r\n',
+                '║  • Node.js 18+: https://nodejs.org                                ║\r\n',
                 '║                                                                     ║\r\n',
                 '╚═══════════════════════════════════════════════════════════════════╝\r\n',
                 '\r\n'
