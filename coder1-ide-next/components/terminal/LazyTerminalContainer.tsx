@@ -1,11 +1,8 @@
 'use client';
 
-import React, { Suspense, lazy } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Loader2, Terminal as TerminalIcon, FolderOpen } from 'lucide-react';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
-
-// Lazy load the heavy TerminalContainer component
-const TerminalContainer = lazy(() => import('./TerminalContainer'));
 
 interface LazyTerminalContainerProps {
   onAgentsSpawn?: () => void;
@@ -125,19 +122,56 @@ function TerminalContainerSkeleton() {
 }
 
 export default function LazyTerminalContainer(props: LazyTerminalContainerProps) {
+  const [TerminalContainer, setTerminalContainer] = useState<React.ComponentType<any> | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Client-side only dynamic import to avoid SSR bailout
+    const loadTerminalContainer = async () => {
+      try {
+        setIsLoading(true);
+        const module = await import('./TerminalContainer');
+        setTerminalContainer(() => module.default);
+        setError(null);
+      } catch (err) {
+        console.error('Failed to load TerminalContainer:', err);
+        setError('Failed to load terminal system');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadTerminalContainer();
+  }, []);
+
+  if (isLoading) {
+    return <TerminalContainerSkeleton />;
+  }
+
+  if (error || !TerminalContainer) {
+    return (
+      <div className="h-full w-full bg-bg-primary border border-border-default rounded flex items-center justify-center">
+        <div className="text-center">
+          <TerminalIcon className="w-12 h-12 text-text-muted mx-auto mb-4" />
+          <p className="text-text-primary font-medium">Terminal Container Error</p>
+          <p className="text-sm text-text-muted">{error || 'Failed to load terminal system'}</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <ErrorBoundary fallback={
       <div className="h-full w-full bg-bg-primary border border-border-default rounded flex items-center justify-center">
         <div className="text-center">
           <TerminalIcon className="w-12 h-12 text-text-muted mx-auto mb-4" />
           <p className="text-text-primary font-medium">Terminal Container Error</p>
-          <p className="text-sm text-text-muted">Failed to load terminal system</p>
+          <p className="text-sm text-text-muted">Runtime error in terminal system</p>
         </div>
       </div>
     }>
-      <Suspense fallback={<TerminalContainerSkeleton />}>
-        <TerminalContainer {...props} />
-      </Suspense>
+      <TerminalContainer {...props} />
     </ErrorBoundary>
   );
 }

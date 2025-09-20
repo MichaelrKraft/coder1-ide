@@ -26,12 +26,22 @@ const MonacoEditor = dynamic(() => import('../../components/editor/LazyMonacoEdi
   ssr: false
 });
 
-const Terminal = dynamic(() => import('@/components/terminal/LazyTerminalContainer'), {
+// Temporarily import TerminalContainer directly to bypass dynamic import issues
+const Terminal = dynamic(() => import('@/components/terminal/TerminalContainer'), {
   ssr: false,
   loading: () => <div className="h-full flex items-center justify-center">Loading Terminal System...</div>
 });
 
 export default function IDEPage() {
+  // Temporarily simplified for debugging hydration issues
+  return (
+    <div style={{ padding: '20px', backgroundColor: 'white', color: 'black', minHeight: '100vh' }}>
+      <h1>Coder1 IDE - Debug Mode</h1>
+      <p>If you can see this, React hydration is working!</p>
+      <p>Terminal and components will be restored once hydration is fixed.</p>
+    </div>
+  );
+}
   const [activeFile, setActiveFile] = useState<string | null>(null);
   const [agentsActive, setAgentsActive] = useState(false);
   const [terminalHeight, setTerminalHeight] = useState(60); // 60% (balanced editor/terminal split)
@@ -996,4 +1006,5 @@ export default App;
       </TerminalCommandProvider>
     </EnhancedSupervisionProvider>
   );
+  */
 }

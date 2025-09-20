@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { X, FolderOpen, Code2, Server, Database, CheckCircle, Cloud, Monitor } from 'lucide-react';
 import Terminal from './Terminal';
 
@@ -58,9 +58,16 @@ export default function TerminalContainer({
   const [sandboxSession, setSandboxSession] = useState<SandboxSession | null>(null);
   
   // Agent Tabs Feature (Phase 1) - Only active when feature flag enabled
-  const agentTabsEnabled = process.env.NEXT_PUBLIC_ENABLE_AGENT_TABS === 'true';
+  // Initialize to false, will be set in useEffect to avoid SSR issues
+  const [agentTabsEnabled, setAgentTabsEnabled] = useState(false);
   const [agentSessions, setAgentSessions] = useState<Map<string, AgentSession>>(new Map());
+  // Initialize activeSessionId to 'main' to ensure terminal always renders
   const [activeSessionId, setActiveSessionId] = useState<string>('main');
+  
+  // Set agent tabs enabled on client side only
+  useEffect(() => {
+    setAgentTabsEnabled(process.env.NEXT_PUBLIC_ENABLE_AGENT_TABS === 'true');
+  }, []);
 
   // Agent role styling helper (Phase 1)
   const getAgentRoleStyle = (role: AgentRole) => {
@@ -327,8 +334,8 @@ export default function TerminalContainer({
 
       {/* Terminal Content */}
       <div className="flex-1 min-h-0">
-        {/* Main Terminal - Use old logic when feature flag disabled, new logic when enabled */}
-        {(!agentTabsEnabled && activeTab === 'main') || (agentTabsEnabled && activeSessionId === 'main') ? (
+        {/* Main Terminal - Simplified logic to always show when activeSessionId is 'main' */}
+        {activeSessionId === 'main' ? (
           <Terminal
             key="main-terminal"
             onAgentsSpawn={onAgentsSpawn}
@@ -340,21 +347,19 @@ export default function TerminalContainer({
           />
         ) : null}
         
-        {/* Sandbox Terminal - Keep existing logic */}
-        {(!agentTabsEnabled && activeTab === 'sandbox') || (agentTabsEnabled && activeSessionId === 'sandbox') ? (
-          sandboxSession && (
-            <Terminal
-              key={`sandbox-${sandboxSession.id}`}
-              onAgentsSpawn={onAgentsSpawn}
-              onTerminalClick={onTerminalClick}
-              onClaudeTyped={onClaudeTyped}
-              onTerminalData={onTerminalData}
-              onTerminalCommand={onTerminalCommand}
-              onTerminalReady={onTerminalReady}
-              sandboxMode={true}
-              sandboxSession={sandboxSession}
-            />
-          )
+        {/* Sandbox Terminal - Show when sandbox is selected */}
+        {activeSessionId === 'sandbox' && sandboxSession ? (
+          <Terminal
+            key={`sandbox-${sandboxSession.id}`}
+            onAgentsSpawn={onAgentsSpawn}
+            onTerminalClick={onTerminalClick}
+            onClaudeTyped={onClaudeTyped}
+            onTerminalData={onTerminalData}
+            onTerminalCommand={onTerminalCommand}
+            onTerminalReady={onTerminalReady}
+            sandboxMode={true}
+            sandboxSession={sandboxSession}
+          />
         ) : null}
         
         {/* Agent Terminals (Phase 1) - Read-only mode */}

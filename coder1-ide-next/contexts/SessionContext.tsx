@@ -79,8 +79,8 @@ export function SessionProvider({ children }: SessionProviderProps) {
     try {
       console.log('🔄 Starting atomic session initialization...');
       
-      // Check for existing session in localStorage
-      let storedSessionId = localStorage.getItem('currentSessionId');
+      // Check for existing session in localStorage (client-side only)
+      let storedSessionId = typeof window !== 'undefined' ? localStorage.getItem('currentSessionId') : null;
       
       if (storedSessionId) {
         console.log('📂 Found stored session:', storedSessionId);
@@ -93,7 +93,9 @@ export function SessionProvider({ children }: SessionProviderProps) {
         const sessionExists = loadedSessions.some(s => s.id === storedSessionId);
         if (!sessionExists) {
           console.log('⚠️ Stored session no longer exists, clearing...');
-          localStorage.removeItem('currentSessionId');
+          if (typeof window !== 'undefined') {
+            localStorage.removeItem('currentSessionId');
+          }
           storedSessionId = null;
         } else {
           console.log('✅ Valid session found, initialization complete');
@@ -108,8 +110,8 @@ export function SessionProvider({ children }: SessionProviderProps) {
         // Load sessions first to check if any exist
         const existingSessions = await refreshSessions();
         
-        // Double-check localStorage one more time after the await
-        const finalCheck = localStorage.getItem('currentSessionId');
+        // Double-check localStorage one more time after the await (client-side only)
+        const finalCheck = typeof window !== 'undefined' ? localStorage.getItem('currentSessionId') : null;
         if (!finalCheck && existingSessions.length === 0) {
           console.log('🔨 Creating new session atomically...');
           await createSession();
@@ -144,7 +146,7 @@ export function SessionProvider({ children }: SessionProviderProps) {
         setSessions(loadedSessions);
         
         // Update current session if we have a sessionId
-        const currentSessionId = sessionId || localStorage.getItem('currentSessionId');
+        const currentSessionId = sessionId || (typeof window !== 'undefined' ? localStorage.getItem('currentSessionId') : null);
         if (currentSessionId) {
           const activeSession = loadedSessions.find((s: Session) => s.id === currentSessionId);
           if (activeSession) {
