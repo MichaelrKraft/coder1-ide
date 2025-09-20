@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import dynamic from 'next/dynamic';
+import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 
 // Import core IDE components - using correct default exports
 import ThreePanelLayout from '@/components/layout/ThreePanelLayout';
@@ -95,35 +96,65 @@ export default function IDEPage() {
                 />
               }
               centerPanel={
-                <div className="h-full flex flex-col">
-                  {/* Editor Area - takes remaining space after terminal */}
-                  <div className={terminalVisible ? "flex-1 min-h-0 overflow-hidden" : "h-full"}>
-                    <MonacoEditor
-                      value={activeFile ? (files[activeFile] || '') : '// Welcome to Coder1 IDE\n// Type "claude" in the terminal below to get started!'}
-                      onChange={(value) => {
-                        if (activeFile && value !== undefined) {
-                          handleFileChange(activeFile, value);
-                        }
-                      }}
-                      language="typescript"
-                      theme="tokyo-night"
-                    />
-                  </div>
-                  
-                  {/* Terminal Area - fixed height at bottom */}
-                  {terminalVisible && (
-                    <div className="h-[350px] min-h-[200px] border-t-2 border-coder1-cyan/50 bg-bg-primary">
-                      <LazyTerminalContainer
-                        onAgentsSpawn={handleAgentsSpawn}
-                        onTerminalClick={handleTerminalClick}
-                        onClaudeTyped={handleClaudeTyped}
-                        onTerminalData={handleTerminalData}
-                        onTerminalCommand={handleTerminalCommand}
-                        onTerminalReady={handleTerminalReady}
+                <PanelGroup direction="vertical" className="h-full">
+                  {/* Editor Panel */}
+                  <Panel defaultSize={terminalVisible ? 65 : 100} minSize={30}>
+                    <div className="h-full overflow-hidden">
+                      <MonacoEditor
+                        value={activeFile ? (files[activeFile] || '') : '// Welcome to Coder1 IDE\n// Type "claude" in the terminal below to get started!'}
+                        onChange={(value) => {
+                          if (activeFile && value !== undefined) {
+                            handleFileChange(activeFile, value);
+                          }
+                        }}
+                        language="typescript"
+                        theme="tokyo-night"
                       />
                     </div>
+                  </Panel>
+                  
+                  {/* Resize Handle between Editor and Terminal */}
+                  {terminalVisible && (
+                    <>
+                      <PanelResizeHandle 
+                        className="group h-1 bg-bg-secondary hover:bg-coder1-cyan/20 transition-all duration-200 cursor-row-resize relative"
+                        style={{
+                          boxShadow: '0 0 0 0 rgba(0, 217, 255, 0)',
+                          transition: 'all 0.3s ease',
+                        }}
+                        onMouseEnter={(e) => {
+                          (e.currentTarget as unknown as HTMLElement).style.boxShadow = '0 0 20px rgba(0, 217, 255, 0.8), inset 0 0 10px rgba(0, 217, 255, 0.4)';
+                        }}
+                        onMouseLeave={(e) => {
+                          (e.currentTarget as unknown as HTMLElement).style.boxShadow = '0 0 0 0 rgba(0, 217, 255, 0)';
+                        }}
+                      >
+                        <div className="h-full w-full flex items-center justify-center">
+                          <div 
+                            className="h-0.5 w-8 bg-coder1-cyan/50 group-hover:bg-coder1-cyan rounded-full transition-all duration-200"
+                            style={{
+                              boxShadow: '0 0 10px rgba(0, 217, 255, 0.6)',
+                            }}
+                          />
+                        </div>
+                      </PanelResizeHandle>
+                      
+                      {/* Terminal Panel */}
+                      <Panel defaultSize={35} minSize={15}>
+                        <div className="h-full bg-bg-primary">
+                          <LazyTerminalContainer
+                            onAgentsSpawn={handleAgentsSpawn}
+                            onTerminalClick={handleTerminalClick}
+                            onClaudeTyped={handleClaudeTyped}
+                            onTerminalData={handleTerminalData}
+                            onTerminalCommand={handleTerminalCommand}
+                            onTerminalReady={handleTerminalReady}
+                          />
+                        </div>
+                      </Panel>
+                    </>
                   )}
-                </div>
+                </PanelGroup>
               }
               rightPanel={
                 <PreviewPanel />
