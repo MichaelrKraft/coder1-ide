@@ -3,6 +3,7 @@
 import React, { useRef, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import type * as monaco from 'monaco-editor';
+import { WelcomeScreen } from './WelcomeScreen';
 
 // Dynamically import Monaco Editor to avoid SSR issues
 const Editor = dynamic(
@@ -162,6 +163,11 @@ export default function MonacoEditor({
   // Use provided value or fall back to file-based content
   const editorValue = value !== undefined ? value : getFileContent(file || null);
   const editorLanguage = language || (file ? getLanguage(file) : 'javascript');
+
+  // Show welcome screen if no file is open and no value provided
+  if (!file && value === undefined) {
+    return <WelcomeScreen />;
+  }
 
   return (
     <div className="h-full w-full monaco-editor-container">
