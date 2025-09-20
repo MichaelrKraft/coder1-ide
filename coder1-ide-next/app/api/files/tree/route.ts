@@ -26,8 +26,9 @@ const EXCLUDED_DIRS = [
 /**
  * Build hierarchical file tree
  */
-async function buildFileTree(dirPath: string, relativePath: string = ''): Promise<any[]> {
+async function buildFileTree(dirPath: string, relativePath: string = '', depth: number = 0): Promise<any[]> {
     const children = [];
+    const MAX_DEPTH = 2; // Limit scanning to 2 levels deep to prevent file handle exhaustion
   
     try {
         const entries = await fs.readdir(dirPath, { withFileTypes: true });
@@ -42,8 +43,8 @@ async function buildFileTree(dirPath: string, relativePath: string = ''): Promis
                     continue;
                 }
         
-                // Recursively build tree for directories
-                const subTree = await buildFileTree(fullPath, relativeFilePath);
+                // Only recurse if we haven't hit max depth
+                const subTree = depth < MAX_DEPTH ? await buildFileTree(fullPath, relativeFilePath, depth + 1) : [];
                 children.push({
                     name: entry.name,
                     path: relativeFilePath,

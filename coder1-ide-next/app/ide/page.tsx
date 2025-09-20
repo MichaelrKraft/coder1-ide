@@ -8,6 +8,7 @@ import ThreePanelLayout from '@/components/layout/ThreePanelLayout';
 import LeftPanel from '@/components/LeftPanel';
 import MonacoEditor from '@/components/editor/MonacoEditor';
 import StatusBarCore from '@/components/status-bar/StatusBarCore';
+import MenuBar from '@/components/MenuBar';
 
 // Use LazyTerminalContainer to avoid SSR issues
 const LazyTerminalContainer = dynamic(
@@ -15,6 +16,15 @@ const LazyTerminalContainer = dynamic(
   { 
     ssr: false,
     loading: () => <div className="flex items-center justify-center h-full bg-bg-primary"><span>Loading terminal...</span></div>
+  }
+);
+
+// Dynamic import for PreviewPanel
+const PreviewPanel = dynamic(
+  () => import('@/components/preview/PreviewPanel'),
+  { 
+    ssr: false,
+    loading: () => <div className="flex items-center justify-center h-full bg-bg-secondary"><span>Loading preview...</span></div>
   }
 );
 
@@ -70,6 +80,11 @@ export default function IDEPage() {
     <SessionProvider>
       <EnhancedSupervisionProvider>
         <div className="h-screen w-full flex flex-col bg-bg-primary">
+          {/* Menu Bar */}
+          <MenuBar 
+            onToggleTerminal={() => setTerminalVisible(!terminalVisible)}
+          />
+          
           {/* Main IDE Layout */}
           <div className="flex-1 flex flex-col min-h-0">
             <ThreePanelLayout
@@ -111,12 +126,7 @@ export default function IDEPage() {
                 </div>
               }
               rightPanel={
-                <div className="h-full p-4 bg-bg-secondary">
-                  <h3 className="text-text-primary text-sm font-semibold mb-2">AI Assistant</h3>
-                  <p className="text-text-muted text-xs">
-                    Type "claude" in the terminal to connect your Claude CLI via the bridge.
-                  </p>
-                </div>
+                <PreviewPanel />
               }
             />
           </div>
