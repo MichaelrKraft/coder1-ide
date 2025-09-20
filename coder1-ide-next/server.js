@@ -719,12 +719,16 @@ app.prepare().then(() => {
           if (command === 'claude' || command.startsWith('claude ')) {
             console.log('[Terminal] Claude command intercepted, showing help instead');
             
-            // Clear the current line first (remove "claude" text)
-            session.write('\r\x1b[K');  // Carriage return + clear line
-            // Then write the prompt again
-            session.write('coder1:coder1-ide-next$ ');
-            // Now move to next line
-            session.write('\r\n');
+            // CRITICAL: Clear bash's input buffer by sending backspaces
+            // Send one backspace for each character that was typed
+            const backspaces = '\b'.repeat(buffer.length);
+            session.write(backspaces);
+            
+            // Clear the line visually in the terminal display
+            socket.emit('terminal:data', {
+              id: sessionId,
+              data: '\r\x1b[K'  // Clear the line in the display
+            });
             
             // Show help message immediately
               const helpMessage = [
@@ -780,11 +784,11 @@ app.prepare().then(() => {
           // Send the Enter key to execute the command (not intercepted)
           session.write(data);
         } else {
-          // For non-Enter keys, build buffer AND echo to terminal
+          // For non-Enter keys, build buffer AND send to PTY
           buffer += data;
           commandBuffers.set(sessionId, buffer);
           
-          // Echo the character immediately
+          // Send to PTY for normal command processing
           session.write(data);
         }
         
