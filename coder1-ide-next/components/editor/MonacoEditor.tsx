@@ -1,21 +1,38 @@
 'use client';
 
 import React, { useRef, useEffect } from 'react';
-import Editor, { OnMount } from '@monaco-editor/react';
+import dynamic from 'next/dynamic';
 import type * as monaco from 'monaco-editor';
 
+// Dynamically import Monaco Editor to avoid SSR issues
+const Editor = dynamic(
+  () => import('@monaco-editor/react'),
+  { 
+    ssr: false,
+    loading: () => (
+      <div className="flex items-center justify-center h-full bg-bg-primary">
+        <span className="text-text-muted">Loading editor...</span>
+      </div>
+    )
+  }
+);
+
 interface MonacoEditorProps {
-  file: string | null;
+  value?: string;
+  language?: string;
   theme?: string;
   fontSize?: number;
   onChange?: (value: string | undefined) => void;
+  file?: string | null;
 }
 
 export default function MonacoEditor({ 
-  file, 
+  value,
+  language = 'typescript',
   theme = 'vs-dark',
   fontSize = 14,
-  onChange 
+  onChange,
+  file 
 }: MonacoEditorProps) {
   const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
 
@@ -59,7 +76,7 @@ export default function MonacoEditor({
     };
   }, []);
 
-  const handleEditorDidMount: OnMount = (editor, monaco) => {
+  const handleEditorDidMount = (editor: any, monaco: any) => {
     editorRef.current = editor;
     
     // Configure Monaco theme to match our IDE
@@ -112,7 +129,7 @@ export default function MonacoEditor({
     });
   };
 
-  // Mock content based on file
+  // Support both file-based and value-based content
   const getFileContent = (filePath: string | null) => {
     if (!filePath) {
       return '// Welcome to Coder1 IDE\n// Open a file to start coding';
@@ -142,13 +159,17 @@ export default function MonacoEditor({
     return 'plaintext';
   };
 
+  // Use provided value or fall back to file-based content
+  const editorValue = value !== undefined ? value : getFileContent(file || null);
+  const editorLanguage = language || (file ? getLanguage(file) : 'javascript');
+
   return (
     <div className="h-full w-full monaco-editor-container">
       <Editor
         height="100%"
         defaultLanguage="typescript"
-        language={getLanguage(file)}
-        value={getFileContent(file)}
+        language={editorLanguage}
+        value={editorValue}
         theme={theme}
         onMount={handleEditorDidMount}
         onChange={onChange}
