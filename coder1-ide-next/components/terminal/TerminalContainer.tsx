@@ -58,7 +58,7 @@ export default function TerminalContainer({
   const [sandboxSession, setSandboxSession] = useState<SandboxSession | null>(null);
   
   // Agent Tabs Feature (Phase 1) - Only active when feature flag enabled
-  const agentTabsEnabled = process.env.ENABLE_AGENT_TABS === 'true';
+  const agentTabsEnabled = process.env.NEXT_PUBLIC_ENABLE_AGENT_TABS === 'true';
   const [agentSessions, setAgentSessions] = useState<Map<string, AgentSession>>(new Map());
   const [activeSessionId, setActiveSessionId] = useState<string>('main');
 

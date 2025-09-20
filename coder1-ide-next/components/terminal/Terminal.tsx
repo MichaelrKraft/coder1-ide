@@ -2054,7 +2054,7 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
         xtermRef.current.write('\r\n$ ');
         
         // Create agent terminal tabs (Phase 1) if feature flag enabled
-        const agentTabsEnabled = process.env.ENABLE_AGENT_TABS === 'true';
+        const agentTabsEnabled = process.env.NEXT_PUBLIC_ENABLE_AGENT_TABS === 'true';
         if (agentTabsEnabled && data.agents && data.agents.length > 0) {
           xtermRef.current.writeln('\r\n📋 Creating agent terminal tabs...');
           
