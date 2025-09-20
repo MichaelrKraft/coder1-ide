@@ -10,6 +10,7 @@
 import React from 'react';
 import { Save, Clock, FileText, BookOpen, Loader2, Brain, Link, Sparkles } from '@/lib/icons';
 import StatusBarModals from './StatusBarModals';
+import { BridgeConnectButton } from '../bridge/BridgeConnectButton';
 import { useIDEStore } from '@/stores/useIDEStore';
 import { useSessionStore } from '@/stores/useSessionStore';
 import { useUIStore } from '@/stores/useUIStore';
@@ -336,6 +337,9 @@ const StatusBarActions = React.memo(function StatusBarActions({
   return (
     <>
       <div className="flex items-center gap-2">
+        {/* Bridge Connect Button */}
+        <BridgeConnectButton />
+        
         {/* CheckPoint Button */}
         <div data-tour="checkpoint-timeline" className="p-[1px] rounded-md" style={{background: 'linear-gradient(135deg, #6366f1, #8b5cf6)'}}>
           <button
