@@ -1,24 +1,9 @@
 'use client';
 
-import React, { Suspense, lazy, useState } from 'react';
+import React, { useState } from 'react';
+import dynamic from 'next/dynamic';
 import { Loader2 } from '@/lib/icons';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
-
-// Lazy load the Monaco Editor with better error handling
-const MonacoEditor = lazy(() => 
-  import('./MonacoEditor').catch(() => ({
-    default: () => <div className="h-full w-full bg-bg-secondary flex items-center justify-center">
-      <p className="text-text-muted">Editor temporarily unavailable</p>
-    </div>
-  }))
-);
-
-interface LazyMonacoEditorProps {
-  file: string | null;
-  theme?: string;
-  fontSize?: number;
-  onChange?: (value: string | undefined) => void;
-}
 
 // Loading fallback component
 function EditorSkeleton() {
@@ -30,6 +15,29 @@ function EditorSkeleton() {
       </div>
     </div>
   );
+}
+
+// Use Next.js dynamic import with better error handling
+const MonacoEditor = dynamic(() => 
+  import('./MonacoEditor').catch((error) => {
+    console.error('Failed to load MonacoEditor:', error);
+    return {
+      default: () => <div className="h-full w-full bg-bg-secondary flex items-center justify-center">
+        <p className="text-text-muted">Editor temporarily unavailable</p>
+      </div>
+    };
+  }),
+  { 
+    ssr: false,
+    loading: () => <EditorSkeleton />
+  }
+);
+
+interface LazyMonacoEditorProps {
+  file: string | null;
+  theme?: string;
+  fontSize?: number;
+  onChange?: (value: string | undefined) => void;
 }
 
 export default function LazyMonacoEditor(props: LazyMonacoEditorProps) {
@@ -115,9 +123,7 @@ export default function LazyMonacoEditor(props: LazyMonacoEditorProps) {
           </div>
         </div>
       }>
-        <Suspense fallback={<EditorSkeleton />}>
-          <MonacoEditor {...props} />
-        </Suspense>
+        <MonacoEditor {...props} />
       </ErrorBoundary>
     </div>
   );

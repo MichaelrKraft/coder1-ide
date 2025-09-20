@@ -186,8 +186,11 @@ class TerminalSession {
         setTimeout(() => {
           // Export a cleaner PS1 prompt
           this.pty.write('export PS1="\\[\\033[01;32m\\]coder1\\[\\033[00m\\]:\\[\\033[01;34m\\]\\W\\[\\033[00m\\]$ "\r');
-          // Clear the screen to remove the ugly default prompt
+          // Clear the screen and show welcome message
           this.pty.write('clear\r');
+          this.pty.write('echo "Coder1 Terminal Ready"\r');
+          this.pty.write('echo "Type \'claude\' to start AI-assisted coding"\r');
+          this.pty.write('echo "──────────────────────────────────────────────"\r');
         }, 100);
       }
     } catch (error) {
@@ -234,12 +237,7 @@ function getOrCreateSession(sessionId, userId = 'default') {
     const session = new TerminalSession(sessionId, userId);
     terminalSessions.set(sessionId, session);
     
-    // Set up PTY event handlers
-    session.pty.onData((data) => {
-      // Will emit to socket clients in WebSocket setup
-      session.lastData = data;
-    });
-    
+    // Set up PTY exit handler only (data handler will be set up in socket connection)
     session.pty.onExit(({ exitCode, signal }) => {
       // REMOVED: // REMOVED: // REMOVED: console.log(`[Terminal] Session ${sessionId} exited with code ${exitCode}`);
       terminalSessions.delete(sessionId);
@@ -712,6 +710,13 @@ app.prepare().then(() => {
         
         let buffer = commandBuffers.get(sessionId);
         
+        // Build up the buffer BEFORE writing to terminal
+        buffer += data;
+        commandBuffers.set(sessionId, buffer);
+        
+        // CRITICAL FIX: Write input to PTY so it appears in terminal
+        session.write(data);
+        
         // Check if Enter is being pressed (command complete)
         if (data.includes('\r') || data.includes('\n')) {
           const command = buffer.trim().toLowerCase();
@@ -721,13 +726,7 @@ app.prepare().then(() => {
           if (command === 'claude' || command.startsWith('claude ')) {
             console.log('[Terminal] Claude command intercepted, showing help instead');
             
-            // Clear the line (simulate pressing Enter without running the command)
-            socket.emit('terminal:data', { 
-              id: sessionId, 
-              data: '\r\n' 
-            });
-            
-            // Show help message immediately (no delay needed since we're not running the command)
+            // Show help message immediately after the command
               const helpMessage = [
                 '\r\n',
                 '╔═══════════════════════════════════════════════════════════════════╗\r\n',
@@ -764,9 +763,9 @@ app.prepare().then(() => {
               data: helpMessage 
             });
             
-            // Clear the command buffer and return early to prevent PTY write
+            // Clear the command buffer 
             commandBuffers.set(sessionId, '');
-            return; // Exit early - don't send the command to PTY!
+            return; // Exit early - command already sent to PTY above
           }
           
           // Clear buffer after command

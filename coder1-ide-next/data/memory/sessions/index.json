@@ -1,5 +1,15 @@
 [
   {
+    "sessionId": "alpha_session_1758322426891",
+    "filename": "2025-09-19T22-53-46-893Z.json",
+    "startTime": "2025-09-19T22:53:46.893Z",
+    "endTime": "2025-09-19T22:53:48.851Z",
+    "platform": "Claude Code",
+    "totalTokens": 0,
+    "interactionCount": 0,
+    "summary": "Claude Code session (0 interactions): "
+  },
+  {
     "sessionId": "alpha_session_1758319524737",
     "filename": "2025-09-19T22-05-24-793Z.json",
     "startTime": "2025-09-19T22:05:24.793Z",

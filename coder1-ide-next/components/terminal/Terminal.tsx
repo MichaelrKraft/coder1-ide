@@ -622,36 +622,52 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
       return;
     }
 
-    try {
-      // REMOVED: // REMOVED: console.log('🔧 Creating XTerm instance...');
-      // Initialize terminal with performance-optimized settings
-      if (!XTerm) {
-        console.error('XTerm not loaded - running in SSR environment');
-        return;
-      }
-      const term = new XTerm({
-        theme: {
-          background: '#0a0a0a',
-          foreground: '#ffffff',
-          cursor: '#00D9FF',
-          cursorAccent: '#00D9FF',
-          selectionBackground: 'rgba(0, 217, 255, 0.3)',
-        },
-        fontSize: 13,
-        fontFamily: 'Menlo, Monaco, "Courier New", monospace',
-        cursorBlink: true,
-        cursorStyle: 'block',
-        allowProposedApi: true, // Add this to prevent API warnings
-        // Performance optimizations and scrolling configuration
-        scrollback: 10000, // Limit scrollback buffer
-        fastScrollModifier: 'ctrl', // Enable fast scrolling with Ctrl key
-        smoothScrollDuration: 0, // Disable smooth scrolling animations
-        scrollOnUserInput: true,
-        scrollSensitivity: 1,
-        // Enhanced scrolling for better bottom access
-        minimumContrastRatio: 1, // Ensures all content is visible
-        allowTransparency: false, // Improve rendering consistency
-      });
+    const initializeTerminal = async () => {
+      try {
+        // REMOVED: // REMOVED: console.log('🔧 Creating XTerm instance...');
+        // Wait for xterm.js to load if not already available
+        if (!XTerm && typeof window !== 'undefined') {
+          console.log('⏳ Waiting for xterm.js to load...');
+          // Dynamically import xterm modules
+          const xtermModule = await import('@xterm/xterm');
+          const fitModule = await import('@xterm/addon-fit');
+          XTerm = xtermModule.Terminal;
+          FitAddon = fitModule.FitAddon;
+          
+          // Import CSS
+          await import('@xterm/xterm/css/xterm.css');
+          console.log('✅ xterm.js loaded successfully');
+        }
+        
+        // Initialize terminal with performance-optimized settings
+        if (!XTerm) {
+          console.error('XTerm not loaded - running in SSR environment');
+          return;
+        }
+        
+        const term = new XTerm({
+          theme: {
+            background: '#0a0a0a',
+            foreground: '#ffffff',
+            cursor: '#00D9FF',
+            cursorAccent: '#00D9FF',
+            selectionBackground: 'rgba(0, 217, 255, 0.3)',
+          },
+          fontSize: 13,
+          fontFamily: 'Menlo, Monaco, "Courier New", monospace',
+          cursorBlink: true,
+          cursorStyle: 'block',
+          allowProposedApi: true, // Add this to prevent API warnings
+          // Performance optimizations and scrolling configuration
+          scrollback: 10000, // Limit scrollback buffer
+          fastScrollModifier: 'ctrl', // Enable fast scrolling with Ctrl key
+          smoothScrollDuration: 0, // Disable smooth scrolling animations
+          scrollOnUserInput: true,
+          scrollSensitivity: 1,
+          // Enhanced scrolling for better bottom access
+          minimumContrastRatio: 1, // Ensures all content is visible
+          allowTransparency: false, // Improve rendering consistency
+        });
 
       if (!FitAddon) {
         console.error('FitAddon not loaded - running in SSR environment');
@@ -905,14 +921,18 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
             fitAddonRef.current = fitAddon;
           }
         }, 200);
+        }
+      } catch (error) {
+        console.error('Terminal initialization error:', error);
+        // Set up a basic fallback
+        if (terminalRef.current) {
+          terminalRef.current.innerHTML = '<div style="color: #ff6b6b; padding: 20px;">Terminal initialization failed. Please refresh the page.</div>';
+        }
       }
-    } catch (error) {
-      // logger?.error('Terminal initialization error:', error);
-      // Set up a basic fallback
-      if (terminalRef.current) {
-        terminalRef.current.innerHTML = '<div style="color: #ff6b6b; padding: 20px;">Terminal initialization failed. Please refresh the page.</div>';
-      }
-    }
+    };
+
+    // Call the async initialization function
+    initializeTerminal();
   }, []);
 
   // Close dropdowns when clicking outside
@@ -1628,7 +1648,8 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
 
     // Handle terminal output from backend
     socket.on('terminal:data', ({ id, data }: { id: string; data: string }) => {
-      if (id === sessionId && term) {
+      // Use the ref which gets updated immediately when session is created
+      if (id === sessionIdForVoiceRef.current && term) {
         // Buffer the output for performance
         outputBufferRef.current.push(data);
         
