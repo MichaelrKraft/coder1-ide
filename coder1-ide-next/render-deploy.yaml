@@ -35,6 +35,10 @@ services:
       - key: ANTHROPIC_API_KEY
         sync: false # Set in Render dashboard for security
       
+      # JWT Secret for Bridge Authentication
+      - key: JWT_SECRET
+        value: coder1-bridge-secret-2025-change-in-production
+      
       # Bridge Configuration
       - key: BRIDGE_SERVER_URL
         value: https://coder1-ide.onrender.com

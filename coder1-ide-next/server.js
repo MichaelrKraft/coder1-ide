@@ -617,7 +617,7 @@ app.prepare().then(() => {
       
       try {
         const jwt = require('jsonwebtoken');
-        const JWT_SECRET = process.env.BRIDGE_JWT_SECRET || 'coder1-bridge-secret-change-in-production';
+        const JWT_SECRET = process.env.JWT_SECRET || 'coder1-bridge-secret-2025';
         const decoded = jwt.verify(token, JWT_SECRET);
         socket.userId = decoded.userId;
         socket.bridgeMetadata = {
@@ -646,6 +646,41 @@ app.prepare().then(() => {
       socket.emit('connection:accepted', {
         bridgeId,
         capabilities: ['claude', 'files', 'git']
+      });
+      
+      // Handle command output from bridge
+      socket.on('claude:output', (data) => {
+        // Forward output to the terminal session
+        io.emit('terminal:data', {
+          id: data.sessionId,
+          data: data.data
+        });
+      });
+      
+      // Handle command completion from bridge
+      socket.on('claude:complete', (data) => {
+        // Notify terminal session that command is complete
+        io.emit('terminal:data', {
+          id: data.sessionId,
+          data: `\r\n✅ Command completed (exit code: ${data.exitCode})\r\n`
+        });
+      });
+      
+      // Handle file operations from bridge
+      socket.on('file:response', (data) => {
+        // Forward file operation responses
+        bridgeManager.emit('file:response', data);
+      });
+      
+      // Handle heartbeat from bridge
+      socket.on('heartbeat', (data) => {
+        bridgeManager.updateHeartbeat(bridgeId);
+      });
+      
+      // Handle disconnect
+      socket.on('disconnect', () => {
+        console.log(`🔌 Bridge disconnected: ${bridgeId}`);
+        bridgeManager.unregisterBridge(bridgeId);
       });
       
       // Listen for bridge manager events and forward to appropriate destinations
