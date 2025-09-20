@@ -69,6 +69,7 @@
     "typescript": "^5",
     "uuid": "^11.1.0",
     "ws": "^8.18.3",
+    "zod": "^4.1.9",
     "zustand": "^5.0.8"
   },
   "devDependencies": {
