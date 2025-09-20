@@ -1,5 +1,44 @@
 [
   {
+    "sessionId": "alpha_session_1758346859142",
+    "filename": "2025-09-20T05-40-59-218Z.json",
+    "startTime": "2025-09-20T05:40:59.218Z",
+    "endTime": "2025-09-20T05:43:19.934Z",
+    "platform": "Claude Code",
+    "totalTokens": 0,
+    "interactionCount": 0,
+    "summary": "Claude Code session (0 interactions): "
+  },
+  {
+    "sessionId": "alpha_session_1758346851119",
+    "filename": "2025-09-20T05-40-51-144Z.json",
+    "startTime": "2025-09-20T05:40:51.144Z",
+    "platform": "Claude Code",
+    "totalTokens": 0,
+    "interactionCount": 0,
+    "summary": "Claude Code session (0 interactions): "
+  },
+  {
+    "sessionId": "alpha_session_1758346379480",
+    "filename": "2025-09-20T05-32-59-508Z.json",
+    "startTime": "2025-09-20T05:32:59.508Z",
+    "endTime": "2025-09-20T05:38:32.412Z",
+    "platform": "Claude Code",
+    "totalTokens": 0,
+    "interactionCount": 0,
+    "summary": "Claude Code session (0 interactions): "
+  },
+  {
+    "sessionId": "alpha_session_1758346702388",
+    "filename": "2025-09-20T05-38-22-486Z.json",
+    "startTime": "2025-09-20T05:38:22.486Z",
+    "endTime": "2025-09-20T05:38:31.292Z",
+    "platform": "Claude Code",
+    "totalTokens": 0,
+    "interactionCount": 0,
+    "summary": "Claude Code session (0 interactions): "
+  },
+  {
     "sessionId": "alpha_session_1758344091809",
     "filename": "2025-09-20T04-54-52-472Z.json",
     "startTime": "2025-09-20T04:54:52.472Z",

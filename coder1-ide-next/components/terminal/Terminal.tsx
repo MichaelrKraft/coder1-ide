@@ -27,6 +27,7 @@ import { useSessionMemory } from '@/hooks/useSessionMemory';
 import { useUIStore } from '@/stores/useUIStore';
 import { filterThinkingAnimations, extractClaudeCommands } from '@/lib/checkpoint-utils';
 import { getCompanionClient } from '@/lib/companion-client';
+import { terminalCommandHandler } from '@/lib/terminal-commands';
 
 // TypeScript declarations for Web Speech API
 declare global {
@@ -1948,21 +1949,37 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
         if (currentLineBuffer.trim()) {
           const command = currentLineBuffer.trim();
           setCommandHistory(prev => [...prev, command]);
-            
-          // Memory system: Inject context for Claude commands
-          if (memory.isEnabled && memory.isActive && command.toLowerCase().includes('claude')) {
-            // Get memory context and inject it
-            memory.getInjectionContext().then(memoryContext => {
-              if (memoryContext) {
-                // Prepend memory context to the command
-                const contextPrefix = `\n[Memory Context: ${memoryContext}]\n`;
-                // Note: Since we're using PTY, we can't modify the command that was already sent
-                // Instead, we'll track it for response handling
-                sessionStorage.setItem('last_claude_command', command);
-                sessionStorage.setItem('memory_context_injected', 'true');
+          
+          // Check if this is an AI command that should be handled locally
+          terminalCommandHandler.processCommand(command).then(result => {
+            if (result.handled) {
+              // Command was handled by the AI system
+              if (result.output) {
+                term.write(result.output);
               }
-            });
-          }
+              if (result.error) {
+                term.write(result.error);
+              }
+              // Don't send to backend - it was handled locally
+              return;
+            }
+            
+            // Not an AI command - continue with normal processing
+            // Memory system: Inject context for Claude commands
+            if (memory.isEnabled && memory.isActive && command.toLowerCase().includes('claude')) {
+              // Get memory context and inject it
+              memory.getInjectionContext().then(memoryContext => {
+                if (memoryContext) {
+                  // Prepend memory context to the command
+                  const contextPrefix = `\n[Memory Context: ${memoryContext}]\n`;
+                  // Note: Since we're using PTY, we can't modify the command that was already sent
+                  // Instead, we'll track it for response handling
+                  sessionStorage.setItem('last_claude_command', command);
+                  sessionStorage.setItem('memory_context_injected', 'true');
+                }
+              });
+            }
+          });
             
           // Notify parent component about the command
           if (onTerminalCommand) {

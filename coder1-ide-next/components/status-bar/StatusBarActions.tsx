@@ -8,13 +8,14 @@
 'use client';
 
 import React from 'react';
-import { Save, Clock, FileText, BookOpen, Loader2, Brain, Link } from '@/lib/icons';
+import { Save, Clock, FileText, BookOpen, Loader2, Brain, Link, Sparkles } from '@/lib/icons';
 import StatusBarModals from './StatusBarModals';
 import { useIDEStore } from '@/stores/useIDEStore';
 import { useSessionStore } from '@/stores/useSessionStore';
 import { useUIStore } from '@/stores/useUIStore';
 import { useContextActivation } from '@/lib/hooks/useContextActivation';
 import { glows } from '@/lib/design-tokens';
+import { codeReviewService } from '@/services/code-review/code-review-service';
 import type { IDEFile } from '@/types';
 
 interface StatusBarActionsProps {
@@ -240,6 +241,59 @@ const StatusBarActions = React.memo(function StatusBarActions({
     window.open('/docs-manager', '_blank');
   };
 
+  const handleAIReview = async () => {
+    try {
+      // Show loading state
+      addToast({
+        message: '🚀 Starting Coder1 AI Review...',
+        type: 'info'
+      });
+
+      // Initialize service if needed
+      if (!codeReviewService.isAvailable()) {
+        await codeReviewService.initialize();
+      }
+
+      // Perform review on current changes
+      const result = await codeReviewService.reviewCode({
+        staged: true,
+        unstaged: true
+      });
+
+      // Format summary message
+      const summaryMessage = result.summary.total === 0 
+        ? '✅ No issues found - code looks great!'
+        : `📊 Found ${result.summary.total} issues: ${result.summary.errors} errors, ${result.summary.warnings} warnings, ${result.summary.suggestions} suggestions`;
+
+      addToast({
+        message: summaryMessage,
+        type: result.summary.errors > 0 ? 'error' : result.summary.warnings > 0 ? 'warning' : 'success',
+        duration: 10000
+      });
+
+      // If there are issues, show details in terminal
+      if (result.summary.total > 0) {
+        // Open terminal tab if not already open
+        const terminalTab = document.querySelector('[data-tab="terminal"]') as HTMLElement;
+        if (terminalTab) {
+          terminalTab.click();
+        }
+        
+        // Show instructions
+        addToast({
+          message: '💡 Run "ai review" in terminal for detailed results',
+          type: 'info',
+          duration: 8000
+        });
+      }
+    } catch (error) {
+      addToast({
+        message: '⚠️ AI Review not available. Run "ai help" in terminal.',
+        type: 'warning'
+      });
+    }
+  };
+
   const handleConnectBridge = async () => {
     try {
       // Generate pairing code through the bridge manager
@@ -390,6 +444,33 @@ const StatusBarActions = React.memo(function StatusBarActions({
               <FileText className="w-4 h-4" />
             )}
             <span>Session Summary</span>
+          </button>
+        </div>
+
+        {/* AI Review Button */}
+        <div data-tour="ai-review" className="p-[1px] rounded-md" style={{background: 'linear-gradient(135deg, #ec4899, #f97316)'}}>
+          <button
+            onClick={handleAIReview}
+            disabled={isLoadingState('review')}
+            className="flex items-center gap-1.5 px-4 py-1.5 text-sm font-medium text-text-secondary hover:text-text-primary rounded transition-all duration-200 disabled:opacity-50 bg-bg-secondary w-full"
+            onMouseEnter={(e) => {
+              if (!isLoadingState('review')) {
+                e.currentTarget.style.boxShadow = glows.orange.medium;
+                e.currentTarget.parentElement!.style.background = 'linear-gradient(135deg, #f472b6, #fb923c)';
+              }
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.boxShadow = 'none';
+              e.currentTarget.parentElement!.style.background = 'linear-gradient(135deg, #ec4899, #f97316)';
+            }}
+            title="AI Review - Instantly analyze code for bugs, security issues, and performance problems"
+          >
+            {isLoadingState('review') ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Sparkles className="w-4 h-4" />
+            )}
+            <span>AI Review</span>
           </button>
         </div>
 
