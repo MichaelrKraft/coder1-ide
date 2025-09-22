@@ -11,19 +11,19 @@ services:
     runtime: node
     region: oregon # or your preferred region
     plan: starter # $7/month plan - sufficient for alpha testing
+    rootDir: coder1-ide-next # Specify the subdirectory as root
     
     # Build configuration for unified server with dynamic routes
     # Install build tools for native dependencies (node-pty)
     buildCommand: |
       apt-get update && apt-get install -y python3 make g++ build-essential
-      cd coder1-ide-next
       NODE_OPTIONS="--max-old-space-size=1200" npm ci
-      NODE_OPTIONS="--max-old-space-size=1200" npm run build:standalone
+      NODE_OPTIONS="--max-old-space-size=1200" npm run build
       rm -rf .next/cache node_modules/.cache
       npm prune --production
     
     # Start command with optimized memory for 512MB starter plan  
-    startCommand: cd coder1-ide-next && NODE_OPTIONS="--max-old-space-size=400 --expose-gc" node server.js
+    startCommand: NODE_OPTIONS="--max-old-space-size=400 --expose-gc" node server.js
     
     # Health check
     healthCheckPath: /api/health
@@ -58,9 +58,12 @@ services:
       - key: NEXT_PUBLIC_UNIFIED_SERVER
         value: true
         
-      # Claude Code OAuth Integration (NO API KEYS!)
+      # Claude Code OAuth Integration
       - key: CLAUDE_CODE_OAUTH_ENABLED
         value: true
+        
+      - key: CLAUDE_CODE_OAUTH_TOKEN
+        sync: false # Secret - set manually in Render dashboard (get from Claude CLI)
         
       - key: CLAUDE_CODE_CLIENT_ID
         sync: false # Secret - set manually in Render dashboard
@@ -69,7 +72,7 @@ services:
         sync: false # Secret - set manually in Render dashboard
         
       - key: CLAUDE_CODE_REDIRECT_URI
-        generateValue: true # Will use service URL + /auth/claude/callback
+        value: https://coder1-ide.onrender.com/auth/claude/callback
         
       # Coder1 Bridge Service Configuration
       - key: ENABLE_BRIDGE_SERVICE

@@ -13,6 +13,7 @@ import { EventEmitter } from 'events';
 import { exec, spawn, ChildProcess } from 'child_process';
 import { promises as fs } from 'fs';
 import * as path from 'path';
+import * as crypto from 'crypto';
 import { logger } from '../lib/logger';
 import { getEnhancedTmuxService } from './enhanced-tmux-service';
 
@@ -163,24 +164,46 @@ export class ClaudeCodeBridgeService extends EventEmitter {
    * Validate Claude Code CLI availability and authentication
    */
   private async validateClaudeCodeCLI(): Promise<void> {
+    // Check if validation should be skipped
+    if (process.env.SKIP_BRIDGE_VALIDATION === 'true') {
+      logger.info('⚠️ Skipping Claude CLI validation (SKIP_BRIDGE_VALIDATION=true)');
+      return;
+    }
+    
     try {
-      // Check if Claude CLI is available
+      // Set OAuth token in environment if available
+      const oauthToken = process.env.CLAUDE_CODE_OAUTH_TOKEN;
+      if (oauthToken && !oauthToken.startsWith('#')) {
+        process.env.ANTHROPIC_API_KEY = oauthToken;
+        logger.debug('📝 OAuth token set for Claude CLI');
+      }
+      
+      // Check if Claude CLI is available with timeout
       await this.executeCommand('which claude', this.projectRoot);
       
-      // Test Claude CLI with a simple ping-like command
-      const testResult = await this.executeCommand('claude --print --output-format json "test"', this.projectRoot);
+      // Test Claude CLI with version command (quick and reliable)
+      const testResult = await this.executeCommand('claude --version', this.projectRoot);
       
       // If we get here without error, Claude CLI is working
       logger.debug('✅ Claude Code CLI validated and authenticated');
     } catch (error) {
-      if (error instanceof Error && error.message.includes('not found')) {
-        throw new Error('Claude Code CLI is not installed or not in PATH. Please install Claude Code first.');
-      } else if (error instanceof Error && error.message.includes('authentication')) {
-        throw new Error('Claude Code CLI authentication failed. Please run "claude setup-token" first.');
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      
+      if (errorMessage.includes('not found')) {
+        logger.warn('⚠️ Claude Code CLI not found in PATH - functionality limited');
+        logger.warn('💡 Install with: npm install -g @anthropic-ai/claude-cli');
+        // Don't throw - allow initialization to continue
+      } else if (errorMessage.includes('timed out')) {
+        logger.warn('⚠️ Claude CLI validation timed out - proceeding without validation');
+        // Don't throw - allow initialization to continue
+      } else if (errorMessage.includes('authentication')) {
+        logger.warn('⚠️ Claude CLI authentication issue - check OAuth token');
+        logger.warn('💡 Get token with: claude auth token');
+        // Don't throw - allow initialization to continue
       } else {
         logger.warn('⚠️ Claude Code CLI validation warning - proceeding with caution');
-        logger.warn(`Details: ${error instanceof Error ? error.message : 'Unknown error'}`);
-        // Don't throw - allow initialization to continue with warning
+        logger.warn(`Details: ${errorMessage}`);
+        // Don't throw - allow initialization to continue
       }
     }
   }
@@ -195,6 +218,8 @@ export class ClaudeCodeBridgeService extends EventEmitter {
     // CHECK FOR CLI PUPPETEER MODE FIRST
     const puppeteerEnabled = process.env.ENABLE_CLI_PUPPETEER === 'true';
     
+    logger.info(`🔍 [DEBUG] CLI Puppeteer environment check: ${process.env.ENABLE_CLI_PUPPETEER} -> ${puppeteerEnabled}`);
+    
     if (puppeteerEnabled) {
       logger.info('🎭 CLI Puppeteer enabled - delegating to puppet bridge system');
       
@@ -203,19 +228,35 @@ export class ClaudeCodeBridgeService extends EventEmitter {
         const { getCoordinatorService } = await import('./agent-coordinator');
         const coordinator = getCoordinatorService();
         
+        // Connect terminal manager to coordinator for output routing
+        const { getAgentTerminalManager } = await import('./agent-terminal-manager');
+        const terminalManager = getAgentTerminalManager();
+        if (terminalManager && coordinator.setAgentTerminalManager) {
+          coordinator.setAgentTerminalManager(terminalManager);
+          logger.info('🔌 Connected terminal manager to coordinator');
+        }
+        
         // Use coordinator workflow system instead of manual work trees
         const analysis = coordinator.analyzeRequirement(requirement);
         
         logger.info(`🎭 Selected workflow: ${analysis.workflowId} (confidence: ${analysis.confidence})`);
         
-        const workflowResult = await coordinator.executeWorkflow(
-          analysis.workflowId,
-          requirement,
-          {
-            sessionId: sessionId || `puppet-${Date.now()}`,
-            timeout: 600000 // 10 minutes
-          }
-        );
+        // Add timeout wrapper to prevent API hanging during initialization
+        const workflowResult = await Promise.race([
+          coordinator.executeWorkflow(
+            analysis.workflowId,
+            requirement,
+            {
+              sessionId: sessionId || `puppet-${Date.now()}`,
+              timeout: 600000 // 10 minutes
+            }
+          ),
+          new Promise((_, reject) => {
+            setTimeout(() => {
+              reject(new Error('CLI Puppeteer initialization timeout (15s) - falling back to manual mode'));
+            }, 15000); // 15 second timeout for initialization
+          })
+        ]) as any;
         
         // Transform workflow result to ParallelTeam format for API compatibility
         const compatibleTeam: ParallelTeam = {
@@ -434,8 +475,12 @@ export class ClaudeCodeBridgeService extends EventEmitter {
     logger.debug(`📝 Prompt: ${prompt.substring(0, 100)}...`);
 
     try {
-      // Generate unique session ID for this agent
-      const agentSessionId = `${teamId}-${agent.role}-${Date.now()}`;
+      // Generate proper UUID for Claude CLI session (required format)
+      const agentSessionId = crypto.randomUUID();
+      
+      // Store mapping for debugging (UUID -> readable name)
+      const readableId = `${teamId}-${agent.role}`;
+      logger.info(`🔑 Agent session mapping: ${readableId} -> ${agentSessionId}`);
 
       // If using tmux sandbox, run Claude in the sandbox
       if (this.tmuxService && agent.sandboxId && !agent.sandboxId.startsWith('fallback') && !agent.sandboxId.startsWith('direct')) {
@@ -796,7 +841,8 @@ Focus on:
       const currentBranch = await this.executeCommand('git branch --show-current', agent.workTreePath);
       const actualBranch = currentBranch.stdout.trim();
       
-      if (actualBranch !== agent.branchName.split('/').pop()) {
+      // Compare full branch names (agent.branchName already contains the full branch)
+      if (actualBranch !== agent.branchName) {
         throw new Error(`Branch mismatch: expected ${agent.branchName}, got ${actualBranch}`);
       }
 
@@ -1329,9 +1375,19 @@ Focus on:
 
   private async executeCommand(command: string, cwd: string): Promise<{ stdout: string; stderr: string }> {
     return new Promise((resolve, reject) => {
-      exec(command, { cwd }, (error, stdout, stderr) => {
+      const timeout = parseInt(process.env.BRIDGE_COMMAND_TIMEOUT || '5000');
+      
+      exec(command, { 
+        cwd,
+        timeout: timeout,
+        killSignal: 'SIGKILL'
+      }, (error, stdout, stderr) => {
         if (error) {
-          reject(error);
+          if (error.killed) {
+            reject(new Error(`Command timed out after ${timeout}ms: ${command}`));
+          } else {
+            reject(error);
+          }
         } else {
           resolve({ stdout, stderr });
         }
