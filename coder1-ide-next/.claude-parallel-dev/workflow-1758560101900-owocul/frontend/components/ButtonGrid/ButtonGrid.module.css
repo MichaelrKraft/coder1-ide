@@ -1,0 +1,20 @@
+.grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  grid-template-rows: repeat(5, 1fr);
+  gap: 12px;
+  padding: 20px;
+  background: #000;
+  border-radius: 0 0 12px 12px;
+}
+
+.grid button:nth-child(17) {
+  grid-column: span 2;
+}
+
+@media (max-width: 480px) {
+  .grid {
+    gap: 10px;
+    padding: 16px;
+  }
+}

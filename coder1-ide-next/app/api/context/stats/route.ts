@@ -10,9 +10,6 @@ import { logger } from '@/lib/logger';
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
   try {
-    // Initialize database if needed
-    await contextDatabase.initialize();
-    
     // Get processor stats (includes current session info)
     const processorStats = await contextProcessor.getStats();
     

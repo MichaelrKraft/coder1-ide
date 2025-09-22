@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { ChevronDown, Home, Grid, FileText, Code, Sparkles, BookOpen, SettingsIcon, Info, HelpCircle, Keyboard, AlertCircle } from '@/lib/icons';
 import { glows } from '@/lib/design-tokens';
+import { BridgeConnectButton } from './bridge/BridgeConnectButton';
 
 interface MenuItem {
   label?: string;
@@ -172,10 +173,10 @@ export default function MenuBar({
 
   // Menu items with proper routing to Next.js pages
   const menuItems = [
-    { icon: Home, label: 'Home page', href: '/', emoji: '🏠' },
-    { icon: Grid, label: 'AI dashboard', href: '/vibe-dashboard', emoji: '🤖' },
-    { icon: FileText, label: 'Documentation', href: '/documentation.html', emoji: '📚' },
-    { icon: SettingsIcon, label: 'Settings', href: '#', onClick: () => onShowSettings?.(), emoji: '⚙️' },
+    { icon: Home, label: 'Home page', href: '/' },
+    { icon: Grid, label: 'AI dashboard', href: '/vibe-dashboard' },
+    { icon: FileText, label: 'Documentation', href: '/documentation.html' },
+    { icon: SettingsIcon, label: 'Settings', href: '#', onClick: () => onShowSettings?.() },
   ];
 
   return (
@@ -289,30 +290,36 @@ export default function MenuBar({
         </div>
       </div>
 
-      {/* Right side - Menu dropdown */}
-      <div className="relative" ref={menuRef}>
+      {/* Right side - Bridge button and Menu dropdown */}
+      <div className="flex items-center gap-2">
+        {/* Connect Bridge Button */}
+        <BridgeConnectButton />
+        
+        {/* Menu dropdown */}
+        <div className="relative" ref={menuRef}>
         <button
           onClick={() => setIsMenuOpen(!isMenuOpen)}
           className="glass-button flex items-center gap-2 px-3 py-1 text-sm font-medium rounded-md transition-all duration-200"
           style={{
             background: 'linear-gradient(135deg, rgba(125, 211, 252, 0.1) 0%, rgba(187, 154, 247, 0.1) 100%)',
-            border: `1px solid rgba(0, 217, 255, 0.3)`,
-            boxShadow: '0 0 10px rgba(0, 217, 255, 0.2), 0 0 20px rgba(0, 217, 255, 0.1), 0 2px 4px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.05)',
+            border: `1px solid rgba(0, 217, 255, 0.6)`,
+            boxShadow: '0 0 10px rgba(0, 217, 255, 0.5), 0 0 20px rgba(0, 217, 255, 0.3), 0 4px 15px -3px rgba(0, 217, 255, 0.15), 0 2px 4px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.05)',
             backdropFilter: 'blur(4px)',
             WebkitBackdropFilter: 'blur(4px)',
             position: 'relative' as const,
             overflow: 'hidden',
+            animation: 'borderGlow 2s ease-in-out infinite',
           }}
           onMouseEnter={(e) => {
-            e.currentTarget.style.borderColor = 'rgba(251, 146, 60, 0.5)';
-            e.currentTarget.style.boxShadow = '0 0 20px rgba(251, 146, 60, 0.4), 0 0 40px rgba(251, 146, 60, 0.2), 0 2px 8px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1)';
+            e.currentTarget.style.borderColor = 'rgba(251, 146, 60, 0.8)';
+            e.currentTarget.style.boxShadow = '0 0 15px rgba(251, 146, 60, 0.6), 0 0 30px rgba(251, 146, 60, 0.4), 0 8px 25px -5px rgba(251, 146, 60, 0.3), 0 2px 8px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1)';
             e.currentTarget.style.transform = 'translateY(-2px) scale(1.02)';
             e.currentTarget.style.backdropFilter = 'blur(6px)';
             (e.currentTarget.style as any).WebkitBackdropFilter = 'blur(6px)';
           }}
           onMouseLeave={(e) => {
-            e.currentTarget.style.borderColor = 'rgba(0, 217, 255, 0.3)';
-            e.currentTarget.style.boxShadow = '0 0 10px rgba(0, 217, 255, 0.2), 0 0 20px rgba(0, 217, 255, 0.1), 0 2px 4px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.05)';
+            e.currentTarget.style.borderColor = 'rgba(0, 217, 255, 0.6)';
+            e.currentTarget.style.boxShadow = '0 0 10px rgba(0, 217, 255, 0.5), 0 0 20px rgba(0, 217, 255, 0.3), 0 4px 15px -3px rgba(0, 217, 255, 0.15), 0 2px 4px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.05)';
             e.currentTarget.style.transform = 'translateY(0) scale(1)';
             e.currentTarget.style.backdropFilter = 'blur(4px)';
             (e.currentTarget.style as any).WebkitBackdropFilter = 'blur(4px)';
@@ -340,6 +347,20 @@ export default function MenuBar({
                         setIsMenuOpen(false);
                       }}
                       className="w-full group flex items-center gap-3 px-4 py-2.5 text-sm text-text-secondary hover:text-text-primary hover:bg-bg-tertiary transition-colors"
+                      onMouseEnter={(e) => {
+                        const span = e.currentTarget.querySelector('span');
+                        if (span) {
+                          span.style.textShadow = '0 0 8px rgba(251, 146, 60, 0.9), 0 0 16px rgba(251, 146, 60, 0.7), 0 0 24px rgba(251, 146, 60, 0.5)';
+                          span.style.color = '#FB923C';
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        const span = e.currentTarget.querySelector('span');
+                        if (span) {
+                          span.style.textShadow = 'none';
+                          span.style.color = '';
+                        }
+                      }}
                     >
                       <Icon 
                         className="w-4 h-4 transition-all duration-300 group-hover:text-orange-400" 
@@ -357,7 +378,6 @@ export default function MenuBar({
                         }}
                       />
                       <span>{item.label}</span>
-                      <span className="ml-auto text-xs text-text-muted">{item.emoji}</span>
                     </button>
                   );
                 }
@@ -369,6 +389,20 @@ export default function MenuBar({
                     href={item.href}
                     className="group flex items-center gap-3 px-4 py-2.5 text-sm text-text-secondary hover:text-text-primary hover:bg-bg-tertiary transition-colors"
                     onClick={() => setIsMenuOpen(false)}
+                    onMouseEnter={(e) => {
+                      const span = e.currentTarget.querySelector('span');
+                      if (span) {
+                        span.style.textShadow = '0 0 8px rgba(251, 146, 60, 0.9), 0 0 16px rgba(251, 146, 60, 0.7), 0 0 24px rgba(251, 146, 60, 0.5)';
+                        span.style.color = '#FB923C';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      const span = e.currentTarget.querySelector('span');
+                      if (span) {
+                        span.style.textShadow = 'none';
+                        span.style.color = '';
+                      }
+                    }}
                   >
                     <Icon 
                       className="w-4 h-4 transition-all duration-300 group-hover:text-orange-400" 
@@ -386,13 +420,13 @@ export default function MenuBar({
                       }}
                     />
                     <span>{item.label}</span>
-                    <span className="ml-auto text-xs text-text-muted">{item.emoji}</span>
                   </Link>
                 );
               })}
             </div>
           </div>
         )}
+        </div>
       </div>
     </div>
   );

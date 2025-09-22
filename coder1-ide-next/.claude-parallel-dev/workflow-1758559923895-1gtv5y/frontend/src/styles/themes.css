@@ -1,0 +1,342 @@
+/* Advanced Theme System for Calculator App */
+
+/* Base Theme Variables */
+:root {
+  /* Animation Timing Functions */
+  --ease-out-expo: cubic-bezier(0.19, 1, 0.22, 1);
+  --ease-in-out-circ: cubic-bezier(0.785, 0.135, 0.15, 0.86);
+  --ease-out-back: cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  
+  /* Typography Scale */
+  --font-xs: 0.75rem;
+  --font-sm: 0.875rem;
+  --font-base: 1rem;
+  --font-lg: 1.125rem;
+  --font-xl: 1.25rem;
+  --font-2xl: 1.5rem;
+  --font-3xl: 1.875rem;
+  --font-4xl: 2.25rem;
+  
+  /* Spacing Scale */
+  --space-xs: 0.25rem;
+  --space-sm: 0.5rem;
+  --space-md: 1rem;
+  --space-lg: 1.5rem;
+  --space-xl: 2rem;
+  --space-2xl: 3rem;
+  
+  /* Z-Index Scale */
+  --z-dropdown: 1000;
+  --z-sticky: 1020;
+  --z-fixed: 1030;
+  --z-modal-backdrop: 1040;
+  --z-modal: 1050;
+  --z-popover: 1060;
+  --z-tooltip: 1070;
+}
+
+/* Dark Theme (Enhanced) */
+[data-theme="dark"] {
+  /* Enhanced Color Palette */
+  --bg-app: #0a0a0a;
+  --bg-primary: #1a1a1a;
+  --bg-secondary: #2d2d2d;
+  --bg-tertiary: #404040;
+  --bg-quaternary: #525252;
+  
+  /* Interactive Colors */
+  --bg-hover: #333333;
+  --bg-active: #4a4a4a;
+  --bg-selected: #1e40af;
+  --bg-disabled: #1f1f1f;
+  
+  /* Text Colors */
+  --text-primary: #ffffff;
+  --text-secondary: #e5e5e5;
+  --text-tertiary: #a3a3a3;
+  --text-quaternary: #737373;
+  --text-disabled: #525252;
+  --text-inverse: #0a0a0a;
+  
+  /* Border Colors */
+  --border-primary: #404040;
+  --border-secondary: #525252;
+  --border-focus: #3b82f6;
+  --border-error: #ef4444;
+  --border-success: #10b981;
+  
+  /* Shadow System */
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.07), 0 2px 4px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1), 0 4px 6px rgba(0, 0, 0, 0.05);
+  --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.1), 0 10px 10px rgba(0, 0, 0, 0.04);
+  --shadow-2xl: 0 25px 50px rgba(0, 0, 0, 0.25);
+  --shadow-inner: inset 0 2px 4px rgba(0, 0, 0, 0.06);
+  
+  /* Gradient Backgrounds */
+  --gradient-hero: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+  --gradient-card: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+  --gradient-button: linear-gradient(135deg, #374151 0%, #1f2937 100%);
+}
+
+/* Light Theme (Enhanced) */
+[data-theme="light"] {
+  /* Enhanced Color Palette */
+  --bg-app: #fafafa;
+  --bg-primary: #ffffff;
+  --bg-secondary: #f5f5f5;
+  --bg-tertiary: #e5e5e5;
+  --bg-quaternary: #d4d4d4;
+  
+  /* Interactive Colors */
+  --bg-hover: #f3f4f6;
+  --bg-active: #e5e7eb;
+  --bg-selected: #dbeafe;
+  --bg-disabled: #f9fafb;
+  
+  /* Text Colors */
+  --text-primary: #111827;
+  --text-secondary: #374151;
+  --text-tertiary: #6b7280;
+  --text-quaternary: #9ca3af;
+  --text-disabled: #d1d5db;
+  --text-inverse: #ffffff;
+  
+  /* Border Colors */
+  --border-primary: #e5e7eb;
+  --border-secondary: #d1d5db;
+  --border-focus: #3b82f6;
+  --border-error: #ef4444;
+  --border-success: #10b981;
+  
+  /* Shadow System */
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.07), 0 2px 4px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1), 0 4px 6px rgba(0, 0, 0, 0.05);
+  --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.1), 0 10px 10px rgba(0, 0, 0, 0.04);
+  --shadow-2xl: 0 25px 50px rgba(0, 0, 0, 0.15);
+  --shadow-inner: inset 0 2px 4px rgba(0, 0, 0, 0.06);
+  
+  /* Gradient Backgrounds */
+  --gradient-hero: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  --gradient-card: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  --gradient-button: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+}
+
+/* Ocean Theme */
+[data-theme="ocean"] {
+  --bg-app: #0c1821;
+  --bg-primary: #1b3a4b;
+  --bg-secondary: #2e5e7e;
+  --bg-tertiary: #3e7cb1;
+  
+  --text-primary: #f0f9ff;
+  --text-secondary: #bae6fd;
+  --text-tertiary: #7dd3fc;
+  
+  --border-primary: #164e63;
+  --border-secondary: #0e7490;
+  
+  --gradient-hero: linear-gradient(135deg, #0c4a6e 0%, #075985 100%);
+  --gradient-card: linear-gradient(135deg, #155e75 0%, #0e7490 100%);
+  
+  /* Ocean-specific button gradients */
+  --gradient-number: linear-gradient(135deg, #67e8f9 0%, #06b6d4 100%);
+  --gradient-operation: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+  --gradient-success: linear-gradient(135deg, #34d399 0%, #10b981 100%);
+}
+
+/* Sunset Theme */
+[data-theme="sunset"] {
+  --bg-app: #1a0b07;
+  --bg-primary: #4c1d07;
+  --bg-secondary: #7c2d12;
+  --bg-tertiary: #ea580c;
+  
+  --text-primary: #fff7ed;
+  --text-secondary: #fed7aa;
+  --text-tertiary: #fdba74;
+  
+  --border-primary: #9a3412;
+  --border-secondary: #ea580c;
+  
+  --gradient-hero: linear-gradient(135deg, #7c2d12 0%, #dc2626 100%);
+  --gradient-card: linear-gradient(135deg, #ea580c 0%, #f97316 100%);
+  
+  /* Sunset-specific button gradients */
+  --gradient-number: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+  --gradient-operation: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+  --gradient-success: linear-gradient(135deg, #65a30d 0%, #84cc16 100%);
+}
+
+/* Forest Theme */
+[data-theme="forest"] {
+  --bg-app: #0b1e0e;
+  --bg-primary: #1a3d20;
+  --bg-secondary: #2d5a36;
+  --bg-tertiary: #4a7c59;
+  
+  --text-primary: #f0fdf4;
+  --text-secondary: #bbf7d0;
+  --text-tertiary: #86efac;
+  
+  --border-primary: #166534;
+  --border-secondary: #15803d;
+  
+  --gradient-hero: linear-gradient(135deg, #14532d 0%, #166534 100%);
+  --gradient-card: linear-gradient(135deg, #15803d 0%, #16a34a 100%);
+  
+  /* Forest-specific button gradients */
+  --gradient-number: linear-gradient(135deg, #86efac 0%, #4ade80 100%);
+  --gradient-operation: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+  --gradient-success: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+}
+
+/* Purple Theme */
+[data-theme="purple"] {
+  --bg-app: #1e1b3a;
+  --bg-primary: #312e81;
+  --bg-secondary: #4338ca;
+  --bg-tertiary: #6366f1;
+  
+  --text-primary: #f5f3ff;
+  --text-secondary: #ddd6fe;
+  --text-tertiary: #c4b5fd;
+  
+  --border-primary: #4c1d95;
+  --border-secondary: #5b21b6;
+  
+  --gradient-hero: linear-gradient(135deg, #3730a3 0%, #4338ca 100%);
+  --gradient-card: linear-gradient(135deg, #5b21b6 0%, #7c3aed 100%);
+  
+  /* Purple-specific button gradients */
+  --gradient-number: linear-gradient(135deg, #c4b5fd 0%, #a78bfa 100%);
+  --gradient-operation: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+  --gradient-success: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
+}
+
+/* Theme-specific enhancements */
+.theme-transition {
+  transition: background-color 0.3s var(--ease-out-expo),
+              color 0.3s var(--ease-out-expo),
+              border-color 0.3s var(--ease-out-expo),
+              box-shadow 0.3s var(--ease-out-expo);
+}
+
+/* Component-specific theme adaptations */
+.calculator-container {
+  background: var(--gradient-card);
+  border: 1px solid var(--border-primary);
+  box-shadow: var(--shadow-2xl);
+}
+
+.calculator-display {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-secondary);
+  box-shadow: var(--shadow-inner);
+}
+
+.calculator-button {
+  border: 1px solid var(--border-primary);
+  box-shadow: var(--shadow-md);
+  transition: all 0.2s var(--ease-out-expo);
+}
+
+.calculator-button:hover {
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-2px);
+}
+
+.calculator-button:active {
+  box-shadow: var(--shadow-sm);
+  transform: translateY(0);
+}
+
+/* Theme selector styles */
+.theme-selector {
+  display: flex;
+  gap: var(--space-sm);
+  padding: var(--space-md);
+  background: var(--bg-secondary);
+  border-radius: var(--border-radius-lg);
+  border: 1px solid var(--border-primary);
+}
+
+.theme-option {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2px solid var(--border-primary);
+  cursor: pointer;
+  transition: all 0.2s var(--ease-out-expo);
+  position: relative;
+}
+
+.theme-option:hover {
+  transform: scale(1.1);
+  box-shadow: var(--shadow-md);
+}
+
+.theme-option.active {
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.2);
+}
+
+.theme-option[data-theme="dark"] {
+  background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+}
+
+.theme-option[data-theme="light"] {
+  background: linear-gradient(135deg, #ffffff 0%, #f5f5f5 100%);
+}
+
+.theme-option[data-theme="ocean"] {
+  background: linear-gradient(135deg, #0c4a6e 0%, #075985 100%);
+}
+
+.theme-option[data-theme="sunset"] {
+  background: linear-gradient(135deg, #7c2d12 0%, #dc2626 100%);
+}
+
+.theme-option[data-theme="forest"] {
+  background: linear-gradient(135deg, #14532d 0%, #166534 100%);
+}
+
+.theme-option[data-theme="purple"] {
+  background: linear-gradient(135deg, #3730a3 0%, #4338ca 100%);
+}
+
+/* Accessibility improvements for themes */
+@media (prefers-contrast: high) {
+  :root {
+    --border-primary: currentColor;
+    --border-secondary: currentColor;
+  }
+  
+  .calculator-button {
+    border-width: 2px;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    color-scheme: dark;
+  }
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme]) {
+    color-scheme: light;
+  }
+}
+
+/* Print styles for all themes */
+@media print {
+  * {
+    background: white !important;
+    color: black !important;
+    box-shadow: none !important;
+  }
+}

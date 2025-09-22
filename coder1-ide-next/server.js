@@ -868,7 +868,12 @@ app.prepare().then(() => {
           
           // ALWAYS intercept claude commands, even if bridgeManager fails to load
           // This prevents "claude: command not found" errors on the server
-          if (command === 'claude' || command.startsWith('claude ')) {
+          // BUT - for local development, let claude commands pass through normally
+          const isLocalDevelopment = process.env.NODE_ENV === 'development' || 
+                                     process.env.PORT === '3001' || 
+                                     process.env.PORT === '3002';
+          
+          if ((command === 'claude' || command.startsWith('claude ')) && !isLocalDevelopment) {
             console.log('[Terminal] Claude command intercepted, bridgeManager:', !!bridgeManager);
             
             // Check if bridgeManager exists and if a bridge is connected
@@ -953,34 +958,17 @@ app.prepare().then(() => {
               const helpMessage = [
                 '\r\n',
                 '╔═══════════════════════════════════════════════════════════════════╗\r\n',
-                '║         ⚠️  IMPORTANT: DO NOT TYPE COMMANDS HERE! ⚠️               ║\r\n',
+                '║                    🌉 Connect Claude Code                          ║\r\n',
                 '╠═══════════════════════════════════════════════════════════════════╣\r\n',
                 '║                                                                     ║\r\n',
-                '║  This terminal runs on the WEB SERVER, not your computer!         ║\r\n',
-                '║  You need to run commands on YOUR LOCAL COMPUTER.                 ║\r\n',
+                '║  Quick Setup:                                                      ║\r\n',
+                '║  1. Click the "🌉 Connect Bridge" button in the status bar         ║\r\n',
+                '║  2. Follow the popup instructions                                  ║\r\n',
+                '║  3. Type "claude" to start AI-assisted coding                     ║\r\n',
                 '║                                                                     ║\r\n',
-                '║  📍 ON YOUR COMPUTER (not here!):                                 ║\r\n',
-                '║  ─────────────────────────────────                                ║\r\n',
-                '║                                                                     ║\r\n',
-                '║  1. Open YOUR LOCAL Terminal/Command Prompt                       ║\r\n',
-                '║     • Mac: Press Cmd+Space, type "Terminal"                       ║\r\n',
-                '║     • Windows: Press Win+R, type "cmd"                            ║\r\n',
-                '║     • Linux: Press Ctrl+Alt+T                                     ║\r\n',
-                '║                                                                     ║\r\n',
-                '║  2. In YOUR LOCAL terminal, run:                                  ║\r\n',
-                '║     curl -sL https://coder1-ide.onrender.com/install-bridge.sh \\  ║\r\n',
-                '║       | bash                                                       ║\r\n',
-                '║                                                                     ║\r\n',
-                '║  3. Still in YOUR LOCAL terminal, run:                            ║\r\n',
-                '║     coder1-bridge start                                           ║\r\n',
-                '║                                                                     ║\r\n',
-                '║  4. Enter the 6-digit code from the Connect Bridge button         ║\r\n',
-                '║                                                                     ║\r\n',
-                '║  Alternative: Run Everything Locally                              ║\r\n',
-                '║  ────────────────────────────────────                            ║\r\n',
+                '║  Alternative: Run Locally                                         ║\r\n',
                 '║  git clone https://github.com/MichaelrKraft/coder1-ide            ║\r\n',
                 '║  cd coder1-ide/coder1-ide-next && npm install && npm run dev      ║\r\n',
-                '║  Open http://localhost:3001                                       ║\r\n',
                 '║                                                                     ║\r\n',
                 '╚═══════════════════════════════════════════════════════════════════╝\r\n',
                 '\r\n'

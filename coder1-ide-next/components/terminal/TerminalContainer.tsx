@@ -334,8 +334,8 @@ export default function TerminalContainer({
 
       {/* Terminal Content */}
       <div className="flex-1 min-h-0">
-        {/* Main Terminal - Simplified logic to always show when activeSessionId is 'main' */}
-        {activeSessionId === 'main' ? (
+        {/* Main Terminal - Always mounted, visibility controlled by CSS */}
+        <div style={{ display: activeSessionId === 'main' ? 'block' : 'none', height: '100%' }}>
           <Terminal
             key="main-terminal"
             onAgentsSpawn={onAgentsSpawn}
@@ -345,26 +345,31 @@ export default function TerminalContainer({
             onTerminalCommand={onTerminalCommand}
             onTerminalReady={onTerminalReady}
           />
-        ) : null}
+        </div>
         
-        {/* Sandbox Terminal - Show when sandbox is selected */}
-        {activeSessionId === 'sandbox' && sandboxSession ? (
-          <Terminal
-            key={`sandbox-${sandboxSession.id}`}
-            onAgentsSpawn={onAgentsSpawn}
-            onTerminalClick={onTerminalClick}
-            onClaudeTyped={onClaudeTyped}
-            onTerminalData={onTerminalData}
-            onTerminalCommand={onTerminalCommand}
-            onTerminalReady={onTerminalReady}
-            sandboxMode={true}
-            sandboxSession={sandboxSession}
-          />
-        ) : null}
+        {/* Sandbox Terminal - Mounted when exists, visibility controlled by CSS */}
+        {sandboxSession && (
+          <div style={{ display: activeSessionId === 'sandbox' ? 'block' : 'none', height: '100%' }}>
+            <Terminal
+              key={`sandbox-${sandboxSession.id}`}
+              onAgentsSpawn={onAgentsSpawn}
+              onTerminalClick={onTerminalClick}
+              onClaudeTyped={onClaudeTyped}
+              onTerminalData={onTerminalData}
+              onTerminalCommand={onTerminalCommand}
+              onTerminalReady={onTerminalReady}
+              sandboxMode={true}
+              sandboxSession={sandboxSession}
+            />
+          </div>
+        )}
         
-        {/* Agent Terminals (Phase 1) - Read-only mode */}
+        {/* Agent Terminals - Interactive mode (Phase 2) */}
         {agentTabsEnabled && Array.from(agentSessions.values()).map((agent) => (
-          activeSessionId === agent.id ? (
+          <div 
+            key={`agent-container-${agent.id}`}
+            style={{ display: activeSessionId === agent.id ? 'block' : 'none', height: '100%' }}
+          >
             <Terminal
               key={`agent-${agent.id}`}
               onAgentsSpawn={onAgentsSpawn}
@@ -373,16 +378,21 @@ export default function TerminalContainer({
               onTerminalData={onTerminalData}
               onTerminalCommand={onTerminalCommand}
               onTerminalReady={onTerminalReady}
-              sandboxMode={true} // Phase 1: Read-only like checkpoint restoration
-              sandboxSession={{
+              sandboxMode={false} // Phase 2: Enable interactive mode for agent terminals
+              agentMode={true} // New prop to indicate this is an agent terminal
+              agentSession={{
                 id: agent.id,
                 name: agent.name,
-                checkpointData: { role: agent.role, teamId: agent.teamId },
+                role: agent.role,
+                teamId: agent.teamId,
                 terminalHistory: agent.terminalHistory,
+                status: agent.status,
+                progress: agent.progress,
+                currentTask: agent.currentTask,
                 createdAt: agent.createdAt
               }}
             />
-          ) : null
+          </div>
         ))}
       </div>
     </div>

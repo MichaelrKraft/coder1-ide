@@ -1,0 +1,296 @@
+.button {
+  background: var(--button-gray);
+  border: none;
+  border-radius: var(--radius-full);
+  color: var(--text-primary);
+  font-size: 24px;
+  font-weight: 400;
+  height: 70px;
+  width: 70px;
+  cursor: pointer;
+  transition: all var(--transition-normal);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-family);
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 
+    var(--shadow-small),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, 
+    rgba(255, 255, 255, 0.1) 0%, 
+    transparent 50%);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--transition-normal);
+}
+
+.button::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  transition: all 0.3s ease;
+  pointer-events: none;
+}
+
+.button:hover::before {
+  opacity: 1;
+}
+
+.button:hover {
+  transform: scale(1.05) translateY(-1px);
+  box-shadow: 
+    var(--shadow-medium),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.button:active {
+  transform: scale(0.95) translateY(0);
+  transition: all var(--transition-fast);
+}
+
+.button:active::after {
+  width: 100%;
+  height: 100%;
+  opacity: 1;
+  transition: all 0.1s ease;
+}
+
+.button:focus-visible {
+  outline: 2px solid var(--accent-orange);
+  outline-offset: 2px;
+}
+
+/* Button Types */
+.number {
+  background: var(--button-gray-light);
+}
+
+.number:hover {
+  background: #5a5a5a;
+}
+
+.operation {
+  background: var(--accent-orange);
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.operation:hover {
+  background: var(--accent-orange-hover);
+  transform: scale(1.08) translateY(-2px);
+  box-shadow: 
+    0 6px 20px rgba(255, 149, 0, 0.4),
+    var(--shadow-medium);
+}
+
+.operation:active {
+  background: var(--accent-orange-active);
+}
+
+.clear {
+  background: var(--button-gray-clear);
+  color: var(--primary-bg);
+  font-weight: 500;
+}
+
+.clear:hover {
+  background: var(--button-gray-clear-hover);
+  transform: scale(1.05) translateY(-1px);
+}
+
+.equals {
+  background: var(--accent-orange);
+  font-weight: 600;
+  font-size: 28px;
+}
+
+.equals:hover {
+  background: var(--accent-orange-hover);
+  transform: scale(1.08) translateY(-2px);
+  box-shadow: 
+    0 6px 20px rgba(255, 149, 0, 0.4),
+    var(--shadow-medium);
+}
+
+.equals:active {
+  background: var(--accent-orange-active);
+}
+
+.zero {
+  width: 150px;
+  border-radius: 35px;
+  justify-content: flex-start;
+  padding-left: 30px;
+}
+
+.zero:hover {
+  transform: scale(1.02) translateY(-1px);
+}
+
+/* Active State */
+.active {
+  background: var(--text-primary);
+  color: var(--accent-orange);
+  font-weight: 600;
+  box-shadow: 
+    0 4px 16px rgba(255, 149, 0, 0.3),
+    var(--shadow-medium);
+}
+
+.active.operation {
+  background: var(--text-primary);
+  color: var(--accent-orange);
+  animation: activeGlow 1s ease-in-out infinite alternate;
+}
+
+@keyframes activeGlow {
+  0% {
+    box-shadow: 
+      0 4px 16px rgba(255, 149, 0, 0.3),
+      var(--shadow-medium);
+  }
+  100% {
+    box-shadow: 
+      0 6px 24px rgba(255, 149, 0, 0.5),
+      var(--shadow-large);
+  }
+}
+
+/* Loading State */
+.loading {
+  pointer-events: none;
+  opacity: 0.7;
+}
+
+.loading::after {
+  width: 20px;
+  height: 20px;
+  border: 2px solid transparent;
+  border-top: 2px solid currentColor;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% {
+    transform: translate(-50%, -50%) rotate(0deg);
+  }
+  100% {
+    transform: translate(-50%, -50%) rotate(360deg);
+  }
+}
+
+/* Responsive Design */
+@media (max-width: 480px) {
+  .button {
+    height: 60px;
+    width: 60px;
+    font-size: 20px;
+  }
+  
+  .equals {
+    font-size: 24px;
+  }
+  
+  .zero {
+    width: 130px;
+    padding-left: 25px;
+  }
+}
+
+@media (max-width: 360px) {
+  .button {
+    height: 55px;
+    width: 55px;
+    font-size: 18px;
+  }
+  
+  .equals {
+    font-size: 22px;
+  }
+  
+  .zero {
+    width: 120px;
+    padding-left: 20px;
+  }
+}
+
+/* Tablet and larger screens */
+@media (min-width: 769px) {
+  .button {
+    height: 80px;
+    width: 80px;
+    font-size: 28px;
+  }
+  
+  .equals {
+    font-size: 32px;
+  }
+  
+  .zero {
+    width: 170px;
+    padding-left: 35px;
+  }
+}
+
+/* High contrast mode */
+@media (prefers-contrast: high) {
+  .button {
+    border: 2px solid var(--text-primary);
+    box-shadow: none;
+  }
+  
+  .button::before,
+  .button::after {
+    display: none;
+  }
+  
+  .operation,
+  .equals {
+    border: 2px solid var(--accent-orange);
+  }
+  
+  .clear {
+    border: 2px solid var(--button-gray-clear);
+  }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .button {
+    transition: none;
+  }
+  
+  .button:hover,
+  .button:active {
+    transform: none;
+  }
+  
+  .active.operation {
+    animation: none;
+  }
+  
+  .loading::after {
+    animation: none;
+  }
+}

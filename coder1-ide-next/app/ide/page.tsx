@@ -158,7 +158,7 @@ export default function IDEPage() {
                 </PanelGroup>
               }
               rightPanel={
-                <PreviewPanel />
+                <PreviewPanel activeFile={activeFile} />
               }
             />
           </div>

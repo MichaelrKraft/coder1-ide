@@ -1,0 +1,287 @@
+/* Calculator Component Specific Styles */
+
+.calculatorWrapper {
+  position: relative;
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.calculatorWrapper:hover {
+  transform: scale(1.02);
+}
+
+.calculatorGlow {
+  position: absolute;
+  top: -10px;
+  left: -10px;
+  right: -10px;
+  bottom: -10px;
+  background: linear-gradient(
+    45deg,
+    rgba(102, 126, 234, 0.15),
+    rgba(118, 75, 162, 0.15),
+    rgba(255, 193, 7, 0.15),
+    rgba(40, 167, 69, 0.15)
+  );
+  border-radius: 40px;
+  filter: blur(20px);
+  opacity: 0;
+  transition: opacity 0.3s ease-in-out;
+  z-index: -1;
+  animation: glowRotate 8s linear infinite;
+}
+
+.calculatorWrapper:hover .calculatorGlow {
+  opacity: 1;
+}
+
+@keyframes glowRotate {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.headerTitle {
+  position: relative;
+  overflow: hidden;
+}
+
+.headerTitle::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.3),
+    transparent
+  );
+  transition: left 0.6s;
+}
+
+.headerTitle:hover::after {
+  left: 100%;
+}
+
+.displayEnhanced {
+  position: relative;
+  overflow: hidden;
+}
+
+.displayEnhanced::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: 
+    linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, transparent 50%),
+    linear-gradient(45deg, rgba(118, 75, 162, 0.05) 50%, transparent 100%);
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+.displayNumber {
+  animation: slideInRight 0.3s ease-out;
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.buttonPulse {
+  animation: buttonPress 0.15s ease-out;
+}
+
+@keyframes buttonPress {
+  0% { transform: scale(1); }
+  50% { transform: scale(0.95); }
+  100% { transform: scale(1); }
+}
+
+.historySlide {
+  animation: slideInUp 0.4s ease-out;
+}
+
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.errorShake {
+  animation: errorShake 0.5s ease-in-out;
+}
+
+@keyframes errorShake {
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+  20%, 40%, 60%, 80% { transform: translateX(5px); }
+}
+
+/* Floating particles effect for special occasions */
+.celebrationMode {
+  position: relative;
+  overflow: visible;
+}
+
+.celebrationMode::before {
+  content: '🎉';
+  position: absolute;
+  top: -30px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 24px;
+  animation: bounce 1s ease-in-out infinite;
+  z-index: 10;
+}
+
+@keyframes bounce {
+  0%, 100% { transform: translateX(-50%) translateY(0); }
+  50% { transform: translateX(-50%) translateY(-10px); }
+}
+
+/* Special button ripple effect */
+.buttonRipple {
+  position: relative;
+  overflow: hidden;
+}
+
+.buttonRipple::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.5);
+  transform: translate(-50%, -50%);
+  transition: width 0.6s, height 0.6s;
+}
+
+.buttonRipple:active::after {
+  width: 300px;
+  height: 300px;
+}
+
+/* Keyboard shortcut indicators */
+.keyboardHint {
+  position: relative;
+  background: linear-gradient(
+    135deg,
+    rgba(102, 126, 234, 0.1),
+    rgba(118, 75, 162, 0.1)
+  );
+  border: 1px solid rgba(102, 126, 234, 0.2);
+  backdrop-filter: blur(10px);
+}
+
+.keyboardHint::before {
+  content: '⌨️';
+  margin-right: 8px;
+}
+
+/* Theme transition enhancement */
+.themeTransition {
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Performance optimization classes */
+.gpu-optimized {
+  transform: translateZ(0);
+  will-change: transform;
+}
+
+.no-select {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+/* Accessibility enhancements */
+.high-contrast {
+  filter: contrast(1.5);
+}
+
+.focus-enhanced:focus-visible {
+  outline: 3px solid #4285f4;
+  outline-offset: 4px;
+  box-shadow: 0 0 0 6px rgba(66, 133, 244, 0.2);
+}
+
+/* Loading skeleton for components */
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.1) 25%,
+    rgba(255, 255, 255, 0.2) 50%,
+    rgba(255, 255, 255, 0.1) 75%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.5s infinite;
+}
+
+@keyframes skeleton-loading {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* Print-specific styles */
+@media print {
+  .calculatorWrapper {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+  
+  .calculatorGlow,
+  .headerTitle::after,
+  .displayEnhanced::before {
+    display: none;
+  }
+}
+
+/* Reduced motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  .calculatorWrapper:hover,
+  .displayNumber,
+  .buttonPulse,
+  .historySlide,
+  .celebrationMode::before {
+    animation: none;
+    transition: none;
+  }
+  
+  .calculatorGlow {
+    display: none;
+  }
+}
+
+/* High contrast mode */
+@media (prefers-contrast: high) {
+  .calculatorGlow,
+  .displayEnhanced::before,
+  .keyboardHint::before {
+    display: none;
+  }
+  
+  .keyboardHint {
+    border: 2px solid currentColor;
+    background: transparent;
+  }
+}

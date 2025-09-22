@@ -84,6 +84,9 @@ class ContextDatabase {
    * Initialize database and create tables
    */
   async initialize(): Promise<void> {
+    // Skip if already initialized
+    if (this.db) return;
+    
     try {
       // Ensure db directory exists
       const dbDir = path.dirname(this.dbPath);

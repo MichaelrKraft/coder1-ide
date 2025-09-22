@@ -10,7 +10,6 @@
 import React from 'react';
 import { Save, Clock, FileText, BookOpen, Loader2, Brain, Link, Sparkles } from '@/lib/icons';
 import StatusBarModals from './StatusBarModals';
-import { BridgeConnectButton } from '../bridge/BridgeConnectButton';
 import { useIDEStore } from '@/stores/useIDEStore';
 import { useSessionStore } from '@/stores/useSessionStore';
 import { useUIStore } from '@/stores/useUIStore';
@@ -337,9 +336,6 @@ const StatusBarActions = React.memo(function StatusBarActions({
   return (
     <>
       <div className="flex items-center gap-2">
-        {/* Bridge Connect Button */}
-        <BridgeConnectButton />
-        
         {/* CheckPoint Button */}
         <div data-tour="checkpoint-timeline" className="p-[1px] rounded-md" style={{background: 'linear-gradient(135deg, #6366f1, #8b5cf6)'}}>
           <button
@@ -411,33 +407,6 @@ const StatusBarActions = React.memo(function StatusBarActions({
           >
             <BookOpen className="w-4 h-4" />
             <span>Docs</span>
-          </button>
-        </div>
-
-        {/* Connect Bridge Button */}
-        <div className="p-[1px] rounded-md" style={{background: 'linear-gradient(135deg, #10b981, #3b82f6)'}}>
-          <button
-            onClick={handleConnectBridge}
-            disabled={isLoadingState('bridge')}
-            className="flex items-center gap-1.5 px-4 py-1.5 text-sm font-medium text-text-secondary hover:text-text-primary rounded transition-all duration-200 disabled:opacity-50 bg-bg-secondary w-full"
-            onMouseEnter={(e) => {
-              if (!isLoadingState('bridge')) {
-                e.currentTarget.style.boxShadow = glows.cyan.medium;
-                e.currentTarget.parentElement!.style.background = 'linear-gradient(135deg, #14b8a6, #60a5fa)';
-              }
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.boxShadow = 'none';
-              e.currentTarget.parentElement!.style.background = 'linear-gradient(135deg, #10b981, #3b82f6)';
-            }}
-            title="Connect Bridge - Link your local Claude CLI to the web IDE"
-          >
-            {isLoadingState('bridge') ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <Link className="w-4 h-4" />
-            )}
-            <span>Connect Bridge</span>
           </button>
         </div>
 

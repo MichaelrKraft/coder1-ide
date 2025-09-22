@@ -1,0 +1,312 @@
+/* Root Variables */
+:root {
+  --primary-bg: #1a1a2e;
+  --secondary-bg: #16213e;
+  --accent-color: #0f3460;
+  --text-primary: #ffffff;
+  --text-secondary: #b8b8b8;
+  --border-color: #2a2a2a;
+  --shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  --border-radius: 12px;
+  --transition: all 0.2s ease;
+}
+
+/* Global Styles */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+  background: linear-gradient(135deg, var(--primary-bg) 0%, var(--secondary-bg) 100%);
+  color: var(--text-primary);
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+/* App Layout */
+.app {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  width: 100%;
+  max-width: 400px;
+}
+
+.app-header {
+  text-align: center;
+  margin-bottom: 10px;
+}
+
+.app-header h1 {
+  font-size: 2rem;
+  font-weight: 300;
+  margin-bottom: 8px;
+  background: linear-gradient(45deg, #4facfe, #00f2fe);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.app-header p {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.app-footer {
+  text-align: center;
+  margin-top: 20px;
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
+
+.app-footer kbd {
+  background: var(--accent-color);
+  color: var(--text-primary);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 0.75rem;
+  border: 1px solid var(--border-color);
+}
+
+/* Calculator Styles */
+.calculator {
+  background: var(--secondary-bg);
+  border-radius: var(--border-radius);
+  padding: 24px;
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border-color);
+  width: 100%;
+  max-width: 320px;
+}
+
+/* Display Styles */
+.calculator-display {
+  background: var(--primary-bg);
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 20px;
+  border: 1px solid var(--border-color);
+  position: relative;
+  min-height: 80px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.memory-indicator {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 8px;
+  min-height: 20px;
+}
+
+.memory-dot {
+  background: #ff6b6b;
+  color: white;
+  font-size: 0.7rem;
+  padding: 2px 6px;
+  border-radius: 10px;
+  font-weight: bold;
+}
+
+.display-value {
+  font-size: 2.2rem;
+  font-weight: 300;
+  text-align: right;
+  color: var(--text-primary);
+  word-break: break-all;
+  line-height: 1.2;
+  min-height: 2.6rem;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+/* Button Grid */
+.calculator-buttons {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+/* Button Base Styles */
+.calculator-button {
+  height: 56px;
+  border: none;
+  border-radius: 8px;
+  font-size: 1.1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: var(--transition);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--accent-color);
+  color: var(--text-primary);
+  border: 1px solid transparent;
+  user-select: none;
+}
+
+.calculator-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.calculator-button:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.calculator-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Number Buttons */
+.number-button {
+  background: linear-gradient(135deg, #4a4a4a 0%, #3a3a3a 100%);
+  font-size: 1.2rem;
+}
+
+.number-button:hover {
+  background: linear-gradient(135deg, #5a5a5a 0%, #4a4a4a 100%);
+}
+
+/* Zero Button (spans 2 columns) */
+.zero-button {
+  grid-column: span 2;
+}
+
+/* Operation Buttons */
+.operation-button {
+  background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+  font-size: 1.3rem;
+  font-weight: 600;
+}
+
+.operation-button:hover {
+  background: linear-gradient(135deg, #ff7979 0%, #fd79a8 100%);
+}
+
+/* Equals Button */
+.equals-button {
+  background: linear-gradient(135deg, #00b894 0%, #00cec9 100%);
+  grid-row: span 2;
+  font-size: 1.4rem;
+  font-weight: 600;
+}
+
+.equals-button:hover {
+  background: linear-gradient(135deg, #55efc4 0%, #81ecec 100%);
+}
+
+/* Clear Buttons */
+.clear-button {
+  background: linear-gradient(135deg, #ffeaa7 0%, #fab1a0 100%);
+  color: #2d3436;
+  font-weight: 600;
+}
+
+.clear-button:hover {
+  background: linear-gradient(135deg, #fdcb6e 0%, #fd79a8 100%);
+  color: white;
+}
+
+/* Memory Buttons */
+.memory-button {
+  background: linear-gradient(135deg, #a29bfe 0%, #6c5ce7 100%);
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.memory-button:hover {
+  background: linear-gradient(135deg, #74b9ff 0%, #0984e3 100%);
+}
+
+/* Responsive Design */
+@media (max-width: 480px) {
+  .app {
+    padding: 10px;
+    gap: 15px;
+  }
+  
+  .calculator {
+    padding: 20px;
+    max-width: 100%;
+  }
+  
+  .calculator-buttons {
+    gap: 8px;
+  }
+  
+  .calculator-button {
+    height: 48px;
+    font-size: 1rem;
+  }
+  
+  .display-value {
+    font-size: 1.8rem;
+  }
+  
+  .app-header h1 {
+    font-size: 1.6rem;
+  }
+}
+
+@media (max-width: 360px) {
+  .calculator-button {
+    height: 44px;
+    font-size: 0.9rem;
+  }
+  
+  .display-value {
+    font-size: 1.6rem;
+  }
+  
+  .calculator-display {
+    padding: 16px;
+    min-height: 70px;
+  }
+}
+
+/* Accessibility */
+@media (prefers-reduced-motion: reduce) {
+  .calculator-button {
+    transition: none;
+  }
+  
+  .calculator-button:hover {
+    transform: none;
+  }
+}
+
+/* Focus Styles for Accessibility */
+.calculator-button:focus {
+  outline: 2px solid #4facfe;
+  outline-offset: 2px;
+}
+
+/* High Contrast Mode Support */
+@media (prefers-contrast: high) {
+  :root {
+    --primary-bg: #000000;
+    --secondary-bg: #1a1a1a;
+    --text-primary: #ffffff;
+    --border-color: #ffffff;
+  }
+  
+  .calculator-button {
+    border: 2px solid var(--text-primary);
+  }
+}

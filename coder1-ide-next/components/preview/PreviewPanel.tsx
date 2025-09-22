@@ -1,13 +1,14 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { BookOpen, Eye, X, RefreshCw, ExternalLink, Brain } from '@/lib/icons';
+import { BookOpen, Eye, X, RefreshCw, ExternalLink, Brain, Sparkles } from '@/lib/icons';
 import { colors, glows } from '@/lib/design-tokens';
 import CodebaseWiki from '@/components/codebase/CodebaseWiki';
+import DeepContextPanel from '@/components/deepcontext/DeepContextPanel';
 import ParallelReasoningDashboard from '@/components/beta/ParallelReasoningDashboard';
 import { previewLoopPrevention, createDebouncedPreviewUpdate } from '@/lib/preview-loop-prevention';
 
-type PreviewMode = 'wiki' | 'preview' | 'terminal' | 'parathink';
+type PreviewMode = 'wiki' | 'preview' | 'terminal' | 'parathink' | 'deepcontext';
 
 interface PreviewPanelProps {
   fileOpen?: boolean;
@@ -202,6 +203,12 @@ const PreviewPanel = React.memo(function PreviewPanel({
             'Codebase Wiki',
             'Browse project documentation and intelligent code analysis'
           )}
+          {renderTabButton(
+            'deepcontext',
+            <Sparkles className="w-4 h-4" />,
+            'DeepContext',
+            'AI-powered semantic code search and relationships'
+          )}
           {/* Only show ParaThinker tab when we have a session */}
           {paraThinkSessionId && renderTabButton(
             'parathink',
@@ -227,6 +234,13 @@ const PreviewPanel = React.memo(function PreviewPanel({
             {mode === 'wiki' && (
               <div className="h-full">
                 <CodebaseWiki />
+              </div>
+            )}
+
+            {/* DeepContext Panel */}
+            {mode === 'deepcontext' && (
+              <div className="h-full">
+                <DeepContextPanel activeFile={activeFile} />
               </div>
             )}
 

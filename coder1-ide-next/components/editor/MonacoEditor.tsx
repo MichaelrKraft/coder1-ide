@@ -1,9 +1,22 @@
 'use client';
 
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 import type * as monaco from 'monaco-editor';
 import { WelcomeScreen } from './WelcomeScreen';
+
+// Dynamically import HeroSection to avoid SSR issues
+const HeroSection = dynamic(
+  () => import('../HeroSection'),
+  { 
+    ssr: false,
+    loading: () => (
+      <div className="flex items-center justify-center h-full bg-bg-primary">
+        <span className="text-text-muted">Loading...</span>
+      </div>
+    )
+  }
+);
 
 // Dynamically import Monaco Editor to avoid SSR issues
 const Editor = dynamic(
@@ -36,6 +49,13 @@ export default function MonacoEditor({
   file 
 }: MonacoEditorProps) {
   const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
+  const [setupViewed, setSetupViewed] = useState<boolean | null>(null);
+
+  // Check if this is the user's first time
+  useEffect(() => {
+    const viewed = localStorage.getItem('coder1-bridge-setup-viewed');
+    setSetupViewed(viewed === 'true');
+  }, []);
 
   // Update font size when prop changes
   useEffect(() => {
@@ -164,9 +184,26 @@ export default function MonacoEditor({
   const editorValue = value !== undefined ? value : getFileContent(file || null);
   const editorLanguage = language || (file ? getLanguage(file) : 'javascript');
 
-  // Show welcome screen if no file is open and no value provided
+  // Show welcome screen or hero section if no file is open and no value provided
   if (!file && value === undefined) {
-    return <WelcomeScreen />;
+    // Wait for localStorage to be checked (avoid SSR issues)
+    if (setupViewed === null) {
+      return <div className="flex items-center justify-center h-full bg-bg-primary">
+        <span className="text-text-muted">Loading...</span>
+      </div>;
+    }
+    
+    if (!setupViewed) {
+      // First time user - show bridge setup instructions
+      // Mark as viewed for next time
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('coder1-bridge-setup-viewed', 'true');
+      }
+      return <WelcomeScreen />;
+    } else {
+      // Returning user - show the hero section
+      return <HeroSection />;
+    }
   }
 
   return (

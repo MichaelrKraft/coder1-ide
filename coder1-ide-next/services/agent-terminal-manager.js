@@ -273,6 +273,19 @@ class AgentTerminalManager extends EventEmitter {
     
     return stats;
   }
+  
+  // Wrapper methods for server.js compatibility
+  connectSocket(agentId, socket) {
+    return this.connectSocketToAgentTerminal(agentId, socket);
+  }
+  
+  handleAgentInput(agentId, data) {
+    return this.sendInputToAgentTerminal(agentId, data);
+  }
+  
+  cleanupSession(agentId) {
+    return this.removeAgentTerminalSession(agentId);
+  }
 }
 
 // Singleton instance

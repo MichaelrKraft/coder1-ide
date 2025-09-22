@@ -52,6 +52,18 @@ interface TerminalProps {
     terminalHistory?: string;
     createdAt: Date;
   }; // Session data from checkpoint
+  agentMode?: boolean; // New prop to indicate agent terminal
+  agentSession?: {
+    id: string;
+    name: string;
+    role: string;
+    teamId: string;
+    terminalHistory?: string;
+    status: string;
+    progress: number;
+    currentTask: string;
+    createdAt: Date;
+  }; // Agent session data
 }
 
 /**
@@ -65,7 +77,7 @@ interface TerminalProps {
  * 
  * DO NOT MODIFY button positioning without checking original
  */
-export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped, onTerminalData, onTerminalCommand, onTerminalReady, sandboxMode = false, sandboxSession }: TerminalProps) {
+export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped, onTerminalData, onTerminalCommand, onTerminalReady, sandboxMode = false, sandboxSession, agentMode = false, agentSession }: TerminalProps) {
   // REMOVED: // REMOVED: console.log('🖥️ Terminal component rendering...');
   const terminalRef = useRef<HTMLDivElement>(null);
   const xtermRef = useRef<XTerm | null>(null);
@@ -698,9 +710,153 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
             term.focus();
             
             // Add custom welcome message
-            if (process.env.NODE_ENV !== 'production' || sandboxMode) {
+            if (process.env.NODE_ENV !== 'production' || sandboxMode || agentMode) {
               term.clear();
-              if (sandboxMode) {
+              
+              // Handle agent terminals
+              if (agentMode && agentSession) {
+                console.log('🤖 Terminal: Agent mode with session:', agentSession);
+                
+                // Display agent terminal header
+                const roleColors: Record<string, string> = {
+                  frontend: '\x1b[38;5;39m',   // Blue
+                  backend: '\x1b[38;5;34m',    // Green
+                  database: '\x1b[38;5;129m',  // Purple
+                  testing: '\x1b[38;5;226m',   // Yellow
+                  devops: '\x1b[38;5;208m',    // Orange
+                  fullstack: '\x1b[38;5;244m'  // Gray
+                };
+                
+                const color = roleColors[agentSession.role] || roleColors.fullstack;
+                term.writeln(`${color}${agentSession.name}\x1b[0m`);
+                term.writeln('\x1b[38;5;240m' + '─'.repeat(80) + '\x1b[0m');
+                
+                // Show agent status
+                term.writeln(`\x1b[38;5;245mRole: ${agentSession.role}\x1b[0m`);
+                term.writeln(`\x1b[38;5;245mTeam: ${agentSession.teamId}\x1b[0m`);
+                if (agentSession.currentTask) {
+                  term.writeln(`\x1b[38;5;245mCurrent Task: ${agentSession.currentTask}\x1b[0m`);
+                }
+                term.writeln('\x1b[38;5;240m' + '─'.repeat(80) + '\x1b[0m');
+                
+                // Write any existing terminal history
+                if (agentSession.terminalHistory) {
+                  term.write(agentSession.terminalHistory);
+                }
+                
+                term.writeln('');
+                term.writeln('🤖 AGENT TERMINAL - Interactive AI workspace');
+                term.writeln('──────────────────────────────────────────────');
+                term.writeln('');
+                
+                // Add mock output for fallback agents
+                if (agentSession.status === 'waiting' || agentSession.status === 'setup_required') {
+                  // This is a fallback agent, generate some mock output
+                  setTimeout(() => {
+                    if (term && !term.isDisposed) {
+                      // Generate mock agent output based on role
+                      const mockCommands = {
+                        frontend: [
+                          '$ npm install react react-dom',
+                          '⏳ Installing frontend dependencies...',
+                          '✅ Dependencies installed successfully',
+                          '',
+                          '$ npx create-react-app frontend --template typescript',
+                          '⏳ Creating React application structure...',
+                          '✅ Frontend scaffold created',
+                          '',
+                          '$ cd frontend && npm run start',
+                          '⏳ Starting development server...',
+                          '✅ Development server running on http://localhost:3000',
+                          '',
+                          '💡 Frontend Developer is setting up the UI components...'
+                        ],
+                        backend: [
+                          '$ npm init -y',
+                          '⏳ Initializing backend project...',
+                          '✅ Package.json created',
+                          '',
+                          '$ npm install express cors body-parser',
+                          '⏳ Installing backend dependencies...',
+                          '✅ Backend packages installed',
+                          '',
+                          '$ touch server.js routes.js',
+                          '⏳ Creating server files...',
+                          '✅ Server structure created',
+                          '',
+                          '💡 Backend Developer is configuring API endpoints...'
+                        ],
+                        database: [
+                          '$ npm install mongoose mongodb',
+                          '⏳ Installing database drivers...',
+                          '✅ Database dependencies installed',
+                          '',
+                          '$ mkdir models && touch models/schema.js',
+                          '⏳ Creating database models...',
+                          '✅ Schema structure created',
+                          '',
+                          '💡 Database Engineer is designing data models...'
+                        ],
+                        testing: [
+                          '$ npm install --save-dev jest @types/jest',
+                          '⏳ Installing testing framework...',
+                          '✅ Jest configured',
+                          '',
+                          '$ npm run test',
+                          '⏳ Running test suite...',
+                          '✅ All tests passing',
+                          '',
+                          '💡 Test Engineer is writing test cases...'
+                        ],
+                        devops: [
+                          '$ docker --version',
+                          'Docker version 20.10.17',
+                          '',
+                          '$ touch Dockerfile docker-compose.yml',
+                          '⏳ Creating container configuration...',
+                          '✅ Docker setup complete',
+                          '',
+                          '💡 DevOps Engineer is configuring deployment pipeline...'
+                        ],
+                        fullstack: [
+                          '$ npm create vite@latest app -- --template react-ts',
+                          '⏳ Creating full-stack application...',
+                          '✅ Project scaffolded successfully',
+                          '',
+                          '$ cd app && npm install',
+                          '⏳ Installing dependencies...',
+                          '✅ All packages installed',
+                          '',
+                          '💡 Full-Stack Developer is building the application...'
+                        ]
+                      };
+                      
+                      const commands = mockCommands[agentSession.role] || mockCommands.fullstack;
+                      
+                      // Write commands with delays to simulate real work
+                      let delay = 0;
+                      commands.forEach((line) => {
+                        setTimeout(() => {
+                          if (term && !term.isDisposed) {
+                            term.writeln(line);
+                          }
+                        }, delay);
+                        delay += 300; // 300ms between lines
+                      });
+                      
+                      // Add a final status message
+                      setTimeout(() => {
+                        if (term && !term.isDisposed) {
+                          term.writeln('');
+                          term.writeln(`\x1b[38;5;245m⚠️ Note: This is a mock demonstration. Configure Claude CLI for real AI agents.\x1b[0m`);
+                          term.writeln(`\x1b[38;5;245mSee documentation for setup instructions.\x1b[0m`);
+                        }
+                      }, delay + 500);
+                    }
+                  }, 500); // Initial delay before starting mock output
+                }
+                
+              } else if (sandboxMode) {
                 console.log('🎯 Terminal: Sandbox mode with session:', sandboxSession);
                 
                 // Display checkpoint terminal history if available
@@ -974,18 +1130,23 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
 
   // Connect to backend when both terminal and session are ready
   useEffect(() => {
-    // Don't connect to backend if in sandbox mode - it's read-only
-    if (sandboxMode) {
+    // Don't connect to backend if in sandbox mode - it's read-only (but allow agent terminals)
+    if (sandboxMode && !agentMode) {
       console.log('🏖️ Sandbox mode - skipping backend connection');
       return;
     }
     
+    // Agent terminals need backend connection for interactive commands
+    if (agentMode) {
+      console.log('🤖 Agent terminal mode - enabling backend connection for:', agentSession?.name);
+    }
+    
     // Connect when terminal is ready (session ID can be created by server if needed)
     if (terminalReady && xtermRef.current && !isConnected && !connectionInProgressRef.current) {
-      console.log('🚀 Terminal ready, connecting to backend...', { sessionId });
+      console.log('🚀 Terminal ready, connecting to backend...', { sessionId, agentMode, agentSession });
       connectToBackend(xtermRef.current);
     }
-  }, [sessionId, terminalReady, isConnected, sandboxMode]);
+  }, [sessionId, terminalReady, isConnected, sandboxMode, agentMode]);
 
   // Handle terminal dimension recalculation when sandbox mode changes
   useEffect(() => {
@@ -1137,62 +1298,74 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
       }, 200);
       
       // ENHANCED: Reconnect to backend after checkpoint restoration with better session management
-      // Without this, the terminal displays content but cannot accept keyboard input
-      setTimeout(async () => {
-        console.log('🔄 Terminal: Enhanced reconnection after checkpoint restoration...');
-        
-        // Clear any old session references that might cause conflicts
-        const oldSessionId = sessionIdForVoiceRef.current || sessionId;
-        if (oldSessionId) {
-          console.log('🧹 Terminal: Clearing old session reference:', oldSessionId);
-          // Add to failed cleanup list to prevent cleanup attempts
-          failedCleanupSessionsRef.current.add(oldSessionId);
-        }
-        
-        // Always create a fresh session after checkpoint restoration
-        console.log('📡 Terminal: Creating fresh session for restored checkpoint...');
-        try {
-          const response = await fetch('/api/terminal-rest/sessions', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ cols: 130, rows: 30 })
-          });
+      // WITHOUT THIS: the terminal displays content but cannot accept keyboard input
+      // CRITICAL FIX: Only run enhanced reconnection for sandbox terminals, NOT main terminals
+      // Main terminals should maintain their existing connection to prevent focus/input issues
+      if (sandboxMode) {
+        setTimeout(async () => {
+          console.log('🔄 Terminal: Enhanced reconnection for sandbox after checkpoint restoration...');
           
-          if (response.ok) {
-            const data = await response.json();
-            const newSessionId = data.sessionId;
-            
-            // Update all session references
-            setSessionId(newSessionId);
-            sessionIdForVoiceRef.current = newSessionId;
-            setTerminalReady(true);
-            
-            console.log('✅ Terminal: Fresh session created after restoration:', newSessionId);
-            
-            // Only connect if we have a valid terminal instance and haven't connected already
-            if (xtermRef.current && (!socketRef.current?.connected || !onDataDisposableRef.current)) {
-              console.log('🔌 Terminal: Connecting to backend with fresh session...');
-              await connectToBackend(xtermRef.current);
-            } else {
-              console.log('ℹ️ Terminal: Already connected or terminal not ready');
-            }
-          } else {
-            console.error('❌ Terminal: Failed to create session, status:', response.status);
-            const errorText = await response.text();
-            console.error('❌ Terminal: Session creation error:', errorText);
+          // Clear any old session references that might cause conflicts
+          const oldSessionId = sessionIdForVoiceRef.current || sessionId;
+          if (oldSessionId) {
+            console.log('🧹 Terminal: Clearing old session reference:', oldSessionId);
+            // Add to failed cleanup list to prevent cleanup attempts
+            failedCleanupSessionsRef.current.add(oldSessionId);
           }
-        } catch (error) {
-          console.error('❌ Terminal: Network error creating session after restoration:', error);
-        }
-        
-        // Ensure terminal has focus for immediate typing
+          
+          // Always create a fresh session after checkpoint restoration
+          console.log('📡 Terminal: Creating fresh session for restored checkpoint...');
+          try {
+            const response = await fetch('/api/terminal-rest/sessions', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ cols: 130, rows: 30 })
+            });
+            
+            if (response.ok) {
+              const data = await response.json();
+              const newSessionId = data.sessionId;
+              
+              // Update all session references
+              setSessionId(newSessionId);
+              sessionIdForVoiceRef.current = newSessionId;
+              setTerminalReady(true);
+              
+              console.log('✅ Terminal: Fresh session created after restoration:', newSessionId);
+              
+              // Only connect if we have a valid terminal instance and haven't connected already
+              if (xtermRef.current && (!socketRef.current?.connected || !onDataDisposableRef.current)) {
+                console.log('🔌 Terminal: Connecting to backend with fresh session...');
+                await connectToBackend(xtermRef.current);
+              } else {
+                console.log('ℹ️ Terminal: Already connected or terminal not ready');
+              }
+            } else {
+              console.error('❌ Terminal: Failed to create session, status:', response.status);
+              const errorText = await response.text();
+              console.error('❌ Terminal: Session creation error:', errorText);
+            }
+          } catch (error) {
+            console.error('❌ Terminal: Network error creating session after restoration:', error);
+          }
+          
+          // Ensure terminal has focus for immediate typing
+          setTimeout(() => {
+            if (xtermRef.current) {
+              xtermRef.current.focus();
+              console.log('🎯 Terminal: Focused and ready for input after restoration');
+            }
+          }, 500);
+        }, 300); // Small delay to ensure terminal content is rendered first
+      } else {
+        // Main terminal - just ensure focus, don't disrupt existing connection
         setTimeout(() => {
           if (xtermRef.current) {
             xtermRef.current.focus();
-            console.log('🎯 Terminal: Focused and ready for input after restoration');
+            console.log('🎯 Main terminal: Focused after checkpoint event (no reconnection needed)');
           }
         }, 500);
-      }, 300); // Small delay to ensure terminal content is rendered first
+      }
     };
     
     const handleIdeStateChanged = (event: CustomEvent) => {
@@ -1890,10 +2063,15 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
     });
 
     // Set up terminal input handling - send to backend
-    // Skip in sandbox mode - it's read-only
-    if (sandboxMode) {
+    // Skip in sandbox mode - it's read-only (but allow agent terminals)
+    if (sandboxMode && !agentMode) {
       console.log('🏖️ Sandbox mode - terminal is read-only');
       return;
+    }
+    
+    // Agent terminals can accept input for interactive commands
+    if (agentMode) {
+      console.log('🤖 Agent terminal input enabled for:', agentSession?.name);
     }
     
     // Clean up any existing handler first
@@ -2041,7 +2219,10 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
     
     try {
       // Call the new Claude Bridge API endpoint on the unified server
-      const unifiedServerUrl = process.env.NEXT_PUBLIC_UNIFIED_SERVER_URL || 'http://localhost:3001';
+      // Use the current origin to handle dynamic ports
+      const unifiedServerUrl = typeof window !== 'undefined' 
+        ? window.location.origin 
+        : (process.env.NEXT_PUBLIC_UNIFIED_SERVER_URL || 'http://localhost:3001');
       const response = await fetch(`${unifiedServerUrl}/api/claude-bridge/spawn`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -2076,35 +2257,43 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
         if (agentTabsEnabled && data.agents && data.agents.length > 0) {
           xtermRef.current.writeln('\r\n📋 Creating agent terminal tabs...');
           
+          // Get socket for WebSocket communication
+          const socket = await getSocket();
+          
           data.agents.forEach((agent: any, index: number) => {
-            // Create agent session data
-            const agentSessionData = {
-              id: agent.id || `agent_${data.teamId}_${index}`,
-              name: agent.name || `${agent.role} Agent`,
-              role: agent.role?.toLowerCase() || 'fullstack',
-              teamId: data.teamId,
-              workTreePath: agent.workTreePath,
-              terminalHistory: `Agent initialized: ${agent.name}\nRole: ${agent.role}\nTeam: ${data.teamId}\n`,
-              status: agent.status || 'initializing',
-              progress: 0,
-              currentTask: agent.currentTask || 'Setting up workspace...',
-              processId: agent.processId
-            };
-            
-            // Dispatch event to create agent tab
-            window.dispatchEvent(new CustomEvent('terminal:createAgentSession', {
-              detail: agentSessionData
-            }));
-            
-            // Phase 2: Also create agent terminal session via WebSocket
-            if (socket?.connected) {
-              socket.emit('agent:terminal:create', {
-                agentId: agentSessionData.id,
-                teamId: agentSessionData.teamId,
-                role: agentSessionData.role
-              });
-              console.log(`🤖 Created agent terminal session for ${agentSessionData.name}`);
-            }
+            // Add a small delay for each agent to ensure events are processed
+            setTimeout(() => {
+              // Create agent session data with unique ID
+              const agentSessionData = {
+                id: agent.id || `agent_${data.teamId}_${index}_${Date.now()}`,
+                name: agent.name || `${agent.role} Agent`,
+                role: agent.role?.toLowerCase() || 'fullstack',
+                teamId: data.teamId,
+                workTreePath: agent.workTreePath,
+                terminalHistory: `Agent initialized: ${agent.name}\nRole: ${agent.role}\nTeam: ${data.teamId}\n`,
+                status: agent.status || 'initializing',
+                progress: 0,
+                currentTask: agent.currentTask || 'Setting up workspace...',
+                processId: agent.processId
+              };
+              
+              console.log(`📋 Creating agent tab for: ${agentSessionData.name} (${agentSessionData.id})`);
+              
+              // Dispatch event to create agent tab
+              window.dispatchEvent(new CustomEvent('terminal:createAgentSession', {
+                detail: agentSessionData
+              }));
+              
+              // Phase 2: Also create agent terminal session via WebSocket
+              if (socket?.connected) {
+                socket.emit('agent:terminal:create', {
+                  agentId: agentSessionData.id,
+                  teamId: agentSessionData.teamId,
+                  role: agentSessionData.role
+                });
+                console.log(`🤖 Created agent terminal session for ${agentSessionData.name}`);
+              }
+            }, index * 100); // 100ms delay between each agent
           });
           
           xtermRef.current.writeln(`✅ Created ${data.agents.length} agent terminal tabs`);

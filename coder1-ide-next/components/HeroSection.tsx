@@ -137,9 +137,9 @@ export default function HeroSection({ onTourStart }: HeroSectionProps = {}) {
         <div className="hero-cone-right"></div>
       </div> */}
       {/* Logo - responsive sizing with zoom-in from back animation */}
-      <div className="relative z-10 mb-0 mt-2">
+      <div className="relative z-10 -mb-8 mt-2">
         <div 
-          className={`relative w-20 h-20 sm:w-28 sm:h-28 lg:w-36 lg:h-36 transition-all duration-1000 ease-out ${
+          className={`relative w-[110px] h-[110px] sm:w-[154px] sm:h-[154px] lg:w-[199px] lg:h-[199px] transition-all duration-1000 ease-out ${
             logoAnimated 
               ? 'opacity-100 scale-100' 
               : 'opacity-0 scale-[0.01]'
@@ -194,7 +194,7 @@ export default function HeroSection({ onTourStart }: HeroSectionProps = {}) {
 
       {/* Subtitle - right under typewriter text */}
       <p 
-        className="relative z-10 text-[clamp(0.875rem,2vw,1.125rem)] mb-2 text-center max-w-[90%] font-semibold px-2"
+        className="relative z-10 text-[clamp(0.875rem,2vw,1.125rem)] mb-6 text-center max-w-[90%] font-semibold px-2"
         style={{
           background: 'linear-gradient(90deg, #FCD34D 0%, #FB923C 50%, #F97316 100%)',
           WebkitBackgroundClip: 'text',
@@ -206,7 +206,7 @@ export default function HeroSection({ onTourStart }: HeroSectionProps = {}) {
       </p>
 
       {/* Action buttons - responsive */}
-      <div className="relative z-10 flex flex-col gap-3 mb-2 w-full max-w-[min(90%,360px)] px-2">
+      <div className="relative z-10 flex flex-col gap-5 mb-2 w-full max-w-[min(90%,360px)] px-2">
         <button 
           data-tour="start-tour-button"
           onClick={(e) => {

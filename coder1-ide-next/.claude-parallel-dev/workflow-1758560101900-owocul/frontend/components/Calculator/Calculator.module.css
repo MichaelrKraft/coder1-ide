@@ -1,0 +1,124 @@
+.calculator {
+  background: var(--primary-bg);
+  border-radius: var(--radius-lg);
+  box-shadow: 
+    var(--shadow-xl),
+    0 0 0 1px rgba(255, 255, 255, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  width: 320px;
+  margin: 0 auto;
+  overflow: hidden;
+  font-family: var(--font-family);
+  position: relative;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  animation: calculatorEntrance 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) 0.2s both;
+  transform-origin: center bottom;
+}
+
+@keyframes calculatorEntrance {
+  0% {
+    opacity: 0;
+    transform: scale(0.8) translateY(40px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.calculator::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, 
+    rgba(255, 255, 255, 0.1) 0%, 
+    rgba(255, 255, 255, 0.05) 50%, 
+    rgba(255, 255, 255, 0.02) 100%);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.calculator::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: conic-gradient(
+    from 0deg at 50% 50%,
+    transparent 0deg,
+    rgba(255, 149, 0, 0.1) 90deg,
+    transparent 180deg,
+    rgba(255, 149, 0, 0.05) 270deg,
+    transparent 360deg
+  );
+  pointer-events: none;
+  z-index: 0;
+  animation: rotate 20s linear infinite;
+  opacity: 0.7;
+}
+
+@keyframes rotate {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* Responsive Design */
+@media (max-width: 480px) {
+  .calculator {
+    width: 100%;
+    max-width: 320px;
+    margin: 0 auto;
+    border-radius: var(--radius-md);
+  }
+}
+
+@media (max-width: 360px) {
+  .calculator {
+    width: calc(100% - var(--spacing-lg));
+    max-width: 300px;
+    border-radius: var(--radius-sm);
+  }
+}
+
+/* Tablet and larger screens */
+@media (min-width: 769px) {
+  .calculator {
+    width: 360px;
+    border-radius: var(--radius-xl);
+  }
+}
+
+/* High contrast mode */
+@media (prefers-contrast: high) {
+  .calculator {
+    border: 2px solid #ffffff;
+    box-shadow: var(--shadow-large);
+  }
+  
+  .calculator::before,
+  .calculator::after {
+    display: none;
+  }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .calculator {
+    animation: none;
+  }
+  
+  .calculator::after {
+    animation: none;
+  }
+}

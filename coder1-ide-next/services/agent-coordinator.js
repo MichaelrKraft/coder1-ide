@@ -62,7 +62,39 @@ class AgentCoordinator extends EventEmitter {
     this.initializeAgentRoles();
     this.initializeWorkflowTemplates();
     
+    // Terminal manager reference (will be set externally)
+    this.agentTerminalManager = null;
+    
+    // Setup puppeteer output listener to route to terminal manager
+    this.setupPuppeteerListeners();
+    
     console.log('🎭 Agent Coordinator initialized');
+  }
+  
+  /**
+   * Setup listeners for puppeteer output events
+   */
+  setupPuppeteerListeners() {
+    if (this.puppeteer) {
+      this.puppeteer.on('agentOutput', ({ agentId, output, timestamp }) => {
+        // Route output to terminal manager if available
+        if (this.agentTerminalManager) {
+          console.log(`📺 Routing output from ${agentId} to terminal manager`);
+          this.agentTerminalManager.appendToAgentTerminal(agentId, output);
+        }
+        
+        // Also emit for other listeners
+        this.emit('agentOutput', { agentId, output, timestamp });
+      });
+    }
+  }
+  
+  /**
+   * Set the agent terminal manager for output routing
+   */
+  setAgentTerminalManager(manager) {
+    this.agentTerminalManager = manager;
+    console.log('🔌 Agent terminal manager connected to coordinator');
   }
 
   /**
@@ -583,6 +615,16 @@ class AgentCoordinator extends EventEmitter {
           console.log(`✅ Agent ${agentId} spawned successfully in ${agentSpawnTime}ms`);
           console.log(`🏠 Agent work tree: ${agent.workTreePath}`);
           console.log(`📊 Agent status: ${agent.status}`);
+          
+          // Create terminal session for this agent if terminal manager is available
+          if (this.agentTerminalManager) {
+            const terminalSession = this.agentTerminalManager.createAgentTerminal(
+              agentId,
+              workflowSession.sessionId,
+              roleId
+            );
+            console.log(`📺 Created terminal session for agent ${agentId}`);
+          }
           
           workflowSession.agents.set(roleId, agent);
         } else {
