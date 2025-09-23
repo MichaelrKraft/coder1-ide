@@ -24,9 +24,10 @@ const USE_FAULTY_TERMINAL = false;
 
 interface HeroSectionProps {
   onTourStart?: () => void;
+  onDismiss?: () => void;
 }
 
-export default function HeroSection({ onTourStart }: HeroSectionProps = {}) {
+export default function HeroSection({ onTourStart, onDismiss }: HeroSectionProps = {}) {
   const [logoAnimated, setLogoAnimated] = useState(false);
   const [showEntranceAnimation, setShowEntranceAnimation] = useState(true);
   const [animationFadingOut, setAnimationFadingOut] = useState(false);
@@ -43,8 +44,14 @@ export default function HeroSection({ onTourStart }: HeroSectionProps = {}) {
     };
   }, []);
 
-  // Handle user interaction to fade out entrance animation
-  const handleUserInteraction = React.useCallback(() => {
+  // Handle user interaction to fade out entrance animation and dismiss HeroSection
+  const handleUserInteraction = React.useCallback((event?: Event) => {
+    // Don't dismiss if clicking on a button (let button handle its action first)
+    if (event && event.target && (event.target as HTMLElement).closest('button')) {
+      return;
+    }
+    
+    // Handle entrance animation fade out
     if (showEntranceAnimation && !animationFadingOut) {
       setAnimationFadingOut(true);
       // After fade transition, completely remove the animation
@@ -52,30 +59,62 @@ export default function HeroSection({ onTourStart }: HeroSectionProps = {}) {
         setShowEntranceAnimation(false);
       }, 1500); // 1.5s transition duration
     }
-  }, [showEntranceAnimation, animationFadingOut]);
+    
+    // Dismiss the entire HeroSection if callback provided
+    if (onDismiss) {
+      // Small delay to ensure smooth transition
+      setTimeout(() => {
+        onDismiss();
+      }, 100);
+    }
+  }, [showEntranceAnimation, animationFadingOut, onDismiss]);
 
   // Set up interaction listeners
   useEffect(() => {
-    if (!showEntranceAnimation) return;
+    // Always listen for interactions if onDismiss is provided
+    if (!showEntranceAnimation && !onDismiss) return;
 
-    const events = ['mousemove', 'click', 'keydown', 'touchstart', 'scroll'];
+    // Only listen for intentional interactions, not mousemove
+    const events = ['click', 'keydown', 'touchstart'];
     
-    events.forEach(event => {
-      document.addEventListener(event, handleUserInteraction, { passive: true });
-    });
+    const handleEvent = (e: Event) => handleUserInteraction(e);
+    
+    // Add scroll listener with threshold to avoid dismissing on minor scrolls
+    let hasScrolled = false;
+    const handleScroll = () => {
+      if (!hasScrolled && window.scrollY > 50) {
+        hasScrolled = true;
+        handleUserInteraction();
+      }
+    };
+    
+    // Delay adding listeners by 500ms to prevent immediate dismissal
+    const listenerTimer = setTimeout(() => {
+      events.forEach(event => {
+        document.addEventListener(event, handleEvent, { passive: true });
+      });
+      document.addEventListener('scroll', handleScroll, { passive: true });
+    }, 500);
 
-    // Auto-timeout after 10 seconds
-    const autoTimeout = setTimeout(() => {
-      handleUserInteraction();
-    }, 10000);
+    // Auto-timeout after 10 seconds (for entrance animation only)
+    let autoTimeout: NodeJS.Timeout | undefined;
+    if (showEntranceAnimation) {
+      autoTimeout = setTimeout(() => {
+        handleUserInteraction();
+      }, 10000);
+    }
 
     return () => {
+      clearTimeout(listenerTimer);
       events.forEach(event => {
-        document.removeEventListener(event, handleUserInteraction);
+        document.removeEventListener(event, handleEvent);
       });
-      clearTimeout(autoTimeout);
+      document.removeEventListener('scroll', handleScroll);
+      if (autoTimeout) {
+        clearTimeout(autoTimeout);
+      }
     };
-  }, [showEntranceAnimation, handleUserInteraction]);
+  }, [showEntranceAnimation, handleUserInteraction, onDismiss]);
 
   return (
     <div className="hero-section relative flex flex-col items-center justify-center min-h-full h-full w-full px-4 py-4 overflow-auto bg-bg-primary">

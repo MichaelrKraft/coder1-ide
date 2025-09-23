@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Galaga 1980s - Classic Arcade Game</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background: linear-gradient(45deg, #000000, #1a0066, #000033);
+            background-size: 400% 400%;
+            animation: starfield 20s ease infinite;
+            font-family: 'Orbitron', monospace;
+            color: #00ff00;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        
+        @keyframes starfield {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        
+        .game-container {
+            text-align: center;
+            position: relative;
+        }
+        
+        #gameCanvas {
+            border: 3px solid #00ff00;
+            border-radius: 10px;
+            box-shadow: 
+                0 0 20px #00ff00,
+                inset 0 0 20px rgba(0, 255, 0, 0.1);
+            background: #000011;
+        }
+        
+        .game-ui {
+            margin-top: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        
+        .score-display, .lives-display, .level-display {
+            background: rgba(0, 255, 0, 0.1);
+            border: 2px solid #00ff00;
+            padding: 10px 20px;
+            border-radius: 5px;
+            font-weight: 700;
+            font-size: 18px;
+            text-shadow: 0 0 10px #00ff00;
+        }
+        
+        .game-title {
+            font-size: 48px;
+            font-weight: 900;
+            margin-bottom: 20px;
+            text-shadow: 0 0 30px #00ff00;
+            background: linear-gradient(45deg, #00ff00, #ffff00, #00ff00);
+            background-size: 200% 200%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: titleGlow 3s ease-in-out infinite;
+        }
+        
+        @keyframes titleGlow {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+        
+        .instructions {
+            margin-top: 20px;
+            font-size: 14px;
+            color: #00aaff;
+            text-shadow: 0 0 5px #00aaff;
+        }
+        
+        .game-over {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.9);
+            border: 3px solid #ff0000;
+            padding: 30px;
+            border-radius: 10px;
+            text-align: center;
+            display: none;
+        }
+        
+        .game-over h2 {
+            color: #ff0000;
+            font-size: 36px;
+            margin-bottom: 20px;
+            text-shadow: 0 0 20px #ff0000;
+        }
+        
+        .restart-btn {
+            background: linear-gradient(45deg, #00ff00, #00aa00);
+            border: none;
+            color: black;
+            padding: 15px 30px;
+            font-size: 18px;
+            font-weight: 700;
+            border-radius: 5px;
+            cursor: pointer;
+            font-family: 'Orbitron', monospace;
+            transition: all 0.3s ease;
+        }
+        
+        .restart-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 20px #00ff00;
+        }
+        
+        .stars {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: -1;
+        }
+        
+        .star {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background: white;
+            border-radius: 50%;
+            animation: twinkle 2s ease-in-out infinite;
+        }
+        
+        @keyframes twinkle {
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+    <div class="stars" id="stars"></div>
+    
+    <div class="game-container">
+        <h1 class="game-title">GALAGA</h1>
+        
+        <canvas id="gameCanvas" width="800" height="600"></canvas>
+        
+        <div class="game-ui">
+            <div class="score-display">
+                SCORE: <span id="score">0</span>
+            </div>
+            <div class="lives-display">
+                LIVES: <span id="lives">3</span>
+            </div>
+            <div class="level-display">
+                LEVEL: <span id="level">1</span>
+            </div>
+        </div>
+        
+        <div class="instructions">
+            Use ARROW KEYS to move • SPACEBAR to shoot • Destroy all enemies to advance!
+        </div>
+        
+        <div class="game-over" id="gameOver">
+            <h2>GAME OVER</h2>
+            <p>Final Score: <span id="finalScore">0</span></p>
+            <button class="restart-btn" onclick="restartGame()">PLAY AGAIN</button>
+        </div>
+    </div>
+
+    <script>
+        // Create starfield background
+        function createStars() {
+            const starsContainer = document.getElementById('stars');
+            for (let i = 0; i < 100; i++) {
+                const star = document.createElement('div');
+                star.className = 'star';
+                star.style.left = Math.random() * 100 + '%';
+                star.style.top = Math.random() * 100 + '%';
+                star.style.animationDelay = Math.random() * 2 + 's';
+                starsContainer.appendChild(star);
+            }
+        }
+        
+        createStars();
+        
+        // Game variables
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Game state
+        let gameState = 'playing'; // playing, gameOver, challengeStage
+        let score = 0;
+        let lives = 3;
+        let level = 1;
+        let keys = {};
+        let lastShot = 0;
+        const shotCooldown = 200; // milliseconds
+        let challengeStageTimer = 0;
+        let enemiesKilledInStage = 0;
+        let tractorBeamActive = false;
+        let playerCaptured = false;
+        let capturedPlayer = null;
+        
+        // Game objects arrays
+        let bullets = [];
+        let enemies = [];
+        let enemyBullets = [];
+        let particles = [];
+        let tractorBeam = null;
+        
+        // Player object
+        const player = {
+            x: canvas.width / 2 - 20,
+            y: canvas.height - 60,
+            width: 40,
+            height: 30,
+            speed: 5,
+            color: '#00ff00'
+        };
+        
+        // Enemy patterns and types
+        const enemyTypes = {
+            bee: { color: '#ffff00', points: 50, speed: 1, canCapture: false },
+            butterfly: { color: '#ff00ff', points: 160, speed: 1.5, canCapture: false },
+            boss: { color: '#ff0000', points: 400, speed: 0.8, canCapture: true }
+        };
+
+        // Sprite patterns for authentic 8-bit look
+        function drawSprite(ctx, x, y, pattern, color) {
+            ctx.fillStyle = color;
+            pattern.forEach((row, rowIndex) => {
+                row.split('').forEach((pixel, colIndex) => {
+                    if (pixel === '1') {
+                        ctx.fillRect(x + colIndex * 2, y + rowIndex * 2, 2, 2);
+                    }
+                });
+            });
+        }
+
+        // Sprite patterns (8x8 pixels, doubled for visibility)
+        const sprites = {
+            player: [
+                '00011000',
+                '00111100',
+                '01111110',
+                '11111111',
+                '11011011',
+                '10111101',
+                '10000001',
+                '10000001'
+            ],
+            bee: [
+                '00100100',
+                '01111110',
+                '11111111',
+                '11011011',
+                '01111110',
+                '00100100',
+                '01000010',
+                '10000001'
+            ],
+            butterfly: [
+                '10000001',
+                '01100110',
+                '00111100',
+                '11111111',
+                '11111111',
+                '00111100',
+                '01100110',
+                '10000001'
+            ],
+            boss: [
+                '00111100',
+                '01111110',
+                '11111111',
+                '11011011',
+                '11111111',
+                '01111110',
+                '00100100',
+                '01000010'
+            ]
+        };
+        
+        // Input handling
+        document.addEventListener('keydown', (e) => {
+            keys[e.code] = true;
+            
+            if (e.code === 'Space') {
+                e.preventDefault();
+                shoot();
+            }
+        });
+        
+        document.addEventListener('keyup', (e) => {
+            keys[e.code] = false;
+        });
+        
+        // Shooting function
+        function shoot() {
+            const now = Date.now();
+            if (now - lastShot < shotCooldown) return;
+            
+            bullets.push({
+                x: player.x + player.width / 2 - 2,
+                y: player.y,
+                width: 4,
+                height: 10,
+                speed: 7,
+                color: '#00ff00'
+            });
+            
+            lastShot = now;
+            
+            // Add muzzle flash particle
+            createParticles(player.x + player.width / 2, player.y, '#00ff00', 3);
+        }
+        
+        // Create particle effects
+        function createParticles(x, y, color, count) {
+            for (let i = 0; i < count; i++) {
+                particles.push({
+                    x: x,
+                    y: y,
+                    vx: (Math.random() - 0.5) * 4,
+                    vy: (Math.random() - 0.5) * 4,
+                    life: 30,
+                    maxLife: 30,
+                    color: color,
+                    size: Math.random() * 3 + 1
+                });
+            }
+        }
+        
+        // Enemy creation
+        function createEnemyFormation() {
+            enemies = [];
+            
+            // Create bee formation (top rows)
+            for (let row = 0; row < 2; row++) {
+                for (let col = 0; col < 10; col++) {
+                    enemies.push({
+                        type: 'bee',
+                        x: 100 + col * 60,
+                        y: 50 + row * 50,
+                        width: 30,
+                        height: 25,
+                        originalX: 100 + col * 60,
+                        originalY: 50 + row * 50,
+                        formationAngle: 0,
+                        attacking: false,
+                        attackTimer: 0,
+                        ...enemyTypes.bee
+                    });
+                }
+            }
+            
+            // Create butterfly formation (middle rows)
+            for (let row = 0; row < 2; row++) {
+                for (let col = 0; col < 8; col++) {
+                    enemies.push({
+                        type: 'butterfly',
+                        x: 160 + col * 60,
+                        y: 150 + row * 50,
+                        width: 35,
+                        height: 30,
+                        originalX: 160 + col * 60,
+                        originalY: 150 + row * 50,
+                        formationAngle: 0,
+                        attacking: false,
+                        attackTimer: 0,
+                        ...enemyTypes.butterfly
+                    });
+                }
+            }
+            
+            // Create boss galaga (bottom row)
+            for (let col = 0; col < 4; col++) {
+                enemies.push({
+                    type: 'boss',
+                    x: 280 + col * 80,
+                    y: 250,
+                    width: 40,
+                    height: 35,
+                    originalX: 280 + col * 80,
+                    originalY: 250,
+                    formationAngle: 0,
+                    attacking: false,
+                    attackTimer: 0,
+                    ...enemyTypes.boss
+                });
+            }
+        }
+        
+        // Update player
+        function updatePlayer() {
+            if (keys['ArrowLeft'] && player.x > 0) {
+                player.x -= player.speed;
+            }
+            if (keys['ArrowRight'] && player.x < canvas.width - player.width) {
+                player.x += player.speed;
+            }
+        }
+        
+        // Update bullets
+        function updateBullets() {
+            // Update player bullets
+            for (let i = bullets.length - 1; i >= 0; i--) {
+                const bullet = bullets[i];
+                bullet.y -= bullet.speed;
+                
+                if (bullet.y < 0) {
+                    bullets.splice(i, 1);
+                }
+            }
+            
+            // Update enemy bullets
+            for (let i = enemyBullets.length - 1; i >= 0; i--) {
+                const bullet = enemyBullets[i];
+                bullet.y += bullet.speed;
+                
+                if (bullet.y > canvas.height) {
+                    enemyBullets.splice(i, 1);
+                }
+            }
+        }
+        
+        // Update enemies
+        function updateEnemies() {
+            const time = Date.now() * 0.001;
+            
+            enemies.forEach((enemy, index) => {
+                if (!enemy.attacking) {
+                    // Formation flying pattern
+                    enemy.formationAngle += 0.02;
+                    enemy.x = enemy.originalX + Math.sin(time + index * 0.1) * 20;
+                    
+                    // Random chance to start attacking
+                    if (Math.random() < 0.001) {
+                        enemy.attacking = true;
+                        enemy.attackTimer = 0;
+                    }
+                    
+                    // Random chance to shoot
+                    if (Math.random() < 0.002) {
+                        enemyBullets.push({
+                            x: enemy.x + enemy.width / 2,
+                            y: enemy.y + enemy.height,
+                            width: 3,
+                            height: 8,
+                            speed: 3,
+                            color: enemy.color
+                        });
+                    }
+                } else {
+                    // Attacking pattern - dive towards player
+                    enemy.attackTimer += 16; // roughly 16ms per frame
+                    
+                    const targetX = player.x;
+                    const targetY = player.y;
+                    
+                    const dx = targetX - enemy.x;
+                    const dy = targetY - enemy.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    
+                    if (distance > 50) {
+                        enemy.x += (dx / distance) * enemy.speed * 2;
+                        enemy.y += (dy / distance) * enemy.speed * 2;
+                    } else {
+                        // Return to formation
+                        enemy.attacking = false;
+                        enemy.x = enemy.originalX;
+                        enemy.y = enemy.originalY;
+                    }
+                }
+            });
+        }
+        
+        // Update particles
+        function updateParticles() {
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const particle = particles[i];
+                particle.x += particle.vx;
+                particle.y += particle.vy;
+                particle.life--;
+                
+                if (particle.life <= 0) {
+                    particles.splice(i, 1);
+                }
+            }
+        }
+        
+        // Collision detection
+        function checkCollisions() {
+            // Bullet vs Enemy collisions
+            for (let i = bullets.length - 1; i >= 0; i--) {
+                const bullet = bullets[i];
+                
+                for (let j = enemies.length - 1; j >= 0; j--) {
+                    const enemy = enemies[j];
+                    
+                    if (bullet.x < enemy.x + enemy.width &&
+                        bullet.x + bullet.width > enemy.x &&
+                        bullet.y < enemy.y + enemy.height &&
+                        bullet.y + bullet.height > enemy.y) {
+                        
+                        // Hit!
+                        score += enemy.points;
+                        createParticles(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2, enemy.color, 8);
+                        
+                        bullets.splice(i, 1);
+                        enemies.splice(j, 1);
+                        break;
+                    }
+                }
+            }
+            
+            // Enemy bullet vs Player collisions
+            for (let i = enemyBullets.length - 1; i >= 0; i--) {
+                const bullet = enemyBullets[i];
+                
+                if (bullet.x < player.x + player.width &&
+                    bullet.x + bullet.width > player.x &&
+                    bullet.y < player.y + player.height &&
+                    bullet.y + bullet.height > player.y) {
+                    
+                    // Player hit!
+                    lives--;
+                    createParticles(player.x + player.width / 2, player.y + player.height / 2, '#ff0000', 10);
+                    enemyBullets.splice(i, 1);
+                    
+                    if (lives <= 0) {
+                        gameState = 'gameOver';
+                        showGameOver();
+                    }
+                }
+            }
+            
+            // Enemy vs Player collisions
+            enemies.forEach((enemy, index) => {
+                if (enemy.x < player.x + player.width &&
+                    enemy.x + enemy.width > player.x &&
+                    enemy.y < player.y + player.height &&
+                    enemy.y + enemy.height > player.y) {
+                    
+                    // Collision with enemy
+                    lives--;
+                    createParticles(player.x + player.width / 2, player.y + player.height / 2, '#ff0000', 10);
+                    createParticles(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2, enemy.color, 8);
+                    enemies.splice(index, 1);
+                    
+                    if (lives <= 0) {
+                        gameState = 'gameOver';
+                        showGameOver();
+                    }
+                }
+            });
+        }
+        
+        // Draw functions
+        function drawPlayer() {
+            // Draw player ship (classic Galaga fighter)
+            ctx.fillStyle = player.color;
+            ctx.fillRect(player.x, player.y, player.width, player.height);
+            
+            // Draw ship details
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(player.x + 5, player.y + 5, 30, 5);
+            ctx.fillRect(player.x + 15, player.y + 15, 10, 10);
+        }
+        
+        function drawEnemies() {
+            enemies.forEach(enemy => {
+                ctx.fillStyle = enemy.color;
+                
+                // Draw enemy based on type
+                if (enemy.type === 'bee') {
+                    // Simple rectangular bee
+                    ctx.fillRect(enemy.x, enemy.y, enemy.width, enemy.height);
+                    ctx.fillStyle = '#ffffff';
+                    ctx.fillRect(enemy.x + 5, enemy.y + 5, 20, 3);
+                } else if (enemy.type === 'butterfly') {
+                    // Butterfly with wings
+                    ctx.fillRect(enemy.x, enemy.y, enemy.width, enemy.height);
+                    ctx.fillStyle = '#ffffff';
+                    ctx.fillRect(enemy.x + 2, enemy.y + 2, 10, 10);
+                    ctx.fillRect(enemy.x + 23, enemy.y + 2, 10, 10);
+                } else if (enemy.type === 'boss') {
+                    // Boss Galaga
+                    ctx.fillRect(enemy.x, enemy.y, enemy.width, enemy.height);
+                    ctx.fillStyle = '#ffffff';
+                    ctx.fillRect(enemy.x + 10, enemy.y + 5, 20, 8);
+                    ctx.fillRect(enemy.x + 15, enemy.y + 15, 10, 8);
+                }
+            });
+        }
+        
+        function drawBullets() {
+            // Draw player bullets
+            ctx.fillStyle = '#00ff00';
+            bullets.forEach(bullet => {
+                ctx.fillRect(bullet.x, bullet.y, bullet.width, bullet.height);
+            });
+            
+            // Draw enemy bullets
+            enemyBullets.forEach(bullet => {
+                ctx.fillStyle = bullet.color;
+                ctx.fillRect(bullet.x, bullet.y, bullet.width, bullet.height);
+            });
+        }
+        
+        function drawParticles() {
+            particles.forEach(particle => {
+                const alpha = particle.life / particle.maxLife;
+                ctx.fillStyle = particle.color + Math.floor(alpha * 255).toString(16).padStart(2, '0');
+                ctx.fillRect(particle.x - particle.size / 2, particle.y - particle.size / 2, particle.size, particle.size);
+            });
+        }
+        
+        function updateUI() {
+            document.getElementById('score').textContent = score;
+            document.getElementById('lives').textContent = lives;
+            document.getElementById('level').textContent = level;
+        }
+        
+        function showGameOver() {
+            document.getElementById('finalScore').textContent = score;
+            document.getElementById('gameOver').style.display = 'block';
+        }
+        
+        function restartGame() {
+            gameState = 'playing';
+            score = 0;
+            lives = 3;
+            level = 1;
+            bullets = [];
+            enemyBullets = [];
+            particles = [];
+            
+            player.x = canvas.width / 2 - 20;
+            player.y = canvas.height - 60;
+            
+            createEnemyFormation();
+            
+            document.getElementById('gameOver').style.display = 'none';
+        }
+        
+        // Game loop
+        function gameLoop() {
+            // Clear canvas
+            ctx.fillStyle = '#000011';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            if (gameState === 'playing') {
+                // Update game objects
+                updatePlayer();
+                updateBullets();
+                updateEnemies();
+                updateParticles();
+                checkCollisions();
+                
+                // Check for level completion
+                if (enemies.length === 0) {
+                    level++;
+                    createEnemyFormation();
+                    // Make enemies slightly faster each level
+                    enemies.forEach(enemy => {
+                        enemy.speed *= 1.1;
+                    });
+                }
+            }
+            
+            // Draw everything
+            drawPlayer();
+            drawEnemies();
+            drawBullets();
+            drawParticles();
+            
+            // Update UI
+            updateUI();
+            
+            requestAnimationFrame(gameLoop);
+        }
+        
+        // Initialize game
+        createEnemyFormation();
+        gameLoop();
+    </script>
+</body>
+</html>

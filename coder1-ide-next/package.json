@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "node server.js",
     "dev:custom": "node server.js",
     "dev:legacy": "next dev",
     "dev:unified": "node server.js",

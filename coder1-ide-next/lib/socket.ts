@@ -21,6 +21,8 @@ const getSocketIO = () => {
   }
   
   console.error('❌ Socket.IO not available from any source!');
+  console.error('This usually means you are using legacy mode (npm run dev:legacy)');
+  console.error('Solution: Use "npm run dev" for unified server with Socket.IO support');
   return null;
 };
 
@@ -30,6 +32,8 @@ let connectionAttempts = 0;
 // Create a mock socket for fallback
 const createMockSocket = (): Socket => {
   console.warn('⚠️ Using mock socket - real connection failed');
+  console.warn('This happens when using "npm run dev:legacy" instead of "npm run dev"');
+  console.warn('Terminal and WebSocket features will NOT work in legacy mode');
   const mockSocket = {
     id: 'mock-socket',
     connected: false,

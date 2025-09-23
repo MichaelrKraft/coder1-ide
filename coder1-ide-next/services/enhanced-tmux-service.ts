@@ -351,11 +351,14 @@ export class EnhancedTmuxService extends EventEmitter {
       }
     }
     
-    // Kill tmux session
+    // Kill tmux session with better error suppression
     try {
-      await this.execAsync(`tmux kill-session -t ${sandbox.tmuxSession}`);
+      // Use 2>/dev/null to suppress stderr and || true to always succeed
+      await this.execAsync(`tmux kill-session -t ${sandbox.tmuxSession} 2>/dev/null || true`);
+      logger.debug(`Successfully cleaned up tmux session: ${sandbox.tmuxSession}`);
     } catch (error) {
-      logger.warn(`Could not kill tmux session:`, error);
+      // This should rarely happen now with || true, but keep as fallback
+      logger.debug(`Tmux session ${sandbox.tmuxSession} may have already been killed`);
     }
     
     // Remove sandbox directory
@@ -564,7 +567,8 @@ export class EnhancedTmuxService extends EventEmitter {
       for (const session of sessions) {
         if (!Array.from(this.sandboxes.values()).some(s => s.tmuxSession === session)) {
           logger.debug(`Cleaning up orphaned tmux session: ${session}`);
-          await this.execAsync(`tmux kill-session -t ${session}`).catch(() => {});
+          // Use 2>/dev/null to suppress errors and || true to always succeed
+          await this.execAsync(`tmux kill-session -t ${session} 2>/dev/null || true`).catch(() => {});
         }
       }
       

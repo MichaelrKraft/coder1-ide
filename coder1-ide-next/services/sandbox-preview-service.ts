@@ -181,16 +181,87 @@ export class SandboxPreviewService extends EventEmitter {
   }
 
   /**
-   * Find an available port
+   * Find an available port with better error handling
    */
   private async findAvailablePort(): Promise<number | null> {
+    // First, try ports in our designated range
     for (let i = 0; i < this.maxPorts; i++) {
       const port = this.basePort + i;
-      if (!this.usedPorts.has(port) && await this.isPortAvailable(port)) {
+      
+      // Skip if we're already tracking this port
+      if (this.usedPorts.has(port)) {
+        continue;
+      }
+      
+      // Check if port is actually available
+      const available = await this.isPortAvailable(port);
+      if (available) {
         return port;
       }
+      
+      // If port is busy but we're not tracking it, it might be orphaned
+      // Try to clean it up
+      try {
+        const { exec } = await import('child_process');
+        await new Promise<void>((resolve) => {
+          exec(`lsof -ti :${port} | xargs kill -9 2>/dev/null`, (error) => {
+            // Ignore errors - process might not exist or we might not have permission
+            resolve();
+          });
+        });
+        
+        // Wait a bit for the port to be released
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        // Try again
+        if (await this.isPortAvailable(port)) {
+          return port;
+        }
+      } catch {
+        // Ignore cleanup errors
+      }
     }
+    
+    // If all ports in range are busy, try finding a random available port
+    // This ensures we can always start a preview, just not on our preferred ports
+    try {
+      const randomPort = await this.findRandomAvailablePort();
+      if (randomPort) {
+        logger.warn(`All preferred ports (${this.basePort}-${this.basePort + this.maxPorts}) busy, using random port ${randomPort}`);
+        return randomPort;
+      }
+    } catch {
+      // Fall through to return null
+    }
+    
     return null;
+  }
+
+  /**
+   * Find a random available port outside our normal range
+   */
+  private findRandomAvailablePort(): Promise<number> {
+    return new Promise((resolve, reject) => {
+      const server = net.createServer();
+      
+      server.once('error', (err) => {
+        reject(err);
+      });
+      
+      server.once('listening', () => {
+        const addr = server.address();
+        if (addr && typeof addr !== 'string') {
+          const port = addr.port;
+          server.close(() => resolve(port));
+        } else {
+          server.close();
+          reject(new Error('Could not get port from server'));
+        }
+      });
+      
+      // Let OS assign a random available port
+      server.listen(0);
+    });
   }
 
   /**

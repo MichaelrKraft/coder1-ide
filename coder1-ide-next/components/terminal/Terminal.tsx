@@ -64,6 +64,7 @@ interface TerminalProps {
     currentTask: string;
     createdAt: Date;
   }; // Agent session data
+  isVisible?: boolean; // Whether this terminal is currently visible
 }
 
 /**
@@ -77,7 +78,7 @@ interface TerminalProps {
  * 
  * DO NOT MODIFY button positioning without checking original
  */
-export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped, onTerminalData, onTerminalCommand, onTerminalReady, sandboxMode = false, sandboxSession, agentMode = false, agentSession }: TerminalProps) {
+export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped, onTerminalData, onTerminalCommand, onTerminalReady, sandboxMode = false, sandboxSession, agentMode = false, agentSession, isVisible = true }: TerminalProps) {
   // REMOVED: // REMOVED: console.log('🖥️ Terminal component rendering...');
   const terminalRef = useRef<HTMLDivElement>(null);
   const xtermRef = useRef<XTerm | null>(null);
@@ -471,7 +472,14 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
             cols: 130,
             rows: 30,
             sandbox: sandboxMode,
-            checkpointName: sandboxSession?.name || 'Sandbox Session'
+            checkpointName: sandboxSession?.name || 'Sandbox Session',
+            // Add agent session info for Claude tabs
+            agentMode: agentMode || false,
+            agentSession: agentMode ? {
+              id: agentSession?.id,
+              name: agentSession?.name,
+              role: agentSession?.role
+            } : undefined
           }),
         });
         
@@ -713,41 +721,68 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
             if (process.env.NODE_ENV !== 'production' || sandboxMode || agentMode) {
               term.clear();
               
-              // Handle agent terminals
+              // Handle agent terminals (including Claude tabs)
               if (agentMode && agentSession) {
                 console.log('🤖 Terminal: Agent mode with session:', agentSession);
                 
-                // Display agent terminal header
-                const roleColors: Record<string, string> = {
-                  frontend: '\x1b[38;5;39m',   // Blue
-                  backend: '\x1b[38;5;34m',    // Green
-                  database: '\x1b[38;5;129m',  // Purple
-                  testing: '\x1b[38;5;226m',   // Yellow
-                  devops: '\x1b[38;5;208m',    // Orange
-                  fullstack: '\x1b[38;5;244m'  // Gray
-                };
+                // Check if this is a Claude tab (starts with "Claude ")
+                const isClaudeTab = agentSession.name && agentSession.name.startsWith('Claude ');
                 
-                const color = roleColors[agentSession.role] || roleColors.fullstack;
-                term.writeln(`${color}${agentSession.name}\x1b[0m`);
-                term.writeln('\x1b[38;5;240m' + '─'.repeat(80) + '\x1b[0m');
-                
-                // Show agent status
-                term.writeln(`\x1b[38;5;245mRole: ${agentSession.role}\x1b[0m`);
-                term.writeln(`\x1b[38;5;245mTeam: ${agentSession.teamId}\x1b[0m`);
-                if (agentSession.currentTask) {
-                  term.writeln(`\x1b[38;5;245mCurrent Task: ${agentSession.currentTask}\x1b[0m`);
+                if (isClaudeTab) {
+                  // Simple header for Claude tabs
+                  term.writeln(`\x1b[38;5;39m${agentSession.name}\x1b[0m`);
+                  term.writeln('\x1b[38;5;240m' + '─'.repeat(80) + '\x1b[0m');
+                  term.writeln('Starting Claude CLI...');
+                  term.writeln('');
+                  
+                  // Auto-run claude command after a short delay
+                  setTimeout(async () => {
+                    // Import getSocket to get the socket instance
+                    const { getSocket } = await import('@/lib/socket');
+                    const socket = await getSocket();
+                    const sessionId = sessionIdForVoiceRef.current;
+                    
+                    if (socket?.connected && sessionId) {
+                      console.log('🚀 Auto-running claude command for tab:', agentSession.name);
+                      socket.emit('terminal:input', {
+                        id: sessionId,
+                        data: 'claude\r'
+                      });
+                    }
+                  }, 1000);
+                } else {
+                  // Original agent terminal display (for future use)
+                  const roleColors: Record<string, string> = {
+                    frontend: '\x1b[38;5;39m',   // Blue
+                    backend: '\x1b[38;5;34m',    // Green
+                    database: '\x1b[38;5;129m',  // Purple
+                    testing: '\x1b[38;5;226m',   // Yellow
+                    devops: '\x1b[38;5;208m',    // Orange
+                    fullstack: '\x1b[38;5;244m'  // Gray
+                  };
+                  
+                  const color = roleColors[agentSession.role] || roleColors.fullstack;
+                  term.writeln(`${color}${agentSession.name}\x1b[0m`);
+                  term.writeln('\x1b[38;5;240m' + '─'.repeat(80) + '\x1b[0m');
+                  
+                  // Show agent status
+                  term.writeln(`\x1b[38;5;245mRole: ${agentSession.role}\x1b[0m`);
+                  term.writeln(`\x1b[38;5;245mTeam: ${agentSession.teamId}\x1b[0m`);
+                  if (agentSession.currentTask) {
+                    term.writeln(`\x1b[38;5;245mCurrent Task: ${agentSession.currentTask}\x1b[0m`);
+                  }
+                  term.writeln('\x1b[38;5;240m' + '─'.repeat(80) + '\x1b[0m');
+                  
+                  // Write any existing terminal history  
+                  if (agentSession.terminalHistory) {
+                    term.write(agentSession.terminalHistory);
+                  }
+                  
+                  term.writeln('');
+                  term.writeln('🤖 AGENT TERMINAL - Interactive AI workspace');
+                  term.writeln('──────────────────────────────────────────────');
+                  term.writeln('');
                 }
-                term.writeln('\x1b[38;5;240m' + '─'.repeat(80) + '\x1b[0m');
-                
-                // Write any existing terminal history
-                if (agentSession.terminalHistory) {
-                  term.write(agentSession.terminalHistory);
-                }
-                
-                term.writeln('');
-                term.writeln('🤖 AGENT TERMINAL - Interactive AI workspace');
-                term.writeln('──────────────────────────────────────────────');
-                term.writeln('');
                 
                 // Add mock output for fallback agents
                 if (agentSession.status === 'waiting' || agentSession.status === 'setup_required') {
@@ -904,7 +939,14 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
                   }
                   term.writeln(displayName);
                   term.writeln('──────────────────────────────────────────────');
-                  term.writeln('\x1b[38;5;245mNo terminal history available in this checkpoint.\x1b[0m');
+                  term.writeln('\x1b[38;5;208m⚠️ No terminal history available in this checkpoint\x1b[0m');
+                  term.writeln('');
+                  term.writeln('\x1b[38;5;245mThis may happen if:\x1b[0m');
+                  term.writeln('\x1b[38;5;245m• The checkpoint was created before terminal history tracking\x1b[0m');
+                  term.writeln('\x1b[38;5;245m• No terminal commands were run before the checkpoint\x1b[0m');
+                  term.writeln('\x1b[38;5;245m• Terminal history collection was not working at checkpoint time\x1b[0m');
+                  term.writeln('');
+                  term.writeln('\x1b[38;5;82mYou can start typing commands now to begin a new session.\x1b[0m');
                 }
                 
                 if (sandboxSession?.checkpointData) {
@@ -1176,12 +1218,18 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
 
   // Auto-focus terminal when component mounts and after interactions
   useEffect(() => {
+    // Only focus if this terminal is visible
+    if (!isVisible) {
+      console.log(`🚫 Terminal ${sessionId} not visible, skipping focus`);
+      return;
+    }
+
     // Focus terminal after a short delay to ensure DOM is ready
     const focusTimer = setTimeout(() => {
-      if (xtermRef.current && terminalRef.current) {
+      if (xtermRef.current && terminalRef.current && isVisible) {
         try {
           xtermRef.current.focus();
-          console.log('✅ Terminal auto-focused on mount');
+          console.log(`✅ Terminal ${sessionId} auto-focused (visible)`);
         } catch (error) {
           console.warn('Could not auto-focus terminal:', error);
         }
@@ -1191,14 +1239,15 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
     // Add global click handler to refocus terminal when clicked anywhere in terminal area
     const handleTerminalAreaClick = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
-      // Check if click is within terminal container
-      if (terminalRef.current && terminalRef.current.contains(target)) {
+      // Check if click is within terminal container and terminal is visible
+      if (terminalRef.current && terminalRef.current.contains(target) && isVisible) {
         // Notify parent that terminal was clicked (hides hero section)
         onTerminalClick?.();
         
         if (xtermRef.current) {
           try {
             xtermRef.current.focus();
+            console.log(`🖱️ Terminal ${sessionId} focused on click`);
           } catch (error) {
             console.warn('Could not focus terminal on click:', error);
           }
@@ -1212,7 +1261,24 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
       clearTimeout(focusTimer);
       document.removeEventListener('click', handleTerminalAreaClick);
     };
-  }, [terminalReady]);
+  }, [terminalReady, isVisible, sessionId]);
+
+  // Handle visibility changes - focus when becoming visible
+  useEffect(() => {
+    if (isVisible && xtermRef.current) {
+      // Small delay to ensure DOM updates are complete
+      const timer = setTimeout(() => {
+        try {
+          xtermRef.current?.focus();
+          console.log(`👁️ Terminal ${sessionId} focused on visibility change`);
+        } catch (error) {
+          console.warn('Could not focus terminal on visibility change:', error);
+        }
+      }, 100);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [isVisible, sessionId]);
 
   // Listen for checkpoint restoration events
   useEffect(() => {
@@ -1707,14 +1773,29 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
     
     // Critical diagnostic: Check if we're using mock socket
     if (socket?.io?.engine?.transport?.name === 'mock' || socket?.id === 'mock-socket') {
-      console.error('⚠️ CRITICAL: USING MOCK SOCKET - Terminal will NOT work!');
-      console.error('This means Socket.IO connection failed completely.');
-      console.error('Check browser console and server logs for connection errors.');
+      console.error('❌ CRITICAL: Terminal requires unified server mode!');
+      console.error('====================================================');
+      console.error('PROBLEM: You are using the wrong development server mode.');
+      console.error('');
+      console.error('SOLUTION: Stop the server and restart with:');
+      console.error('  npm run dev');
+      console.error('');
+      console.error('DO NOT USE: npm run dev:legacy');
+      console.error('');
+      console.error('The unified server provides Socket.IO for terminal support.');
+      console.error('See DEVELOPMENT.md for more information.');
+      console.error('====================================================');
       
       // Visual warning for users
       if (xtermRef.current) {
-        xtermRef.current.writeln('\x1b[31m⚠️ ERROR: Socket connection failed - Terminal is offline\x1b[0m');
-        xtermRef.current.writeln('\x1b[33mPlease refresh the page or contact support\x1b[0m');
+        xtermRef.current.writeln('\x1b[31m⚠️ ERROR: Wrong server mode - Terminal disabled\x1b[0m');
+        xtermRef.current.writeln('');
+        xtermRef.current.writeln('\x1b[33mYou are using legacy mode which has no Socket.IO support.\x1b[0m');
+        xtermRef.current.writeln('');
+        xtermRef.current.writeln('To fix: Stop the server and run:');
+        xtermRef.current.writeln('\x1b[36m  npm run dev\x1b[0m');
+        xtermRef.current.writeln('');
+        xtermRef.current.writeln('See DEVELOPMENT.md for details.');
       }
     } else {
       console.log('✅ Using real Socket.IO connection');

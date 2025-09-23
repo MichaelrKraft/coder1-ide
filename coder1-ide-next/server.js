@@ -60,6 +60,39 @@ try {
   agentTerminalManager = null;
 }
 
+// Conductor system removed - using simple multi-Claude tabs instead
+// Multi-Claude tabs will be handled through the terminal UI directly
+
+// Broadcast team status updates periodically
+setInterval(() => {
+  if (agentTerminalManager && io) {
+    const stats = agentTerminalManager.getStats();
+    
+    if (stats.totalSessions > 0) {
+      const agents = stats.sessions.map(session => ({
+        agentId: session.agentId,
+        role: session.role,
+        status: session.bufferSize > 0 ? 'working' : 'idle',
+        bufferSize: session.bufferSize
+      }));
+      
+      // Broadcast to all connected clients
+      io.emit('team:status:update', { agents });
+    }
+  }
+}, 3000); // Update every 3 seconds
+
+// Agent Coordinator for multi-agent workflows with terminal integration
+let agentCoordinator;
+try {
+  const { getCoordinatorService } = require('./services/agent-coordinator');
+  agentCoordinator = getCoordinatorService();
+  console.log('🎭 Agent Coordinator initialized');
+} catch (error) {
+  console.warn('⚠️ Agent Coordinator not available:', error.message);
+  agentCoordinator = null;
+}
+
 // Test PTY compatibility on startup
 const testPtyCompatibility = () => {
   try {
@@ -598,6 +631,16 @@ app.prepare().then(() => {
       console.warn('⚠️ Failed to initialize Agent Terminal Manager:', error.message);
     }
   }
+  
+  // Connect Agent Coordinator to Agent Terminal Manager for output routing
+  if (agentCoordinator && agentTerminalManager) {
+    try {
+      agentCoordinator.setAgentTerminalManager(agentTerminalManager);
+      console.log('🔌 Agent Coordinator connected to Agent Terminal Manager');
+    } catch (error) {
+      console.warn('⚠️ Failed to connect Agent Coordinator to Terminal Manager:', error.message);
+    }
+  }
 
   // Initialize Coder1 Bridge Manager for local Claude CLI connections
   let bridgeManager;
@@ -847,11 +890,14 @@ app.prepare().then(() => {
       }
     });
     
-    // Handle terminal input
-    socket.on('terminal:input', ({ id, data }) => {
+    // Handle terminal input with Conductor command detection
+    socket.on('terminal:input', async ({ id, data }) => {
       console.log(`⌨️ TERMINAL INPUT: Session ${id}, Data length: ${data?.length}, First char: ${data?.[0]?.charCodeAt(0)}`);
       
       const sessionId = id || currentSessionId;
+      
+      // Conductor slash commands removed - multi-Claude tabs handle this differently
+      
       const session = terminalSessions.get(sessionId);
       if (session) {
         // Build up command buffer BEFORE writing to terminal
@@ -1168,6 +1214,24 @@ app.prepare().then(() => {
         }
       });
     }
+    
+    // Team Status Handlers for Conductor System
+    socket.on('team:status:request', () => {
+      if (agentTerminalManager) {
+        const stats = agentTerminalManager.getStats();
+        
+        const agents = stats.sessions.map(session => ({
+          agentId: session.agentId,
+          role: session.role,
+          status: session.bufferSize > 0 ? 'working' : 'idle',
+          bufferSize: session.bufferSize
+        }));
+        
+        socket.emit('team:status:update', { agents });
+      } else {
+        socket.emit('team:status:update', { agents: [] });
+      }
+    });
     
     // Clean up on disconnect
     socket.on('disconnect', () => {

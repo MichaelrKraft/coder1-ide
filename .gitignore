@@ -14,6 +14,10 @@ npm-debug.log*
 *.swo
 .DS_Store
 
+# Claude parallel development directories
+.claude-parallel-dev/
+.claude-test-stdin
+
 # Build outputs
 dist/
 build/
@@ -44,6 +48,21 @@ server.log
 test-*.js
 test-*.html
 test-pty/
+
+# Database files
+db/*.db
+db/*.db-shm
+db/*.db-wal
+
+# Session data
+data/memory/sessions/*.json
+data/sessions/
+
+# Games (unrelated)
+public/games/
+
+# Next.js
+coder1-ide-next/.next/
 test-supervision/
 
 # GitHub CLI integration test files

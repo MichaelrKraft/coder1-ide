@@ -466,7 +466,10 @@ Context: ${agentSession.context}`;
         // NO PROMPT as argument - will be sent via stdin
       ], {
         cwd: taskWorkDir,
-        env: { ...process.env },
+        env: { 
+          ...process.env,
+          CLAUDE_CODE_OAUTH_TOKEN: process.env.CLAUDE_CODE_OAUTH_TOKEN
+        },
         stdio: ['pipe', 'pipe', 'pipe'] // Enable stdin, stdout, stderr pipes
       });
       

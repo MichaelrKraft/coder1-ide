@@ -618,7 +618,7 @@ class AgentCoordinator extends EventEmitter {
           
           // Create terminal session for this agent if terminal manager is available
           if (this.agentTerminalManager) {
-            const terminalSession = this.agentTerminalManager.createAgentTerminal(
+            const terminalSession = this.agentTerminalManager.createAgentTerminalSession(
               agentId,
               workflowSession.sessionId,
               roleId

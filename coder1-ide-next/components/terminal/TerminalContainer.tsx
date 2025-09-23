@@ -65,8 +65,10 @@ export default function TerminalContainer({
   const [activeSessionId, setActiveSessionId] = useState<string>('main');
   
   // Set agent tabs enabled on client side only
+  // Enable multi-Claude tabs (simplified from agent tabs)
   useEffect(() => {
-    setAgentTabsEnabled(process.env.NEXT_PUBLIC_ENABLE_AGENT_TABS === 'true');
+    // Always enable for multi-Claude functionality
+    setAgentTabsEnabled(true);
   }, []);
 
   // Agent role styling helper (Phase 1)
@@ -84,11 +86,49 @@ export default function TerminalContainer({
 
   // Handle creating a sandbox from checkpoint data
   const createSandbox = useCallback((checkpointData: any) => {
+    // Extract terminal history from multiple possible locations for backward compatibility
+    const extractTerminalHistory = (data: any): string => {
+      // New format: top-level terminalHistory field
+      if (data.terminalHistory && typeof data.terminalHistory === 'string') {
+        console.log('📋 Found terminal history in top-level field, length:', data.terminalHistory.length);
+        return data.terminalHistory;
+      }
+      
+      // New format: data.terminalHistory field
+      if (data.data?.terminalHistory && typeof data.data.terminalHistory === 'string') {
+        console.log('📋 Found terminal history in data.terminalHistory field, length:', data.data.terminalHistory.length);
+        return data.data.terminalHistory;
+      }
+      
+      // Legacy format: data.snapshot.terminal field
+      if (data.data?.snapshot?.terminal && typeof data.data.snapshot.terminal === 'string') {
+        console.log('📋 Found terminal history in legacy data.snapshot.terminal field, length:', data.data.snapshot.terminal.length);
+        return data.data.snapshot.terminal;
+      }
+      
+      // Direct snapshot.terminal (for older checkpoints)
+      if (data.snapshot?.terminal && typeof data.snapshot.terminal === 'string') {
+        console.log('📋 Found terminal history in direct snapshot.terminal field, length:', data.snapshot.terminal.length);
+        return data.snapshot.terminal;
+      }
+      
+      console.log('⚠️ No terminal history found in checkpoint data. Available fields:', Object.keys(data));
+      if (data.data) {
+        console.log('📋 Data fields available:', Object.keys(data.data));
+        if (data.data.snapshot) {
+          console.log('📋 Snapshot fields available:', Object.keys(data.data.snapshot));
+        }
+      }
+      return '';
+    };
+    
+    const terminalHistory = extractTerminalHistory(checkpointData);
+    
     const sandbox: SandboxSession = {
       id: `sandbox_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       name: checkpointData.name || `Checkpoint ${new Date().toLocaleDateString('en-US')} ${new Date().toLocaleTimeString()}`,
       checkpointData: checkpointData.checkpointData || checkpointData, // Handle nested structure
-      terminalHistory: checkpointData.terminalHistory || '', // Store terminal history
+      terminalHistory: terminalHistory, // Store extracted terminal history
       createdAt: new Date()
     };
     
@@ -159,6 +199,34 @@ export default function TerminalContainer({
     
     console.log('🗑️ Agent session closed:', agentId);
   }, [agentTabsEnabled, activeSessionId]);
+
+  // Create a new Claude tab - simple multi-Claude implementation
+  const createNewClaudeTab = useCallback(async () => {
+    const claudeNumber = Array.from(agentSessions.values()).filter(
+      s => s && s.name && s.name.startsWith('Claude')
+    ).length + 1;
+    
+    const claudeSession: AgentSession = {
+      id: `claude_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      name: `Claude ${claudeNumber}`,
+      role: 'fullstack', // Use fullstack as default for Claude tabs
+      teamId: 'claude-multi',
+      terminalHistory: '',
+      status: 'initializing',
+      progress: 0,
+      currentTask: 'Starting Claude CLI...',
+      createdAt: new Date()
+    };
+    
+    // Add the session to our tabs
+    setAgentSessions(prev => new Map(prev).set(claudeSession.id, claudeSession));
+    setActiveSessionId(claudeSession.id);
+    
+    console.log('✨ New Claude tab created:', claudeSession.name);
+    
+    // The Terminal component will handle creating the actual terminal session
+    // and auto-running the 'claude' command when it mounts
+  }, [agentSessions]);
 
   // Listen for sandbox creation and action events
   React.useEffect(() => {
@@ -328,6 +396,16 @@ export default function TerminalContainer({
           );
         })}
 
+        {/* New Claude Tab Button */}
+        <button
+          className="px-4 py-2 text-sm text-text-secondary hover:text-text-primary hover:bg-bg-tertiary transition-all duration-200 flex items-center gap-2 border-l border-border-default"
+          onClick={createNewClaudeTab}
+          title="Open a new Claude CLI session"
+        >
+          <span className="text-xs">➕</span>
+          <span>New Claude Tab</span>
+        </button>
+
         {/* Tab bar spacer */}
         <div className="flex-1 bg-bg-secondary"></div>
       </div>
@@ -344,6 +422,7 @@ export default function TerminalContainer({
             onTerminalData={onTerminalData}
             onTerminalCommand={onTerminalCommand}
             onTerminalReady={onTerminalReady}
+            isVisible={activeSessionId === 'main'}
           />
         </div>
         
@@ -360,6 +439,7 @@ export default function TerminalContainer({
               onTerminalReady={onTerminalReady}
               sandboxMode={true}
               sandboxSession={sandboxSession}
+              isVisible={activeSessionId === 'sandbox'}
             />
           </div>
         )}
@@ -391,6 +471,7 @@ export default function TerminalContainer({
                 currentTask: agent.currentTask,
                 createdAt: agent.createdAt
               }}
+              isVisible={activeSessionId === agent.id}
             />
           </div>
         ))}
