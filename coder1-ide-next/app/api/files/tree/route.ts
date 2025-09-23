@@ -4,6 +4,9 @@ import path from 'path';
 import { withGeneralMiddleware } from '@/lib/api-middleware';
 import { logger } from '@/lib/logger';
 
+// Force dynamic rendering for this route
+export const dynamic = 'force-dynamic';
+
 // Get project root directory
 const getProjectRoot = () => {
     return process.cwd();

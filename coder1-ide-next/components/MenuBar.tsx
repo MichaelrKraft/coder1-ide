@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { ChevronDown, Home, Grid, FileText, Code, Sparkles, BookOpen, SettingsIcon, Info, HelpCircle, Keyboard, AlertCircle } from '@/lib/icons';
 import { glows } from '@/lib/design-tokens';
 import { BridgeConnectButton } from './bridge/BridgeConnectButton';
+import { SetupInstructionsModal } from './bridge/SetupInstructionsModal';
 
 interface MenuItem {
   label?: string;
@@ -82,6 +83,7 @@ export default function MenuBar({
 }: MenuBarProps) {
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [setupModalOpen, setSetupModalOpen] = useState(false);
   const menuBarRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -136,6 +138,8 @@ export default function MenuBar({
       { label: 'Stop', action: onStop || (() => console.log('Stop')), shortcut: 'Shift+F5' }
     ],
     Help: [
+      { label: 'Bridge Setup Instructions', action: () => setSetupModalOpen(true), shortcut: '' },
+      { separator: true },
       { label: 'About Coder1', action: onShowAbout || (() => alert('Coder1 IDE v2.0.0\nBuilt for Claude Code and vibe coders')), shortcut: '' },
       { label: 'Documentation', action: () => window.open('/docs-manager', '_blank'), shortcut: '' },
       { separator: true },
@@ -428,6 +432,13 @@ export default function MenuBar({
         )}
         </div>
       </div>
+      
+      {/* Bridge Setup Instructions Modal */}
+      <SetupInstructionsModal 
+        isOpen={setupModalOpen} 
+        onClose={() => setSetupModalOpen(false)}
+        showDontShowAgain={false}
+      />
     </div>
   );
 }

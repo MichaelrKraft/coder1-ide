@@ -265,11 +265,26 @@ export default function MonacoEditor({
     if (!setupViewed) {
       // First time user - show bridge setup instructions
       console.log('🔵 Showing WelcomeScreen for first-time user');
-      // Mark as viewed for next time
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('coder1-bridge-setup-viewed', 'true');
-      }
-      return <WelcomeScreen />;
+      // DON'T automatically mark as viewed - let user dismiss it manually
+      // This ensures they can see it until they're ready
+      return (
+        <div className="relative h-full">
+          <WelcomeScreen />
+          <button
+            onClick={() => {
+              // Mark as viewed when user explicitly dismisses
+              if (typeof window !== 'undefined') {
+                localStorage.setItem('coder1-bridge-setup-viewed', 'true');
+              }
+              setSetupViewed(true);
+            }}
+            className="absolute top-4 right-4 px-4 py-2 bg-bg-secondary hover:bg-bg-tertiary border border-border-default rounded-lg transition-colors text-sm"
+            title="I've completed the setup - continue to IDE"
+          >
+            Continue to IDE →
+          </button>
+        </div>
+      );
     } else {
       // Returning user - show the hero section with dismiss and tour callbacks
       console.log('🟢 Showing HeroSection for returning user');

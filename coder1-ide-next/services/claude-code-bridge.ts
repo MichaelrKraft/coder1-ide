@@ -136,6 +136,12 @@ export class ClaudeCodeBridgeService extends EventEmitter {
    * Validate git repository state and permissions
    */
   private async validateRepositoryState(): Promise<void> {
+    // Skip git validation in production environments (Render, Vercel, etc.)
+    if (process.env.NODE_ENV === 'production' || process.env.RENDER === 'true') {
+      logger.info('📦 Production environment detected - skipping git validation');
+      return;
+    }
+
     try {
       // Check if directory is a git repository
       const gitDir = path.join(this.projectRoot, '.git');
@@ -164,9 +170,11 @@ export class ClaudeCodeBridgeService extends EventEmitter {
    * Validate Claude Code CLI availability and authentication
    */
   private async validateClaudeCodeCLI(): Promise<void> {
-    // Check if validation should be skipped
-    if (process.env.SKIP_BRIDGE_VALIDATION === 'true') {
-      logger.info('⚠️ Skipping Claude CLI validation (SKIP_BRIDGE_VALIDATION=true)');
+    // Skip validation in production or if explicitly disabled
+    if (process.env.NODE_ENV === 'production' || 
+        process.env.RENDER === 'true' ||
+        process.env.SKIP_BRIDGE_VALIDATION === 'true') {
+      logger.info('⚠️ Skipping Claude CLI validation in production environment');
       return;
     }
     
