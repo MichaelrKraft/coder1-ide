@@ -269,7 +269,16 @@ export default function MonacoEditor({
       // This ensures they can see it until they're ready
       return (
         <div className="relative h-full">
-          <WelcomeScreen />
+          <WelcomeScreen 
+            onDismiss={() => {
+              // Mark as viewed when user explicitly dismisses
+              if (typeof window !== 'undefined') {
+                localStorage.setItem('coder1-bridge-setup-viewed', 'true');
+              }
+              setSetupViewed(true);
+            }}
+          />
+          {/* Backup button with fixed positioning */}
           <button
             onClick={() => {
               // Mark as viewed when user explicitly dismisses
@@ -278,8 +287,12 @@ export default function MonacoEditor({
               }
               setSetupViewed(true);
             }}
-            className="absolute top-4 right-4 px-4 py-2 bg-bg-secondary hover:bg-bg-tertiary border border-border-default rounded-lg transition-colors text-sm"
-            title="I've completed the setup - continue to IDE"
+            className="fixed top-24 right-8 px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 text-base"
+            style={{
+              zIndex: 9999,
+              boxShadow: '0 0 20px rgba(0, 217, 255, 0.3), 0 4px 6px rgba(0, 0, 0, 0.3)',
+            }}
+            title="Continue to IDE"
           >
             Continue to IDE →
           </button>

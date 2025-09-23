@@ -2,7 +2,11 @@
 
 import React from 'react';
 
-export function WelcomeScreen() {
+interface WelcomeScreenProps {
+  onDismiss?: () => void;
+}
+
+export function WelcomeScreen({ onDismiss }: WelcomeScreenProps = {}) {
   return (
     <div className="flex items-center justify-center h-full bg-bg-primary p-8">
       <div className="max-w-4xl w-full">
@@ -59,6 +63,29 @@ export function WelcomeScreen() {
                 </div>
               </div>
             </div>
+
+            {/* Dismiss buttons */}
+            {onDismiss && (
+              <div className="flex gap-4 justify-center mt-8">
+                <button
+                  onClick={onDismiss}
+                  className="px-6 py-3 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors"
+                  title="Skip setup for now and explore the IDE"
+                >
+                  Skip Setup
+                </button>
+                <button
+                  onClick={onDismiss}
+                  className="px-8 py-3 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-200"
+                  style={{
+                    boxShadow: '0 0 20px rgba(0, 217, 255, 0.3), 0 4px 6px rgba(0, 0, 0, 0.3)',
+                  }}
+                  title="I've completed the setup - continue to IDE"
+                >
+                  I've Completed Setup →
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>
