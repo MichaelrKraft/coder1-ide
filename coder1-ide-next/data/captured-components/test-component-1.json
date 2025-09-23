@@ -1,0 +1,18 @@
+{
+  "id": "test-component-1",
+  "title": "Hero Section",
+  "url": "https://example.com/homepage",
+  "timestamp": "2025-01-21T10:30:00.000Z",
+  "category": "hero",
+  "tags": [
+    "responsive",
+    "gradient",
+    "call-to-action"
+  ],
+  "html": "<div class=\"hero-section\">\n  <h1>Welcome to Our Platform</h1>\n  <p>Build amazing things with our tools</p>\n  <button class=\"cta-button\">Get Started</button>\n</div>",
+  "css": ".hero-section {\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  padding: 4rem 2rem;\n  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);\n  color: white;\n  text-align: center;\n}\n\n.hero-section h1 {\n  font-size: 3rem;\n  margin-bottom: 1rem;\n  font-weight: bold;\n}\n\n.hero-section p {\n  font-size: 1.2rem;\n  margin-bottom: 2rem;\n  opacity: 0.9;\n}\n\n.cta-button {\n  background: #ff6b6b;\n  color: white;\n  border: none;\n  padding: 1rem 2rem;\n  border-radius: 8px;\n  font-size: 1.1rem;\n  cursor: pointer;\n  transition: transform 0.2s;\n}\n\n.cta-button:hover {\n  transform: translateY(-2px);\n}",
+  "screenshot": null,
+  "generatedCode": {
+    "react": "import React from 'react';\nimport './Component.css';\n\nconst CapturedComponent = () => {\n    return (\n        <div className=\"captured-component\">\n            <div class=\"hero-section\">\n  <h1>Welcome to Our Platform</h1>\n  <p>Build amazing things with our tools</p>\n  <button class=\"cta-button\">Get Started</button>\n</div>\n        </div>\n    );\n};\n\nexport default CapturedComponent;\n\n/* CSS (Component.css) */\n.hero-section {\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  padding: 4rem 2rem;\n  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);\n  color: white;\n  text-align: center;\n}\n\n.hero-section h1 {\n  font-size: 3rem;\n  margin-bottom: 1rem;\n  font-weight: bold;\n}\n\n.hero-section p {\n  font-size: 1.2rem;\n  margin-bottom: 2rem;\n  opacity: 0.9;\n}\n\n.cta-button {\n  background: #ff6b6b;\n  color: white;\n  border: none;\n  padding: 1rem 2rem;\n  border-radius: 8px;\n  font-size: 1.1rem;\n  cursor: pointer;\n  transition: transform 0.2s;\n}\n\n.cta-button:hover {\n  transform: translateY(-2px);\n}\n"
+  }
+}

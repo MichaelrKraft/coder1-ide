@@ -128,6 +128,24 @@ const nextConfig = {
     
     return config;
   },
+  
+  // Add rewrites to bridge Express-to-Next.js routing for component capture system
+  async rewrites() {
+    return [
+      {
+        source: '/components-beta/api/list',
+        destination: '/api/components-beta/list'
+      },
+      {
+        source: '/components-beta/api/component/:id',
+        destination: '/api/components-beta/component/:id'
+      },
+      {
+        source: '/components-beta/api/generate-code/:id',
+        destination: '/api/components-beta/generate-code/:id'
+      }
+    ];
+  },
 }
 
 module.exports = nextConfig;
