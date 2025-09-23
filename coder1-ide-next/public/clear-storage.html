@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Clear Coder1 Storage</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background: #1a1a1a;
+            color: white;
+        }
+        .container {
+            text-align: center;
+            padding: 40px;
+            background: #2a2a2a;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+        button {
+            margin: 10px;
+            padding: 10px 20px;
+            font-size: 16px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            background: #00D9FF;
+            color: black;
+            font-weight: bold;
+        }
+        button:hover {
+            background: #00B8E6;
+        }
+        .status {
+            margin-top: 20px;
+            padding: 10px;
+            border-radius: 5px;
+            background: #333;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Clear Coder1 Storage</h1>
+        <p>Use this to reset your Coder1 IDE if it's not loading properly</p>
+        
+        <button onclick="clearAll()">Clear All Storage</button>
+        <button onclick="clearSetupOnly()">Clear Setup Flags Only</button>
+        <button onclick="goToIDE()">Go to IDE</button>
+        
+        <div class="status" id="status"></div>
+    </div>
+
+    <script>
+        function clearAll() {
+            // Clear everything
+            localStorage.clear();
+            sessionStorage.clear();
+            
+            // Clear cookies
+            document.cookie.split(";").forEach(function(c) { 
+                document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"); 
+            });
+            
+            document.getElementById('status').innerHTML = '✅ All storage cleared! You can now <a href="/ide" style="color: #00D9FF;">go to IDE</a>';
+        }
+        
+        function clearSetupOnly() {
+            // Clear only setup-related items
+            localStorage.removeItem('coder1-bridge-setup-viewed');
+            localStorage.removeItem('coder1-tour-status');
+            localStorage.removeItem('coder1-tour-timestamp');
+            sessionStorage.removeItem('coder1-hero-dismissed');
+            
+            document.getElementById('status').innerHTML = '✅ Setup flags cleared! You can now <a href="/ide" style="color: #00D9FF;">go to IDE</a>';
+        }
+        
+        function goToIDE() {
+            window.location.href = '/ide';
+        }
+        
+        // Show current storage status
+        const setupViewed = localStorage.getItem('coder1-bridge-setup-viewed');
+        const tourStatus = localStorage.getItem('coder1-tour-status');
+        const heroDismissed = sessionStorage.getItem('coder1-hero-dismissed');
+        
+        document.getElementById('status').innerHTML = 
+            `Current Status:<br>` +
+            `Setup Viewed: ${setupViewed || 'not set'}<br>` +
+            `Tour Status: ${tourStatus || 'not set'}<br>` +
+            `Hero Dismissed: ${heroDismissed || 'not set'}`;
+    </script>
+</body>
+</html>

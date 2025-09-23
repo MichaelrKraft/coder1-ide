@@ -128,33 +128,57 @@ export default function TerminalSettings({
       // Updated dropdown height to match new max-height
       const dropdownHeight = 520; // Matches max-h-[520px]
       const dropdownWidth = 280;
+      const gap = 4; // Reduced gap for more vertical space
+      const margin = 10; // Margin from viewport edges
       
-      let top = rect.bottom + 8; // Gap below button
+      let top = rect.bottom + gap; // Default position below button
       let left = rect.left;
       
-      // Check if dropdown would go off-screen vertically
-      const spaceBelow = viewportHeight - rect.bottom - 8;
-      const spaceAbove = rect.top - 8;
+      // Calculate available space
+      const spaceBelow = viewportHeight - rect.bottom - margin;
+      const spaceAbove = rect.top - margin;
       
+      // Determine best vertical position
       if (spaceBelow < dropdownHeight) {
-        // Not enough space below, check if we should position above
-        if (spaceAbove > spaceBelow && spaceAbove > 200) {
-          // Position above the button
-          top = Math.max(10, rect.top - dropdownHeight - 8);
+        // Not enough space below
+        if (spaceAbove >= dropdownHeight + gap) {
+          // Plenty of space above - position above the button
+          top = rect.top - dropdownHeight - gap;
+        } else if (spaceAbove > spaceBelow && spaceAbove > 200) {
+          // More space above than below, and at least 200px - position above
+          top = Math.max(margin, rect.top - dropdownHeight - gap);
         } else {
-          // Not enough space above either, position at top of viewport with scroll
-          top = Math.max(10, rect.bottom + 8);
-          // Let the overflow-y-auto handle the scrolling
+          // Not ideal space anywhere - position to fit in viewport
+          // Calculate the best position that shows maximum content
+          if (spaceBelow > spaceAbove) {
+            // Use space below, but ensure we don't go past viewport
+            top = rect.bottom + gap;
+            // Ensure the dropdown doesn't extend past viewport bottom
+            const maxTop = viewportHeight - dropdownHeight - margin;
+            top = Math.min(top, maxTop);
+          } else {
+            // Use space above
+            top = Math.max(margin, rect.top - dropdownHeight - gap);
+          }
         }
       }
       
+      // Ensure dropdown never extends beyond viewport bottom
+      const dropdownBottom = top + dropdownHeight;
+      if (dropdownBottom > viewportHeight - margin) {
+        // Adjust top to keep dropdown within viewport
+        top = viewportHeight - dropdownHeight - margin;
+        // But don't go above the top margin
+        top = Math.max(margin, top);
+      }
+      
       // If it would go off-screen horizontally, adjust left
-      if (left + dropdownWidth > viewportWidth) {
-        left = viewportWidth - dropdownWidth - 20;
+      if (left + dropdownWidth > viewportWidth - margin) {
+        left = viewportWidth - dropdownWidth - margin;
       }
       
       // Ensure horizontal position is never off-screen
-      left = Math.max(10, left);
+      left = Math.max(margin, left);
       
       setDropdownPosition({ top, left });
     }
