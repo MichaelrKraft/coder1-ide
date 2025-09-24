@@ -49,18 +49,7 @@ export default function StatusBarCore({
     isLoading: false
   });
   
-  // Context Folders state management
-  const [contextStats, setContextStats] = useState<{
-    totalSessions: number;
-    totalMemories: number;
-    isActive: boolean;
-    isLoading: boolean;
-  }>({
-    totalSessions: 0,
-    totalMemories: 0,
-    isActive: false,
-    isLoading: false
-  });
+  // Context Folders state management removed - moved to terminal memory panel
   
   const actuallyConnected = isConnected || connections.terminal;
   const supervisionActive = supervision.isActive;
@@ -115,32 +104,7 @@ export default function StatusBarCore({
     }
   };
 
-  // Fetch Context Folders statistics
-  const fetchContextStats = async () => {
-    try {
-      setContextStats(prev => ({ ...prev, isLoading: true }));
-      
-      const response = await fetch('/api/context/stats', {
-        method: 'GET',
-        headers: { 'Content-Type': 'application/json' }
-      });
-      
-      if (response.ok) {
-        const stats = await response.json();
-        setContextStats({
-          totalSessions: stats.totalSessions || 0,
-          totalMemories: stats.totalConversations || 0,
-          isActive: (stats.totalConversations || 0) > 0 || (stats.totalSessions || 0) > 0,
-          isLoading: false
-        });
-      } else {
-        setContextStats(prev => ({ ...prev, isLoading: false }));
-      }
-    } catch (error) {
-      // logger?.warn('Context stats fetch failed:', error);
-      setContextStats(prev => ({ ...prev, isLoading: false }));
-    }
-  };
+  // Context stats fetching removed - moved to terminal memory panel
 
   // Fetch git info on mount and periodically
   useEffect(() => {
@@ -149,12 +113,7 @@ export default function StatusBarCore({
     return () => clearInterval(interval);
   }, []);
   
-  // Fetch Context stats on mount and periodically
-  useEffect(() => {
-    fetchContextStats();
-    const interval = setInterval(fetchContextStats, 60000); // Update every 60 seconds instead of 10
-    return () => clearInterval(interval);
-  }, []);
+  // Context stats removed - moved to terminal memory panel
   
   return (
     <>
@@ -214,28 +173,7 @@ export default function StatusBarCore({
             </div>
           )}
           
-          {/* Context Folders Information - Now positioned last (far right) */}
-          {contextStats.isActive && (
-            <div 
-              className="flex items-center gap-1 cursor-pointer hover:opacity-80 transition-opacity" 
-              title={`Context Memory: ${contextStats.totalMemories} memories, ${contextStats.totalSessions} contexts - Click to view AI memory in AI Dashboard`}
-              onClick={() => {
-                // Navigate to AI dashboard memory section
-                window.open('/vibe-dashboard', '_blank');
-              }}
-            >
-              <Brain className={`w-3 h-3 ${contextStats.totalMemories > 0 ? 'text-purple-400' : 'text-text-muted'}`} />
-              <span className={contextStats.totalMemories > 0 ? 'text-purple-400' : 'text-text-secondary'}>
-                {contextStats.totalMemories} memories
-              </span>
-              {contextStats.totalSessions > 0 && (
-                <div className="flex items-center gap-1">
-                  <span className="text-text-muted">•</span>
-                  <span className="text-text-secondary">{contextStats.totalSessions} contexts</span>
-                </div>
-              )}
-            </div>
-          )}
+          {/* Context memory statistics moved to terminal header memory panel */}
         </div>
       </div>
     </>

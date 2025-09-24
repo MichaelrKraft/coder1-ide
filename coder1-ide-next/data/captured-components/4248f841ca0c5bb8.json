@@ -1,0 +1,14 @@
+{
+  "id": "4248f841ca0c5bb8",
+  "title": "Mike Test Component",
+  "url": "https://example.com/test-page",
+  "selector": "body",
+  "html": "<div class=\"captured-component\" style=\"padding: 24px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;\">\n      <h3 style=\"color: #1a202c; margin-bottom: 12px;\">Real Component Test</h3>\n      <p style=\"color: #4a5568; margin-bottom: 16px;\">This simulates a component captured from a real website</p>\n      <button style=\"background: #3182ce; color: white; padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer;\">\n        Test Button\n      </button>\n    </div>",
+  "css": "\n    .captured-component {\n      font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif;\n      max-width: 400px;\n      margin: 20px auto;\n    }\n    .captured-component button:hover {\n      background: #2c5282;\n    }",
+  "screenshot": null,
+  "timestamp": "2025-09-24T02:52:19.117Z",
+  "tags": [],
+  "category": "uncategorized",
+  "framework": "vanilla",
+  "generatedCode": null
+}

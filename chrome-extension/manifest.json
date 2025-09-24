@@ -1,13 +1,14 @@
 {
   "manifest_version": 3,
   "name": "Coder1 Component Capture",
-  "version": "1.0.0",
-  "description": "Capture any web component and generate code instantly in Coder1 IDE",
+  "version": "1.2.7",
+  "description": "Capture any web component and generate code instantly in Coder1 IDE [v1.2.0 - Simplified version]",
   "permissions": [
     "activeTab",
     "contextMenus",
     "storage",
-    "tabs"
+    "tabs",
+    "scripting"
   ],
   "host_permissions": [
     "http://localhost:3001/*",
@@ -21,8 +22,7 @@
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
-      "js": ["content.js"],
-      "css": ["capture.css"],
+      "js": ["content-simple.js"],
       "run_at": "document_end"
     }
   ],

@@ -337,7 +337,7 @@ const StatusBarActions = React.memo(function StatusBarActions({
     <>
       <div className="flex items-center gap-2">
         {/* CheckPoint Button */}
-        <div data-tour="checkpoint-timeline" className="p-[1px] rounded-md" style={{background: 'linear-gradient(135deg, #6366f1, #8b5cf6)'}}>
+        <div data-tour="checkpoint-timeline" className="p-[1px] rounded-md" style={{background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', boxShadow: glows.purple.intense}}>
           <button
             onClick={handleCheckpoint}
             disabled={isLoadingState('checkpoint')}
@@ -356,7 +356,7 @@ const StatusBarActions = React.memo(function StatusBarActions({
         </div>
 
         {/* TimeLine Button */}
-        <div data-tour="timeline-button" className="p-[1px] rounded-md" style={{background: 'linear-gradient(135deg, #6366f1, #8b5cf6)'}}>
+        <div data-tour="timeline-button" className="p-[1px] rounded-md" style={{background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', boxShadow: glows.purple.intense}}>
           <button
             onClick={handleTimeline}
             disabled={isLoadingState('timeline')}
@@ -376,7 +376,7 @@ const StatusBarActions = React.memo(function StatusBarActions({
 
 
         {/* Session Summary Button */}
-        <div data-tour="session-summary" className="p-[1px] rounded-md" style={{background: 'linear-gradient(135deg, #6366f1, #8b5cf6)'}}>
+        <div data-tour="session-summary" className="p-[1px] rounded-md" style={{background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', boxShadow: glows.purple.intense}}>
           <button
             onClick={handleSessionSummary}
             disabled={isLoadingState('session')}
@@ -396,7 +396,7 @@ const StatusBarActions = React.memo(function StatusBarActions({
 
 
         {/* Docs Button */}
-        <div className="p-[1px] rounded-md" style={{background: 'linear-gradient(135deg, #6366f1, #8b5cf6)'}}>
+        <div className="p-[1px] rounded-md" style={{background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', boxShadow: glows.purple.intense}}>
           <button
             data-tour="docs-button"
             onClick={handleDocs}

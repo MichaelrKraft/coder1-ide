@@ -15,7 +15,7 @@ if (typeof window !== 'undefined') {
   require('@xterm/xterm/css/xterm.css');
 }
 import './Terminal.css'; // Re-enabled - critical for xterm viewport fixes
-import { Users, Zap, StopCircle, Brain, Eye, Code2, Mic, MicOff, Speaker, ChevronDown, Plus } from '@/lib/icons';
+import { Zap, StopCircle, Brain, Eye, Code2, Mic, MicOff, Speaker, ChevronDown, Plus } from '@/lib/icons';
 import TerminalSettings, { TerminalSettingsState } from './TerminalSettings';
 import { glows, spacing } from '@/lib/design-tokens';
 import { getSocket } from '@/lib/socket';
@@ -28,6 +28,7 @@ import { useUIStore } from '@/stores/useUIStore';
 import { filterThinkingAnimations, extractClaudeCommands } from '@/lib/checkpoint-utils';
 import { getCompanionClient } from '@/lib/companion-client';
 import { terminalCommandHandler } from '@/lib/terminal-commands';
+import { debounce } from '@/lib/debounce';
 
 // TypeScript declarations for Web Speech API
 declare global {
@@ -184,6 +185,40 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
   // Terminal settings state - guaranteed to have proper structure
   const [terminalSettings, setTerminalSettings] = useState<TerminalSettingsState>(defaultTerminalSettings);
 
+  // Fetch context stats (moved from StatusBarCore)
+  const fetchContextStats = async () => {
+    try {
+      console.log('🔍 Terminal: Fetching context stats...');
+      setContextStats(prev => ({ ...prev, isLoading: true }));
+      
+      const response = await fetch('/api/context/stats', {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      
+      if (response.ok) {
+        const stats = await response.json();
+        console.log('🔍 Terminal: Context stats received:', stats);
+        
+        const newContextStats = {
+          totalSessions: stats.totalSessions || 0,
+          totalMemories: stats.totalConversations || 0,
+          isActive: (stats.totalConversations || 0) > 0 || (stats.totalSessions || 0) > 0,
+          isLoading: false
+        };
+        
+        console.log('🔍 Terminal: Setting context stats:', newContextStats);
+        setContextStats(newContextStats);
+      } else {
+        console.log('🔍 Terminal: Context stats response not ok:', response.status);
+        setContextStats(prev => ({ ...prev, isLoading: false }));
+      }
+    } catch (error) {
+      console.log('🔍 Terminal: Context stats fetch failed:', error);
+      setContextStats(prev => ({ ...prev, isLoading: false }));
+    }
+  };
+
   // Load terminal settings from localStorage on mount
   useEffect(() => {
     logger.debug('[Terminal] Loading terminal settings from localStorage on mount');
@@ -209,6 +244,20 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
       // Save defaults on first run
       localStorage.setItem('coder1-terminal-settings', JSON.stringify(defaultTerminalSettings));
     }
+  }, []);
+
+  // Fetch context stats on mount and set up interval
+  useEffect(() => {
+    console.log('🔍 Terminal: Component mounted, calling fetchContextStats...');
+    fetchContextStats();
+    const statsInterval = setInterval(() => {
+      console.log('🔍 Terminal: Interval fetchContextStats...');
+      fetchContextStats();
+    }, 60000); // Update every 60 seconds
+    
+    return () => {
+      clearInterval(statsInterval);
+    };
   }, []);
 
   // Initialize companion service connection for Claude Code CLI access
@@ -424,6 +473,19 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
   const soundDropdownRef = useRef<HTMLDivElement>(null);
   const [showMemoryDropdown, setShowMemoryDropdown] = useState(false);
   const memoryDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Context stats state (moved from StatusBarCore)
+  const [contextStats, setContextStats] = useState<{
+    totalSessions: number;
+    totalMemories: number;
+    isActive: boolean;
+    isLoading: boolean;
+  }>({
+    totalSessions: 0,
+    totalMemories: 0,
+    isActive: false,
+    isLoading: false
+  });
   
   // Scroll tracking - Phase 1: Read-only monitoring
   const [isUserScrolled, setIsUserScrolled] = useState(false);
@@ -1283,8 +1345,9 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
   // Listen for checkpoint restoration events
   useEffect(() => {
     
-    const handleCheckpointRestored = (event: CustomEvent) => {
-      console.log('🔄 Terminal: Checkpoint restoration event received', event.detail);
+    // Debounced handler to prevent rapid-fire restoration attempts
+    const debouncedCheckpointRestore = debounce((event: CustomEvent) => {
+      console.log('🔄 Terminal: Checkpoint restoration event received (debounced)', event.detail);
       
       // For checkpointRestored event: { checkpoint, snapshot }
       const snapshot = event.detail?.snapshot;
@@ -1368,6 +1431,18 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
       // CRITICAL FIX: Only run enhanced reconnection for sandbox terminals, NOT main terminals
       // Main terminals should maintain their existing connection to prevent focus/input issues
       if (sandboxMode) {
+        // Check if Claude is already active - don't reinitialize if it is
+        if (claudeActive) {
+          console.log('ℹ️ Terminal: Claude already active, skipping reconnection');
+          setTimeout(() => {
+            if (xtermRef.current) {
+              xtermRef.current.focus();
+              console.log('🎯 Terminal: Focused existing Claude session');
+            }
+          }, 200);
+          return;
+        }
+        
         setTimeout(async () => {
           console.log('🔄 Terminal: Enhanced reconnection for sandbox after checkpoint restoration...');
           
@@ -1425,6 +1500,10 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
         }, 300); // Small delay to ensure terminal content is rendered first
       } else {
         // Main terminal - just ensure focus, don't disrupt existing connection
+        // Also check if Claude is already active to prevent reinitializing
+        if (claudeActive) {
+          console.log('ℹ️ Main terminal: Claude already active, preserving session');
+        }
         setTimeout(() => {
           if (xtermRef.current) {
             xtermRef.current.focus();
@@ -1432,6 +1511,11 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
           }
         }, 500);
       }
+    }, 300); // 300ms debounce delay to prevent rapid-fire restoration
+    
+    // Wrapper to handle the event listener properly
+    const handleCheckpointRestored = (event: CustomEvent) => {
+      debouncedCheckpointRestore(event);
     };
     
     const handleIdeStateChanged = (event: CustomEvent) => {
@@ -1493,6 +1577,12 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
       }
     };
     
+    // Remove any existing listeners first to prevent duplicates
+    window.removeEventListener('checkpointRestored', handleCheckpointRestored as any);
+    window.removeEventListener('ideStateChanged', handleIdeStateChanged as any);
+    window.removeEventListener('terminal:injectCommand', handleInjectCommand as any);
+    
+    // Add fresh listeners
     window.addEventListener('checkpointRestored', handleCheckpointRestored as any);
     window.addEventListener('ideStateChanged', handleIdeStateChanged as any);
     window.addEventListener('terminal:injectCommand', handleInjectCommand as any);
@@ -2608,15 +2698,6 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
             <span>Stop</span>
           </button>
 
-          {/* AI Team Button */}
-          <button
-            onClick={handleSpawnAgents}
-            className="terminal-control-btn flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md"
-            title="Deploy six Claude code agents working in parallel"
-          >
-            <Users className="w-4 h-4" />
-            <span>AI Team</span>
-          </button>
 
           {/* Memory button with dropdown */}
           <div className="relative">
@@ -2655,6 +2736,24 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
                       </div>
                     </>
                   )}
+                  
+                  {/* Context Statistics (moved from footer) */}
+                  {contextStats.isActive && (
+                    <>
+                      <div className="border-t border-border-default pt-2 mt-2">
+                        <div className="text-xs text-gray-400 uppercase tracking-wider mb-2">Context Memory</div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-gray-400">Memories:</span>
+                          <span className="text-purple-400 font-medium">{contextStats.totalMemories}</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-gray-400">Contexts:</span>
+                          <span className="text-purple-400 font-medium">{contextStats.totalSessions}</span>
+                        </div>
+                      </div>
+                    </>
+                  )}
+                  
                   <div className="border-t border-border-default pt-2 mt-2">
                     <button
                       onClick={() => {

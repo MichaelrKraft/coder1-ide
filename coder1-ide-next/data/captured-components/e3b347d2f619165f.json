@@ -1,0 +1,14 @@
+{
+  "id": "e3b347d2f619165f",
+  "title": "div element",
+  "url": "https://www.ask.com/",
+  "selector": "div",
+  "html": "<div class=\"tile-item\" id=\"post-214699\">\n\t\t\t\t\t\t\t\t\t\t\t<a href=\"https://www.ask.com/culture/exploring-top-food-trends-shaping-culture-comprehensive-guide\" data-content-id=\"214699\" data-zone=\"center\" data-provider-source=\"content\" data-result-type=\"articleTiles\">\n\t\t\t\t\t\t\t\t\t\t\t\t<div class=\"featured-image\">\n\t\t\t\t\t\t\t\t\t\t\t\t<img loading=\"lazy\" decoding=\"async\" width=\"215\" height=\"143\" src=\"https://www.ask.com/wp-content/uploads/sites/3/2024/06/AdobeStock_294347193.jpeg?w=215\" class=\"attachment-latest-article-desktop-thumb size-latest-article-desktop-thumb wp-post-image\" alt=\"\" srcset=\"https://www.ask.com/wp-content/uploads/sites/3/2024/06/AdobeStock_294347193.jpeg 2592w, https://www.ask.com/wp-content/uploads/sites/3/2024/06/AdobeStock_294347193.jpeg?resize=300,200 300w, https://www.ask.com/wp-content/uploads/sites/3/2024/06/AdobeStock_294347193.jpeg?resize=768,512 768w, https://www.ask.com/wp-content/uploads/sites/3/2024/06/AdobeStock_294347193.jpeg?resize=1024,683 1024w, https://www.ask.com/wp-content/uploads/sites/3/2024/06/AdobeStock_294347193.jpeg?resize=1536,1024 1536w, https://www.ask.com/wp-content/uploads/sites/3/2024/06/AdobeStock_294347193.jpeg?resize=2048,1365 2048w, https://www.ask.com/wp-content/uploads/sites/3/2024/06/AdobeStock_294347193.jpeg?resize=269,179 269w, https://www.ask.com/wp-content/uploads/sites/3/2024/06/AdobeStock_294347193.jpeg?resize=180,120 180w, https://www.ask.com/wp-content/uploads/sites/3/2024/06/AdobeStock_294347193.jpeg?resize=215,143 215w, https://www.ask.com/wp-content/uploads/sites/3/2024/06/AdobeStock_294347193.jpeg?resize=144,96 144w, https://www.ask.com/wp-content/uploads/sites/3/2024/06/AdobeStock_294347193.jpeg?resize=174,116 174w\" sizes=\"auto, (max-width: 900px) 100vw, 730px\">\t\t\t\t\t\t\t\t\t\t\t\t</div>\n\t\t\t\t\t\t\t\t\t\t\t\t<div class=\"tile-caption\">\n\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t<div class=\"tile-sticker\">Culture</div>\n\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t<div class=\"tile-caption-inner\">\n\t\t\t\t\t\t\t\t\t\t\t\t\t\t<div class=\"abstract\">Exploring the Top Food Trends Shaping Culture: A Comprehensive Guide</div>\n\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t</div>\n\t\t\t\t\t\t\t\t\t\t\t\t</div>\n\t\t\t\t\t\t\t\t\t\t\t</a>\n\t\t\t\t\t\t\t\t\t\t</div>",
+  "css": "/* Basic styles for div */\n.captured-component { display: block; }",
+  "screenshot": null,
+  "timestamp": "2025-09-24T05:28:28.291Z",
+  "tags": [],
+  "category": "uncategorized",
+  "framework": "vanilla",
+  "generatedCode": null
+}

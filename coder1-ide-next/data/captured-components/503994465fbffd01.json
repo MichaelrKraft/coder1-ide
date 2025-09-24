@@ -1,0 +1,14 @@
+{
+  "id": "503994465fbffd01",
+  "title": "Test Component from Playwright",
+  "url": "https://example.com",
+  "selector": "body",
+  "html": "<div class=\"test-component\"><h2>Test Component</h2><p>Testing capture workflow</p></div>",
+  "css": ".test-component { padding: 15px; background: #e8f4fd; border-radius: 6px; }",
+  "screenshot": null,
+  "timestamp": "2025-09-24T02:42:04.154Z",
+  "tags": [],
+  "category": "uncategorized",
+  "framework": "vanilla",
+  "generatedCode": null
+}

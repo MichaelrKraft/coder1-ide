@@ -133,10 +133,6 @@ export default function DiscoverSection() {
               <span>Templates</span>
             </a>
             
-            <a href="/workflow-dashboard.html" className="w-full flex items-center gap-2 px-2 py-1.5 text-xs text-text-secondary hover:text-text-primary hover:bg-bg-tertiary rounded transition-colors">
-              <Sparkles className="w-3 h-3 text-coder1-cyan" />
-              <span>Workflows</span>
-            </a>
           </div>
 
           {/* AI Tools Section */}

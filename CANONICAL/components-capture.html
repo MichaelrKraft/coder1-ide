@@ -100,6 +100,11 @@
             color: var(--bg-primary);
             border-color: var(--coder1-cyan);
         }
+        
+        .btn-small {
+            padding: 0.375rem 0.75rem;
+            font-size: 0.75rem;
+        }
 
         .btn-primary:hover {
             background: var(--coder1-purple);
@@ -518,19 +523,29 @@
             content.innerHTML = `
                 <div class="component-grid">
                     ${filtered.map(component => `
-                        <div class="component-card" onclick="selectComponent('${component.id}')">
-                            <div class="component-preview">
-                                ${component.hasScreenshot 
-                                    ? `<img src="/components-beta/api/screenshot/${component.id}" alt="${component.title}">` 
-                                    : '<div class="empty-icon">📦</div>'}
-                            </div>
-                            <div class="component-info">
-                                <div class="component-title">${component.title}</div>
-                                <div class="component-meta">${component.url}</div>
-                                <div class="component-meta">${new Date(component.timestamp).toLocaleDateString()}</div>
-                                <div class="component-tags">
-                                    ${component.tags.map(tag => `<span class="tag">${tag}</span>`).join('')}
+                        <div class="component-card">
+                            <div onclick="selectComponent('${component.id}')" style="cursor: pointer;">
+                                <div class="component-preview">
+                                    ${component.hasScreenshot 
+                                        ? `<img src="/components-beta/api/screenshot/${component.id}" alt="${component.title}">` 
+                                        : '<div class="empty-icon">📦</div>'}
                                 </div>
+                                <div class="component-info">
+                                    <div class="component-title">${component.title}</div>
+                                    <div class="component-meta">${component.url}</div>
+                                    <div class="component-meta">${new Date(component.timestamp).toLocaleDateString()}</div>
+                                    <div class="component-tags">
+                                        ${component.tags.map(tag => `<span class="tag">${tag}</span>`).join('')}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="component-card-actions" style="display: flex; gap: 0.5rem; padding: 0.75rem; border-top: 1px solid var(--border-default);">
+                                <button class="btn btn-small" onclick="selectComponent('${component.id}')" style="flex: 1;">
+                                    👁️ View
+                                </button>
+                                <button class="btn btn-small btn-primary" onclick="openInEditor('${component.id}')" style="flex: 1;">
+                                    ✏️ Edit
+                                </button>
                             </div>
                         </div>
                     `).join('')}
@@ -671,6 +686,50 @@
                     renderComponents();
                 });
             });
+            
+            // Listen for messages from Chrome extension
+            window.addEventListener('message', async function(event) {
+                // Validate message origin (Chrome extensions send from the current page)
+                if (event.data && event.data.type === 'COMPONENT_CAPTURE') {
+                    console.log('📦 Received component from Chrome extension:', event.data);
+                    
+                    // Save the component with loadIntoEditor flag
+                    // SAFETY: Using the new /api/component-capture endpoint that properly saves components
+                    console.log('🔄 Saving component via /api/component-capture endpoint...');
+                    try {
+                        const response = await fetch('/api/component-capture', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                ...event.data.component,
+                                loadIntoEditor: true  // This will trigger redirect to IDE
+                            })
+                        });
+                        
+                        const result = await response.json();
+                        
+                        if (result.success) {
+                            console.log('✅ Component saved:', result.id);
+                            
+                            // Redirect to IDE with component loaded
+                            if (result.redirectUrl) {
+                                window.location.href = result.redirectUrl;
+                            } else {
+                                // Fallback: just redirect with component ID
+                                window.location.href = `/ide?loadComponent=${result.id}`;
+                            }
+                        } else {
+                            console.error('Failed to save component:', result.error);
+                            alert('Failed to save component. Please try again.');
+                        }
+                    } catch (error) {
+                        console.error('Error saving component:', error);
+                        alert('Error saving component. Please check the console.');
+                    }
+                }
+            });
         }
 
         // Utility functions
@@ -688,6 +747,11 @@
 
         function backToIDE() {
             window.location.href = '/ide';
+        }
+        
+        function openInEditor(componentId) {
+            // Redirect to IDE with component loaded
+            window.location.href = `/ide?loadComponent=${componentId}`;
         }
 
         function copyCode() {

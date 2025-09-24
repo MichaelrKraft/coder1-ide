@@ -4,8 +4,30 @@
  */
 
 import { NextResponse } from 'next/server';
+import fs from 'fs';
+import path from 'path';
 
-const templates = [
+// Load MCP templates from JSON files
+function loadMCPTemplates() {
+  try {
+    const templatesPath = path.join(process.cwd(), '../src/data/coderone-templates');
+    const mcpIntegrationsPath = path.join(templatesPath, 'mcp-integrations.json');
+    
+    if (fs.existsSync(mcpIntegrationsPath)) {
+      const mcpData = JSON.parse(fs.readFileSync(mcpIntegrationsPath, 'utf8'));
+      return mcpData.templates.map((template: any) => ({
+        ...template,
+        category: mcpData.category,
+        categorySlug: mcpData.categorySlug
+      }));
+    }
+  } catch (error) {
+    console.error('Error loading MCP templates:', error);
+  }
+  return [];
+}
+
+const baseTemplates = [
   {
     id: 'frontend-agent',
     name: 'Frontend Developer',
@@ -201,9 +223,13 @@ const templates = [
 ];
 
 export async function GET() {
+  // Combine base templates with MCP templates
+  const mcpTemplates = loadMCPTemplates();
+  const allTemplates = [...baseTemplates, ...mcpTemplates];
+  
   return NextResponse.json({
     success: true,
-    templates,
+    templates: allTemplates,
     timestamp: new Date().toISOString()
   });
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Clock, Play, Pause, Save, FileText, DollarSign, RefreshCw, Loader2, CheckCircle, XCircle, X, ChevronDown, ChevronUp } from 'lucide-react';
 import { useSession } from '@/contexts/SessionContext';
 import { sessionEnhancementService } from '@/services/session-enhancement-service';
@@ -40,6 +40,9 @@ export default function SessionsPanel({ isVisible = true }: SessionsPanelProps) 
   const [restorationStage, setRestorationStage] = useState<string | null>(null);
   const [lastAction, setLastAction] = useState<{type: 'success' | 'error' | 'info', message: string, details?: string} | null>(null);
   const [showAllSessions, setShowAllSessions] = useState(false);
+  
+  // Guard against concurrent checkpoint restorations
+  const restorationInProgressRef = useRef<boolean>(false);
   
   // Enhanced session loading with deduplication and intelligent naming
   const loadSessions = async () => {
@@ -160,6 +163,15 @@ export default function SessionsPanel({ isVisible = true }: SessionsPanelProps) 
 
   // Handle checkpoint restoration
   const handleRestoreCheckpoint = async (checkpoint: Checkpoint) => {
+    // Check if restoration is already in progress
+    if (restorationInProgressRef.current) {
+      console.log('⚠️ Checkpoint restoration already in progress, ignoring request');
+      return;
+    }
+    
+    // Set the guard flag
+    restorationInProgressRef.current = true;
+    
     // REMOVED: // REMOVED: console.log('🔄 Starting checkpoint restoration for:', checkpoint.name, 'ID:', checkpoint.id);
     setRestoringCheckpointId(checkpoint.id);
     setLastAction(null);
@@ -344,6 +356,8 @@ export default function SessionsPanel({ isVisible = true }: SessionsPanelProps) 
     } finally {
       setRestoringCheckpointId(null);
       setRestorationStage(null);
+      // Clear the restoration guard flag
+      restorationInProgressRef.current = false;
       // Clear success message after 5 seconds (longer for enhanced message)
       if (lastAction?.type === 'success') {
         setTimeout(() => setLastAction(null), 5000);

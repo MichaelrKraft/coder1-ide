@@ -392,7 +392,7 @@ router.get('/recommended', async (req, res) => {
 
 /**
  * POST /api/templates/install-mcp
- * Install an MCP by adding it to ~/.mcp.json
+ * Install an MCP by adding it to ~/.mcp.json with enhanced validation
  */
 router.post('/install-mcp', async (req, res) => {
     const os = require('os');
@@ -400,12 +400,40 @@ router.post('/install-mcp', async (req, res) => {
     const mcpConfigPath = path.join(homedir, '.mcp.json');
     
     try {
-        const { mcpId, config } = req.body;
+        const { templateId } = req.body;
         
-        if (!mcpId || !config) {
+        if (!templateId) {
             return res.status(400).json({
                 success: false,
-                error: 'MCP ID and configuration are required'
+                error: 'Template ID is required'
+            });
+        }
+
+        // Load template data to get MCP configuration
+        const data = await loadTemplates();
+        const template = data.templates.find(t => t.id === templateId);
+        
+        if (!template) {
+            return res.status(404).json({
+                success: false,
+                error: 'Template not found'
+            });
+        }
+
+        // Check if template has MCP configuration
+        if (!template.mcpConfig) {
+            return res.status(400).json({
+                success: false,
+                error: 'Template does not have MCP configuration'
+            });
+        }
+
+        // Validate MCP configuration
+        const { command, args, env } = template.mcpConfig;
+        if (!command || !Array.isArray(args)) {
+            return res.status(400).json({
+                success: false,
+                error: 'Invalid MCP configuration format'
             });
         }
 
@@ -426,16 +454,39 @@ router.post('/install-mcp', async (req, res) => {
         }
 
         // Check if MCP is already installed
-        if (mcpConfig.mcpServers[mcpId]) {
+        if (mcpConfig.mcpServers[templateId]) {
             return res.json({
                 success: true,
-                message: `MCP "${mcpId}" is already installed`,
-                alreadyInstalled: true
+                message: `MCP "${template.name}" is already installed`,
+                alreadyInstalled: true,
+                template: {
+                    id: template.id,
+                    name: template.name
+                }
             });
         }
 
+        // Prepare MCP configuration for ~/.mcp.json
+        const mcpServerConfig = {
+            name: template.name,
+            command: command,
+            args: args,
+            env: env || {}
+        };
+
         // Add new MCP configuration
-        mcpConfig.mcpServers[mcpId] = config;
+        mcpConfig.mcpServers[templateId] = mcpServerConfig;
+
+        // Create backup of existing config
+        try {
+            if (await fs.access(mcpConfigPath).then(() => true).catch(() => false)) {
+                const backupPath = `${mcpConfigPath}.backup-${Date.now()}`;
+                await fs.copyFile(mcpConfigPath, backupPath);
+                console.log(`Created backup: ${backupPath}`);
+            }
+        } catch (backupError) {
+            console.warn('Could not create backup:', backupError.message);
+        }
 
         // Write updated configuration
         await fs.writeFile(
@@ -444,10 +495,18 @@ router.post('/install-mcp', async (req, res) => {
             'utf8'
         );
 
+        console.log(`✅ MCP "${template.name}" installed successfully`);
+
         res.json({
             success: true,
-            message: `MCP "${mcpId}" installed successfully`,
-            requiresRestart: true
+            message: `MCP "${template.name}" installed successfully`,
+            requiresRestart: true,
+            template: {
+                id: template.id,
+                name: template.name,
+                command: template.mcpConfig.command
+            },
+            configPath: mcpConfigPath
         });
 
     } catch (error) {
@@ -455,6 +514,175 @@ router.post('/install-mcp', async (req, res) => {
         res.status(500).json({
             success: false,
             error: 'Failed to install MCP: ' + error.message
+        });
+    }
+});
+
+/**
+ * GET /api/templates/install-status/:templateId
+ * Check installation status and health of a specific MCP template
+ */
+router.get('/install-status/:templateId', async (req, res) => {
+    const os = require('os');
+    const homedir = os.homedir();
+    const mcpConfigPath = path.join(homedir, '.mcp.json');
+    
+    try {
+        const { templateId } = req.params;
+        
+        // Load template data
+        const data = await loadTemplates();
+        const template = data.templates.find(t => t.id === templateId);
+        
+        if (!template) {
+            return res.status(404).json({
+                success: false,
+                error: 'Template not found'
+            });
+        }
+
+        let installStatus = {
+            templateId,
+            templateName: template.name,
+            isInstalled: false,
+            isConfigured: false,
+            needsEnvironmentVars: false,
+            missingEnvVars: [],
+            status: 'not_installed',
+            statusMessage: 'Not installed'
+        };
+
+        // Check if template has MCP configuration
+        if (!template.mcpConfig) {
+            installStatus.status = 'no_mcp_config';
+            installStatus.statusMessage = 'Template does not support MCP installation';
+            return res.json({
+                success: true,
+                ...installStatus
+            });
+        }
+
+        // Check if already installed
+        try {
+            const configContent = await fs.readFile(mcpConfigPath, 'utf8');
+            const mcpConfig = JSON.parse(configContent);
+            
+            if (mcpConfig.mcpServers && mcpConfig.mcpServers[templateId]) {
+                installStatus.isInstalled = true;
+                
+                // Check if environment variables are configured
+                const serverConfig = mcpConfig.mcpServers[templateId];
+                const templateEnv = template.mcpConfig.env || {};
+                const configuredEnv = serverConfig.env || {};
+                
+                const missingEnvVars = [];
+                for (const [key, value] of Object.entries(templateEnv)) {
+                    if (value.includes('YOUR_') || !configuredEnv[key] || configuredEnv[key].includes('YOUR_')) {
+                        missingEnvVars.push(key);
+                    }
+                }
+                
+                if (missingEnvVars.length > 0) {
+                    installStatus.needsEnvironmentVars = true;
+                    installStatus.missingEnvVars = missingEnvVars;
+                    installStatus.status = 'needs_config';
+                    installStatus.statusMessage = `Installed but needs configuration: ${missingEnvVars.join(', ')}`;
+                } else {
+                    installStatus.isConfigured = true;
+                    installStatus.status = 'installed';
+                    installStatus.statusMessage = 'Installed and configured';
+                }
+            }
+        } catch (error) {
+            // MCP config file doesn't exist or is invalid
+            installStatus.status = 'not_installed';
+            installStatus.statusMessage = 'Not installed';
+        }
+
+        // Check if environment variables are required for installation
+        if (!installStatus.isInstalled) {
+            const templateEnv = template.mcpConfig.env || {};
+            const requiredEnvVars = Object.keys(templateEnv).filter(key => 
+                templateEnv[key].includes('YOUR_')
+            );
+            
+            if (requiredEnvVars.length > 0) {
+                installStatus.needsEnvironmentVars = true;
+                installStatus.missingEnvVars = requiredEnvVars;
+                installStatus.status = 'needs_setup';
+                installStatus.statusMessage = `Requires setup: ${requiredEnvVars.join(', ')}`;
+            } else {
+                installStatus.status = 'ready_to_install';
+                installStatus.statusMessage = 'Ready for one-click installation';
+            }
+        }
+
+        res.json({
+            success: true,
+            ...installStatus
+        });
+
+    } catch (error) {
+        console.error('Error checking install status:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to check installation status: ' + error.message
+        });
+    }
+});
+
+/**
+ * GET /api/templates/bulk-install-status
+ * Check installation status for all MCP templates
+ */
+router.get('/bulk-install-status', async (req, res) => {
+    try {
+        const data = await loadTemplates();
+        const mcpTemplates = data.templates.filter(t => t.mcpConfig);
+        
+        const statusPromises = mcpTemplates.map(async (template) => {
+            // Use the existing endpoint logic
+            const response = await new Promise((resolve) => {
+                const mockReq = { params: { templateId: template.id } };
+                const mockRes = {
+                    json: (data) => resolve(data),
+                    status: () => mockRes
+                };
+                
+                // Call the install-status logic directly
+                router.handle(mockReq, mockRes, () => {});
+            });
+            
+            return {
+                templateId: template.id,
+                templateName: template.name,
+                category: template.category,
+                ...response
+            };
+        });
+        
+        const statuses = await Promise.all(statusPromises);
+        
+        // Summary statistics
+        const summary = {
+            total: statuses.length,
+            installed: statuses.filter(s => s.isInstalled).length,
+            configured: statuses.filter(s => s.isConfigured).length,
+            needsSetup: statuses.filter(s => s.needsEnvironmentVars).length,
+            readyToInstall: statuses.filter(s => s.status === 'ready_to_install').length
+        };
+        
+        res.json({
+            success: true,
+            summary,
+            statuses
+        });
+        
+    } catch (error) {
+        console.error('Error checking bulk install status:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to check bulk installation status: ' + error.message
         });
     }
 });

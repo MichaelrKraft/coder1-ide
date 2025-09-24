@@ -753,32 +753,6 @@
         inset 0 0 15px rgba(255, 0, 0, 0.1);
 }
 
-/* IDE Enter Button */
-.ide-enter-btn {
-    background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
-    border: none;
-    border-radius: 8px;
-    color: white;
-    padding: 10px 16px;
-    font-size: 0.9rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    box-shadow: 0 4px 15px rgba(0, 255, 204, 0.3);
-}
-
-.ide-enter-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(0, 255, 204, 0.4);
-    border: 2px solid #00ffcc;
-    box-shadow: 
-        0 6px 20px rgba(0, 255, 204, 0.4),
-        0 0 15px rgba(0, 255, 204, 0.5),
-        inset 0 0 15px rgba(245, 158, 11, 0.1);
-}
 
 /* Wizard step layout with left icon and center text */
 .wizard-step {

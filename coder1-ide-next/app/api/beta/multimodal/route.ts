@@ -56,6 +56,13 @@ export async function POST(request: NextRequest) {
           language: f.language,
           summary: f.summary
         })),
+        pdfs: processedContent.pdfs?.map(pdf => ({
+          name: pdf.name,
+          pages: pdf.pages,
+          title: pdf.title,
+          author: pdf.author,
+          summary: pdf.summary
+        })),
         images: processedContent.images?.map(img => ({
           name: img.originalName,
           dimensions: img.width && img.height ? `${img.width}x${img.height}` : 'unknown'
@@ -107,6 +114,13 @@ Always be helpful, concise, and technically accurate.`
         size: f.size,
         language: f.language,
         summary: f.summary
+      })),
+      pdfs: processedContent.pdfs?.map(pdf => ({
+        name: pdf.name,
+        pages: pdf.pages,
+        title: pdf.title,
+        author: pdf.author,
+        summary: pdf.summary
       })),
       images: processedContent.images?.map(img => ({
         name: img.originalName,

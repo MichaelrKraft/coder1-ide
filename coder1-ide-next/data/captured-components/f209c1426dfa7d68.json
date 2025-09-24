@@ -1,0 +1,14 @@
+{
+  "id": "f209c1426dfa7d68",
+  "title": "svg element",
+  "url": "https://www.yahoo.com/",
+  "selector": "svg",
+  "html": "<svg aria-hidden=\"true\" class=\"size-[1.5rem] text-white group-hover:text-creator-purple\" focusable=\"false\" height=\"16\" viewBox=\"0 0 16 16\" width=\"16\" xmlns=\"http://www.w3.org/2000/svg\"><path fill=\"currentColor\" d=\"m4.08 7.994 6.414-6.414 1.415 1.414-5 5 5 5-1.415 1.415z\"></path></svg>",
+  "css": "/* Basic styles for svg */\n.captured-component { display: block; }",
+  "screenshot": null,
+  "timestamp": "2025-09-24T05:03:35.876Z",
+  "tags": [],
+  "category": "uncategorized",
+  "framework": "vanilla",
+  "generatedCode": null
+}

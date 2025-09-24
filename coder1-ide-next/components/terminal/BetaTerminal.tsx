@@ -15,7 +15,7 @@ if (typeof window !== 'undefined') {
   require('@xterm/xterm/css/xterm.css');
 }
 import './Terminal.css';
-import { Users, Zap, StopCircle, Brain, Eye, Code2, Mic, MicOff, Speaker, ChevronDown, RefreshCw, Check, Grid } from '@/lib/icons';
+import { Zap, StopCircle, Brain, Eye, Code2, Mic, MicOff, Speaker, ChevronDown, RefreshCw, Check, Grid } from '@/lib/icons';
 import { Cpu } from 'lucide-react';
 import TerminalSettings, { TerminalSettingsState } from './TerminalSettings';
 import { glows, spacing } from '@/lib/design-tokens';
@@ -27,7 +27,7 @@ import SupervisionConfigModal from '@/components/supervision/SupervisionConfigMo
 import { universalAIWrapper } from '@/services/ai-platform/universal-ai-wrapper-client';
 import { cliDetector, CLIInfo } from '@/services/ai-platform/cli-detector-client';
 import { useSessionMemory } from '@/hooks/useSessionMemory';
-import BetaTerminalDropOverlay from './BetaTerminalDropOverlay';
+import SimpleDragDropOverlay from './SimpleDragDropOverlay';
 
 /**
  * Remove emojis from terminal text
@@ -165,17 +165,75 @@ function BetaTerminal({
     autoInject: true
   });
 
+  // Context stats state (moved from StatusBarCore)
+  const [contextStats, setContextStats] = useState<{
+    totalSessions: number;
+    totalMemories: number;
+    isActive: boolean;
+    isLoading: boolean;
+  }>({
+    totalSessions: 0,
+    totalMemories: 0,
+    isActive: false,
+    isLoading: false
+  });
+
+  // Fetch context stats (moved from StatusBarCore)
+  const fetchContextStats = async () => {
+    try {
+      console.log('🔍 BetaTerminal: Fetching context stats...');
+      setContextStats(prev => ({ ...prev, isLoading: true }));
+      
+      const response = await fetch('/api/context/stats', {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      
+      if (response.ok) {
+        const stats = await response.json();
+        console.log('🔍 BetaTerminal: Context stats received:', stats);
+        
+        const newContextStats = {
+          totalSessions: stats.totalSessions || 0,
+          totalMemories: stats.totalConversations || 0,
+          isActive: (stats.totalConversations || 0) > 0 || (stats.totalSessions || 0) > 0,
+          isLoading: false
+        };
+        
+        console.log('🔍 BetaTerminal: Setting context stats:', newContextStats);
+        setContextStats(newContextStats);
+      } else {
+        console.log('🔍 BetaTerminal: Context stats response not ok:', response.status);
+        setContextStats(prev => ({ ...prev, isLoading: false }));
+      }
+    } catch (error) {
+      console.log('🔍 BetaTerminal: Context stats fetch failed:', error);
+      setContextStats(prev => ({ ...prev, isLoading: false }));
+    }
+  };
+
   // Initialize AI platforms on mount
   useEffect(() => {
     console.log('🎯 BetaTerminal: Component mounted, initializing AI platforms');
     setIsMounted(true);
+    
+    // Fetch context stats on mount and set up interval
+    console.log('🔍 BetaTerminal: Calling fetchContextStats from useEffect...');
+    fetchContextStats();
+    const statsInterval = setInterval(() => {
+      console.log('🔍 BetaTerminal: Interval fetchContextStats...');
+      fetchContextStats();
+    }, 60000); // Update every 60 seconds
     
     // Force re-render after mount to ensure buttons are interactive
     const timer = setTimeout(() => {
       console.log('✅ BetaTerminal: Component fully mounted, buttons should be interactive');
     }, 100);
     
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(timer);
+      clearInterval(statsInterval);
+    };
   }, []);
   
   // Debug log for component rendering
@@ -1177,6 +1235,50 @@ function BetaTerminal({
     }
   };
 
+  // Handle Claude CLI bridge results
+  const handleClaudeBridge = useCallback((bridgeResult: any) => {
+    try {
+      if (xtermRef.current) {
+        if (bridgeResult.error) {
+          xtermRef.current.writeln(`\r\n❌ Claude CLI Bridge Error: ${bridgeResult.error}`);
+        } else {
+          xtermRef.current.writeln(`\r\n🌉 Claude CLI Bridge: ${bridgeResult.message}`);
+          
+          if (bridgeResult.sessionBridge?.claudeCommand) {
+            xtermRef.current.writeln(`\r\n💡 Ready to run:`);
+            xtermRef.current.writeln(`   ${bridgeResult.sessionBridge.claudeCommand}`);
+            
+            // Direct injection: Add command to terminal input buffer
+            setTimeout(() => {
+              if (xtermRef.current) {
+                // Write a new prompt and the command
+                xtermRef.current.write('\r\n$ ');
+                // Type the command character by character to simulate user input
+                const command = bridgeResult.sessionBridge.claudeCommand;
+                let index = 0;
+                const typeCommand = () => {
+                  if (index < command.length && xtermRef.current) {
+                    xtermRef.current.write(command[index]);
+                    index++;
+                    setTimeout(typeCommand, 50); // 50ms delay between characters
+                  }
+                };
+                typeCommand();
+              }
+            }, 1000); // 1 second delay before injection
+          }
+          
+          if (bridgeResult.sessionBridge?.filesCount) {
+            xtermRef.current.writeln(`\r\n📁 ${bridgeResult.sessionBridge.filesCount} file(s) now accessible by Claude CLI`);
+            xtermRef.current.writeln(`\r\n⌨️  Command will be injected in 1 second...`);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error handling Claude bridge result:', error);
+    }
+  }, []);
+
   // Multimodal file handling
   const handleFileDrop = async (files: File[]) => {
     setIsProcessingFiles(true);
@@ -1270,8 +1372,16 @@ function BetaTerminal({
   };
 
   return (
-    <div className="relative h-full bg-gray-900 rounded-lg overflow-hidden flex flex-col">
-      {/* Terminal Header - Exact 40px height */}
+    <>
+      {/* Global Drag Drop Overlay - Must be at root level */}
+      <SimpleDragDropOverlay
+        onFileDrop={handleFileDrop}
+        onTextInsert={handleTextInsert}
+        isProcessing={isProcessingFiles}
+      />
+      
+      <div className="relative h-full bg-gray-900 rounded-lg overflow-hidden flex flex-col">
+        {/* Terminal Header - Exact 40px height */}
       <div 
         className="flex items-center justify-between border-b border-border-default px-3 bg-bg-secondary border-t border-t-coder1-cyan/50 shadow-glow-cyan"
         style={{ height: spacing.terminalHeader.height }}
@@ -1421,16 +1531,6 @@ function BetaTerminal({
             )}
           </div>
 
-          {/* AI Team Button */}
-          <button
-            onClick={handleSpawnAgents}
-            disabled={!isMounted}
-            className={`terminal-control-btn flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md ${!isMounted ? 'opacity-50 cursor-not-allowed' : ''}`}
-            title={!isMounted ? "Loading..." : "Deploy six Claude code agents working in parallel"}
-          >
-            <Users className="w-4 h-4" />
-            <span>AI Team</span>
-          </button>
 
           {/* Memory button with dropdown */}
           <div className="relative">
@@ -1472,6 +1572,47 @@ function BetaTerminal({
                       </div>
                     </>
                   )}
+                  
+                  {/* Context Statistics (moved from footer) */}
+                  {console.log('🔍 BetaTerminal: Rendering memory dropdown, contextStats:', contextStats)}
+                  
+                  {/* Debug section - always show */}
+                  <div className="border-t border-border-default pt-2 mt-2">
+                    <div className="text-xs text-gray-400 uppercase tracking-wider mb-2">Context Memory (Debug)</div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-400">isActive:</span>
+                      <span className="text-yellow-400 font-medium">{contextStats.isActive ? 'true' : 'false'}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-400">isLoading:</span>
+                      <span className="text-yellow-400 font-medium">{contextStats.isLoading ? 'true' : 'false'}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-400">Memories:</span>
+                      <span className="text-purple-400 font-medium">{contextStats.totalMemories}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-400">Contexts:</span>
+                      <span className="text-purple-400 font-medium">{contextStats.totalSessions}</span>
+                    </div>
+                  </div>
+                  
+                  {contextStats.isActive && (
+                    <>
+                      <div className="border-t border-border-default pt-2 mt-2">
+                        <div className="text-xs text-gray-400 uppercase tracking-wider mb-2">Context Memory</div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-gray-400">Memories:</span>
+                          <span className="text-purple-400 font-medium">{contextStats.totalMemories}</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-gray-400">Contexts:</span>
+                          <span className="text-purple-400 font-medium">{contextStats.totalSessions}</span>
+                        </div>
+                      </div>
+                    </>
+                  )}
+                  
                   <div className="border-t border-border-default pt-2 mt-2">
                     <button
                       onClick={() => {
@@ -1544,14 +1685,6 @@ function BetaTerminal({
           className="h-full" 
           onClick={handleTerminalClick}
         />
-        
-        {/* Multimodal Drop Overlay */}
-        <BetaTerminalDropOverlay
-          onFileDrop={handleFileDrop}
-          onTextInsert={handleTextInsert}
-          isProcessing={isProcessingFiles}
-          terminalRef={terminalRef}
-        />
       </div>
 
       {/* Status Bar */}
@@ -1583,6 +1716,7 @@ function BetaTerminal({
         />
       )}
     </div>
+    </>
   );
 }
 

@@ -1,0 +1,14 @@
+{
+  "id": "c8409b28a9e9918b",
+  "title": "img element",
+  "url": "https://www.ask.com/",
+  "selector": "img",
+  "html": "<img fetchpriority=\"high\" decoding=\"async\" width=\"640\" height=\"427\" src=\"https://www.ask.com/wp-content/uploads/sites/3/2024/06/AdobeStock_315374502.jpeg?w=640\" class=\"attachment-large size-large wp-post-image\" alt=\"\" loading=\"eager\" srcset=\"https://www.ask.com/wp-content/uploads/sites/3/2024/06/AdobeStock_315374502.jpeg 2000w, https://www.ask.com/wp-content/uploads/sites/3/2024/06/AdobeStock_315374502.jpeg?resize=300,200 300w, https://www.ask.com/wp-content/uploads/sites/3/2024/06/AdobeStock_315374502.jpeg?resize=768,512 768w, https://www.ask.com/wp-content/uploads/sites/3/2024/06/AdobeStock_315374502.jpeg?resize=1024,683 1024w, https://www.ask.com/wp-content/uploads/sites/3/2024/06/AdobeStock_315374502.jpeg?resize=1536,1025 1536w, https://www.ask.com/wp-content/uploads/sites/3/2024/06/AdobeStock_315374502.jpeg?resize=269,179 269w, https://www.ask.com/wp-content/uploads/sites/3/2024/06/AdobeStock_315374502.jpeg?resize=180,120 180w, https://www.ask.com/wp-content/uploads/sites/3/2024/06/AdobeStock_315374502.jpeg?resize=175,118 175w, https://www.ask.com/wp-content/uploads/sites/3/2024/06/AdobeStock_315374502.jpeg?resize=214,143 214w, https://www.ask.com/wp-content/uploads/sites/3/2024/06/AdobeStock_315374502.jpeg?resize=144,96 144w, https://www.ask.com/wp-content/uploads/sites/3/2024/06/AdobeStock_315374502.jpeg?resize=174,116 174w\" sizes=\"(max-width: 900px) 100vw, 730px\">",
+  "css": "/* Basic styles for img */\n.captured-component { display: block; }",
+  "screenshot": null,
+  "timestamp": "2025-09-24T05:30:43.739Z",
+  "tags": [],
+  "category": "uncategorized",
+  "framework": "vanilla",
+  "generatedCode": null
+}

@@ -1,0 +1,14 @@
+{
+  "id": "5be00b2343233cb6",
+  "title": "Test Component from CURL",
+  "url": "https://example.com",
+  "selector": "div.test-component",
+  "html": "<div class=\"test-component\"><h2>Test Component</h2><p>This is a test</p></div>",
+  "css": ".test-component { padding: 20px; background: #f0f0f0; }",
+  "screenshot": null,
+  "timestamp": "2025-09-24T00:37:40.555Z",
+  "tags": [],
+  "category": "uncategorized",
+  "framework": "vanilla",
+  "generatedCode": null
+}

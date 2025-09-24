@@ -231,9 +231,9 @@ class TerminalSession {
           this.pty.write('export PS1="\\[\\033[01;32m\\]coder1\\[\\033[00m\\]:\\[\\033[01;34m\\]\\W\\[\\033[00m\\]$ "\r');
           // Clear the screen and show welcome message
           this.pty.write('clear\r');
-          this.pty.write('echo "Coder1 Terminal Ready"\r');
-          this.pty.write('echo "Type \'claude\' to start AI-assisted coding"\r');
-          this.pty.write('echo "──────────────────────────────────────────────"\r');
+          this.pty.write('Coder1 Terminal Ready\r\n');
+          this.pty.write('Type \'claude\' to start AI-assisted coding\r\n');
+          this.pty.write('──────────────────────────────────────────────\r\n');
         }, 100);
       }
     } catch (error) {

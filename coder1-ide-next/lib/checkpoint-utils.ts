@@ -4,8 +4,8 @@
  */
 
 /**
- * Filter function to remove Claude thinking animations from terminal data
- * This ensures clean checkpoint snapshots without animation artifacts
+ * Filter function to remove Claude thinking animations and validation loops from terminal data
+ * This ensures clean checkpoint snapshots without animation artifacts or validation errors
  */
 export function filterThinkingAnimations(terminalData: string): string {
   if (!terminalData) return terminalData;
@@ -15,6 +15,7 @@ export function filterThinkingAnimations(terminalData: string): string {
   // 1. Lines with Unicode spinners (✳, ✢, ·, ✶, ✻, ✽, etc.) + "Thinking…" or variations
   // 2. Associated cursor movement sequences
   // 3. Color codes around "Thinking" with letters highlighted differently
+  // 4. Claude Code validation loop messages and "Flowing…" patterns
   
   let filtered = terminalData;
   
@@ -33,12 +34,41 @@ export function filterThinkingAnimations(terminalData: string): string {
     /(\r?\n){4,}/g
   ];
   
+  // Claude Code validation loop patterns - CRITICAL FOR ALPHA LAUNCH
+  const validationLoopPatterns = [
+    // Match "Found invalid settings files" messages with any surrounding text
+    /.*Found invalid settings files\. They will be ignored\. Run \/doctor for details\..*\r?\n/g,
+    // Match "Flowing…" patterns with spinners and interruption text
+    /[✳✢·✶✻✽✦☆★▪▫◆◇○●]\s*Flowing…\s*\(esc to interrupt\).*?\r?\n/g,
+    // Match color-coded "Flowing…" patterns
+    /\u001b\[38;5;\d+m[✳✢·✶✻✽✦☆★▪▫◆◇○●]\u001b\[39m\s*\u001b\[38;5;\d+m.*?Flowing.*?\u001b\[39m.*?\(esc to interrupt\).*?\r?\n/g,
+    // Match validation loop cursor sequences (specific to Claude Code loops)
+    /\u001b\[2K\u001b\[1A\u001b\[2K\u001b\[1A\u001b\[2K\u001b\[1A\u001b\[2K\u001b\[1A\u001b\[2K\u001b\[1A\u001b\[2K\u001b\[G.*?Found invalid settings files.*?\r?\n/g,
+    // Match repetitive validation sequences
+    /(\s*Found invalid settings files\. They will be ignored\. Run \/doctor for details\.\s*\r?\n){2,}/g,
+    // Match repetitive "Flowing…" sequences
+    /([✳✢·✶✻✽✦☆★▪▫◆◇○●]\s*Flowing…\s*\(esc to interrupt\).*?\r?\n){2,}/g
+  ];
+  
+  // Apply thinking animation filters
   for (const pattern of thinkingPatterns) {
+    filtered = filtered.replace(pattern, '');
+  }
+  
+  // Apply validation loop filters - CRITICAL FOR ALPHA LAUNCH
+  for (const pattern of validationLoopPatterns) {
     filtered = filtered.replace(pattern, '');
   }
   
   // Clean up any remaining isolated cursor movement codes
   filtered = filtered.replace(/(\u001b\[2K\u001b\[1A)+\u001b\[2K\u001b\[G/g, '');
+  
+  // Clean up validation loop specific cursor sequences
+  filtered = filtered.replace(/(\u001b\[2K\u001b\[1A){5,}\u001b\[2K\u001b\[G/g, '');
+  
+  // Remove any remaining "Found invalid settings" fragments
+  filtered = filtered.replace(/.*Found invalid settings.*?\r?\n/g, '');
+  filtered = filtered.replace(/.*Flowing….*?\r?\n/g, '');
   
   // Normalize multiple consecutive newlines to maximum 2
   filtered = filtered.replace(/(\r?\n){3,}/g, '\r\n\r\n');

@@ -8,18 +8,16 @@
     
     // Ensure functions are globally available
     window.templateFunctions = {
-        installTemplate: function(event) {
+        installTemplate: async function(event) {
             if (event) {
                 event.preventDefault();
                 event.stopPropagation();
             }
             
-            // REMOVED: // REMOVED: console.log('Install Template clicked');
-            
             // Get the button
             const btn = event ? event.currentTarget : document.querySelector('.modal-content .btn-primary');
             if (!btn) {
-                logger?.error('Button not found');
+                console.error('Install button not found');
                 return;
             }
             
@@ -29,21 +27,58 @@
             
             // Get template info
             const templateName = document.getElementById('modalName')?.textContent || 'Template';
+            const templateId = templates.find(t => t.name === templateName)?.id;
             
-            // Show loading state
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Installing...';
-            btn.disabled = true;
-            btn.style.background = '#666';
+            if (!templateId) {
+                showNotification('❌ Template not found');
+                return;
+            }
             
-            // Simulate installation
-            setTimeout(() => {
-                btn.innerHTML = '<i class="fas fa-check"></i> Installed Successfully!';
-                btn.style.background = '#10b981';
+            try {
+                // Show initial loading state
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Installing...';
+                btn.disabled = true;
+                btn.style.background = '#666';
                 
-                // Show notification
-                showNotification(`✅ "${templateName}" installed successfully!`);
+                // Call the real API
+                const response = await fetch('/api/templates/install-mcp', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ templateId })
+                });
                 
-                // Close modal after delay
+                const result = await response.json();
+                
+                if (result.success) {
+                    if (result.alreadyInstalled) {
+                        // Already installed
+                        btn.innerHTML = '<i class="fas fa-check"></i> Already Installed';
+                        btn.style.background = '#059669';
+                        showNotification(`ℹ️ "${templateName}" is already installed`);
+                    } else {
+                        // Successfully installed
+                        btn.innerHTML = '<i class="fas fa-check"></i> Installed Successfully!';
+                        btn.style.background = '#10b981';
+                        
+                        let message = `✅ "${templateName}" installed successfully!`;
+                        if (result.requiresRestart) {
+                            message += ' Restart Claude Code to use this MCP.';
+                        }
+                        showNotification(message);
+                        
+                        // Update template card status if visible
+                        updateTemplateCardStatus(templateId, 'installed');
+                    }
+                } else {
+                    // Installation failed
+                    btn.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Installation Failed';
+                    btn.style.background = '#dc2626';
+                    showNotification(`❌ Failed to install "${templateName}": ${result.error}`);
+                }
+                
+                // Close modal and reset button after delay
                 setTimeout(() => {
                     const modal = document.getElementById('modalOverlay');
                     if (modal) {
@@ -54,8 +89,23 @@
                     btn.innerHTML = originalHTML;
                     btn.style.background = originalBg;
                     btn.disabled = false;
-                }, 1500);
-            }, 2000);
+                }, 2000);
+                
+            } catch (error) {
+                console.error('Installation error:', error);
+                
+                // Show error state
+                btn.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Network Error';
+                btn.style.background = '#dc2626';
+                showNotification('❌ Installation failed: Network error');
+                
+                // Reset button after delay
+                setTimeout(() => {
+                    btn.innerHTML = originalHTML;
+                    btn.style.background = originalBg;
+                    btn.disabled = false;
+                }, 3000);
+            }
         },
         
         viewDocs: function(event) {
@@ -87,6 +137,38 @@
         }
     };
     
+    // Helper function to update template card status
+    function updateTemplateCardStatus(templateId, status) {
+        const templateCard = document.querySelector(`[data-template-id="${templateId}"]`);
+        if (!templateCard) return;
+        
+        const installBtn = templateCard.querySelector('.quick-install-btn, .template-install-btn');
+        if (!installBtn) return;
+        
+        switch (status) {
+            case 'installed':
+                installBtn.innerHTML = '<i class="fas fa-check"></i> Installed';
+                installBtn.className = installBtn.className.replace(/btn-[a-z]+/, 'btn-success');
+                installBtn.disabled = true;
+                installBtn.style.background = '#10b981';
+                break;
+            case 'installing':
+                installBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Installing...';
+                installBtn.disabled = true;
+                installBtn.style.background = '#666';
+                break;
+            case 'error':
+                installBtn.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Error';
+                installBtn.style.background = '#dc2626';
+                setTimeout(() => {
+                    installBtn.innerHTML = 'Install';
+                    installBtn.style.background = '';
+                    installBtn.disabled = false;
+                }, 3000);
+                break;
+        }
+    }
+
     // Helper function for notifications
     function showNotification(message) {
         // Remove any existing notifications

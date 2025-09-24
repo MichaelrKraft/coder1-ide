@@ -1,0 +1,14 @@
+{
+  "id": "e74917647c102d33",
+  "title": "Test Component from Fixed Endpoint",
+  "url": "https://example.com/test-fix",
+  "selector": ".card",
+  "html": "<div class=\"card\">Fixed Endpoint Test</div>",
+  "css": ".card { padding: 20px; background: #f0f0f0; }",
+  "screenshot": null,
+  "timestamp": "2025-09-24T01:52:33.455Z",
+  "tags": [],
+  "category": "uncategorized",
+  "framework": "vanilla",
+  "generatedCode": null
+}

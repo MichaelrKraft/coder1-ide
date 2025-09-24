@@ -1,6 +1,6 @@
 // Popup script for Coder1 Component Capture extension
 
-const CODER1_BACKEND = 'http://localhost:3000';
+const CODER1_BACKEND = 'http://localhost:3001';
 
 // Check backend connection status
 async function checkBackendStatus() {
@@ -74,22 +74,51 @@ document.getElementById('capture-btn').addEventListener('click', async () => {
         // Get the active tab
         const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
         
-        console.log('[Coder1 Popup] Sending startCapture to tab:', tab.id);
+        console.log('[Coder1 Popup] DEBUG: Active tab info:', {
+            id: tab.id,
+            url: tab.url,
+            status: tab.status,
+            title: tab.title
+        });
+        
+        // Check if URL is valid for content scripts
+        const isValidUrl = !tab.url.startsWith('chrome://') && 
+                          !tab.url.startsWith('chrome-extension://') && 
+                          !tab.url.startsWith('file://') &&
+                          !tab.url.startsWith('about:');
+        
+        if (!isValidUrl) {
+            alert(`Cannot capture on this type of page: ${tab.url}\n\nTry on a regular website like google.com`);
+            return;
+        }
+        
+        console.log('[Coder1 Popup] Sending startCapture to tab:', tab.id, 'URL:', tab.url);
         
         // Send message to content script to start capture
         chrome.tabs.sendMessage(tab.id, { action: 'startCapture' }, (response) => {
             if (chrome.runtime.lastError) {
-                console.error('[Coder1 Popup] Error sending message:', chrome.runtime.lastError);
-                alert('Error: Could not start capture mode. Make sure you\'re on a regular webpage (not chrome:// or file:// URLs)');
+                console.error('[Coder1 Popup] ERROR Details:', {
+                    error: chrome.runtime.lastError,
+                    tabId: tab.id,
+                    tabUrl: tab.url,
+                    tabStatus: tab.status
+                });
+                
+                const errorMsg = chrome.runtime.lastError.message;
+                if (errorMsg.includes('Could not establish connection')) {
+                    alert(`Content script not loaded on this page.\n\nURL: ${tab.url}\n\nTry:\n1. Refresh this page\n2. Try a different website\n3. Check extension permissions`);
+                } else {
+                    alert(`Communication error: ${errorMsg}\n\nURL: ${tab.url}`);
+                }
                 return;
             }
-            console.log('[Coder1 Popup] Response from content script:', response);
+            console.log('[Coder1 Popup] ✅ Response from content script:', response);
         });
         
-        // Close popup after a small delay
-        setTimeout(() => window.close(), 100);
+        // Close popup after a small delay (only if no error)
+        setTimeout(() => window.close(), 500);
     } catch (error) {
-        console.error('[Coder1 Popup] Error in capture button:', error);
+        console.error('[Coder1 Popup] Exception in capture button:', error);
         alert('Error starting capture mode: ' + error.message);
     }
 });

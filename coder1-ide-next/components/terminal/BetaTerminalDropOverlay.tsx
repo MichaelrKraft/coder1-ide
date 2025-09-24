@@ -1,11 +1,12 @@
 'use client';
 
 import React, { useState, useRef, useCallback } from 'react';
-import { Upload, FileImage, FileText, FileCode, File, X, Loader2, Check } from 'lucide-react';
+import { Upload, FileImage, FileText, FileCode, File, X, Loader2, Check, Terminal, Link } from 'lucide-react';
 
 interface BetaTerminalDropOverlayProps {
   onFileDrop: (files: File[]) => void;
   onTextInsert?: (text: string) => void;
+  onClaudeBridge?: (bridgeResult: any) => void; // New: handle Claude CLI bridge
   isProcessing?: boolean;
   terminalRef?: React.RefObject<HTMLDivElement>;
 }
@@ -21,6 +22,7 @@ interface ProcessedFile {
 export default function BetaTerminalDropOverlay({ 
   onFileDrop, 
   onTextInsert,
+  onClaudeBridge,
   isProcessing = false,
   terminalRef 
 }: BetaTerminalDropOverlayProps) {
@@ -28,11 +30,46 @@ export default function BetaTerminalDropOverlay({
   const [dragCounter, setDragCounter] = useState(0);
   const [droppedFiles, setDroppedFiles] = useState<ProcessedFile[]>([]);
   const [showPreview, setShowPreview] = useState(false);
+  const [isBridging, setIsBridging] = useState(false);
+  const [bridgeResult, setBridgeResult] = useState<any>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
+
+  // Global drag prevention to stop browser from opening files
+  React.useEffect(() => {
+    const preventDefaults = (e: DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+    };
+
+    const handleGlobalDrop = (e: DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+      // Prevent all drops when we're in dragging state to avoid browser navigation
+      if (isDragging) {
+        return false;
+      }
+    };
+
+    // Add global event listeners in CAPTURE phase to prevent browser default behavior early
+    document.addEventListener('dragover', preventDefaults, true);
+    document.addEventListener('dragenter', preventDefaults, true);
+    document.addEventListener('dragstart', preventDefaults, true);
+    document.addEventListener('drop', handleGlobalDrop, true);
+
+    return () => {
+      document.removeEventListener('dragover', preventDefaults, true);
+      document.removeEventListener('dragenter', preventDefaults, true);
+      document.removeEventListener('dragstart', preventDefaults, true);
+      document.removeEventListener('drop', handleGlobalDrop, true);
+    };
+  }, [terminalRef, isDragging]);
 
   // File type icons
   const getFileIcon = (file: File) => {
     if (file.type.startsWith('image/')) return <FileImage className="w-5 h-5" />;
+    if (file.type === 'application/pdf') return <File className="w-5 h-5 text-red-400" />;
     if (file.type.startsWith('text/') || file.name.endsWith('.md')) return <FileText className="w-5 h-5" />;
     if (file.name.match(/\.(js|jsx|ts|tsx|py|java|cpp|c|go|rs|rb|php)$/)) return <FileCode className="w-5 h-5" />;
     return <File className="w-5 h-5" />;
@@ -183,6 +220,55 @@ export default function BetaTerminalDropOverlay({
   const handleClearAll = () => {
     setDroppedFiles([]);
     setShowPreview(false);
+    setBridgeResult(null);
+  };
+
+  // Handle Claude CLI bridge
+  const handleClaudeBridge = async () => {
+    if (droppedFiles.length === 0) return;
+
+    setIsBridging(true);
+    try {
+      const formData = new FormData();
+      formData.append('sessionId', `bridge_${Date.now()}`);
+      formData.append('userPrompt', `Analyze these ${droppedFiles.length} file(s)`);
+      formData.append('autoInject', 'true');
+      formData.append('preferredFormat', 'both');
+
+      droppedFiles.forEach((pf, index) => {
+        formData.append(`file_${index}`, pf.file);
+      });
+
+      const response = await fetch('/api/claude-bridge/session', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error(`Bridge failed: ${response.statusText}`);
+      }
+
+      const result = await response.json();
+      setBridgeResult(result);
+
+      // Notify parent component
+      if (onClaudeBridge) {
+        onClaudeBridge(result);
+      }
+
+      // Insert terminal display text if available
+      if (onTextInsert && result.terminalDisplay) {
+        onTextInsert(result.terminalDisplay);
+      }
+
+    } catch (error) {
+      console.error('Claude bridge error:', error);
+      setBridgeResult({
+        error: `Failed to bridge files: ${error instanceof Error ? error.message : 'Unknown error'}`
+      });
+    } finally {
+      setIsBridging(false);
+    }
   };
 
   return (
@@ -190,12 +276,19 @@ export default function BetaTerminalDropOverlay({
       {/* Invisible drop overlay that captures events */}
       <div
         ref={overlayRef}
-        className={`absolute inset-0 pointer-events-none ${isDragging ? 'pointer-events-auto' : ''}`}
+        className="fixed pointer-events-auto"
         onDragEnter={handleDragEnter}
         onDragLeave={handleDragLeave}
         onDragOver={handleDragOver}
         onDrop={handleDrop}
-        style={{ zIndex: isDragging ? 999 : -1 }}
+        style={{ 
+          zIndex: 9999,
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          position: 'fixed'
+        }}
       >
         {/* Visual feedback when dragging */}
         {isDragging && (
@@ -271,7 +364,7 @@ export default function BetaTerminalDropOverlay({
           </div>
           
           {/* Bulk actions */}
-          <div className="mt-3 flex gap-2">
+          <div className="mt-3 flex flex-wrap gap-2">
             <button
               onClick={() => {
                 // Process all files at once
@@ -279,7 +372,7 @@ export default function BetaTerminalDropOverlay({
                 handleClearAll();
               }}
               className="px-3 py-1.5 text-sm bg-primary text-bg-primary rounded hover:bg-primary-hover transition-colors"
-              disabled={isProcessing}
+              disabled={isProcessing || isBridging}
             >
               {isProcessing ? (
                 <>
@@ -290,6 +383,26 @@ export default function BetaTerminalDropOverlay({
                 'Process All with AI'
               )}
             </button>
+            
+            <button
+              onClick={handleClaudeBridge}
+              className="px-3 py-1.5 text-sm bg-green-600 text-white rounded hover:bg-green-700 transition-colors flex items-center gap-1"
+              disabled={isProcessing || isBridging || droppedFiles.length === 0}
+              title="Bridge files for Claude CLI access"
+            >
+              {isBridging ? (
+                <>
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                  Bridging...
+                </>
+              ) : (
+                <>
+                  <Link className="w-3 h-3" />
+                  Bridge to Claude CLI
+                </>
+              )}
+            </button>
+            
             <button
               onClick={handleClearAll}
               className="px-3 py-1.5 text-sm bg-bg-tertiary text-text-secondary rounded hover:bg-bg-secondary transition-colors"
@@ -297,6 +410,52 @@ export default function BetaTerminalDropOverlay({
               Clear All
             </button>
           </div>
+        </div>
+      )}
+
+      {/* Bridge status display */}
+      {bridgeResult && (
+        <div className="absolute bottom-0 left-0 right-0 bg-green-900/95 backdrop-blur-sm border-t border-green-600 p-4 shadow-xl"
+             style={{ zIndex: 1001 }}>
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-sm font-semibold text-green-100 flex items-center gap-2">
+              <Link className="w-4 h-4" />
+              Claude CLI Bridge Status
+            </h3>
+            <button
+              onClick={() => setBridgeResult(null)}
+              className="text-green-300 hover:text-green-100 transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+          
+          {bridgeResult.error ? (
+            <div className="text-red-300 text-sm">
+              ❌ {bridgeResult.error}
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <div className="text-green-200 text-sm">
+                ✅ {bridgeResult.message}
+              </div>
+              
+              {bridgeResult.sessionBridge?.claudeCommand && (
+                <div className="bg-green-800/50 rounded p-2 text-xs">
+                  <div className="text-green-300 mb-1">Ready to run:</div>
+                  <code className="text-green-100 font-mono break-all">
+                    {bridgeResult.sessionBridge.claudeCommand}
+                  </code>
+                </div>
+              )}
+              
+              {bridgeResult.sessionBridge?.filesCount && (
+                <div className="text-green-300 text-xs">
+                  📁 {bridgeResult.sessionBridge.filesCount} file(s) bridged to filesystem
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
 

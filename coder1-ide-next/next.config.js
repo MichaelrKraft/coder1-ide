@@ -143,6 +143,10 @@ const nextConfig = {
       {
         source: '/components-beta/api/generate-code/:id',
         destination: '/api/components-beta/generate-code/:id'
+      },
+      {
+        source: '/components-beta/api/save',
+        destination: '/api/components-beta/save'
       }
     ];
   },

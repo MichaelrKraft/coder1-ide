@@ -267,8 +267,6 @@ class ProductCreationHub {
         // Theme toggle
         document.getElementById('themeToggle')?.addEventListener('click', () => this.toggleTheme());
         
-        // IDE Enter button
-        document.getElementById('enterIDE')?.addEventListener('click', () => this.enterIDE());
         
         // Skip buttons
         document.getElementById('skipPRD')?.addEventListener('click', () => this.skipStep(3));
@@ -1641,27 +1639,6 @@ Please analyze this PRD and help me build this project step by step.`;
         console.log('✅ Project data prepared for IDE transfer with both localStorage keys:', projectData);
     }
     
-    enterIDE() {
-        // Prepare project data if available
-        if (this.currentProject) {
-            this.prepareProjectForIDE();
-        }
-        
-        // Navigate to Coder1 IDE with context
-        const ideUrl = this.currentProject 
-            ? '/ide?project=transfer'
-            : '/ide';
-            
-        window.open(ideUrl, '_blank');
-        
-        // Show transfer message
-        if (this.currentProject) {
-            this.addMessageToChat(
-                '🚀 Opening Coder1 IDE with your project data! Your PRD and project details have been prepared for Claude Code integration.',
-                'assistant'
-            );
-        }
-    }
 
     skipStep(stepNumber) {
         console.log(`Skipping step ${stepNumber}`);
@@ -1799,17 +1776,11 @@ Please analyze this PRD and help me build this project step by step.`;
         this.updateProgress(100, 'Project ready to build!');
         document.getElementById('exportProject').disabled = false;
         
-        // Add completion message with IDE redirect info
+        // Add completion message
         this.addMessageToChat(
-            '🎉 Congratulations! Your project is now complete with version management set up. Automatically redirecting to Coder1 IDE in 3 seconds...',
+            '🎉 Congratulations! Your project is now complete with version management set up. You can now use the export functionality to download your project files.',
             'assistant'
         );
-        
-        // Auto-redirect to Coder1 IDE after 3 seconds
-        setTimeout(() => {
-            this.addMessageToChat('🚀 Launching Coder1 IDE with your project...', 'assistant');
-            this.enterIDE();
-        }, 3000);
     }
 
     closeVersionModal() {

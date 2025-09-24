@@ -1,9 +1,12 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
+import { useSearchParams } from 'next/navigation';
+import { loadComponentForEditor } from '@/lib/component-formatter';
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import InteractiveTour from "@/components/InteractiveTour";
+import SettingsModal from "@/components/SettingsModal";
 
 // Import core IDE components - using correct default exports
 import ThreePanelLayout from "@/components/layout/ThreePanelLayout";
@@ -11,6 +14,7 @@ import LeftPanel from "@/components/LeftPanel";
 import MonacoEditor from "@/components/editor/MonacoEditor";
 import StatusBarCore from "@/components/status-bar/StatusBarCore";
 import MenuBar from "@/components/MenuBar";
+import SimpleDragDropOverlay from "@/components/terminal/SimpleDragDropOverlay";
 
 // Conductor components removed - using simple multi-Claude tabs instead
 
@@ -49,6 +53,10 @@ export default function IDEPage() {
   // Tour state
   const [showTour, setShowTour] = useState(false);
   
+  // Settings modal state
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [fontSize, setFontSize] = useState(14);
+  
   // Editor state
   const [activeFile, setActiveFile] = useState<string | null>(null);
   const [files, setFiles] = useState<Record<string, string>>({});
@@ -66,6 +74,31 @@ export default function IDEPage() {
     null,
   );
   const [terminalReady, setTerminalReady] = useState<boolean>(false);
+
+  // File drop handling
+  const [isProcessingFiles, setIsProcessingFiles] = useState(false);
+
+  const handleFileDrop = async (files: File[]) => {
+    console.log(`📎 Handling ${files.length} file(s) via drag-and-drop`);
+    setIsProcessingFiles(true);
+    
+    try {
+      // Process files for Claude
+      for (const file of files) {
+        console.log(`Processing file: ${file.name} (${file.size} bytes)`);
+        // TODO: Send to Claude CLI via terminal integration
+      }
+    } catch (error) {
+      console.error('Error processing files:', error);
+    } finally {
+      setIsProcessingFiles(false);
+    }
+  };
+
+  const handleTextInsert = (text: string) => {
+    console.log('📝 Inserting text into terminal:', text);
+    // TODO: Insert text into terminal
+  };
 
   // Terminal callbacks
   const handleAgentsSpawn = () => {
@@ -108,6 +141,28 @@ export default function IDEPage() {
     setFiles((prev) => ({ ...prev, [path]: content }));
   };
 
+  // Get search params for component loading
+  const searchParams = useSearchParams();
+  
+  // Load component from query params if present
+  useEffect(() => {
+    const componentId = searchParams.get('loadComponent');
+    
+    if (componentId) {
+      // Load the component and set it in the editor
+      loadComponentForEditor(componentId).then((content) => {
+        if (content) {
+          // Create a virtual file for the component
+          const fileName = `component-${componentId}.html`;
+          setFiles((prev) => ({ ...prev, [fileName]: content }));
+          setActiveFile(fileName);
+        }
+      }).catch((error) => {
+        console.error(`Error loading component ${componentId}:`, error);
+      });
+    }
+  }, [searchParams]); // Only run when search params change
+
   return (
     <SessionProvider>
       <EnhancedSupervisionProvider>
@@ -115,10 +170,18 @@ export default function IDEPage() {
           sessionId={terminalSessionId}
           terminalReady={terminalReady}
         >
+          {/* Global Drag Drop Overlay - Must be at root level */}
+          <SimpleDragDropOverlay
+            onFileDrop={handleFileDrop}
+            onTextInsert={handleTextInsert}
+            isProcessing={isProcessingFiles}
+          />
+          
           <div className="h-screen w-full flex flex-col bg-bg-primary">
             {/* Menu Bar */}
             <MenuBar
               onToggleTerminal={() => setTerminalVisible(!terminalVisible)}
+              onShowSettings={() => setShowSettingsModal(true)}
             />
 
             {/* Main IDE Layout */}
@@ -150,6 +213,7 @@ export default function IDEPage() {
                           file={activeFile}
                           language="typescript"
                           theme="tokyo-night"
+                          fontSize={fontSize}
                           onTourStart={() => setShowTour(true)}
                         />
                       </div>
@@ -203,7 +267,19 @@ export default function IDEPage() {
                     )}
                   </PanelGroup>
                 }
-                rightPanel={<PreviewPanel activeFile={activeFile} />}
+                rightPanel={
+                  <PreviewPanel 
+                    activeFile={activeFile}
+                    editorContent={activeFile ? files[activeFile] || "" : ""}
+                    fileOpen={!!activeFile}
+                    isPreviewable={
+                      // SAFETY: Mark files as previewable based on extension
+                      activeFile ? 
+                      /\.(html|htm|tsx|jsx|css|js|ts)$/i.test(activeFile) : 
+                      false
+                    }
+                  />
+                }
               />
             </div>
 
@@ -232,6 +308,14 @@ export default function IDEPage() {
                 }}
               />
             )}
+            
+            {/* Settings Modal */}
+            <SettingsModal
+              isOpen={showSettingsModal}
+              onClose={() => setShowSettingsModal(false)}
+              fontSize={fontSize}
+              onFontSizeChange={setFontSize}
+            />
           </div>
         </TerminalCommandProvider>
       </EnhancedSupervisionProvider>

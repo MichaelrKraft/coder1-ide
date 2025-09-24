@@ -1,0 +1,14 @@
+{
+  "id": "be6ba08e530f7d38",
+  "title": "Test Component",
+  "url": "http://example.com",
+  "selector": "div.test-component",
+  "html": "<div class=\"test-component\"><h1>Hello World</h1><p>This is a test component.</p></div>",
+  "css": ".test-component { background: #f0f0f0; padding: 20px; border-radius: 8px; } .test-component h1 { color: #333; }",
+  "screenshot": null,
+  "timestamp": "2025-09-24T03:35:01.265Z",
+  "tags": [],
+  "category": "uncategorized",
+  "framework": "vanilla",
+  "generatedCode": null
+}

@@ -1,0 +1,14 @@
+{
+  "id": "b23d4a112cad02e8",
+  "title": "Test with Redirect",
+  "url": "https://example.com/test",
+  "selector": "body",
+  "html": "<div>Test</div>",
+  "css": ".test { color: blue; }",
+  "screenshot": null,
+  "timestamp": "2025-09-24T01:58:34.187Z",
+  "tags": [],
+  "category": "uncategorized",
+  "framework": "vanilla",
+  "generatedCode": null
+}

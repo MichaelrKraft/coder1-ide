@@ -388,9 +388,9 @@ Provide contextual warnings, suggestions, and guidance based on this configurati
       />
       
       {/* Modal */}
-      <div className="relative w-full max-w-4xl max-h-[90vh] bg-bg-secondary border border-coder1-cyan/50 rounded-lg shadow-glow-cyan overflow-hidden">
+      <div className="relative w-full max-w-4xl max-h-[90vh] mx-4 sm:mx-0 bg-bg-secondary border border-coder1-cyan/50 rounded-lg shadow-glow-cyan flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-border-default bg-bg-tertiary">
+        <div className="flex items-center justify-between p-4 sm:p-6 border-b border-border-default bg-bg-tertiary">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-gradient-to-br from-coder1-cyan to-coder1-purple rounded-lg">
               <Brain className="w-6 h-6 text-white" />
@@ -421,7 +421,7 @@ Provide contextual warnings, suggestions, and guidance based on this configurati
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-auto p-6" style={{ minHeight: '500px', maxHeight: '600px' }}>
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 min-h-0">
           {/* Step 1: Project Context */}
           {state.currentStep === 'project-context' && (
             <div className="space-y-6">
@@ -826,7 +826,7 @@ Provide contextual warnings, suggestions, and guidance based on this configurati
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between p-6 border-t border-border-default bg-bg-tertiary">
+        <div className="flex items-center justify-between p-4 sm:p-6 border-t border-border-default bg-bg-tertiary">
           <button
             onClick={goPrevious}
             disabled={!canGoPrevious}

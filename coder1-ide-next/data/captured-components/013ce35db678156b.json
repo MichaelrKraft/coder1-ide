@@ -1,0 +1,16 @@
+{
+  "id": "013ce35db678156b",
+  "title": "Test Integration Component",
+  "url": "https://example.com/test-integration",
+  "selector": ".hero-section",
+  "html": "<div class=\"hero-section\"><h1>Welcome to Coder1</h1><p>This component was captured and loaded automatically!</p></div>",
+  "css": ".hero-section { padding: 40px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; text-align: center; border-radius: 10px; } .hero-section h1 { font-size: 2.5rem; margin-bottom: 1rem; } .hero-section p { font-size: 1.2rem; opacity: 0.9; }",
+  "screenshot": null,
+  "timestamp": "2025-09-24T02:03:36.216Z",
+  "tags": [],
+  "category": "uncategorized",
+  "framework": "vanilla",
+  "generatedCode": {
+    "react": "import React from 'react';\nimport './Component.css';\n\nconst CapturedComponent = () => {\n    return (\n        <div className=\"captured-component\">\n            <div class=\"hero-section\"><h1>Welcome to Coder1</h1><p>This component was captured and loaded automatically!</p></div>\n        </div>\n    );\n};\n\nexport default CapturedComponent;\n\n/* CSS (Component.css) */\n.hero-section { padding: 40px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; text-align: center; border-radius: 10px; } .hero-section h1 { font-size: 2.5rem; margin-bottom: 1rem; } .hero-section p { font-size: 1.2rem; opacity: 0.9; }\n"
+  }
+}

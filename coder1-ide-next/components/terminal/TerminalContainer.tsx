@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { X, FolderOpen, Code2, Server, Database, CheckCircle, Cloud, Monitor } from 'lucide-react';
 import Terminal from './Terminal';
 
@@ -57,6 +57,9 @@ export default function TerminalContainer({
   const [activeTab, setActiveTab] = useState<'main' | 'sandbox'>('main');
   const [sandboxSession, setSandboxSession] = useState<SandboxSession | null>(null);
   
+  // Track created sandboxes to prevent duplicates
+  const createdSandboxesRef = useRef<Set<string>>(new Set());
+  
   // Agent Tabs Feature (Phase 1) - Only active when feature flag enabled
   // Initialize to false, will be set in useEffect to avoid SSR issues
   const [agentTabsEnabled, setAgentTabsEnabled] = useState(false);
@@ -86,6 +89,23 @@ export default function TerminalContainer({
 
   // Handle creating a sandbox from checkpoint data
   const createSandbox = useCallback((checkpointData: any) => {
+    // Generate a unique ID for this checkpoint based on its data
+    const checkpointId = checkpointData.originalCheckpoint?.id || 
+                        checkpointData.checkpointData?.timestamp || 
+                        checkpointData.timestamp || 
+                        JSON.stringify(checkpointData).substring(0, 100);
+    
+    // Check if we've already created a sandbox for this checkpoint
+    if (createdSandboxesRef.current.has(checkpointId)) {
+      console.log('⚠️ Sandbox already created for checkpoint:', checkpointId);
+      // Just switch to the existing sandbox tab
+      setActiveTab('sandbox');
+      return;
+    }
+    
+    // Mark this checkpoint as having a sandbox
+    createdSandboxesRef.current.add(checkpointId);
+    
     // Extract terminal history from multiple possible locations for backward compatibility
     const extractTerminalHistory = (data: any): string => {
       // New format: top-level terminalHistory field
@@ -142,6 +162,13 @@ export default function TerminalContainer({
   const closeSandbox = useCallback(() => {
     if (sandboxSession) {
       console.log('🗑️ Closing sandbox:', sandboxSession.id);
+      
+      // Clear the checkpoint ID from our tracking set
+      const checkpointId = sandboxSession.checkpointData?.originalCheckpoint?.id || 
+                          sandboxSession.checkpointData?.timestamp || 
+                          JSON.stringify(sandboxSession.checkpointData).substring(0, 100);
+      createdSandboxesRef.current.delete(checkpointId);
+      
       setSandboxSession(null);
       setActiveTab('main');
     }

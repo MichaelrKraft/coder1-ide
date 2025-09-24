@@ -1,0 +1,14 @@
+{
+  "id": "5e90d5cbb5ae6afa",
+  "title": "Beautiful Card Component",
+  "url": "https://example.com/card",
+  "selector": "body",
+  "html": "<div class=\"card\"><div class=\"card-header\"><h3>Product Feature</h3></div><div class=\"card-body\"><p>This is an amazing feature that will revolutionize your workflow.</p><button class=\"cta-button\">Learn More</button></div></div>",
+  "css": ".card { background: white; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); padding: 0; overflow: hidden; max-width: 400px; margin: 20px auto; } .card-header { background: linear-gradient(135deg, #00d9ff, #8b5cf6); color: white; padding: 20px; } .card-header h3 { margin: 0; font-size: 1.5rem; } .card-body { padding: 20px; } .card-body p { color: #666; line-height: 1.6; margin-bottom: 20px; } .cta-button { background: linear-gradient(135deg, #00d9ff, #8b5cf6); color: white; border: none; padding: 12px 24px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: transform 0.2s; } .cta-button:hover { transform: scale(1.05); }",
+  "screenshot": null,
+  "timestamp": "2025-09-24T02:10:46.249Z",
+  "tags": [],
+  "category": "uncategorized",
+  "framework": "vanilla",
+  "generatedCode": null
+}

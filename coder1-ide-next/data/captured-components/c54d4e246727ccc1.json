@@ -1,0 +1,14 @@
+{
+  "id": "c54d4e246727ccc1",
+  "title": "Playwright Test Component",
+  "url": "https://example.com/playwright-test",
+  "selector": ".test-hero",
+  "html": "<div class=\"test-hero\"><h1>Captured via Playwright</h1><p>This component was captured using Playwright automation and should appear in the IDE!</p></div>",
+  "css": ".test-hero { background: linear-gradient(45deg, #ff6b6b, #4ecdc4); padding: 40px; color: white; border-radius: 15px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.2); } .test-hero h1 { font-size: 2.5rem; margin-bottom: 1rem; text-shadow: 2px 2px 4px rgba(0,0,0,0.2); } .test-hero p { font-size: 1.2rem; opacity: 0.95; }",
+  "screenshot": null,
+  "timestamp": "2025-09-24T02:13:32.242Z",
+  "tags": [],
+  "category": "uncategorized",
+  "framework": "vanilla",
+  "generatedCode": null
+}

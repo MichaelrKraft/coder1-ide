@@ -21,6 +21,73 @@ export async function GET(request: NextRequest) {
     if (!filePath) {
       return getDemoPreview();
     }
+    
+    // SAFETY CHECK: Handle virtual component files (component-{id}.html)
+    // These are components loaded from the database, not real files
+    if (filePath.startsWith('component-') && filePath.endsWith('.html')) {
+      console.log('🎨 Preview API: Handling virtual component file:', filePath);
+      
+      try {
+        // Extract component ID from filename
+        const componentId = filePath.replace('component-', '').replace('.html', '');
+        
+        // Fetch component from API
+        const componentResponse = await fetch(`http://localhost:3001/api/components-beta/component/${componentId}`);
+        const componentData = await componentResponse.json();
+        
+        if (componentData.success && componentData.component) {
+          console.log('✅ Preview API: Successfully loaded component:', componentId);
+          
+          // Format component as complete HTML document
+          const { title, html, css } = componentData.component;
+          const formattedHTML = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${escapeHtml(title || 'Captured Component')}</title>
+    <style>
+        /* Reset styles for isolated preview */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            padding: 20px;
+        }
+        
+        /* Component styles */
+        ${css || ''}
+    </style>
+</head>
+<body>
+    <!-- Captured Component -->
+    ${html || '<p>No HTML content</p>'}
+</body>
+</html>`;
+          
+          return new NextResponse(formattedHTML, {
+            headers: {
+              'Content-Type': 'text/html; charset=utf-8',
+              'Cache-Control': 'no-cache, no-store, must-revalidate',
+              'X-Preview-File': filePath,
+              'X-Preview-Component': componentId,
+              'X-Preview-Success': 'true'
+            },
+          });
+        } else {
+          console.error('❌ Preview API: Component not found:', componentId);
+          return getErrorHTML(`Component not found: ${componentId}`);
+        }
+      } catch (error) {
+        console.error('❌ Preview API: Error loading virtual component:', error);
+        return getErrorHTML(`Failed to load component: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      }
+    }
 
     // Create cache key for request deduplication
     const cacheKey = `${filePath}:${version}`;

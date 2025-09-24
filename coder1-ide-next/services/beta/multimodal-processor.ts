@@ -1,9 +1,10 @@
 /**
  * Multimodal Processor Service for Beta IDE
- * Handles image processing, file conversion, and Claude vision API integration
+ * Handles image processing, file conversion, PDF processing, and Claude vision API integration
  */
 
 import { Anthropic } from '@anthropic-ai/sdk';
+import * as pdfParse from 'pdf-parse';
 
 export interface ProcessedImage {
   base64: string;
@@ -24,16 +25,30 @@ export interface ProcessedFile {
   language?: string; // For code files
 }
 
+export interface ProcessedPDF {
+  name: string;
+  type: string;
+  size: number;
+  content: string; // Extracted text content
+  pages: number;
+  title?: string; // PDF metadata title
+  author?: string; // PDF metadata author
+  summary?: string;
+}
+
 export interface MultimodalContent {
   text?: string;
   images?: ProcessedImage[];
   files?: ProcessedFile[];
+  pdfs?: ProcessedPDF[]; // Add PDF support
 }
 
 class MultimodalProcessor {
   private maxImageSize = 5 * 1024 * 1024; // 5MB
   private maxFileSize = 1 * 1024 * 1024; // 1MB for text files
+  private maxPdfSize = 10 * 1024 * 1024; // 10MB for PDF files
   private supportedImageTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+  private supportedPdfTypes = ['application/pdf'];
   private supportedCodeExtensions = [
     '.js', '.jsx', '.ts', '.tsx', '.py', '.java', '.cpp', '.c', 
     '.go', '.rs', '.rb', '.php', '.swift', '.kt', '.scala', '.r',
@@ -86,11 +101,43 @@ class MultimodalProcessor {
   }
 
   /**
+   * Process a PDF file
+   */
+  async processPdfFile(file: File): Promise<ProcessedPDF> {
+    if (!this.supportedPdfTypes.includes(file.type)) {
+      throw new Error(`Unsupported PDF type: ${file.type}`);
+    }
+
+    if (file.size > this.maxPdfSize) {
+      throw new Error(`PDF too large: ${(file.size / 1024 / 1024).toFixed(2)}MB (max 10MB)`);
+    }
+
+    try {
+      const buffer = await this.fileToBuffer(file);
+      const pdfData = await pdfParse(buffer);
+
+      return {
+        name: file.name,
+        type: file.type,
+        size: file.size,
+        content: pdfData.text || '',
+        pages: pdfData.numpages || 0,
+        title: pdfData.info?.Title || undefined,
+        author: pdfData.info?.Author || undefined,
+        summary: this.generatePdfSummary(pdfData.text || '', pdfData.numpages || 0)
+      };
+    } catch (error) {
+      throw new Error(`Failed to process PDF: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  /**
    * Process multiple files
    */
   async processFiles(files: File[]): Promise<MultimodalContent> {
     const images: ProcessedImage[] = [];
     const processedFiles: ProcessedFile[] = [];
+    const pdfs: ProcessedPDF[] = [];
     const errors: string[] = [];
 
     for (const file of files) {
@@ -98,6 +145,9 @@ class MultimodalProcessor {
         if (this.supportedImageTypes.includes(file.type)) {
           const processedImage = await this.processImage(file);
           images.push(processedImage);
+        } else if (this.supportedPdfTypes.includes(file.type)) {
+          const processedPdf = await this.processPdfFile(file);
+          pdfs.push(processedPdf);
         } else if (this.isTextFile(file)) {
           const processedFile = await this.processTextFile(file);
           processedFiles.push(processedFile);
@@ -122,6 +172,20 @@ class MultimodalProcessor {
       });
     }
 
+    if (pdfs.length > 0) {
+      text += `\nPDFs (${pdfs.length}):\n`;
+      pdfs.forEach(pdf => {
+        text += `- ${pdf.name}`;
+        if (pdf.pages) {
+          text += ` (${pdf.pages} pages)`;
+        }
+        text += '\n';
+        if (pdf.summary) {
+          text += `  ${pdf.summary}\n`;
+        }
+      });
+    }
+
     if (processedFiles.length > 0) {
       text += `\nFiles (${processedFiles.length}):\n`;
       processedFiles.forEach(file => {
@@ -140,7 +204,7 @@ class MultimodalProcessor {
       text += `\nErrors:\n${errors.join('\n')}`;
     }
 
-    return { text, images, files: processedFiles };
+    return { text, images, files: processedFiles, pdfs };
   }
 
   /**
@@ -188,6 +252,27 @@ class MultimodalProcessor {
       });
     }
 
+    // Add PDF contents as text
+    if (content.pdfs && content.pdfs.length > 0) {
+      content.pdfs.forEach(pdf => {
+        let pdfText = `\n--- PDF: ${pdf.name} ---\n`;
+        pdfText += `Pages: ${pdf.pages}\n`;
+        if (pdf.title) {
+          pdfText += `Title: ${pdf.title}\n`;
+        }
+        if (pdf.author) {
+          pdfText += `Author: ${pdf.author}\n`;
+        }
+        pdfText += `\n${pdf.content}\n`;
+        pdfText += `--- End of ${pdf.name} ---\n`;
+        
+        messages.push({
+          type: 'text',
+          text: pdfText
+        });
+      });
+    }
+
     return messages;
   }
 
@@ -221,6 +306,24 @@ class MultimodalProcessor {
       reader.onload = () => resolve(reader.result as string);
       reader.onerror = reject;
       reader.readAsText(file);
+    });
+  }
+
+  /**
+   * Helper: Convert file to buffer (for PDF processing)
+   */
+  private fileToBuffer(file: File): Promise<Buffer> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        if (reader.result instanceof ArrayBuffer) {
+          resolve(Buffer.from(reader.result));
+        } else {
+          reject(new Error('Failed to convert file to buffer'));
+        }
+      };
+      reader.onerror = reject;
+      reader.readAsArrayBuffer(file);
     });
   }
 
@@ -327,6 +430,19 @@ class MultimodalProcessor {
 
     // Generic summary
     return `${lines.length} lines, ${content.length} characters`;
+  }
+
+  /**
+   * Helper: Generate a brief summary of PDF content
+   */
+  private generatePdfSummary(content: string, pages: number): string {
+    const words = content.split(/\s+/).filter(word => word.length > 0);
+    const characters = content.length;
+    
+    // Basic content analysis
+    const avgWordsPerPage = pages > 0 ? Math.round(words.length / pages) : 0;
+    
+    return `${pages} pages, ${words.length} words, ~${avgWordsPerPage} words/page`;
   }
 
   /**
