@@ -18,17 +18,9 @@ const HeroSection = dynamic(
   }
 );
 
-// Dynamically import Monaco Editor to avoid SSR issues
+// Dynamically import Monaco Editor to avoid SSR issues  
 const Editor = dynamic(
-  () => import('@monaco-editor/react').then((mod) => {
-    // Configure Monaco to use CDN for reliability
-    mod.loader.config({
-      paths: {
-        vs: 'https://cdn.jsdelivr.net/npm/monaco-editor@0.52.2/min/vs'
-      }
-    });
-    return mod;
-  }),
+  () => import('@monaco-editor/react'),
   { 
     ssr: false,
     loading: () => (
@@ -63,6 +55,25 @@ export default function MonacoEditor({
   const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
   const [setupViewed, setSetupViewed] = useState<boolean | null>(null);
   const [heroSectionDismissed, setHeroSectionDismissed] = useState<boolean | null>(null);
+
+  // Configure Monaco Editor to use CDN for reliable loading
+  useEffect(() => {
+    const configureMonaco = async () => {
+      try {
+        if (typeof window !== 'undefined') {
+          const { loader } = await import('@monaco-editor/react');
+          loader.config({
+            paths: {
+              vs: 'https://cdn.jsdelivr.net/npm/monaco-editor@0.52.2/min/vs'
+            }
+          });
+        }
+      } catch (error) {
+        console.warn('Monaco loader configuration failed, using default:', error);
+      }
+    };
+    configureMonaco();
+  }, []);
 
   // Check if this is the user's first time
   useEffect(() => {
