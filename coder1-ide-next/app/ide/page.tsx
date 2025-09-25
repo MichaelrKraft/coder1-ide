@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback, Suspense } from "react";
 import dynamic from "next/dynamic";
 import { useSearchParams } from 'next/navigation';
 import { loadComponentForEditor } from '@/lib/component-formatter';
@@ -54,7 +54,7 @@ import { EnhancedSupervisionProvider } from "@/contexts/EnhancedSupervisionConte
 import { SessionProvider } from "@/contexts/SessionContext";
 import { TerminalCommandProvider } from "@/contexts/TerminalCommandContext";
 
-export default function IDEPage() {
+function IDEPageContent() {
   // Tour state
   const [showTour, setShowTour] = useState(false);
   
@@ -906,5 +906,13 @@ export default function IDEPage() {
         </TerminalCommandProvider>
       </EnhancedSupervisionProvider>
     </SessionProvider>
+  );
+}
+
+export default function IDEPage() {
+  return (
+    <Suspense fallback={<div>Loading IDE...</div>}>
+      <IDEPageContent />
+    </Suspense>
   );
 }
