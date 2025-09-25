@@ -47,8 +47,9 @@ export function WelcomeScreen({ onDismiss, onBridgeClick }: WelcomeScreenProps =
                 <div className="border-l-4 border-blue-500 pl-3">
                   <h3 className="text-sm font-semibold text-green-400 mb-1">Step 2: Install Bridge (on YOUR computer)</h3>
                   <div className="bg-black rounded p-2 font-mono text-xs">
-                    <span className="text-green-400">$</span> <span className="text-white">curl -sL https://coder1-ide.onrender.com/install-bridge.sh | bash</span>
+                    <span className="text-green-400">$</span> <span className="text-white">curl -sL http://localhost:3001/install-bridge.sh | bash</span>
                   </div>
+                  <p className="text-xs text-gray-400 mt-1">For production: use https://coder1-ide.onrender.com/install-bridge.sh</p>
                 </div>
 
                 <div className="border-l-4 border-blue-500 pl-3">

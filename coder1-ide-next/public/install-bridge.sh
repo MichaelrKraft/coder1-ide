@@ -76,13 +76,23 @@ else
     cd "$TEMP_DIR" && unzip -q coder1.zip && mv coder1-ide-master coder1-ide
 fi
 
-# Navigate to bridge directory
-cd "$TEMP_DIR/coder1-ide/bridge-cli" || cd "$TEMP_DIR/bridge-cli" 2>/dev/null || {
+# Navigate to bridge directory - check multiple possible locations
+if [ -d "$TEMP_DIR/coder1-ide/coder1-ide-next/bridge-cli" ]; then
+    cd "$TEMP_DIR/coder1-ide/coder1-ide-next/bridge-cli"
+elif [ -d "$TEMP_DIR/coder1-ide-next/bridge-cli" ]; then
+    cd "$TEMP_DIR/coder1-ide-next/bridge-cli"
+elif [ -d "$TEMP_DIR/bridge-cli" ]; then
+    cd "$TEMP_DIR/bridge-cli"
+else
     echo -e "${RED}❌ Bridge CLI directory not found in repository${NC}"
+    echo -e "${YELLOW}Searched locations:${NC}"
+    echo -e "  - $TEMP_DIR/coder1-ide/coder1-ide-next/bridge-cli"
+    echo -e "  - $TEMP_DIR/coder1-ide-next/bridge-cli"
+    echo -e "  - $TEMP_DIR/bridge-cli"
     echo -e "${YELLOW}Please check the repository structure or install manually${NC}"
     rm -rf "$TEMP_DIR"
     exit 1
-}
+fi
 
 echo -e "${BLUE}🔧 Installing dependencies...${NC}"
 

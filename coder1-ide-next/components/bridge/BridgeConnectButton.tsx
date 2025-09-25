@@ -259,7 +259,7 @@ export function BridgeConnectButton() {
                             <h4 className="font-semibold text-cyan-300 mb-2 text-sm">Install Bridge (on YOUR computer)</h4>
                             <div 
                               className="relative group cursor-pointer"
-                              onClick={() => copyToClipboard('curl -sL https://coder1-ide.onrender.com/install-bridge.sh | bash', 'install')}
+                              onClick={() => copyToClipboard('curl -sL http://localhost:3001/install-bridge.sh | bash', 'install')}
                             >
                               <div 
                                 className="bg-black rounded-lg p-3 font-mono text-xs border transition-all duration-200"
@@ -271,7 +271,7 @@ export function BridgeConnectButton() {
                                 <div className="flex items-center justify-between">
                                   <div className="flex items-center gap-2">
                                     <span className="text-green-400">$</span>
-                                    <span className="text-white">curl -sL https://coder1-ide.onrender.com/install-bridge.sh | bash</span>
+                                    <span className="text-white">curl -sL http://localhost:3001/install-bridge.sh | bash</span>
                                   </div>
                                   <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                     {copiedCommand === 'install' ? (
