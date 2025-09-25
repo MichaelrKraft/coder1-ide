@@ -316,25 +316,14 @@ export default function MonacoEditor({
               }
               setSetupViewed(true);
             }}
-          />
-          {/* Backup button with fixed positioning */}
-          <button
-            onClick={() => {
-              // Mark as viewed when user explicitly dismisses
+            onBridgeClick={() => {
+              // Trigger the Bridge modal
+              // This will be handled by dispatching a custom event that StatusBar listens to
               if (typeof window !== 'undefined') {
-                localStorage.setItem('coder1-bridge-setup-viewed', 'true');
+                window.dispatchEvent(new CustomEvent('openBridgeModal'));
               }
-              setSetupViewed(true);
             }}
-            className="fixed top-24 right-8 px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 text-base"
-            style={{
-              zIndex: 9999,
-              boxShadow: '0 0 20px rgba(0, 217, 255, 0.3), 0 4px 6px rgba(0, 0, 0, 0.3)',
-            }}
-            title="Continue to IDE"
-          >
-            Continue to IDE →
-          </button>
+          />
         </div>
       );
     } else {

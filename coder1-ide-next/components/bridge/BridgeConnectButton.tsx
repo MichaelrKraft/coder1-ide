@@ -10,6 +10,19 @@ export function BridgeConnectButton() {
   const [showProTips, setShowProTips] = useState(false);
   const [copiedCommand, setCopiedCommand] = useState<string>('');
 
+  // Listen for openBridgeModal event from WelcomeScreen
+  useEffect(() => {
+    const handleOpenBridgeModal = () => {
+      generatePairingCode();
+    };
+
+    window.addEventListener('openBridgeModal', handleOpenBridgeModal);
+    
+    return () => {
+      window.removeEventListener('openBridgeModal', handleOpenBridgeModal);
+    };
+  }, []);
+
   const generatePairingCode = async () => {
     setIsLoading(true);
     try {
