@@ -1,0 +1,35 @@
+{
+  "docId": "doc_1758753063099_ty50qe2yz",
+  "title": "test image",
+  "url": "file://test-image.png",
+  "type": "image",
+  "categories": [
+    "image",
+    "uploaded"
+  ],
+  "content": {
+    "thumbnailBase64": "/9j/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCADIAMgDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAf/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAb/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCcAI9BAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAP//Z",
+    "dimensions": {
+      "width": 1,
+      "height": 1
+    },
+    "format": "png",
+    "size": 70
+  },
+  "searchableText": "[Image: 1x1 png]",
+  "metadata": {
+    "fileName": "test-image.png",
+    "fileType": "image/png",
+    "fileSize": 70,
+    "processedAt": "2025-09-24T22:31:03.099Z",
+    "width": 1,
+    "height": 1,
+    "format": "png",
+    "space": "srgb",
+    "channels": 4,
+    "depth": "uchar",
+    "density": 72,
+    "hasAlpha": true,
+    "wordCount": 3
+  }
+}

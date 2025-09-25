@@ -237,7 +237,8 @@ const StatusBarActions = React.memo(function StatusBarActions({
   };
 
   const handleDocs = () => {
-    window.open('/docs-manager', '_blank');
+    // Dispatch custom event to open the integrated DocumentationPanel
+    window.dispatchEvent(new CustomEvent('openDocumentationPanel'));
   };
 
 

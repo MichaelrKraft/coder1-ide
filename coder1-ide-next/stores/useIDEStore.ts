@@ -39,6 +39,20 @@ interface IDEStore {
   // Settings
   settings: IDESettings;
   
+  // AI state
+  aiState: {
+    currentModel: 'claude-opus-4.1' | 'claude-sonnet-4' | 'claude-sonnet-3.7' | 'claude-3.5-haiku';
+    tokenUsage: {
+      input: number;
+      output: number;
+      total: number;
+    };
+    modelConfig: {
+      temperature: number;
+      maxTokens: number;
+    };
+  };
+  
   // Loading states
   loading: LoadingState | null;
   
@@ -137,6 +151,15 @@ interface IDEStore {
   clearToasts: () => void;
   
   // ================================================================================
+  // AI Actions
+  // ================================================================================
+  
+  setAIModel: (model: IDEStore['aiState']['currentModel']) => void;
+  updateTokenUsage: (tokens: Partial<IDEStore['aiState']['tokenUsage']>) => void;
+  resetTokenUsage: () => void;
+  updateModelConfig: (config: Partial<IDEStore['aiState']['modelConfig']>) => void;
+  
+  // ================================================================================
   // Utility Actions
   // ================================================================================
   
@@ -198,6 +221,19 @@ const initialState = {
     autoSave: true,
     autoFormat: true,
   } as IDESettings,
+  
+  aiState: {
+    currentModel: 'claude-opus-4.1' as const,  // Default to Opus 4.1 (most capable)
+    tokenUsage: {
+      input: 0,
+      output: 0,
+      total: 0,
+    },
+    modelConfig: {
+      temperature: 0.7,
+      maxTokens: 4096,
+    },
+  },
   
   loading: null as LoadingState | null,
   
@@ -486,6 +522,52 @@ export const useIDEStore = create<IDEStore>()(
           set({ toasts: [] }, false, 'clearToasts'),
         
         // ================================================================================
+        // AI Actions
+        // ================================================================================
+        
+        setAIModel: (model) => {
+          set((state) => ({
+            aiState: { ...state.aiState, currentModel: model }
+          }), false, `setAIModel:${model}`);
+          
+          // Store preference in localStorage
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('preferredAIModel', model);
+          }
+        },
+        
+        updateTokenUsage: (tokens) =>
+          set((state) => ({
+            aiState: {
+              ...state.aiState,
+              tokenUsage: {
+                input: tokens.input ?? state.aiState.tokenUsage.input,
+                output: tokens.output ?? state.aiState.tokenUsage.output,
+                total: tokens.input !== undefined || tokens.output !== undefined
+                  ? (tokens.input ?? state.aiState.tokenUsage.input) + 
+                    (tokens.output ?? state.aiState.tokenUsage.output)
+                  : tokens.total ?? state.aiState.tokenUsage.total,
+              }
+            }
+          }), false, 'updateTokenUsage'),
+        
+        resetTokenUsage: () =>
+          set((state) => ({
+            aiState: {
+              ...state.aiState,
+              tokenUsage: { input: 0, output: 0, total: 0 }
+            }
+          }), false, 'resetTokenUsage'),
+        
+        updateModelConfig: (config) =>
+          set((state) => ({
+            aiState: {
+              ...state.aiState,
+              modelConfig: { ...state.aiState.modelConfig, ...config }
+            }
+          }), false, 'updateModelConfig'),
+        
+        // ================================================================================
         // Utility Actions
         // ================================================================================
         
@@ -504,6 +586,11 @@ export const useIDEStore = create<IDEStore>()(
             panelSizes: state.layout.panelSizes,
           },
           project: state.project,
+          aiState: {
+            currentModel: state.aiState.currentModel,
+            modelConfig: state.aiState.modelConfig,
+            // Don't persist token usage - reset on refresh
+          },
         }),
       }
     ),

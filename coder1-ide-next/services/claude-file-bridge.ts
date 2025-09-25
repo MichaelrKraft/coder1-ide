@@ -8,6 +8,10 @@ import fs from 'fs/promises';
 import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
 import os from 'os';
+import Tesseract from 'tesseract.js';
+import pdf from 'pdf-parse';
+import mammoth from 'mammoth';
+import * as XLSX from 'xlsx';
 
 export interface BridgedFile {
   id: string;
@@ -73,8 +77,18 @@ class ClaudeFileBridge {
 
   /**
    * Bridge a File object to the filesystem for Claude CLI access
+   * Also extracts content for direct transmission to Claude Code
    */
   async bridgeFile(file: File, content?: string, metadata?: any): Promise<BridgedFile> {
+    // Enhanced validation
+    if (!file || !file.name) {
+      throw new Error('Invalid file object provided');
+    }
+
+    if (file.size === 0) {
+      console.log(`⚠️ Empty file detected: ${file.name}`);
+    }
+
     if (file.size > this.options.maxFileSize) {
       throw new Error(`File too large: ${(file.size / 1024 / 1024).toFixed(2)}MB (max ${this.options.maxFileSize / 1024 / 1024}MB)`);
     }
@@ -84,15 +98,187 @@ class ClaudeFileBridge {
       await this.cleanupOldestFiles(Math.ceil(this.options.maxFiles * 0.2)); // Remove 20%
     }
 
+    // Validate file name for security
+    if (file.name.includes('..') || file.name.includes('/') || file.name.includes('\\')) {
+      console.log(`⚠️ Potentially unsafe filename detected: ${file.name}`);
+      // Sanitize filename while preserving extension
+      const sanitizedName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+      console.log(`🧹 Sanitized filename: ${sanitizedName}`);
+    }
+
     const fileId = uuidv4();
     const fileExtension = path.extname(file.name) || this.getExtensionFromMimeType(file.type);
     const tempFileName = `${fileId}${fileExtension}`;
     const tempPath = path.join(this.tempDir, tempFileName);
 
     try {
-      // Write file to temporary location
-      const buffer = await this.fileToBuffer(file);
-      await fs.writeFile(tempPath, buffer);
+      // Write file to temporary location with error handling
+      console.log(`📁 Processing file: ${file.name} (${file.type}, ${file.size} bytes)`);
+      
+      let buffer: Buffer;
+      try {
+        buffer = await this.fileToBuffer(file);
+      } catch (bufferError) {
+        console.error(`❌ Failed to read file buffer for ${file.name}:`, bufferError);
+        throw new Error(`Failed to read file: ${bufferError instanceof Error ? bufferError.message : 'Unknown error'}`);
+      }
+
+      // Validate buffer is not empty
+      if (buffer.length === 0 && file.size > 0) {
+        console.log(`⚠️ File ${file.name} appears empty after reading`);
+      }
+
+      try {
+        await fs.writeFile(tempPath, buffer);
+        console.log(`✅ File written to temp location: ${tempPath}`);
+      } catch (writeError) {
+        console.error(`❌ Failed to write file ${file.name} to temp location:`, writeError);
+        throw new Error(`Failed to save file temporarily: ${writeError instanceof Error ? writeError.message : 'Unknown error'}`);
+      }
+      
+      // Extract content based on file type with enhanced error handling
+      let extractedContent: string | undefined;
+      try {
+        if (this.isTextFile(file.type, file.name)) {
+          try {
+            extractedContent = buffer.toString('utf-8');
+            console.log(`✅ Text content extracted: ${extractedContent.length} characters`);
+          } catch (textError) {
+            console.error(`❌ Failed to decode text for ${file.name}:`, textError);
+            extractedContent = `[Text File: ${file.name}]\nError: Unable to decode file as UTF-8 text. File may be binary or corrupted.`;
+          }
+        } else if (this.isImageFile(file.type)) {
+        // For images, try OCR first, then fallback to base64
+        try {
+          console.log(`🔍 Performing OCR on image: ${file.name}`);
+          const ocrResult = await Tesseract.recognize(buffer, 'eng', {
+            logger: m => {
+              if (m.status === 'recognizing text') {
+                console.log(`OCR Progress: ${Math.round(m.progress * 100)}%`);
+              }
+            }
+          });
+          
+          const ocrText = ocrResult.data.text.trim();
+          if (ocrText && ocrText.length > 0) {
+            console.log(`✅ OCR extracted ${ocrText.length} characters from ${file.name}`);
+            // Include both OCR text and image reference
+            const base64 = buffer.toString('base64');
+            extractedContent = `[Image: ${file.name}]\n\nExtracted text via OCR:\n${ocrText}\n\n[Image data available as: data:${file.type};base64,${base64}]`;
+          } else {
+            console.log(`⚠️ OCR found no text in ${file.name}, using base64 fallback`);
+            const base64 = buffer.toString('base64');
+            extractedContent = `data:${file.type};base64,${base64}`;
+          }
+        } catch (ocrError) {
+          console.error(`❌ OCR failed for ${file.name}:`, ocrError);
+          // Fallback to base64 if OCR fails
+          const base64 = buffer.toString('base64');
+          extractedContent = `data:${file.type};base64,${base64}`;
+        }
+      } else if (this.isPDFFile(file.type, file.name)) {
+        // Enhanced PDF text extraction
+        try {
+          console.log(`📄 Extracting text from PDF: ${file.name}`);
+          const data = await pdf(buffer);
+          
+          if (data.text && data.text.trim().length > 0) {
+            console.log(`✅ PDF extracted ${data.text.length} characters from ${file.name}`);
+            // Format PDF content with metadata
+            extractedContent = `[PDF Document: ${file.name}]\n` +
+              `Pages: ${data.numpages}\n` +
+              `Created: ${data.info?.CreationDate || 'Unknown'}\n\n` +
+              `Extracted text:\n${data.text.trim()}`;
+          } else {
+            console.log(`⚠️ PDF ${file.name} appears to be empty or image-based`);
+            extractedContent = `[PDF Document: ${file.name}]\n` +
+              `Pages: ${data.numpages || 'Unknown'}\n` +
+              `Note: This PDF appears to contain no extractable text. It may be image-based or protected.`;
+          }
+        } catch (pdfError) {
+          console.error(`❌ PDF extraction failed for ${file.name}:`, pdfError);
+          extractedContent = `[PDF Document: ${file.name}]\n` +
+            `Error: Unable to extract text from this PDF file. It may be corrupted, protected, or image-based.`;
+        }
+      } else if (this.isWordDoc(file.type, file.name)) {
+        // Word document processing (.docx)
+        try {
+          console.log(`📝 Extracting text from Word document: ${file.name}`);
+          const result = await mammoth.extractRawText({ buffer });
+          
+          if (result.value && result.value.trim().length > 0) {
+            console.log(`✅ Word doc extracted ${result.value.length} characters from ${file.name}`);
+            extractedContent = `[Word Document: ${file.name}]\n\n` +
+              `Extracted text:\n${result.value.trim()}`;
+            
+            // Log any warnings from mammoth
+            if (result.messages && result.messages.length > 0) {
+              console.log(`⚠️ Word processing warnings for ${file.name}:`, result.messages);
+            }
+          } else {
+            console.log(`⚠️ Word document ${file.name} appears to be empty`);
+            extractedContent = `[Word Document: ${file.name}]\n` +
+              `Note: This Word document appears to contain no extractable text.`;
+          }
+        } catch (wordError) {
+          console.error(`❌ Word document extraction failed for ${file.name}:`, wordError);
+          extractedContent = `[Word Document: ${file.name}]\n` +
+            `Error: Unable to extract text from this Word document. It may be corrupted or in an unsupported format.`;
+        }
+      } else if (this.isExcelFile(file.type, file.name)) {
+        // Excel spreadsheet processing (.xlsx, .xls)
+        try {
+          console.log(`📊 Extracting data from Excel file: ${file.name}`);
+          const workbook = XLSX.read(buffer, { type: 'buffer' });
+          
+          if (workbook.SheetNames && workbook.SheetNames.length > 0) {
+            let excelContent = `[Excel Spreadsheet: ${file.name}]\n`;
+            excelContent += `Sheets: ${workbook.SheetNames.length}\n\n`;
+            
+            // Process each sheet
+            workbook.SheetNames.forEach((sheetName, index) => {
+              const worksheet = workbook.Sheets[sheetName];
+              const csvData = XLSX.utils.sheet_to_csv(worksheet);
+              
+              if (csvData && csvData.trim().length > 0) {
+                excelContent += `## Sheet ${index + 1}: ${sheetName}\n\n`;
+                // Convert to markdown table format for better readability
+                const rows = csvData.split('\n').filter(row => row.trim().length > 0);
+                if (rows.length > 0) {
+                  excelContent += '```csv\n' + csvData + '\n```\n\n';
+                }
+              }
+            });
+            
+            console.log(`✅ Excel extracted data from ${workbook.SheetNames.length} sheets in ${file.name}`);
+            extractedContent = excelContent;
+          } else {
+            console.log(`⚠️ Excel file ${file.name} appears to have no sheets`);
+            extractedContent = `[Excel Spreadsheet: ${file.name}]\n` +
+              `Note: This Excel file appears to contain no accessible sheets.`;
+          }
+        } catch (excelError) {
+          console.error(`❌ Excel extraction failed for ${file.name}:`, excelError);
+          extractedContent = `[Excel Spreadsheet: ${file.name}]\n` +
+            `Error: Unable to extract data from this Excel file. It may be corrupted or in an unsupported format.`;
+        }
+      } else {
+          // Unsupported file type - provide helpful message
+          console.log(`ℹ️ Unsupported file type for content extraction: ${file.type} (${file.name})`);
+          extractedContent = `[File: ${file.name}]\n` +
+            `Type: ${file.type || 'unknown'}\n` +
+            `Size: ${(file.size / 1024).toFixed(1)}KB\n\n` +
+            `This file type is not supported for content extraction. ` +
+            `It has been saved temporarily for Claude CLI access, but you may need to ` +
+            `upload it directly to Claude Code for analysis.`;
+        }
+      } catch (contentError) {
+        console.error(`❌ Content extraction failed for ${file.name}:`, contentError);
+        extractedContent = `[File: ${file.name}]\n` +
+          `Error during content extraction: ${contentError instanceof Error ? contentError.message : 'Unknown error'}\n\n` +
+          `The file has been saved temporarily but content could not be processed. ` +
+          `You can try uploading it directly to Claude Code.`;
+      }
 
       const bridgedFile: BridgedFile = {
         id: fileId,
@@ -102,7 +288,7 @@ class ClaudeFileBridge {
         size: file.size,
         created: new Date(),
         accessed: new Date(),
-        content,
+        content: extractedContent || content, // Use extracted content if available, fallback to passed content
         metadata
       };
 
@@ -209,6 +395,79 @@ class ClaudeFileBridge {
   }
 
   /**
+   * Check if file is a text file based on type and extension
+   */
+  private isTextFile(mimeType: string, fileName: string): boolean {
+    const textMimeTypes = [
+      'text/plain',
+      'text/html',
+      'text/css',
+      'text/javascript',
+      'application/javascript',
+      'application/json',
+      'application/xml',
+      'text/xml',
+      'text/markdown',
+      'application/x-sh',
+      'application/x-yaml',
+      'text/yaml',
+      'text/csv',
+      'application/csv'
+    ];
+    
+    const textExtensions = [
+      '.txt', '.md', '.js', '.ts', '.jsx', '.tsx',
+      '.json', '.xml', '.yaml', '.yml', '.html',
+      '.css', '.scss', '.sass', '.less', '.py',
+      '.rb', '.go', '.rs', '.c', '.cpp', '.h',
+      '.java', '.sh', '.bash', '.zsh', '.fish',
+      '.csv', '.tsv', '.log', '.conf', '.ini',
+      '.env', '.gitignore', '.dockerfile', '.sql'
+    ];
+    
+    if (textMimeTypes.includes(mimeType)) return true;
+    
+    const ext = path.extname(fileName).toLowerCase();
+    return textExtensions.includes(ext);
+  }
+  
+  /**
+   * Check if file is an image
+   */
+  private isImageFile(mimeType: string): boolean {
+    return mimeType.startsWith('image/');
+  }
+
+  /**
+   * Check if file is a PDF
+   */
+  private isPDFFile(mimeType: string, fileName: string): boolean {
+    return mimeType === 'application/pdf' || fileName.toLowerCase().endsWith('.pdf');
+  }
+
+  /**
+   * Check if file is a Word document
+   */
+  private isWordDoc(mimeType: string, fileName: string): boolean {
+    return mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' || 
+           fileName.toLowerCase().endsWith('.docx');
+  }
+
+  /**
+   * Check if file is an Excel spreadsheet
+   */
+  private isExcelFile(mimeType: string, fileName: string): boolean {
+    const excelMimes = [
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'application/vnd.ms-excel'
+    ];
+    const lowerFileName = fileName.toLowerCase();
+    return excelMimes.includes(mimeType) || 
+           lowerFileName.endsWith('.xlsx') || 
+           lowerFileName.endsWith('.xls');
+  }
+
+  /**
    * Clean up expired files
    */
   private async cleanupExpiredFiles(): Promise<void> {
@@ -247,19 +506,15 @@ class ClaudeFileBridge {
   /**
    * Helper: Convert File to Buffer
    */
-  private fileToBuffer(file: File): Promise<Buffer> {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => {
-        if (reader.result instanceof ArrayBuffer) {
-          resolve(Buffer.from(reader.result));
-        } else {
-          reject(new Error('Failed to convert file to buffer'));
-        }
-      };
-      reader.onerror = reject;
-      reader.readAsArrayBuffer(file);
-    });
+  private async fileToBuffer(file: File): Promise<Buffer> {
+    // In Node.js environment, File is a Blob
+    // We need to use arrayBuffer() method instead of FileReader
+    try {
+      const arrayBuffer = await file.arrayBuffer();
+      return Buffer.from(arrayBuffer);
+    } catch (error) {
+      throw new Error(`Failed to convert file to buffer: ${error}`);
+    }
   }
 
   /**

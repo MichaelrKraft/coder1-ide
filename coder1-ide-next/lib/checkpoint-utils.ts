@@ -19,6 +19,29 @@ export function filterThinkingAnimations(terminalData: string): string {
   
   let filtered = terminalData;
   
+  // 🚨 CRITICAL FIX (Jan 2025): Specific pattern for "plan mode on (shift+tab to cycle)"
+  // This MUST run FIRST before other filters
+  // Diagnostic test showed 117 out of 120 instances were not being caught
+  const planModeOnPatterns = [
+    // Match exact "plan mode on (shift+tab to cycle)" with pause symbol and any whitespace
+    /^\s*⏸\s*plan mode on\s*\(shift\+tab to cycle\)\s*$/gim,
+    // Match without pause symbol
+    /^\s*plan mode on\s*\(shift\+tab to cycle\)\s*$/gim,
+    // Match with potential ANSI codes around the text
+    /\u001b\[[0-9;]*m?\s*⏸?\s*plan mode on\s*\(shift\+tab to cycle\)\s*\u001b\[[0-9;]*m?/gi,
+    // Match indented versions (your test data shows indented lines)
+    /^[ \t]+⏸?\s*plan mode on\s*\(shift\+tab to cycle\)\s*$/gim,
+    // Match with carriage returns and newlines
+    /\r?\n?\s*⏸?\s*plan mode on\s*\(shift\+tab to cycle\)\s*\r?\n?/gi,
+    // Aggressive catch-all: any line containing this phrase
+    /.*plan mode on\s*\(shift\+tab to cycle\).*/gi
+  ];
+  
+  // Apply the critical fix FIRST - this is the permanent solution
+  for (const pattern of planModeOnPatterns) {
+    filtered = filtered.replace(pattern, '');
+  }
+  
   // Remove thinking animation patterns with all their ANSI codes
   // This matches lines with spinner symbols followed by "Thinking" (with possible color codes in between)
   const thinkingPatterns = [
@@ -50,6 +73,106 @@ export function filterThinkingAnimations(terminalData: string): string {
     /([✳✢·✶✻✽✦☆★▪▫◆◇○●]\s*Flowing…\s*\(esc to interrupt\).*?\r?\n){2,}/g
   ];
   
+  // Plan mode animation patterns - CRITICAL FOR CHECKPOINT RESTORATION
+  const planModePatterns = [
+    // Match "Examining" patterns with any variation
+    /[✳✢·✶✻✽✦☆★▪▫◆◇○●]\s*Examining.*?\(esc to interrupt\).*?\r?\n/g,
+    /\u001b\[38;5;\d+m[✳✢·✶✻✽✦☆★▪▫◆◇○●]\u001b\[39m\s*\u001b\[38;5;\d+m.*?Examining.*?\u001b\[39m.*?\(esc to interrupt\).*?\r?\n/g,
+    // Match "Stewing" patterns
+    /[✳✢·✶✻✽✦☆★▪▫◆◇○●]\s*Stewing.*?\(esc to interrupt\).*?\r?\n/g,
+    /\u001b\[38;5;\d+m[✳✢·✶✻✽✦☆★▪▫◆◇○●]\u001b\[39m\s*\u001b\[38;5;\d+m.*?Stewing.*?\u001b\[39m.*?\(esc to interrupt\).*?\r?\n/g,
+    // Match "Pouncing" patterns
+    /[✳✢·✶✻✽✦☆★▪▫◆◇○●]\s*Pouncing.*?\(esc to interrupt\).*?\r?\n/g,
+    /\u001b\[38;5;\d+m[✳✢·✶✻✽✦☆★▪▫◆◇○●]\u001b\[39m\s*\u001b\[38;5;\d+m.*?Pouncing.*?\u001b\[39m.*?\(esc to interrupt\).*?\r?\n/g,
+    // Match "Conjuring" patterns
+    /[✳✢·✶✻✽✦☆★▪▫◆◇○●]\s*Conjuring.*?\(esc to interrupt\).*?\r?\n/g,
+    /\u001b\[38;5;\d+m[✳✢·✶✻✽✦☆★▪▫◆◇○●]\u001b\[39m\s*\u001b\[38;5;\d+m.*?Conjuring.*?\u001b\[39m.*?\(esc to interrupt\).*?\r?\n/g,
+    // Match "Tempering" patterns - CRITICAL FOR USER'S ISSUE
+    /[✳✢·✶✻✽✦☆★▪▫◆◇○●]\s*Tempering.*?\(esc to interrupt\).*?\r?\n/g,
+    /\u001b\[38;5;\d+m[✳✢·✶✻✽✦☆★▪▫◆◇○●]\u001b\[39m\s*\u001b\[38;5;\d+m.*?Tempering.*?\u001b\[39m.*?\(esc to interrupt\).*?\r?\n/g,
+    // Match "Planning" patterns
+    /[✳✢·✶✻✽✦☆★▪▫◆◇○●]\s*Planning.*?\(esc to interrupt\).*?\r?\n/g,
+    /\u001b\[38;5;\d+m[✳✢·✶✻✽✦☆★▪▫◆◇○●]\u001b\[39m\s*\u001b\[38;5;\d+m.*?Planning.*?\u001b\[39m.*?\(esc to interrupt\).*?\r?\n/g,
+    // Match "Analyzing" patterns
+    /[✳✢·✶✻✽✦☆★▪▫◆◇○●]\s*Analyzing.*?\(esc to interrupt\).*?\r?\n/g,
+    /\u001b\[38;5;\d+m[✳✢·✶✻✽✦☆★▪▫◆◇○●]\u001b\[39m\s*\u001b\[38;5;\d+m.*?Analyzing.*?\u001b\[39m.*?\(esc to interrupt\).*?\r?\n/g,
+    // Match repetitive plan mode sequences
+    /([✳✢·✶✻✽✦☆★▪▫◆◇○●]\s*(?:Examining|Stewing|Pouncing|Conjuring|Tempering|Planning|Analyzing).*?\(esc to interrupt\).*?\r?\n){2,}/g,
+    // Match specific "Examining checkpoint system" pattern
+    /.*Examining checkpoint system.*?\r?\n/g,
+    /.*Examining the checkpoint system.*?\r?\n/g,
+    // Generic catch-all for any Claude Code animation verb ending in "-ing"
+    /[✳✢·✶✻✽✦☆★▪▫◆◇○●]\s*[A-Z][a-z]+ing.*?\(esc to interrupt\).*?\r?\n/g,
+    /\u001b\[38;5;\d+m[✳✢·✶✻✽✦☆★▪▫◆◇○●]\u001b\[39m\s*\u001b\[38;5;\d+m.*?[A-Z][a-z]+ing.*?\u001b\[39m.*?\(esc to interrupt\).*?\r?\n/g
+  ];
+  
+  // Plan mode UI elements - box drawing, status lines, todo indicators
+  const planModeUIPatterns = [
+    // Match box drawing characters for plan mode UI
+    /[┌─┐│└┘├┤┬┴┼╭╮╰╯╱╲╳]+.*?\r?\n/g,
+    // Match plan mode status lines with brackets
+    /\[\s*(?:Planning|Analyzing|Building|Reviewing|Testing|Implementing)\s*\].*?\r?\n/g,
+    // Match todo-style indicators
+    /\s*(?:□|☐|☑|☒|✓|✗|×)\s+.*?(?:TODO|DONE|IN PROGRESS|PENDING).*?\r?\n/g,
+    // Match progress indicators
+    /\s*(?:\d+%|\d+\/\d+)\s*(?:complete|done|finished|remaining).*?\r?\n/g,
+    // Match step indicators
+    /\s*(?:Step\s+\d+:|\d+\.|\d+\))\s*.*?\r?\n/g,
+    // Match plan mode headers
+    /\s*(?:===+|---+)\s*(?:PLAN|STRATEGY|APPROACH|ANALYSIS|REVIEW)\s*(?:===+|---+).*?\r?\n/g
+  ];
+  
+  // CRITICAL: Statusline task messages - the main cause of checkpoint replay issues
+  // These patterns catch the actual task descriptions that previous fixes missed
+  const statuslineTaskPatterns = [
+    // CRITICAL: Handle ANSI codes within statusline messages
+    // These patterns match statusline messages with embedded ANSI escape sequences
+    /.*\u001b\[\d+m\(esc to interrupt.*$/gm,  // Matches [2m(esc to interrupt...
+    /.*\(esc to interrupt.*$/gm,              // Fallback without ANSI
+    
+    // Match any line with the characteristic statusline control hints
+    /.*\(esc to interrupt.*?ctrl\+t.*?\).*$/gm,
+    /.*ctrl\+t to show todos.*$/gm,
+    /.*ctrl\+t for todos.*$/gm,
+    
+    // Match "Next:" indicators with the special arrow character
+    /^\s*⎿\s*Next:.*$/gm,
+    /.*⎿.*Next:.*$/gm,
+    
+    // Match task descriptions with status symbols and control hints (most common pattern)
+    /^[✶✳✢·✻✽✦☆★▪▫◆◇○●]\s+[^(]+\(esc to interrupt.*?\).*$/gm,
+    
+    // Match statusline tasks with both control hints present
+    /^[✶✳✢·✻✽✦☆★▪▫◆◇○●]\s+.*?\s*\(esc.*?ctrl\+t.*?\).*$/gm,
+    
+    // Match lines with ANSI codes containing statusline patterns
+    /\u001b\[.*?m[✶✳✢·✻✽✦☆★▪▫◆◇○●]\u001b\[.*?m\s+.*?\(esc to interrupt.*?\).*$/gm,
+    
+    // Clean up orphaned "Next:" lines without context
+    /^\s*Next:.*$/gm,
+    
+    // Remove standalone control hints that might be left over
+    /^\s*\(esc to interrupt.*?\).*$/gm,
+    /^\s*\(.*?ctrl\+t.*?\).*$/gm,
+    
+    // Match any residual statusline-like patterns with task descriptions
+    /^[✶✳✢·✻✽✦☆★▪▫◆◇○●]\s+[A-Z][^.!?\n]*[a-z].*?\(esc.*?\).*$/gm,
+    
+    // Catch statusline tasks with any descriptive text (not just -ing verbs)
+    // This generic pattern catches messages like "Adding configuration system with TOML-style localStorage"
+    /^[✶✳✢·✻✽✦☆★▪▫◆◇○●]\s+[A-Z][\w\s]+.*?\(esc to interrupt.*?\).*$/gm,
+    
+    // Additional specific pattern for messages with "ctrl+t" at the end
+    /^[✶✳✢·✻✽✦☆★▪▫◆◇○●]\s+.*?·\s*ctrl\+t.*$/gm,
+    
+    // CRITICAL FIX: Handle statusline with ANSI codes mixed in
+    // This catches lines like: [38;5;174m✶[39m [text] [2m(esc to interrupt
+    /.*\u001b\[[\d;]+m[✶✳✢·✻✽✦☆★▪▫◆◇○●]\u001b.*\u001b\[\d+m\(esc to interrupt.*$/gm,
+    
+    // Catch any line ending with variations of "esc to interrupt"
+    /.*\besc to interrupt\b.*$/gm
+  ];
+  
   // Apply thinking animation filters
   for (const pattern of thinkingPatterns) {
     filtered = filtered.replace(pattern, '');
@@ -60,15 +183,37 @@ export function filterThinkingAnimations(terminalData: string): string {
     filtered = filtered.replace(pattern, '');
   }
   
+  // Apply plan mode animation filters - CRITICAL FOR CHECKPOINT RESTORATION
+  for (const pattern of planModePatterns) {
+    filtered = filtered.replace(pattern, '');
+  }
+  
+  // Apply plan mode UI element filters
+  for (const pattern of planModeUIPatterns) {
+    filtered = filtered.replace(pattern, '');
+  }
+  
+  // Apply statusline task message filters - CRITICAL FOR PERMANENT FIX
+  for (const pattern of statuslineTaskPatterns) {
+    filtered = filtered.replace(pattern, '');
+  }
+  
   // Clean up any remaining isolated cursor movement codes
   filtered = filtered.replace(/(\u001b\[2K\u001b\[1A)+\u001b\[2K\u001b\[G/g, '');
   
   // Clean up validation loop specific cursor sequences
   filtered = filtered.replace(/(\u001b\[2K\u001b\[1A){5,}\u001b\[2K\u001b\[G/g, '');
   
+  // Clean up any cursor sequences with newlines at the end (from server logs)
+  filtered = filtered.replace(/\[2K\[1A\[2K\[1A\[2K\[1A\[2K\[1A\[2K\[1A\[2K\[G\s*\r?\n/g, '');
+  
   // Remove any remaining "Found invalid settings" fragments
   filtered = filtered.replace(/.*Found invalid settings.*?\r?\n/g, '');
   filtered = filtered.replace(/.*Flowing….*?\r?\n/g, '');
+  
+  // Remove any remaining plan mode fragments
+  filtered = filtered.replace(/.*(?:Examining|Stewing|Pouncing|Conjuring|Tempering|Planning|Analyzing).*?\r?\n/g, '');
+  filtered = filtered.replace(/.*checkpoint system.*?\r?\n/gi, '');
   
   // Normalize multiple consecutive newlines to maximum 2
   filtered = filtered.replace(/(\r?\n){3,}/g, '\r\n\r\n');

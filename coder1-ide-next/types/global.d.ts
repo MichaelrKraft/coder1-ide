@@ -13,6 +13,7 @@ declare global {
   interface Window {
     logger: Logger;
     __usageTrackingInterval?: NodeJS.Timeout;
+    terminalSocket?: any; // Socket.IO instance for terminal communication
   }
   
   // Node.js global interface

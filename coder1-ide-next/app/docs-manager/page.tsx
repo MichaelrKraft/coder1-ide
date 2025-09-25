@@ -725,7 +725,7 @@ export default function DocumentationManagerPage() {
                             <h3 className="font-medium text-blue-400">{doc.title}</h3>
                             <div className="flex items-center gap-4 mt-1 text-sm text-gray-400">
                               <span>Category: {doc.category}</span>
-                              <span>Words: {doc.wordCount.toLocaleString()}</span>
+                              <span>Words: {doc.wordCount ? doc.wordCount.toLocaleString() : 'N/A'}</span>
                               <span>Chunks: {doc.chunks}</span>
                               <span>Added: {new Date(doc.addedAt).toLocaleDateString()}</span>
                             </div>

@@ -15,6 +15,7 @@ interface PreviewPanelProps {
   activeFile?: string | null;
   editorContent?: string;
   isPreviewable?: boolean;
+  onOpenFile?: (path: string, line?: number) => void;
 }
 
 /**
@@ -28,6 +29,7 @@ const PreviewPanel = React.memo(function PreviewPanel({
   activeFile = null,
   editorContent = '',
   isPreviewable = false,
+  onOpenFile,
 }: PreviewPanelProps) {
   const [mode, setMode] = useState<PreviewMode>('preview');
   const [paraThinkSessionId, setParaThinkSessionId] = useState<string | null>(null);
@@ -240,7 +242,13 @@ const PreviewPanel = React.memo(function PreviewPanel({
             {/* DeepContext Panel */}
             {mode === 'deepcontext' && (
               <div className="h-full">
-                <DeepContextPanel activeFile={activeFile} />
+                <DeepContextPanel 
+                  activeFile={activeFile}
+                  onOpenFile={onOpenFile || ((path: string, line?: number) => {
+                    console.log(`Request to open file: ${path}${line ? ` at line ${line}` : ''}`);
+                    console.log('No onOpenFile handler provided to PreviewPanel');
+                  })}
+                />
               </div>
             )}
 

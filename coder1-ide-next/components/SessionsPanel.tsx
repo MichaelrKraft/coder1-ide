@@ -197,8 +197,34 @@ export default function SessionsPanel({ isVisible = true }: SessionsPanelProps) 
         if (restoreData.checkpoint && restoreData.checkpoint.data) {
           const snapshot = restoreData.checkpoint.data.snapshot;
           const conversationHistory = restoreData.checkpoint.data.conversationHistory;
-          console.log('📸 Snapshot data:', snapshot);
-          console.log('💬 Conversation history:', conversationHistory);
+          
+          // 🚨 DIAGNOSTIC: Log raw terminal data before filtering
+          if (snapshot?.terminal) {
+            console.log('🔍 DIAGNOSTIC: Raw terminal data length:', snapshot.terminal.length);
+            console.log('🔍 DIAGNOSTIC: Raw terminal first 500 chars:', snapshot.terminal.substring(0, 500));
+            console.log('🔍 DIAGNOSTIC: Raw terminal last 500 chars:', snapshot.terminal.substring(snapshot.terminal.length - 500));
+            
+            // Check for "plan mode on" pattern in raw data
+            const planModeMatches = snapshot.terminal.match(/plan mode on/gi);
+            const pauseSymbolMatches = snapshot.terminal.match(/⏸/g);
+            const shiftTabMatches = snapshot.terminal.match(/shift\+tab/gi);
+            
+            console.log('🔍 DIAGNOSTIC: "plan mode on" occurrences in raw data:', planModeMatches?.length || 0);
+            console.log('🔍 DIAGNOSTIC: "⏸" symbol occurrences in raw data:', pauseSymbolMatches?.length || 0);
+            console.log('🔍 DIAGNOSTIC: "shift+tab" occurrences in raw data:', shiftTabMatches?.length || 0);
+            
+            if (planModeMatches && planModeMatches.length > 10) {
+              console.log('🚨 DIAGNOSTIC: FOUND HIGH REPETITION in raw checkpoint data!');
+              console.log('🔍 DIAGNOSTIC: Sample repetitive lines:');
+              const lines = snapshot.terminal.split('\n');
+              const planModeLines = lines.filter(line => line.toLowerCase().includes('plan mode on'));
+              console.log('🔍 DIAGNOSTIC: Plan mode lines (first 5):', planModeLines.slice(0, 5));
+              console.log('🔍 DIAGNOSTIC: Total plan mode lines:', planModeLines.length);
+            }
+          }
+          
+          console.log('📸 Snapshot data keys:', Object.keys(snapshot || {}));
+          console.log('💬 Conversation history length:', conversationHistory?.length || 0);
           
           // Count what we're restoring
           const conversationCount = conversationHistory?.length || 0;
@@ -210,9 +236,28 @@ export default function SessionsPanel({ isVisible = true }: SessionsPanelProps) 
           
           // Stage 1: Restore localStorage data
           setRestorationStage('Restoring workspace data...');
-          if (snapshot.files) localStorage.setItem('openFiles', snapshot.files);
-          if (snapshot.terminal) localStorage.setItem('terminalHistory', snapshot.terminal);
-          if (snapshot.editor) localStorage.setItem('editorContent', snapshot.editor);
+          console.log('🏪 DIAGNOSTIC: Setting localStorage data...');
+          
+          if (snapshot.files) {
+            localStorage.setItem('openFiles', snapshot.files);
+            console.log('🏪 DIAGNOSTIC: Set openFiles to localStorage');
+          }
+          
+          if (snapshot.terminal) {
+            console.log('🏪 DIAGNOSTIC: About to set terminalHistory to localStorage');
+            console.log('🏪 DIAGNOSTIC: Terminal data being stored length:', snapshot.terminal.length);
+            console.log('🏪 DIAGNOSTIC: Terminal data contains "plan mode on":', 
+              (snapshot.terminal.match(/plan mode on/gi) || []).length, 'times');
+            localStorage.setItem('terminalHistory', snapshot.terminal);
+            console.log('🏪 DIAGNOSTIC: Set terminalHistory to localStorage');
+          }
+          
+          if (snapshot.editor) {
+            localStorage.setItem('editorContent', snapshot.editor);
+            console.log('🏪 DIAGNOSTIC: Set editorContent to localStorage');
+          }
+          
+          console.log('🏪 DIAGNOSTIC: localStorage restoration complete');
           
           // Stage 2: Switch to the checkpoint's session
           setRestorationStage('Switching to checkpoint session...');
@@ -224,13 +269,21 @@ export default function SessionsPanel({ isVisible = true }: SessionsPanelProps) 
           
           // Stage 3: Dispatch restoration events for terminal and conversation history
           setRestorationStage('Restoring terminal and conversation history...');
+          console.log('📢 DIAGNOSTIC: About to dispatch restoration events...');
+          
+          console.log('📢 DIAGNOSTIC: Dispatching checkpointRestored event...');
           window.dispatchEvent(new CustomEvent('checkpointRestored', {
             detail: { checkpoint: restoreData.checkpoint, snapshot }
           }));
+          console.log('📢 DIAGNOSTIC: checkpointRestored event dispatched');
           
+          console.log('📢 DIAGNOSTIC: Dispatching ideStateChanged event...');
           window.dispatchEvent(new CustomEvent('ideStateChanged', {
             detail: { type: 'checkpoint-restored', data: snapshot, checkpoint: restoreData.checkpoint }
           }));
+          console.log('📢 DIAGNOSTIC: ideStateChanged event dispatched');
+          
+          console.log('📢 DIAGNOSTIC: All restoration events dispatched');
           
           // Stage 4: Create sandbox for checkpoint exploration
           setRestorationStage('Creating checkpoint sandbox...');
@@ -285,9 +338,37 @@ export default function SessionsPanel({ isVisible = true }: SessionsPanelProps) 
           }
           
           // Clean the terminal history from thinking animations
-          const cleanedTerminalHistory = snapshot?.terminal 
-            ? filterThinkingAnimations(snapshot.terminal)
-            : '';
+          let cleanedTerminalHistory = '';
+          if (snapshot?.terminal) {
+            console.log('🧽 DIAGNOSTIC: Applying filterThinkingAnimations...');
+            const beforeLength = snapshot.terminal.length;
+            const beforePlanModeCount = (snapshot.terminal.match(/plan mode on/gi) || []).length;
+            const beforePauseCount = (snapshot.terminal.match(/⏸/g) || []).length;
+            
+            cleanedTerminalHistory = filterThinkingAnimations(snapshot.terminal);
+            
+            const afterLength = cleanedTerminalHistory.length;
+            const afterPlanModeCount = (cleanedTerminalHistory.match(/plan mode on/gi) || []).length;
+            const afterPauseCount = (cleanedTerminalHistory.match(/⏸/g) || []).length;
+            
+            console.log('🧽 DIAGNOSTIC: Filter Results:');
+            console.log('  📏 Length: ', beforeLength, '→', afterLength, '(', beforeLength - afterLength, 'chars removed)');
+            console.log('  📝 "plan mode on": ', beforePlanModeCount, '→', afterPlanModeCount, '(', beforePlanModeCount - afterPlanModeCount, 'instances removed)');
+            console.log('  ⏸ Pause symbols: ', beforePauseCount, '→', afterPauseCount, '(', beforePauseCount - afterPauseCount, 'symbols removed)');
+            
+            if (afterPlanModeCount > 0) {
+              console.log('🚨 DIAGNOSTIC: FILTERING FAILED - "plan mode on" still present after filtering!');
+              console.log('🔍 DIAGNOSTIC: Remaining plan mode lines:');
+              const remainingLines = cleanedTerminalHistory.split('\n').filter(line => 
+                line.toLowerCase().includes('plan mode on')
+              ).slice(0, 3);
+              remainingLines.forEach((line, i) => {
+                console.log(`  ${i + 1}. "${line}"`);
+              });
+            } else {
+              console.log('✅ DIAGNOSTIC: Filtering successful - all "plan mode on" text removed');
+            }
+          }
           
           const sandboxData = {
             name: restoreData.checkpoint.name || `Checkpoint ${new Date(restoreData.checkpoint.timestamp).toLocaleDateString('en-US')} ${new Date(restoreData.checkpoint.timestamp).toLocaleTimeString()}`,
@@ -316,9 +397,23 @@ export default function SessionsPanel({ isVisible = true }: SessionsPanelProps) 
           });
           
           // Dispatch sandbox creation event for terminal container
+          console.log('🏖️ DIAGNOSTIC: About to dispatch terminal:createSandbox event...');
+          console.log('🏖️ DIAGNOSTIC: Sandbox terminal history length:', sandboxData.terminalHistory?.length || 0);
+          console.log('🏖️ DIAGNOSTIC: Sandbox terminal contains "plan mode on":', 
+            (sandboxData.terminalHistory?.match(/plan mode on/gi) || []).length, 'times');
+          console.log('🏖️ DIAGNOSTIC: Sandbox data structure:', {
+            name: sandboxData.name,
+            filesCount: sandboxData.files?.length,
+            commandsCount: sandboxData.commands?.length,
+            terminalHistoryLength: sandboxData.terminalHistory?.length,
+            hasTerminalHistory: !!sandboxData.terminalHistory
+          });
+          
           window.dispatchEvent(new CustomEvent('terminal:createSandbox', {
             detail: sandboxData
           }));
+          
+          console.log('🏖️ DIAGNOSTIC: terminal:createSandbox event dispatched');
           
           // Final stage: Show detailed success message
           setRestorationStage('Finalizing restoration...');

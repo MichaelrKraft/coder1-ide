@@ -141,7 +141,7 @@ export default function MenuBar({
       { label: 'Bridge Setup Instructions', action: () => setSetupModalOpen(true), shortcut: '' },
       { separator: true },
       { label: 'About Coder1', action: onShowAbout || (() => alert('Coder1 IDE v2.0.0\nBuilt for Claude Code and vibe coders')), shortcut: '' },
-      { label: 'Documentation', action: () => window.open('/docs-manager', '_blank'), shortcut: '' },
+      { label: 'Documentation', action: () => window.dispatchEvent(new CustomEvent('openDocumentationPanel')), shortcut: '' },
       { separator: true },
       { label: 'Keyboard Shortcuts', action: onShowKeyboardShortcuts || (() => console.log('Shortcuts')), shortcut: 'Ctrl+K Ctrl+S' },
       { label: 'Report Issue', action: () => window.open('https://github.com/michaelkraft/autonomous_vibe_interface/issues', '_blank') }
@@ -184,13 +184,20 @@ export default function MenuBar({
   ];
 
   return (
-    <div className="h-20 bg-bg-secondary border-b border-border-default flex items-center justify-between px-3">
+    <div 
+      className="h-20 bg-bg-secondary border-b flex items-center justify-between px-3"
+      style={{
+        borderBottomColor: 'var(--primary-cyan)',
+        borderBottomWidth: '2px',
+        boxShadow: '0 2px 20px rgba(0, 217, 255, 0.4), 0 1px 10px rgba(0, 217, 255, 0.3)'
+      }}
+    >
       {/* Left section with logo centered in 15% width (matching explorer panel) */}
       <div className="flex items-center flex-1">
         {/* Logo container - 15% width to match explorer panel */}
         <div className="flex justify-center items-center" style={{ width: '15%', minWidth: '150px' }}>
           <Image 
-            src="/Coder1-logo-Trans.png" 
+            src="/Coder1-Logo-Sharp.svg" 
             alt="Coder1" 
             width={140} 
             height={50}

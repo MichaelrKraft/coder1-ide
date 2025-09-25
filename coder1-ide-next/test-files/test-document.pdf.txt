@@ -1,0 +1,31 @@
+%PDF-1.4 (This is a text file simulating PDF content for testing)
+
+# Coder1 IDE Documentation Upload Test Document
+
+This document tests the PDF processing capabilities of the Documentation Hub.
+
+## Abstract
+The Coder1 IDE provides a comprehensive development environment with integrated AI assistance.
+
+## Key Features
+1. Monaco Editor Integration
+2. Terminal with PTY Support  
+3. Session Management
+4. AI-Powered Documentation Processing
+5. File Upload and Processing System
+
+## API Documentation
+The system provides REST APIs for document management:
+- Upload endpoints support multiple file formats
+- Automatic text extraction and processing
+- Search and categorization capabilities
+
+## Testing Scenarios
+This document should be processed to extract:
+- Title and headings
+- Code blocks and technical content
+- Structured text for search indexing
+- Metadata including word count and categories
+
+## Conclusion
+The file upload system enables users to build comprehensive documentation repositories for enhanced AI context during development sessions.

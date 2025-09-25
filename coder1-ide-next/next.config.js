@@ -28,6 +28,17 @@ const nextConfig = {
       '@': __dirname,
     };
     
+    // Monaco Editor webpack plugin for client-side only
+    if (!isServer) {
+      const MonacoWebpackPlugin = require('monaco-editor-webpack-plugin');
+      config.plugins.push(
+        new MonacoWebpackPlugin({
+          languages: ['json', 'css', 'html', 'javascript', 'typescript', 'python'],
+          features: ['!gotoSymbol'],
+        })
+      );
+    }
+    
     // CRITICAL FIX: Replace browser-only libraries with stubs during SSR
     if (isServer) {
       const path = require('path');

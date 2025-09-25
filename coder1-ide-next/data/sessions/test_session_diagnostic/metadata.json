@@ -1,0 +1,24 @@
+{
+  "id": "test_session_diagnostic",
+  "name": "🔍 DIAGNOSTIC TEST - Plan Mode Issue",
+  "description": "Test session designed to reproduce the repetitive 'plan mode on' text issue",
+  "createdAt": 1758800000000,
+  "updatedAt": 1758800060000,
+  "status": "completed",
+  "metadata": {
+    "diagnostic": true,
+    "issue": "plan-mode-repetition",
+    "planModeCount": 120,
+    "purpose": "Reproduce issue for permanent fix development",
+    "ide": true,
+    "sessionType": "diagnostic"
+  },
+  "checkpoints": [
+    {
+      "id": "checkpoint_diagnostic_test",
+      "name": "Diagnostic Test - Plan Mode Issue",
+      "timestamp": 1758800000000,
+      "description": "120x repetitions of 'plan mode on (shift+tab to cycle)'"
+    }
+  ]
+}

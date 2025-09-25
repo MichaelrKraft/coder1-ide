@@ -1034,9 +1034,18 @@ function BetaTerminal({
       // Restore terminal history
       console.log(`📜 BetaTerminal: Restoring terminal session from checkpoint`);
       
-      // Write the entire terminal string (contains ANSI escape sequences from Claude Code)
-      // Note: removeEmojis might strip important ANSI codes, so we write raw data
-      xtermRef.current.write(terminalData);
+      // Apply defensive filtering to remove any statusline artifacts that may have slipped through
+      // This provides double protection against statusline message replay
+      let cleanedData = terminalData;
+      
+      // Remove statusline control hints patterns as a final safeguard
+      cleanedData = cleanedData.replace(/.*\(esc to interrupt.*?ctrl\+t.*?\).*$/gm, '');
+      cleanedData = cleanedData.replace(/.*ctrl\+t to show todos.*$/gm, '');
+      cleanedData = cleanedData.replace(/^\s*⎿\s*Next:.*$/gm, '');
+      cleanedData = cleanedData.replace(/^[✶✳✢·✻✽✦☆★▪▫◆◇○●]\s+.*?\(esc to interrupt.*?\).*$/gm, '');
+      
+      // Write the cleaned terminal data
+      xtermRef.current.write(cleanedData);
       
       // Add a separator to show where restoration ends
       xtermRef.current.writeln('\r\n' + '='.repeat(50));
@@ -1102,7 +1111,15 @@ function BetaTerminal({
         
         // Restore terminal
         console.log(`📜 BetaTerminal: Restoring terminal from IDE state change`);
-        xtermRef.current.write(terminalData);
+        
+        // Apply defensive filtering to remove any statusline artifacts (same as checkpoint restore)
+        let cleanedData = terminalData;
+        cleanedData = cleanedData.replace(/.*\(esc to interrupt.*?ctrl\+t.*?\).*$/gm, '');
+        cleanedData = cleanedData.replace(/.*ctrl\+t to show todos.*$/gm, '');
+        cleanedData = cleanedData.replace(/^\s*⎿\s*Next:.*$/gm, '');
+        cleanedData = cleanedData.replace(/^[✶✳✢·✻✽✦☆★▪▫◆◇○●]\s+.*?\(esc to interrupt.*?\).*$/gm, '');
+        
+        xtermRef.current.write(cleanedData);
         
         // Add separator
         xtermRef.current.writeln('\r\n' + '='.repeat(50));

@@ -47,7 +47,7 @@ export default function AlphaPage() {
           <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
             <div className="flex flex-col items-start">
               <Image 
-                src="/Coder1-logo-Trans.png" 
+                src="/Coder1-Logo-Sharp.svg" 
                 alt="Coder1 Logo" 
                 width={120} 
                 height={120}

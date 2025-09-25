@@ -891,8 +891,8 @@ app.prepare().then(() => {
     });
     
     // Handle terminal input with Conductor command detection
-    socket.on('terminal:input', async ({ id, data }) => {
-      console.log(`⌨️ TERMINAL INPUT: Session ${id}, Data length: ${data?.length}, First char: ${data?.[0]?.charCodeAt(0)}`);
+    socket.on('terminal:input', async ({ id, data, selectedClaudeModel }) => {
+      console.log(`⌨️ TERMINAL INPUT: Session ${id}, Data length: ${data?.length}, Model: ${selectedClaudeModel || 'default'}`);
       
       const sessionId = id || currentSessionId;
       
@@ -959,7 +959,8 @@ app.prepare().then(() => {
                 context: {
                   workingDirectory: process.cwd(),
                   currentFile: null,
-                  selection: null
+                  selection: null,
+                  selectedClaudeModel: selectedClaudeModel || 'claude-4-sonnet-20250510'
                 },
                 timestamp: new Date()
               };

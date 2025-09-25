@@ -1,0 +1,28 @@
+{
+  "docId": "doc_1758752997220_isiecu5pc",
+  "title": "test image",
+  "url": "file://test-image.svg",
+  "type": "svg",
+  "categories": [
+    "svg",
+    "uploaded"
+  ],
+  "content": {
+    "svgContent": "<svg width=\"200\" height=\"200\" xmlns=\"http://www.w3.org/2000/svg\">\n  <!-- Test SVG for Documentation Upload -->\n  <rect width=\"200\" height=\"200\" fill=\"#f0f0f0\" stroke=\"#333\" stroke-width=\"2\"/>\n  \n  <text x=\"100\" y=\"50\" text-anchor=\"middle\" font-family=\"Arial\" font-size=\"16\" fill=\"#333\">\n    Coder1 IDE\n  </text>\n  \n  <text x=\"100\" y=\"80\" text-anchor=\"middle\" font-family=\"Arial\" font-size=\"12\" fill=\"#666\">\n    Documentation Upload Test\n  </text>\n  \n  <circle cx=\"100\" cy=\"130\" r=\"30\" fill=\"#4CAF50\" stroke=\"#333\" stroke-width=\"2\"/>\n  \n  <text x=\"100\" y=\"135\" text-anchor=\"middle\" font-family=\"Arial\" font-size=\"10\" fill=\"white\">\n    SVG\n  </text>\n  \n  <text x=\"100\" y=\"180\" text-anchor=\"middle\" font-family=\"Arial\" font-size=\"10\" fill=\"#333\">\n    Test File Upload System\n  </text>\n</svg>...",
+    "fullContent": "<svg width=\"200\" height=\"200\" xmlns=\"http://www.w3.org/2000/svg\">\n  <!-- Test SVG for Documentation Upload -->\n  <rect width=\"200\" height=\"200\" fill=\"#f0f0f0\" stroke=\"#333\" stroke-width=\"2\"/>\n  \n  <text x=\"100\" y=\"50\" text-anchor=\"middle\" font-family=\"Arial\" font-size=\"16\" fill=\"#333\">\n    Coder1 IDE\n  </text>\n  \n  <text x=\"100\" y=\"80\" text-anchor=\"middle\" font-family=\"Arial\" font-size=\"12\" fill=\"#666\">\n    Documentation Upload Test\n  </text>\n  \n  <circle cx=\"100\" cy=\"130\" r=\"30\" fill=\"#4CAF50\" stroke=\"#333\" stroke-width=\"2\"/>\n  \n  <text x=\"100\" y=\"135\" text-anchor=\"middle\" font-family=\"Arial\" font-size=\"10\" fill=\"white\">\n    SVG\n  </text>\n  \n  <text x=\"100\" y=\"180\" text-anchor=\"middle\" font-family=\"Arial\" font-size=\"10\" fill=\"#333\">\n    Test File Upload System\n  </text>\n</svg>",
+    "hasText": true
+  },
+  "searchableText": "\n    Coder1 IDE\n   \n    Documentation Upload Test\n   \n    SVG\n   \n    Test File Upload System\n  ",
+  "metadata": {
+    "fileName": "test-image.svg",
+    "fileType": "image/svg+xml",
+    "fileSize": 788,
+    "processedAt": "2025-09-24T22:29:57.220Z",
+    "viewBox": null,
+    "width": "200",
+    "height": "200",
+    "textElementCount": 4,
+    "size": 788,
+    "wordCount": 10
+  }
+}

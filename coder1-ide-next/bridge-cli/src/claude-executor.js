@@ -26,7 +26,19 @@ class ClaudeExecutor extends EventEmitter {
       // Parse command into parts
       const parts = this.parseCommand(command);
       const claudeCommand = parts[0]; // Should be 'claude'
-      const args = parts.slice(1);
+      let args = parts.slice(1);
+      
+      // Add model parameter if specified in context
+      if (options.context && options.context.selectedClaudeModel) {
+        const modelIndex = args.findIndex(arg => arg === '--model');
+        if (modelIndex === -1) {
+          // Add model parameter if not already present
+          args.unshift('--model', options.context.selectedClaudeModel);
+        } else {
+          // Replace existing model parameter
+          args[modelIndex + 1] = options.context.selectedClaudeModel;
+        }
+      }
       
       this.log(`Executing: claude ${args.join(' ')}`);
       

@@ -1,0 +1,23 @@
+{
+  "docId": "doc_1758753208774_yzkkwwo2z",
+  "title": "test image",
+  "url": "file://test-image.jpg",
+  "type": "image",
+  "categories": [
+    "image",
+    "uploaded"
+  ],
+  "content": {
+    "base64": "/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEB...",
+    "mimeType": "image/jpeg"
+  },
+  "searchableText": "[Image file]",
+  "metadata": {
+    "fileName": "test-image.jpg",
+    "fileType": "image/jpeg",
+    "fileSize": 285,
+    "processedAt": "2025-09-24T22:33:28.774Z",
+    "mimeType": "image/jpeg",
+    "wordCount": 2
+  }
+}

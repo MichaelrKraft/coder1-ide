@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { Search, Plus, Trash2, ExternalLink, Clock, FileText, Brain, Loader2 } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Search, Plus, Trash2, ExternalLink, Clock, FileText, Brain, Loader2, Upload, FileImage, File } from 'lucide-react';
 import { getCompanionClient } from '@/lib/companion-client';
 
 interface DocumentationResult {
@@ -41,20 +41,44 @@ const DocumentationPanel: React.FC = () => {
   const [isAdding, setIsAdding] = useState(false);
   const [stats, setStats] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
+  const [isDragActive, setIsDragActive] = useState(false);
+  const [uploadingFiles, setUploadingFiles] = useState<string[]>([]);
+  const [showFileUpload, setShowFileUpload] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const companionClient = React.useMemo(() => getCompanionClient(), []);
+
+  // Listen for external open documentation panel events
+  useEffect(() => {
+    const handleOpenDocumentationPanel = () => {
+      // Documentation panel disabled per user request - do not open
+      console.log('Documentation panel open request ignored - panel disabled');
+    };
+
+    window.addEventListener('openDocumentationPanel', handleOpenDocumentationPanel);
+    
+    return () => {
+      window.removeEventListener('openDocumentationPanel', handleOpenDocumentationPanel);
+    };
+  }, []);
 
   // Load documentation list on mount
   useEffect(() => {
     if (isOpen) {
-      loadDocsList();
-      loadStats();
+      if (companionClient.isConnected()) {
+        loadDocsList();
+        loadStats();
+      } else {
+        // Load from local API if companion not connected
+        loadLocalDocs();
+      }
     }
   }, [isOpen]);
 
   const loadDocsList = async () => {
     if (!companionClient.isConnected()) {
-      setError('Companion service not connected');
+      // Fall back to local API instead of showing error
+      await loadLocalDocs();
       return;
     }
 
@@ -92,31 +116,55 @@ const DocumentationPanel: React.FC = () => {
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!searchQuery.trim() || !companionClient.isConnected()) return;
+    if (!searchQuery.trim()) return;
 
     setIsSearching(true);
     setError(null);
     
     try {
-      const response = await fetch('http://localhost:57132/docs/search', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          query: searchQuery,
-          options: {
-            maxResults: 10,
-            includeContent: true,
-            useClaudeAnalysis: true,
-            projectContext: 'Coder1 IDE development'
-          }
-        })
-      });
+      if (companionClient.isConnected()) {
+        // Use companion service for advanced search
+        const response = await fetch('http://localhost:57132/docs/search', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            query: searchQuery,
+            options: {
+              maxResults: 10,
+              includeContent: true,
+              useClaudeAnalysis: true,
+              projectContext: 'Coder1 IDE development'
+            }
+          })
+        });
 
-      if (response.ok) {
-        const data = await response.json();
-        setSearchResults(data.results || []);
+        if (response.ok) {
+          const data = await response.json();
+          setSearchResults(data.results || []);
+        } else {
+          throw new Error('Search failed');
+        }
       } else {
-        throw new Error('Search failed');
+        // Use local search for basic filtering
+        const filteredDocs = docs.filter(doc => 
+          doc.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          doc.categories.some(cat => cat.toLowerCase().includes(searchQuery.toLowerCase()))
+        );
+        
+        // Convert to search results format
+        const results = filteredDocs.map(doc => ({
+          docId: doc.docId,
+          title: doc.title,
+          url: doc.url,
+          categories: doc.categories,
+          relevanceScore: 1.0,
+          excerpts: [{
+            text: `Document: ${doc.title} (${doc.wordCount} words)`,
+            hasCode: false
+          }]
+        }));
+        
+        setSearchResults(results);
       }
     } catch (error) {
       console.error('Search error:', error);
@@ -195,16 +243,162 @@ const DocumentationPanel: React.FC = () => {
     return `${days}d ago`;
   };
 
+  // File upload handlers
+  const handleDragEnter = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragActive(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragActive(false);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragActive(false);
+
+    const files = Array.from(e.dataTransfer.files);
+    
+    // Check if files contain PDFs - these should go to File-to-Claude converter instead
+    const hasPDFs = files.some(file => file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf'));
+    
+    if (hasPDFs) {
+      // Don't stop propagation - let PDFs fall through to global DragDropOverlay
+      console.log('📄 PDF detected - routing to File-to-Claude converter instead of Documentation system');
+      return;
+    }
+    
+    // Only stop propagation for non-PDF files that we actually want to process
+    e.stopPropagation();
+    await handleFileUpload(files);
+  };
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files ? Array.from(e.target.files) : [];
+    await handleFileUpload(files);
+  };
+
+  const handleFileUpload = async (files: File[]) => {
+    // Note: PDFs are excluded - they're routed to File-to-Claude converter instead
+    const supportedTypes = [
+      'image/png',
+      'image/jpeg',
+      'image/jpg',
+      'image/svg+xml',
+      'text/csv',
+      'application/vnd.ms-excel',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    ];
+
+    const validFiles = files.filter(file => {
+      const isSupported = supportedTypes.includes(file.type) || 
+                         file.name.endsWith('.csv') ||
+                         file.name.endsWith('.svg');
+      if (!isSupported) {
+        console.warn(`Unsupported file type: ${file.name} (${file.type})`);
+      }
+      return isSupported;
+    });
+
+    if (validFiles.length === 0) {
+      setError('Please upload PNG, JPEG, SVG, or CSV files only (PDFs go to File-to-Claude converter)');
+      return;
+    }
+
+    for (const file of validFiles) {
+      try {
+        setUploadingFiles(prev => [...prev, file.name]);
+        setError(null);
+
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('type', file.type);
+        formData.append('name', file.name);
+
+        // First try our API endpoint
+        const response = await fetch('/api/docs/upload', {
+          method: 'POST',
+          body: formData
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          console.log('File uploaded successfully:', data);
+          
+          // If companion service is connected, sync with it
+          if (companionClient.isConnected()) {
+            await loadDocsList();
+            await loadStats();
+          } else {
+            // Reload the docs list from our API
+            await loadLocalDocs();
+          }
+        } else {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Failed to upload file');
+        }
+      } catch (error) {
+        console.error(`Error uploading ${file.name}:`, error);
+        setError(`Failed to upload ${file.name}: ${error.message}`);
+      } finally {
+        setUploadingFiles(prev => prev.filter(name => name !== file.name));
+      }
+    }
+
+    // Clear file input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+  
+  // Load documents from local API
+  const loadLocalDocs = async () => {
+    try {
+      const response = await fetch('/api/docs/upload');
+      if (response.ok) {
+        const data = await response.json();
+        const formattedDocs = data.documents.map((doc: any) => ({
+          docId: doc.docId,
+          title: doc.title,
+          url: doc.url,
+          categories: doc.categories,
+          wordCount: doc.wordCount,
+          chunkCount: Math.ceil(doc.wordCount / 500), // Estimate chunks
+          processedAt: doc.processedAt,
+          age: Date.now() - new Date(doc.processedAt).getTime()
+        }));
+        setDocs(formattedDocs);
+      }
+    } catch (error) {
+      console.error('Failed to load local docs:', error);
+    }
+  };
+
+  const getFileIcon = (fileName: string) => {
+    const ext = fileName.split('.').pop()?.toLowerCase();
+    if (['png', 'jpg', 'jpeg', 'svg'].includes(ext || '')) {
+      return <FileImage className="w-4 h-4 text-blue-400" />;
+    }
+    if (ext === 'pdf') {
+      return <File className="w-4 h-4 text-red-400" />;
+    }
+    if (ext === 'csv') {
+      return <FileText className="w-4 h-4 text-green-400" />;
+    }
+    return <File className="w-4 h-4 text-text-muted" />;
+  };
+
   if (!isOpen) {
-    return (
-      <button
-        onClick={() => setIsOpen(true)}
-        className="fixed bottom-4 right-4 bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-full shadow-lg transition-colors z-50"
-        title="Open Documentation Panel"
-      >
-        <FileText className="w-6 h-6" />
-      </button>
-    );
+    // Floating button permanently removed per user request
+    return null;
   }
 
   return (
@@ -226,11 +420,11 @@ const DocumentationPanel: React.FC = () => {
         </button>
       </div>
 
-      {/* Connection Status */}
+      {/* Connection Status - Updated to show local mode */}
       {!companionClient.isConnected() && (
-        <div className="p-4 bg-yellow-500/10 border-b border-yellow-500/20">
-          <p className="text-sm text-yellow-400">
-            ⚠️ Companion service not connected. Documentation features unavailable.
+        <div className="p-4 bg-blue-500/10 border-b border-blue-500/20">
+          <p className="text-sm text-blue-400">
+            📁 Running in local mode. Upload and search documents below.
           </p>
         </div>
       )}
@@ -321,11 +515,77 @@ const DocumentationPanel: React.FC = () => {
               ) : (
                 <>
                   <Plus className="w-4 h-4" />
-                  Add Documentation
+                  Add Documentation URL
                 </>
               )}
             </button>
           </form>
+
+          {/* File Upload Section */}
+          <div className="mt-4 pt-4 border-t border-border-default">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm text-text-muted">Or upload files:</span>
+              <button
+                onClick={() => setShowFileUpload(!showFileUpload)}
+                className="text-xs text-blue-400 hover:text-blue-300"
+              >
+                {showFileUpload ? 'Hide' : 'Show'}
+              </button>
+            </div>
+
+            {showFileUpload && (
+              <div
+                className={`relative border-2 border-dashed rounded-lg p-4 transition-colors ${
+                  isDragActive 
+                    ? 'border-blue-500 bg-blue-500/10' 
+                    : 'border-border-default hover:border-blue-400'
+                } ${uploadingFiles.length > 0 ? 'opacity-50 pointer-events-none' : ''}`}
+                onDragEnter={handleDragEnter}
+                onDragLeave={handleDragLeave}
+                onDragOver={handleDragOver}
+                onDrop={handleDrop}
+              >
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  multiple
+                  accept=".png,.jpg,.jpeg,.svg,.csv"
+                  onChange={handleFileSelect}
+                  className="hidden"
+                  disabled={uploadingFiles.length > 0}
+                />
+
+                <div className="text-center">
+                  <Upload className="w-8 h-8 mx-auto mb-2 text-text-muted" />
+                  <p className="text-sm text-text-primary mb-1">
+                    Drop files here or{' '}
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="text-blue-400 hover:text-blue-300 underline"
+                      disabled={uploadingFiles.length > 0}
+                    >
+                      browse
+                    </button>
+                  </p>
+                  <p className="text-xs text-text-muted">
+                    Supports: PDF, PNG, JPEG, SVG, CSV
+                  </p>
+                </div>
+
+                {uploadingFiles.length > 0 && (
+                  <div className="mt-3 space-y-1">
+                    {uploadingFiles.map(fileName => (
+                      <div key={fileName} className="flex items-center gap-2 text-sm text-text-secondary">
+                        <Loader2 className="w-3 h-3 animate-spin" />
+                        <span>Uploading {fileName}...</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Results Area */}
@@ -338,17 +598,22 @@ const DocumentationPanel: React.FC = () => {
                 <div key={result.docId} className="border border-border-default rounded-lg p-3 space-y-2">
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
-                      <h4 className="font-medium text-text-primary line-clamp-2">{result.title}</h4>
+                      <div className="flex items-center gap-2">
+                        {result.url && !result.url.startsWith('http') && getFileIcon(result.title)}
+                        <h4 className="font-medium text-text-primary line-clamp-2">{result.title}</h4>
+                      </div>
                       <div className="flex items-center gap-2 mt-1">
-                        <a
-                          href={result.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1"
-                        >
-                          <ExternalLink className="w-3 h-3" />
-                          View Original
-                        </a>
+                        {result.url && result.url.startsWith('http') && (
+                          <a
+                            href={result.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1"
+                          >
+                            <ExternalLink className="w-3 h-3" />
+                            View Original
+                          </a>
+                        )}
                         {result.claudeScore && (
                           <span className="text-xs text-green-400" title={result.claudeReasoning}>
                             AI Score: {result.claudeScore}/10
@@ -422,17 +687,22 @@ const DocumentationPanel: React.FC = () => {
                     <div key={doc.docId} className="border border-border-default rounded-lg p-3 space-y-2">
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
-                          <h4 className="font-medium text-text-primary line-clamp-2">{doc.title}</h4>
+                          <div className="flex items-center gap-2">
+                            {doc.url && !doc.url.startsWith('http') && getFileIcon(doc.title)}
+                            <h4 className="font-medium text-text-primary line-clamp-2">{doc.title}</h4>
+                          </div>
                           <div className="flex items-center gap-2 mt-1">
-                            <a
-                              href={doc.url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1"
-                            >
-                              <ExternalLink className="w-3 h-3" />
-                              View
-                            </a>
+                            {doc.url && doc.url.startsWith('http') && (
+                              <a
+                                href={doc.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1"
+                              >
+                                <ExternalLink className="w-3 h-3" />
+                                View
+                              </a>
+                            )}
                             <span className="text-xs text-text-muted flex items-center gap-1">
                               <Clock className="w-3 h-3" />
                               {formatAge(doc.age)}
@@ -448,7 +718,7 @@ const DocumentationPanel: React.FC = () => {
                         </button>
                       </div>
                       
-                      {doc.categories.length > 0 && (
+                      {doc.categories && doc.categories.length > 0 && (
                         <div className="flex flex-wrap gap-1">
                           {doc.categories.map(cat => (
                             <span key={cat} className="px-2 py-1 bg-bg-tertiary text-xs text-text-muted rounded">

@@ -21,8 +21,14 @@ export class SoundAlertService {
   private selectedPreset: SoundPreset = 'gentle';
 
   constructor() {
+    console.log('🔊 SoundAlertService: Initializing...');
     this.initializeAudioContext();
     this.loadUserPreference();
+    console.log('🔊 SoundAlertService: Initialization complete', {
+      enabled: this.isEnabled,
+      preset: this.selectedPreset,
+      hasAudioContext: !!this.audioContext
+    });
   }
 
   /**
@@ -34,8 +40,16 @@ export class SoundAlertService {
       const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
       if (AudioContextClass) {
         this.audioContext = new AudioContextClass();
+        console.log('🔊 SoundAlertService: Audio context initialized successfully', {
+          state: this.audioContext.state,
+          sampleRate: this.audioContext.sampleRate
+        });
+      } else {
+        console.warn('🔇 SoundAlertService: Web Audio API not supported');
+        this.audioContext = null;
       }
     } catch (error) {
+      console.warn('🔇 SoundAlertService: Failed to initialize audio context:', error);
       logger?.warn('🔇 SoundAlertService: Failed to initialize audio context:', error);
       this.audioContext = null;
     }
@@ -47,15 +61,22 @@ export class SoundAlertService {
   private loadUserPreference(): void {
     try {
       const savedEnabled = localStorage.getItem('soundAlertsEnabled');
+      const savedPreset = localStorage.getItem('soundAlertPreset');
+      
+      console.log('🔊 SoundAlertService: Loading preferences from localStorage', {
+        savedEnabled: savedEnabled,
+        savedPreset: savedPreset
+      });
+      
       if (savedEnabled !== null) {
         this.isEnabled = JSON.parse(savedEnabled);
       }
       
-      const savedPreset = localStorage.getItem('soundAlertPreset');
       if (savedPreset && this.isValidPreset(savedPreset)) {
         this.selectedPreset = savedPreset as SoundPreset;
       }
     } catch (error) {
+      console.warn('🔇 SoundAlertService: Failed to load user preferences:', error);
       logger?.warn('🔇 SoundAlertService: Failed to load user preferences:', error);
       this.isEnabled = true; // Default to enabled
       this.selectedPreset = 'gentle'; // Default preset
@@ -151,8 +172,15 @@ export class SoundAlertService {
       oscillator.start(currentTime);
       oscillator.stop(currentTime + duration);
 
-      // REMOVED: // REMOVED: console.log('🔊 SoundAlertService: Played alert sound');
+      console.log('🔊 SoundAlertService: Played alert sound', {
+        preset: options.preset || this.selectedPreset,
+        frequency: frequency,
+        duration: duration,
+        volume: volume,
+        audioContextState: this.audioContext.state
+      });
     } catch (error) {
+      console.warn('🔇 SoundAlertService: Failed to play sound:', error);
       logger?.warn('🔇 SoundAlertService: Failed to play sound:', error);
     }
   }

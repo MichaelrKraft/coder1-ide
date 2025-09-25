@@ -39,6 +39,20 @@ class ClaudeAPIService {
   }
 
   /**
+   * Set Claude model for API requests
+   */
+  setModel(model: string) {
+    this.model = model;
+  }
+
+  /**
+   * Get current model
+   */
+  getModel(): string {
+    return this.model;
+  }
+
+  /**
    * Check if Claude API is properly configured
    */
   isConfigured(): boolean {

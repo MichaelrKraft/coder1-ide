@@ -1,0 +1,102 @@
+{
+  "docId": "doc_1758752733290_3qm2lv6j0",
+  "title": "test document",
+  "url": "file://test-document.csv",
+  "type": "csv",
+  "categories": [
+    "csv",
+    "uploaded"
+  ],
+  "content": {
+    "headers": [
+      "Name",
+      "Age",
+      "Department",
+      "Salary"
+    ],
+    "rowCount": 5,
+    "preview": [
+      {
+        "Name": "John Doe",
+        "Age": "30",
+        "Department": "Engineering",
+        "Salary": "75000"
+      },
+      {
+        "Name": "Jane Smith",
+        "Age": "28",
+        "Department": "Marketing",
+        "Salary": "65000"
+      },
+      {
+        "Name": "Bob Johnson",
+        "Age": "35",
+        "Department": "Sales",
+        "Salary": "70000"
+      },
+      {
+        "Name": "Alice Wilson",
+        "Age": "32",
+        "Department": "Engineering",
+        "Salary": "80000"
+      },
+      {
+        "Name": "Charlie Brown",
+        "Age": "29",
+        "Department": "Marketing",
+        "Salary": "62000"
+      }
+    ],
+    "stats": {},
+    "fullData": [
+      {
+        "Name": "John Doe",
+        "Age": "30",
+        "Department": "Engineering",
+        "Salary": "75000"
+      },
+      {
+        "Name": "Jane Smith",
+        "Age": "28",
+        "Department": "Marketing",
+        "Salary": "65000"
+      },
+      {
+        "Name": "Bob Johnson",
+        "Age": "35",
+        "Department": "Sales",
+        "Salary": "70000"
+      },
+      {
+        "Name": "Alice Wilson",
+        "Age": "32",
+        "Department": "Engineering",
+        "Salary": "80000"
+      },
+      {
+        "Name": "Charlie Brown",
+        "Age": "29",
+        "Department": "Marketing",
+        "Salary": "62000"
+      }
+    ]
+  },
+  "searchableText": "Headers: Name, Age, Department, Salary\nRows: 5\nJohn Doe 30 Engineering 75000\nJane Smith 28 Marketing 65000\nBob Johnson 35 Sales 70000\nAlice Wilson 32 Engineering 80000\nCharlie Brown 29 Marketing 62000",
+  "metadata": {
+    "fileName": "test-document.csv",
+    "fileType": "application/octet-stream",
+    "fileSize": 180,
+    "processedAt": "2025-09-24T22:25:33.290Z",
+    "headers": [
+      "Name",
+      "Age",
+      "Department",
+      "Salary"
+    ],
+    "rowCount": 5,
+    "columnCount": 4,
+    "hasNumericData": false,
+    "stats": {},
+    "wordCount": 32
+  }
+}

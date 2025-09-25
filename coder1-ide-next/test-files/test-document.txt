@@ -1,0 +1,23 @@
+# Test Documentation File
+
+This is a sample documentation file for testing the Coder1 IDE Documentation Hub upload functionality.
+
+## Features to Test
+- File upload via drag and drop
+- File processing and text extraction
+- Search functionality
+- Content categorization
+
+## API Endpoints
+- POST /api/docs/upload - Upload documentation files
+- GET /api/docs/search - Search uploaded documentation
+- GET /api/docs/list - List all uploaded documents
+
+## File Types Supported
+- PDF documents
+- PNG images
+- JPEG images
+- SVG vector files
+- CSV spreadsheets
+
+This document will be used to verify that text-based file uploads work correctly in the system.

@@ -197,6 +197,24 @@ export default function SettingsModal({ isOpen, onClose, fontSize, onFontSizeCha
                       />
                     </div>
                   )}
+
+                  {/* Alpha Release Notice */}
+                  <div className="mt-6 p-4 bg-orange-500/10 border border-orange-500/30 rounded-lg">
+                    <h4 className="flex items-center gap-2 text-sm font-semibold text-orange-400 mb-2">
+                      <Monitor className="w-4 h-4" />
+                      Alpha Release Status
+                    </h4>
+                    <div className="space-y-2 text-sm text-text-secondary">
+                      <p>
+                        <span className="text-orange-400 font-medium">Enhanced StatusLine:</span>{' '}
+                        Temporarily disabled during alpha testing. 
+                      </p>
+                      <p className="text-xs">
+                        Advanced status components (model info, cost tracking, repo stats) will be available in the next release. 
+                        Core IDE functionality is fully operational.
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}

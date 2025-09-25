@@ -37,6 +37,7 @@ interface MonacoEditorProps {
   theme?: string;
   fontSize?: number;
   onChange?: (value: string | undefined) => void;
+  onMount?: (editor: monaco.editor.IStandaloneCodeEditor) => void;
   file?: string | null;
   onTourStart?: () => void;
 }
@@ -47,6 +48,7 @@ export default function MonacoEditor({
   theme = 'vs-dark',
   fontSize = 14,
   onChange,
+  onMount,
   file,
   onTourStart
 }: MonacoEditorProps) {
@@ -130,6 +132,11 @@ export default function MonacoEditor({
 
   const handleEditorDidMount = (editor: any, monaco: any) => {
     editorRef.current = editor;
+    
+    // Call the onMount prop if provided
+    if (onMount) {
+      onMount(editor);
+    }
     
     // Configure Monaco theme to match our IDE
     monaco.editor.defineTheme('coder1-dark', {

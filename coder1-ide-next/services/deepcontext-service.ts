@@ -130,48 +130,78 @@ class DeepContextService extends EventEmitter {
    * Search for code semantically
    */
   async search(query: string): Promise<DeepContextSearchResult[]> {
-    // If DeepContext is available, use it
+    console.log('🔍 DeepContext search called with query:', query);
+    console.log('🔍 Service status:', this.status);
+    console.log('🔍 MCP available:', this.mcpAvailable);
+    
+    // Always prioritize real file search first
+    try {
+      console.log('🔍 Attempting real file search via fallbackSearch...');
+      const results = await this.fallbackSearch(query);
+      console.log('🔍 fallbackSearch returned', results.length, 'results');
+      
+      // If we get results from the API (even 0 results), that's a successful API call
+      // 0 results means "no matches found" which is a valid response
+      console.log('✅ File search API succeeded, returning', results.length, 'results');
+      return results;
+      
+    } catch (error) {
+      console.error('❌ Real file search API failed, trying fallbacks:', error);
+      // Only fall back to other methods if the API actually failed
+    }
+    
+    // If real file search fails or returns no results, try MCP demo API
     if (this.mcpAvailable && this.status.indexed) {
       try {
+        console.log('🔍 Attempting MCP demo search...');
         const response = await fetch('/api/deepcontext/search', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ query })
         });
         
+        console.log('🔍 MCP API response status:', response.status);
         if (response.ok) {
-          return await response.json();
+          const mcpResults = await response.json();
+          console.log('✅ MCP API returned', mcpResults.length, 'results');
+          return mcpResults;
+        } else {
+          console.log('❌ MCP API responded with error:', response.status);
         }
       } catch (error) {
-        console.error('DeepContext search failed:', error);
+        console.error('❌ DeepContext MCP search failed:', error);
       }
+    } else {
+      console.log('❌ MCP not available - installed:', this.mcpAvailable, 'indexed:', this.status.indexed);
     }
     
-    // Fallback to basic search
-    return this.fallbackSearch(query);
+    // Final fallback to demo results
+    console.log('⚠️ Using demo fallback results');
+    return this.getDemoResults(query);
   }
 
   /**
    * Get relationships for a file/function
    */
   async getRelationships(file: string, line?: number): Promise<DeepContextRelationship[]> {
-    if (this.mcpAvailable && this.status.indexed) {
-      try {
-        const response = await fetch('/api/deepcontext/relationships', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ file, line })
-        });
-        
-        if (response.ok) {
-          return await response.json();
-        }
-      } catch (error) {
-        console.error('DeepContext relationships failed:', error);
+    // Always try to use the relationships API (it has real analysis now)
+    try {
+      const response = await fetch('/api/deepcontext/relationships', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ file, line })
+      });
+      
+      if (response.ok) {
+        const relationships = await response.json();
+        console.log(`Found ${relationships.length} relationships for ${file}`);
+        return relationships;
       }
+    } catch (error) {
+      console.error('DeepContext relationships failed:', error);
     }
     
-    // Return empty array if not available
+    // Return empty array if API fails
     return [];
   }
 
@@ -199,12 +229,98 @@ class DeepContextService extends EventEmitter {
   }
 
   /**
-   * Fallback to basic text search when DeepContext is not available
+   * Fallback to real file search when DeepContext MCP is not available
    */
   private async fallbackSearch(query: string): Promise<DeepContextSearchResult[]> {
-    console.log('Using fallback search for query:', query);
+    console.log('📁 fallbackSearch called with query:', query);
     
-    // For demo purposes, return mock results based on query
+    try {
+      console.log('📁 Making fetch request to /api/deepcontext/file-search...');
+      
+      // Use our new file search API endpoint
+      const response = await fetch('/api/deepcontext/file-search', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          query, 
+          maxResults: 20,
+          fileTypes: [] // Search all file types
+        })
+      });
+      
+      console.log('📁 File search API response status:', response.status);
+      console.log('📁 Response ok:', response.ok);
+      
+      if (response.ok) {
+        const results = await response.json();
+        console.log(`📁 File search API returned ${results.length} results for query:`, query);
+        
+        if (results.length > 0) {
+          console.log('📁 First result preview:', {
+            file: results[0].file,
+            line: results[0].line,
+            content: results[0].content.substring(0, 100),
+            relevance: results[0].relevance
+          });
+        }
+        
+        return results;
+      } else {
+        const errorText = await response.text();
+        console.error('📁 File search API error:', response.status, errorText);
+        throw new Error(`API returned ${response.status}: ${errorText}`);
+      }
+    } catch (error) {
+      console.error('📁 Failed to search files - throwing error:', error);
+      throw error; // Re-throw so the calling method knows it failed
+    }
+  }
+
+  /**
+   * Get current status
+   */
+  getStatus(): DeepContextStatus {
+    return { ...this.status };
+  }
+
+  /**
+   * Check if DeepContext would be helpful for a query
+   */
+  wouldBeHelpful(query: string): boolean {
+    const complexPatterns = [
+      /how does .* work/i,
+      /where is .* implemented/i,
+      /find all .* that/i,
+      /show .* relationships/i,
+      /what calls/i,
+      /similar to/i,
+      /related to/i,
+      /connected to/i,
+      /that uses/i,
+      /depends on/i
+    ];
+    
+    return complexPatterns.some(pattern => pattern.test(query));
+  }
+
+  /**
+   * Reset DeepContext (for debugging)
+   */
+  reset(): void {
+    localStorage.removeItem('deepcontext-installed');
+    localStorage.removeItem('deepcontext-indexed');
+    this.status = {
+      installed: false,
+      indexing: false,
+      indexed: false
+    };
+    this.mcpAvailable = false;
+  }
+
+  /**
+   * Get demo results for a query (final fallback)
+   */
+  private getDemoResults(query: string): DeepContextSearchResult[] {
     const lowerQuery = query.toLowerCase();
     
     if (lowerQuery.includes('auth') || lowerQuery.includes('login')) {
@@ -248,47 +364,6 @@ class DeepContextService extends EventEmitter {
         context: 'Search results placeholder'
       }
     ];
-  }
-
-  /**
-   * Get current status
-   */
-  getStatus(): DeepContextStatus {
-    return { ...this.status };
-  }
-
-  /**
-   * Check if DeepContext would be helpful for a query
-   */
-  wouldBeHelpful(query: string): boolean {
-    const complexPatterns = [
-      /how does .* work/i,
-      /where is .* implemented/i,
-      /find all .* that/i,
-      /show .* relationships/i,
-      /what calls/i,
-      /similar to/i,
-      /related to/i,
-      /connected to/i,
-      /that uses/i,
-      /depends on/i
-    ];
-    
-    return complexPatterns.some(pattern => pattern.test(query));
-  }
-
-  /**
-   * Reset DeepContext (for debugging)
-   */
-  reset(): void {
-    localStorage.removeItem('deepcontext-installed');
-    localStorage.removeItem('deepcontext-indexed');
-    this.status = {
-      installed: false,
-      indexing: false,
-      indexed: false
-    };
-    this.mcpAvailable = false;
   }
 }
 

@@ -5,7 +5,7 @@
 
 import { exec, spawn, ChildProcess } from 'child_process';
 import { promisify } from 'util';
-import path from 'path';
+import * as path from 'path';
 import fs from 'fs/promises';
 
 const execAsync = promisify(exec);
@@ -198,6 +198,74 @@ class ClaudeCliService {
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       console.error('Claude CLI error:', errorMessage);
+      throw new Error(`Claude CLI error: ${errorMessage}`);
+    }
+  }
+
+  /**
+   * Send message with file attachments to Claude CLI
+   */
+  async sendMessageWithFiles(
+    sessionId: string,
+    message: string,
+    filePaths: string[],
+    context?: string
+  ): Promise<{ response: string; command: string }> {
+    if (!this.isClaudeAvailable()) {
+      throw new Error('Claude CLI not available. Please install Claude Code CLI from https://claude.ai/code');
+    }
+
+    const session = this.getSession(sessionId);
+    if (!session) {
+      throw new Error(`Session ${sessionId} not found`);
+    }
+
+    // Prepare message with file information
+    // Claude CLI will use its Read tool to access these files
+    const fileInfo = filePaths.map(p => `- ${p}`).join('\n');
+    let fullMessage = `I've uploaded the following files for you to analyze:\n\n${fileInfo}\n\n${message}`;
+    
+    if (context) {
+      fullMessage = `Context:\n${context}\n\n${fullMessage}`;
+    }
+
+    try {
+      // Claude CLI command - just pass the message, Claude will read files using its tools
+      const claudeCommand = `${this.detectedCommand} -p "${fullMessage}"`;
+      const workingDir = session.projectPath || process.cwd();
+      
+      console.log(`🎯 Executing Claude CLI with file references:`, {
+        command: this.detectedCommand,
+        files: filePaths,
+        message: message
+      });
+      
+      const { stdout, stderr } = await execAsync(claudeCommand, {
+        cwd: workingDir,
+        timeout: 120000, // 120 second timeout for file processing
+        maxBuffer: 10 * 1024 * 1024 // 10MB buffer for larger responses
+      });
+
+      if (stderr) {
+        console.warn('Claude CLI stderr:', stderr);
+      }
+
+      // Clean up the response
+      const response = this.cleanClaudeResponse(stdout);
+
+      // Update session history with file info
+      const fileNames = filePaths.map(p => path.basename(p)).join(', ');
+      session.conversationHistory.push(
+        { role: 'user', content: `[Files: ${fileNames}] ${message}`, timestamp: new Date() },
+        { role: 'assistant', content: response, timestamp: new Date() }
+      );
+      session.lastActivity = new Date();
+
+      return { response, command: `claude (with files: ${fileNames}) "${message}"` };
+
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      console.error('Claude CLI error with files:', errorMessage);
       throw new Error(`Claude CLI error: ${errorMessage}`);
     }
   }

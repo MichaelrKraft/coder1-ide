@@ -96,23 +96,12 @@ export default function HeroSection({ onTourStart, onDismiss }: HeroSectionProps
       document.addEventListener('scroll', handleScroll, { passive: true });
     }, 500);
 
-    // Auto-timeout after 10 seconds (for entrance animation only)
-    let autoTimeout: NodeJS.Timeout | undefined;
-    if (showEntranceAnimation) {
-      autoTimeout = setTimeout(() => {
-        handleUserInteraction();
-      }, 10000);
-    }
-
     return () => {
       clearTimeout(listenerTimer);
       events.forEach(event => {
         document.removeEventListener(event, handleEvent);
       });
       document.removeEventListener('scroll', handleScroll);
-      if (autoTimeout) {
-        clearTimeout(autoTimeout);
-      }
     };
   }, [showEntranceAnimation, handleUserInteraction, onDismiss]);
 
@@ -190,7 +179,7 @@ export default function HeroSection({ onTourStart, onDismiss }: HeroSectionProps
           }}
         >
           <Image
-            src="/Coder1-logo-Trans.png"
+            src="/Coder1-Logo-Sharp.svg"
             alt="Coder1 Logo"
             fill
             className="drop-shadow-2xl object-contain"

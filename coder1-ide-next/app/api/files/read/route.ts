@@ -25,7 +25,8 @@ const ALLOWED_PATHS = [
     'utils',
     'types',
     'hooks',
-    'stores'
+    'stores',
+    '.claude-parallel-dev' // Allow Claude parallel development directory
 ];
 
 // Blocked sensitive files
