@@ -78,7 +78,8 @@
     "ws": "^8.18.3",
     "xlsx": "^0.18.5",
     "zod": "^4.1.9",
-    "zustand": "^5.0.8"
+    "zustand": "^5.0.8",
+    "monaco-editor-webpack-plugin": "^7.1.0"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
@@ -91,7 +92,6 @@
     "@types/three": "^0.180.0",
     "eslint": "^8",
     "eslint-config-next": "14.2.5",
-    "monaco-editor-webpack-plugin": "^7.1.0",
     "node-fetch": "^3.3.2"
   }
 }
