@@ -13,10 +13,12 @@ export function BridgeConnectButton() {
   // Listen for openBridgeModal event from WelcomeScreen
   useEffect(() => {
     const handleOpenBridgeModal = () => {
+      console.log('🌉 BridgeConnectButton: Received openBridgeModal event');
       generatePairingCode();
     };
 
     window.addEventListener('openBridgeModal', handleOpenBridgeModal);
+    console.log('🌉 BridgeConnectButton: Event listener registered');
     
     return () => {
       window.removeEventListener('openBridgeModal', handleOpenBridgeModal);
@@ -24,6 +26,7 @@ export function BridgeConnectButton() {
   }, []);
 
   const generatePairingCode = async () => {
+    console.log('🌉 generatePairingCode called');
     setIsLoading(true);
     try {
       // Generate a user ID (in production, use actual user auth)
@@ -32,12 +35,15 @@ export function BridgeConnectButton() {
         localStorage.setItem('userId', userId);
       }
 
+      console.log('🌉 Fetching pairing code for user:', userId);
       const response = await fetch(`/api/bridge/generate-code?userId=${userId}`);
       const data = await response.json();
+      console.log('🌉 Received data:', data);
       
       if (data.code) {
         setPairingCode(data.code);
         setIsOpen(true);
+        console.log('🌉 Modal should now be open with code:', data.code);
         
         // Start checking for connection
         checkBridgeConnection(userId);
