@@ -5,7 +5,6 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { ChevronDown, Home, Grid, FileText, Code, Sparkles, BookOpen, SettingsIcon, Info, HelpCircle, Keyboard, AlertCircle } from '@/lib/icons';
 import { glows } from '@/lib/design-tokens';
-import { BridgeConnectButton } from './bridge/BridgeConnectButton';
 import { SetupInstructionsModal } from './bridge/SetupInstructionsModal';
 
 interface MenuItem {
@@ -301,11 +300,8 @@ export default function MenuBar({
         </div>
       </div>
 
-      {/* Right side - Bridge button and Menu dropdown */}
+      {/* Right side - Menu dropdown */}
       <div className="flex items-center gap-2">
-        {/* Connect Bridge Button */}
-        <BridgeConnectButton />
-        
         {/* Menu dropdown */}
         <div className="relative" ref={menuRef}>
         <button

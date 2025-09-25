@@ -75,7 +75,7 @@ export function WelcomeScreen({ onDismiss, onBridgeClick }: WelcomeScreenProps =
                   className="px-6 py-2.5 bg-bg-secondary border border-cyan-500 text-cyan-400 rounded-lg hover:bg-cyan-500/10 transition-all duration-200 font-semibold text-sm shadow-[0_0_20px_rgba(0,217,255,0.3)]"
                   title="Get your pairing code to connect Claude Code CLI"
                 >
-                  🌉 Connect Bridge
+                  Bridge
                 </button>
               )}
               {onDismiss && (
