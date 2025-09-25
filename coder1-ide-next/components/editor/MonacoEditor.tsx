@@ -317,29 +317,7 @@ export default function MonacoEditor({
               setSetupViewed(true);
             }}
             onBridgeClick={() => {
-              // Trigger the Bridge modal
-              console.log('🔵 WelcomeScreen Bridge button clicked');
-              if (typeof window !== 'undefined') {
-                // Try direct function call first
-                if ((window as any).openBridgeModal) {
-                  console.log('🔵 Calling openBridgeModal directly');
-                  (window as any).openBridgeModal();
-                } else {
-                  // Fall back to event dispatch
-                  console.log('🔵 openBridgeModal function not found, dispatching event');
-                  window.dispatchEvent(new CustomEvent('openBridgeModal'));
-                  // Retry with delay
-                  setTimeout(() => {
-                    if ((window as any).openBridgeModal) {
-                      console.log('🔵 Calling openBridgeModal directly (delayed)');
-                      (window as any).openBridgeModal();
-                    } else {
-                      console.log('🔵 Dispatching openBridgeModal event (delayed)');
-                      window.dispatchEvent(new CustomEvent('openBridgeModal'));
-                    }
-                  }, 500);
-                }
-              }
+              // Bridge button now handles itself in WelcomeScreen
             }}
           />
         </div>

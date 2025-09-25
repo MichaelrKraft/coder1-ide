@@ -8,9 +8,33 @@ interface WelcomeScreenProps {
 }
 
 export function WelcomeScreen({ onDismiss, onBridgeClick }: WelcomeScreenProps = {}) {
-  const [pairingCode] = useState(() => 
-    Math.floor(100000 + Math.random() * 900000).toString()
-  );
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [pairingCode, setPairingCode] = useState<string>('');
+  const [isLoading, setIsLoading] = useState(false);
+  
+  const handleBridgeClick = async () => {
+    setIsLoading(true);
+    try {
+      // Generate a user ID (in production, use actual user auth)
+      const userId = localStorage.getItem('userId') || `user_${Date.now()}`;
+      if (!localStorage.getItem('userId')) {
+        localStorage.setItem('userId', userId);
+      }
+
+      const response = await fetch(`/api/bridge/generate-code?userId=${userId}`);
+      const data = await response.json();
+      
+      if (data.code) {
+        setPairingCode(data.code);
+        setIsModalOpen(true);
+      }
+    } catch (error) {
+      console.error('Failed to generate pairing code:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
   return (
     <div className="flex items-center justify-center h-full bg-bg-primary p-4">
       <div className="max-w-3xl w-full">
@@ -70,15 +94,14 @@ export function WelcomeScreen({ onDismiss, onBridgeClick }: WelcomeScreenProps =
 
             {/* Action buttons with uniform glowing style */}
             <div className="flex gap-3 justify-center mt-6">
-              {onBridgeClick && (
-                <button
-                  onClick={onBridgeClick}
-                  className="px-6 py-2.5 bg-bg-secondary border border-cyan-500 text-cyan-400 rounded-lg hover:bg-cyan-500/10 transition-all duration-200 font-semibold text-sm shadow-[0_0_20px_rgba(0,217,255,0.3)]"
-                  title="Get your pairing code to connect Claude Code CLI"
-                >
-                  Bridge
-                </button>
-              )}
+              <button
+                onClick={handleBridgeClick}
+                disabled={isLoading}
+                className="px-6 py-2.5 bg-bg-secondary border border-cyan-500 text-cyan-400 rounded-lg hover:bg-cyan-500/10 transition-all duration-200 font-semibold text-sm shadow-[0_0_20px_rgba(0,217,255,0.3)]"
+                title="Get your pairing code to connect Claude Code CLI"
+              >
+                {isLoading ? 'Loading...' : 'Bridge'}
+              </button>
               {onDismiss && (
                 <>
                   <button
@@ -101,6 +124,41 @@ export function WelcomeScreen({ onDismiss, onBridgeClick }: WelcomeScreenProps =
           </div>
         </div>
       </div>
+      
+      {/* Simple Bridge Modal */}
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div 
+            className="fixed inset-0 bg-black/70 backdrop-blur-sm" 
+            onClick={() => setIsModalOpen(false)} 
+          />
+          <div className="relative max-w-md w-full bg-bg-secondary rounded-lg p-6 shadow-2xl border border-cyan-500/50">
+            <button
+              onClick={() => setIsModalOpen(false)}
+              className="absolute top-4 right-4 text-gray-400 hover:text-white"
+            >
+              ✕
+            </button>
+            
+            <h2 className="text-xl font-bold mb-4 text-cyan-400">
+              Bridge Connection Code
+            </h2>
+            
+            <div className="text-center mb-4">
+              <div className="text-4xl font-mono font-bold text-cyan-300 mb-2">
+                {pairingCode}
+              </div>
+              <p className="text-sm text-gray-400">
+                Enter this code in your terminal after running: coder1-bridge start
+              </p>
+            </div>
+            
+            <div className="text-xs text-gray-500 text-center">
+              This code expires in 5 minutes
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

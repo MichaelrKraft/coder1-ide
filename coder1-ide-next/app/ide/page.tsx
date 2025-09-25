@@ -20,7 +20,6 @@ import StatusLine from "@/components/status-bar/StatusLine";
 import MenuBar from "@/components/MenuBar";
 import DragDropOverlay from "@/components/terminal/DragDropOverlay";
 import DocumentationPanel from "@/components/documentation/DocumentationPanel";
-import { BridgeConnectButton } from "@/components/bridge/BridgeConnectButton";
 
 // Conductor components removed - using simple multi-Claude tabs instead
 
@@ -903,12 +902,6 @@ function IDEPageContent() {
             
             {/* Documentation Panel */}
             <DocumentationPanel />
-            
-            {/* Hidden Bridge Connect Button - listens for events from WelcomeScreen */}
-            {/* Using visibility:hidden instead of display:none to ensure component mounts */}
-            <div style={{ position: 'absolute', visibility: 'hidden', pointerEvents: 'none' }}>
-              <BridgeConnectButton />
-            </div>
           </div>
         </TerminalCommandProvider>
       </EnhancedSupervisionProvider>
