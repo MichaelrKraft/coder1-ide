@@ -30,13 +30,17 @@ const nextConfig = {
     
     // Monaco Editor webpack plugin for client-side only
     if (!isServer) {
-      const MonacoWebpackPlugin = require('monaco-editor-webpack-plugin');
-      config.plugins.push(
-        new MonacoWebpackPlugin({
-          languages: ['json', 'css', 'html', 'javascript', 'typescript', 'python'],
-          features: ['!gotoSymbol'],
-        })
-      );
+      try {
+        const MonacoWebpackPlugin = require('monaco-editor-webpack-plugin');
+        config.plugins.push(
+          new MonacoWebpackPlugin({
+            languages: ['json', 'css', 'html', 'javascript', 'typescript', 'python'],
+            features: ['!gotoSymbol'],
+          })
+        );
+      } catch (error) {
+        console.warn('Monaco Editor webpack plugin not found, skipping...');
+      }
     }
     
     // CRITICAL FIX: Replace browser-only libraries with stubs during SSR
