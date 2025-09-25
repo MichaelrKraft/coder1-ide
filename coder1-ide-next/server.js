@@ -714,7 +714,9 @@ app.prepare().then(() => {
       
       // Handle heartbeat from bridge
       socket.on('heartbeat', (data) => {
-        bridgeManager.updateHeartbeat(bridgeId);
+        // TODO: Implement updateHeartbeat method in bridge-manager.js
+        // bridgeManager.updateHeartbeat(bridgeId);
+        console.log(`💓 Bridge heartbeat received from ${bridgeId}`);
       });
       
       // Handle disconnect
@@ -725,6 +727,17 @@ app.prepare().then(() => {
       
       // Listen for bridge manager events and forward to appropriate destinations
       bridgeManager.on('command:output', (data) => {
+        // Track token usage for responses
+        (async () => {
+          try {
+            const { tokenTracker } = require('./services/token-tracker');
+            await tokenTracker.trackResponse(data.data?.length || 0, data.sessionId);
+            console.log(`📊 Tracked response tokens for session: ${data.sessionId}`);
+          } catch (error) {
+            console.error('Failed to track response tokens:', error);
+          }
+        })();
+        
         // Forward to terminal session
         const terminalSocket = io.sockets.sockets.get(data.sessionId);
         if (terminalSocket) {
@@ -975,6 +988,17 @@ app.prepare().then(() => {
                 },
                 timestamp: new Date()
               };
+              
+              // Track token usage for Claude commands
+              (async () => {
+                try {
+                  const { tokenTracker } = require('./services/token-tracker');
+                  await tokenTracker.trackCommand(buffer.trim(), sessionId);
+                  console.log(`📊 Tracked tokens for command: ${buffer.trim().substring(0, 50)}...`);
+                } catch (error) {
+                  console.error('Failed to track tokens:', error);
+                }
+              })();
               
               bridgeManager.executeCommand(userId, commandRequest)
                 .then(result => {

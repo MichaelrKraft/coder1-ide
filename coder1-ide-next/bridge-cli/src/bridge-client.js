@@ -15,7 +15,10 @@ class BridgeClient extends EventEmitter {
   constructor(options = {}) {
     super();
     
-    this.serverUrl = options.serverUrl || 'https://coder1-ide.onrender.com';
+    // Detect if we should use local or production URL
+    // Check for --local flag or environment variable
+    const isLocal = options.local || process.env.CODER1_LOCAL === 'true';
+    this.serverUrl = options.serverUrl || (isLocal ? 'http://localhost:3001' : 'https://coder1-ide.onrender.com');
     this.verbose = options.verbose || false;
     this.socket = null;
     this.bridgeId = null;

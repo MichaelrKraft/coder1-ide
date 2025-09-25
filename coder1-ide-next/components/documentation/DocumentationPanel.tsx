@@ -51,8 +51,7 @@ const DocumentationPanel: React.FC = () => {
   // Listen for external open documentation panel events
   useEffect(() => {
     const handleOpenDocumentationPanel = () => {
-      // Documentation panel disabled per user request - do not open
-      console.log('Documentation panel open request ignored - panel disabled');
+      setIsOpen(true);
     };
 
     window.addEventListener('openDocumentationPanel', handleOpenDocumentationPanel);

@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
-
-// Import pairing codes from generate-code endpoint
-import { pairingCodes } from '../generate-code/route';
+import { bridgeStore } from '@/lib/bridge-store';
 
 // JWT secret (in production, use environment variable)
 const JWT_SECRET = process.env.JWT_SECRET || 'coder1-bridge-secret-2025';
@@ -37,22 +35,13 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    // Check if code exists and is valid
-    const pairingData = pairingCodes.get(code);
+    // Check if code exists and is valid using shared store
+    const pairingData = bridgeStore.validateCode(code);
     
     if (!pairingData) {
       return NextResponse.json({ 
         success: false,
         error: 'Invalid or expired pairing code' 
-      }, { status: 400 });
-    }
-
-    // Check expiration
-    if (pairingData.expires < Date.now()) {
-      pairingCodes.delete(code);
-      return NextResponse.json({ 
-        success: false,
-        error: 'Pairing code expired' 
       }, { status: 400 });
     }
 
@@ -80,8 +69,8 @@ export async function POST(request: NextRequest) {
       platform
     });
 
-    // Remove used pairing code
-    pairingCodes.delete(code);
+    // Remove used pairing code from shared store
+    bridgeStore.consumeCode(code);
 
     return NextResponse.json({
       success: true,

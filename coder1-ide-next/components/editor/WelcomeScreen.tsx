@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 interface WelcomeScreenProps {
   onDismiss?: () => void;
@@ -11,6 +11,14 @@ export function WelcomeScreen({ onDismiss, onBridgeClick }: WelcomeScreenProps =
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [pairingCode, setPairingCode] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isProduction, setIsProduction] = useState(true);
+  
+  // Detect if running on localhost or production
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setIsProduction(!window.location.hostname.includes('localhost'));
+    }
+  }, []);
   
   const handleBridgeClick = async () => {
     setIsLoading(true);
@@ -69,18 +77,27 @@ export function WelcomeScreen({ onDismiss, onBridgeClick }: WelcomeScreenProps =
                 </div>
 
                 <div className="border-l-4 border-blue-500 pl-3">
-                  <h3 className="text-sm font-semibold text-green-400 mb-1">Step 2: Install Bridge (on YOUR computer)</h3>
+                  <h3 className="text-sm font-semibold text-green-400 mb-1">Step 2: Install Bridge (one-time setup)</h3>
                   <div className="bg-black rounded p-2 font-mono text-xs">
-                    <span className="text-green-400">$</span> <span className="text-white">curl -sL http://localhost:3001/install-bridge.sh | bash</span>
+                    <span className="text-green-400">$</span> <span className="text-white">
+                      curl -sL {isProduction ? 'https://coder1-ide.onrender.com' : 'http://localhost:3001'}/install-bridge.sh | bash
+                    </span>
                   </div>
-                  <p className="text-xs text-gray-400 mt-1">For production: use https://coder1-ide.onrender.com/install-bridge.sh</p>
+                  <p className="text-xs text-gray-400 mt-1">This installs the bridge tool that connects your Claude CLI to the IDE</p>
                 </div>
 
                 <div className="border-l-4 border-blue-500 pl-3">
-                  <h3 className="text-sm font-semibold text-green-400 mb-1">Step 3: Connect Bridge (still on YOUR computer)</h3>
+                  <h3 className="text-sm font-semibold text-green-400 mb-1">Step 3: Start Bridge (keep it running)</h3>
                   <div className="bg-black rounded p-2 font-mono text-xs">
-                    <span className="text-green-400">$</span> <span className="text-white">coder1-bridge start</span>
+                    <span className="text-green-400">$</span> <span className="text-white">
+                      coder1-bridge start{isProduction ? ' &' : ' --dev'}
+                    </span>
                   </div>
+                  <p className="text-xs text-gray-400 mt-1">
+                    {isProduction 
+                      ? '💡 Pro tip: Use & to run in background for seamless experience' 
+                      : 'Note: --dev flag connects to localhost:3001'}
+                  </p>
                 </div>
 
                 <div className="border-l-4 border-blue-500 pl-3">
@@ -156,6 +173,16 @@ export function WelcomeScreen({ onDismiss, onBridgeClick }: WelcomeScreenProps =
             <div className="text-xs text-gray-500 text-center">
               This code expires in 5 minutes
             </div>
+            
+            {isProduction && (
+              <div className="mt-4 p-3 bg-green-500/10 border border-green-500/30 rounded-lg">
+                <p className="text-xs text-green-400 font-semibold mb-1">🎯 Seamless Experience</p>
+                <p className="text-xs text-gray-400">
+                  Once connected, the bridge stays active in the background. 
+                  You can close this window and return anytime without re-pairing!
+                </p>
+              </div>
+            )}
           </div>
         </div>
       )}

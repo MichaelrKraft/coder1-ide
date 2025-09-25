@@ -110,15 +110,22 @@ if command -v coder1-bridge &> /dev/null; then
     echo
     echo -e "${CYAN}🚀 Quick Start:${NC}"
     echo -e "  1. Visit: ${BLUE}https://coder1-ide.onrender.com/ide${NC}"
-    echo -e "  2. Click: ${YELLOW}Connect Bridge${NC} button"
+    echo -e "  2. Click the ${YELLOW}Bridge${NC} button to get your pairing code"
     echo -e "  3. Run: ${GREEN}coder1-bridge start${NC}"
     echo -e "  4. Enter the 6-digit pairing code"
     echo
-    echo -e "${CYAN}📝 Commands:${NC}"
-    echo -e "  ${GREEN}coder1-bridge start${NC}    - Connect to IDE"
-    echo -e "  ${GREEN}coder1-bridge test${NC}     - Test Claude CLI"
-    echo -e "  ${GREEN}coder1-bridge status${NC}   - Check connection"
-    echo -e "  ${GREEN}coder1-bridge --help${NC}   - Show all commands"
+    echo -e "${CYAN}✨ For Seamless Experience:${NC}"
+    echo -e "  ${GREEN}coder1-bridge start &${NC}     - Run in background (stays connected)"
+    echo -e "  ${GREEN}coder1-bridge status${NC}      - Check if bridge is connected"
+    echo
+    echo -e "${CYAN}🔧 Advanced Options:${NC}"
+    echo -e "  ${GREEN}coder1-bridge start --dev${NC} - Connect to local development (localhost:3001)"
+    echo -e "  ${GREEN}coder1-bridge test${NC}        - Test your Claude CLI installation"
+    echo -e "  ${GREEN}coder1-bridge --help${NC}      - Show all available commands"
+    echo
+    echo -e "${YELLOW}💡 Pro Tip:${NC} Keep the bridge running in background for instant access!"
+    echo -e "   Once connected, you can close this terminal and the bridge stays active."
+    echo -e "   Return to ${BLUE}https://coder1-ide.onrender.com/ide${NC} anytime!"
     echo
 else
     echo -e "${RED}❌ Installation failed!${NC}"

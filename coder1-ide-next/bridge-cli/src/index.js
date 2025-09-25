@@ -95,7 +95,8 @@ program
     try {
       const bridge = new BridgeClient({
         serverUrl: options.server,
-        verbose: options.verbose
+        verbose: options.verbose,
+        local: options.dev  // Pass the dev flag to indicate local connection
       });
 
       await bridge.connect(pairingCode);
