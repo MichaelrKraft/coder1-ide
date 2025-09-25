@@ -20,7 +20,15 @@ const HeroSection = dynamic(
 
 // Dynamically import Monaco Editor to avoid SSR issues
 const Editor = dynamic(
-  () => import('@monaco-editor/react'),
+  () => import('@monaco-editor/react').then((mod) => {
+    // Configure Monaco to use CDN for reliability
+    mod.loader.config({
+      paths: {
+        vs: 'https://cdn.jsdelivr.net/npm/monaco-editor@0.52.2/min/vs'
+      }
+    });
+    return mod;
+  }),
   { 
     ssr: false,
     loading: () => (
