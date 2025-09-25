@@ -98,7 +98,10 @@ export const getSocket = async (sessionId?: string, bridgeAuth: boolean = false)
           reconnectionDelay: 1000,
           reconnectionDelayMax: 5000,
           timeout: 20000,
-          forceNew: false
+          forceNew: false,
+          // Match server ping settings to prevent timeout
+          pingTimeout: 60000,  // Match server setting
+          pingInterval: 25000  // Match server setting
         });
 
         // Verify socket was created properly
