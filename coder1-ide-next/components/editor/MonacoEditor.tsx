@@ -318,9 +318,27 @@ export default function MonacoEditor({
             }}
             onBridgeClick={() => {
               // Trigger the Bridge modal
-              // This will be handled by dispatching a custom event that StatusBar listens to
+              console.log('🔵 WelcomeScreen Bridge button clicked');
               if (typeof window !== 'undefined') {
-                window.dispatchEvent(new CustomEvent('openBridgeModal'));
+                // Try direct function call first
+                if ((window as any).openBridgeModal) {
+                  console.log('🔵 Calling openBridgeModal directly');
+                  (window as any).openBridgeModal();
+                } else {
+                  // Fall back to event dispatch
+                  console.log('🔵 openBridgeModal function not found, dispatching event');
+                  window.dispatchEvent(new CustomEvent('openBridgeModal'));
+                  // Retry with delay
+                  setTimeout(() => {
+                    if ((window as any).openBridgeModal) {
+                      console.log('🔵 Calling openBridgeModal directly (delayed)');
+                      (window as any).openBridgeModal();
+                    } else {
+                      console.log('🔵 Dispatching openBridgeModal event (delayed)');
+                      window.dispatchEvent(new CustomEvent('openBridgeModal'));
+                    }
+                  }, 500);
+                }
               }
             }}
           />

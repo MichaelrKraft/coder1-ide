@@ -905,7 +905,8 @@ function IDEPageContent() {
             <DocumentationPanel />
             
             {/* Hidden Bridge Connect Button - listens for events from WelcomeScreen */}
-            <div style={{ display: 'none' }}>
+            {/* Using visibility:hidden instead of display:none to ensure component mounts */}
+            <div style={{ position: 'absolute', visibility: 'hidden', pointerEvents: 'none' }}>
               <BridgeConnectButton />
             </div>
           </div>

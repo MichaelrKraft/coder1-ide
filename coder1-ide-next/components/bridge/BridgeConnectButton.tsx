@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 
 export function BridgeConnectButton() {
   const [isOpen, setIsOpen] = useState(false);
@@ -10,22 +10,31 @@ export function BridgeConnectButton() {
   const [showProTips, setShowProTips] = useState(false);
   const [copiedCommand, setCopiedCommand] = useState<string>('');
 
-  // Listen for openBridgeModal event from WelcomeScreen
-  useEffect(() => {
-    const handleOpenBridgeModal = () => {
-      console.log('🌉 BridgeConnectButton: Received openBridgeModal event');
-      generatePairingCode();
-    };
+  const checkBridgeConnection = useCallback((userId: string) => {
+    const interval = setInterval(async () => {
+      try {
+        const response = await fetch(`/api/bridge/status?userId=${userId}`);
+        const data = await response.json();
+        
+        if (data.connected) {
+          setBridgeConnected(true);
+          clearInterval(interval);
+          setTimeout(() => {
+            setIsOpen(false);
+            setPairingCode('');
+          }, 2000);
+        }
+      } catch (error) {
+        console.error('Failed to check bridge status:', error);
+      }
+    }, 2000);
 
-    window.addEventListener('openBridgeModal', handleOpenBridgeModal);
-    console.log('🌉 BridgeConnectButton: Event listener registered');
-    
-    return () => {
-      window.removeEventListener('openBridgeModal', handleOpenBridgeModal);
-    };
+    // Stop checking after 5 minutes
+    setTimeout(() => clearInterval(interval), 300000);
   }, []);
 
-  const generatePairingCode = async () => {
+  // Make generatePairingCode stable with useCallback
+  const generatePairingCodeStable = useCallback(async () => {
     console.log('🌉 generatePairingCode called');
     setIsLoading(true);
     try {
@@ -53,30 +62,33 @@ export function BridgeConnectButton() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [checkBridgeConnection]);
 
-  const checkBridgeConnection = (userId: string) => {
-    const interval = setInterval(async () => {
-      try {
-        const response = await fetch(`/api/bridge/status?userId=${userId}`);
-        const data = await response.json();
-        
-        if (data.connected) {
-          setBridgeConnected(true);
-          clearInterval(interval);
-          setTimeout(() => {
-            setIsOpen(false);
-            setPairingCode('');
-          }, 2000);
-        }
-      } catch (error) {
-        console.error('Failed to check bridge status:', error);
-      }
-    }, 2000);
+  // Listen for openBridgeModal event from WelcomeScreen
+  useEffect(() => {
+    const handleOpenBridgeModal = () => {
+      console.log('🌉 BridgeConnectButton: Received openBridgeModal event');
+      generatePairingCodeStable();
+    };
 
-    // Stop checking after 5 minutes
-    setTimeout(() => clearInterval(interval), 300000);
-  };
+    // Register event listener
+    window.addEventListener('openBridgeModal', handleOpenBridgeModal);
+    console.log('🌉 BridgeConnectButton: Event listener registered');
+    
+    // Also expose as a global function for direct calling
+    (window as any).openBridgeModal = () => {
+      console.log('🌉 BridgeConnectButton: openBridgeModal called directly');
+      generatePairingCodeStable();
+    };
+    
+    return () => {
+      window.removeEventListener('openBridgeModal', handleOpenBridgeModal);
+      delete (window as any).openBridgeModal;
+    };
+  }, [generatePairingCodeStable]);
+
+  // Alias for the button onClick
+  const generatePairingCode = generatePairingCodeStable;
 
   const copyToClipboard = async (text: string, commandType: string) => {
     try {
