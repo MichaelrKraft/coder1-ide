@@ -81,30 +81,48 @@ export default function MonacoEditor({
     const viewed = localStorage.getItem('coder1-bridge-setup-viewed');
     if (viewed === null) {
       // First time user - will show WelcomeScreen
+      console.log('🟡 MonacoEditor: First-time user detected, showing WelcomeScreen');
       setSetupViewed(false);
     } else {
       // Returning user - skip WelcomeScreen, prepare for HeroSection
+      console.log('🟢 MonacoEditor: Returning user detected, preparing HeroSection');
       setSetupViewed(true);
     }
     
     // Check if hero was already dismissed during navigation (not refresh)
     const dismissed = sessionStorage.getItem('coder1-hero-dismissed');
     
-    // Check if this is a fresh page load (navigation.type available in modern browsers)
-    const isPageReload = typeof window !== 'undefined' && 
-                        window.performance && 
-                        window.performance.navigation && 
-                        window.performance.navigation.type === 1;
+    // Modern navigation detection using PerformanceNavigationTiming API
+    const isPageReload = (() => {
+      try {
+        if (typeof window !== 'undefined' && window.performance) {
+          // Use modern PerformanceNavigationTiming API
+          const navigationEntries = performance.getEntriesByType('navigation') as PerformanceNavigationTiming[];
+          if (navigationEntries.length > 0) {
+            const navigationType = navigationEntries[0].type;
+            console.log('🔍 Navigation type detected:', navigationType);
+            return navigationType === 'reload';
+          }
+        }
+        // Fallback: assume it's a fresh page load if no navigation info
+        return true;
+      } catch (error) {
+        console.warn('Navigation detection failed, assuming fresh page load:', error);
+        return true;
+      }
+    })();
     
+    // Simplified logic: Always show hero section on page load for returning users,
+    // unless it was explicitly dismissed in the current session (and not a reload)
     if (isPageReload || !dismissed) {
-      // On page reload or if not dismissed, show hero section
+      console.log('🎯 MonacoEditor: Showing hero section (page reload or not dismissed)');
       setHeroSectionDismissed(false);
-      // Clear the sessionStorage on reload to ensure hero shows
+      // Clear sessionStorage on any page reload to ensure hero shows
       if (isPageReload && typeof window !== 'undefined') {
         sessionStorage.removeItem('coder1-hero-dismissed');
       }
     } else {
-      // Hero was dismissed during navigation in same session
+      console.log('🔴 MonacoEditor: Hero section was dismissed in this session');
       setHeroSectionDismissed(true);
     }
   }, []);
@@ -275,7 +293,7 @@ export default function MonacoEditor({
             height="100%"
             defaultLanguage="typescript"
             language="javascript"
-            value="// Welcome to Coder1 IDE\n// Open a file or create a new one to start coding\n"
+            value="// Welcome back to Coder1 IDE\n// Open a file or drag & drop files to start coding\n// Type 'claude' in the terminal below to start Claude Code\n"
             theme={theme}
             onMount={handleEditorDidMount}
             onChange={onChange}
@@ -311,13 +329,16 @@ export default function MonacoEditor({
           <WelcomeScreen 
             onDismiss={() => {
               // Mark as viewed when user explicitly dismisses
+              console.log('🎆 WelcomeScreen dismissed, marking setup as viewed');
               if (typeof window !== 'undefined') {
                 localStorage.setItem('coder1-bridge-setup-viewed', 'true');
+                console.log('💾 Stored setup completion in localStorage');
               }
               setSetupViewed(true);
             }}
             onBridgeClick={() => {
               // Bridge button now handles itself in WelcomeScreen
+              console.log('🌉 Bridge button clicked in WelcomeScreen');
             }}
           />
         </div>
@@ -330,8 +351,11 @@ export default function MonacoEditor({
           console.log('🔴 HeroSection dismissed by user interaction');
           // Mark as dismissed for this component instance
           setHeroSectionDismissed(true);
-          // Also store in sessionStorage to prevent re-showing on navigation
-          sessionStorage.setItem('coder1-hero-dismissed', 'true');
+          // Also store in sessionStorage to prevent re-showing on navigation within same session
+          if (typeof window !== 'undefined') {
+            sessionStorage.setItem('coder1-hero-dismissed', 'true');
+            console.log('💾 Stored hero dismissal in sessionStorage');
+          }
         }}
         onTourStart={() => {
           console.log('🎯 Interactive Tour started from HeroSection');

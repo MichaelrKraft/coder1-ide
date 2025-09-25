@@ -48,11 +48,15 @@ export default function HeroSection({ onTourStart, onDismiss }: HeroSectionProps
   const handleUserInteraction = React.useCallback((event?: Event) => {
     // Don't dismiss if clicking on a button (let button handle its action first)
     if (event && event.target && (event.target as HTMLElement).closest('button')) {
+      console.log('🛡️ HeroSection: Button click detected, not dismissing');
       return;
     }
     
+    console.log('👍 HeroSection: User interaction detected, preparing to dismiss');
+    
     // Handle entrance animation fade out
     if (showEntranceAnimation && !animationFadingOut) {
+      console.log('🎦 HeroSection: Starting entrance animation fade out');
       setAnimationFadingOut(true);
       // After fade transition, completely remove the animation
       setTimeout(() => {
@@ -62,10 +66,13 @@ export default function HeroSection({ onTourStart, onDismiss }: HeroSectionProps
     
     // Dismiss the entire HeroSection if callback provided
     if (onDismiss) {
+      console.log('🔴 HeroSection: Calling onDismiss callback');
       // Small delay to ensure smooth transition
       setTimeout(() => {
         onDismiss();
       }, 100);
+    } else {
+      console.log('⚠️ HeroSection: No onDismiss callback provided');
     }
   }, [showEntranceAnimation, animationFadingOut, onDismiss]);
 
