@@ -4,7 +4,14 @@
  */
 
 import { Anthropic } from '@anthropic-ai/sdk';
-import * as pdfParse from 'pdf-parse';
+
+// Dynamic import for optional dependency
+let pdfParse: any;
+try {
+  pdfParse = require('pdf-parse');
+} catch (e) {
+  console.warn('pdf-parse not available in multimodal processor');
+}
 
 export interface ProcessedImage {
   base64: string;

@@ -9,9 +9,29 @@ import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
 import os from 'os';
 import Tesseract from 'tesseract.js';
-import pdf from 'pdf-parse';
-import mammoth from 'mammoth';
-import * as XLSX from 'xlsx';
+
+// Dynamic imports to handle optional dependencies
+let pdf: any;
+let mammoth: any;
+let XLSX: any;
+
+try {
+  pdf = require('pdf-parse');
+} catch (e) {
+  console.warn('pdf-parse not available');
+}
+
+try {
+  mammoth = require('mammoth');
+} catch (e) {
+  console.warn('mammoth not available');
+}
+
+try {
+  XLSX = require('xlsx');
+} catch (e) {
+  console.warn('xlsx not available');
+}
 
 export interface BridgedFile {
   id: string;
