@@ -49,6 +49,33 @@ Their prediction about the memory leak being a "one-line fix" was spot on. They 
 - The system has grown without pruning
 - Perception of progress is as valuable as actual progress
 
+---
+
+## 📝 Addendum: DeepContext Reality Check (September 25, 2025)
+
+### Discovered Issues
+Another example of the "impressive UI with mock backend" pattern identified above:
+- **"DeepContext"** was misleadingly named - it's just basic file text search
+- **No semantic understanding** despite UI claims of "AI-powered" search
+- **Mock implementations** throughout the service layer (fake installation, fake indexing)
+- **Demo fallbacks** presenting hardcoded results for common queries
+
+### Integrity Decision
+- **Renamed to "File Search"** to be honest with users about actual capabilities
+- **Postponed real DeepContext MCP** integration to focus on system stability
+- **Documented the gap** between marketing vision and technical reality
+- **Preserved working functionality** while removing false advertising
+
+### Pattern Confirmation
+This discovery reinforces the previous agent's wisdom about the codebase:
+- Many features are "theater" - showing activity without real functionality
+- The gap between UI promises and backend reality is significant
+- Mock implementations are often the ONLY implementation
+- Users would prefer honest, working features over impressive-looking fakes
+
+### Technical Details
+See `/coder1-ide-next/DEEPCONTEXT_TO_FILESEARCH_SESSION.md` for full investigation and fixes.
+
 ### The Mock Agent Opportunity
 The mock agents currently show:
 - Role-specific command sequences
@@ -57,6 +84,21 @@ The mock agents currently show:
 - Zero cost, zero setup, instant response
 
 **This could become the DEFAULT experience** rather than a fallback.
+
+### Context Memory Pattern Confirmation (September 25, 2025)
+Investigation of the Context Memory System revealed **the same pattern** identified above:
+- **Impressive Schema**: Complete SQLite database with tables for conversations, patterns, insights, embeddings
+- **Sophisticated Infrastructure**: Context processor with conversation extraction, pattern detection
+- **Missing Intelligence**: No actual ML/AI learning - just rule-based pattern counting
+- **Reality**: It's a sophisticated logging system that pretends to learn
+
+**Key Findings**:
+- Stores conversations and detects basic patterns (command sequences, error→solution pairs)
+- No embeddings generated (always undefined despite schema)
+- No insights created (table remains empty)
+- No learning from history (can't improve over time)
+
+This reinforces the architectural observation: "Every complex system started as a simple idea that grew without pruning. Be the gardener who prunes."
 
 ## 🚀 Recommendations
 

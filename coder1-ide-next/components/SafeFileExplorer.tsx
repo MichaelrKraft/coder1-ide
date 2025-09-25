@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useCallback, useEffect } from 'react';
-import { ChevronRight, ChevronDown, File, Folder, FolderOpen, Loader2 } from 'lucide-react';
+import { ChevronRight, ChevronDown, File, Folder, FolderOpen, Loader2, Home, Settings, ArrowLeft } from 'lucide-react';
 
 interface FileNode {
   name: string;
@@ -20,42 +20,65 @@ export default function SafeFileExplorer({ onFileSelect, activeFile }: SafeFileE
   const [fileTree, setFileTree] = useState<FileNode | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [currentRoot, setCurrentRoot] = useState<string>('');
+  const [showDirectoryInput, setShowDirectoryInput] = useState(false);
+  const [directoryInput, setDirectoryInput] = useState('');
+
+  // Load saved directory from localStorage on mount
+  useEffect(() => {
+    const saved = localStorage.getItem('fileExplorerDirectory');
+    if (saved) {
+      setCurrentRoot(saved);
+    }
+  }, []);
 
   // Fetch real file tree from API
-  useEffect(() => {
-    const fetchFileTree = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        
-        const response = await fetch('/api/files/tree');
-        if (!response.ok) {
-          throw new Error(`Failed to fetch files: ${response.status}`);
-        }
-        
+  const fetchFileTree = useCallback(async (rootPath?: string) => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const url = rootPath ? `/api/files/tree?rootPath=${encodeURIComponent(rootPath)}` : '/api/files/tree';
+      const response = await fetch(url);
+      
+      if (!response.ok) {
         const data = await response.json();
-        if (data.success && data.tree) {
-          // Convert 'directory' type to 'folder' for UI consistency
-          const convertTreeTypes = (node: any): FileNode => ({
-            ...node,
-            type: node.type === 'directory' ? 'directory' : 'file',
-            children: node.children ? node.children.map(convertTreeTypes) : undefined
-          });
-          
-          setFileTree(convertTreeTypes(data.tree));
-        } else {
-          throw new Error('Invalid response format');
-        }
-      } catch (err) {
-        console.error('Failed to load file tree:', err);
-        setError(err instanceof Error ? err.message : 'Failed to load files');
-      } finally {
-        setLoading(false);
+        throw new Error(data.error || `Failed to fetch files: ${response.status}`);
       }
-    };
-
-    fetchFileTree();
+      
+      const data = await response.json();
+      if (data.success && data.tree) {
+        // Convert 'directory' type to 'folder' for UI consistency
+        const convertTreeTypes = (node: any): FileNode => ({
+          ...node,
+          type: node.type === 'directory' ? 'directory' : 'file',
+          children: node.children ? node.children.map(convertTreeTypes) : undefined
+        });
+        
+        setFileTree(convertTreeTypes(data.tree));
+        setCurrentRoot(data.currentRoot);
+        
+        // Save to localStorage
+        if (data.currentRoot) {
+          localStorage.setItem('fileExplorerDirectory', data.currentRoot);
+        }
+        
+        // Reset expanded folders for new directory
+        setExpandedFolders(new Set(['/']));
+      } else {
+        throw new Error('Invalid response format');
+      }
+    } catch (err) {
+      console.error('Failed to load file tree:', err);
+      setError(err instanceof Error ? err.message : 'Failed to load files');
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    fetchFileTree(currentRoot || undefined);
+  }, [fetchFileTree, currentRoot]);
 
   const toggleFolder = useCallback((path: string) => {
     setExpandedFolders(prev => {
@@ -68,6 +91,32 @@ export default function SafeFileExplorer({ onFileSelect, activeFile }: SafeFileE
       return newExpanded;
     });
   }, []);
+
+  const handleDirectoryChange = useCallback((newPath: string) => {
+    setCurrentRoot(newPath);
+    setShowDirectoryInput(false);
+    setDirectoryInput('');
+  }, []);
+
+  const handleDirectoryInputSubmit = useCallback(() => {
+    if (directoryInput.trim()) {
+      handleDirectoryChange(directoryInput.trim());
+    }
+  }, [directoryInput, handleDirectoryChange]);
+
+  const resetToProjectRoot = useCallback(() => {
+    localStorage.removeItem('fileExplorerDirectory');
+    setCurrentRoot('');
+  }, []);
+
+  const navigateToParent = useCallback(() => {
+    if (currentRoot) {
+      const parentPath = require('path').dirname(currentRoot);
+      if (parentPath !== currentRoot) { // Prevent infinite loop at root
+        handleDirectoryChange(parentPath);
+      }
+    }
+  }, [currentRoot, handleDirectoryChange]);
 
   const renderNode = useCallback((node: FileNode, depth: number = 0): React.ReactNode => {
     if (!node || !node.path) return null;
@@ -155,11 +204,83 @@ export default function SafeFileExplorer({ onFileSelect, activeFile }: SafeFileE
     );
   }
 
+  // Format current path for display
+  const formatPath = (path: string) => {
+    if (!path) return 'Project Root';
+    const parts = path.split('/');
+    if (parts.length > 3) {
+      return `.../${parts.slice(-2).join('/')}`;
+    }
+    return path;
+  };
+
   return (
-    <div className="h-full overflow-auto">
-      {fileTree ? renderNode(fileTree) : (
-        <div className="p-4 text-text-secondary text-sm">No files to display</div>
-      )}
+    <div className="h-full flex flex-col">
+      {/* Directory Controls Header */}
+      <div className="border-b border-border-default p-2 space-y-2 bg-bg-tertiary">
+        {/* Current Directory Display */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2 min-w-0 flex-1">
+            <Folder className="w-4 h-4 shrink-0 text-coder1-cyan" />
+            <span className="text-xs text-text-secondary truncate" title={currentRoot || 'Project Root'}>
+              {formatPath(currentRoot)}
+            </span>
+          </div>
+          <div className="flex items-center gap-1">
+            {currentRoot && (
+              <button
+                onClick={navigateToParent}
+                className="p-1 hover:bg-bg-secondary rounded transition-colors"
+                title="Go to parent directory"
+              >
+                <ArrowLeft className="w-3 h-3" />
+              </button>
+            )}
+            <button
+              onClick={resetToProjectRoot}
+              className="p-1 hover:bg-bg-secondary rounded transition-colors"
+              title="Reset to project root"
+            >
+              <Home className="w-3 h-3" />
+            </button>
+            <button
+              onClick={() => setShowDirectoryInput(!showDirectoryInput)}
+              className="p-1 hover:bg-bg-secondary rounded transition-colors"
+              title="Change directory"
+            >
+              <Settings className="w-3 h-3" />
+            </button>
+          </div>
+        </div>
+
+        {/* Directory Input */}
+        {showDirectoryInput && (
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={directoryInput}
+              onChange={(e) => setDirectoryInput(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && handleDirectoryInputSubmit()}
+              placeholder="Enter directory path..."
+              className="flex-1 px-2 py-1 text-xs bg-bg-primary border border-border-default rounded focus:outline-none focus:ring-1 focus:ring-coder1-cyan"
+              autoFocus
+            />
+            <button
+              onClick={handleDirectoryInputSubmit}
+              className="px-2 py-1 text-xs bg-coder1-cyan text-bg-primary rounded hover:bg-opacity-80 transition-colors"
+            >
+              Go
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* File Tree Content */}
+      <div className="flex-1 overflow-auto">
+        {fileTree ? renderNode(fileTree) : (
+          <div className="p-4 text-text-secondary text-sm">No files to display</div>
+        )}
+      </div>
     </div>
   );
 }

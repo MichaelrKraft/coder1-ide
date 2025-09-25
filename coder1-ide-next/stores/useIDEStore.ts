@@ -571,7 +571,45 @@ export const useIDEStore = create<IDEStore>()(
         // Utility Actions
         // ================================================================================
         
-        reset: () => set(initialState, false, 'reset'),
+        reset: () => {
+          // Check if this is a session refresh (preserve user preferences)
+          const isRefresh = typeof window !== 'undefined' && 
+                           window.performance && 
+                           window.performance.navigation && 
+                           window.performance.navigation.type === 1;
+          
+          if (isRefresh) {
+            // Mark refresh in sessionStorage for coordination
+            sessionStorage.setItem('ide-state-refreshed', Date.now().toString());
+            
+            // Preserve user settings and layout preferences, reset working state
+            return set((state) => ({
+              ...initialState,
+              // Preserve user preferences
+              settings: state.settings,
+              layout: {
+                ...initialState.layout,
+                // Keep user's panel size preferences
+                showExplorer: state.layout.showExplorer,
+                showTerminal: state.layout.showTerminal,
+                showOutput: state.layout.showOutput,
+                showPreview: state.layout.showPreview,
+                panelSizes: state.layout.panelSizes,
+              },
+              // Preserve AI model preferences
+              aiState: {
+                ...initialState.aiState,
+                currentModel: state.aiState.currentModel,
+                modelConfig: state.aiState.modelConfig,
+              },
+              // Keep project context if available
+              project: state.project,
+            }), false, 'reset-refresh');
+          } else {
+            // Full reset for normal cases
+            return set(initialState, false, 'reset');
+          }
+        },
       }),
       {
         name: 'coder1-ide-store',

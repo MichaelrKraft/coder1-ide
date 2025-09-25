@@ -1461,7 +1461,7 @@ function BetaTerminal({
                 if (xtermRef.current) {
                   xtermRef.current.writeln(removeEmojis('\r\nEmergency Stop Activated:'));
                   xtermRef.current.writeln(removeEmojis('* All AI agents stopped'));
-                  xtermRef.current.writeln(removeEmojis('* Voice input disabled'));
+                  // xtermRef.current.writeln(removeEmojis('* Voice input disabled'));
                   xtermRef.current.writeln(removeEmojis('* Supervision disabled'));
                   xtermRef.current.writeln(removeEmojis('* Terminal processes killed'));
                   xtermRef.current.writeln(removeEmojis('\r\nSystem ready for new commands.'));

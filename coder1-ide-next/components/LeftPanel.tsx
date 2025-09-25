@@ -1,9 +1,10 @@
 'use client';
 
 import React, { useState } from 'react';
-import { FolderTree, Clock } from 'lucide-react';
+import { FolderTree, Clock, Search } from 'lucide-react';
 import SafeFileExplorer from './SafeFileExplorer';
 import SessionsPanel from './SessionsPanel';
+import DeepContextPanel from './deepcontext/DeepContextPanel';
 
 interface LeftPanelProps {
   onFileSelect: (path: string) => void;
@@ -11,7 +12,7 @@ interface LeftPanelProps {
 }
 
 export default function LeftPanel({ onFileSelect, activeFile }: LeftPanelProps) {
-  const [activeTab, setActiveTab] = useState<'explorer' | 'sessions'>('explorer');
+  const [activeTab, setActiveTab] = useState<'explorer' | 'sessions' | 'search'>('explorer');
   
   // REMOVED: // REMOVED: console.log('🔄 LeftPanel rendered with activeTab:', activeTab);
   
@@ -104,14 +105,35 @@ export default function LeftPanel({ onFileSelect, activeFile }: LeftPanelProps) 
           <Clock className="w-3 h-3" />
           <span>Sessions</span>
         </button>
+        <button
+          className={`flex-1 px-3 py-2 text-xs font-semibold uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 ${
+            activeTab === 'search'
+              ? 'text-coder1-cyan border-b-2 border-coder1-cyan bg-bg-tertiary'
+              : 'text-text-muted hover:text-text-secondary hover:bg-bg-tertiary'
+          }`}
+          onClick={() => setActiveTab('search')}
+          title="File Search - Search for files and code across your project"
+        >
+          <Search className="w-3 h-3" />
+          <span>Search</span>
+        </button>
       </div>
       
       {/* Tab Content - Takes remaining space but leaves room for Discover */}
       <div className="flex-1 min-h-0 relative z-10">
-        {activeTab === 'explorer' ? (
+        {activeTab === 'explorer' && (
           <SafeFileExplorer onFileSelect={onFileSelect} activeFile={activeFile} />
-        ) : (
+        )}
+        {activeTab === 'sessions' && (
           <SessionsPanel isVisible={true} />
+        )}
+        {activeTab === 'search' && (
+          <DeepContextPanel 
+            activeFile={activeFile}
+            onOpenFile={(path: string, line?: number) => {
+              onFileSelect(path);
+            }}
+          />
         )}
       </div>
       

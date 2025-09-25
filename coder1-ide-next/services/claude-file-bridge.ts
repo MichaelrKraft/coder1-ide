@@ -148,35 +148,11 @@ class ClaudeFileBridge {
             extractedContent = `[Text File: ${file.name}]\nError: Unable to decode file as UTF-8 text. File may be binary or corrupted.`;
           }
         } else if (this.isImageFile(file.type)) {
-        // For images, try OCR first, then fallback to base64
-        try {
-          console.log(`🔍 Performing OCR on image: ${file.name}`);
-          const ocrResult = await Tesseract.recognize(buffer, 'eng', {
-            logger: m => {
-              if (m.status === 'recognizing text') {
-                console.log(`OCR Progress: ${Math.round(m.progress * 100)}%`);
-              }
-            }
-          });
-          
-          const ocrText = ocrResult.data.text.trim();
-          if (ocrText && ocrText.length > 0) {
-            console.log(`✅ OCR extracted ${ocrText.length} characters from ${file.name}`);
-            // Include both OCR text and image reference
-            const base64 = buffer.toString('base64');
-            extractedContent = `[Image: ${file.name}]\n\nExtracted text via OCR:\n${ocrText}\n\n[Image data available as: data:${file.type};base64,${base64}]`;
-          } else {
-            console.log(`⚠️ OCR found no text in ${file.name}, using base64 fallback`);
-            const base64 = buffer.toString('base64');
-            extractedContent = `data:${file.type};base64,${base64}`;
-          }
-        } catch (ocrError) {
-          console.error(`❌ OCR failed for ${file.name}:`, ocrError);
-          // Fallback to base64 if OCR fails
-          const base64 = buffer.toString('base64');
-          extractedContent = `data:${file.type};base64,${base64}`;
-        }
-      } else if (this.isPDFFile(file.type, file.name)) {
+          // For images, don't create base64 - just provide reference for proper Claude Code handling
+          console.log(`🖼️ Processing image file: ${file.name} (keeping as file reference)`);
+          extractedContent = `[Image: ${file.name}]\nType: ${file.type}\nSize: ${(file.size / 1024).toFixed(1)}KB\nSaved to: ${tempPath}\n\nTo analyze this image in Claude Code:\n1. Drag the original image file directly into Claude Code\n2. Or use the file at: ${tempPath}`;
+          console.log(`✅ Image reference created (no base64) for: ${file.name}`);
+        } else if (this.isPDFFile(file.type, file.name)) {
         // Enhanced PDF text extraction
         try {
           console.log(`📄 Extracting text from PDF: ${file.name}`);

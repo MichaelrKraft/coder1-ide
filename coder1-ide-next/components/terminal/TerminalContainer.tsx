@@ -99,7 +99,11 @@ export default function TerminalContainer({
     if (createdSandboxesRef.current.has(checkpointId)) {
       console.log('⚠️ Sandbox already created for checkpoint:', checkpointId);
       // Just switch to the existing sandbox tab
-      setActiveTab('sandbox');
+      if (agentTabsEnabled) {
+        setActiveSessionId('sandbox');
+      } else {
+        setActiveTab('sandbox');
+      }
       return;
     }
     
@@ -153,10 +157,28 @@ export default function TerminalContainer({
     };
     
     setSandboxSession(sandbox);
-    setActiveTab('sandbox');
+    
+    // 🐛 DIRECT FIX: Set state immediately and use React's batching
+    console.log('🏖️ DIRECT FIX: Setting sandbox state immediately');
+    console.log('🏖️ DIRECT FIX: agentTabsEnabled =', agentTabsEnabled);
+    
+    if (agentTabsEnabled) {
+      console.log('🏖️ DIRECT FIX: Setting activeSessionId to "sandbox"');
+      setActiveSessionId('sandbox');
+    } else {
+      console.log('🏖️ DIRECT FIX: Setting activeTab to "sandbox"');
+      setActiveTab('sandbox');
+    }
+    
+    // Force immediate verification with React.flushSync if needed
+    setTimeout(() => {
+      console.log('🏖️ DIRECT FIX: Verification after React batching:');
+      console.log('  - activeTab:', activeTab);
+      console.log('  - activeSessionId:', activeSessionId);
+    }, 0);
     
     console.log('🏖️ Sandbox created:', sandbox.id, 'with terminal history length:', sandbox.terminalHistory?.length);
-  }, []);
+  }, [agentTabsEnabled, setActiveTab, setActiveSessionId]); // 🐛 FIX: Add dependencies to prevent stale closure
 
   // Handle closing the sandbox
   const closeSandbox = useCallback(() => {
@@ -170,7 +192,11 @@ export default function TerminalContainer({
       createdSandboxesRef.current.delete(checkpointId);
       
       setSandboxSession(null);
-      setActiveTab('main');
+      if (agentTabsEnabled) {
+        setActiveSessionId('main');
+      } else {
+        setActiveTab('main');
+      }
     }
   }, [sandboxSession]);
 
@@ -347,9 +373,19 @@ export default function TerminalContainer({
         {sandboxSession && (
           <div
             className={`flex items-center gap-2 text-sm transition-all duration-200 relative ${
-              (!agentTabsEnabled && activeTab === 'sandbox') || (agentTabsEnabled && activeSessionId === 'sandbox')
-                ? 'bg-bg-primary text-text-primary border-b-2 border-orange-400'
-                : 'text-text-secondary hover:text-text-primary hover:bg-bg-tertiary'
+              (() => {
+                const isActive = (!agentTabsEnabled && activeTab === 'sandbox') || (agentTabsEnabled && activeSessionId === 'sandbox');
+                console.log('🏖️ UI DEBUG: Sandbox tab rendering');
+                console.log('  - agentTabsEnabled:', agentTabsEnabled);
+                console.log('  - activeTab:', activeTab);
+                console.log('  - activeSessionId:', activeSessionId);
+                console.log('  - Condition 1 (!agentTabsEnabled && activeTab === "sandbox"):', !agentTabsEnabled && activeTab === 'sandbox');
+                console.log('  - Condition 2 (agentTabsEnabled && activeSessionId === "sandbox"):', agentTabsEnabled && activeSessionId === 'sandbox');
+                console.log('  - Final isActive:', isActive);
+                return isActive 
+                  ? 'bg-bg-primary text-text-primary border-b-2 border-orange-400'
+                  : 'text-text-secondary hover:text-text-primary hover:bg-bg-tertiary';
+              })()
             }`}
           >
             <button

@@ -5,74 +5,66 @@ import { claudeCliService } from '@/services/claude-cli-service';
 // Mark as dynamic since this uses request data
 export const dynamic = 'force-dynamic';
 
-// Generate a message formatted for Claude Code with enhanced AI optimization
-function generateClaudeMessage(files: any[]): string {
-  // Create a properly formatted message for Claude Code
-  let message = '# 📎 Files Shared via Coder1 IDE\n\n';
-  message += `I'm sharing ${files.length} file${files.length > 1 ? 's' : ''} with you:\n\n`;
+// Generate user-friendly content for terminal display (minimal output)
+function generateDisplayMessage(files: any[]): string {
+  // Return minimal display - just file info, no verbose content
+  let content = '';
   
   files.forEach((file, index) => {
-    // Get appropriate icon based on file type
-    const icon = getFileIcon(file.type, file.originalName);
-    message += `## ${icon} ${file.originalName}\n\n`;
-    
-    // Enhanced metadata display
-    message += `**File Details:**\n`;
-    message += `- **Type**: ${getReadableFileType(file.type, file.originalName)}\n`;
-    message += `- **Size**: ${formatFileSize(file.size)}\n`;
-    
     if (file.content) {
-      // Handle different content types with better formatting
-      if (file.content.includes('[Image:') && file.content.includes('Extracted text via OCR:')) {
-        // OCR-processed image
-        message += `- **Processing**: Text extracted via OCR\n\n`;
-        message += `${file.content}\n\n`;
-      } else if (file.content.includes('[PDF Document:')) {
-        // PDF with extracted text
-        message += `- **Processing**: PDF text extraction\n\n`;
-        message += `${file.content}\n\n`;
-      } else if (file.content.includes('[Word Document:')) {
-        // Word document
-        message += `- **Processing**: Word document text extraction\n\n`;
-        message += `${file.content}\n\n`;
-      } else if (file.content.includes('[Excel Spreadsheet:')) {
-        // Excel file
-        message += `- **Processing**: Excel data extraction\n\n`;
-        message += `${file.content}\n\n`;
-      } else if (file.type?.startsWith('image/')) {
-        // Image without OCR (base64 fallback)
-        message += `\n⚠️ **Image file**: This image couldn't be processed with OCR. For best results, please upload this image directly to Claude Code using the attachment button.\n\n`;
-      } else if (file.content.startsWith('data:')) {
-        // Base64 data - try to decode
-        const base64Match = file.content.match(/^data:[^;]+;base64,(.+)$/);
-        if (base64Match) {
-          try {
-            const decodedContent = Buffer.from(base64Match[1], 'base64').toString('utf-8');
-            const ext = file.originalName.split('.').pop()?.toLowerCase() || 'txt';
-            message += `\n\`\`\`${ext}\n${decodedContent}\n\`\`\`\n\n`;
-          } catch (e) {
-            message += `\n⚠️ **Binary file**: Cannot be displayed as text. Upload directly to Claude Code if needed.\n\n`;
-          }
-        }
-      } else {
-        // Plain text content
-        const ext = file.originalName.split('.').pop()?.toLowerCase() || 'txt';
-        message += `\n\`\`\`${ext}\n${file.content}\n\`\`\`\n\n`;
+      // For all file types, just show icon, name and size
+      const fileIcon = getFileIcon(file.type, file.originalName);
+      const fileSize = formatFileSize(file.size);
+      content += `${fileIcon} ${file.originalName} (${fileSize})`;
+      
+      // Add separator between multiple files
+      if (index < files.length - 1) {
+        content += ', ';
       }
-    } else {
-      message += `\n⚠️ **No content extracted**: Upload this file directly to Claude Code.\n\n`;
     }
   });
   
-  // Enhanced footer with instructions
-  message += '---\n\n';
-  message += '**Next Steps:**\n';
-  message += '1. ✅ Files are now formatted for Claude Code\n';
-  message += '2. 📋 This content is in your clipboard - paste it into your Claude Code conversation\n';
-  message += '3. 🤖 Claude Code can now analyze, understand, and work with these files\n\n';
-  message += '*Enhanced by Coder1 IDE file processing*\n';
+  return content;
+}
+
+// Generate content for Claude Code clipboard (reference for images, not base64)
+function generateClaudeMessage(files: any[]): string {
+  // Return content for clipboard - reference images instead of base64
+  let content = '';
   
-  return message;
+  files.forEach((file, index) => {
+    if (file.content) {
+      // For images, provide a reference instead of base64 data
+      if (file.content.startsWith('data:image')) {
+        const fileIcon = getFileIcon(file.type, file.originalName);
+        const fileType = getReadableFileType(file.type, file.originalName);
+        const fileSize = formatFileSize(file.size);
+        content += `[Image File: ${file.originalName}]\n`;
+        content += `Type: ${fileType}\n`;
+        content += `Size: ${fileSize}\n`;
+        content += `\nPlease use the file at: ${file.tempPath || file.originalName}\n`;
+        content += `(Drag the original image file directly into Claude Code for analysis)`;
+      } else if (file.content.startsWith('data:')) {
+        // Other data URLs - provide reference
+        const fileType = getReadableFileType(file.type, file.originalName);
+        const fileSize = formatFileSize(file.size);
+        content += `[Data File: ${file.originalName}]\n`;
+        content += `Type: ${fileType}\n`;
+        content += `Size: ${fileSize}\n`;
+        content += `(Drag the original file directly into Claude Code for processing)`;
+      } else {
+        // Text content - include actual content
+        content += file.content;
+      }
+      
+      // Add separator between multiple files
+      if (index < files.length - 1) {
+        content += '\n\n---\n\n';
+      }
+    }
+  });
+  
+  return content;
 }
 
 // Helper functions for better formatting
@@ -184,8 +176,10 @@ export async function POST(request: NextRequest) {
       filePaths,
       command,
       summary: claudeFileBridge.generateFilesSummary(fileIds),
-      // Add a formatted message that can be copied to Claude Code
-      claudeMessage: generateClaudeMessage(filesWithContent)
+      // Add a formatted message that can be copied to Claude Code (includes base64)
+      claudeMessage: generateClaudeMessage(filesWithContent),
+      // Add user-friendly display message for terminal (hides base64)
+      displayMessage: generateDisplayMessage(filesWithContent)
     });
     
   } catch (error) {

@@ -86,6 +86,19 @@ export function SessionProvider({ children }: SessionProviderProps) {
         console.log('📂 Found stored session:', storedSessionId);
         setSessionId(storedSessionId);
         
+        // Detect browser refresh using same pattern as MonacoEditor
+        const isPageReload = typeof window !== 'undefined' && 
+                            window.performance && 
+                            window.performance.navigation && 
+                            window.performance.navigation.type === 1;
+        
+        if (isPageReload) {
+          console.log('🔄 Browser refresh detected, dispatching sessionRefreshed event');
+          window.dispatchEvent(new CustomEvent('sessionRefreshed', { 
+            detail: { sessionId: storedSessionId } 
+          }));
+        }
+        
         // Load all sessions and find the current one
         const loadedSessions = await refreshSessions();
         

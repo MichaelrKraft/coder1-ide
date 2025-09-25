@@ -7,6 +7,8 @@ export function BridgeConnectButton() {
   const [pairingCode, setPairingCode] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
   const [bridgeConnected, setBridgeConnected] = useState(false);
+  const [showProTips, setShowProTips] = useState(false);
+  const [copiedCommand, setCopiedCommand] = useState<string>('');
 
   const generatePairingCode = async () => {
     setIsLoading(true);
@@ -57,6 +59,16 @@ export function BridgeConnectButton() {
     setTimeout(() => clearInterval(interval), 300000);
   };
 
+  const copyToClipboard = async (text: string, commandType: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedCommand(commandType);
+      setTimeout(() => setCopiedCommand(''), 2000);
+    } catch (err) {
+      console.error('Failed to copy text: ', err);
+    }
+  };
+
   return (
     <>
       <button
@@ -92,103 +104,340 @@ export function BridgeConnectButton() {
         <span>Bridge</span>
       </button>
 
-      {/* Coder1 Styled Modal */}
+      {/* Professional Coder1 Setup Modal */}
       {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setIsOpen(false)} />
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div 
-            className="relative bg-bg-secondary border border-border-default rounded-xl p-8 max-w-md w-full mx-4 shadow-2xl"
+            className="fixed inset-0 bg-black/70 backdrop-blur-sm transition-opacity duration-300" 
+            onClick={() => setIsOpen(false)} 
+          />
+          <div 
+            className="relative max-w-2xl w-full max-h-[90vh] overflow-y-auto rounded-2xl shadow-2xl transition-all duration-300"
             style={{
-              background: 'linear-gradient(135deg, rgba(10, 10, 10, 0.95) 0%, rgba(20, 20, 20, 0.95) 100%)',
-              backdropFilter: 'blur(10px)',
-              WebkitBackdropFilter: 'blur(10px)',
-              boxShadow: '0 0 40px rgba(0, 217, 255, 0.2), 0 20px 80px rgba(0, 0, 0, 0.8)',
+              background: 'linear-gradient(135deg, rgba(10, 10, 10, 0.98) 0%, rgba(25, 25, 25, 0.98) 100%)',
+              backdropFilter: 'blur(16px)',
+              WebkitBackdropFilter: 'blur(16px)',
+              boxShadow: '0 0 60px rgba(0, 217, 255, 0.15), 0 30px 100px rgba(0, 0, 0, 0.9)',
+              border: '1px solid rgba(0, 217, 255, 0.2)',
             }}
           >
+            {/* Close Button */}
             <button
               onClick={() => setIsOpen(false)}
-              className="absolute top-4 right-4 text-text-muted hover:text-text-primary transition-colors"
+              className="absolute top-6 right-6 z-10 w-8 h-8 flex items-center justify-center rounded-lg transition-all duration-200 hover:bg-white/10"
               style={{
-                fontSize: '24px',
-                lineHeight: '1',
+                color: 'rgba(156, 163, 175, 0.8)',
               }}
             >
-              ×
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
             </button>
-            
-            <h2 className="text-2xl font-bold mb-3 bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
-              Connect Claude Code to Coder1 IDE
-            </h2>
-            <p className="text-sm text-text-secondary mb-6">
-              Run this command on your computer to connect
-            </p>
-          
-          {!bridgeConnected ? (
-            <div className="space-y-5">
-              <div className="text-center">
-                <div 
-                  className="text-7xl font-mono font-bold mb-4"
+
+            <div className="p-6">
+              {/* Header */}
+              <div className="text-center mb-6">
+                <h2 
+                  className="text-2xl font-bold mb-2"
                   style={{
                     background: 'linear-gradient(135deg, #00D9FF 0%, #3b82f6 100%)',
                     WebkitBackgroundClip: 'text',
                     WebkitTextFillColor: 'transparent',
                     backgroundClip: 'text',
-                    textShadow: '0 0 30px rgba(0, 217, 255, 0.5)',
-                    letterSpacing: '0.1em',
                   }}
                 >
-                  {pairingCode || '------'}
-                </div>
-                <p className="text-sm text-text-muted">
-                  This code expires in 5 minutes
-                </p>
-              </div>
-              
-              <div className="bg-bg-primary border border-border-default rounded-lg p-4">
-                <p className="text-sm font-semibold mb-3 text-text-primary">Run on your computer:</p>
+                  🌉 Connect Claude Code to Coder1 IDE
+                </h2>
+                
+                {/* Enhanced Warning Section */}
                 <div 
-                  className="bg-black rounded-md p-3 font-mono text-sm"
+                  className="mb-6 p-3 rounded-lg border-l-4 transition-all duration-200"
                   style={{
-                    boxShadow: 'inset 0 2px 4px rgba(0, 0, 0, 0.5)',
+                    background: 'linear-gradient(135deg, rgba(251, 146, 60, 0.08) 0%, rgba(251, 191, 36, 0.08) 100%)',
+                    border: '1px solid rgba(251, 146, 60, 0.3)',
+                    borderLeft: '4px solid rgba(251, 146, 60, 0.8)',
+                    boxShadow: '0 0 20px rgba(251, 146, 60, 0.1)',
                   }}
                 >
-                  <span className="text-green-400">$</span> <span className="text-white">coder1-bridge start</span>
+                  <div className="flex items-center gap-2 mb-1">
+                    <div 
+                      className="w-5 h-5 flex items-center justify-center rounded-full text-xs"
+                      style={{
+                        background: 'linear-gradient(135deg, rgba(251, 146, 60, 0.2) 0%, rgba(251, 191, 36, 0.2) 100%)',
+                      }}
+                    >
+                      ⚠️
+                    </div>
+                    <h3 className="font-bold text-base text-orange-300">
+                      IMPORTANT: DO NOT TYPE COMMANDS IN THE WEB TERMINAL!
+                    </h3>
+                  </div>
+                  <p className="text-orange-200 text-xs leading-relaxed ml-7">
+                    Please follow the instructions below and run commands on YOUR local computer
+                  </p>
                 </div>
-                <p className="text-xs text-text-muted mt-3">
-                  Then enter the code above when prompted
-                </p>
               </div>
 
-              <div className="bg-bg-tertiary/50 rounded-lg p-3 border border-border-default">
-                <p className="font-semibold mb-2 text-sm text-text-secondary">Don't have the bridge installed?</p>
-                <div 
-                  className="bg-bg-primary rounded p-2 font-mono text-xs overflow-x-auto"
-                  style={{
-                    boxShadow: 'inset 0 1px 3px rgba(0, 0, 0, 0.3)',
-                  }}
-                >
-                  <span className="text-gray-400">curl -sL https://coder1-ide.onrender.com/install-bridge.sh | bash</span>
+              {!bridgeConnected ? (
+                <div className="space-y-5">
+                  {/* Setup Instructions */}
+                  <div>
+                    <h3 
+                      className="flex items-center gap-2 text-lg font-bold mb-4"
+                      style={{
+                        background: 'linear-gradient(135deg, #00D9FF 0%, #3b82f6 100%)',
+                        WebkitBackgroundClip: 'text',
+                        WebkitTextFillColor: 'transparent',
+                        backgroundClip: 'text',
+                      }}
+                    >
+                      📍 Setup Instructions
+                    </h3>
+                    
+                    <div className="space-y-3">
+                      {/* Step 1 */}
+                      <div 
+                        className="p-4 rounded-lg border transition-all duration-200 hover:scale-[1.01]"
+                        style={{
+                          background: 'linear-gradient(135deg, rgba(0, 217, 255, 0.05) 0%, rgba(59, 130, 246, 0.05) 100%)',
+                          border: '1px solid rgba(0, 217, 255, 0.2)',
+                        }}
+                      >
+                        <div className="flex items-start gap-3">
+                          <div 
+                            className="w-6 h-6 rounded-full flex items-center justify-center font-bold text-xs shrink-0"
+                            style={{
+                              background: 'linear-gradient(135deg, #00D9FF 0%, #3b82f6 100%)',
+                              color: 'white',
+                            }}
+                          >
+                            1
+                          </div>
+                          <div className="flex-1">
+                            <h4 className="font-semibold text-cyan-300 mb-1 text-sm">Open YOUR Local Terminal</h4>
+                            <div className="space-y-1 text-xs text-gray-300">
+                              <p>• <strong>Mac:</strong> Press Cmd+Space, type "Terminal"</p>
+                              <p>• <strong>Windows:</strong> Press Win+R, type "cmd"</p>
+                              <p>• <strong>Linux:</strong> Press Ctrl+Alt+T</p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Step 2 */}
+                      <div 
+                        className="p-4 rounded-lg border transition-all duration-200 hover:scale-[1.01]"
+                        style={{
+                          background: 'linear-gradient(135deg, rgba(0, 217, 255, 0.05) 0%, rgba(59, 130, 246, 0.05) 100%)',
+                          border: '1px solid rgba(0, 217, 255, 0.2)',
+                        }}
+                      >
+                        <div className="flex items-start gap-3">
+                          <div 
+                            className="w-6 h-6 rounded-full flex items-center justify-center font-bold text-xs shrink-0"
+                            style={{
+                              background: 'linear-gradient(135deg, #00D9FF 0%, #3b82f6 100%)',
+                              color: 'white',
+                            }}
+                          >
+                            2
+                          </div>
+                          <div className="flex-1">
+                            <h4 className="font-semibold text-cyan-300 mb-2 text-sm">Install Bridge (on YOUR computer)</h4>
+                            <div 
+                              className="relative group cursor-pointer"
+                              onClick={() => copyToClipboard('curl -sL https://coder1-ide.onrender.com/install-bridge.sh | bash', 'install')}
+                            >
+                              <div 
+                                className="bg-black rounded-lg p-3 font-mono text-xs border transition-all duration-200"
+                                style={{
+                                  border: '1px solid rgba(34, 197, 94, 0.3)',
+                                  boxShadow: 'inset 0 2px 4px rgba(0, 0, 0, 0.5), 0 0 10px rgba(34, 197, 94, 0.1)',
+                                }}
+                              >
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-green-400">$</span>
+                                    <span className="text-white">curl -sL https://coder1-ide.onrender.com/install-bridge.sh | bash</span>
+                                  </div>
+                                  <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    {copiedCommand === 'install' ? (
+                                      <span className="text-green-400 text-xs">✓ Copied!</span>
+                                    ) : (
+                                      <span className="text-cyan-400 text-xs">Click to copy</span>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Step 3 */}
+                      <div 
+                        className="p-4 rounded-lg border transition-all duration-200 hover:scale-[1.01]"
+                        style={{
+                          background: 'linear-gradient(135deg, rgba(0, 217, 255, 0.05) 0%, rgba(59, 130, 246, 0.05) 100%)',
+                          border: '1px solid rgba(0, 217, 255, 0.2)',
+                        }}
+                      >
+                        <div className="flex items-start gap-3">
+                          <div 
+                            className="w-6 h-6 rounded-full flex items-center justify-center font-bold text-xs shrink-0"
+                            style={{
+                              background: 'linear-gradient(135deg, #00D9FF 0%, #3b82f6 100%)',
+                              color: 'white',
+                            }}
+                          >
+                            3
+                          </div>
+                          <div className="flex-1">
+                            <h4 className="font-semibold text-cyan-300 mb-2 text-sm">Connect Bridge (still on YOUR computer)</h4>
+                            <div 
+                              className="relative group cursor-pointer"
+                              onClick={() => copyToClipboard('coder1-bridge start', 'connect')}
+                            >
+                              <div 
+                                className="bg-black rounded-lg p-3 font-mono text-xs border transition-all duration-200"
+                                style={{
+                                  border: '1px solid rgba(34, 197, 94, 0.3)',
+                                  boxShadow: 'inset 0 2px 4px rgba(0, 0, 0, 0.5), 0 0 10px rgba(34, 197, 94, 0.1)',
+                                }}
+                              >
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-green-400">$</span>
+                                    <span className="text-white">coder1-bridge start</span>
+                                  </div>
+                                  <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    {copiedCommand === 'connect' ? (
+                                      <span className="text-green-400 text-xs">✓ Copied!</span>
+                                    ) : (
+                                      <span className="text-cyan-400 text-xs">Click to copy</span>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Step 4 */}
+                      <div 
+                        className="p-4 rounded-lg border transition-all duration-200 hover:scale-[1.01]"
+                        style={{
+                          background: 'linear-gradient(135deg, rgba(0, 217, 255, 0.05) 0%, rgba(59, 130, 246, 0.05) 100%)',
+                          border: '1px solid rgba(0, 217, 255, 0.2)',
+                        }}
+                      >
+                        <div className="flex items-start gap-3">
+                          <div 
+                            className="w-6 h-6 rounded-full flex items-center justify-center font-bold text-xs shrink-0"
+                            style={{
+                              background: 'linear-gradient(135deg, #00D9FF 0%, #3b82f6 100%)',
+                              color: 'white',
+                            }}
+                          >
+                            4
+                          </div>
+                          <div className="flex-1">
+                            <h4 className="font-semibold text-cyan-300 mb-2 text-sm">Enter the 6-digit code</h4>
+                            <div className="text-center">
+                              <div 
+                                className="text-4xl font-mono font-bold mb-2 inline-block px-4 py-2 rounded-lg cursor-pointer group"
+                                style={{
+                                  background: 'linear-gradient(135deg, #00D9FF 0%, #3b82f6 100%)',
+                                  WebkitBackgroundClip: 'text',
+                                  WebkitTextFillColor: 'transparent',
+                                  backgroundClip: 'text',
+                                  textShadow: '0 0 30px rgba(0, 217, 255, 0.5)',
+                                  letterSpacing: '0.15em',
+                                  border: '2px solid rgba(0, 217, 255, 0.3)',
+                                  boxShadow: '0 0 20px rgba(0, 217, 255, 0.15), inset 0 0 20px rgba(0, 217, 255, 0.03)',
+                                }}
+                                onClick={() => copyToClipboard(pairingCode || '------', 'code')}
+                                title="Click to copy code"
+                              >
+                                {pairingCode || '------'}
+                              </div>
+                              {copiedCommand === 'code' && (
+                                <div className="text-green-400 text-xs mb-1">✓ Code Copied!</div>
+                              )}
+                              <p className="text-xs text-gray-400">
+                                Click to copy • Expires in 5 minutes
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Pro Tips Section */}
+                  <div 
+                    className="border border-gray-600 rounded-lg overflow-hidden"
+                    style={{
+                      background: 'linear-gradient(135deg, rgba(156, 163, 175, 0.05) 0%, rgba(107, 114, 128, 0.05) 100%)',
+                    }}
+                  >
+                    <button
+                      onClick={() => setShowProTips(!showProTips)}
+                      className="w-full px-4 py-3 text-left flex items-center justify-between hover:bg-white/5 transition-colors duration-200"
+                    >
+                      <h4 className="font-bold text-yellow-400 flex items-center gap-2 text-sm">
+                        💡 Pro Tips
+                      </h4>
+                      <svg 
+                        className={`w-4 h-4 text-yellow-400 transition-transform duration-200 ${showProTips ? 'rotate-180' : ''}`}
+                        fill="none" 
+                        stroke="currentColor" 
+                        viewBox="0 0 24 24"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </button>
+                    
+                    {showProTips && (
+                      <div className="px-4 pb-3 space-y-2 text-xs text-gray-300 border-t border-gray-600">
+                        <div className="pt-3">
+                          <p className="mb-1">• The bridge runs on YOUR computer, not in this web terminal</p>
+                          <p className="mb-1">• Keep the bridge running in the background while using Coder1 IDE</p>
+                          <p className="mb-1">• The pairing code expires after 5 minutes for security</p>
+                          <p>• You can reconnect anytime by clicking the Bridge button</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <div className="text-center py-8">
+                  <div 
+                    className="text-6xl mb-4 animate-bounce"
+                    style={{
+                      filter: 'drop-shadow(0 0 30px rgba(34, 197, 94, 0.6))',
+                    }}
+                  >
+                    ✅
+                  </div>
+                  <h3 
+                    className="text-2xl font-bold mb-3"
+                    style={{
+                      background: 'linear-gradient(135deg, #10B981 0%, #34D399 100%)',
+                      WebkitBackgroundClip: 'text',
+                      WebkitTextFillColor: 'transparent',
+                      backgroundClip: 'text',
+                    }}
+                  >
+                    Bridge Connected Successfully!
+                  </h3>
+                  <p className="text-gray-300 text-sm">
+                    You can now use Claude commands in the terminal
+                  </p>
+                </div>
+              )}
             </div>
-          ) : (
-            <div className="text-center py-8">
-              <div 
-                className="text-6xl mb-4"
-                style={{
-                  filter: 'drop-shadow(0 0 20px rgba(34, 197, 94, 0.5))',
-                }}
-              >
-                ✅
-              </div>
-              <h3 className="text-xl font-bold bg-gradient-to-r from-green-400 to-emerald-500 bg-clip-text text-transparent">
-                Bridge Connected!
-              </h3>
-              <p className="text-sm text-text-secondary mt-2">
-                You can now use Claude commands in the terminal
-              </p>
-            </div>
-          )}
           </div>
         </div>
       )}

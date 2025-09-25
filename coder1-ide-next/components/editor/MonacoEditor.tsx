@@ -97,7 +97,7 @@ export default function MonacoEditor({
     }
   }, [fontSize]);
 
-  // Listen for tour:addCode and tour:clearCode events
+  // Listen for tour events and session refresh events
   useEffect(() => {
     const handleTourAddCode = (event: CustomEvent) => {
       if (editorRef.current && event.detail?.code) {
@@ -111,12 +111,25 @@ export default function MonacoEditor({
       }
     };
 
+    const handleSessionRefreshed = () => {
+      // Reset editor to clean welcome state on browser refresh
+      console.log('🔄 MonacoEditor: Session refresh detected, resetting to welcome screen');
+      setHeroSectionDismissed(false);
+      
+      // Clear editor content and reset to welcome message
+      if (editorRef.current) {
+        editorRef.current.setValue('// Welcome to Coder1 IDE\n// Open a file to start coding');
+      }
+    };
+
     window.addEventListener('tour:addCode', handleTourAddCode as EventListener);
     window.addEventListener('tour:clearCode', handleTourClearCode);
+    window.addEventListener('sessionRefreshed', handleSessionRefreshed as EventListener);
     
     return () => {
       window.removeEventListener('tour:addCode', handleTourAddCode as EventListener);
       window.removeEventListener('tour:clearCode', handleTourClearCode);
+      window.removeEventListener('sessionRefreshed', handleSessionRefreshed as EventListener);
     };
   }, []);
 

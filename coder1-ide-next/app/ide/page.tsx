@@ -80,6 +80,14 @@ export default function IDEPage() {
   // Terminal history for checkpoint creation
   const [terminalHistory, setTerminalHistory] = useState<string>("");
   const [terminalCommands, setTerminalCommands] = useState<string[]>([]);
+  const [recentTerminalInput, setRecentTerminalInput] = useState<string>("");
+  
+  // Track recentTerminalInput state changes for contextual memory
+  useEffect(() => {
+    if (recentTerminalInput) {
+      console.log('🧠 [MEMORY-STATE] Contextual memory updated with:', recentTerminalInput);
+    }
+  }, [recentTerminalInput]);
 
   // Terminal session tracking for TerminalCommandProvider
   const [terminalSessionId, setTerminalSessionId] = useState<string | null>(
@@ -135,69 +143,49 @@ export default function IDEPage() {
       });
       
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to bridge files');
+        let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+        try {
+          const error = await response.json();
+          errorMessage = error.error || errorMessage;
+        } catch (parseError) {
+          // If we can't parse as JSON, use the response text
+          try {
+            const textError = await response.text();
+            console.error('Non-JSON error response:', textError.substring(0, 200));
+          } catch (textError) {
+            console.error('Failed to read error response');
+          }
+        }
+        throw new Error(errorMessage);
       }
       
       const result = await response.json();
-      const { bridgedFiles, claudeMessage } = result;
+      const { bridgedFiles, claudeMessage, displayMessage } = result;
       
       console.log(`✅ Processed ${bridgedFiles.length} files for Claude Code`);
       
-      // Display file info in terminal with better instructions
-      let terminalDisplay = '\n\r\n';
-      terminalDisplay += '╔═══════════════════════════════════════════════════════════════╗\r\n';
-      terminalDisplay += '║              📎 FILE DRAG-AND-DROP SYSTEM                    ║\r\n';
-      terminalDisplay += '╚═══════════════════════════════════════════════════════════════╝\r\n\r\n';
-      
-      terminalDisplay += '📂 FILES RECEIVED:\r\n';
-      terminalDisplay += '─────────────────────────────────────────────\r\n';
-      
-      bridgedFiles.forEach((file: any, index: number) => {
-        const icon = file.type?.startsWith('image/') ? '🖼️' : 
-                     file.type === 'application/pdf' ? '📑' : 
-                     file.type?.includes('text') || file.type?.includes('javascript') || file.type?.includes('json') ? '📝' : '📄';
-        
-        terminalDisplay += `${index + 1}. ${icon} ${file.originalName}\r\n`;
-        terminalDisplay += `   • Type: ${file.type || 'unknown'}\r\n`;
-        terminalDisplay += `   • Size: ${(file.size / 1024).toFixed(1)}KB\r\n`;
-        
-        // Show content preview for text files
-        if (file.displayContent && !file.type?.startsWith('image/')) {
-          terminalDisplay += '   • Preview:\r\n';
-          const lines = file.displayContent.split('\n').slice(0, 3);
-          lines.forEach((line: string) => {
-            if (line.length > 50) {
-              line = line.substring(0, 50) + '...';
-            }
-            terminalDisplay += `     "${line}"\r\n`;
-          });
-        }
-        terminalDisplay += '\r\n';
-      });
-      
-      terminalDisplay += '╔═══════════════════════════════════════════════════════════════╗\r\n';
-      terminalDisplay += '║      ⚠️  CRITICAL: HOW TO SHARE WITH CLAUDE CODE  ⚠️          ║\r\n';
-      terminalDisplay += '╚═══════════════════════════════════════════════════════════════╝\r\n\r\n';
-      
-      terminalDisplay += '🚨 Claude Code CANNOT directly access files dropped here!\r\n';
-      terminalDisplay += '   Files must be copied and pasted into your Claude conversation.\r\n\r\n';
-      
-      terminalDisplay += '📋 TO SHARE FILES WITH CLAUDE:\r\n';
-      terminalDisplay += '─────────────────────────────────────────────\r\n';
-      terminalDisplay += '1️⃣  Press Ctrl+Shift+C (or Cmd+Shift+C on Mac)\r\n';
-      terminalDisplay += '    OR type: copy-files\r\n\r\n';
-      terminalDisplay += '2️⃣  Go to your Claude Code conversation\r\n\r\n';
-      terminalDisplay += '3️⃣  Paste (Ctrl+V or Cmd+V) the content\r\n\r\n';
-      terminalDisplay += '4️⃣  Claude can now see and analyze your files!\r\n\r\n';
-      
-      terminalDisplay += '═══════════════════════════════════════════════════════════════\r\n';
-      terminalDisplay += '💡 TIP: For images, save them locally and use Claude\'s \r\n';
-      terminalDisplay += '        attachment button to upload directly.\r\n';
-      terminalDisplay += '═══════════════════════════════════════════════════════════════\r\n\r\n';
-      
-      // Use the properly formatted message from the API response
+      // Use Claude message for clipboard (includes base64 for proper AI processing)
       const claudeCopyText = claudeMessage || generateFallbackMessage(bridgedFiles);
+      
+      // Use display message for terminal (user-friendly, hides base64)
+      const terminalDisplayContent = displayMessage || `Files processed: ${bridgedFiles.map((f: any) => f.originalName).join(', ')}`;
+      
+      // Auto-copy to clipboard immediately (no button needed!)
+      let terminalDisplay: string;
+      let autoCopySuccess = false;
+      
+      try {
+        await navigator.clipboard.writeText(claudeCopyText);
+        // Show minimal success message with file info
+        terminalDisplay = `\r\n${terminalDisplayContent}\r\n✅ Content copied to clipboard → Paste in Claude Code\r\n`;
+        autoCopySuccess = true;
+        console.log(`📋 Auto-copied ${bridgedFiles.length} files to clipboard for Claude Code`);
+      } catch (clipboardError) {
+        console.warn('⚠️ Auto-copy failed, will show copy button as fallback:', clipboardError);
+        // Show file info and that it's ready (button will appear)
+        terminalDisplay = `\r\n${terminalDisplayContent}\r\n✅ Ready for Claude - Click copy button below\r\n`;
+        autoCopySuccess = false;
+      }
       
       // Helper function for fallback message generation
       function generateFallbackMessage(files: any[]): string {
@@ -227,9 +215,11 @@ export default function IDEPage() {
             await navigator.clipboard.writeText(claudeCopyText);
             const successMsg = '\r\n✅ FILES COPIED TO CLIPBOARD!\r\n';
             const instructMsg = '   Now paste into your Claude Code conversation.\r\n\r\n';
-            if (window.terminalSocket && terminalSessionId) {
-              window.terminalSocket.emit('terminal:input', {
-                sessionId: terminalSessionId,
+            const globalSocket = (window as any).terminalSocket;
+            const globalSessionId = (window as any).terminalSessionId;
+            if (globalSocket && globalSessionId) {
+              globalSocket.emit('terminal:input', {
+                sessionId: globalSessionId,
                 data: successMsg + instructMsg
               });
             }
@@ -238,9 +228,11 @@ export default function IDEPage() {
             console.error('Failed to copy:', err);
             const errorMsg = '\r\n❌ Failed to copy to clipboard. Please try again.\r\n';
             const manualMsg = '   Try pressing Ctrl+Shift+C or typing: copy-files\r\n\r\n';
-            if (window.terminalSocket && terminalSessionId) {
-              window.terminalSocket.emit('terminal:input', {
-                sessionId: terminalSessionId,
+            const globalSocket = (window as any).terminalSocket;
+            const globalSessionId = (window as any).terminalSessionId;
+            if (globalSocket && globalSessionId) {
+              globalSocket.emit('terminal:input', {
+                sessionId: globalSessionId,
                 data: errorMsg + manualMsg
               });
             }
@@ -249,19 +241,33 @@ export default function IDEPage() {
         };
       }
       
-      // Add copy button UI
-      terminalDisplay += '\n\n';
-      terminalDisplay += '🔵 ACTION REQUIRED:\n';
-      terminalDisplay += '══════════════════\n';
-      terminalDisplay += '📋 Press Ctrl+Shift+C to copy files for Claude\n';
-      terminalDisplay += '   Or type: copy-files\n';
-      terminalDisplay += '\n';
+      // No additional UI text - keeping it minimal
       
-      // Send to terminal
-      if (window.terminalSocket && terminalSessionId) {
-        window.terminalSocket.emit('terminal:input', {
-          sessionId: terminalSessionId,
-          data: terminalDisplay.replace(/\n/g, '\r\n')
+      // Send to terminal - use globally exposed socket and session from Terminal component
+      const globalSocket = (window as any).terminalSocket;
+      const globalSessionId = (window as any).terminalSessionId;
+      
+      if (globalSocket && globalSessionId) {
+        console.log('📤 Sending file info to terminal:', globalSessionId);
+        globalSocket.emit('terminal:input', {
+          sessionId: globalSessionId,
+          data: terminalDisplay
+        });
+        
+        // Pass the copy content to Terminal component via window object
+        (window as any).claudeFilesToCopy = claudeCopyText;
+        (window as any).claudeFilesReady = true;
+        
+        // Only trigger copy button event if auto-copy failed
+        if (!autoCopySuccess) {
+          window.dispatchEvent(new CustomEvent('claudeFilesReady', { 
+            detail: { content: claudeCopyText, fileCount: bridgedFiles.length }
+          }));
+        }
+      } else {
+        console.warn('⚠️ Terminal socket or session not available:', {
+          socket: !!globalSocket,
+          session: globalSessionId
         });
       }
       
@@ -270,9 +276,11 @@ export default function IDEPage() {
       
       // Show error in terminal
       const errorMessage = `\n❌ Error: ${error instanceof Error ? error.message : 'Failed to process files'}\n`;
-      if (window.terminalSocket && terminalSessionId) {
-        window.terminalSocket.emit('terminal:input', {
-          sessionId: terminalSessionId,
+      const globalSocket = (window as any).terminalSocket;
+      const globalSessionId = (window as any).terminalSessionId;
+      if (globalSocket && globalSessionId) {
+        globalSocket.emit('terminal:input', {
+          sessionId: globalSessionId,
           data: errorMessage
         });
       }
@@ -285,29 +293,21 @@ export default function IDEPage() {
     console.log('📝 Inserting text into terminal:', text);
     
     // Send text to terminal if connected
-    if (window.terminalSocket && terminalSessionId) {
-      window.terminalSocket.emit('terminal:input', {
-        sessionId: terminalSessionId,
+    const globalSocket = (window as any).terminalSocket;
+    const globalSessionId = (window as any).terminalSessionId;
+    if (globalSocket && globalSessionId) {
+      globalSocket.emit('terminal:input', {
+        sessionId: globalSessionId,
         data: `\n${text}\n`
       });
     }
   };
   
-  // Add terminal socket to window for global access
+  // Terminal socket and session ID are now exposed globally by Terminal component
+  // No need to search for socket - Terminal component handles this reliably
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      // Store socket reference globally
-      const checkSocket = () => {
-        const socket = (window as any).io?.sockets?.[0];
-        if (socket) {
-          window.terminalSocket = socket;
-          console.log('🔌 Terminal socket reference stored');
-        }
-      };
-      
-      // Check immediately and after a delay
-      checkSocket();
-      setTimeout(checkSocket, 2000);
+      console.log('🔌 Terminal integration ready - socket and session available via Terminal component');
     }
   }, []);
   
@@ -328,10 +328,12 @@ export default function IDEPage() {
           });
         } else {
           // Show message in terminal if no files uploaded
-          if (window.terminalSocket && terminalSessionId) {
+          const globalSocket = (window as any).terminalSocket;
+          const globalSessionId = (window as any).terminalSessionId;
+          if (globalSocket && globalSessionId) {
             const msg = '\r\n⚠️ No files to copy. Drag and drop files first.\r\n\r\n';
-            window.terminalSocket.emit('terminal:input', {
-              sessionId: terminalSessionId,
+            globalSocket.emit('terminal:input', {
+              sessionId: globalSessionId,
               data: msg
             });
           }
@@ -365,8 +367,19 @@ export default function IDEPage() {
 
   const handleTerminalCommand = (command: string) => {
     console.log("⌨️ Terminal command:", command);
+    
+    // Simple logging for contextual memory troubleshooting
+    
     // Track commands for checkpoint creation
     setTerminalCommands((prev) => [...prev.slice(-49), command]); // Keep last 50 commands
+    
+    // Extract user input for contextual memory (commands starting with user input)
+    if (command.trim().length > 0 && !command.startsWith('$') && !command.startsWith('#')) {
+      console.log('🎯 [MEMORY] Setting contextual memory input:', command);
+      setRecentTerminalInput(command);
+    } else {
+      console.log('🚫 [MEMORY] Command filtered out (starts with $ or #)');
+    }
   };
 
   const handleTerminalReady = (sessionId: any, ready: any) => {
@@ -535,9 +548,11 @@ export default function IDEPage() {
     }
 
     // Send command to terminal
-    if (window.terminalSocket && terminalSessionId) {
-      window.terminalSocket.emit('terminal:input', {
-        sessionId: terminalSessionId,
+    const globalSocket = (window as any).terminalSocket;
+    const globalSessionId = (window as any).terminalSessionId;
+    if (globalSocket && globalSessionId) {
+      globalSocket.emit('terminal:input', {
+        sessionId: globalSessionId,
         data: command + '\n'
       });
       setRunningProcesses(prev => [...prev, activeFile]);
@@ -551,9 +566,11 @@ export default function IDEPage() {
 
   const handleStop = useCallback(() => {
     // Send Ctrl+C to terminal to stop running process
-    if (window.terminalSocket && terminalSessionId) {
-      window.terminalSocket.emit('terminal:input', {
-        sessionId: terminalSessionId,
+    const globalSocket = (window as any).terminalSocket;
+    const globalSessionId = (window as any).terminalSessionId;
+    if (globalSocket && globalSessionId) {
+      globalSocket.emit('terminal:input', {
+        sessionId: globalSessionId,
         data: '\x03' // Ctrl+C
       });
       setRunningProcesses([]);
@@ -833,6 +850,8 @@ export default function IDEPage() {
                       false
                     }
                     onOpenFile={handleOpenFileFromPath}
+                    recentTerminalInput={recentTerminalInput}
+                    terminalCommands={terminalCommands}
                   />
                 }
               />

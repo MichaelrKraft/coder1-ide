@@ -4,6 +4,18 @@ import fs from 'fs/promises';
 
 export const dynamic = 'force-dynamic';
 
+// Get the correct data directory path (consistent with checkpoint API)
+const getDataDirectory = () => {
+  // The server runs from /autonomous_vibe_interface/coder1-ide-next, so data is in ./data
+  const projectRoot = process.cwd();
+  const dataDir = path.join(projectRoot, 'data');
+  
+  console.log('📂 Sessions API - Project root:', projectRoot);
+  console.log('📂 Sessions API - Data directory:', dataDir);
+  
+  return dataDir;
+};
+
 // Simple session management (unified server implementation)
 const activeSessions = new Map();
 
@@ -27,7 +39,8 @@ export async function GET(request: NextRequest) {
     const fileSessions: Session[] = [];
     
     // Try to read sessions from file system
-    const dataDir = path.join(process.cwd(), 'data', 'sessions');
+    const dataDir = path.join(getDataDirectory(), 'sessions');
+    console.log('📂 Sessions GET - Looking for sessions in:', dataDir);
     try {
       const sessionDirs = await fs.readdir(dataDir);
       
@@ -111,8 +124,9 @@ export async function POST(request: NextRequest) {
     activeSessions.set(sessionId, session);
     
     // Save to file system for persistence
-    const dataDir = path.join(process.cwd(), 'data');
+    const dataDir = getDataDirectory();
     const sessionDir = path.join(dataDir, 'sessions', sessionId);
+    console.log('📂 Sessions POST - Creating session in:', sessionDir);
     
     await fs.mkdir(sessionDir, { recursive: true });
     
@@ -175,7 +189,8 @@ export async function DELETE(request: NextRequest) {
     }
     
     // Also delete from file system
-    const sessionDir = path.join(process.cwd(), 'data', 'sessions', sessionId);
+    const sessionDir = path.join(getDataDirectory(), 'sessions', sessionId);
+    console.log('📂 Sessions DELETE - Removing session from:', sessionDir);
     try {
       await fs.rm(sessionDir, { recursive: true, force: true });
       console.log(`✅ Session directory deleted: ${sessionDir}`);

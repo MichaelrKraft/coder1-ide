@@ -31,6 +31,28 @@ import { terminalCommandHandler } from '@/lib/terminal-commands';
 import { debounce } from '@/lib/debounce';
 // import EnhancedStatusline from '@/components/statusline/EnhancedStatusline'; // Temporarily disabled for debugging
 
+// Defensive filtering for status lines - Layer 3 protection
+const cleanStatusLines = (data: string): string => {
+  if (!data) return data;
+  
+  // Critical patterns that MUST be filtered
+  let cleaned = data;
+  
+  // Remove any line with "esc to interrupt" control hint
+  cleaned = cleaned.replace(/.*\(esc to interrupt.*?\).*$/gm, '');
+  
+  // Remove "Next:" indicators with special arrow
+  cleaned = cleaned.replace(/.*⎿\s*Next:.*$/gm, '');
+  
+  // Remove lines with "ctrl+t" hints
+  cleaned = cleaned.replace(/.*ctrl\+t.*todos.*$/gm, '');
+  
+  // Remove statusline task symbols followed by text
+  cleaned = cleaned.replace(/^[✶✳✢·✻✽✦☆★▪▫◆◇○●]\s+.*$/gm, '');
+  
+  return cleaned;
+};
+
 // TypeScript declarations for Web Speech API
 declare global {
   interface Window {
@@ -535,6 +557,13 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
   const soundDropdownRef = useRef<HTMLDivElement>(null);
   const [showMemoryDropdown, setShowMemoryDropdown] = useState(false);
   const memoryDropdownRef = useRef<HTMLDivElement>(null);
+  
+  // State for Claude copy button (drag-drop files)
+  const [showClaudeCopyButton, setShowClaudeCopyButton] = useState(false);
+  const [claudeCopyContent, setClaudeCopyContent] = useState('');
+  
+  // State for simple button management (no complex positioning needed)
+  const [currentFileCount, setCurrentFileCount] = useState<number>(0);
 
   // Context stats state (moved from StatusBarCore)
   const [contextStats, setContextStats] = useState<{
@@ -613,6 +642,11 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
           setSessionId(data.sessionId);
           // Immediately update the ref for voice recognition
           sessionIdForVoiceRef.current = data.sessionId;
+          // Make session ID globally available for drag-drop
+          if (typeof window !== 'undefined') {
+            (window as any).terminalSessionId = data.sessionId;
+            console.log('🔌 Terminal session ID made globally available for drag-drop');
+          }
           setTerminalReady(true);
           // Notify parent component - performance-safe callback
           notifyTerminalReady(data.sessionId, true);
@@ -1021,7 +1055,8 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
                 // Display checkpoint terminal history if available
                 if (sandboxSession?.terminalHistory) {
                   // Clean the terminal history to remove thinking animations and control sequences
-                  const cleanedHistory = filterThinkingAnimations(sandboxSession.terminalHistory);
+                  let cleanedHistory = filterThinkingAnimations(sandboxSession.terminalHistory);
+                  cleanedHistory = cleanStatusLines(cleanedHistory);  // Layer 3 defense
                   
                   // Write header - format checkpoint name to include date if not already present
                   let displayName = sandboxSession?.name || 'Checkpoint Session';
@@ -1285,9 +1320,52 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
     setSelectedSoundPreset(soundAlertService.getPreset());
   }, []);
 
+  // Simplified: No complex positioning - work WITH terminal architecture
+  const positionButtonSimply = (fileCount: number) => {
+    console.log('🔧 Positioning copy button simply for', fileCount, 'files');
+    // No complex calculations - use predictable CSS positioning
+    // Button will appear in bottom-right of terminal area, clearly visible
+    // Button uses simple CSS positioning - no complex calculations needed
+    return; // Simple function - no positioning logic needed
+  };
+  
+  // Listen for Claude files ready event from IDE page (drag-drop files)
+  useEffect(() => {
+    const handleClaudeFilesReady = (event: CustomEvent) => {
+      console.log('📋 Terminal: Received Claude files ready event', event.detail);
+      const { content, fileCount } = event.detail;
+      console.log('📋 Terminal: Processing event - content length:', content?.length, 'fileCount:', fileCount);
+      
+      if (content && fileCount > 0) {
+        console.log('📋 Terminal: Setting up copy button and calculating position...');
+        setClaudeCopyContent(content);
+        setShowClaudeCopyButton(true);
+        setCurrentFileCount(fileCount); // Store file count for resize recalculation
+        
+        // Button will use simple, predictable positioning - no complex calculations needed
+        console.log('📋 Terminal: File drop completed, button will appear in predictable location');
+        
+        // Auto-hide after 30 seconds
+        setTimeout(() => {
+          setShowClaudeCopyButton(false);
+        }, 30000);
+      }
+    };
+    
+    window.addEventListener('claudeFilesReady', handleClaudeFilesReady as EventListener);
+    
+    return () => {
+      window.removeEventListener('claudeFilesReady', handleClaudeFilesReady as EventListener);
+    };
+  }, []);
+
   // Keep sessionId ref in sync for voice callbacks
   useEffect(() => {
     sessionIdForVoiceRef.current = sessionId;
+    // Make session ID globally available for drag-drop when it changes
+    if (typeof window !== 'undefined' && sessionId) {
+      (window as any).terminalSessionId = sessionId;
+    }
     // REMOVED: // REMOVED: console.log('📝 Updated sessionIdForVoiceRef:', sessionId);
   }, [sessionId]);
 
@@ -1485,7 +1563,8 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
         
         // Filter out thinking animations before writing
         console.log('🧽 TERMINAL DIAGNOSTIC: Applying filterThinkingAnimations...');
-        const filteredData = filterThinkingAnimations(terminalData);
+        let filteredData = filterThinkingAnimations(terminalData);
+        filteredData = cleanStatusLines(filteredData);  // Layer 3 defense
         
         // 🚨 DIAGNOSTIC: Compare before and after filtering
         const filteredPlanModeCount = (filteredData.match(/plan mode on/gi) || []).length;
@@ -1681,7 +1760,8 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
         xtermRef.current.clear();
         console.log(`📜 Terminal: Restoring terminal from IDE state change`);
         // Filter out thinking animations before writing
-        const filteredData = filterThinkingAnimations(terminalData);
+        let filteredData = filterThinkingAnimations(terminalData);
+        filteredData = cleanStatusLines(filteredData);  // Layer 3 defense
         xtermRef.current.write(filteredData);
         
         // Add separator
@@ -1780,7 +1860,7 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
           // Clear interim feedback and show final (minimal UI feedback)
           if (xtermRef.current) {
             // Minimal feedback - just show that voice was recognized
-            xtermRef.current.writeln(`\r\n🎤 Voice: ${cleanTranscript}`);
+            // // xtermRef.current.writeln(`\r\n🎤 Voice: ${cleanTranscript}`); // REMOVED: Voice status message
             
             // Check if it's a Claude activation command
             if (cleanTranscript.toLowerCase().includes('claude')) {
@@ -1873,7 +1953,7 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
             default:
               errorMessage = `Speech recognition error: ${event.error}`;
           }
-          xtermRef.current.writeln(`\r\n❌ ${errorMessage}`);
+          // xtermRef.current.writeln(`\r\n❌ ${errorMessage}`);
         }
       };
       
@@ -1890,13 +1970,13 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
             // REMOVED: // REMOVED: console.log('Auto-restart failed:', error);
             setVoiceListening(false);
             if (xtermRef.current) {
-              xtermRef.current.writeln('\r\n🎤 Voice input ended');
+              // xtermRef.current.writeln('\r\n🎤 Voice input ended');
             }
           }
         } else {
           setVoiceListening(false);
           if (xtermRef.current) {
-            xtermRef.current.writeln('\r\n🎤 Voice input ended');
+            // xtermRef.current.writeln('\r\n🎤 Voice input ended');
           }
         }
       };
@@ -1910,24 +1990,24 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
   const toggleVoiceRecognition = async () => {
     if (!recognition) {
       xtermRef.current?.writeln('\r\n❌ Speech recognition not supported in this browser');
-      xtermRef.current?.writeln('Try using Chrome, Edge, or Safari for speech recognition');
+      // xtermRef.current?.writeln('Try using Chrome, Edge, or Safari for speech recognition');
       return;
     }
     
     if (voiceListening) {
       recognition.stop();
       setVoiceListening(false);
-      xtermRef.current?.writeln('\r\n🎤 Voice input stopped');
+      // xtermRef.current?.writeln('\r\n🎤 Voice input stopped');
     } else {
       try {
         // Request microphone permission first
         if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
           try {
             await navigator.mediaDevices.getUserMedia({ audio: true });
-            xtermRef.current?.writeln('\r\n🎤 Microphone access granted');
+            // xtermRef.current?.writeln('\r\n🎤 Microphone access granted');
           } catch (permError) {
             xtermRef.current?.writeln('\r\n❌ Microphone permission denied');
-            xtermRef.current?.writeln('Please allow microphone access to use speech-to-text');
+            // xtermRef.current?.writeln('Please allow microphone access to use speech-to-text');
             return;
           }
         }
@@ -1939,12 +2019,12 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
         
         recognition.start();
         setVoiceListening(true);
-        xtermRef.current?.writeln('\r\n🎤 Voice input started - speak now...');
-        xtermRef.current?.writeln('Say your commands clearly. Speech will be converted to text.');
+        // xtermRef.current?.writeln('\r\n🎤 Voice input started - speak now...');
+        // xtermRef.current?.writeln('Say your commands clearly. Speech will be converted to text.');
       } catch (error) {
         // logger?.error('Failed to start speech recognition:', error);
         setVoiceListening(false);
-        xtermRef.current?.writeln('\r\n❌ Failed to start voice input');
+        // xtermRef.current?.writeln('\r\n❌ Failed to start voice input');
         xtermRef.current?.writeln(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
       }
     }
@@ -2004,6 +2084,12 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
     const socket = await getSocket();
     // REMOVED: // REMOVED: console.log('✅ Socket.IO instance obtained:', socket.connected ? 'CONNECTED' : 'DISCONNECTED');
     socketRef.current = socket;
+    
+    // Make socket globally available for file drop functionality
+    if (typeof window !== 'undefined') {
+      (window as any).terminalSocket = socket;
+      console.log('🔌 Terminal socket made globally available for drag-drop');
+    }
     
     // Critical diagnostic: Check if we're using mock socket
     if (socket?.io?.engine?.transport?.name === 'mock' || socket?.id === 'mock-socket') {
@@ -2134,6 +2220,19 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
       }
       outputFlushTimeoutRef.current = null;
     };
+
+    // 🧠 CONTEXTUAL MEMORY FIX: Handle commands from server for contextual memory
+    socket.on('terminal:command', ({ id, command }: { id: string; command: string }) => {
+      if (id === sessionIdForVoiceRef.current) {
+        console.log('🧠 [CLIENT] Received command from server for contextual memory:', command);
+        if (onTerminalCommand) {
+          onTerminalCommand(command);
+          console.log('✅ [CLIENT] Forwarded command to contextual memory system');
+        } else {
+          console.warn('⚠️ [CLIENT] onTerminalCommand callback not available');
+        }
+      }
+    });
 
     // Handle terminal output from backend
     socket.on('terminal:data', ({ id, data }: { id: string; data: string }) => {
@@ -2296,7 +2395,8 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
             
             // Write the historical terminal content
             // Use the same comprehensive cleaning as initial sandbox setup to remove Claude thinking animations
-            const cleanedHistory = filterThinkingAnimations(sandboxSession.terminalHistory);
+            let cleanedHistory = filterThinkingAnimations(sandboxSession.terminalHistory);
+            cleanedHistory = cleanStatusLines(cleanedHistory);  // Layer 3 defense
             
             // Write the history
             term.write(cleanedHistory);
@@ -2424,6 +2524,8 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
     
     // Create new handler and store the disposable
     onDataDisposableRef.current = term.onData((data) => {
+      // Only log important events, not every character
+      
       // Use the ref for most current session ID
       const currentSessionId = sessionIdForVoiceRef.current || sessionId;
       
@@ -2465,9 +2567,17 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
       
       // Track current line buffer for command history
       if (data === '\r') {
+        // 🔍 SIMPLE DEBUG: Only log Enter key events
+        if (currentLineBuffer.trim()) {
+          console.log('🎯 [ENTER-KEY] Command typed:', currentLineBuffer.trim());
+        } else {
+          console.log('🎯 [ENTER-KEY] Enter pressed but no command typed');
+        }
+        
         // Enter pressed - command was sent
         if (currentLineBuffer.trim()) {
           const command = currentLineBuffer.trim();
+          console.log('🔍 [CONTEXTUAL-DEBUG] Processing command:', command);
           setCommandHistory(prev => [...prev, command]);
           
           // Check for copy-files command first
@@ -2523,6 +2633,9 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
           // Notify parent component about the command
           if (onTerminalCommand) {
             onTerminalCommand(command);
+            console.log('✅ [CALLBACK] onTerminalCommand called with:', command);
+          } else {
+            console.warn('⚠️ [CALLBACK] onTerminalCommand callback missing');
           }
         }
         setCurrentLineBuffer('');
@@ -2558,6 +2671,8 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
             fitAddonRef.current.fit();
             const { cols, rows } = xtermRef.current;
             socket.emit('terminal:resize', { id: sessionId, cols, rows });
+            
+            // Button positioning is handled by CSS - no recalculation needed
           } catch (error) {
             // Silently handle dimension errors during resize
             console.warn('Terminal resize skipped - dimensions not ready');
@@ -2868,7 +2983,7 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
               
               xtermRef.current?.writeln('\r\n🛑 Emergency Stop Activated:');
               xtermRef.current?.writeln('• All AI agents stopped');
-              xtermRef.current?.writeln('• Voice input disabled');
+              // xtermRef.current?.writeln('• Voice input disabled');
               xtermRef.current?.writeln('• Supervision disabled');
               xtermRef.current?.writeln('• Terminal processes killed');
               xtermRef.current?.writeln('\r\nSystem ready for new commands.');
@@ -3030,6 +3145,62 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
         currentConfig={activeConfiguration}
         templates={templates}
       />
+      
+      {/* Claude Copy Button - appears when files are dropped */}
+      {showClaudeCopyButton && (
+        <button
+          onClick={async () => {
+            try {
+              await navigator.clipboard.writeText(claudeCopyContent);
+              
+              // Show success in terminal with clear paste instructions
+              if (xtermRef.current) {
+                xtermRef.current.writeln('\r\n\x1b[32m✅ FILES COPIED!\x1b[0m');
+                xtermRef.current.writeln('\x1b[36m📋 Next:\x1b[0m Press \x1b[33mCmd+V\x1b[0m (Mac) or \x1b[33mCtrl+V\x1b[0m (PC) to paste in Claude Code');
+                xtermRef.current.writeln('\x1b[2m   Or click in any text field and paste\x1b[0m\r\n');
+              }
+              
+              // Hide button after successful copy
+              setTimeout(() => {
+                setShowClaudeCopyButton(false);
+              }, 2000);
+            } catch (err) {
+              console.error('Failed to copy:', err);
+              if (xtermRef.current) {
+                xtermRef.current.writeln('\r\n\x1b[31m❌ Copy failed. Please try again.\x1b[0m\r\n');
+              }
+            }
+          }}
+          className="absolute px-2 py-1 bg-cyan-500 hover:bg-cyan-400 text-black text-xs font-medium rounded shadow hover:shadow-md transition-all duration-150 flex items-center gap-1 z-50 border border-cyan-400"
+          title="Copy files for Claude Code"
+          style={{
+            position: 'absolute',
+            // Simple, predictable positioning in terminal area
+            bottom: '20px', // Close to bottom of terminal
+            right: '20px',  // Right side, clearly visible
+            background: 'linear-gradient(135deg, #06b6d4 0%, #0891b2 100%)',
+            backdropFilter: 'blur(2px)',
+            WebkitBackdropFilter: 'blur(2px)',
+            pointerEvents: 'auto',
+            zIndex: 1000    // Ensure it's above everything
+          }}
+        >
+          <svg 
+            className="w-3 h-3" 
+            fill="none" 
+            stroke="currentColor" 
+            viewBox="0 0 24 24"
+          >
+            <path 
+              strokeLinecap="round" 
+              strokeLinejoin="round" 
+              strokeWidth={2} 
+              d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" 
+            />
+          </svg>
+          <span className="text-xs">Copy</span>
+        </button>
+      )}
       
       {/* Phase 2: Scroll to bottom button - appears when user has scrolled up OR Claude is active */}
       {(isUserScrolled || claudeActive) && (

@@ -1,14 +1,14 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { BookOpen, Eye, X, RefreshCw, ExternalLink, Brain, Sparkles } from '@/lib/icons';
+import { BookOpen, Eye, X, RefreshCw, ExternalLink, Brain, Sparkles, Search } from '@/lib/icons';
 import { colors, glows } from '@/lib/design-tokens';
 import CodebaseWiki from '@/components/codebase/CodebaseWiki';
-import DeepContextPanel from '@/components/deepcontext/DeepContextPanel';
+import ContextualMemoryPanel from '@/components/contextual-memory/ContextualMemoryPanel';
 import ParallelReasoningDashboard from '@/components/beta/ParallelReasoningDashboard';
 import { previewLoopPrevention, createDebouncedPreviewUpdate } from '@/lib/preview-loop-prevention';
 
-type PreviewMode = 'wiki' | 'preview' | 'terminal' | 'parathink' | 'deepcontext';
+type PreviewMode = 'wiki' | 'preview' | 'terminal' | 'parathink' | 'contextual-memory';
 
 interface PreviewPanelProps {
   fileOpen?: boolean;
@@ -16,6 +16,8 @@ interface PreviewPanelProps {
   editorContent?: string;
   isPreviewable?: boolean;
   onOpenFile?: (path: string, line?: number) => void;
+  recentTerminalInput?: string;
+  terminalCommands?: string[];
 }
 
 /**
@@ -30,8 +32,10 @@ const PreviewPanel = React.memo(function PreviewPanel({
   editorContent = '',
   isPreviewable = false,
   onOpenFile,
+  recentTerminalInput = '',
+  terminalCommands = [],
 }: PreviewPanelProps) {
-  const [mode, setMode] = useState<PreviewMode>('preview');
+  const [mode, setMode] = useState<PreviewMode>('contextual-memory');
   const [paraThinkSessionId, setParaThinkSessionId] = useState<string | null>(null);
   
   // Live preview state
@@ -123,6 +127,22 @@ const PreviewPanel = React.memo(function PreviewPanel({
     };
   }, []);
 
+  // Listen for session refresh events
+  useEffect(() => {
+    const handleSessionRefreshed = () => {
+      // Reset preview to clean default state on browser refresh
+      console.log('🔄 PreviewPanel: Session refresh detected, resetting to default state');
+      setMode('preview');
+      setParaThinkSessionId(null);
+    };
+
+    window.addEventListener('sessionRefreshed', handleSessionRefreshed as EventListener);
+    
+    return () => {
+      window.removeEventListener('sessionRefreshed', handleSessionRefreshed as EventListener);
+    };
+  }, []);
+
   // Handle iframe load events
   const handleIframeLoad = useCallback(() => {
     setPreviewLoading(false);
@@ -194,6 +214,12 @@ const PreviewPanel = React.memo(function PreviewPanel({
       <div className="flex items-center justify-between px-4 h-12 shrink-0">
         <div className="flex items-center gap-1">
           {renderTabButton(
+            'contextual-memory',
+            <Brain className="w-4 h-4" />,
+            'Contextual Memory',
+            'View relevant past conversations and solutions based on your current context'
+          )}
+          {renderTabButton(
             'preview',
             <Eye className="w-4 h-4" />,
             'Preview',
@@ -204,12 +230,6 @@ const PreviewPanel = React.memo(function PreviewPanel({
             <BookOpen className="w-4 h-4" />,
             'Codebase Wiki',
             'Browse project documentation and intelligent code analysis'
-          )}
-          {renderTabButton(
-            'deepcontext',
-            <Sparkles className="w-4 h-4" />,
-            'DeepContext',
-            'AI-powered semantic code search and relationships'
           )}
           {/* Only show ParaThinker tab when we have a session */}
           {paraThinkSessionId && renderTabButton(
@@ -239,15 +259,20 @@ const PreviewPanel = React.memo(function PreviewPanel({
               </div>
             )}
 
-            {/* DeepContext Panel */}
-            {mode === 'deepcontext' && (
+            {/* Contextual Memory Panel */}
+            {mode === 'contextual-memory' && (
               <div className="h-full">
-                <DeepContextPanel 
-                  activeFile={activeFile}
-                  onOpenFile={onOpenFile || ((path: string, line?: number) => {
-                    console.log(`Request to open file: ${path}${line ? ` at line ${line}` : ''}`);
-                    console.log('No onOpenFile handler provided to PreviewPanel');
-                  })}
+                <ContextualMemoryPanel 
+                  userInput={recentTerminalInput}
+                  currentFiles={activeFile ? [activeFile] : []}
+                  recentCommands={terminalCommands.slice(-5)} // Last 5 commands for context
+                  onUseMemory={(memory) => {
+                    console.log('User wants to use memory:', memory);
+                    // TODO: Implement memory usage
+                  }}
+                  onExpandMemory={(memory) => {
+                    console.log('User expanded memory:', memory);
+                  }}
                 />
               </div>
             )}

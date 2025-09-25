@@ -128,10 +128,13 @@ export default function TimelinePage() {
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8 flex items-center justify-between">
-          <Link href="/ide" className="inline-flex items-center gap-2 text-gray-400 hover:text-white transition-colors">
+          <button 
+            onClick={() => window.history.back()} 
+            className="inline-flex items-center gap-2 text-gray-400 hover:text-white transition-colors"
+          >
             <ArrowLeft className="w-4 h-4" />
             Back to IDE
-          </Link>
+          </button>
           <div className="flex items-center gap-3">
             {sessionId && (
               <span className="text-xs text-gray-400">

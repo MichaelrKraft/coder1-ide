@@ -263,7 +263,7 @@ export default function DeepContextPanel({ activeFile, onOpenFile }: DeepContext
                     ⚡ Upgrade Available!
                   </h3>
                   <p className="text-2xl font-bold bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
-                    Click to add Advanced Semantic Search for FREE
+                    Click to add Advanced File Search for FREE
                   </p>
                 </div>
 
@@ -327,8 +327,8 @@ export default function DeepContextPanel({ activeFile, onOpenFile }: DeepContext
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center space-y-4">
             <Brain className="w-16 h-16 text-purple-400 mx-auto animate-pulse" />
-            <h3 className="text-lg font-semibold">🧠 DeepContext is analyzing your codebase...</h3>
-            <p className="text-sm text-text-secondary">Building semantic understanding of your code</p>
+            <h3 className="text-lg font-semibold">📁 File Search is indexing your codebase...</h3>
+            <p className="text-sm text-text-secondary">Scanning files for searchable content</p>
             <div className="w-64 mx-auto">
               <div className="h-2 bg-bg-tertiary rounded-full overflow-hidden">
                 <div 
@@ -345,7 +345,7 @@ export default function DeepContextPanel({ activeFile, onOpenFile }: DeepContext
     );
   }
 
-  // Main DeepContext interface
+  // Main File Search interface
   return (
     <div className="h-full flex flex-col">
       {/* Search Bar */}
@@ -358,7 +358,7 @@ export default function DeepContextPanel({ activeFile, onOpenFile }: DeepContext
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
             onFocus={() => searchHistory.length > 0 && setShowHistory(true)}
-            placeholder="Ask about your code..."
+            placeholder="Search for files or code..."
             className="w-full pl-10 pr-24 py-2 bg-bg-tertiary border border-border-default rounded-lg text-sm placeholder:text-text-muted focus:outline-none focus:border-purple-400 transition-colors"
           />
           

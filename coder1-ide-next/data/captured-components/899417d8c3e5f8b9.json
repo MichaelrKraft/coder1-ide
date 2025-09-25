@@ -1,0 +1,14 @@
+{
+  "id": "899417d8c3e5f8b9",
+  "title": "div element",
+  "url": "https://replicate.com/pricing",
+  "selector": "div",
+  "html": "<div class=\"w-full border-r8-gray-5 p-2 flex flex-col gap-1 empty:bg-r8-gray-2\"><div class=\"font-mono text-r8-sm\">$0.50 <span class=\"text-r8-gray-11\">/ second of output video</span></div></div>",
+  "css": "/* Basic styles for div */\n.captured-component { display: block; }",
+  "screenshot": null,
+  "timestamp": "2025-09-25T03:12:15.298Z",
+  "tags": [],
+  "category": "uncategorized",
+  "framework": "vanilla",
+  "generatedCode": null
+}

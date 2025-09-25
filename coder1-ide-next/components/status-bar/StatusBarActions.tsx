@@ -104,6 +104,7 @@ const StatusBarActions = React.memo(function StatusBarActions({
         // Fallback to original checkpoint system
         createCheckpoint('Manual checkpoint', false);
         
+        console.log('📝 Creating checkpoint with sessionId:', sessionId);
         const response = await fetch('/api/checkpoint', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -120,10 +121,18 @@ const StatusBarActions = React.memo(function StatusBarActions({
           })
         });
         
+        console.log('📡 Checkpoint API response:', response.ok, response.status);
+        
         if (response.ok) {
           const data = await response.json();
+          console.log('📦 Checkpoint response data:', data);
           
           // Dispatch event to notify Sessions panel to refresh
+          console.log('🚀 Dispatching checkpointCreated event with:', { 
+            checkpoint: data.checkpoint,
+            sessionId: data.sessionId 
+          });
+          
           window.dispatchEvent(new CustomEvent('checkpointCreated', { 
             detail: { 
               checkpoint: data.checkpoint,
@@ -136,6 +145,8 @@ const StatusBarActions = React.memo(function StatusBarActions({
             type: 'success'
           });
         } else {
+          const errorText = await response.text();
+          console.error('❌ Checkpoint API error:', errorText);
           throw new Error('Failed to save checkpoint');
         }
       }
@@ -155,7 +166,7 @@ const StatusBarActions = React.memo(function StatusBarActions({
       
       if (response.ok) {
         // REMOVED: // REMOVED: console.log('📊 Timeline data:', data);
-        window.open(`/timeline?sessionId=${sessionId}`, '_blank');
+        window.location.href = `/timeline?sessionId=${sessionId}`;
         addToast({
           message: '📊 Opening timeline view',
           type: 'info'

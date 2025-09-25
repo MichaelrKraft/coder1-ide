@@ -130,6 +130,15 @@ export function filterThinkingAnimations(terminalData: string): string {
     /.*\u001b\[\d+m\(esc to interrupt.*$/gm,  // Matches [2m(esc to interrupt...
     /.*\(esc to interrupt.*$/gm,              // Fallback without ANSI
     
+    // Match any line with pause symbol and "plan mode on"
+    /.*⏸.*plan mode on.*$/gim,
+    
+    // Match lines with specific Claude Code status patterns
+    /.*(?:Examining|Planning|Analyzing|Building|Testing).*\(esc to interrupt.*$/gim,
+    
+    // Catch lines with mixed ANSI codes and status text
+    /.*\u001b\[[\d;]*m.*\(esc to interrupt.*$/gm,
+    
     // Match any line with the characteristic statusline control hints
     /.*\(esc to interrupt.*?ctrl\+t.*?\).*$/gm,
     /.*ctrl\+t to show todos.*$/gm,
@@ -173,6 +182,29 @@ export function filterThinkingAnimations(terminalData: string): string {
     /.*\besc to interrupt\b.*$/gm
   ];
   
+  // MCP Tool Call Patterns - CRITICAL FOR FILTERING TOOL INVOCATIONS
+  // These patterns catch MCP tool calls, record symbols, and other Claude operational messages
+  const mcpToolPatterns = [
+    // Match MCP tool calls like "playwright - playwright_navigate (MCP)"
+    /.*?\w+\s*-\s*\w+.*?\(MCP\).*?\r?\n/g,
+    // Match record symbols with tool calls
+    /⏺\s*.*?\w+\s*-\s*\w+.*?\(MCP\).*?\r?\n/g,
+    // Match any line starting with record symbol
+    /^⏺.*?\r?\n/gm,
+    // Match tool invocation patterns with underscores (like playwright_navigate)
+    /.*?\w+\s*-\s*\w+_\w+.*?\(.*?\).*?\r?\n/g,
+    // Generic MCP pattern catch-all
+    /.*?\(MCP\).*?\r?\n/g,
+    // Match lines with record symbols anywhere
+    /.*⏺.*?\r?\n/g,
+    // Match any tool call pattern (broad)
+    /.*?\w+\s*-\s*\w+\s*\(.*?\).*?\r?\n/g,
+    // Match repeated tool invocations (the main issue)
+    /(.*?\w+\s*-\s*\w+.*?\(MCP\).*?\r?\n){2,}/g,
+    // Match incomplete tool calls (interrupted)
+    /.*?\w+\s*-\s*\w+.*?\(MCP\)\(.*?$/gm
+  ];
+  
   // Apply thinking animation filters
   for (const pattern of thinkingPatterns) {
     filtered = filtered.replace(pattern, '');
@@ -195,6 +227,11 @@ export function filterThinkingAnimations(terminalData: string): string {
   
   // Apply statusline task message filters - CRITICAL FOR PERMANENT FIX
   for (const pattern of statuslineTaskPatterns) {
+    filtered = filtered.replace(pattern, '');
+  }
+  
+  // Apply MCP tool call filters - CRITICAL FOR TOOL INVOCATION CLEANUP
+  for (const pattern of mcpToolPatterns) {
     filtered = filtered.replace(pattern, '');
   }
   
@@ -254,13 +291,29 @@ export function processCheckpointDataForSave(snapshot: any): any {
 /**
  * Process checkpoint data after loading for restore
  * Ensures any remaining artifacts are cleaned before restoration
+ * 🚨 CRITICAL FIX: Filter terminalHistory field to prevent Claude Code status line repetition
  */
 export function processCheckpointDataForRestore(checkpoint: any): any {
-  if (!checkpoint?.data?.snapshot) return checkpoint;
+  if (!checkpoint) return checkpoint;
   
   const processed = { ...checkpoint };
   
-  // Apply filtering to restore data as well (double safety)
+  // 🚨 CRITICAL: Filter terminalHistory field - this is the ROOT CAUSE of repetition
+  // This field gets injected directly into terminal during restoration
+  if (processed.terminalHistory) {
+    console.log(`🧹 Filtering terminalHistory: ${processed.terminalHistory.length} chars before filtering`);
+    processed.terminalHistory = filterThinkingAnimations(processed.terminalHistory);
+    console.log(`🧹 Filtering terminalHistory: ${processed.terminalHistory.length} chars after filtering`);
+  }
+  
+  // Also filter terminalHistory in data object (backup location)
+  if (processed.data?.terminalHistory) {
+    console.log(`🧹 Filtering data.terminalHistory: ${processed.data.terminalHistory.length} chars before filtering`);
+    processed.data.terminalHistory = filterThinkingAnimations(processed.data.terminalHistory);
+    console.log(`🧹 Filtering data.terminalHistory: ${processed.data.terminalHistory.length} chars after filtering`);
+  }
+  
+  // Apply filtering to restore snapshot data as well (double safety)
   if (processed.data?.snapshot) {
     processed.data.snapshot = processCheckpointDataForSave(processed.data.snapshot);
   }

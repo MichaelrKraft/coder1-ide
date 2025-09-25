@@ -2,9 +2,21 @@ import { NextRequest, NextResponse } from 'next/server';
 import path from 'path';
 import fs from 'fs/promises';
 import { contextDatabase } from '@/services/context-database';
-import { processCheckpointDataForSave } from '@/lib/checkpoint-utils';
+import { processCheckpointDataForSave, filterThinkingAnimations } from '@/lib/checkpoint-utils';
 
 export const dynamic = 'force-dynamic';
+
+// Get the correct data directory path
+const getDataDirectory = () => {
+  // The server runs from /autonomous_vibe_interface/coder1-ide-next, so data is in ./data
+  const projectRoot = process.cwd();
+  const dataDir = path.join(projectRoot, 'data');
+  
+  console.log('📂 Checkpoint API - Project root:', projectRoot);
+  console.log('📂 Checkpoint API - Data directory:', dataDir);
+  
+  return dataDir;
+};
 
 // Self-contained checkpoint storage
 export async function POST(request: NextRequest) {
@@ -16,9 +28,11 @@ export async function POST(request: NextRequest) {
     const checkpointId = `checkpoint_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     
     // Ensure data directory structure exists
-    const dataDir = path.join(process.cwd(), 'data');
+    const dataDir = getDataDirectory();
     const sessionDir = path.join(dataDir, 'sessions', sessionId);
     const checkpointsDir = path.join(sessionDir, 'checkpoints');
+    
+    console.log('📂 POST - Creating checkpoint in directory:', checkpointsDir);
     
     await fs.mkdir(checkpointsDir, { recursive: true });
     
@@ -78,9 +92,10 @@ export async function POST(request: NextRequest) {
     // Filter snapshot data to remove thinking animations and artifacts
     const filteredSnapshot = processCheckpointDataForSave(data.snapshot);
     
-    // Extract terminal history from request data
-    const terminalHistory = data.terminalHistory || data.snapshot?.terminal || '';
-    console.log(`📋 Checkpoint: Terminal history length: ${terminalHistory.length} characters`);
+    // Extract terminal history from request data and filter out status lines
+    const rawTerminalHistory = data.terminalHistory || data.snapshot?.terminal || '';
+    const terminalHistory = filterThinkingAnimations(rawTerminalHistory);
+    console.log(`📋 Checkpoint: Terminal history length: ${terminalHistory.length} characters (filtered from ${rawTerminalHistory.length})`);
     
     // Create enhanced checkpoint with conversation history and terminal history
     const checkpoint = {
@@ -130,8 +145,11 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const sessionId = searchParams.get('sessionId');
     
-    const dataDir = path.join(process.cwd(), 'data');
+    const dataDir = getDataDirectory();
     const sessionsDir = path.join(dataDir, 'sessions');
+    
+    console.log('📂 GET - Looking for sessions in directory:', sessionsDir);
+    console.log('📂 GET - Requested sessionId:', sessionId);
     
     if (!sessionId) {
       // If no sessionId, find the latest session
@@ -144,16 +162,16 @@ export async function GET(request: NextRequest) {
           
           try {
             const checkpointFiles = await fs.readdir(checkpointsDir);
-            const checkpoints = [];
             
-            for (const file of checkpointFiles) {
-              if (file.endsWith('.json')) {
-                const checkpointData = JSON.parse(
-                  await fs.readFile(path.join(checkpointsDir, file), 'utf8')
-                );
-                checkpoints.push(checkpointData);
-              }
-            }
+            // 🚀 PERFORMANCE FIX: Read all checkpoint files in parallel instead of sequentially
+            const jsonFiles = checkpointFiles.filter(file => file.endsWith('.json'));
+            const readPromises = jsonFiles.map(async (file) => {
+              const fileContent = await fs.readFile(path.join(checkpointsDir, file), 'utf8');
+              return JSON.parse(fileContent);
+            });
+            
+            const checkpoints = await Promise.all(readPromises);
+            console.log(`📊 Performance: Loaded ${checkpoints.length} checkpoints in parallel`);
             
             // Sort by timestamp (newest first)
             checkpoints.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
@@ -189,16 +207,16 @@ export async function GET(request: NextRequest) {
     
     try {
       const checkpointFiles = await fs.readdir(checkpointsDir);
-      const checkpoints = [];
       
-      for (const file of checkpointFiles) {
-        if (file.endsWith('.json')) {
-          const checkpointData = JSON.parse(
-            await fs.readFile(path.join(checkpointsDir, file), 'utf8')
-          );
-          checkpoints.push(checkpointData);
-        }
-      }
+      // 🚀 PERFORMANCE FIX: Read all checkpoint files in parallel instead of sequentially
+      const jsonFiles = checkpointFiles.filter(file => file.endsWith('.json'));
+      const readPromises = jsonFiles.map(async (file) => {
+        const fileContent = await fs.readFile(path.join(checkpointsDir, file), 'utf8');
+        return JSON.parse(fileContent);
+      });
+      
+      const checkpoints = await Promise.all(readPromises);
+      console.log(`📊 Performance: Loaded ${checkpoints.length} checkpoints in parallel for session ${sessionId}`);
       
       // Sort by timestamp (newest first)
       checkpoints.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());

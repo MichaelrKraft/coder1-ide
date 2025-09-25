@@ -1,0 +1,7 @@
+This is a simple text file to demonstrate the new streamlined Claude Code integration.
+
+Key improvements:
+- Auto-copy to clipboard (no button clicking)
+- Clean terminal feedback
+- Conversational content format
+- Optimized for Claude Code workflow

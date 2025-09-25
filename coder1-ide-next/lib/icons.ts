@@ -16,7 +16,8 @@ export {
   RefreshCw,
   Loader2,
   ExternalLink,
-  Link
+  Link,
+  Search
 } from 'lucide-react';
 
 // Development & Code

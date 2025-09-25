@@ -1,0 +1,11 @@
+This is a test file for testing the drag-drop functionality.
+
+The fixes should:
+1. Show the copy button in bottom-right of terminal (not trying to position inline)
+2. Generate clean content without base64 spam
+3. Keep the server stable without crashes
+
+Test completed successfully if:
+✅ Button appears in predictable bottom-right location
+✅ Copied content is readable and clean
+✅ No server crashes or connection lost errors

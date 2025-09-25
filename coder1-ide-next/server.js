@@ -912,6 +912,20 @@ app.prepare().then(() => {
           const command = buffer.trim().toLowerCase();
           console.log('[Terminal] Command completed:', command);
           
+          // 🧠 CONTEXTUAL MEMORY FIX: Send command to frontend for contextual memory processing
+          // Only send conversational commands (not shell commands starting with $ or #)
+          if (command.length > 0 && !command.startsWith('$') && !command.startsWith('#')) {
+            console.log('🧠 [SERVER] Sending command to frontend for contextual memory:', command);
+            session.connectedSockets.forEach(connectedSocket => {
+              if (connectedSocket.connected) {
+                connectedSocket.emit('terminal:command', { 
+                  id: sessionId, 
+                  command: command 
+                });
+              }
+            });
+          }
+          
           // ALWAYS intercept claude commands, even if bridgeManager fails to load
           // This prevents "claude: command not found" errors on the server
           // BUT - for local development, let claude commands pass through normally

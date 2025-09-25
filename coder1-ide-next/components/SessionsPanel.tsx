@@ -101,7 +101,7 @@ export default function SessionsPanel({ isVisible = true }: SessionsPanelProps) 
   
   // Memoize event handlers to prevent unnecessary re-registration
   const handleCheckpointCreated = useCallback((event: CustomEvent) => {
-    // REMOVED: // REMOVED: console.log('📍 Checkpoint created event received:', event.detail);
+    console.log('📍 Checkpoint created event received:', event.detail);
     // Only reload checkpoints if this is the current session
     if (currentSession && event.detail.sessionId === currentSession.id) {
       loadCheckpoints(currentSession.id);
@@ -110,7 +110,7 @@ export default function SessionsPanel({ isVisible = true }: SessionsPanelProps) 
   }, [currentSession]);
   
   const handleSessionChanged = useCallback((event: CustomEvent) => {
-    // REMOVED: // REMOVED: console.log('🔄 Session changed event received:', event.detail);
+    console.log('🔄 Session changed event received:', event.detail);
     // Only reload checkpoints for the new session
     if (event.detail.session) {
       loadCheckpoints(event.detail.session.id);
@@ -128,7 +128,7 @@ export default function SessionsPanel({ isVisible = true }: SessionsPanelProps) 
     loadOnce();
   }, []); // Empty dependency array - only run once on mount
   
-  // Separate effect for event listeners to avoid recreation
+  // Update event listeners when callbacks change to avoid stale closures
   useEffect(() => {
     window.addEventListener('checkpointCreated', handleCheckpointCreated as EventListener);
     window.addEventListener('sessionChanged', handleSessionChanged as EventListener);
@@ -137,7 +137,15 @@ export default function SessionsPanel({ isVisible = true }: SessionsPanelProps) 
       window.removeEventListener('checkpointCreated', handleCheckpointCreated as EventListener);
       window.removeEventListener('sessionChanged', handleSessionChanged as EventListener);
     };
-  }, []); // Empty dependency array - set up once, never recreate
+  }, [handleCheckpointCreated, handleSessionChanged]); // Re-register when callbacks change
+  
+  // Load checkpoints when current session changes
+  useEffect(() => {
+    if (currentSession) {
+      console.log('🔄 Loading checkpoints for session:', currentSession.id);
+      loadCheckpoints(currentSession.id);
+    }
+  }, [currentSession?.id]); // Trigger when session ID changes
   
   // Update session timer for current session - only when visible
   useEffect(() => {

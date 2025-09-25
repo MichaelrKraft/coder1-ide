@@ -8,7 +8,29 @@ import { logger } from '@/lib/logger';
 export const dynamic = 'force-dynamic';
 
 // Get project root directory
-const getProjectRoot = () => {
+const getProjectRoot = (customPath?: string) => {
+    if (customPath) {
+        // Validate and resolve the custom path
+        const resolvedPath = path.resolve(customPath);
+        
+        // Security check - prevent access to system directories
+        const systemPaths = ['/etc', '/usr', '/var', '/bin', '/sbin', '/sys', '/proc', '/dev'];
+        const homeDir = require('os').homedir();
+        
+        // Only allow paths within user's home directory or current project
+        if (!resolvedPath.startsWith(homeDir) && !resolvedPath.startsWith(process.cwd())) {
+            throw new Error('Access denied: Path must be within user directory or project');
+        }
+        
+        // Check if path exists and is accessible
+        try {
+            require('fs').accessSync(resolvedPath, require('fs').constants.R_OK);
+            return resolvedPath;
+        } catch (error) {
+            throw new Error('Path is not accessible or does not exist');
+        }
+    }
+    
     return process.cwd();
 };
 
@@ -85,7 +107,11 @@ async function buildFileTree(dirPath: string, relativePath: string = '', depth: 
 async function fileTreeHandler({ req }: { req: NextRequest }): Promise<NextResponse> {
     const request = req;
     try {
-        const projectRoot = getProjectRoot();
+        // Get rootPath from query parameters
+        const url = new URL(request.url);
+        const rootPath = url.searchParams.get('rootPath');
+        
+        const projectRoot = getProjectRoot(rootPath || undefined);
         const tree = await buildFileTree(projectRoot);
         
         // REMOVED: // REMOVED: console.log(`📂 [Unified] File tree requested for: ${projectRoot}`);
@@ -98,17 +124,19 @@ async function fileTreeHandler({ req }: { req: NextRequest }): Promise<NextRespo
                 type: 'directory',
                 children: tree
             },
+            currentRoot: projectRoot,
             server: 'unified-server'
         });
         
     } catch (error) {
         // logger?.error('❌ [Unified] File tree error:', error);
+        const errorMessage = error instanceof Error ? error.message : 'Failed to build file tree';
         return NextResponse.json(
             {
                 success: false,
-                error: 'Failed to build file tree'
+                error: errorMessage
             },
-            { status: 500 }
+            { status: error instanceof Error && error.message.includes('Access denied') ? 403 : 500 }
         );
     }
 }
