@@ -23,6 +23,17 @@ class ClaudeAPI {
       lastReset: new Date().getMonth(),
       dailyUsage: {}
     };
+    
+    // Initialize settings synchronously with defaults
+    this.settings = {
+      ai: {
+        model: 'claude-3-haiku-20240307',
+        use_economy_for_simple: true,
+        cost_alert_threshold: 10.00
+      }
+    };
+    
+    // Load settings and cost tracker asynchronously
     this.loadSettings();
     this.loadCostTracker();
   }

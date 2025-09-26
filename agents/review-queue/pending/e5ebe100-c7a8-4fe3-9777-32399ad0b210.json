@@ -1,0 +1,20 @@
+{
+  "id": "e5ebe100-c7a8-4fe3-9777-32399ad0b210",
+  "type": "issue_response",
+  "issue_number": 999,
+  "issue_title": "Test Issue - Memory usage is too high",
+  "issue_author": "testuser",
+  "issue_body": "When I open large files, the IDE uses too much memory and becomes slow.",
+  "draft_response": "Here is a draft response to the GitHub issue:\n\nHi @testuser,\n\nThanks for reporting this issue with Coder1 IDE's memory usage. We appreciate you taking the time to provide this feedback - it really helps us improve the product.\n\nIt sounds like you're experiencing high memory usage and performance issues when working with large files. This is definitely something we'll want to look into further. \n\nOur team will investigate this issue and try to identify the root cause. In the meantime, a few things you can try:\n\n- Close any unused files or applications to free up system memory\n- Adjust the IDE's memory settings under Preferences > Performance\n- Try working with the files in smaller chunks if possible\n\nIf the high memory usage persists, please let us know and we'll do our best to resolve it. We're committed to providing a smooth, efficient development experience with Coder1 IDE.\n\nThanks again for your report. We value your input and will work to address this issue as soon as we can.\n\nBest regards,\n[Your name]\nCoder1 IDE Community Manager",
+  "confidence": 0.5,
+  "created_at": "2025-09-26T04:27:52.079Z",
+  "metadata": {
+    "labels": [
+      "memory-system"
+    ],
+    "priority": "low",
+    "category": "other"
+  },
+  "queued_at": "2025-09-26T04:27:52.080Z",
+  "status": "pending"
+}
