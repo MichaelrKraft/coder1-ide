@@ -1,14 +1,13 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { BookOpen, Eye, X, RefreshCw, ExternalLink, Brain, Sparkles, Search } from '@/lib/icons';
+import { Eye, X, RefreshCw, ExternalLink, Brain, Sparkles, Search } from '@/lib/icons';
 import { colors, glows } from '@/lib/design-tokens';
-import CodebaseWiki from '@/components/codebase/CodebaseWiki';
 import ContextualMemoryPanel from '@/components/contextual-memory/ContextualMemoryPanel';
 import ParallelReasoningDashboard from '@/components/beta/ParallelReasoningDashboard';
 import { previewLoopPrevention, createDebouncedPreviewUpdate } from '@/lib/preview-loop-prevention';
 
-type PreviewMode = 'wiki' | 'preview' | 'terminal' | 'parathink' | 'contextual-memory';
+type PreviewMode = 'preview' | 'terminal' | 'parathink' | 'contextual-memory';
 
 interface PreviewPanelProps {
   fileOpen?: boolean;
@@ -23,7 +22,7 @@ interface PreviewPanelProps {
 /**
  * Preview Panel with Multiple Modes
  * - Live Preview (when HTML/React files open)
- * - Codebase Wiki (📚 button in preview)
+ * - Contextual Memory (AI-powered session context)
  * - ParaThinker Dashboard (Beta feature)
  */
 const PreviewPanel = React.memo(function PreviewPanel({
@@ -225,12 +224,6 @@ const PreviewPanel = React.memo(function PreviewPanel({
             'Preview',
             'Live preview of your HTML, CSS, and JavaScript code'
           )}
-          {renderTabButton(
-            'wiki',
-            <BookOpen className="w-4 h-4" />,
-            'Codebase Wiki',
-            'Browse project documentation and intelligent code analysis'
-          )}
           {/* Only show ParaThinker tab when we have a session */}
           {paraThinkSessionId && renderTabButton(
             'parathink',
@@ -252,12 +245,6 @@ const PreviewPanel = React.memo(function PreviewPanel({
 
       {/* Content Area */}
       <div className="flex-1 overflow-auto">
-        {/* Codebase Wiki */}
-            {mode === 'wiki' && (
-              <div className="h-full">
-                <CodebaseWiki />
-              </div>
-            )}
 
             {/* Contextual Memory Panel */}
             {mode === 'contextual-memory' && (

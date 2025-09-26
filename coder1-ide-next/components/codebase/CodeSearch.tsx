@@ -68,7 +68,11 @@ interface Suggestion {
     methods?: number;
 }
 
-const CodebaseWiki: React.FC = () => {
+interface CodeSearchProps {
+    onOpenFile?: (path: string, line?: number) => void;
+}
+
+const CodeSearch: React.FC<CodeSearchProps> = ({ onOpenFile }) => {
     const [searchQuery, setSearchQuery] = useState('');
     const [searchResults, setSearchResults] = useState<SearchResult | null>(null);
     const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
@@ -272,9 +276,9 @@ const CodebaseWiki: React.FC = () => {
     };
 
     const openInEditor = (filePath: string, line?: number) => {
-        // This would integrate with the parent IDE to open files
-        // REMOVED: // REMOVED: console.log('Opening file:', filePath, 'at line:', line);
-        // TODO: Integrate with IDE file opening mechanism
+        if (onOpenFile) {
+            onOpenFile(filePath, line);
+        }
     };
 
     const formatFileSize = (bytes: number) => {
@@ -661,4 +665,4 @@ const CodebaseWiki: React.FC = () => {
     );
 };
 
-export default CodebaseWiki;
+export default CodeSearch;

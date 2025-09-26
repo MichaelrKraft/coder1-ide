@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { FolderTree, Clock, Search } from 'lucide-react';
 import SafeFileExplorer from './SafeFileExplorer';
 import SessionsPanel from './SessionsPanel';
-import DeepContextPanel from './deepcontext/DeepContextPanel';
+import CodeSearch from './codebase/CodeSearch';
 
 interface LeftPanelProps {
   onFileSelect: (path: string) => void;
@@ -112,7 +112,7 @@ export default function LeftPanel({ onFileSelect, activeFile }: LeftPanelProps) 
               : 'text-text-muted hover:text-text-secondary hover:bg-bg-tertiary'
           }`}
           onClick={() => setActiveTab('search')}
-          title="File Search - Search for files and code across your project"
+          title="Code Search - Intelligent search through functions, classes, and code structure"
         >
           <Search className="w-3 h-3" />
           <span>Search</span>
@@ -128,12 +128,7 @@ export default function LeftPanel({ onFileSelect, activeFile }: LeftPanelProps) 
           <SessionsPanel isVisible={true} />
         )}
         {activeTab === 'search' && (
-          <DeepContextPanel 
-            activeFile={activeFile}
-            onOpenFile={(path: string, line?: number) => {
-              onFileSelect(path);
-            }}
-          />
+          <CodeSearch onOpenFile={onFileSelect} />
         )}
       </div>
       
