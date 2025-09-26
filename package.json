@@ -26,7 +26,13 @@
     "preload:skip": "SKIP_PRELOAD=true npm start",
     "preload:status": "curl -s http://localhost:3001/api/repository-admin/preload/status | jq",
     "preload:stop": "curl -X POST http://localhost:3001/api/repository-admin/preload/stop",
-    "preload:list": "curl -s http://localhost:3001/api/repository-admin/preload/list | jq"
+    "preload:list": "curl -s http://localhost:3001/api/repository-admin/preload/list | jq",
+    "agent:test": "cd agents && npm test",
+    "agent:review": "cd agents && npm run review",
+    "agent:approve": "cd agents && npm run approve",
+    "agent:execute": "cd agents && npm run execute",
+    "agent:cost-report": "cd agents && npm run cost-report",
+    "agent:install": "cd agents && npm install"
   },
   "keywords": [
     "ai",

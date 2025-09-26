@@ -1,40 +1,56 @@
 import { NextRequest, NextResponse } from 'next/server';
+import path from 'path';
+
+// Import the CodebaseWiki service
+const CodebaseWiki = require('@/services/codebase-wiki.js');
+
+// Singleton instance of CodebaseWiki
+let codebaseWiki: any = null;
+
+function getCodebaseWiki() {
+  if (!codebaseWiki) {
+    const projectRoot = path.join(process.cwd(), '..');  // Go up to autonomous_vibe_interface
+    codebaseWiki = new CodebaseWiki({
+      projectRoot,
+      logger: console
+    });
+    
+    // Start initial indexing in the background
+    codebaseWiki.indexCodebase().catch((err: any) => {
+      console.error('Failed to index codebase:', err);
+    });
+  }
+  return codebaseWiki;
+}
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const query = searchParams.get('q') || '';
-  const limit = searchParams.get('limit') || '8';
+  const limit = parseInt(searchParams.get('limit') || '8');
 
   try {
-    // Proxy to Express backend
-    const backendUrl = `http://localhost:3000/api/codebase/suggest?q=${encodeURIComponent(query)}&limit=${limit}`;
-    const response = await fetch(backendUrl);
-    const data = await response.json();
+    const wiki = getCodebaseWiki();
     
-    return NextResponse.json(data);
-  } catch (error) {
-    // // logger?.error('Failed to proxy codebase suggestions:', error);
+    // Use the real suggest method from CodebaseWiki service
+    const suggestions = await wiki.suggest(query, { limit });
     
-    // Fallback to mock data if backend is unavailable
-    const mockSuggestions = [
-      { type: 'function', name: 'useState', file: 'hooks.ts', params: 'initialValue' },
-      { type: 'function', name: 'useEffect', file: 'hooks.ts', params: 'callback, deps' },
-      { type: 'function', name: 'fetchData', file: 'api.ts', params: 'url, options' },
-      { type: 'class', name: 'ComponentManager', file: 'manager.ts', methods: 12 },
-      { type: 'function', name: 'formatDate', file: 'utils.ts', params: 'date, format' },
-      { type: 'variable', name: 'API_BASE_URL', file: 'config.ts' },
-      { type: 'function', name: 'validateInput', file: 'validation.ts', params: 'input, rules' },
-      { type: 'class', name: 'DatabaseConnection', file: 'db.ts', methods: 8 }
-    ];
-
-    // Filter suggestions based on query
-    const filteredSuggestions = mockSuggestions
-      .filter(s => s.name.toLowerCase().includes(query.toLowerCase()))
-      .slice(0, parseInt(limit));
-
     return NextResponse.json({
       success: true,
-      suggestions: filteredSuggestions
+      suggestions
     });
+    
+  } catch (error) {
+    console.error('Failed to get codebase suggestions:', error);
+    
+    // Return error response instead of mock data
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Failed to get suggestions',
+        message: error instanceof Error ? error.message : 'Unknown error',
+        suggestions: []
+      },
+      { status: 500 }
+    );
   }
 }

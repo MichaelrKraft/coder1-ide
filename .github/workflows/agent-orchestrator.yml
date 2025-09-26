@@ -1,0 +1,161 @@
+name: Agent Orchestrator
+
+on:
+  # Trigger on GitHub events
+  issues:
+    types: [opened, edited]
+  pull_request:
+    types: [opened, edited, synchronize]
+  issue_comment:
+    types: [created]
+  
+  # Schedule daily digest
+  schedule:
+    - cron: '0 9 * * *'  # 9 AM daily
+    - cron: '0 */2 * * *'  # Every 2 hours for executing approved items
+  
+  # Manual trigger
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'Run mode'
+        required: false
+        default: 'process'
+        type: choice
+        options:
+          - process
+          - execute
+          - review
+          - test
+
+jobs:
+  process-event:
+    runs-on: ubuntu-latest
+    if: github.event_name != 'schedule'
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+      
+      - name: Install dependencies
+        run: |
+          cd agents
+          npm install
+      
+      - name: Process GitHub event
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          SENDGRID_API_KEY: ${{ secrets.SENDGRID_API_KEY }}
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASS: ${{ secrets.SMTP_PASS }}
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
+          GITHUB_EVENT_PATH: ${{ github.event_path }}
+          GITHUB_OWNER: ${{ github.repository_owner }}
+          GITHUB_REPO: ${{ github.event.repository.name }}
+        run: |
+          cd agents
+          node orchestrator.js
+      
+      - name: Show queue status
+        if: always()
+        run: |
+          cd agents
+          node scripts/review.js || true
+
+  execute-approved:
+    runs-on: ubuntu-latest
+    if: github.event.schedule == '0 */2 * * *' || github.event.inputs.mode == 'execute'
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+      
+      - name: Install dependencies
+        run: |
+          cd agents
+          npm install
+      
+      - name: Execute approved items
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_OWNER: ${{ github.repository_owner }}
+          GITHUB_REPO: ${{ github.event.repository.name }}
+        run: |
+          cd agents
+          node scripts/execute.js
+
+  daily-digest:
+    runs-on: ubuntu-latest
+    if: github.event.schedule == '0 9 * * *'
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+      
+      - name: Install dependencies
+        run: |
+          cd agents
+          npm install
+      
+      - name: Send daily digest
+        env:
+          SENDGRID_API_KEY: ${{ secrets.SENDGRID_API_KEY }}
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASS: ${{ secrets.SMTP_PASS }}
+        run: |
+          echo "Daily digest not yet implemented"
+          # TODO: Create daily digest script
+          # cd agents
+          # node scripts/daily-digest.js
+
+  test-mode:
+    runs-on: ubuntu-latest
+    if: github.event.inputs.mode == 'test'
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+      
+      - name: Install dependencies
+        run: |
+          cd agents
+          npm install
+      
+      - name: Run test mode
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          SENDGRID_API_KEY: ${{ secrets.SENDGRID_API_KEY }}
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASS: ${{ secrets.SMTP_PASS }}
+        run: |
+          cd agents
+          node orchestrator.js --test
+          echo ""
+          echo "Test complete! Check your email at support@callspot.ai for the test draft."

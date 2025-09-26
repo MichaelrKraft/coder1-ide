@@ -1,0 +1,22 @@
+{
+  "id": "2b132531-6c2b-495e-8b71-c8802417cedd",
+  "type": "issue_response",
+  "issue_number": 999,
+  "issue_title": "Test Issue - Memory usage is too high",
+  "issue_author": "testuser",
+  "issue_body": "When I open large files, the IDE uses too much memory and becomes slow.",
+  "draft_response": "Thanks for reporting this memory issue\\! We're aware that large files can cause high memory usage and are actively working on optimizations. In the meantime, try splitting large files or increasing Node's memory limit. We'll update this issue when improvements are released.",
+  "confidence": 0.6,
+  "created_at": "2025-09-26T01:50:17.215Z",
+  "metadata": {
+    "labels": [
+      "memory-system"
+    ],
+    "priority": "low",
+    "category": "other"
+  },
+  "queued_at": "2025-09-26T01:50:17.217Z",
+  "status": "approved",
+  "approved_at": "2025-09-26T01:50:37.140Z",
+  "edited": true
+}

@@ -747,6 +747,62 @@ class CodebaseWiki extends EventEmitter {
             this.logger.log('📚 [CODEBASE-WIKI] No existing index found, starting fresh');
         }
     }
+    
+    /**
+     * Get autocomplete suggestions for search
+     */
+    async suggest(query, options = {}) {
+        if (!query || query.length < 2) {
+            return [];
+        }
+        
+        const suggestions = [];
+        const queryLower = query.toLowerCase();
+        const limit = options.limit || 8;
+        
+        // Suggest functions
+        for (const [id, func] of this.index.functions) {
+            if (func.name.toLowerCase().includes(queryLower)) {
+                suggestions.push({
+                    type: 'function',
+                    name: func.name,
+                    file: func.file,
+                    params: func.params.map(p => p.name).join(', '),
+                    relevance: this.calculateRelevance(func.name, query)
+                });
+            }
+        }
+        
+        // Suggest classes
+        for (const [id, cls] of this.index.classes) {
+            if (cls.name.toLowerCase().includes(queryLower)) {
+                suggestions.push({
+                    type: 'class',
+                    name: cls.name,
+                    file: cls.file,
+                    methods: cls.methods ? cls.methods.length : 0,
+                    relevance: this.calculateRelevance(cls.name, query)
+                });
+            }
+        }
+        
+        // Suggest variables
+        for (const [id, variable] of this.index.variables) {
+            if (variable.name.toLowerCase().includes(queryLower)) {
+                suggestions.push({
+                    type: 'variable',
+                    name: variable.name,
+                    file: variable.file,
+                    relevance: this.calculateRelevance(variable.name, query)
+                });
+            }
+        }
+        
+        // Sort by relevance and limit results
+        return suggestions
+            .sort((a, b) => b.relevance - a.relevance)
+            .slice(0, limit);
+    }
 }
 
 module.exports = CodebaseWiki;

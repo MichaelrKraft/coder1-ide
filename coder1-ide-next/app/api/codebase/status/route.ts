@@ -1,33 +1,74 @@
 import { NextResponse } from 'next/server';
+import path from 'path';
+
+// Import the CodebaseWiki service
+const CodebaseWiki = require('@/services/codebase-wiki.js');
+
+// Singleton instance of CodebaseWiki
+let codebaseWiki: any = null;
+
+function getCodebaseWiki() {
+  if (!codebaseWiki) {
+    const projectRoot = path.join(process.cwd(), '..');  // Go up to autonomous_vibe_interface
+    codebaseWiki = new CodebaseWiki({
+      projectRoot,
+      logger: console
+    });
+    
+    // Start initial indexing in the background
+    codebaseWiki.indexCodebase().catch((err: any) => {
+      console.error('Failed to index codebase:', err);
+    });
+  }
+  return codebaseWiki;
+}
 
 export async function GET() {
   try {
-    // Proxy to Express backend
-    const backendUrl = 'http://localhost:3000/api/codebase/status';
-    const response = await fetch(backendUrl);
-    const data = await response.json();
+    const wiki = getCodebaseWiki();
     
-    return NextResponse.json(data);
-  } catch (error) {
-    // // logger?.error('Failed to proxy codebase status:', error);
+    // Get real status from the CodebaseWiki service
+    const stats = await wiki.getStats();
     
-    // Fallback to mock data if backend is unavailable
-    const status = {
+    return NextResponse.json({
       success: true,
       indexing: {
-        isIndexing: false,
-        lastIndexed: new Date().toISOString(),
-        progress: 100,
-        filesProcessed: 127,
-        totalFiles: 127
+        isIndexing: stats.isIndexing || false,
+        lastIndexed: stats.lastIndexed,
+        progress: stats.isIndexing ? 50 : 100, // Simplified progress
+        filesProcessed: stats.files,
+        totalFiles: stats.files
       },
       service: {
         status: 'healthy',
-        version: '1.0.0-demo',
-        uptime: Math.floor(Math.random() * 10000) + 5000
+        version: '1.0.0-live',
+        uptime: process.uptime() * 1000 // Real uptime in milliseconds
       }
-    };
-
-    return NextResponse.json(status);
+    });
+    
+  } catch (error) {
+    console.error('Failed to get codebase status:', error);
+    
+    // Return error response instead of mock data
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Failed to get codebase status',
+        message: error instanceof Error ? error.message : 'Unknown error',
+        indexing: {
+          isIndexing: false,
+          lastIndexed: null,
+          progress: 0,
+          filesProcessed: 0,
+          totalFiles: 0
+        },
+        service: {
+          status: 'error',
+          version: '1.0.0-live',
+          uptime: process.uptime() * 1000
+        }
+      },
+      { status: 500 }
+    );
   }
 }

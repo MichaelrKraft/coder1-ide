@@ -1,0 +1,24 @@
+{
+  "name": "coder1-agents",
+  "version": "1.0.0",
+  "description": "Autonomous GitHub community management agents for Coder1 IDE",
+  "main": "orchestrator.js",
+  "scripts": {
+    "approve": "node scripts/approve.js",
+    "review": "node scripts/review.js",
+    "execute": "node scripts/execute.js",
+    "cost-report": "node scripts/cost-report.js",
+    "test": "node orchestrator.js --test",
+    "start": "node orchestrator.js"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.63.0",
+    "@octokit/rest": "^20.0.2",
+    "@sendgrid/mail": "^8.1.0",
+    "nodemailer": "^6.9.7",
+    "uuid": "^9.0.1",
+    "dotenv": "^16.3.1"
+  },
+  "author": "Mike Kraft",
+  "license": "MIT"
+}

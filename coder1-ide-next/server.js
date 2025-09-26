@@ -93,6 +93,16 @@ try {
   agentCoordinator = null;
 }
 
+// Terminal Token Integration for automatic Claude usage tracking
+let terminalTokenIntegration;
+try {
+  const { terminalTokenIntegration: integration } = require('./services/terminal-token-integration.js');
+  terminalTokenIntegration = integration;
+} catch (error) {
+  console.warn('⚠️ Terminal Token Integration not available:', error.message);
+  terminalTokenIntegration = null;
+}
+
 // Test PTY compatibility on startup
 const testPtyCompatibility = () => {
   try {
@@ -852,6 +862,11 @@ app.prepare().then(() => {
         // Only set up PTY data handler once per session to avoid duplicates
         if (!session.dataHandlerSetup) {
           session.pty.onData((data) => {
+            // Track terminal output with token integration for Claude response monitoring
+            if (terminalTokenIntegration) {
+              terminalTokenIntegration.onTerminalOutput(sessionId, data);
+            }
+            
             // Forward to all connected sockets for this session
             session.connectedSockets.forEach(connectedSocket => {
               if (connectedSocket.connected) {
@@ -879,12 +894,22 @@ app.prepare().then(() => {
             }
           }
           
+          // End session in token integration for usage tracking
+          if (terminalTokenIntegration && sessionId) {
+            terminalTokenIntegration.endSession(sessionId);
+          }
+          
           // Clean up socket-to-session mapping
           socketToSession.delete(socket.id);
         });
         
         // Track socket-to-session relationship for cleanup
         socketToSession.set(socket.id, sessionId);
+        
+        // Register session with token integration for usage tracking
+        if (terminalTokenIntegration) {
+          terminalTokenIntegration.registerSession(sessionId, sessionId);
+        }
         
         socket.emit('terminal:created', { 
           sessionId, 
@@ -919,18 +944,24 @@ app.prepare().then(() => {
         
         // Check if Enter is being pressed (command complete)
         if (data.includes('\r') || data.includes('\n')) {
-          const command = buffer.trim().toLowerCase();
-          console.log('[Terminal] Command completed:', command);
+          const command = buffer.trim();
+          const commandLower = command.toLowerCase();
+          console.log('[Terminal] Command completed:', commandLower);
+          
+          // Track command with token integration for Claude usage monitoring
+          if (terminalTokenIntegration && command.length > 0) {
+            terminalTokenIntegration.onCommandInput(sessionId, command);
+          }
           
           // 🧠 CONTEXTUAL MEMORY FIX: Send command to frontend for contextual memory processing
           // Only send conversational commands (not shell commands starting with $ or #)
-          if (command.length > 0 && !command.startsWith('$') && !command.startsWith('#')) {
-            console.log('🧠 [SERVER] Sending command to frontend for contextual memory:', command);
+          if (command.length > 0 && !commandLower.startsWith('$') && !commandLower.startsWith('#')) {
+            console.log('🧠 [SERVER] Sending command to frontend for contextual memory:', commandLower);
             session.connectedSockets.forEach(connectedSocket => {
               if (connectedSocket.connected) {
                 connectedSocket.emit('terminal:command', { 
                   id: sessionId, 
-                  command: command 
+                  command: commandLower 
                 });
               }
             });

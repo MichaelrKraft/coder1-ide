@@ -555,164 +555,7 @@
         }
 
 
-        /* AI Coach */
-        .coach-card {
-            background: linear-gradient(135deg, rgba(139, 92, 246, 0.05), rgba(6, 182, 212, 0.05));
-        }
 
-        .coach-content {
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
-        }
-
-        .coach-context {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 8px 12px;
-            background: rgba(139, 92, 246, 0.1);
-            border-radius: 8px;
-            border: 1px solid rgba(139, 92, 246, 0.2);
-        }
-
-        .context-label {
-            color: var(--text-secondary);
-            font-size: 12px;
-            font-weight: 500;
-        }
-
-        .context-value {
-            color: var(--accent-primary);
-            font-weight: 600;
-            font-size: 13px;
-        }
-
-        .coach-suggestion {
-            display: flex;
-            align-items: flex-start;
-            gap: 12px;
-            padding: 16px;
-            background: var(--glass-bg);
-            border-radius: 12px;
-            border: 1px solid var(--glass-border);
-            transition: all 0.3s ease;
-        }
-
-        .coach-suggestion:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 20px rgba(139, 92, 246, 0.1);
-        }
-
-        .suggestion-icon {
-            font-size: 20px;
-            flex-shrink: 0;
-        }
-
-        .suggestion-text {
-            flex: 1;
-            color: var(--text-primary);
-            line-height: 1.4;
-        }
-
-        .coach-actions {
-            display: flex;
-            gap: 8px;
-            margin-top: 12px;
-        }
-
-        .coach-action-btn {
-            padding: 6px 12px;
-            background: var(--accent-primary);
-            border: none;
-            border-radius: 6px;
-            color: white;
-            font-size: 11px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .coach-action-btn:hover {
-            background: var(--accent-secondary);
-            transform: translateY(-1px);
-        }
-
-        .coach-action-btn.secondary {
-            background: var(--glass-bg);
-            color: var(--text-primary);
-            border: 1px solid var(--glass-border);
-        }
-
-        /* Professional AI Coach Design */
-        .coach-header {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            flex: 1;
-        }
-
-        .coach-avatar {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(6, 182, 212, 0.2));
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 18px;
-            border: 2px solid rgba(139, 92, 246, 0.3);
-        }
-
-        .coach-info {
-            display: flex;
-            flex-direction: column;
-            gap: 2px;
-        }
-
-        .coach-name {
-            color: var(--text-primary);
-            font-weight: 600;
-            font-size: 14px;
-        }
-
-        .coach-status {
-            color: var(--success);
-            font-size: 11px;
-            font-weight: 500;
-        }
-
-        .coach-controls {
-            display: flex;
-            gap: 6px;
-        }
-
-        .coach-btn {
-            width: 32px;
-            height: 32px;
-            background: var(--glass-bg);
-            border: 1px solid var(--glass-border);
-            border-radius: 6px;
-            color: var(--text-primary);
-            cursor: pointer;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 12px;
-        }
-
-        .coach-btn.secondary {
-            background: var(--glass-bg);
-            color: var(--text-primary);
-            border: 1px solid var(--glass-border);
-        }
-
-        .coach-btn:hover {
-            background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(6, 182, 212, 0.2));
-            border-color: var(--accent-primary);
-            transform: translateY(-1px);
-            box-shadow: 0 2px 8px rgba(139, 92, 246, 0.3);
-        }
 
         /* Focus Section */
         .focus-section {
@@ -2495,37 +2338,16 @@
             color: var(--accent-primary);
         }
 
-        /* Workflows and Coach Container */
-        .workflows-coach-container {
-            display: grid !important;
-            grid-template-columns: 1fr 1fr !important;
-            gap: 20px;
-            margin: 20px auto;
-            max-width: 1400px;
-            padding: 0 20px;
-            align-items: start;
-        }
 
-        /* Force side-by-side layout for larger screens */
-        @media (min-width: 900px) {
-            .workflows-coach-container {
-                grid-template-columns: 1fr 1fr !important;
-            }
-        }
 
-        @media (max-width: 899px) {
-            .workflows-coach-container {
-                grid-template-columns: 1fr;
-            }
-        }
 
-        /* Third Row Container - 2 columns for AI Memory & Context, AI Coach */
+        /* Third Row Container - Single column for AI Memory & Context */
         .third-row-container {
             display: grid;
-            grid-template-columns: repeat(2, 1fr);
+            grid-template-columns: 1fr;
             gap: 30px;
             margin: 40px auto;
-            max-width: 1400px;
+            max-width: 800px;
             padding: 0 20px;
             align-items: start;
         }
@@ -2612,177 +2434,7 @@
             padding: 8px 12px;
         }
 
-        /* Project Pipeline Styles */
-        .project-pipeline-card {
-            grid-column: span 2;
-        }
 
-        .project-pipeline-card .card-title {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .new-project-btn {
-            padding: 6px 12px;
-            background: var(--glass-bg);
-            border: 1px solid var(--glass-border);
-            border-radius: 8px;
-            color: var(--text-primary);
-            font-size: 12px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .new-project-btn:hover {
-            background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(6, 182, 212, 0.2));
-            border-color: var(--accent-primary);
-            transform: translateY(-1px);
-            box-shadow: 0 2px 8px rgba(139, 92, 246, 0.3);
-        }
-
-        .pipeline-stages {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin: 20px 0;
-            padding: 20px;
-            background: var(--glass-bg);
-            border-radius: 12px;
-            border: 1px solid var(--glass-border);
-        }
-
-        .pipeline-stage {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 8px;
-            opacity: 0.3;
-            transition: all 0.3s ease;
-            cursor: pointer;
-        }
-
-        .pipeline-stage.active {
-            opacity: 1;
-            transform: scale(1.1);
-        }
-
-        .pipeline-stage.completed {
-            opacity: 0.7;
-        }
-
-        .pipeline-stage.completed .stage-icon {
-            background: linear-gradient(135deg, var(--success) 0%, #10b981aa 100%);
-        }
-
-        .stage-icon {
-            width: 50px;
-            height: 50px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 24px;
-            background: var(--glass-bg);
-            border: 2px solid var(--glass-border);
-            border-radius: 50%;
-            transition: all 0.3s ease;
-        }
-
-        .pipeline-stage.active .stage-icon {
-            background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
-            border-color: var(--accent-primary);
-            box-shadow: 0 4px 20px rgba(139, 92, 246, 0.3);
-        }
-
-        .stage-name {
-            font-size: 12px;
-            color: var(--text-secondary);
-            font-weight: 500;
-        }
-
-        .pipeline-stage.active .stage-name {
-            color: var(--text-primary);
-            font-weight: 600;
-        }
-
-        .pipeline-arrow {
-            color: var(--glass-border);
-            font-size: 20px;
-            margin: 0 -10px;
-        }
-
-        .pipeline-project-info {
-            padding: 16px;
-            background: var(--glass-bg);
-            border-radius: 12px;
-            border: 1px solid var(--glass-border);
-            margin-bottom: 16px;
-        }
-
-        .project-name {
-            font-size: 16px;
-            font-weight: 600;
-            color: var(--text-primary);
-            margin-bottom: 12px;
-        }
-
-        .project-progress-bar {
-            height: 8px;
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 4px;
-            overflow: hidden;
-            margin-bottom: 12px;
-        }
-
-        .project-progress-fill {
-            height: 100%;
-            background: linear-gradient(90deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
-            border-radius: 4px;
-            transition: width 0.5s ease;
-        }
-
-        .project-stats {
-            display: flex;
-            justify-content: space-between;
-            font-size: 12px;
-            color: var(--text-secondary);
-        }
-
-        .project-stats span {
-            display: flex;
-            align-items: center;
-            gap: 4px;
-        }
-
-        .pipeline-suggestions {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        .suggestion-item {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 10px;
-            background: rgba(139, 92, 246, 0.05);
-            border: 1px solid rgba(139, 92, 246, 0.2);
-            border-radius: 8px;
-            font-size: 13px;
-            color: var(--text-secondary);
-            transition: all 0.3s ease;
-        }
-
-        .suggestion-item:hover {
-            background: rgba(139, 92, 246, 0.1);
-            border-color: var(--accent-primary);
-            color: var(--text-primary);
-            cursor: pointer;
-        }
-
-        .suggestion-icon {
-            font-size: 16px;
-        }
 
         /* Git Mastery Combined Card Styles */
         .git-mastery-grid {
@@ -4156,39 +3808,6 @@
             </div>
         </div>
 
-        <!-- AI Team Dashboard - Two-Tier Layout -->
-        <div class="ai-team-section" id="aiTeamSection" style="display: none;">
-            <div class="ai-team-header">
-                <h2>🤖 AI Team</h2>
-                <p>AI agents working on your project requirements</p>
-                <button class="btn btn-secondary" onclick="hideAITeam()">Hide Dashboard</button>
-            </div>
-
-            <!-- Top Tier: Visual Progress Cards -->
-            <div class="agent-progress-grid" id="agentProgressGrid">
-                <!-- Agent cards will be dynamically inserted here -->
-            </div>
-
-            <!-- Bottom Tier: Claude Task Output Preview -->
-            <div class="task-output-panel">
-                <div class="task-output-header">
-                    <h3>🔄 Claude Task Bridge - Live Output</h3>
-                    <div class="task-status" id="taskStatus">Ready</div>
-                </div>
-                <div class="task-output-content" id="taskOutputContent">
-                    <div class="task-prompt" id="taskPrompt" style="display: none;">
-                        <div class="task-prompt-label">Task Request:</div>
-                        <div class="task-prompt-text"></div>
-                    </div>
-                    <div class="task-output-log" id="taskOutputLog">
-                        <div class="task-waiting">
-                            <div class="task-waiting-icon">⏳</div>
-                            <div>Waiting for task to start...</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
 
         <!-- Vertical Cards Grid -->
         <div class="vertical-cards-grid">
@@ -4482,62 +4101,11 @@
                 </div>
             </div>
 
-            <!-- Project Pipeline Card -->
-            <div class="card project-pipeline-card">
-                <div class="card-title">
-                    <span>Project Pipeline</span>
-                    <button class="new-project-btn" id="newProjectBtn">+ New Project</button>
-                </div>
-                <div class="pipeline-container" id="pipelineContainer">
-                    <div class="pipeline-stages">
-                        <div class="pipeline-stage active" data-stage="idea">
-                            <div class="stage-icon">💡</div>
-                            <div class="stage-name">Idea</div>
-                        </div>
-                        <div class="pipeline-arrow">→</div>
-                        <div class="pipeline-stage" data-stage="design">
-                            <div class="stage-icon">🎨</div>
-                            <div class="stage-name">Design</div>
-                        </div>
-                        <div class="pipeline-arrow">→</div>
-                        <div class="pipeline-stage" data-stage="development">
-                            <div class="stage-icon">⚙️</div>
-                            <div class="stage-name">Build</div>
-                        </div>
-                        <div class="pipeline-arrow">→</div>
-                        <div class="pipeline-stage" data-stage="testing">
-                            <div class="stage-icon">🧪</div>
-                            <div class="stage-name">Test</div>
-                        </div>
-                        <div class="pipeline-arrow">→</div>
-                        <div class="pipeline-stage" data-stage="deployment">
-                            <div class="stage-icon">🚀</div>
-                            <div class="stage-name">Deploy</div>
-                        </div>
-                    </div>
-                    <div class="pipeline-project-info">
-                        <div class="project-name" id="currentProjectName">No active project</div>
-                        <div class="project-progress-bar">
-                            <div class="project-progress-fill" id="projectProgressFill" style="width: 0%"></div>
-                        </div>
-                        <div class="project-stats">
-                            <span id="projectTasks">0/0 tasks</span>
-                            <span id="projectEstimate">Est: --</span>
-                            <span id="projectTokens">0 tokens</span>
-                        </div>
-                    </div>
-                </div>
-                <div class="pipeline-suggestions" id="pipelineSuggestions">
-                    <div class="suggestion-item">
-                        <span class="suggestion-icon">💡</span>
-                        <span>Start by creating your first project!</span>
-                    </div>
-                </div>
-            </div>
+
 
         </div>
 
-        <!-- Third Row: AI Memory & Context and AI Coach -->
+        <!-- Third Row: AI Memory & Context -->
         <div class="third-row-container">
 
             <!-- AI Memory & Context Card -->
@@ -4629,90 +4197,6 @@
                 </div>
             </div>
 
-            <!-- AI Coach Card -->
-            <div class="card coach-card">
-                <div class="card-title">
-                    <div class="coach-header">
-                        <div class="coach-avatar">🤖</div>
-                        <div class="coach-info">
-                            <span class="coach-name">AI Development Coach</span>
-                            <span class="coach-status">Ready to help</span>
-                        </div>
-                    </div>
-                    <div class="coach-controls">
-                        <button class="coach-btn secondary" id="refreshCoachBtn" title="Get new suggestions">
-                            ↻
-                        </button>
-                        <button class="coach-btn" id="askCoachBtn" title="Ask for specific help">
-                            💬
-                        </button>
-                    </div>
-                </div>
-                
-                <div class="coach-content" id="coachContent">
-                    <!-- Current Focus Section -->
-                    <div class="focus-section">
-                        <div class="focus-header">
-                            <span class="focus-label">Current Focus</span>
-                            <span class="focus-progress">Step 1 of 3</span>
-                        </div>
-                        <div class="focus-card">
-                            <div class="focus-icon">🚀</div>
-                            <div class="focus-details">
-                                <h4 class="focus-title">Project Setup & Foundation</h4>
-                                <p class="focus-description">Let's get your development environment ready and create your first project structure.</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Smart Recommendations -->
-                    <div class="recommendations-section">
-                        <h5 class="section-title">Smart Recommendations</h5>
-                        <div class="recommendation-list">
-                            <div class="recommendation-item priority-high">
-                                <div class="rec-indicator"></div>
-                                <div class="rec-content">
-                                    <h6>Initialize Git Repository</h6>
-                                    <p>Start tracking your code changes from day one</p>
-                                </div>
-                                <button class="rec-action" onclick="window.vibeDashboard.executeRecommendation('init-git')">
-                                    Do it
-                                </button>
-                            </div>
-                            
-                            <div class="recommendation-item priority-medium">
-                                <div class="rec-indicator"></div>
-                                <div class="rec-content">
-                                    <h6>Set Up Environment</h6>
-                                    <p>Configure your development tools and dependencies</p>
-                                </div>
-                                <button class="rec-action" onclick="window.vibeDashboard.executeRecommendation('setup-env')">
-                                    Guide me
-                                </button>
-                            </div>
-                            
-                            <div class="recommendation-item priority-low">
-                                <div class="rec-indicator"></div>
-                                <div class="rec-content">
-                                    <h6>Learn Keyboard Shortcuts</h6>
-                                    <p>Speed up your coding with essential shortcuts</p>
-                                </div>
-                                <button class="rec-action secondary" onclick="window.vibeDashboard.executeRecommendation('learn-shortcuts')">
-                                    Later
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Ambient Prompt Display -->
-                    <div class="quick-actions-section">
-                        <h5 class="section-title">💡 Discover MCP Commands</h5>
-                        <div id="ambient-prompt-container">
-                            <!-- Ambient Prompt Display will be initialized here -->
-                        </div>
-                    </div>
-                </div>
-            </div>
         </div>
 
     <!-- Term Tooltip (for learning mode) -->
@@ -4899,10 +4383,10 @@
                 this.streak = 0;
                 this.projectProgress = 0;
                 this.currentProject = null;
-                this.projectPipeline = null;
+
                 this.projectBreakdownLoaded = false;
                 
-                // AI Team Dashboard properties
+
                 this.agentProgressSimulator = null;
                 this.claudeTaskBridge = null;
                 this.isAITeamActive = false;
@@ -4911,7 +4395,7 @@
                 this.init();
             }
 
-            // AI Team Dashboard Methods
+
             showAITeam(requirements) {
                 const aiTeamSection = document.getElementById('aiTeamSection');
                 if (aiTeamSection) {
@@ -5293,10 +4777,9 @@ Execute as a single Task with multiple sub-agents working in parallel.`;
                 this.setupEventListeners();
                 this.loadDashboardData();
                 this.loadTokenMetrics();
-                this.loadProjectPipeline();
+
                 this.loadCheckpointTimeline();
                 this.startTimeTracking();
-                this.updateMotivationalMessage();
                 this.setupWebSocket();
                 this.initializeCharts();
                 this.loadHooks();
@@ -5875,7 +5358,6 @@ Execute as a single Task with multiple sub-agents working in parallel.`;
                 if (topCommand) {
                     document.getElementById('topCommand').textContent = topCommand.command;
                     document.getElementById('commandCount').textContent = `Used ${topCommand.count} times today`;
-                    this.updateCommandExplanation(topCommand.command);
                 }
                 
                 // Update git stats
@@ -5942,31 +5424,6 @@ Execute as a single Task with multiple sub-agents working in parallel.`;
                 return maxCommand ? { command: maxCommand, count: maxCount } : null;
             }
 
-            updateCommandExplanation(command) {
-                const explanations = {
-                    'git commit': 'Saves a snapshot of your code with a message describing what changed',
-                    'git push': 'Uploads your code changes to GitHub so others can see them',
-                    'npm start': 'Starts your application so you can test it locally',
-                    'npm install': 'Downloads all the packages your project needs to run',
-                    'git status': 'Shows which files have been changed since your last commit',
-                    'git pull': 'Downloads the latest changes from your team'
-                };
-                
-                const tips = {
-                    'git commit': "Try 'git commit -m \"your message\"' for faster commits!",
-                    'git push': "Use 'git push origin main' to specify the branch",
-                    'npm start': "Check package.json to see what this command actually runs",
-                    'npm install': "Add '--save-dev' for development-only packages",
-                    'git status': "Use 'git status -s' for a shorter output",
-                    'git pull': "Always pull before you push to avoid conflicts"
-                };
-                
-                const explanation = explanations[command] || 'A useful command for your project';
-                const tip = tips[command] || 'Keep exploring new commands!';
-                
-                document.getElementById('commandExplanation').textContent = explanation;
-                document.getElementById('levelUpTip').textContent = tip;
-            }
 
 
             startTimeTracking() {
@@ -5988,31 +5445,6 @@ Execute as a single Task with multiple sub-agents working in parallel.`;
                 }, 60000);
             }
 
-            updateMotivationalMessage() {
-                const hour = new Date().getHours();
-                const motivationText = document.getElementById('motivationText');
-                const motivationSub = document.getElementById('motivationSub');
-                
-                let message = '';
-                let sub = '';
-                
-                if (hour < 12) {
-                    message = '☀️ Good morning! Ready to build something amazing?';
-                    sub = 'Start your day with a small win';
-                } else if (hour < 17) {
-                    message = '🚀 You\'re in the zone! Keep that momentum going!';
-                    sub = 'Perfect time for deep focus';
-                } else if (hour < 21) {
-                    message = '🌙 Evening coding session? You\'re dedicated!';
-                    sub = 'Remember to take breaks';
-                } else {
-                    message = '🌟 Late night coding? You\'re a true builder!';
-                    sub = 'Don\'t forget to save your work';
-                }
-                
-                motivationText.textContent = message;
-                motivationSub.textContent = sub;
-            }
 
             celebrate(message) {
                 // Create confetti effect
@@ -6057,57 +5489,42 @@ Execute as a single Task with multiple sub-agents working in parallel.`;
                 }
             }
 
-            async fetchNextSteps() {
-                try {
-                    const response = await fetch('/api/ai-coach/next-steps');
-                    if (response.ok) {
-                        const steps = await response.json();
-                        this.updateNextSteps(steps);
-                    }
-                } catch (error) {
-                    console.log('Using default next steps');
-                }
-            }
 
-            updateNextSteps(steps) {
-                const nextStepsContainer = document.getElementById('nextSteps');
-                nextStepsContainer.innerHTML = '';
-                
-                steps.forEach((step, index) => {
-                    const stepElement = document.createElement('div');
-                    stepElement.className = 'step-item';
-                    stepElement.innerHTML = `
-                        <div class="step-number">${index + 1}</div>
-                        <div class="step-content">
-                            <h4>${step.title}</h4>
-                            <p>${step.description}</p>
-                        </div>
-                    `;
-                    nextStepsContainer.appendChild(stepElement);
-                });
-            }
+
+
 
             // Token Metrics Functions
             async loadTokenMetrics() {
                 try {
-                    const response = await fetch('/api/vibe-flow/budget');
+                    const response = await fetch('/api/token-usage/');
                     if (response.ok) {
-                        const metrics = await response.json();
-                        this.updateTokenCard(metrics);
-                    } else {
-                        // Use mock data for demo
+                        const usage = await response.json();
+                        // Transform the token tracker data to match expected format
+                        const limit = 100000; // Default daily token limit
+                        const used = usage.totalTokens || 0;
+                        const progress = Math.min(Math.round((used / limit) * 100), 100);
+                        const burnRate = Math.round(usage.averageBurnRate || 0);
+                        
                         this.updateTokenCard({
                             daily: {
-                                used: 45000,
-                                limit: 100000,
-                                progress: 45
+                                used: used,
+                                limit: limit,
+                                progress: progress
                             },
-                            burnRate: 750,
-                            timeUntilLimit: '2h 15m',
-                            warnings: []
+                            burnRate: burnRate,
+                            timeUntilLimit: this.calculateTimeUntilLimit(used, limit, burnRate),
+                            warnings: progress > 80 ? ['High usage warning'] : []
                         });
+                        
+                        console.log('📊 [DASHBOARD] Real token usage loaded:', { used, limit, progress, burnRate });
+                        
+                        // Also load weekly data for charts
+                        this.loadWeeklyUsageData();
+                    } else {
+                        throw new Error('Token usage API not available');
                     }
                 } catch (error) {
+                    console.log('📊 [DASHBOARD] Using mock token usage data:', error.message);
                     // Mock data for demo
                     this.updateTokenCard({
                         daily: {
@@ -6123,6 +5540,57 @@ Execute as a single Task with multiple sub-agents working in parallel.`;
                 
                 // Update every 30 seconds
                 setTimeout(() => this.loadTokenMetrics(), 30000);
+            }
+            
+            calculateTimeUntilLimit(used, limit, burnRate) {
+                if (burnRate <= 0) return '∞';
+                const remaining = limit - used;
+                if (remaining <= 0) return '0m';
+                
+                const minutesRemaining = Math.floor(remaining / burnRate);
+                const hours = Math.floor(minutesRemaining / 60);
+                const minutes = minutesRemaining % 60;
+                
+                if (hours > 0) {
+                    return `${hours}h ${minutes}m`;
+                } else {
+                    return `${minutes}m`;
+                }
+            }
+            
+            async loadWeeklyUsageData() {
+                try {
+                    const response = await fetch('/api/token-usage/weekly');
+                    if (response.ok) {
+                        const weeklyData = await response.json();
+                        this.updateUsageChart(this.formatWeeklyDataForChart(weeklyData));
+                        console.log('📊 [DASHBOARD] Weekly usage data loaded for charts');
+                    }
+                } catch (error) {
+                    console.log('📊 [DASHBOARD] Could not load weekly data for charts:', error.message);
+                }
+            }
+            
+            formatWeeklyDataForChart(weeklyData) {
+                const labels = weeklyData.map(day => {
+                    const date = new Date(day.date);
+                    return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+                });
+                
+                const tokenData = weeklyData.map(day => day.totalTokens || 0);
+                const costData = weeklyData.map(day => day.totalCost || 0);
+                
+                return {
+                    labels: labels,
+                    datasets: [
+                        {
+                            data: tokenData
+                        },
+                        {
+                            data: costData
+                        }
+                    ]
+                };
             }
             
             updateTokenCard(metrics) {
@@ -6719,359 +6187,13 @@ Execute as a single Task with multiple sub-agents working in parallel.`;
                 }
             }
 
-            // Project Pipeline Methods
-            async loadProjectPipeline() {
-                try {
-                    const response = await fetch('/api/project-pipeline/active');
-                    if (response.ok) {
-                        const data = await response.json();
-                        if (data.project) {
-                            this.currentProject = data.project;
-                            this.updatePipelineUI(data.project);
-                        }
-                    }
-                } catch (error) {
-                    console.log('Error loading project pipeline:', error);
-                }
 
-                // Setup new project button
-                const newProjectBtn = document.getElementById('newProjectBtn');
-                newProjectBtn.addEventListener('click', () => this.showNewProjectDialog());
 
-                // Setup stage clicks
-                document.querySelectorAll('.pipeline-stage').forEach(stage => {
-                    stage.addEventListener('click', (e) => {
-                        if (this.currentProject) {
-                            const stageName = e.currentTarget.dataset.stage;
-                            this.handleStageClick(stageName);
-                        }
-                    });
-                });
-            }
 
-            updatePipelineUI(project) {
-                // Update project name
-                document.getElementById('currentProjectName').textContent = project.name;
-                
-                // Update progress bar
-                const progressPercent = Math.floor(project.progress * 100);
-                document.getElementById('projectProgressFill').style.width = `${progressPercent}%`;
-                
-                // Update stats
-                const completedTasks = project.completedTasks ? project.completedTasks.length : 0;
-                const totalTasks = project.tasks ? project.tasks.length : 0;
-                document.getElementById('projectTasks').textContent = `${completedTasks}/${totalTasks} tasks`;
-                
-                // Update estimated completion
-                if (project.estimatedCompletion) {
-                    const date = new Date(project.estimatedCompletion);
-                    const days = Math.ceil((date - Date.now()) / (1000 * 60 * 60 * 24));
-                    document.getElementById('projectEstimate').textContent = `Est: ${days}d`;
-                } else {
-                    document.getElementById('projectEstimate').textContent = 'Est: --';
-                }
-                
-                // Update token count
-                document.getElementById('projectTokens').textContent = `${this.formatTokenCount(project.actualTokens || 0)} tokens`;
-                
-                // Update stage visualization
-                this.updateStageVisualization(project);
-                
-                // Load suggestions
-                this.loadProjectSuggestions(project.id);
-            }
 
-            updateStageVisualization(project) {
-                const stages = ['idea', 'design', 'development', 'testing', 'deployment'];
-                const currentStageIndex = stages.indexOf(project.stage);
-                
-                document.querySelectorAll('.pipeline-stage').forEach((stageEl, index) => {
-                    stageEl.classList.remove('active', 'completed');
-                    
-                    if (index < currentStageIndex) {
-                        stageEl.classList.add('completed');
-                    } else if (index === currentStageIndex) {
-                        stageEl.classList.add('active');
-                    }
-                });
-            }
 
-            async loadProjectSuggestions(projectId) {
-                try {
-                    const response = await fetch(`/api/project-pipeline/suggestions/${projectId}`);
-                    if (response.ok) {
-                        const suggestions = await response.json();
-                        this.displayProjectSuggestions(suggestions);
-                    }
-                } catch (error) {
-                    console.log('Error loading suggestions:', error);
-                }
-            }
 
-            displayProjectSuggestions(suggestions) {
-                const container = document.getElementById('pipelineSuggestions');
-                container.innerHTML = '';
-                
-                suggestions.forEach(suggestion => {
-                    const suggestionEl = document.createElement('div');
-                    suggestionEl.className = 'suggestion-item';
-                    suggestionEl.innerHTML = `
-                        <span class="suggestion-icon">${this.getSuggestionIcon(suggestion.type)}</span>
-                        <span>${suggestion.action}</span>
-                    `;
-                    suggestionEl.addEventListener('click', () => this.handleSuggestionClick(suggestion));
-                    container.appendChild(suggestionEl);
-                });
-            }
 
-            getSuggestionIcon(type) {
-                const icons = {
-                    'task': '✅',
-                    'stage': '➡️',
-                    'webhook': '🔗',
-                    'optimization': '⚡'
-                };
-                return icons[type] || '💡';
-            }
-
-            async handleStageClick(stageName) {
-                if (!this.currentProject) return;
-                
-                // Check if moving to next stage
-                const stages = ['idea', 'design', 'development', 'testing', 'deployment'];
-                const currentIndex = stages.indexOf(this.currentProject.stage);
-                const clickedIndex = stages.indexOf(stageName);
-                
-                if (clickedIndex === currentIndex + 1) {
-                    // Move to next stage
-                    if (confirm(`Move to ${stageName} stage?`)) {
-                        await this.updateProjectStage(this.currentProject.id, stageName);
-                    }
-                }
-            }
-
-            async updateProjectStage(projectId, newStage) {
-                try {
-                    const response = await fetch(`/api/project-pipeline/stage`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ projectId, newStage })
-                    });
-                    
-                    if (response.ok) {
-                        const updatedProject = await response.json();
-                        this.currentProject = updatedProject;
-                        this.updatePipelineUI(updatedProject);
-                    }
-                } catch (error) {
-                    console.error('Error updating stage:', error);
-                }
-            }
-
-            showNewProjectDialog() {
-                // Create a better dialog with HTML instead of prompts
-                const dialogHTML = `
-                    <div id="projectDialog" style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); 
-                                                   background: var(--bg-secondary); border: 1px solid var(--glass-border); 
-                                                   border-radius: 16px; padding: 30px; z-index: 1000; min-width: 400px;
-                                                   box-shadow: 0 20px 60px rgba(0,0,0,0.8);">
-                        <h3 style="color: var(--accent-primary); margin-bottom: 20px;">Create New Project</h3>
-                        
-                        <div style="margin-bottom: 16px;">
-                            <label style="display: block; margin-bottom: 8px; color: var(--text-secondary); font-size: 14px;">
-                                What do you want to call your project?
-                            </label>
-                            <input type="text" id="projectName" placeholder="My Awesome App" 
-                                   style="width: 100%; padding: 10px; background: var(--glass-bg); 
-                                          border: 1px solid var(--glass-border); border-radius: 8px; 
-                                          color: var(--text-primary);">
-                        </div>
-                        
-                        <div style="margin-bottom: 16px;">
-                            <label style="display: block; margin-bottom: 8px; color: var(--text-secondary); font-size: 14px;">
-                                What will it do? (optional)
-                            </label>
-                            <textarea id="projectDesc" placeholder="A tool that helps people..." 
-                                      style="width: 100%; padding: 10px; background: var(--glass-bg); 
-                                             border: 1px solid var(--glass-border); border-radius: 8px; 
-                                             color: var(--text-primary); min-height: 60px; resize: vertical;"></textarea>
-                        </div>
-                        
-                        <div style="margin-bottom: 20px;">
-                            <label style="display: block; margin-bottom: 12px; color: var(--text-secondary); font-size: 14px;">
-                                What kind of project is this?
-                            </label>
-                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                                <button class="project-type-btn" data-type="webapp" 
-                                        style="padding: 12px; background: var(--glass-bg); border: 2px solid var(--accent-primary);
-                                               border-radius: 8px; color: var(--text-primary); cursor: pointer;
-                                               transition: all 0.3s ease;">
-                                    <div style="font-size: 24px; margin-bottom: 4px;">🌐</div>
-                                    <div style="font-size: 14px; font-weight: 600;">Website/Web App</div>
-                                    <div style="font-size: 11px; color: var(--text-secondary);">Runs in a browser</div>
-                                </button>
-                                
-                                <button class="project-type-btn" data-type="mobile" 
-                                        style="padding: 12px; background: var(--glass-bg); border: 2px solid transparent;
-                                               border-radius: 8px; color: var(--text-primary); cursor: pointer;
-                                               transition: all 0.3s ease;">
-                                    <div style="font-size: 24px; margin-bottom: 4px;">📱</div>
-                                    <div style="font-size: 14px; font-weight: 600;">Mobile App</div>
-                                    <div style="font-size: 11px; color: var(--text-secondary);">For phones/tablets</div>
-                                </button>
-                                
-                                <button class="project-type-btn" data-type="tool" 
-                                        style="padding: 12px; background: var(--glass-bg); border: 2px solid transparent;
-                                               border-radius: 8px; color: var(--text-primary); cursor: pointer;
-                                               transition: all 0.3s ease;">
-                                    <div style="font-size: 24px; margin-bottom: 4px;">🔧</div>
-                                    <div style="font-size: 14px; font-weight: 600;">Tool/Utility</div>
-                                    <div style="font-size: 11px; color: var(--text-secondary);">Automates tasks</div>
-                                </button>
-                                
-                                <button class="project-type-btn" data-type="game" 
-                                        style="padding: 12px; background: var(--glass-bg); border: 2px solid transparent;
-                                               border-radius: 8px; color: var(--text-primary); cursor: pointer;
-                                               transition: all 0.3s ease;">
-                                    <div style="font-size: 24px; margin-bottom: 4px;">🎮</div>
-                                    <div style="font-size: 14px; font-weight: 600;">Game</div>
-                                    <div style="font-size: 11px; color: var(--text-secondary);">Something fun</div>
-                                </button>
-                            </div>
-                        </div>
-                        
-                        <div style="display: flex; gap: 10px; justify-content: flex-end;">
-                            <button onclick="document.getElementById('projectDialog').remove()" 
-                                    style="padding: 10px 20px; background: var(--glass-bg); 
-                                           border: 1px solid var(--glass-border); border-radius: 8px; 
-                                           color: var(--text-primary); cursor: pointer;">
-                                Cancel
-                            </button>
-                            <button id="createProjectBtn" 
-                                    style="padding: 10px 20px; background: var(--accent-primary); 
-                                           border: none; border-radius: 8px; color: white; 
-                                           cursor: pointer; font-weight: 600;">
-                                Create Project
-                            </button>
-                        </div>
-                    </div>
-                    <div style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; 
-                                background: rgba(0,0,0,0.5); z-index: 999;"
-                         onclick="document.getElementById('projectDialog').remove()"></div>
-                `;
-                
-                // Add dialog to page
-                document.body.insertAdjacentHTML('beforeend', dialogHTML);
-                
-                // Setup type selection
-                let selectedType = 'webapp';
-                document.querySelectorAll('.project-type-btn').forEach(btn => {
-                    btn.addEventListener('click', (e) => {
-                        document.querySelectorAll('.project-type-btn').forEach(b => {
-                            b.style.border = '2px solid transparent';
-                        });
-                        e.currentTarget.style.border = '2px solid var(--accent-primary)';
-                        selectedType = e.currentTarget.dataset.type;
-                    });
-                });
-                
-                // Handle create button
-                document.getElementById('createProjectBtn').addEventListener('click', () => {
-                    const name = document.getElementById('projectName').value.trim();
-                    const description = document.getElementById('projectDesc').value.trim();
-                    
-                    if (!name) {
-                        document.getElementById('projectName').style.borderColor = 'var(--error)';
-                        return;
-                    }
-                    
-                    document.getElementById('projectDialog').remove();
-                    this.createNewProject(name, description, selectedType);
-                });
-                
-                // Focus on name input
-                document.getElementById('projectName').focus();
-            }
-
-            async createNewProject(name, description, type) {
-                try {
-                    const response = await fetch('/api/project-pipeline/create', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ name, description, type })
-                    });
-                    
-                    if (response.ok) {
-                        const project = await response.json();
-                        this.currentProject = project;
-                        this.updatePipelineUI(project);
-                    }
-                } catch (error) {
-                    console.error('Error creating project:', error);
-                }
-            }
-
-            async handleSuggestionClick(suggestion) {
-                if (suggestion.type === 'task') {
-                    // Mark task as complete
-                    const taskId = suggestion.taskId;
-                    if (taskId) {
-                        await this.completeTask(this.currentProject.id, taskId);
-                    }
-                } else if (suggestion.type === 'stage') {
-                    // Move to next stage
-                    const nextStage = suggestion.nextStage;
-                    if (nextStage) {
-                        await this.updateProjectStage(this.currentProject.id, nextStage);
-                    }
-                } else if (suggestion.type === 'webhook') {
-                    // Show webhook configuration
-                    this.showWebhookConfig();
-                }
-            }
-
-            async completeTask(projectId, taskId) {
-                try {
-                    const response = await fetch('/api/project-pipeline/task/complete', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ projectId, taskId })
-                    });
-                    
-                    if (response.ok) {
-                        const updatedProject = await response.json();
-                        this.currentProject = updatedProject;
-                        this.updatePipelineUI(updatedProject);
-                    }
-                } catch (error) {
-                    console.error('Error completing task:', error);
-                }
-            }
-
-            showWebhookConfig() {
-                const url = prompt('Enter webhook URL:');
-                if (!url) return;
-                
-                const events = prompt('Events to trigger (comma-separated: stage_change,task_complete,milestone):') || 'stage_change';
-                
-                this.addWebhook(this.currentProject.id, url, events.split(',').map(e => e.trim()));
-            }
-
-            async addWebhook(projectId, url, events) {
-                try {
-                    const response = await fetch('/api/project-pipeline/webhook', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ projectId, url, events })
-                    });
-                    
-                    if (response.ok) {
-                        alert('Webhook added successfully!');
-                    }
-                } catch (error) {
-                    console.error('Error adding webhook:', error);
-                }
-            }
 
             // Chart Initialization and Management
             initializeCharts() {
@@ -7229,9 +6351,24 @@ Execute as a single Task with multiple sub-agents working in parallel.`;
                 try {
                     loader.style.display = 'block';
                     
-                    const response = await fetch('/api/vibe-flow/project-breakdown');
+                    // Use the correct API endpoint for projects
+                    const response = await fetch('/api/vibe-flow/projects/');
                     if (response.ok) {
-                        const data = await response.json();
+                        const result = await response.json();
+                        // Transform the API response to match expected format
+                        const data = {
+                            projects: result.data.projects.map(p => ({
+                                name: p.name,
+                                tokens: p.tokensUsed,
+                                percentage: p.percentageOfTotal,
+                                color: this.getProjectColor(p.name),
+                                lastActivity: this.formatTimeAgo(p.lastActivity),
+                                filesEdited: p.filesEdited,
+                                commandsRun: p.commandsRun,
+                                timeSpent: p.timeSpent
+                            })),
+                            totalTokens: result.data.summary.totalTokens
+                        };
                         this.displayProjectBreakdown(data);
                     } else {
                         // Use mock data for demo
@@ -7245,6 +6382,31 @@ Execute as a single Task with multiple sub-agents working in parallel.`;
                     loader.style.display = 'none';
                     this.projectBreakdownLoaded = true;
                 }
+            }
+            
+            getProjectColor(projectName) {
+                // Assign consistent colors to projects
+                const colors = ['#8b5cf6', '#06b6d4', '#10b981', '#f59e0b', '#ef4444', '#ec4899', '#6366f1'];
+                let hash = 0;
+                for (let i = 0; i < projectName.length; i++) {
+                    hash = projectName.charCodeAt(i) + ((hash << 5) - hash);
+                }
+                return colors[Math.abs(hash) % colors.length];
+            }
+            
+            formatTimeAgo(timestamp) {
+                const now = Date.now();
+                const then = new Date(timestamp).getTime();
+                const diff = now - then;
+                
+                const minutes = Math.floor(diff / 60000);
+                const hours = Math.floor(diff / 3600000);
+                const days = Math.floor(diff / 86400000);
+                
+                if (minutes < 1) return 'just now';
+                if (minutes < 60) return `${minutes} minute${minutes > 1 ? 's' : ''} ago`;
+                if (hours < 24) return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+                return `${days} day${days > 1 ? 's' : ''} ago`;
             }
             
             generateMockProjectData() {
@@ -7308,6 +6470,13 @@ Execute as a single Task with multiple sub-agents working in parallel.`;
                                         <div class="project-info">
                                             <div class="project-name">${project.name}</div>
                                             <div class="project-activity">Last activity: ${project.lastActivity}</div>
+                                            ${project.filesEdited > 0 || project.commandsRun > 0 ? `
+                                                <div class="project-meta">
+                                                    ${project.filesEdited > 0 ? `<span>📝 ${project.filesEdited} files</span>` : ''}
+                                                    ${project.commandsRun > 0 ? `<span>⚡ ${project.commandsRun} commands</span>` : ''}
+                                                    ${project.timeSpent > 0 ? `<span>⏱️ ${project.timeSpent}m</span>` : ''}
+                                                </div>
+                                            ` : ''}
                                         </div>
                                         <div class="project-stats">
                                             <div class="project-tokens">${this.formatTokenCount(project.tokens)}</div>
@@ -7498,25 +6667,7 @@ Execute as a single Task with multiple sub-agents working in parallel.`;
                 }, 4000);
             }
 
-            // AI Coach Actions
-            quickAction(action) {
-                switch (action) {
-                    case 'ask-claude':
-                        this.openClaudeChat();
-                        break;
-                    case 'coder-thesaurus':
-                        this.openCoderThesaurus();
-                        break;
-                    case 'best-practices':
-                        this.showBestPractices();
-                        break;
-                    case 'productivity':
-                        this.showProductivityTips();
-                        break;
-                    default:
-                        console.log('Quick action:', action);
-                }
-            }
+
 
             executeRecommendation(recommendation) {
                 switch (recommendation) {
@@ -8943,7 +8094,7 @@ Execute as a single Task with multiple sub-agents working in parallel.`;
             return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
         };
 
-        // AI Team Dashboard Global Functions
+
         window.showAITeam = function(requirements = "Build a modern web application with React and Node.js") {
             if (window.vibeDashboard) {
                 window.vibeDashboard.showAITeam(requirements);
@@ -8995,119 +8146,11 @@ Execute as a single Task with multiple sub-agents working in parallel.`;
                 window.vibeDashboard.checkServiceHealth();
             }, 30000);
             
-            // Setup AI Coach buttons
-            const refreshCoachBtn = document.getElementById('refreshCoachBtn');
-            const askCoachBtn = document.getElementById('askCoachBtn');
+
             
-            if (refreshCoachBtn) {
-                refreshCoachBtn.addEventListener('click', () => {
-                    // Refresh coach suggestions
-                    const suggestionsHTML = [
-                        {
-                            icon: '💡',
-                            title: 'Optimize Your Workflow',
-                            desc: 'Enable hybrid hooks for 90% faster operations',
-                            action: 'Learn More',
-                            actionFunc: () => window.open('/hooks', '_blank')
-                        },
-                        {
-                            icon: '🚀',
-                            title: 'Deploy with Confidence',
-                            desc: 'Set up automated testing before deployment',
-                            action: 'Set Up',
-                            actionFunc: () => alert('Test automation setup coming soon!')
-                        },
-                        {
-                            icon: '📊',
-                            title: 'Track Progress',
-                            desc: 'Create checkpoints to save your work',
-                            action: 'Create',
-                            actionFunc: () => {
-                                if (typeof createCheckpoint === 'function') {
-                                    createCheckpoint();
-                                }
-                            }
-                        },
-                        {
-                            icon: '🎯',
-                            title: 'Focus Session',
-                            desc: 'Start a focused 25-minute coding session',
-                            action: 'Start',
-                            actionFunc: () => alert('Focus timer coming soon!')
-                        }
-                    ];
-                    
-                    // Randomly select 3 suggestions
-                    const shuffled = suggestionsHTML.sort(() => 0.5 - Math.random());
-                    const selected = shuffled.slice(0, 3);
-                    
-                    const recommendationsDiv = document.getElementById('coachRecommendations');
-                    if (recommendationsDiv) {
-                        recommendationsDiv.innerHTML = selected.map(rec => `
-                            <div class="recommendation-card">
-                                <div class="rec-icon">${rec.icon}</div>
-                                <div class="rec-content">
-                                    <h6>${rec.title}</h6>
-                                    <p>${rec.desc}</p>
-                                </div>
-                                <button class="rec-action" id="rec-${rec.title.replace(/\s/g, '-')}">
-                                    ${rec.action}
-                                </button>
-                            </div>
-                        `).join('');
-                        
-                        // Add click handlers to the action buttons
-                        selected.forEach(rec => {
-                            const btn = document.getElementById(`rec-${rec.title.replace(/\s/g, '-')}`);
-                            if (btn) {
-                                btn.addEventListener('click', rec.actionFunc);
-                            }
-                        });
-                        
-                        // Show a refresh animation
-                        refreshCoachBtn.style.animation = 'spin 0.5s ease-in-out';
-                        setTimeout(() => {
-                            refreshCoachBtn.style.animation = '';
-                        }, 500);
-                    }
-                });
-            }
+
             
-            if (askCoachBtn) {
-                askCoachBtn.addEventListener('click', () => {
-                    const question = prompt('What would you like help with?');
-                    if (question) {
-                        // Simulate AI response
-                        const responses = [
-                            `Great question about "${question}"! Let me analyze your project and provide tailored suggestions...`,
-                            `I understand you need help with "${question}". Based on your current workflow, I recommend...`,
-                            `"${question}" is a common challenge. Here's how successful developers handle this...`
-                        ];
-                        
-                        const response = responses[Math.floor(Math.random() * responses.length)];
-                        
-                        const coachResponse = document.querySelector('.coach-response');
-                        if (coachResponse) {
-                            coachResponse.innerHTML = `
-                                <div style="padding: 16px; background: rgba(139, 92, 246, 0.1); border-radius: 8px; margin-top: 16px;">
-                                    <div style="font-weight: 600; margin-bottom: 8px;">🤖 AI Coach Response:</div>
-                                    <div style="color: var(--text-secondary); line-height: 1.6;">
-                                        ${response}
-                                    </div>
-                                    <div style="margin-top: 12px;">
-                                        <button class="btn btn-primary" style="margin-right: 8px;" onclick="window.open('/ide', '_blank')">
-                                            Open IDE
-                                        </button>
-                                        <button class="btn btn-secondary" onclick="this.parentElement.parentElement.remove()">
-                                            Dismiss
-                                        </button>
-                                    </div>
-                                </div>
-                            `;
-                        }
-                    }
-                });
-            }
+
             
             // Add spin animation for refresh button
             const style = document.createElement('style');

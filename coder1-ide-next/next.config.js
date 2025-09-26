@@ -1,10 +1,13 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: false, // Disabled to prevent double-initialization issues
-  // Disable standalone mode for development - causes static asset issues
-  // output: 'standalone', // Only enable for production builds
+  // GitHub Pages Configuration
+  output: process.env.NODE_ENV === 'production' && process.env.GITHUB_PAGES ? 'export' : undefined,
+  trailingSlash: true, // GitHub Pages compatibility
+  assetPrefix: process.env.NODE_ENV === 'production' && process.env.GITHUB_PAGES ? '/coder1-ide' : '',
+  basePath: process.env.NODE_ENV === 'production' && process.env.GITHUB_PAGES ? '/coder1-ide' : '',
   images: {
-    unoptimized: true, // Disable image optimization to fix preload error
+    unoptimized: true, // Required for static export and GitHub Pages
   },
   eslint: {
     // Temporarily disable ESLint during builds for Alpha deployment

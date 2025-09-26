@@ -38,7 +38,8 @@ const getProjectRoot = (customPath?: string) => {
 const SUPPORTED_EXTENSIONS = [
     '.js', '.jsx', '.ts', '.tsx', '.json', '.md', '.txt', '.css', '.scss', '.html',
     '.vue', '.py', '.java', '.go', '.rs', '.c', '.cpp', '.h', '.hpp', '.php',
-    '.rb', '.sh', '.yml', '.yaml', '.xml', '.sql', '.env', '.gitignore'
+    '.rb', '.sh', '.yml', '.yaml', '.xml', '.sql', '.gitignore', '.dockerignore',
+    '.eslintrc', '.prettierrc', '.babelrc'
 ];
 
 // Directories to exclude from search
@@ -46,6 +47,14 @@ const EXCLUDED_DIRS = [
     'node_modules', '.git', '.next', 'build', 'dist', 'coverage', 
     '.nyc_output', 'logs', '.cache', '.tmp', '.temp', 'ARCHIVE',
     'backups', 'backup_*', 'db', 'summaries', 'exports'
+];
+
+// Sensitive files to never show (for security)
+const BLOCKED_FILES = [
+    '.env', '.env.local', '.env.production', '.env.development', '.env.test',
+    'id_rsa', 'id_dsa', 'id_ecdsa', 'id_ed25519',
+    '.pem', '.key', '.cert', 'credentials', 'secrets',
+    'package-lock.json', 'yarn.lock', 'pnpm-lock.yaml' // Large files, not useful in editor
 ];
 
 /**
@@ -78,6 +87,11 @@ async function buildFileTree(dirPath: string, relativePath: string = '', depth: 
                 });
         
             } else if (entry.isFile()) {
+                // Skip blocked/sensitive files
+                if (BLOCKED_FILES.some(blocked => entry.name === blocked || entry.name.includes(blocked))) {
+                    continue;
+                }
+                
                 // Check if file extension is supported
                 const ext = path.extname(entry.name).toLowerCase();
                 if (SUPPORTED_EXTENSIONS.includes(ext) || entry.name.startsWith('.')) {

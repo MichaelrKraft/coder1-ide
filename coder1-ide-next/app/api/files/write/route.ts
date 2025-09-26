@@ -133,6 +133,14 @@ async function fileWriteHandler({ req }: { req: NextRequest }): Promise<NextResp
         
         // logger?.info(`📝 [Unified] File written: ${filePath} (${Buffer.byteLength(content, 'utf8')} bytes)`);
         
+        // Track file operation in project tracker
+        try {
+            const { projectTracker } = await import('@/services/project-tracker');
+            await projectTracker.trackFileOperation(fullPath, 'write');
+        } catch (err) {
+            // Project tracker not available
+        }
+        
         return NextResponse.json({
             success: true,
             message: 'File saved successfully',

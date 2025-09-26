@@ -1,0 +1,53 @@
+{
+  "email": {
+    "approval_address": "support@callspot.ai",
+    "from_address": "agents@coder1-ide.dev",
+    "from_name": "Coder1 Agents"
+  },
+  "review": {
+    "auto_approve_threshold": 0.95,
+    "timeout_hours": {
+      "high": 0.5,
+      "medium": 2,
+      "low": 24
+    },
+    "timeout_action": "hold"
+  },
+  "ai": {
+    "model": "claude-3-haiku-20240307",
+    "model_options": {
+      "economy": "claude-3-haiku-20240307",
+      "standard": "claude-3-sonnet-20240229",
+      "premium": "claude-3-5-sonnet-20241022"
+    },
+    "max_tokens": 1000,
+    "temperature": 0.7,
+    "use_economy_for_simple": true,
+    "cost_alert_threshold": 10.00
+  },
+  "agents": {
+    "issue_responder": true,
+    "pr_commenter": true,
+    "content_creator": false,
+    "auto_merger": false,
+    "seo_optimizer": false
+  },
+  "github": {
+    "owner": "MichaelrKraft",
+    "repo": "coder1-ide",
+    "labels": {
+      "auto_add": true,
+      "create_if_missing": false
+    }
+  },
+  "responses": {
+    "sign_off": "\n\nIf you have any questions or need further assistance, please don't hesitate to ask!",
+    "include_discord_link": true,
+    "discord_link": "https://discord.gg/coder1-ide"
+  },
+  "monitoring": {
+    "send_error_notifications": true,
+    "daily_digest": true,
+    "digest_time": "09:00"
+  }
+}

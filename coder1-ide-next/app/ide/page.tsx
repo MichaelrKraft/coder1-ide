@@ -97,6 +97,8 @@ function IDEPageContent() {
 
   // File drop handling
   const [isProcessingFiles, setIsProcessingFiles] = useState(false);
+  const [loadingFiles, setLoadingFiles] = useState<Set<string>>(new Set());
+  const [fileErrors, setFileErrors] = useState<Record<string, string>>({});
   const terminalRef = useRef<any>(null);
 
   // Initialize menu actions service
@@ -390,12 +392,19 @@ function IDEPageContent() {
 
   // File operations
   const handleFileSelect = (path: string) => {
-    setActiveFile(path);
+    handleOpenFileFromPath(path);
   };
 
   const handleOpenFileFromPath = useCallback(async (path: string, line?: number) => {
     try {
       console.log(`📁 Opening file: ${path}${line ? ` at line ${line}` : ''}`);
+      
+      // Clear any previous errors for this file
+      setFileErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[path];
+        return newErrors;
+      });
       
       // Check if file is already loaded
       if (files[path]) {
@@ -403,6 +412,9 @@ function IDEPageContent() {
         setActiveFile(path);
         return;
       }
+
+      // Set loading state
+      setLoadingFiles(prev => new Set(prev).add(path));
 
       // Clean path - remove leading "/" to make it relative for the file API
       const cleanPath = path.startsWith('/') ? path.substring(1) : path;
@@ -414,7 +426,14 @@ function IDEPageContent() {
       const response = await fetch(`/api/files/read?path=${encodedPath}`);
 
       if (!response.ok) {
-        throw new Error(`Failed to read file: ${response.status}`);
+        let errorMessage = `Failed to read file: ${response.status}`;
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.error || errorMessage;
+        } catch (parseError) {
+          // Use default error message if response isn't JSON
+        }
+        throw new Error(errorMessage);
       }
 
       const data = await response.json();
@@ -427,12 +446,36 @@ function IDEPageContent() {
       // TODO: Handle line positioning in Monaco editor
       if (line) {
         console.log(`📁 TODO: Navigate to line ${line} in Monaco editor`);
+        // Future enhancement: editor.revealLineInCenter(line);
+        // Future enhancement: editor.setPosition({lineNumber: line, column: 1});
       }
       
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
       console.error('📁 Failed to open file:', error);
-      // Fall back to just setting as active file (might be empty)
+      
+      // Set error state for this file
+      setFileErrors(prev => ({ ...prev, [path]: errorMessage }));
+      
+      // Still set as active file to show error state in editor
       setActiveFile(path);
+      
+      // Show error in terminal if available
+      const globalSocket = (window as any).terminalSocket;
+      const globalSessionId = (window as any).terminalSessionId;
+      if (globalSocket && globalSessionId) {
+        globalSocket.emit('terminal:input', {
+          sessionId: globalSessionId,
+          data: `\n❌ Failed to open ${path}: ${errorMessage}\n`
+        });
+      }
+    } finally {
+      // Clear loading state
+      setLoadingFiles(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(path);
+        return newSet;
+      });
     }
   }, [files]);
 
@@ -771,10 +814,16 @@ function IDEPageContent() {
                       <div className="h-full overflow-hidden">
                         <MonacoEditor
                           value={
-                            activeFile ? files[activeFile] || "" : undefined
+                            activeFile ? (
+                              loadingFiles.has(activeFile) ? 
+                                `// Loading ${activeFile}...\n// Please wait while the file is being loaded.` :
+                              fileErrors[activeFile] ? 
+                                `// Error loading ${activeFile}\n// ${fileErrors[activeFile]}\n// \n// Please check:\n// 1. File exists and is accessible\n// 2. You have permission to read the file\n// 3. The file path is correct\n// \n// Try refreshing the file explorer or check the terminal for more details.` :
+                              files[activeFile] || ""
+                            ) : undefined
                           }
                           onChange={(value) => {
-                            if (activeFile && value !== undefined) {
+                            if (activeFile && value !== undefined && !loadingFiles.has(activeFile) && !fileErrors[activeFile]) {
                               handleFileChange(activeFile, value);
                             }
                           }}
