@@ -132,6 +132,10 @@ if (require.main === module) {
   
   if (process.argv.includes('--test')) {
     orchestrator.runTest();
+  } else if (process.argv.includes('--direct')) {
+    // Direct mode - post directly to GitHub without email approval
+    const directMode = require('./direct-mode');
+    directMode();
   } else {
     orchestrator.processFromGitHubActions();
   }

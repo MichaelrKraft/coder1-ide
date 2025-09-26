@@ -7072,6 +7072,62 @@ Execute as a single Task with multiple sub-agents working in parallel.`;
                 `;
             }
 
+            renderAIRecommendations(recommendations, healthScore) {
+                // Create AI recommendations section if it doesn't exist
+                let aiSection = document.getElementById('aiRecommendationsSection');
+                if (!aiSection) {
+                    // Find the hooks section to insert after
+                    const hooksSection = document.querySelector('.sidebar-section');
+                    if (!hooksSection) return;
+                    
+                    aiSection = document.createElement('div');
+                    aiSection.id = 'aiRecommendationsSection';
+                    aiSection.className = 'sidebar-section';
+                    aiSection.style.marginTop = '20px';
+                    hooksSection.parentNode.insertBefore(aiSection, hooksSection.nextSibling);
+                }
+
+                // Build recommendations HTML
+                const healthColor = healthScore >= 80 ? '#00c851' : healthScore >= 60 ? '#ffbb33' : '#ff4444';
+                const healthText = healthScore >= 80 ? 'Excellent' : healthScore >= 60 ? 'Good' : 'Needs Improvement';
+
+                const recsHTML = recommendations.slice(0, 3).map(rec => `
+                    <div class="hook-item" style="margin: 10px 0; padding: 10px; background: rgba(255,255,255,0.05); border-radius: 8px;">
+                        <div style="display: flex; align-items: center; margin-bottom: 5px;">
+                            <span style="font-size: 20px; margin-right: 10px;">${rec.icon || '💡'}</span>
+                            <div style="flex: 1;">
+                                <div style="font-weight: bold; color: #fff;">${rec.name}</div>
+                                <div style="font-size: 11px; color: ${rec.color || '#64b5f6'};">
+                                    ${rec.confidencePercentage || Math.round(rec.confidence * 100)}% confidence
+                                </div>
+                            </div>
+                        </div>
+                        <div style="font-size: 12px; color: #bbb; margin: 5px 0;">${rec.description}</div>
+                        <div style="display: flex; justify-content: space-between; font-size: 11px; color: #999; margin-top: 5px;">
+                            <span>Saves ~${rec.estimatedSavings} tokens</span>
+                            <span style="background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px;">
+                                ${rec.pattern}
+                            </span>
+                        </div>
+                    </div>
+                `).join('');
+
+                aiSection.innerHTML = `
+                    <div class="section-header" style="margin-bottom: 15px;">
+                        <h3 style="margin: 0; color: #fff;">🤖 AI Recommendations</h3>
+                        <div style="display: inline-block; background: ${healthColor}; color: #fff; padding: 4px 8px; border-radius: 4px; font-size: 11px; margin-left: 10px;">
+                            ${healthText} (${healthScore}%)
+                        </div>
+                    </div>
+                    <div class="ai-recommendations-list">
+                        ${recsHTML}
+                    </div>
+                `;
+
+                // Make the section visible
+                aiSection.style.display = 'block';
+            }
+
             async createHook(hookData) {
                 try {
                     const response = await fetch('/api/vibe-hooks/create', {
