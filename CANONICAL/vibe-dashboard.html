@@ -6976,9 +6976,9 @@ Execute as a single Task with multiple sub-agents working in parallel.`;
 
                     // Load both traditional hooks and AI recommendations
                     const [hooksResponse, statsResponse, aiResponse] = await Promise.all([
-                        fetch('/api/vibe-hooks/list'),
-                        fetch('/api/vibe-hooks/stats'),
-                        fetch('/api/hooks/ai-recommendations').catch(() => ({ json: () => ({ success: false }) }))
+                        fetch('/api/vibe-hooks/list/'),
+                        fetch('/api/vibe-hooks/stats/'),
+                        fetch('/api/hooks/ai-recommendations/').catch(() => ({ json: () => ({ success: false }) }))
                     ]);
 
                     const hooksData = await hooksResponse.json();

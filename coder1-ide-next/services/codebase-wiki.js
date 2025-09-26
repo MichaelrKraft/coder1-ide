@@ -18,11 +18,27 @@ class CodebaseWiki extends EventEmitter {
         this.indexDir = path.join(this.projectRoot, '.coder1', 'codebase-index');
         this.excludePatterns = options.excludePatterns || [
             'node_modules/**',
+            '**/node_modules/**',
             'build/**',
             'dist/**',
             '*.min.js',
             '.git/**',
-            'coverage/**'
+            'coverage/**',
+            'ARCHIVE/**',
+            '.next/**',
+            'out/**',
+            'db/**',
+            '*.db',
+            '*.db-*',
+            'summaries/**',
+            'exports/**',
+            'backups/**',
+            '*.backup',
+            '*.bak*',
+            'tmp/**',
+            '.cache/**',
+            'logs/**',
+            '*.log'
         ];
         
         // Parser configuration

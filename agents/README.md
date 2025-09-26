@@ -1,6 +1,8 @@
 # 🤖 Coder1 Autonomous GitHub Agents
 
-Automated GitHub community management system with email-based human review for all messages.
+## ✅ Status: WORKING & TESTED
+
+Intelligent AI agents that automatically respond to GitHub issues using Claude AI. Now supports **direct posting mode** - no email configuration required!
 
 ## 🚀 Quick Start
 
@@ -10,103 +12,129 @@ cd agents
 npm install
 ```
 
-### 2. Configure Environment
-Copy `.env.example` to `../.env.local` and add your keys:
+### 2. Configure API Keys
 ```bash
-ANTHROPIC_API_KEY=your-key
-SENDGRID_API_KEY=your-key  # Or use SMTP_* variables
-GITHUB_TOKEN=your-github-token
+# Edit .env.local
+nano ../.env.local
+
+# Required:
+ANTHROPIC_API_KEY=sk-ant-api03-...  # Your Anthropic API key
+GITHUB_TOKEN=ghp_...                 # GitHub Personal Access Token
+
+# See SETUP_GITHUB_TOKEN.md for GitHub token setup
 ```
 
-### 3. Test the System
+### 3. Test Locally
 ```bash
-npm test
-```
-This will generate a test issue response and email it to support@callspot.ai
+# Test AI response generation (no GitHub needed)
+node test-local.js
 
-### 4. Review & Approve
-Check your email, then approve:
-```bash
-npm run approve [queue-id]
+# Verify GitHub token
+node scripts/verify-github.js
 ```
 
-## 📧 Email Approval Flow
+### 4. Deploy to GitHub
+Add secrets to your GitHub repository:
+- Repository → Settings → Secrets → Add `GITHUB_TOKEN` and `ANTHROPIC_API_KEY`
 
-1. **Agent drafts response** → Sends to support@callspot.ai
-2. **You review email** → Reply with APPROVE, EDIT, or REJECT
-3. **Agent posts approved content** → GitHub issue/PR updated
+The workflow will automatically trigger when issues are created!
+
+## 🔄 Direct Posting Mode (NEW!)
+
+**No email configuration required!** The agent posts directly to GitHub:
+
+1. **Issue created** → GitHub Actions triggers
+2. **AI generates response** → Claude analyzes and responds
+3. **Direct posting** → Response posted immediately to GitHub
+
+For email-based approval (optional), see the legacy documentation.
 
 ## 🎮 CLI Commands
 
 ```bash
-# Review all pending items
-npm run review
+# Test AI response generation locally
+node test-local.js
 
-# Approve a specific item
-npm run approve [queue-id]
+# Verify GitHub token configuration
+node scripts/verify-github.js
 
-# Approve with edits
-npm run approve [queue-id] --edit "your edited version"
+# Run orchestrator in direct mode
+node orchestrator.js --direct
 
-# Reject an item
-npm run reject [queue-id] --reason "why rejected"
+# Test with custom issue
+ISSUE_TITLE="Bug report" ISSUE_BODY="App crashes" node orchestrator.js --direct
 
-# Execute all approved items
-npm run execute
+# View cost report
+node scripts/cost-report.js
 
-# Test the system
-npm test
+# Legacy email-based commands (optional)
+npm run review        # Review pending items
+npm run approve ID    # Approve an item
+npm run execute      # Execute approved items
 ```
 
 ## 🔄 GitHub Actions
 
 The system runs automatically via GitHub Actions:
-- **On Issues/PRs**: Drafts responses immediately
-- **Every 2 hours**: Executes approved items
-- **Daily at 9 AM**: Sends digest of pending items
+- **On Issues Created**: Generates and posts AI response immediately
+- **Direct Posting**: No email approval needed
+- **Response Time**: <2 minutes from issue creation
+- **Workflow**: `.github/workflows/github-agent.yml`
 
 ## 📁 Directory Structure
 
 ```
 agents/
 ├── orchestrator.js          # Main coordinator
+├── direct-mode.js          # Direct GitHub posting (NEW!)
+├── github-direct-poster.js # GitHub API client (NEW!)
+├── test-local.js           # Local testing tool (NEW!)
 ├── github-agent/           # GitHub automation
 │   └── issue-responder.js  # Issue response drafting
-├── email/                  # Email system
-│   └── sender.js          # Sends to support@callspot.ai
-├── review-queue/          # Approval queue
+├── email/                  # Email system (optional)
+│   └── sender.js          # Email notifications
+├── review-queue/          # Approval queue (legacy)
 │   ├── pending/          # Awaiting approval
 │   ├── approved/         # Ready to execute
 │   └── rejected/         # Rejected items
 ├── scripts/              # CLI tools
+│   ├── verify-github.js # GitHub token verification (NEW!)
+│   ├── cost-report.js   # Usage tracking (NEW!)
 │   ├── approve.js       # Approve items
 │   ├── review.js        # Review dashboard
-│   ├── execute.js       # Execute approved
-│   └── reject.js        # Reject items
+│   └── execute.js       # Execute approved
 └── lib/                 # Shared utilities
-    └── claude-api.js    # Claude integration
+    └── claude-api.js    # Claude AI integration
 ```
 
-## 🎯 What Gets Reviewed
+## 🎯 Operating Modes
 
-✅ **All Messages** (require your approval):
-- GitHub issue responses
-- PR comments
-- Blog posts
-- Social media content
-- Community announcements
+### Direct Mode (Default - NEW!)
+✅ **Automatic Responses** (no approval needed):
+- GitHub issue responses posted immediately
+- AI-generated responses with footer attribution
+- Cost-optimized model selection
+- ~$0.0004 per response
 
-✔️ **Automatic Actions** (no review needed):
-- Starring repositories
-- Following users
-- Collecting analytics
-- SEO optimization
+### Email Mode (Legacy - Optional)
+📧 **Reviewed Responses** (require approval):
+- Drafts sent to email for review
+- Manual approval before posting
+- Edit capability before publishing
+- Higher control but slower response
 
-## 📊 Confidence Levels
+## 💰 Cost Analysis
 
-- **>95% confidence**: Auto-approve (if configured)
-- **70-95% confidence**: Email for review
-- **<70% confidence**: Auto-reject
+### Per Response
+- **Simple Issues**: ~$0.0003 (Haiku model)
+- **Complex Issues**: ~$0.0006 (Haiku model)
+
+### Monthly Projections
+- **10 issues/day**: ~$0.15/month
+- **50 issues/day**: ~$0.75/month
+- **100 issues/day**: ~$1.50/month
+
+Run `node scripts/cost-report.js` for detailed usage tracking.
 
 ## ⚙️ Configuration
 
