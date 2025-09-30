@@ -1,0 +1,163 @@
+# Render.com Blueprint for Coder1 IDE
+# This file defines the infrastructure for deploying Coder1 IDE to Render
+
+services:
+  # Main Coder1 IDE Application
+  - type: web
+    name: coder1-ide
+    runtime: node
+    plan: starter # Can upgrade to standard for more resources
+    buildCommand: npm run build:render
+    startCommand: npm start
+    healthCheckPath: /
+    
+    # Environment Configuration
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3001
+      - key: NEXT_TELEMETRY_DISABLED
+        value: 1
+      - key: NODE_OPTIONS
+        value: "--max-old-space-size=1500"
+      
+      # Feature Flags for Production
+      - key: NEXT_PUBLIC_ENABLE_AI_CONSULTATION
+        value: true
+      - key: NEXT_PUBLIC_ENABLE_AGENT_DASHBOARD
+        value: true
+      - key: NEXT_PUBLIC_MEMORY_CONTEXT_ENABLED
+        value: true
+      - key: NEXT_PUBLIC_MEMORY_AUTO_INJECT
+        value: true
+      
+      # Disable Beta Features in Production
+      - key: NEXT_PUBLIC_ENABLE_TWEAKCC
+        value: false
+      - key: NEXT_PUBLIC_ENABLE_CONTAINERS
+        value: false
+      - key: NEXT_PUBLIC_ENABLE_BETA_ROUTE
+        value: false
+      - key: ENABLE_CLI_PUPPETEER
+        value: false
+      
+      # Performance Optimizations
+      - key: MAX_PARALLEL_AGENTS
+        value: 3
+      - key: MAX_WORKFLOW_TIME
+        value: 300000
+      - key: AGENT_RESPONSE_TIMEOUT
+        value: 30000
+      - key: MEMORY_PANIC_THRESHOLD_MB
+        value: 1800
+      
+      # Security (add via Render Dashboard)
+      - key: JWT_SECRET
+        sync: false # Set manually in Render Dashboard
+      - key: JWT_REFRESH_SECRET  
+        sync: false # Set manually in Render Dashboard
+      
+      # Optional AI Services (add via Render Dashboard if needed)
+      - key: ANTHROPIC_API_KEY
+        sync: false # Set manually if AI features desired
+      - key: OPENAI_API_KEY
+        sync: false # Set manually if fallback AI needed
+      
+      # Auto-generated Public URLs (Render will populate these)
+      - key: NEXT_PUBLIC_API_URL
+        fromService:
+          type: web
+          name: coder1-ide
+          property: host
+      - key: NEXT_PUBLIC_UNIFIED_SERVER_URL
+        fromService:
+          type: web
+          name: coder1-ide
+          property: host
+      - key: NEXT_PUBLIC_WEBSOCKET_URL
+        fromService:
+          type: web
+          name: coder1-ide
+          property: host
+    
+    # Build Configuration
+    buildFilter:
+      paths:
+        - coder1-ide-next/**
+        - package.json
+        - package-lock.json
+        - .env.example
+      ignoredPaths:
+        - docs/**
+        - .github/**
+        - "*.md"
+        - test-*.js
+        - ARCHIVE/**
+        - backups/**
+        - logs/**
+        - .DS_Store
+    
+    # Routing Configuration
+    routes:
+      - type: rewrite
+        source: /ide
+        destination: /ide
+      - type: rewrite
+        source: /api/*
+        destination: /api/$1
+      - type: rewrite
+        source: /
+        destination: /
+    
+    # Resource Limits (adjust based on plan)
+    disk:
+      name: coder1-data
+      size: 1GB
+      mountPath: /app/data
+    
+    # Health Check Configuration
+    healthCheckPath: /
+    
+    # Auto-Deploy Configuration
+    autoDeploy: true
+    branch: main # Change to your deployment branch
+    
+    # Custom Headers for WebSocket Support
+    headers:
+      - path: /*
+        headers:
+          - key: X-Frame-Options
+            value: DENY
+          - key: X-Content-Type-Options
+            value: nosniff
+          - key: Connection
+            value: Upgrade
+          - key: Upgrade
+            value: websocket
+
+# Static Assets (if needed for CDN optimization)
+# Currently handled by Next.js, but can be separated for performance
+# - type: static
+#   name: coder1-static
+#   staticPublishPath: ./coder1-ide-next/public
+#   pullRequestPreviewsEnabled: false
+
+# Database (SQLite is embedded, but can add Redis for sessions)
+# - type: redis
+#   name: coder1-session-cache
+#   plan: starter
+#   maxmemoryPolicy: allkeys-lru
+
+# Notification Configuration
+# notifications:
+#   - type: slack
+#     name: deployment-alerts
+#     channel: "#deployments"
+
+# Custom Domains (configure after deployment)
+# domains:
+#   - name: coder1.yourdomain.com
+#     type: apex
+#   - name: ide.yourdomain.com
+#     type: subdomain
