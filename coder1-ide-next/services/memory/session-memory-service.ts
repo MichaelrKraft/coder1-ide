@@ -5,6 +5,7 @@
 
 import { EventEmitter } from 'events';
 import { logger } from '@/lib/logger';
+import { MemoryMode, SafeModeFilter, SAFE_MODE_FILTER } from '@/lib/memory-types';
 
 export interface MemoryInteraction {
   timestamp: Date;
@@ -24,6 +25,10 @@ export interface SessionMemory {
   summary?: string;
   totalTokens: number;
   metadata?: Record<string, any>;
+  verified?: boolean;
+  hasErrors?: boolean;
+  flagged?: boolean;
+  confidence?: number;
 }
 
 export interface MemoryContext {
@@ -38,6 +43,8 @@ interface MemoryServiceConfig {
   maxStoredSessions: number;
   compressionRatio: number;
   autoSaveInterval: number;
+  memoryMode: MemoryMode;
+  safeModeFilter: SafeModeFilter;
 }
 
 class SessionMemoryService extends EventEmitter {
@@ -55,6 +62,8 @@ class SessionMemoryService extends EventEmitter {
       maxStoredSessions: 100,
       compressionRatio: 0.1, // Compress to 10% of original
       autoSaveInterval: 30000, // 30 seconds
+      memoryMode: MemoryMode.SAFE,
+      safeModeFilter: SAFE_MODE_FILTER,
       ...config
     };
 
@@ -228,17 +237,59 @@ class SessionMemoryService extends EventEmitter {
   }
 
   /**
+   * Apply safe mode filtering to sessions
+   */
+  private applySafeModeFilter(sessions: SessionMemory[]): SessionMemory[] {
+    if (this.config.memoryMode !== MemoryMode.SAFE) {
+      return sessions;
+    }
+
+    const filter = this.config.safeModeFilter;
+    const now = Date.now();
+    const maxAge = filter.maxAge * 24 * 60 * 60 * 1000; // Convert days to ms
+
+    return sessions.filter(session => {
+      // Check age
+      const age = now - new Date(session.startTime).getTime();
+      if (age > maxAge) return false;
+
+      // Check for errors
+      if (filter.excludeErrors && session.hasErrors) return false;
+
+      // Check if flagged
+      if (filter.excludeFlagged && session.flagged) return false;
+
+      // Check confidence if available
+      if (session.confidence !== undefined && session.confidence < filter.minConfidence) {
+        return false;
+      }
+
+      // If requireVerified is true, only include verified sessions
+      if (filter.requireVerified && !session.verified) {
+        return false;
+      }
+
+      return true;
+    });
+  }
+
+  /**
    * Find sessions relevant to current input
    */
   private async findRelevantSessions(input?: string): Promise<SessionMemory[]> {
-    if (!input) {
-      // Return most recent sessions
-      return this.recentSessions.slice(0, 3);
+    // Apply safe mode filter first
+    const filteredSessions = this.config.memoryMode === MemoryMode.OFF 
+      ? []
+      : this.applySafeModeFilter(this.recentSessions);
+
+    if (!input || filteredSessions.length === 0) {
+      // Return most recent filtered sessions
+      return filteredSessions.slice(0, 3);
     }
 
     // Simple keyword matching for MVP
     const keywords = this.extractKeywords(input);
-    const relevant = this.recentSessions.filter(session => {
+    const relevant = filteredSessions.filter(session => {
       const sessionText = JSON.stringify(session.interactions).toLowerCase();
       return keywords.some(keyword => sessionText.includes(keyword.toLowerCase()));
     });
@@ -325,6 +376,45 @@ class SessionMemoryService extends EventEmitter {
   }
 
   /**
+   * Set memory mode
+   */
+  setMemoryMode(mode: MemoryMode): void {
+    this.config.memoryMode = mode;
+    logger.info(`🧠 Memory mode set to: ${mode}`);
+    this.emit('mode-changed', mode);
+  }
+
+  /**
+   * Get current memory mode
+   */
+  getMemoryMode(): MemoryMode {
+    return this.config.memoryMode;
+  }
+
+  /**
+   * Mark current session as verified
+   */
+  markSessionVerified(): void {
+    if (this.currentSession) {
+      this.currentSession.verified = true;
+      this.currentSession.confidence = 1.0;
+      logger.info('✅ Current session marked as verified');
+    }
+  }
+
+  /**
+   * Flag session with correction
+   */
+  flagSession(sessionId: string, reason: string): void {
+    const session = this.recentSessions.find(s => s.sessionId === sessionId);
+    if (session) {
+      session.flagged = true;
+      session.metadata = { ...session.metadata, flagReason: reason };
+      logger.info(`🚩 Session ${sessionId} flagged: ${reason}`);
+    }
+  }
+
+  /**
    * Get memory statistics
    */
   getStats(): Record<string, any> {
@@ -333,7 +423,8 @@ class SessionMemoryService extends EventEmitter {
       currentSessionInteractions: this.currentSession?.interactions.length || 0,
       currentSessionTokens: this.currentSession?.totalTokens || 0,
       recentSessionsCount: this.recentSessions.length,
-      totalStoredTokens: this.recentSessions.reduce((sum, s) => sum + s.totalTokens, 0)
+      totalStoredTokens: this.recentSessions.reduce((sum, s) => sum + s.totalTokens, 0),
+      memoryMode: this.config.memoryMode
     };
   }
 

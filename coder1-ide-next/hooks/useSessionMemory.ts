@@ -6,6 +6,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { sessionMemoryService } from '@/services/memory/session-memory-service';
 import type { MemoryContext, MemoryInteraction } from '@/services/memory/session-memory-service';
 import { logger } from '@/lib/logger';
+import { MemoryMode } from '@/lib/memory-types';
 
 export interface UseSessionMemoryOptions {
   enabled: boolean;
@@ -18,6 +19,7 @@ export interface UseSessionMemoryReturn {
   isEnabled: boolean;
   isActive: boolean;
   memoryContext: MemoryContext | null;
+  memoryMode: MemoryMode;
   stats: {
     interactions: number;
     tokens: number;
@@ -28,6 +30,9 @@ export interface UseSessionMemoryReturn {
   startSession: () => Promise<void>;
   endSession: () => Promise<void>;
   toggleMemory: () => void;
+  setMemoryMode: (mode: MemoryMode) => void;
+  markSessionVerified: () => void;
+  flagSession: (sessionId: string, reason: string) => void;
 }
 
 export function useSessionMemory(options: UseSessionMemoryOptions): UseSessionMemoryReturn {
@@ -41,6 +46,7 @@ export function useSessionMemory(options: UseSessionMemoryOptions): UseSessionMe
   const [isEnabled, setIsEnabled] = useState(initialEnabled);
   const [isActive, setIsActive] = useState(false);
   const [memoryContext, setMemoryContext] = useState<MemoryContext | null>(null);
+  const [memoryMode, setMemoryModeState] = useState<MemoryMode>(MemoryMode.SAFE);
   const [stats, setStats] = useState({
     interactions: 0,
     tokens: 0,
@@ -183,6 +189,25 @@ export function useSessionMemory(options: UseSessionMemoryOptions): UseSessionMe
     });
   }, [isActive, startSession, endSession]);
 
+  // Set memory mode
+  const setMemoryMode = useCallback((mode: MemoryMode) => {
+    sessionMemoryService.setMemoryMode(mode);
+    setMemoryModeState(mode);
+    logger.info(`Memory mode changed to: ${mode}`);
+  }, []);
+
+  // Mark session as verified
+  const markSessionVerified = useCallback(() => {
+    sessionMemoryService.markSessionVerified();
+    logger.info('Session marked as verified');
+  }, []);
+
+  // Flag session with correction
+  const flagSession = useCallback((sessionId: string, reason: string) => {
+    sessionMemoryService.flagSession(sessionId, reason);
+    logger.info(`Session ${sessionId} flagged: ${reason}`);
+  }, []);
+
   // Clean up on unmount
   useEffect(() => {
     return () => {
@@ -198,11 +223,15 @@ export function useSessionMemory(options: UseSessionMemoryOptions): UseSessionMe
     isEnabled,
     isActive,
     memoryContext,
+    memoryMode,
     stats,
     addInteraction,
     getInjectionContext,
     startSession,
     endSession,
-    toggleMemory
+    toggleMemory,
+    setMemoryMode,
+    markSessionVerified,
+    flagSession
   };
 }

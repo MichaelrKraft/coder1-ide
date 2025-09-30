@@ -16,20 +16,28 @@ if (typeof window !== 'undefined') {
 }
 import './Terminal.css'; // Re-enabled - critical for xterm viewport fixes
 import { Zap, StopCircle, Brain, Eye, Code2, Mic, MicOff, Speaker, ChevronDown, Plus } from '@/lib/icons';
+import { Edit3, GitBranch, X, Stethoscope } from 'lucide-react';
 import TerminalSettings, { TerminalSettingsState } from './TerminalSettings';
 import { glows, spacing } from '@/lib/design-tokens';
 import { getSocket } from '@/lib/socket';
-// import ErrorDoctor from './ErrorDoctor'; // Removed to fix terminal overlap issue
+import ErrorDoctor from './ErrorDoctor';
 import { soundAlertService, SoundPreset } from '@/lib/sound-alert-service';
+import { consoleCaptureService, CapturedConsoleError } from '@/lib/console-capture-service';
 import { useEnhancedSupervision } from '@/contexts/EnhancedSupervisionContext';
 import SupervisionConfigModal from '@/components/supervision/SupervisionConfigModal';
 import { useSessionMemory } from '@/hooks/useSessionMemory';
+import { MemoryMode } from '@/lib/memory-types';
+import { features } from '@/lib/feature-flags';
 import { useUIStore } from '@/stores/useUIStore';
+import { useIDEStore } from '@/stores/useIDEStore';
 import { filterThinkingAnimations, extractClaudeCommands } from '@/lib/checkpoint-utils';
 import { getCompanionClient } from '@/lib/companion-client';
 import { terminalCommandHandler } from '@/lib/terminal-commands';
 import { debounce } from '@/lib/debounce';
 // import EnhancedStatusline from '@/components/statusline/EnhancedStatusline'; // Temporarily disabled for debugging
+import StagedComposer from './StagedComposer';
+import SessionMetricsBar from './SessionMetricsBar';
+import TerminalTokenStats from './TerminalTokenStats';
 
 // Defensive filtering for status lines - Layer 3 protection
 const cleanStatusLines = (data: string): string => {
@@ -68,6 +76,7 @@ interface TerminalProps {
   onTerminalData?: (data: string) => void;
   onTerminalCommand?: (command: string) => void;
   onTerminalReady?: (sessionId: string | null, ready: boolean) => void;
+  onComposerVisibilityChange?: (visible: boolean) => void;
   sandboxMode?: boolean;
   sandboxSession?: {
     id: string;
@@ -102,7 +111,7 @@ interface TerminalProps {
  * 
  * DO NOT MODIFY button positioning without checking original
  */
-export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped, onTerminalData, onTerminalCommand, onTerminalReady, sandboxMode = false, sandboxSession, agentMode = false, agentSession, isVisible = true }: TerminalProps) {
+export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped, onTerminalData, onTerminalCommand, onTerminalReady, onComposerVisibilityChange, sandboxMode = false, sandboxSession, agentMode = false, agentSession, isVisible = true }: TerminalProps) {
   // REMOVED: // REMOVED: console.log('🖥️ Terminal component rendering...');
   const terminalRef = useRef<HTMLDivElement>(null);
   const xtermRef = useRef<XTerm | null>(null);
@@ -111,6 +120,7 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
   const sessionCreatedRef = useRef(false); // Track if session was already created
   const onDataDisposableRef = useRef<any>(null); // Store onData disposable
   const connectionInProgressRef = useRef(false); // Prevent concurrent connections
+  const pasteHandlerRef = useRef<((e: ClipboardEvent) => Promise<void>) | null>(null); // Store paste handler for cleanup
   const [isConnected, setIsConnected] = useState(false);
   const [agentsRunning, setAgentsRunning] = useState(false);
   const [voiceListening, setVoiceListening] = useState(false);
@@ -173,6 +183,19 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
     platform: 'Claude Code',
     autoInject: true
   });
+
+  // Memory activity indicator state
+  const [memoryActivity, setMemoryActivity] = useState<{
+    isActive: boolean;
+    tokensUsed: number;
+    sessionsUsed: number;
+    lastActivity: Date | null;
+  }>({
+    isActive: false,
+    tokensUsed: 0,
+    sessionsUsed: 0,
+    lastActivity: null
+  });
   
   // UI Store for toasts
   const { addToast } = useUIStore();
@@ -181,6 +204,27 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
   const [sandboxCreationStatus, setSandboxCreationStatus] = useState<'idle' | 'creating' | 'success' | 'error'>('idle');
   const [sandboxCreationMessage, setSandboxCreationMessage] = useState<string>('');
   const [createdSandboxId, setCreatedSandboxId] = useState<string>('');
+  
+  // Feature flag for staged command line
+  const ENABLE_STAGED_COMPOSER = process.env.NEXT_PUBLIC_ENABLE_STAGED_COMPOSER !== 'false'; // Default to enabled
+  
+  // Staged composer state
+  const [composerVisible, setComposerVisible] = useState(false);
+  const [stagedCommand, setStagedCommand] = useState('');
+  const [isProcessingCommand, setIsProcessingCommand] = useState(false);
+  
+  // Planning mode state
+  const [planningMode, setPlanningMode] = useState(false);
+  const [plannedCommands, setPlannedCommands] = useState<string[]>([]);
+  
+  // Context menu state
+  const [contextMenuVisible, setContextMenuVisible] = useState(false);
+  const [contextMenuPosition, setContextMenuPosition] = useState({ x: 0, y: 0 });
+  
+  // Notify parent when composer visibility changes
+  useEffect(() => {
+    onComposerVisibilityChange?.(composerVisible);
+  }, [composerVisible, onComposerVisibilityChange]);
   
   // Default terminal settings - guaranteed structure
   const defaultTerminalSettings: TerminalSettingsState = {
@@ -330,6 +374,31 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
       clearInterval(statsInterval);
     };
   }, []);
+
+  // Sync console errors and update error indicator
+  useEffect(() => {
+    const updateConsoleErrors = () => {
+      const captured = consoleCaptureService.getErrors();
+      setConsoleErrors(captured);
+      
+      // Update hasActiveError using a callback to get current state
+      setHasActiveError(prev => {
+        // Get current error history from state via callback
+        const hasConsoleError = captured.length > 0;
+        // We'll check terminal errors via another way to avoid stale closure
+        return hasConsoleError || prev; // Keep existing state if we have console errors
+      });
+    };
+
+    // Update immediately
+    updateConsoleErrors();
+
+    // Set up periodic sync (every 2 seconds)
+    const interval = setInterval(updateConsoleErrors, 2000);
+
+    return () => clearInterval(interval);
+  }, []); // Remove errorHistory dependency to avoid stale closures
+
 
   // Initialize companion service connection for Claude Code CLI access
   useEffect(() => {
@@ -528,8 +597,23 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
   const [lastError, setLastError] = useState<string | null>(null);
   const [errorDoctorActive, setErrorDoctorActive] = useState(true);
   const socketRef = useRef<any>(null); // Will be Socket instance after async init
+  
+  // Error Doctor modal states
+  const [showErrorDoctorModal, setShowErrorDoctorModal] = useState(false);
+  const [hasActiveError, setHasActiveError] = useState(false);
+  const [errorHistory, setErrorHistory] = useState<string[]>([]);
+  
+  // Console capture states
+  const [consoleErrors, setConsoleErrors] = useState<CapturedConsoleError[]>([]);
+  const [isAnalyzingWithClaude, setIsAnalyzingWithClaude] = useState(false);
   const [currentLineBuffer, setCurrentLineBuffer] = useState('');
   const [selectedSoundPreset, setSelectedSoundPreset] = useState<SoundPreset>('gentle');
+
+  // Separate effect to update error state when errorHistory changes
+  useEffect(() => {
+    const hasTerminalError = errorHistory.length > 0;
+    setHasActiveError(prev => hasTerminalError || (consoleErrors.length > 0));
+  }, [errorHistory, consoleErrors]);
 
   // Save sound alert settings to localStorage when they change
   useEffect(() => {
@@ -858,6 +942,82 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
       // Ensure the container is ready before opening
       if (terminalRef.current && terminalRef.current.offsetParent !== null) {
         term.open(terminalRef.current);
+        
+        // Global paste handler for image interception
+        const handleImagePaste = async (e: ClipboardEvent) => {
+          // Only handle if terminal has focus
+          if (!terminalRef.current?.contains(document.activeElement)) return;
+          
+          const items = e.clipboardData?.items;
+          if (!items) return;
+          
+          for (let i = 0; i < items.length; i++) {
+            const item = items[i];
+            if (item.type.startsWith('image/')) {
+              // Prevent base64 text from appearing
+              e.preventDefault();
+              e.stopPropagation();
+              
+              // Convert to File
+              const blob = item.getAsFile();
+              if (!blob) continue;
+              
+              const timestamp = Date.now();
+              const extension = item.type.split('/')[1] || 'png';
+              const fileName = `pasted-image-${timestamp}.${extension}`;
+              const file = new File([blob], fileName, { type: item.type });
+              
+              // Show user feedback
+              term.writeln(`\r\n📎 [Image: ${fileName} (${(file.size/1024).toFixed(1)}KB)]`);
+              
+              // Bridge the file to make it available to Claude
+              try {
+                const formData = new FormData();
+                formData.append('files', file);
+                
+                const response = await fetch('/api/claude/bridge-files', {
+                  method: 'POST',
+                  body: formData
+                });
+                
+                if (response.ok) {
+                  const data = await response.json();
+                  console.log('✅ Image bridged successfully:', data);
+                  
+                  // Store in session context
+                  if (typeof window !== 'undefined') {
+                    if (!(window as any).pastedImages) {
+                      (window as any).pastedImages = [];
+                    }
+                    (window as any).pastedImages.push({
+                      name: fileName,
+                      id: data.files?.[0]?.id,
+                      timestamp: timestamp
+                    });
+                  }
+                  
+                  term.writeln(`✅ Image ready for Claude. Ask any question about it.\r\n`);
+                } else {
+                  term.writeln(`⚠️ Failed to process image. Please try dragging it instead.\r\n`);
+                }
+              } catch (error) {
+                console.error('Failed to bridge pasted image:', error);
+                term.writeln(`⚠️ Error processing image. Please try again.\r\n`);
+              }
+              
+              break; // Only handle first image
+            }
+          }
+        };
+        
+        // Store the handler in ref for cleanup
+        pasteHandlerRef.current = handleImagePaste;
+        
+        // Add paste listener at document level with capture phase
+        setTimeout(() => {
+          document.addEventListener('paste', handleImagePaste, true);
+          console.log('📋 Image paste handler initialized');
+        }, 100);
         
         // Use same timing as ResizeObserver which works correctly
         setTimeout(() => {
@@ -1253,6 +1413,11 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
             if (onDataDisposableRef.current) {
               onDataDisposableRef.current.dispose();
               onDataDisposableRef.current = null;
+            }
+            // Clean up paste event listener
+            if (pasteHandlerRef.current) {
+              document.removeEventListener('paste', pasteHandlerRef.current, true);
+              pasteHandlerRef.current = null;
             }
             if (term) {
               term.dispose();
@@ -2251,6 +2416,22 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
         if (data.length > 20 || data.includes('```') || data.includes('I\'ll') || data.includes('Let me')) {
           setClaudeActive(true);
           
+          // Estimate and track token usage for Claude responses
+          // This is a rough estimate: ~1 token per 4 characters
+          const estimatedTokens = Math.ceil(data.length / 4);
+          
+          // Update token usage in the IDE store
+          const store = useIDEStore.getState();
+          const currentUsage = store.aiState?.tokenUsage || { input: 0, output: 0, total: 0 };
+          
+          // Assume Claude responses are output tokens
+          // Input tokens would be from user commands (tracked separately)
+          store.updateTokenUsage({
+            input: currentUsage.input,
+            output: currentUsage.output + estimatedTokens,
+            total: currentUsage.total + estimatedTokens
+          });
+          
           // Clear existing activity timeout
           if (claudeActivityTimeoutRef.current) {
             clearTimeout(claudeActivityTimeoutRef.current);
@@ -2350,9 +2531,15 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
         }
         
         // Check for errors to trigger Error Doctor
-        if (data.includes('error') || data.includes('Error') || data.includes('failed')) {
-          // REMOVED: // REMOVED: console.log('❌ ERROR DETECTED:', data.substring(0, 100));
-          setLastError(data);
+        if (data.includes('error') || data.includes('Error') || data.includes('failed') || data.includes('command not found') || data.includes('No such file') || data.includes('permission denied') || data.includes('cannot find module') || data.includes('Permission denied')) {
+          console.log('❌ ERROR DETECTED by Error Doctor:', data.substring(0, 200));
+          
+          // Clean the error data by removing ANSI escape codes
+          const cleanedData = data.replace(/\x1b\[[0-9;]*[a-zA-Z]/g, '').trim();
+          
+          setLastError(cleanedData);
+          setHasActiveError(true);
+          setErrorHistory(prev => [...prev.slice(-9), cleanedData]); // Keep last 10 errors
         }
       }
     });
@@ -2599,6 +2786,26 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
             return; // Don't process this command further
           }
           
+          // Track input tokens for AI commands
+          if (command.toLowerCase().includes('claude') || 
+              command.toLowerCase().includes('ai') || 
+              command.startsWith('/') ||
+              claudeActive) {
+            // Estimate input tokens (~1 token per 4 characters)
+            const estimatedTokens = Math.ceil(command.length / 4);
+            
+            // Update token usage in the IDE store
+            const store = useIDEStore.getState();
+            const currentUsage = store.aiState?.tokenUsage || { input: 0, output: 0, total: 0 };
+            
+            // Input tokens from user commands
+            store.updateTokenUsage({
+              input: currentUsage.input + estimatedTokens,
+              output: currentUsage.output,
+              total: currentUsage.total + estimatedTokens
+            });
+          }
+          
           // Check if this is an AI command that should be handled locally
           terminalCommandHandler.processCommand(command).then(result => {
             if (result.handled) {
@@ -2625,6 +2832,19 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
                   // Instead, we'll track it for response handling
                   sessionStorage.setItem('last_claude_command', command);
                   sessionStorage.setItem('memory_context_injected', 'true');
+                  
+                  // Update memory activity indicator
+                  setMemoryActivity({
+                    isActive: true,
+                    tokensUsed: memory.stats.tokens,
+                    sessionsUsed: memory.stats.sessions,
+                    lastActivity: new Date()
+                  });
+                  
+                  // Auto-hide the indicator after 10 seconds
+                  setTimeout(() => {
+                    setMemoryActivity(prev => ({ ...prev, isActive: false }));
+                  }, 10000);
                 }
               });
             }
@@ -2806,6 +3026,251 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
     }
   };
 
+  // Staged Composer handlers
+  const handleSendStagedCommand = useCallback(async (command: string, images?: Array<{ base64: string; mimeType: string }>) => {
+    if (!socketRef.current?.connected || !sessionId) {
+      console.error('Cannot send command: no socket connection or session');
+      return;
+    }
+
+    // If images are present, save them temporarily and send command with image references
+    if (images && images.length > 0) {
+      console.log(`🖼️ Processing ${images.length} image(s) with Claude CLI`);
+      
+      // Save images to temp files
+      const imagePaths: string[] = [];
+      try {
+        for (let i = 0; i < images.length; i++) {
+          const img = images[i];
+          const tempPath = `/tmp/claude-image-${Date.now()}-${i}.${img.mimeType.split('/')[1]}`;
+          
+          // Save base64 image to file via API
+          const saveResponse = await fetch('/api/files/save-temp-image', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              base64: img.base64,
+              mimeType: img.mimeType,
+              path: tempPath
+            })
+          });
+          
+          if (saveResponse.ok) {
+            const { path } = await saveResponse.json();
+            imagePaths.push(path);
+          }
+        }
+        
+        // Build Claude command with image paths
+        let claudeCommand = 'claude ';
+        imagePaths.forEach(path => {
+          claudeCommand += `-i "${path}" `;
+        });
+        claudeCommand += `"${command}"`;
+        
+        console.log(`🚀 Sending Claude CLI command: ${claudeCommand}`);
+        
+        // Send the complete Claude command to terminal
+        for (let i = 0; i < claudeCommand.length; i++) {
+          socketRef.current.emit('terminal:input', {
+            id: sessionId,
+            data: claudeCommand[i],
+            selectedClaudeModel
+          });
+          await new Promise(resolve => setTimeout(resolve, 5));
+        }
+        
+        // Send Enter key
+        socketRef.current.emit('terminal:input', {
+          id: sessionId,
+          data: '\r',
+          selectedClaudeModel
+        });
+        
+      } catch (error) {
+        console.error('Error processing images:', error);
+        xtermRef.current?.writeln(`\r\n\x1b[31mError: Failed to process images\x1b[0m\r\n`);
+      } finally {
+        setIsProcessingCommand(false);
+        setComposerVisible(false);
+        setStagedCommand('');
+        // Focus terminal
+        if (xtermRef.current) {
+          xtermRef.current.focus();
+        }
+      }
+      return; // Don't send regular command if we have images
+    }
+
+    // If in planning mode, add to planned commands instead of executing
+    if (planningMode) {
+      setPlannedCommands(prev => [...prev, command]);
+      xtermRef.current?.writeln(`\x1b[33m[PLANNED ${plannedCommands.length + 1}]\x1b[0m ${command.substring(0, 80)}${command.length > 80 ? '...' : ''}`);
+      setComposerVisible(false);
+      setStagedCommand('');
+      
+      // Focus terminal after adding to plan
+      if (xtermRef.current) {
+        xtermRef.current.focus();
+      }
+      return;
+    }
+
+    setIsProcessingCommand(true);
+
+    // Send ONLY the command text to terminal (no base64 data!)
+    for (let i = 0; i < command.length; i++) {
+      socketRef.current.emit('terminal:input', {
+        id: sessionId,
+        data: command[i],
+        selectedClaudeModel,
+        // Include image metadata if present
+        ...(images && images.length > 0 && i === 0 ? { 
+          attachedImages: images 
+        } : {})
+      });
+      // Small delay to mimic typing
+      await new Promise(resolve => setTimeout(resolve, 5));
+    }
+    
+    // Send Enter key
+    socketRef.current.emit('terminal:input', {
+      id: sessionId,
+      data: '\r',
+      selectedClaudeModel
+    });
+    
+    // Increment command counter for metrics
+    try {
+      await fetch('/api/claude/usage', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          action: 'increment',
+          sessionId,
+          tokens: {
+            input: Math.ceil(command.length / 4), // Rough estimate: 4 chars per token
+            output: 0 // Will be updated when response comes
+          }
+        })
+      });
+    } catch (error) {
+      console.error('Failed to update usage metrics:', error);
+    }
+    
+    setIsProcessingCommand(false);
+    setComposerVisible(false);
+    setStagedCommand('');
+    
+    // Focus terminal after sending
+    if (xtermRef.current) {
+      xtermRef.current.focus();
+    }
+  }, [sessionId, selectedClaudeModel, planningMode, plannedCommands.length]);
+
+  // Handle context menu for save as markdown
+  const handleContextMenu = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    setContextMenuPosition({ x: e.clientX, y: e.clientY });
+    setContextMenuVisible(true);
+  }, []);
+
+  const handleSaveAsMarkdown = useCallback(() => {
+    if (!xtermRef.current) return;
+    
+    // Get terminal buffer content
+    const terminal = xtermRef.current;
+    const buffer = terminal.buffer.active;
+    const lines: string[] = [];
+    
+    for (let i = 0; i < buffer.length; i++) {
+      const line = buffer.getLine(i);
+      if (line) {
+        lines.push(line.translateToString(true));
+      }
+    }
+    
+    // Format as markdown
+    const markdown = `# Terminal Session - ${new Date().toISOString()}\n\n\`\`\`bash\n${lines.join('\n')}\n\`\`\`\n`;
+    
+    // Create download
+    const blob = new Blob([markdown], { type: 'text/markdown' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `terminal-session-${Date.now()}.md`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    setContextMenuVisible(false);
+  }, []);
+
+  // Close context menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = () => {
+      setContextMenuVisible(false);
+    };
+    
+    if (contextMenuVisible) {
+      document.addEventListener('click', handleClickOutside);
+      return () => document.removeEventListener('click', handleClickOutside);
+    }
+  }, [contextMenuVisible]);
+
+  const getCurrentLineFromTerminal = useCallback(() => {
+    if (!xtermRef.current) return '';
+    
+    try {
+      const buffer = xtermRef.current.buffer.active;
+      const cursorY = buffer.cursorY + buffer.viewportY;
+      const line = buffer.getLine(cursorY);
+      if (line) {
+        return line.translateToString(true).trim();
+      }
+    } catch (error) {
+      console.error('Error getting current line:', error);
+    }
+    return '';
+  }, []);
+
+  // Keyboard shortcuts for staged composer
+  useEffect(() => {
+    // Only enable keyboard shortcuts if feature is enabled
+    if (!ENABLE_STAGED_COMPOSER) return;
+    
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Only handle shortcuts when terminal is focused and not in sandbox mode
+      if (!xtermRef.current || sandboxMode) return;
+      
+      // Ctrl+Space to open composer
+      if (e.ctrlKey && e.code === 'Space') {
+        e.preventDefault();
+        setComposerVisible(true);
+        return;
+      }
+      
+      // Ctrl+E to edit current line
+      if (e.ctrlKey && e.key === 'e') {
+        e.preventDefault();
+        const currentLine = getCurrentLineFromTerminal();
+        setStagedCommand(currentLine);
+        setComposerVisible(true);
+        return;
+      }
+    };
+
+    // Add listener at document level with capture to intercept before terminal
+    document.addEventListener('keydown', handleKeyDown, true);
+    
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown, true);
+    };
+  }, [sandboxMode, getCurrentLineFromTerminal]);
+
   // Handle sandbox creation
   const handleSandboxAction = async () => {
     console.log('🎯 handleSandboxAction called from Terminal');
@@ -2928,11 +3393,16 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
       {/* Terminal Header - Exact 40px height */}
       <div 
         className={`flex items-center justify-between border-b border-border-default px-3 bg-bg-secondary ${
-          sandboxMode 
+          planningMode
+            ? 'border-t border-t-yellow-500/50 shadow-glow-yellow'
+            : sandboxMode 
             ? 'border-t border-t-orange-500/50 shadow-glow-orange' 
             : 'border-t border-t-coder1-cyan/50 shadow-glow-cyan'
         }`}
-        style={{ height: spacing.terminalHeader.height }}
+        style={{ 
+          height: spacing.terminalHeader.height,
+          backgroundColor: planningMode ? 'rgba(234, 179, 8, 0.05)' : undefined
+        }}
       >
         {/* Left section - Edit mode and settings */}
         <div className="flex items-center gap-2">
@@ -2945,6 +3415,51 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
           >
             {voiceListening ? <MicOff className="w-4 h-4 text-red-500" /> : <Mic className="w-4 h-4" />}
           </button>
+
+          {/* Planning Mode Icon Button - Only show when staged composer is enabled */}
+          {ENABLE_STAGED_COMPOSER && (
+            <button
+              onClick={() => {
+                setPlanningMode(!planningMode);
+                if (!planningMode) {
+                  // Entering planning mode
+                  xtermRef.current?.writeln('\r\n\x1b[33m📋 PLANNING MODE ACTIVATED\x1b[0m');
+                  xtermRef.current?.writeln('Commands will be collected but not executed until you disable planning mode.\r\n');
+                } else {
+                  // Exiting planning mode
+                  if (plannedCommands.length > 0) {
+                    xtermRef.current?.writeln('\r\n\x1b[32m✅ PLANNING MODE DISABLED\x1b[0m');
+                    xtermRef.current?.writeln(`You have ${plannedCommands.length} planned commands. Execute them now? (y/n)`);
+                  } else {
+                    xtermRef.current?.writeln('\r\n\x1b[32m✅ PLANNING MODE DISABLED\x1b[0m\r\n');
+                  }
+                }
+              }}
+              className={`terminal-control-btn p-1.5 rounded-md transition-all ${
+                planningMode 
+                  ? 'terminal-btn-active-yellow' 
+                  : 'hover:bg-bg-tertiary'
+              }`}
+              title={planningMode ? "Disable planning mode" : "Enable planning mode"}
+            >
+              <GitBranch className={`w-4 h-4 ${planningMode ? 'text-yellow-400' : 'text-text-secondary'}`} />
+            </button>
+          )}
+
+          {/* Compose Icon Button - Only show when staged composer is enabled */}
+          {ENABLE_STAGED_COMPOSER && (
+            <button
+              onClick={() => setComposerVisible(true)}
+              className={`terminal-control-btn p-1.5 rounded-md transition-all ${
+                composerVisible 
+                  ? 'terminal-btn-active-orange' 
+                  : 'hover:bg-bg-tertiary'
+              }`}
+              title="Open staged command composer (Ctrl+Space)"
+            >
+              <Edit3 className={`w-4 h-4 ${composerVisible ? 'text-orange-400' : 'text-text-secondary'}`} />
+            </button>
+          )}
 
           {/* Terminal Settings */}
           <TerminalSettings
@@ -2998,74 +3513,149 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
 
           {/* Memory button with dropdown */}
           <div className="relative">
+            {/* Memory Activity Indicator */}
+            {memoryActivity.isActive && (
+              <div className="absolute -top-2 -right-2 bg-coder1-cyan text-black text-xs px-1.5 py-0.5 rounded-full z-10 shadow-lg animate-pulse">
+                {memoryActivity.tokensUsed}t
+                <span className="text-xs opacity-80">
+                  /{memoryActivity.sessionsUsed}s
+                </span>
+              </div>
+            )}
+            
             <button
               data-tour="memory-button"
               onClick={() => setShowMemoryDropdown(!showMemoryDropdown)}
-              className="terminal-control-btn flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md"
+              className={`terminal-control-btn flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md ${
+                memoryActivity.isActive ? 'ring-1 ring-coder1-cyan ring-opacity-50' : ''
+              }`}
               title="Memory system status and controls"
             >
-              <Brain className="w-4 h-4" />
+              <Brain className={`w-4 h-4 ${memoryActivity.isActive ? 'text-coder1-cyan' : ''}`} />
               <span>Memory</span>
+              {memory.memoryMode !== MemoryMode.OFF && (
+                <span className="text-xs ml-1 text-gray-400">
+                  ({memory.memoryMode === MemoryMode.SAFE ? 'Safe' : 'On'})
+                </span>
+              )}
             </button>
             
-            {/* Memory dropdown */}
+            {/* Enhanced Memory dropdown with modes */}
             {showMemoryDropdown && (
               <div 
                 ref={memoryDropdownRef}
-                className="absolute top-full mt-2 right-0 bg-bg-secondary border border-border-default rounded-lg shadow-lg p-3 z-50 min-w-[250px]"
+                className="absolute top-full mt-2 right-0 bg-bg-secondary border border-border-default rounded-lg shadow-lg p-4 z-50 min-w-[280px]"
               >
-                <div className="text-xs space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-gray-400">Status:</span>
-                    <span className={memory.isActive ? "text-green-400" : "text-yellow-400"}>
-                      {memory.isActive ? 'Active' : 'Initializing'}
-                    </span>
+                <div className="space-y-3">
+                  {/* Memory Mode Selection */}
+                  <div className="space-y-2">
+                    <div className="text-xs text-gray-400 uppercase tracking-wider mb-2">Memory Mode</div>
+                    <div className="space-y-1">
+                      <label className="flex items-center gap-2 cursor-pointer p-2 rounded hover:bg-bg-tertiary">
+                        <input
+                          type="radio"
+                          name="memoryMode"
+                          checked={memory.memoryMode === MemoryMode.OFF}
+                          onChange={() => memory.setMemoryMode(MemoryMode.OFF)}
+                          className="text-coder1-cyan"
+                        />
+                        <span className="text-sm">Off</span>
+                      </label>
+                      <label className="flex items-center gap-2 cursor-pointer p-2 rounded hover:bg-bg-tertiary">
+                        <input
+                          type="radio"
+                          name="memoryMode"
+                          checked={memory.memoryMode === MemoryMode.SAFE}
+                          onChange={() => memory.setMemoryMode(MemoryMode.SAFE)}
+                          className="text-coder1-cyan"
+                        />
+                        <span className="text-sm">Safe <span className="text-xs text-gray-400">(Recommended)</span></span>
+                      </label>
+                      <label className="flex items-center gap-2 cursor-pointer p-2 rounded hover:bg-bg-tertiary">
+                        <input
+                          type="radio"
+                          name="memoryMode"
+                          checked={memory.memoryMode === MemoryMode.ON}
+                          onChange={() => memory.setMemoryMode(MemoryMode.ON)}
+                          className="text-coder1-cyan"
+                        />
+                        <span className="text-sm">On</span>
+                      </label>
+                    </div>
                   </div>
-                  {memory.stats.sessions > 0 && (
-                    <>
+
+                  {/* Separator */}
+                  <div className="border-t border-border-default"></div>
+
+                  {/* Current Context Preview */}
+                  {memory.isEnabled && memory.memoryMode !== MemoryMode.OFF && (
+                    <div className="text-xs space-y-1">
+                      <div className="text-gray-400">Current Context:</div>
                       <div className="flex items-center justify-between">
-                        <span className="text-gray-400">Sessions:</span>
-                        <span className="text-gray-300">{memory.stats.sessions}</span>
+                        <span className="text-white">{memory.stats.tokens} tokens from {memory.stats.sessions} sessions</span>
+                        {memory.memoryContext && (
+                          <button 
+                            onClick={() => console.log(memory.memoryContext)}
+                            className="text-coder1-cyan hover:text-coder1-purple text-xs"
+                          >
+                            View
+                          </button>
+                        )}
                       </div>
+                    </div>
+                  )}
+
+                  {/* Memory Status */}
+                  <div className="text-xs space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-400">Status:</span>
+                      <span className={memory.isActive ? "text-green-400" : "text-yellow-400"}>
+                        {memory.isActive ? 'Active' : memory.memoryMode === MemoryMode.OFF ? 'Disabled' : 'Initializing'}
+                      </span>
+                    </div>
+                    {memory.stats.interactions > 0 && (
                       <div className="flex items-center justify-between">
-                        <span className="text-gray-400">Tokens:</span>
-                        <span className="text-gray-300">{memory.stats.tokens}</span>
+                        <span className="text-gray-400">This Session:</span>
+                        <span className="text-gray-300">{memory.stats.interactions} interactions</span>
                       </div>
-                    </>
-                  )}
-                  
-                  {/* Context Statistics (moved from footer) */}
-                  {contextStats.isActive && (
-                    <>
-                      <div className="border-t border-border-default pt-2 mt-2">
-                        <div className="text-xs text-gray-400 uppercase tracking-wider mb-2">Context Memory</div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-gray-400">Memories:</span>
-                          <span className="text-purple-400 font-medium">{contextStats.totalMemories}</span>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-gray-400">Contexts:</span>
-                          <span className="text-purple-400 font-medium">{contextStats.totalSessions}</span>
-                        </div>
-                      </div>
-                    </>
-                  )}
-                  
-                  <div className="border-t border-border-default pt-2 mt-2">
+                    )}
+                  </div>
+
+                  {/* Separator */}
+                  <div className="border-t border-border-default"></div>
+
+                  {/* Quick Actions */}
+                  <div className="space-y-2">
                     <button
                       onClick={() => {
-                        memory.toggleMemory();
-                        setMemoryEnabled(!memoryEnabled);
+                        memory.markSessionVerified();
+                        setShowMemoryDropdown(false);
                       }}
-                      className="w-full flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md bg-gradient-to-br from-sky-100/10 to-purple-100/10 border border-cyan-500/50 text-white backdrop-blur-sm transition-all duration-300 hover:border-orange-400/70 hover:bg-gradient-to-br hover:from-orange-100/10 hover:to-amber-100/10 hover:backdrop-blur-md"
-                      style={{
-                        background: 'linear-gradient(135deg, rgba(125, 211, 252, 0.1) 0%, rgba(187, 154, 247, 0.1) 100%)',
-                        border: '1px solid rgba(0, 217, 255, 0.5)',
-                        backdropFilter: 'blur(4px)',
-                        WebkitBackdropFilter: 'blur(4px)'
-                      }}
+                      className="w-full text-left px-2 py-1 text-sm hover:bg-bg-tertiary rounded"
+                      disabled={!memory.isActive}
                     >
-                      {memory.isEnabled ? 'Disable Memory' : 'Enable Memory'}
+                      Mark Session as Verified
+                    </button>
+                    <button
+                      onClick={() => {
+                        // TODO: Open correction modal
+                        console.log('Correct Memory clicked');
+                      }}
+                      className="w-full text-left px-2 py-1 text-sm hover:bg-bg-tertiary rounded"
+                    >
+                      Correct Memory
+                    </button>
+                    <button
+                      onClick={() => {
+                        if (confirm('Clear current session memory?')) {
+                          memory.endSession();
+                          memory.startSession();
+                        }
+                      }}
+                      className="w-full text-left px-2 py-1 text-sm hover:bg-bg-tertiary rounded text-red-400"
+                      disabled={!memory.isActive}
+                    >
+                      Clear Current Session
                     </button>
                   </div>
                 </div>
@@ -3073,6 +3663,26 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
             )}
           </div>
 
+          {/* Error Doctor button - matches Memory button style exactly */}
+          <button
+            onClick={() => setShowErrorDoctorModal(true)}
+            onDoubleClick={() => {
+              // Debug: manually trigger an error for testing
+              const testError = "bash: invalidcommand: command not found";
+              console.log('🧪 Manual error triggered for testing');
+              setLastError(testError);
+              setHasActiveError(true);
+              setErrorHistory(prev => [...prev.slice(-9), testError]);
+            }}
+            className="terminal-control-btn flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md"
+            title="Error Doctor - AI-powered error analysis (double-click to test)"
+          >
+            <Stethoscope className={`w-4 h-4 ${hasActiveError ? 'text-red-400' : ''}`} />
+            <span>Error Doctor</span>
+            {hasActiveError && (
+              <span className="ml-1 w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+            )}
+          </button>
 
           {/* Enhanced Supervision button */}
           <button
@@ -3096,6 +3706,7 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
             <Eye className="w-4 h-4" />
             <span>Supervision</span>
           </button>
+
 
           {/* Sandbox Button */}
           <button
@@ -3128,6 +3739,7 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
         <div 
           ref={terminalRef} 
           data-tour="terminal-input"
+          onContextMenu={handleContextMenu}
           style={{
             width: '100%',
             minHeight: '100%'
@@ -3240,12 +3852,27 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
         </button>
       )}
 
-      {/* Enhanced Status Line - Professional Claude Code statusline */}
-      {/* <EnhancedStatusline
-        terminalRef={terminalRef}
-        settingsButtonRef={settingsButtonRef}
-        xtermRef={xtermRef}
-      /> */}
+      {/* Terminal Footer Section - Contains metrics and status */}
+      <div className="flex flex-col">
+        {/* Token Usage Statistics - At bottom of terminal */}
+        <TerminalTokenStats />
+        
+        {/* Session Metrics Bar - Positioned above status line (HIDDEN per user request) */}
+        {/* {ENABLE_STAGED_COMPOSER && (
+          <SessionMetricsBar
+            sessionId={sessionId}
+            isProcessing={isProcessingCommand}
+            claudeActive={claudeActive}
+          />
+        )} */}
+        
+        {/* Enhanced Status Line - Professional Claude Code statusline (disabled) */}
+        {/* <EnhancedStatusline
+          terminalRef={terminalRef}
+          settingsButtonRef={settingsButtonRef}
+          xtermRef={xtermRef}
+        /> */}
+      </div>
 
       {/* Status Line - Fixed positioning without covering content */}
       {(() => {
@@ -3287,6 +3914,245 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
               <span>{sessionTokens} tokens</span>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Staged Composer Overlay */}
+      <StagedComposer
+        isVisible={composerVisible}
+        onClose={() => {
+          setComposerVisible(false);
+          setStagedCommand('');
+          // Focus terminal when closing
+          if (xtermRef.current) {
+            xtermRef.current.focus();
+          }
+        }}
+        onSend={handleSendStagedCommand}
+        currentCommand={stagedCommand}
+        sessionId={sessionId || ''}
+        isProcessing={isProcessingCommand || claudeActive}
+        planningMode={planningMode}
+        onPlanningModeToggle={() => {
+          setPlanningMode(!planningMode);
+          if (!planningMode) {
+            // Entering planning mode
+            xtermRef.current?.writeln('\r\n\x1b[33m📋 PLANNING MODE ACTIVATED\x1b[0m');
+            xtermRef.current?.writeln('Commands will be collected but not executed until you disable planning mode.\r\n');
+          } else {
+            // Exiting planning mode
+            if (plannedCommands.length > 0) {
+              xtermRef.current?.writeln('\r\n\x1b[32m✅ PLANNING MODE DISABLED\x1b[0m');
+              xtermRef.current?.writeln(`You have ${plannedCommands.length} planned commands. Execute them now? (y/n)`);
+            } else {
+              xtermRef.current?.writeln('\r\n\x1b[32m✅ PLANNING MODE DISABLED\x1b[0m\r\n');
+            }
+          }
+        }}
+      />
+      
+      {/* Context Menu */}
+      {contextMenuVisible && (
+        <div 
+          className="fixed z-[1000000] bg-bg-secondary border border-border-primary rounded-md shadow-lg py-1"
+          style={{
+            left: `${contextMenuPosition.x}px`,
+            top: `${contextMenuPosition.y}px`,
+          }}
+        >
+          <button
+            className="w-full px-4 py-2 text-left hover:bg-bg-tertiary text-text-primary text-sm"
+            onClick={handleSaveAsMarkdown}
+          >
+            Save Session as Markdown
+          </button>
+        </div>
+      )}
+      
+      {/* Error Doctor Modal - Completely separate from terminal layout */}
+      {showErrorDoctorModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          {/* Backdrop */}
+          <div 
+            className="absolute inset-0 bg-black bg-opacity-50"
+            onClick={() => setShowErrorDoctorModal(false)}
+          />
+          
+          {/* Modal */}
+          <div className="relative bg-bg-secondary border border-border-default rounded-lg shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden">
+            {/* Header */}
+            <div className="flex items-center justify-between p-4 border-b border-border-default">
+              <div className="flex items-center gap-2">
+                <Brain className="w-5 h-5 text-coder1-cyan" />
+                <h2 className="text-lg font-semibold">Error Doctor</h2>
+                {hasActiveError && (
+                  <span className="text-xs text-red-400">(Active Error)</span>
+                )}
+              </div>
+              <button
+                onClick={() => setShowErrorDoctorModal(false)}
+                className="text-text-secondary hover:text-text-primary"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            {/* Content */}
+            <div className="p-4 overflow-y-auto max-h-[60vh]">
+              <ErrorDoctor 
+                lastError={lastError}
+                isActive={true}
+              />
+              
+              {/* Terminal Error History */}
+              {errorHistory.length > 0 && (
+                <div className="mt-4 pt-4 border-t border-border-default">
+                  <h3 className="text-sm font-medium mb-2">🖥️ Terminal Errors</h3>
+                  <div className="space-y-1">
+                    {errorHistory.map((error, idx) => (
+                      <div key={idx} className="text-xs text-text-muted">
+                        <div className="truncate">
+                          {error.length > 80 ? `${error.substring(0, 80)}...` : error}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
+              {/* Console Errors */}
+              {consoleErrors.length > 0 && (
+                <div className="mt-4 pt-4 border-t border-border-default">
+                  <h3 className="text-sm font-medium mb-2">🌐 Console Errors</h3>
+                  <div className="space-y-2">
+                    {consoleErrors.slice(-5).map((error) => (
+                      <div key={error.id} className="text-xs border-l-2 border-red-500/50 pl-2">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className={`px-1.5 py-0.5 rounded text-xs ${
+                            error.type === 'error' ? 'bg-red-900/50 text-red-300' :
+                            error.type === 'warn' ? 'bg-yellow-900/50 text-yellow-300' :
+                            'bg-blue-900/50 text-blue-300'
+                          }`}>
+                            {error.type}
+                          </span>
+                          <span className="text-text-muted">
+                            {new Date(error.timestamp).toLocaleTimeString()}
+                          </span>
+                        </div>
+                        <div className="text-text-secondary">
+                          {error.message.length > 100 ? `${error.message.substring(0, 100)}...` : error.message}
+                        </div>
+                      </div>
+                    ))}
+                    {consoleErrors.length > 5 && (
+                      <div className="text-xs text-text-muted text-center">
+                        ... and {consoleErrors.length - 5} more console errors
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+              
+              {/* No Errors State */}
+              {errorHistory.length === 0 && consoleErrors.length === 0 && (
+                <div className="text-center text-text-muted py-4">
+                  <div className="text-2xl mb-2">✨</div>
+                  <div>No errors detected!</div>
+                  <div className="text-xs mt-1">Terminal and console are clean</div>
+                </div>
+              )}
+            </div>
+            
+            {/* Footer */}
+            <div className="flex justify-between items-center p-4 border-t border-border-default">
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    setHasActiveError(false);
+                    setErrorHistory([]);
+                    consoleCaptureService.clearErrors();
+                    setConsoleErrors([]);
+                  }}
+                  className="px-3 py-1.5 text-sm rounded-md bg-bg-tertiary hover:bg-bg-primary"
+                >
+                  Clear All
+                </button>
+              </div>
+              
+              <div className="flex gap-2">
+                {/* Send to Claude Code Button */}
+                {(errorHistory.length > 0 || consoleErrors.length > 0) && (
+                  <button
+                    onClick={async () => {
+                      setIsAnalyzingWithClaude(true);
+                      try {
+                        // Prepare error report for Claude Code
+                        const terminalErrors = errorHistory.join('\n\n');
+                        const consoleErrorReport = consoleErrors.map(error => 
+                          `[${error.type.toUpperCase()}] ${error.timestamp}\n${error.message}`
+                        ).join('\n\n');
+                        
+                        const fullReport = `CODER1 IDE ERROR REPORT
+Generated: ${new Date().toISOString()}
+
+📱 TERMINAL ERRORS (${errorHistory.length}):
+${terminalErrors || 'No terminal errors'}
+
+🌐 CONSOLE ERRORS (${consoleErrors.length}):
+${consoleErrorReport || 'No console errors'}
+
+📝 ANALYSIS REQUEST:
+Please analyze these errors and provide:
+1. Root cause analysis
+2. Step-by-step fix recommendations
+3. Prevention strategies
+4. Any related documentation or resources
+
+Context: Running in Coder1 IDE development environment`;
+
+                        // Copy to clipboard for now (Phase 1)
+                        await navigator.clipboard.writeText(fullReport);
+                        addToast('📋 Error report copied to clipboard! Paste into Claude Code for analysis.', 'success');
+                        
+                        // Future: Direct Claude Code API integration
+                        // const response = await fetch('/api/claude-code/analyze', {
+                        //   method: 'POST',
+                        //   headers: { 'Content-Type': 'application/json' },
+                        //   body: JSON.stringify({ errorReport: fullReport })
+                        // });
+                        
+                      } catch (error) {
+                        console.error('Failed to send errors to Claude Code:', error);
+                        addToast('❌ Failed to prepare error report', 'error');
+                      } finally {
+                        setIsAnalyzingWithClaude(false);
+                      }
+                    }}
+                    disabled={isAnalyzingWithClaude}
+                    className="px-4 py-1.5 text-sm rounded-md bg-gradient-to-r from-purple-600 to-coder1-cyan text-white hover:from-purple-700 hover:to-coder1-cyan-hover disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                  >
+                    {isAnalyzingWithClaude ? (
+                      <>
+                        <div className="animate-spin w-3 h-3 border border-white border-t-transparent rounded-full" />
+                        Analyzing...
+                      </>
+                    ) : (
+                      <>
+                        🧠 Send to Claude Code
+                      </>
+                    )}
+                  </button>
+                )}
+                
+                <button
+                  onClick={() => setShowErrorDoctorModal(false)}
+                  className="px-3 py-1.5 text-sm rounded-md bg-coder1-cyan text-black hover:bg-coder1-cyan-hover"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>
