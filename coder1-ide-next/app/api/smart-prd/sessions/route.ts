@@ -11,17 +11,23 @@ Status: PRODUCTION - Created: January 20, 2025
 import { NextRequest, NextResponse } from 'next/server';
 
 // In-memory session storage (for demo - in production, use Redis or database)
-const sessions = new Map();
+// Use global sessions map to share between routes
+const sessions = (global as any).prdSessions || new Map();
 
-// Simple session cleanup (remove sessions older than 1 hour)
-setInterval(() => {
-  const oneHourAgo = Date.now() - (60 * 60 * 1000);
-  for (const [sessionId, session] of sessions.entries()) {
-    if (session.createdAt < oneHourAgo) {
-      sessions.delete(sessionId);
+// Initialize global sessions if not exists
+if (!(global as any).prdSessions) {
+  (global as any).prdSessions = sessions;
+  
+  // Simple session cleanup (remove sessions older than 1 hour)
+  setInterval(() => {
+    const oneHourAgo = Date.now() - (60 * 60 * 1000);
+    for (const [sessionId, session] of sessions.entries()) {
+      if ((session as any).createdAt < oneHourAgo) {
+        sessions.delete(sessionId);
+      }
     }
-  }
-}, 15 * 60 * 1000); // Run cleanup every 15 minutes
+  }, 15 * 60 * 1000); // Run cleanup every 15 minutes
+}
 
 function generateSessionId(): string {
   return 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);

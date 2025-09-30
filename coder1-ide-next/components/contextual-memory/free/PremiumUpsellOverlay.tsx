@@ -125,7 +125,7 @@ export const PremiumUpsellOverlay: React.FC<PremiumUpsellOverlayProps> = ({
         {/* CTA Button */}
         <button
           onClick={onUpgradeClick}
-          className="w-full bg-black hover:bg-gray-900 text-white font-medium py-3 px-6 rounded-lg transition-all border border-purple-500 hover:border-purple-400 shadow-[0_0_10px_rgba(168,85,247,0.3)] hover:shadow-[0_0_15px_rgba(168,85,247,0.5)]"
+          className="w-full bg-black hover:bg-gray-900 text-white font-medium py-3 px-6 rounded-lg transition-all border border-purple-500 hover:border-orange-500 shadow-[0_0_10px_rgba(168,85,247,0.3)] hover:shadow-[0_0_20px_rgba(251,146,60,0.6)]"
         >
           <div className="text-base">Enable Contextual Memory™</div>
         </button>

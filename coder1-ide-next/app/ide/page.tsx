@@ -18,7 +18,7 @@ import MonacoEditor from "@/components/editor/MonacoEditor";
 import StatusBarCore from "@/components/status-bar/StatusBarCore";
 import StatusLine from "@/components/status-bar/StatusLine";
 import MenuBar from "@/components/MenuBar";
-import DragDropOverlay from "@/components/terminal/DragDropOverlay";
+// import DragDropOverlay from "@/components/terminal/DragDropOverlay"; // Disabled - conflicts with StagedComposer
 import DocumentationPanel from "@/components/documentation/DocumentationPanel";
 
 // Conductor components removed - using simple multi-Claude tabs instead
@@ -99,6 +99,9 @@ function IDEPageContent() {
   const [isProcessingFiles, setIsProcessingFiles] = useState(false);
   const [loadingFiles, setLoadingFiles] = useState<Set<string>>(new Set());
   const [fileErrors, setFileErrors] = useState<Record<string, string>>({});
+  
+  // Composer visibility state  
+  const [composerVisible, setComposerVisible] = useState(false);
   const terminalRef = useRef<any>(null);
 
   // Initialize menu actions service
@@ -129,6 +132,13 @@ function IDEPageContent() {
 
   const handleFileDrop = async (files: File[]) => {
     console.log(`📎 Handling ${files.length} file(s) via drag-and-drop`);
+    
+    // If composer is visible, don't auto-process - let composer handle it
+    if (composerVisible) {
+      console.log('🎯 Composer visible - skipping auto-processing');
+      return;
+    }
+    
     setIsProcessingFiles(true);
     
     try {
@@ -740,12 +750,13 @@ function IDEPageContent() {
           sessionId={terminalSessionId}
           terminalReady={terminalReady}
         >
-          {/* Global Drag Drop Overlay - Must be at root level */}
+          {/* Global Drag Drop Overlay - DISABLED to prevent conflict with StagedComposer
           <DragDropOverlay
             onFileDrop={handleFileDrop}
             onTextInsert={handleTextInsert}
             isProcessing={isProcessingFiles}
-          />
+            isComposerVisible={composerVisible}
+          /> */}
           
           <div className="h-screen w-full flex flex-col bg-bg-primary">
             {/* Menu Bar */}
@@ -880,6 +891,7 @@ function IDEPageContent() {
                               onTerminalData={handleTerminalData}
                               onTerminalCommand={handleTerminalCommand}
                               onTerminalReady={handleTerminalReady}
+                              onComposerVisibilityChange={setComposerVisible}
                             />
                           </div>
                         </Panel>
@@ -920,7 +932,7 @@ function IDEPageContent() {
               terminalCommands={terminalCommands}
             />
             
-            {/* Status Line - Shows Model, Tokens, Date */}
+            {/* Status Line - Simple Time Display Only */}
             <StatusLine />
             
             {/* Interactive Tour Overlay */}

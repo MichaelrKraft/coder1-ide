@@ -5,12 +5,14 @@
 
 import { Anthropic } from '@anthropic-ai/sdk';
 
-// Dynamic import for optional dependency
+// Dynamic import for optional dependency (server-side only)
 let pdfParse: any;
-try {
-  pdfParse = require('pdf-parse');
-} catch (e) {
-  console.warn('pdf-parse not available in multimodal processor');
+if (typeof window === 'undefined') {
+  try {
+    pdfParse = require('pdf-parse');
+  } catch (e) {
+    console.warn('pdf-parse not available in multimodal processor');
+  }
 }
 
 export interface ProcessedImage {

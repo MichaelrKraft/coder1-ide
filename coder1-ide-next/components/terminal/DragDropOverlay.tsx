@@ -7,12 +7,14 @@ interface DragDropOverlayProps {
   onFileDrop: (files: File[]) => void;
   onTextInsert?: (text: string) => void;
   isProcessing?: boolean;
+  isComposerVisible?: boolean;
 }
 
 export default function DragDropOverlay({ 
   onFileDrop, 
   onTextInsert,
-  isProcessing = false
+  isProcessing = false,
+  isComposerVisible = false
 }: DragDropOverlayProps) {
   const [isDragging, setIsDragging] = useState(false);
   const dragCounterRef = useRef(0);
@@ -24,6 +26,13 @@ export default function DragDropOverlay({
     // Use capture phase for better event interception
     const handleDragEnter = (e: DragEvent) => {
       e.preventDefault();
+      
+      // Skip if composer is visible to avoid conflict
+      if (isComposerVisible) {
+        console.log('🎯 Skipping DragDropOverlay - Composer is visible');
+        return;
+      }
+      
       e.stopPropagation();
       
       // Only respond to file drags
@@ -53,6 +62,10 @@ export default function DragDropOverlay({
     
     const handleDragOver = (e: DragEvent) => {
       e.preventDefault();
+      
+      // Skip if composer is visible
+      if (isComposerVisible) return;
+      
       e.stopPropagation();
       if (e.dataTransfer) {
         e.dataTransfer.dropEffect = 'copy';
@@ -62,6 +75,14 @@ export default function DragDropOverlay({
     const handleDrop = (e: DragEvent) => {
       e.preventDefault();
       e.stopPropagation();
+      
+      // Skip if composer is visible - let composer handle it
+      if (isComposerVisible) {
+        console.log('🎯 Skipping DragDropOverlay drop - Composer should handle this');
+        dragCounterRef.current = 0;
+        setIsDragging(false);
+        return;
+      }
       
       dragCounterRef.current = 0;
       setIsDragging(false);
@@ -111,7 +132,7 @@ export default function DragDropOverlay({
       window.removeEventListener('drop', handleDrop, true);
       console.log('🧹 Drag-drop event listeners removed');
     };
-  }, [onFileDrop, onTextInsert]);
+  }, [onFileDrop, onTextInsert, isComposerVisible]);
   
   // Log state changes
   useEffect(() => {

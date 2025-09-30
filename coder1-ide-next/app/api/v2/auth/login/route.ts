@@ -43,6 +43,17 @@ export async function POST(request: NextRequest) {
     // Update last login
     updateLastLogin(user.id);
     
+    // Sync login event to Go High Level
+    try {
+      if (process.env.ENABLE_GHL_INTEGRATION === 'true') {
+        const { ghlUserSync } = await import('@/services/ghl-user-sync');
+        await ghlUserSync.syncUserLogin(user.id);
+      }
+    } catch (ghlError) {
+      // Don't fail login if GHL sync fails
+      // logger?.warn('Failed to sync login to GHL:', ghlError);
+    }
+    
     // Generate tokens
     const { accessToken, refreshToken, expiresAt } = generateTokens({
       userId: user.id,

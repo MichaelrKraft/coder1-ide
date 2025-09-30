@@ -98,6 +98,22 @@ export async function POST(request: NextRequest) {
       ip_address: ip,
     });
     
+    // Sync user to Go High Level CRM
+    try {
+      if (process.env.ENABLE_GHL_INTEGRATION === 'true') {
+        const { ghlUserSync } = await import('@/services/ghl-user-sync');
+        await ghlUserSync.syncNewUser({
+          id: user.id,
+          email: user.email,
+          username: user.username,
+          subscriptionTier: user.subscription_tier,
+        });
+      }
+    } catch (ghlError) {
+      // Don't fail registration if GHL sync fails
+      // logger?.warn('Failed to sync user to GHL:', ghlError);
+    }
+
     // Create response with tokens
     const response = NextResponse.json(
       {

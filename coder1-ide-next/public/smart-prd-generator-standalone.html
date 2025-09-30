@@ -1,96 +1,209 @@
+<!-- 
+===============================================================================
+CANONICAL FILE - MODIFY THIS VERSION ONLY
+===============================================================================
+File: smart-prd-generator.html
+Purpose: Smart Repository Patterns PRD Generator - Lead Magnet Interface
+Status: PRODUCTION - Last updated: January 20, 2025
+Claude Agents: This is the OFFICIAL version - do not modify copies elsewhere
+===============================================================================
+-->
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Smart PRD Generator - Coder1 IDE</title>
+    <title>Smart Repository Patterns - Generate PRDs from Proven Startup Success Patterns</title>
+    <meta name="description" content="Generate professional PRDs using proven patterns from Notion, Stripe, GitHub, and other successful startups. Free tool that provides real value and seamless handoff to Coder1 for implementation.">
+    
+    <!-- Open Graph Meta Tags -->
+    <meta property="og:title" content="Smart Repository Patterns PRD Generator">
+    <meta property="og:description" content="Generate professional PRDs using proven patterns from successful startups">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="http://localhost:3000/smart-prd-generator">
+    
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#6366f1',
+                        secondary: '#ec4899',
+                        accent: '#10b981'
+                    },
+                    animation: {
+                        'fade-in': 'fadeIn 0.5s ease-in-out',
+                        'slide-up': 'slideUp 0.5s ease-out',
+                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite'
+                    }
+                }
+            }
+        }
+    </script>
     <style>
-        body {
-            background: #0a0a0a;
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .pattern-card {
+            transition: all 0.3s ease;
+        }
+        .pattern-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+        .progress-step {
+            transition: all 0.3s ease;
+        }
+        .progress-step.active {
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            color: white;
+        }
+        .progress-step.completed {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+        }
+        .glassmorphism {
+            background: rgba(255, 255, 255, 0.25);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.18);
         }
         .gradient-text {
-            background: linear-gradient(135deg, #8b5cf6, #06b6d4);
+            background: linear-gradient(135deg, #6366f1, #ec4899, #10b981);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
         }
-        .pattern-card {
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            transition: all 0.3s ease;
-            cursor: pointer;
-        }
-        .pattern-card:hover {
-            border-color: #8b5cf6;
-            box-shadow: 0 0 20px rgba(139, 92, 246, 0.3);
-            transform: translateY(-4px);
-        }
-        .btn-gradient {
-            background: linear-gradient(135deg, #8b5cf6, #06b6d4);
-        }
-        .btn-gradient:hover {
-            box-shadow: 0 8px 25px rgba(139, 92, 246, 0.4);
-            transform: translateY(-2px);
+        
+        /* Dark mode styles */
+        .dark .glassmorphism {
+            background: rgba(17, 24, 39, 0.85);
+            border-color: rgba(75, 85, 99, 0.3);
         }
         
-        /* Fix text visibility and colors for dark theme */
-        textarea, input[type="text"] {
-            color: #f1f5f9 !important;
-            background: rgba(0, 0, 0, 0.6) !important;
-            border: 2px solid rgba(139, 92, 246, 0.3) !important;
-            border-radius: 12px !important;
-            -webkit-text-fill-color: #f1f5f9 !important;
+        .dark .gradient-text {
+            background: linear-gradient(135deg, #818cf8, #f472b6, #34d399);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
         }
         
-        textarea:focus, input[type="text"]:focus {
-            background: rgba(0, 0, 0, 0.8) !important;
-            border-color: #8b5cf6 !important;
-            outline: none !important;
-            box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.2) !important;
+        /* Dark mode card styles */
+        .dark .pattern-card,
+        .dark .mode-card {
+            background: rgba(31, 41, 55, 0.95);
+            border-color: rgba(75, 85, 99, 0.5);
         }
         
-        ::placeholder {
-            color: #94a3b8 !important;
-            opacity: 0.8 !important;
+        .dark .pattern-card:hover,
+        .dark .mode-card:hover {
+            border-color: #818cf8;
+            background: rgba(31, 41, 55, 1);
         }
         
-        /* Question card styling */
-        .bg-white {
-            background: rgba(255, 255, 255, 0.03) !important;
-            border: 1px solid rgba(255, 255, 255, 0.08) !important;
+        /* Dark mode text colors */
+        .dark h1, .dark h2, .dark h3, .dark h4 {
+            color: #f3f4f6;
         }
         
-        /* Text colors for dark theme */
-        .text-gray-900 {
-            color: #f1f5f9 !important;
+        .dark p {
+            color: #d1d5db;
         }
         
-        .text-gray-600 {
-            color: #cbd5e1 !important;
+        .dark .text-gray-900 {
+            color: #f3f4f6;
         }
         
-        .text-gray-500 {
-            color: #94a3b8 !important;
+        .dark .text-gray-800 {
+            color: #e5e7eb;
+        }
+        
+        .dark .text-gray-700 {
+            color: #d1d5db;
+        }
+        
+        .dark .text-gray-600 {
+            color: #9ca3af;
+        }
+        
+        .dark .text-gray-500 {
+            color: #6b7280;
+        }
+        
+        .dark .bg-white {
+            background-color: rgba(31, 41, 55, 0.95);
+        }
+        
+        .dark .bg-gray-50 {
+            background-color: rgba(17, 24, 39, 0.5);
+        }
+        
+        .dark .bg-gray-100 {
+            background-color: rgba(31, 41, 55, 0.5);
+        }
+        
+        .dark .border-gray-200 {
+            border-color: rgba(75, 85, 99, 0.5);
+        }
+        
+        .dark input[type="radio"],
+        .dark input[type="checkbox"] {
+            background-color: rgba(31, 41, 55, 0.95);
+            border-color: rgba(75, 85, 99, 0.5);
+        }
+        
+        .dark textarea {
+            background-color: rgba(31, 41, 55, 0.95);
+            border-color: rgba(75, 85, 99, 0.5);
+            color: #f3f4f6;
+        }
+        
+        .dark #prd-preview {
+            background-color: rgba(17, 24, 39, 0.95);
+            border-color: rgba(75, 85, 99, 0.5);
+            color: #d1d5db;
+        }
+        
+        .dark .shadow-lg {
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
         }
     </style>
 </head>
-<body class="text-white">
+<body class="bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 min-h-screen transition-colors duration-300">
     <!-- Navigation -->
-    <nav class="fixed top-0 w-full z-50 bg-black/50 backdrop-blur-lg border-b border-gray-800">
-        <div class="container mx-auto px-6">
+    <nav class="fixed top-0 w-full z-50 glassmorphism">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between items-center py-4">
                 <div class="flex items-center space-x-2">
-                    <div class="w-8 h-8 bg-gradient-to-br from-purple-500 to-cyan-500 rounded-lg flex items-center justify-center">
-                        <span class="text-white font-bold">S</span>
+                    <div class="w-8 h-8 bg-gradient-to-br from-primary to-secondary rounded-lg flex items-center justify-center">
+                        <span class="text-white font-bold text-lg">S</span>
                     </div>
                     <span class="text-xl font-bold gradient-text">Smart Patterns</span>
                 </div>
                 <div class="flex items-center space-x-4">
-                    <button onclick="showPatternsSection()" class="text-gray-400 hover:text-white transition-colors">
-                        Browse Patterns
+                    <button onclick="showPatterns()" class="text-gray-600 hover:text-primary transition-colors dark:text-gray-300">Browse Patterns</button>
+                    <button onclick="showAbout()" class="text-gray-600 hover:text-primary transition-colors dark:text-gray-300">About</button>
+                    
+                    <!-- Dark Mode Toggle -->
+                    <button onclick="toggleDarkMode()" class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors" aria-label="Toggle dark mode">
+                        <!-- Sun icon (shown in dark mode) -->
+                        <svg id="sun-icon" class="w-5 h-5 text-gray-600 dark:text-gray-300" style="display: none;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path>
+                        </svg>
+                        <!-- Moon icon (shown in light mode) -->
+                        <svg id="moon-icon" class="w-5 h-5 text-gray-600 dark:text-gray-300" style="display: block;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
+                        </svg>
                     </button>
-                    <button onclick="window.location.href='/ide'" class="btn-gradient text-white px-4 py-2 rounded-lg hover:shadow-lg transition-all">
+                    
+                    <button onclick="launchCoder1()" class="bg-gradient-to-r from-primary to-secondary text-white px-4 py-2 rounded-lg hover:shadow-lg transition-all">
                         Launch Coder1 →
                     </button>
                 </div>
@@ -101,1272 +214,323 @@
     <!-- Main Container -->
     <div class="pt-20 pb-16">
         <!-- Hero Section -->
-        <section id="hero-section" class="container mx-auto px-6 py-16 text-center">
-            <div class="inline-flex items-center space-x-2 bg-gradient-to-r from-purple-500/10 to-cyan-500/10 border border-purple-500/30 px-4 py-2 rounded-full mb-6">
-                <span class="w-2 h-2 bg-gradient-to-r from-purple-500 to-cyan-500 rounded-full animate-pulse"></span>
-                <span class="text-sm font-medium bg-gradient-to-r from-purple-400 to-cyan-400 bg-clip-text text-transparent">Free Professional PRD Generator</span>
-            </div>
-            
-            <h1 class="text-5xl md:text-6xl font-bold mb-6 text-center">
-                Build Like the
-                <br>
-                <span class="gradient-text">Best Startups</span>
-            </h1>
-            
-            <p class="text-xl text-gray-400 mb-8 max-w-3xl mx-auto">
-                Generate professional PRDs using proven patterns from Notion, Stripe, GitHub, and other successful companies. 
-                Get real architectural guidance and seamless handoff to Coder1 for implementation.
-            </p>
-            
-            <div class="flex flex-col sm:flex-row gap-4 justify-center mb-12">
-                <button onclick="showDescriptionSection()" class="btn-gradient text-white px-8 py-4 rounded-lg text-lg font-semibold hover:shadow-xl transition-all">
-                    🚀 Generate My PRD (Free)
-                </button>
-                <button onclick="showPatternsSection()" class="border-2 border-purple-500 text-purple-400 px-8 py-4 rounded-lg text-lg font-semibold hover:bg-purple-500/20 hover:text-white transition-all">
-                    📋 Browse Patterns
-                </button>
-            </div>
-            
-            <!-- Trust Indicators -->
-            <div class="flex justify-center items-center space-x-8 text-sm text-gray-500">
-                <div class="flex items-center space-x-2">
-                    <span class="w-3 h-3 bg-cyan-500 rounded-full"></span>
-                    <span>16 Proven Patterns</span>
-                </div>
-                <div class="flex items-center space-x-2">
-                    <span class="w-3 h-3 bg-cyan-500 rounded-full"></span>
-                    <span>70%+ Success Rate</span>
-                </div>
-                <div class="flex items-center space-x-2">
-                    <span class="w-3 h-3 bg-cyan-500 rounded-full"></span>
-                    <span>5-Page Professional PRDs</span>
-                </div>
-            </div>
-        </section>
-
-        <!-- Description Section (Hidden by default) -->
-        <section id="description-section" class="py-16 hidden">
-            <div class="card max-w-4xl mx-auto">
-                <div class="text-center mb-12">
-                    <h2 class="text-3xl font-bold mb-4 gradient-text">Describe Your Application</h2>
-                    <p class="text-lg text-gray-300 mb-6">Start by telling us about the application you'd like to build</p>
-                    <div class="inline-block px-4 py-3 rounded-lg bg-gradient-to-r from-purple-500/10 to-cyan-500/10 border border-purple-500/30">
-                        <span class="text-sm font-medium bg-gradient-to-r from-purple-400 to-cyan-400 bg-clip-text text-transparent">
-                            💡 Step 1 of 3: Provide a detailed description to get the best PRD recommendations
-                        </span>
-                    </div>
+        <section id="hero-section" class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16 text-center">
+            <div class="animate-fade-in">
+                <div class="inline-flex items-center space-x-2 bg-gradient-to-r from-primary/10 to-secondary/10 px-4 py-2 rounded-full mb-6">
+                    <span class="w-2 h-2 bg-accent rounded-full animate-pulse"></span>
+                    <span class="text-sm font-medium text-gray-600">Free Professional PRD Generator</span>
                 </div>
                 
-                <div class="bg-white/5 rounded-2xl shadow-xl p-8 border border-white/10">
-                    <div class="space-y-6">
-                        <div class="space-y-3">
-                            <h3 class="text-xl font-semibold text-white">Describe the application you'd like to build</h3>
-                            <textarea 
-                                id="app-description-input" 
-                                class="w-full p-4 rounded-lg text-white bg-black/60 border-2 border-purple-500/30 focus:border-purple-500 focus:outline-none transition-all" 
-                                rows="6" 
-                                placeholder="Describe your application idea in detail... For example: 'I want to build a task management app for remote teams that includes real-time collaboration, file sharing, and progress tracking features.'"
-                            ></textarea>
-                        </div>
-                        
-                        <!-- Progress indicator -->
-                        <div class="flex items-center justify-between text-sm text-gray-400">
-                            <span>Step 1 of 3</span>
-                            <div class="flex items-center space-x-2">
-                                <div class="w-3 h-3 bg-purple-500 rounded-full"></div>
-                                <div class="w-3 h-3 bg-gray-600 rounded-full"></div>
-                                <div class="w-3 h-3 bg-gray-600 rounded-full"></div>
-                            </div>
-                        </div>
-                        
-                        <!-- Navigation Buttons -->
-                        <div class="flex justify-between">
-                            <button onclick="showHeroSection()" class="px-6 py-3 text-purple-400 border border-purple-500/50 rounded-lg hover:bg-purple-500/20 hover:text-white transition-all">
-                                ← Back to Home
-                            </button>
-                            <button onclick="proceedToPatterns()" class="px-8 py-3 btn-gradient text-white rounded-lg hover:shadow-xl transition-all">
-                                Next: Choose Patterns →
-                            </button>
-                        </div>
+                <h1 class="text-5xl md:text-6xl font-bold mb-6">
+                    Build Like the 
+                    <span class="gradient-text">Best Startups</span>
+                </h1>
+                
+                <p class="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
+                    Generate professional PRDs using proven patterns from Notion, Stripe, GitHub, and other successful companies. 
+                    Get real architectural guidance and seamless handoff to Coder1 for implementation.
+                </p>
+                
+                <div class="flex flex-col sm:flex-row gap-4 justify-center mb-12">
+                    <button onclick="showModeSelection()" class="bg-gradient-to-r from-primary to-secondary text-white px-8 py-4 rounded-lg text-lg font-semibold hover:shadow-xl transition-all transform hover:scale-105">
+                        🚀 Generate My PRD (Free)
+                    </button>
+                    <button onclick="showPatterns()" class="border-2 border-primary text-primary px-8 py-4 rounded-lg text-lg font-semibold hover:bg-primary hover:text-white transition-all">
+                        📋 Browse Patterns
+                    </button>
+                </div>
+                
+                <!-- Trust Indicators -->
+                <div class="flex justify-center items-center space-x-8 text-sm text-gray-500">
+                    <div class="flex items-center space-x-2">
+                        <span class="w-3 h-3 bg-accent rounded-full"></span>
+                        <span>8 Proven Patterns</span>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <span class="w-3 h-3 bg-accent rounded-full"></span>
+                        <span>Quick or Comprehensive</span>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <span class="w-3 h-3 bg-accent rounded-full"></span>
+                        <span>5-20 Page PRDs</span>
                     </div>
                 </div>
             </div>
         </section>
 
-        <!-- Pattern Selection (Hidden by default) -->
-        <section id="pattern-section" class="py-16 hidden">
-            <div class="card max-w-6xl mx-auto">
-                <div class="text-center mb-12">
-                    <h2 class="text-3xl font-bold mb-4 gradient-text">Choose Your Success Patterns</h2>
-                    <p class="text-lg text-gray-300 mb-6">Select all boxes that have components or features that will apply to your application</p>
-                    <div class="inline-block px-4 py-3 rounded-lg bg-gradient-to-r from-purple-500/10 to-cyan-500/10 border border-purple-500/30 mb-4">
-                        <span class="text-sm font-medium bg-gradient-to-r from-purple-400 to-cyan-400 bg-clip-text text-transparent">
-                            💡 Step 2 of 3: Most successful apps combine 2-4 patterns. Select all that apply to get the most relevant PRD.
-                        </span>
+        <!-- Mode Selection Section -->
+        <section id="mode-selection" class="hidden max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+            <!-- Back Button -->
+            <div class="mb-8">
+                <button onclick="prdGenerator.goBack('hero-section')" class="flex items-center text-gray-600 hover:text-primary transition-colors">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                    </svg>
+                    Back to Home
+                </button>
+            </div>
+            
+            <div class="text-center mb-12">
+                <h2 class="text-3xl font-bold text-gray-900 mb-4">Choose Your Documentation Depth</h2>
+                <p class="text-lg text-gray-600">Select based on your timeline and needs</p>
+            </div>
+            
+            <div class="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+                <!-- Quick Mode Card -->
+                <div class="mode-card bg-white rounded-2xl shadow-xl p-8 border-2 border-transparent hover:border-primary transition-all cursor-pointer transform hover:scale-105" onclick="selectMode('quick')">
+                    <div class="text-center mb-6">
+                        <div class="w-20 h-20 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <span class="text-4xl">⚡</span>
+                        </div>
+                        <h3 class="text-2xl font-bold text-gray-900 mb-2">Quick Mode</h3>
+                        <p class="text-sm text-gray-500">Perfect when you need solid documentation fast</p>
                     </div>
                     
-                    <!-- Progress indicator -->
-                    <div class="flex items-center justify-center space-x-2 mb-6">
-                        <div class="w-3 h-3 bg-purple-500 rounded-full"></div>
-                        <div class="w-3 h-3 bg-purple-500 rounded-full"></div>
-                        <div class="w-3 h-3 bg-gray-600 rounded-full"></div>
+                    <div class="space-y-3 mb-6">
+                        <div class="flex items-center text-gray-700">
+                            <svg class="w-5 h-5 mr-3 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                            </svg>
+                            <span>3-5 minutes to complete</span>
+                        </div>
+                        <div class="flex items-center text-gray-700">
+                            <svg class="w-5 h-5 mr-3 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                            </svg>
+                            <span>5-8 page PRD document</span>
+                        </div>
+                        <div class="flex items-center text-gray-700">
+                            <svg class="w-5 h-5 mr-3 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                            </svg>
+                            <span>3-5 smart questions</span>
+                        </div>
+                        <div class="flex items-center text-gray-700">
+                            <svg class="w-5 h-5 mr-3 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                            </svg>
+                            <span>AI fills in the gaps</span>
+                        </div>
+                        <div class="flex items-center text-gray-700">
+                            <svg class="w-5 h-5 mr-3 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                            </svg>
+                            <span>Essential sections only</span>
+                        </div>
+                    </div>
+                    
+                    <div class="text-center">
+                        <button class="w-full bg-gradient-to-r from-yellow-400 to-orange-500 text-white py-3 rounded-lg font-semibold hover:shadow-lg transition-all">
+                            Choose Quick Mode
+                        </button>
                     </div>
                 </div>
                 
-                <div class="pattern-grid grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                <!-- Row 1 -->
-                <div class="pattern-card" onclick="togglePattern('stripe')">
-                    <div class="flex items-start justify-between mb-3">
-                        <div class="flex items-center gap-2">
-                            <input type="checkbox" id="pattern-stripe" class="checkbox">
-                            <h3 class="text-lg font-bold" style="color: var(--text-primary);">Stripe SaaS</h3>
+                <!-- Professional Mode Card -->
+                <div class="mode-card bg-white rounded-2xl shadow-xl p-8 border-2 border-transparent hover:border-primary transition-all cursor-pointer transform hover:scale-105" onclick="selectMode('professional')">
+                    <div class="text-center mb-6">
+                        <div class="w-20 h-20 bg-gradient-to-br from-primary to-secondary rounded-full flex items-center justify-center mx-auto mb-4">
+                            <span class="text-4xl">🏆</span>
                         </div>
-                        <span class="px-2 py-1 text-xs rounded-full" style="background: rgba(16, 185, 129, 0.2); color: var(--success);">68%</span>
+                        <h3 class="text-2xl font-bold text-gray-900 mb-2">Professional Mode</h3>
+                        <p class="text-sm text-gray-500">Comprehensive documentation for serious builders</p>
                     </div>
-                    <p class="text-sm mb-2" style="color: var(--text-secondary);">Payment processing & developer APIs</p>
-                    <div class="flex flex-wrap gap-1 mb-2">
-                        <span class="component-tag blue">Payment processing</span>
-                        <span class="component-tag green">User authentication</span>
-                        <span class="component-tag blue">Subscription billing</span>
-                        <span class="component-tag purple">API webhooks</span>
-                    </div>
-                    <div class="text-xs" style="color: var(--text-secondary);">Developer-first • High complexity</div>
-                </div>
-
-                <div class="pattern-card bg-white rounded-xl shadow-lg p-4 cursor-pointer transition-all hover:shadow-xl hover:scale-105" onclick="togglePattern('notion')">
-                    <div class="flex items-start justify-between mb-3">
-                        <div class="flex items-center space-x-2">
-                            <input type="checkbox" id="pattern-notion" class="pattern-checkbox w-4 h-4 text-indigo-600 rounded">
-                            <h3 class="text-lg font-bold text-gray-900">Notion Workspace</h3>
+                    
+                    <div class="space-y-3 mb-6">
+                        <div class="flex items-center text-gray-700">
+                            <svg class="w-5 h-5 mr-3 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                            </svg>
+                            <span>10-15 minutes to complete</span>
                         </div>
-                        <span class="text-xs bg-gradient-to-r from-purple-500/20 to-cyan-500/20 border border-purple-500/30 text-cyan-400 px-2 py-1 rounded-full">73%</span>
-                    </div>
-                    <p class="text-sm text-gray-600 mb-2">All-in-one workspace & content creation</p>
-                    <div class="flex flex-wrap gap-1 mb-2">
-                        <span class="px-2 py-1 text-xs bg-gradient-to-r from-purple-500/20 to-pink-500/20 border border-purple-500/30 text-pink-400 rounded-full">Rich text editor</span>
-                        <span class="px-2 py-1 text-xs bg-cyan-500/20 border border-cyan-500/30 text-cyan-400 rounded-full">Real-time collaboration</span>
-                        <span class="px-2 py-1 text-xs bg-purple-500/20 border border-purple-500/30 text-purple-400 rounded-full">Database views</span>
-                        <span class="px-2 py-1 text-xs bg-gradient-to-r from-purple-500/20 to-pink-500/20 border border-purple-500/30 text-pink-400 rounded-full">Block system</span>
-                    </div>
-                    <div class="text-xs text-gray-500">Productivity • Medium complexity</div>
-                </div>
-
-                <div class="pattern-card bg-white rounded-xl shadow-lg p-4 cursor-pointer transition-all hover:shadow-xl hover:scale-105" onclick="togglePattern('github')">
-                    <div class="flex items-start justify-between mb-3">
-                        <div class="flex items-center space-x-2">
-                            <input type="checkbox" id="pattern-github" class="pattern-checkbox w-4 h-4 text-indigo-600 rounded">
-                            <h3 class="text-lg font-bold text-gray-900">GitHub DevTools</h3>
+                        <div class="flex items-center text-gray-700">
+                            <svg class="w-5 h-5 mr-3 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                            </svg>
+                            <span>15-20 page PRD document</span>
                         </div>
-                        <span class="text-xs bg-gradient-to-r from-purple-500/20 to-cyan-500/20 border border-purple-500/30 text-cyan-400 px-2 py-1 rounded-full">75%</span>
-                    </div>
-                    <p class="text-sm text-gray-600 mb-2">Version control & developer collaboration</p>
-                    <div class="flex flex-wrap gap-1 mb-2">
-                        <span class="px-2 py-1 text-xs bg-purple-500/20 border border-purple-500/30 text-purple-400 rounded-full">Version control</span>
-                        <span class="px-2 py-1 text-xs bg-cyan-500/20 border border-cyan-500/30 text-cyan-400 rounded-full">Issue tracking</span>
-                        <span class="px-2 py-1 text-xs bg-purple-500/20 border border-purple-500/30 text-purple-400 rounded-full">Pull requests</span>
-                        <span class="px-2 py-1 text-xs bg-purple-500/20 border border-purple-500/30 text-purple-400 rounded-full">CI/CD automation</span>
-                    </div>
-                    <div class="text-xs text-gray-500">Developer tools • High complexity</div>
-                </div>
-
-                <div class="pattern-card bg-white rounded-xl shadow-lg p-4 cursor-pointer transition-all hover:shadow-xl hover:scale-105" onclick="togglePattern('slack')">
-                    <div class="flex items-start justify-between mb-3">
-                        <div class="flex items-center space-x-2">
-                            <input type="checkbox" id="pattern-slack" class="pattern-checkbox w-4 h-4 text-indigo-600 rounded">
-                            <h3 class="text-lg font-bold text-gray-900">Slack Messaging</h3>
+                        <div class="flex items-center text-gray-700">
+                            <svg class="w-5 h-5 mr-3 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                            </svg>
+                            <span>8-12 detailed questions</span>
                         </div>
-                        <span class="text-xs bg-gradient-to-r from-purple-500/20 to-cyan-500/20 border border-purple-500/30 text-cyan-400 px-2 py-1 rounded-full">71%</span>
-                    </div>
-                    <p class="text-sm text-gray-600 mb-2">Team communication & channels</p>
-                    <div class="flex flex-wrap gap-1 mb-2">
-                        <span class="px-2 py-1 text-xs bg-cyan-500/20 border border-cyan-500/30 text-cyan-400 rounded-full">Real-time messaging</span>
-                        <span class="px-2 py-1 text-xs bg-purple-500/20 border border-purple-500/30 text-purple-400 rounded-full">File sharing</span>
-                        <span class="px-2 py-1 text-xs bg-cyan-500/20 border border-cyan-500/30 text-cyan-400 rounded-full">Thread conversations</span>
-                        <span class="px-2 py-1 text-xs bg-purple-500/20 border border-purple-500/30 text-purple-400 rounded-full">Bot integrations</span>
-                    </div>
-                    <div class="text-xs text-gray-500">Communication • Medium complexity</div>
-                </div>
-
-                <!-- Row 2 -->
-                <div class="pattern-card bg-white rounded-xl shadow-lg p-4 cursor-pointer transition-all hover:shadow-xl hover:scale-105" onclick="togglePattern('figma')">
-                    <div class="flex items-start justify-between mb-3">
-                        <div class="flex items-center space-x-2">
-                            <input type="checkbox" id="pattern-figma" class="pattern-checkbox w-4 h-4 text-indigo-600 rounded">
-                            <h3 class="text-lg font-bold text-gray-900">Figma Creative</h3>
+                        <div class="flex items-center text-gray-700">
+                            <svg class="w-5 h-5 mr-3 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                            </svg>
+                            <span>Includes visuals & diagrams</span>
                         </div>
-                        <span class="text-xs bg-gradient-to-r from-purple-500/20 to-cyan-500/20 border border-purple-500/30 text-cyan-400 px-2 py-1 rounded-full">69%</span>
-                    </div>
-                    <p class="text-sm text-gray-600 mb-2">Collaborative design & creative tools</p>
-                    <div class="flex flex-wrap gap-1 mb-2">
-                        <span class="px-2 py-1 text-xs bg-gradient-to-r from-purple-500/20 to-pink-500/20 border border-purple-500/30 text-pink-400 rounded-full">Canvas editor</span>
-                        <span class="px-2 py-1 text-xs bg-gradient-to-r from-purple-500/20 to-pink-500/20 border border-purple-500/30 text-pink-400 rounded-full">Vector graphics</span>
-                        <span class="px-2 py-1 text-xs bg-purple-500/20 border border-purple-500/30 text-purple-400 rounded-full">Component libraries</span>
-                        <span class="px-2 py-1 text-xs bg-cyan-500/20 border border-cyan-500/30 text-cyan-400 rounded-full">Real-time collaboration</span>
-                    </div>
-                    <div class="text-xs text-gray-500">Creative tools • High complexity</div>
-                </div>
-
-                <div class="pattern-card bg-white rounded-xl shadow-lg p-4 cursor-pointer transition-all hover:shadow-xl hover:scale-105" onclick="togglePattern('asana')">
-                    <div class="flex items-start justify-between mb-3">
-                        <div class="flex items-center space-x-2">
-                            <input type="checkbox" id="pattern-asana" class="pattern-checkbox w-4 h-4 text-indigo-600 rounded">
-                            <h3 class="text-lg font-bold text-gray-900">Asana Projects</h3>
+                        <div class="flex items-center text-gray-700">
+                            <svg class="w-5 h-5 mr-3 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                            </svg>
+                            <span>Full technical specs</span>
                         </div>
-                        <span class="text-xs bg-gradient-to-r from-purple-500/20 to-cyan-500/20 border border-purple-500/30 text-cyan-400 px-2 py-1 rounded-full">67%</span>
                     </div>
-                    <p class="text-sm text-gray-600 mb-2">Project management & task coordination</p>
-                    <div class="flex flex-wrap gap-1 mb-2">
-                        <span class="px-2 py-1 text-xs bg-cyan-500/20 border border-cyan-500/30 text-cyan-400 rounded-full">Task management</span>
-                        <span class="px-2 py-1 text-xs bg-purple-500/20 border border-purple-500/30 text-purple-400 rounded-full">Project timelines</span>
-                        <span class="px-2 py-1 text-xs bg-cyan-500/20 border border-cyan-500/30 text-cyan-400 rounded-full">Team collaboration</span>
-                        <span class="px-2 py-1 text-xs bg-purple-500/20 border border-purple-500/30 text-purple-400 rounded-full">Progress tracking</span>
-                    </div>
-                    <div class="text-xs text-gray-500">Project mgmt • Medium complexity</div>
-                </div>
-
-                <div class="pattern-card bg-white rounded-xl shadow-lg p-4 cursor-pointer transition-all hover:shadow-xl hover:scale-105" onclick="togglePattern('zoom')">
-                    <div class="flex items-start justify-between mb-3">
-                        <div class="flex items-center space-x-2">
-                            <input type="checkbox" id="pattern-zoom" class="pattern-checkbox w-4 h-4 text-indigo-600 rounded">
-                            <h3 class="text-lg font-bold text-gray-900">Zoom Video</h3>
-                        </div>
-                        <span class="text-xs bg-gradient-to-r from-purple-500/20 to-cyan-500/20 border border-purple-500/30 text-cyan-400 px-2 py-1 rounded-full">74%</span>
-                    </div>
-                    <p class="text-sm text-gray-600 mb-2">Video conferencing & virtual meetings</p>
-                    <div class="flex flex-wrap gap-1 mb-2">
-                        <span class="px-2 py-1 text-xs bg-gradient-to-r from-purple-500/20 to-pink-500/20 border border-purple-500/30 text-pink-400 rounded-full">Video conferencing</span>
-                        <span class="px-2 py-1 text-xs bg-gradient-to-r from-purple-500/20 to-pink-500/20 border border-purple-500/30 text-pink-400 rounded-full">Screen sharing</span>
-                        <span class="px-2 py-1 text-xs bg-gradient-to-r from-purple-500/20 to-pink-500/20 border border-purple-500/30 text-pink-400 rounded-full">Recording</span>
-                        <span class="px-2 py-1 text-xs bg-purple-500/20 border border-purple-500/30 text-purple-400 rounded-full">Mobile/desktop apps</span>
-                    </div>
-                    <div class="text-xs text-gray-500">Video platform • High complexity</div>
-                </div>
-
-                <div class="pattern-card bg-white rounded-xl shadow-lg p-4 cursor-pointer transition-all hover:shadow-xl hover:scale-105" onclick="togglePattern('shopify')">
-                    <div class="flex items-start justify-between mb-3">
-                        <div class="flex items-center space-x-2">
-                            <input type="checkbox" id="pattern-shopify" class="pattern-checkbox w-4 h-4 text-indigo-600 rounded">
-                            <h3 class="text-lg font-bold text-gray-900">Shopify Store</h3>
-                        </div>
-                        <span class="text-xs bg-gradient-to-r from-purple-500/20 to-cyan-500/20 border border-purple-500/30 text-cyan-400 px-2 py-1 rounded-full">72%</span>
-                    </div>
-                    <p class="text-sm text-gray-600 mb-2">E-commerce platform & online stores</p>
-                    <div class="flex flex-wrap gap-1 mb-2">
-                        <span class="px-2 py-1 text-xs bg-cyan-500/20 border border-cyan-500/30 text-cyan-400 rounded-full">Shopping cart</span>
-                        <span class="px-2 py-1 text-xs bg-purple-500/20 border border-purple-500/30 text-purple-400 rounded-full">Payment gateway</span>
-                        <span class="px-2 py-1 text-xs bg-purple-500/20 border border-purple-500/30 text-purple-400 rounded-full">Inventory management</span>
-                        <span class="px-2 py-1 text-xs bg-purple-500/20 border border-purple-500/30 text-purple-400 rounded-full">Order processing</span>
-                    </div>
-                    <div class="text-xs text-gray-500">E-commerce • Medium complexity</div>
-                </div>
-
-                <!-- Row 3 -->
-                <div class="pattern-card bg-white rounded-xl shadow-lg p-4 cursor-pointer transition-all hover:shadow-xl hover:scale-105" onclick="togglePattern('spotify')">
-                    <div class="flex items-start justify-between mb-3">
-                        <div class="flex items-center space-x-2">
-                            <input type="checkbox" id="pattern-spotify" class="pattern-checkbox w-4 h-4 text-indigo-600 rounded">
-                            <h3 class="text-lg font-bold text-gray-900">Spotify Media</h3>
-                        </div>
-                        <span class="text-xs bg-gradient-to-r from-purple-500/20 to-cyan-500/20 border border-purple-500/30 text-cyan-400 px-2 py-1 rounded-full">76%</span>
-                    </div>
-                    <p class="text-sm text-gray-600 mb-2">Content streaming & media platforms</p>
-                    <div class="flex flex-wrap gap-1 mb-2">
-                        <span class="px-2 py-1 text-xs bg-gradient-to-r from-purple-500/20 to-pink-500/20 border border-purple-500/30 text-pink-400 rounded-full">Audio streaming</span>
-                        <span class="px-2 py-1 text-xs bg-cyan-500/20 border border-cyan-500/30 text-cyan-400 rounded-full">Playlist management</span>
-                        <span class="px-2 py-1 text-xs bg-purple-500/20 border border-purple-500/30 text-purple-400 rounded-full">Recommendation engine</span>
-                        <span class="px-2 py-1 text-xs bg-purple-500/20 border border-purple-500/30 text-purple-400 rounded-full">Offline sync</span>
-                    </div>
-                    <div class="text-xs text-gray-500">Media platform • High complexity</div>
-                </div>
-
-                <div class="pattern-card bg-white rounded-xl shadow-lg p-4 cursor-pointer transition-all hover:shadow-xl hover:scale-105" onclick="togglePattern('linkedin')">
-                    <div class="flex items-start justify-between mb-3">
-                        <div class="flex items-center space-x-2">
-                            <input type="checkbox" id="pattern-linkedin" class="pattern-checkbox w-4 h-4 text-indigo-600 rounded">
-                            <h3 class="text-lg font-bold text-gray-900">LinkedIn Social</h3>
-                        </div>
-                        <span class="text-xs bg-gradient-to-r from-purple-500/20 to-cyan-500/20 border border-purple-500/30 text-cyan-400 px-2 py-1 rounded-full">70%</span>
-                    </div>
-                    <p class="text-sm text-gray-600 mb-2">Professional networking & social feeds</p>
-                    <div class="flex flex-wrap gap-1 mb-2">
-                        <span class="px-2 py-1 text-xs bg-cyan-500/20 border border-cyan-500/30 text-cyan-400 rounded-full">Professional profiles</span>
-                        <span class="px-2 py-1 text-xs bg-cyan-500/20 border border-cyan-500/30 text-cyan-400 rounded-full">Social feeds</span>
-                        <span class="px-2 py-1 text-xs bg-purple-500/20 border border-purple-500/30 text-purple-400 rounded-full">Connection network</span>
-                        <span class="px-2 py-1 text-xs bg-cyan-500/20 border border-cyan-500/30 text-cyan-400 rounded-full">Messaging system</span>
-                    </div>
-                    <div class="text-xs text-gray-500">Social network • Medium complexity</div>
-                </div>
-
-                <div class="pattern-card bg-white rounded-xl shadow-lg p-4 cursor-pointer transition-all hover:shadow-xl hover:scale-105" onclick="togglePattern('airbnb')">
-                    <div class="flex items-start justify-between mb-3">
-                        <div class="flex items-center space-x-2">
-                            <input type="checkbox" id="pattern-airbnb" class="pattern-checkbox w-4 h-4 text-indigo-600 rounded">
-                            <h3 class="text-lg font-bold text-gray-900">Airbnb Marketplace</h3>
-                        </div>
-                        <span class="text-xs bg-gradient-to-r from-purple-500/20 to-cyan-500/20 border border-purple-500/30 text-cyan-400 px-2 py-1 rounded-full">68%</span>
-                    </div>
-                    <p class="text-sm text-gray-600 mb-2">Peer-to-peer marketplace & bookings</p>
-                    <div class="flex flex-wrap gap-1 mb-2">
-                        <span class="px-2 py-1 text-xs bg-purple-500/20 border border-purple-500/30 text-purple-400 rounded-full">Listing management</span>
-                        <span class="px-2 py-1 text-xs bg-purple-500/20 border border-purple-500/30 text-purple-400 rounded-full">Booking system</span>
-                        <span class="px-2 py-1 text-xs bg-cyan-500/20 border border-cyan-500/30 text-cyan-400 rounded-full">Review system</span>
-                        <span class="px-2 py-1 text-xs bg-purple-500/20 border border-purple-500/30 text-purple-400 rounded-full">Search filters</span>
-                    </div>
-                    <div class="text-xs text-gray-500">Marketplace • High complexity</div>
-                </div>
-
-                <div class="pattern-card bg-white rounded-xl shadow-lg p-4 cursor-pointer transition-all hover:shadow-xl hover:scale-105" onclick="togglePattern('netflix')">
-                    <div class="flex items-start justify-between mb-3">
-                        <div class="flex items-center space-x-2">
-                            <input type="checkbox" id="pattern-netflix" class="pattern-checkbox w-4 h-4 text-indigo-600 rounded">
-                            <h3 class="text-lg font-bold text-gray-900">Netflix Content</h3>
-                        </div>
-                        <span class="text-xs bg-gradient-to-r from-purple-500/20 to-cyan-500/20 border border-purple-500/30 text-cyan-400 px-2 py-1 rounded-full">77%</span>
-                    </div>
-                    <p class="text-sm text-gray-600 mb-2">Subscription content & recommendations</p>
-                    <div class="flex flex-wrap gap-1 mb-2">
-                        <span class="px-2 py-1 text-xs bg-gradient-to-r from-purple-500/20 to-pink-500/20 border border-purple-500/30 text-pink-400 rounded-full">Video streaming</span>
-                        <span class="px-2 py-1 text-xs bg-gradient-to-r from-purple-500/20 to-pink-500/20 border border-purple-500/30 text-pink-400 rounded-full">Content delivery</span>
-                        <span class="px-2 py-1 text-xs bg-purple-500/20 border border-purple-500/30 text-purple-400 rounded-full">Recommendation engine</span>
-                        <span class="px-2 py-1 text-xs bg-cyan-500/20 border border-cyan-500/30 text-cyan-400 rounded-full">User profiles</span>
-                    </div>
-                    <div class="text-xs text-gray-500">Content platform • High complexity</div>
-                </div>
-
-                <!-- Row 4 -->
-                <div class="pattern-card bg-white rounded-xl shadow-lg p-4 cursor-pointer transition-all hover:shadow-xl hover:scale-105" onclick="togglePattern('uber')">
-                    <div class="flex items-start justify-between mb-3">
-                        <div class="flex items-center space-x-2">
-                            <input type="checkbox" id="pattern-uber" class="pattern-checkbox w-4 h-4 text-indigo-600 rounded">
-                            <h3 class="text-lg font-bold text-gray-900">Uber On-demand</h3>
-                        </div>
-                        <span class="text-xs bg-gradient-to-r from-purple-500/20 to-cyan-500/20 border border-purple-500/30 text-cyan-400 px-2 py-1 rounded-full">73%</span>
-                    </div>
-                    <p class="text-sm text-gray-600 mb-2">On-demand services & real-time matching</p>
-                    <div class="flex flex-wrap gap-1 mb-2">
-                        <span class="px-2 py-1 text-xs bg-purple-500/20 border border-purple-500/30 text-purple-400 rounded-full">Location services</span>
-                        <span class="px-2 py-1 text-xs bg-purple-500/20 border border-purple-500/30 text-purple-400 rounded-full">Real-time tracking</span>
-                        <span class="px-2 py-1 text-xs bg-purple-500/20 border border-purple-500/30 text-purple-400 rounded-full">Driver matching</span>
-                        <span class="px-2 py-1 text-xs bg-purple-500/20 border border-purple-500/30 text-purple-400 rounded-full">Payment processing</span>
-                    </div>
-                    <div class="text-xs text-gray-500">Service platform • High complexity</div>
-                </div>
-
-                <div class="pattern-card bg-white rounded-xl shadow-lg p-4 cursor-pointer transition-all hover:shadow-xl hover:scale-105" onclick="togglePattern('salesforce')">
-                    <div class="flex items-start justify-between mb-3">
-                        <div class="flex items-center space-x-2">
-                            <input type="checkbox" id="pattern-salesforce" class="pattern-checkbox w-4 h-4 text-indigo-600 rounded">
-                            <h3 class="text-lg font-bold text-gray-900">Salesforce CRM</h3>
-                        </div>
-                        <span class="text-xs bg-gradient-to-r from-purple-500/20 to-cyan-500/20 border border-purple-500/30 text-cyan-400 px-2 py-1 rounded-full">75%</span>
-                    </div>
-                    <p class="text-sm text-gray-600 mb-2">Customer relationship management</p>
-                    <div class="flex flex-wrap gap-1 mb-2">
-                        <span class="px-2 py-1 text-xs bg-cyan-500/20 border border-cyan-500/30 text-cyan-400 rounded-full">Lead management</span>
-                        <span class="px-2 py-1 text-xs bg-purple-500/20 border border-purple-500/30 text-purple-400 rounded-full">Contact database</span>
-                        <span class="px-2 py-1 text-xs bg-purple-500/20 border border-purple-500/30 text-purple-400 rounded-full">Sales pipeline</span>
-                        <span class="px-2 py-1 text-xs bg-purple-500/20 border border-purple-500/30 text-purple-400 rounded-full">Email automation</span>
-                    </div>
-                    <div class="text-xs text-gray-500">Enterprise CRM • High complexity</div>
-                </div>
-
-                <div class="pattern-card bg-white rounded-xl shadow-lg p-4 cursor-pointer transition-all hover:shadow-xl hover:scale-105" onclick="togglePattern('dropbox')">
-                    <div class="flex items-start justify-between mb-3">
-                        <div class="flex items-center space-x-2">
-                            <input type="checkbox" id="pattern-dropbox" class="pattern-checkbox w-4 h-4 text-indigo-600 rounded">
-                            <h3 class="text-lg font-bold text-gray-900">Dropbox Storage</h3>
-                        </div>
-                        <span class="text-xs bg-gradient-to-r from-purple-500/20 to-cyan-500/20 border border-purple-500/30 text-cyan-400 px-2 py-1 rounded-full">71%</span>
-                    </div>
-                    <p class="text-sm text-gray-600 mb-2">Cloud file storage & synchronization</p>
-                    <div class="flex flex-wrap gap-1 mb-2">
-                        <span class="px-2 py-1 text-xs bg-purple-500/20 border border-purple-500/30 text-purple-400 rounded-full">File storage</span>
-                        <span class="px-2 py-1 text-xs bg-purple-500/20 border border-purple-500/30 text-purple-400 rounded-full">Device sync</span>
-                        <span class="px-2 py-1 text-xs bg-cyan-500/20 border border-cyan-500/30 text-cyan-400 rounded-full">File sharing</span>
-                        <span class="px-2 py-1 text-xs bg-purple-500/20 border border-purple-500/30 text-purple-400 rounded-full">Version history</span>
-                    </div>
-                    <div class="text-xs text-gray-500">File storage • Medium complexity</div>
-                </div>
-
-                <div class="pattern-card bg-white rounded-xl shadow-lg p-4 cursor-pointer transition-all hover:shadow-xl hover:scale-105" onclick="togglePattern('discord')">
-                    <div class="flex items-start justify-between mb-3">
-                        <div class="flex items-center space-x-2">
-                            <input type="checkbox" id="pattern-discord" class="pattern-checkbox w-4 h-4 text-indigo-600 rounded">
-                            <h3 class="text-lg font-bold text-gray-900">Discord Community</h3>
-                        </div>
-                        <span class="text-xs bg-gradient-to-r from-purple-500/20 to-cyan-500/20 border border-purple-500/30 text-cyan-400 px-2 py-1 rounded-full">69%</span>
-                    </div>
-                    <p class="text-sm text-gray-600 mb-2">Community platforms & voice chat</p>
-                    <div class="flex flex-wrap gap-1 mb-2">
-                        <span class="px-2 py-1 text-xs bg-gradient-to-r from-purple-500/20 to-pink-500/20 border border-purple-500/30 text-pink-400 rounded-full">Voice/text chat</span>
-                        <span class="px-2 py-1 text-xs bg-cyan-500/20 border border-cyan-500/30 text-cyan-400 rounded-full">Server management</span>
-                        <span class="px-2 py-1 text-xs bg-cyan-500/20 border border-cyan-500/30 text-cyan-400 rounded-full">Role permissions</span>
-                        <span class="px-2 py-1 text-xs bg-purple-500/20 border border-purple-500/30 text-purple-400 rounded-full">Bot ecosystem</span>
-                    </div>
-                    <div class="text-xs text-gray-500">Community • Medium complexity</div>
-                </div>
-            </div>
-            
-            <div class="mt-8 text-center">
-                <div id="selected-patterns-count" class="text-sm text-gray-600 mb-4">0 patterns selected</div>
-                <div class="space-y-4">
-                    <button onclick="proceedToQuestionnaire()" id="continue-button" class="px-8 py-4 bg-gradient-to-r from-indigo-500 to-pink-500 text-white rounded-lg text-lg font-semibold hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed" disabled>
-                        Continue to Questions →
-                    </button>
-                    <div>
-                        <button onclick="showDescriptionSection()" class="text-purple-400 hover:text-white transition-all">
-                            ← Back to Description
+                    
+                    <div class="text-center">
+                        <button class="w-full bg-gradient-to-r from-primary to-secondary text-white py-3 rounded-lg font-semibold hover:shadow-lg transition-all">
+                            Choose Professional Mode
                         </button>
                     </div>
                 </div>
             </div>
+            
+            <div class="text-center mt-8">
+                <p class="text-sm text-gray-500">
+                    Not sure? Start with Quick Mode - you can always generate a Professional version later
+                </p>
+            </div>
         </section>
 
-        <!-- Questionnaire Interface (Hidden by default) -->
-        <section id="questionnaire-section" class="container mx-auto px-6 py-16 max-w-3xl hidden">
+        <!-- Pattern Selection -->
+        <section id="pattern-selection" class="hidden max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+            <!-- Back Button -->
+            <div class="mb-8">
+                <button onclick="prdGenerator.goBack('mode-selection')" class="flex items-center text-gray-600 hover:text-primary transition-colors">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                    </svg>
+                    Back to Mode Selection
+                </button>
+            </div>
+            
+            <div class="text-center mb-8">
+                <h2 class="text-3xl font-bold text-gray-900 mb-4">Choose Your Success Patterns</h2>
+                <p class="text-lg text-gray-600 mb-2">Select one or more patterns that match your vision</p>
+                <p class="text-sm text-gray-500">Combining patterns creates unique hybrid approaches</p>
+            </div>
+            
+            <!-- Selected Patterns Display -->
+            <div id="selected-patterns" class="mb-6 hidden">
+                <div class="bg-blue-50 rounded-lg p-4 border border-blue-200">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <span class="text-sm font-semibold text-blue-900">Selected Patterns: </span>
+                            <span id="selected-patterns-list" class="text-blue-700"></span>
+                        </div>
+                        <button onclick="prdGenerator.proceedWithPatterns()" class="bg-gradient-to-r from-primary to-secondary text-white px-6 py-2 rounded-lg font-semibold hover:shadow-lg transition-all">
+                            Continue →
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="patterns-grid" class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Patterns will be loaded here -->
+            </div>
+        </section>
+
+        <!-- Questionnaire Interface -->
+        <section id="questionnaire-section" class="hidden max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+            <!-- Back Button -->
+            <div class="mb-8">
+                <button onclick="prdGenerator.goBack('pattern-selection')" class="flex items-center text-gray-600 hover:text-primary transition-colors">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                    </svg>
+                    Back to Pattern Selection
+                </button>
+            </div>
+            
             <!-- Progress Bar -->
             <div class="mb-8">
-                <div class="text-center mb-8">
-                    <h2 class="text-3xl font-bold mb-4 gradient-text">Smart Questionnaire</h2>
-                    <div class="inline-block px-4 py-3 rounded-lg bg-gradient-to-r from-purple-500/10 to-cyan-500/10 border border-purple-500/30 mb-4">
-                        <span class="text-sm font-medium bg-gradient-to-r from-purple-400 to-cyan-400 bg-clip-text text-transparent">
-                            💡 Step 3 of 3: Answer these questions to complete your professional PRD
-                        </span>
-                    </div>
-                    
-                    <!-- Progress indicator -->
-                    <div class="flex items-center justify-center space-x-2 mb-6">
-                        <div class="w-3 h-3 bg-purple-500 rounded-full"></div>
-                        <div class="w-3 h-3 bg-purple-500 rounded-full"></div>
-                        <div class="w-3 h-3 bg-purple-500 rounded-full"></div>
-                    </div>
-                    
-                    <span class="text-sm text-gray-400">
-                        Question <span id="current-question">1</span> of <span id="total-questions">5</span>
-                    </span>
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-2xl font-bold text-gray-900">Smart Questionnaire</h2>
+                    <span id="progress-text" class="text-sm text-gray-500">Question 1 of 5</span>
                 </div>
                 <div class="w-full bg-gray-200 rounded-full h-2">
-                    <div id="progress-bar" class="bg-gradient-to-r from-indigo-500 to-pink-500 h-2 rounded-full transition-all duration-500" style="width: 20%"></div>
+                    <div id="progress-bar" class="bg-gradient-to-r from-primary to-secondary h-2 rounded-full transition-all duration-500" style="width: 20%"></div>
                 </div>
             </div>
 
             <!-- Question Card -->
-            <div class="bg-white/5 rounded-2xl shadow-xl p-8 mb-6 border border-white/10">
-                <h3 class="text-xl font-semibold mb-4 text-white">What type of application are you building?</h3>
-                <div class="space-y-3">
-                    <button class="w-full text-left p-4 border-2 border-purple-500/30 rounded-lg hover:border-purple-500 hover:bg-purple-500/20 transition-all text-white">
-                        SaaS Platform
-                    </button>
-                    <button class="w-full text-left p-4 border-2 border-purple-500/30 rounded-lg hover:border-purple-500 hover:bg-purple-500/20 transition-all text-white">
-                        E-commerce Platform
-                    </button>
-                    <button class="w-full text-left p-4 border-2 border-purple-500/30 rounded-lg hover:border-purple-500 hover:bg-purple-500/20 transition-all text-white">
-                        Developer Tools
-                    </button>
-                    <button class="w-full text-left p-4 border-2 border-purple-500/30 rounded-lg hover:border-purple-500 hover:bg-purple-500/20 transition-all text-white">
-                        Social Platform
-                    </button>
-                </div>
+            <div id="question-card" class="bg-white rounded-2xl shadow-xl p-8 mb-6">
+                <!-- Question content will be inserted here -->
             </div>
 
             <!-- Navigation Buttons -->
             <div class="flex justify-between">
-                <button onclick="previousQuestion()" class="px-6 py-3 text-purple-400 border border-purple-500/50 rounded-lg hover:bg-purple-500/20 hover:text-white transition-all">
+                <button id="prev-btn" onclick="previousQuestion()" class="hidden px-6 py-3 text-primary border border-primary rounded-lg hover:bg-primary hover:text-white transition-all">
                     ← Previous
                 </button>
-                <button onclick="nextQuestion()" class="ml-auto px-8 py-3 btn-gradient text-white rounded-lg hover:shadow-lg transition-all">
+                <button id="next-btn" onclick="nextQuestion()" class="ml-auto px-8 py-3 bg-gradient-to-r from-primary to-secondary text-white rounded-lg hover:shadow-lg transition-all">
                     Next Question →
                 </button>
             </div>
+        </section>
+
+        <!-- PRD Generation -->
+        <section id="prd-generation" class="hidden max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+            <div class="text-center">
+                <div id="generation-loading" class="mb-8">
+                    <div class="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                    <h3 class="text-2xl font-bold text-gray-900 mb-2">Generating Your PRD</h3>
+                    <p class="text-gray-600">Applying proven patterns from successful startups...</p>
+                </div>
+                
+                <div id="generation-complete" class="hidden">
+                    <div class="w-16 h-16 bg-gradient-to-br from-accent to-green-400 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-2xl font-bold text-gray-900 mb-2">PRD Generated Successfully!</h3>
+                    <p class="text-gray-600 mb-8">Your professional 5-page PRD is ready for download and implementation.</p>
+                    
+                    <div class="flex flex-col sm:flex-row gap-4 justify-center mb-8">
+                        <button onclick="downloadPRD()" class="bg-gradient-to-r from-accent to-green-400 text-white px-8 py-4 rounded-lg text-lg font-semibold hover:shadow-xl transition-all">
+                            📄 Download PRD
+                        </button>
+                        <button onclick="startHandoff()" class="bg-gradient-to-r from-primary to-secondary text-white px-8 py-4 rounded-lg text-lg font-semibold hover:shadow-xl transition-all">
+                            🚀 Implement with Coder1
+                        </button>
+                    </div>
+                    
+                    <!-- PRD Preview Section -->
+                    <div class="mt-12">
+                        <h3 class="text-xl font-bold text-gray-900 mb-4">Document Preview</h3>
+                        <div id="prd-preview" class="bg-white rounded-xl shadow-lg p-8 text-left max-h-96 overflow-y-auto border border-gray-200">
+                            <div class="prose prose-lg max-w-none">
+                                <!-- PRD content will be inserted here -->
+                                <p class="text-gray-500">Loading preview...</p>
+                            </div>
+                        </div>
+                        <p class="text-sm text-gray-500 mt-4 text-center">Scroll to read the full document • Download for complete formatting</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Handoff Section -->
+        <section id="handoff-section" class="hidden max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl font-bold text-gray-900 mb-4">Ready to Build?</h2>
+                <p class="text-lg text-gray-600">Your PRD provides the foundation. Now let's implement it with Coder1's AI-powered development environment.</p>
+            </div>
             
-            <div class="mt-8 text-center">
-                <button onclick="showPatternsSection()" class="text-gray-600 hover:text-gray-900">
-                    ← Back to Patterns
+            <!-- Handoff Steps -->
+            <div id="handoff-steps" class="space-y-6">
+                <!-- Steps will be loaded here -->
+            </div>
+            
+            <!-- Launch IDE Button -->
+            <div class="text-center mt-12">
+                <button onclick="launchIDE()" class="bg-gradient-to-r from-primary to-secondary text-white px-12 py-6 rounded-lg text-xl font-bold hover:shadow-2xl transition-all transform hover:scale-105">
+                    🎯 Launch Coder1 IDE
                 </button>
+                <p class="text-sm text-gray-500 mt-4">Opens in new tab with your project context pre-loaded</p>
             </div>
         </section>
     </div>
 
-    <!-- Load comprehensive PRD generator -->
-    <script src="/js/prd-generator.js?v=1726592427"></script>
-    
-    <script>
-        // Comprehensive Smart PRD Generator with restructured flow
-        let currentQuestion = 1; // Start at 1 for questionnaire (description handled separately)
-        let totalQuestions = 5; // Questions 1-5 in questionnaire section
-        let selectedPattern = null;
-        let selectedPatterns = []; // New: Track multiple selected patterns
-        let selectedAnswers = {};
-        
-        // Complete question set including initial text input
-        const questions = [
-            {
-                id: 0,
-                type: 'text',
-                question: 'Describe the application you\'d like to build',
-                placeholder: 'Describe your application idea in detail...'
-            },
-            {
-                id: 1,
-                type: 'choice',
-                question: 'What type of application are you building?',
-                options: ['SaaS Platform', 'E-commerce Platform', 'Developer Tools', 'Social Platform']
-            },
-            {
-                id: 2,
-                type: 'choice',
-                question: 'Who is your primary target audience?',
-                options: ['Developers', 'Business Users', 'Consumers', 'Enterprise Teams'],
-                allowCustom: true,
-                customPlaceholder: 'Describe your target audience...'
-            },
-            {
-                id: 3,
-                type: 'choice',
-                question: 'What\'s your preferred business model?',
-                options: ['Subscription (Monthly/Annual)', 'One-time Purchase', 'Freemium', 'Usage-based']
-            },
-            {
-                id: 4,
-                type: 'choice',
-                question: 'What\'s your target timeline?',
-                options: ['1-3 months', '3-6 months', '6-12 months', '12+ months']
-            },
-            {
-                id: 5,
-                type: 'choice',
-                question: 'What\'s your team size?',
-                options: ['Solo Founder', '2-3 people', '4-10 people', '10+ people']
-            }
-        ];
+    <!-- Floating Action Button - Removed per user request -->
 
-        // Show patterns section
-        function showPatternsSection() {
-            console.log('Showing patterns section');
-            document.getElementById('hero-section').classList.add('hidden');
-            document.getElementById('description-section').classList.add('hidden');
-            document.getElementById('pattern-section').classList.remove('hidden');
-            document.getElementById('questionnaire-section').classList.add('hidden');
-        }
+    <!-- Toast Notifications -->
+    <div id="toast-container" class="fixed top-20 right-6 z-50 space-y-2"></div>
 
-        // Show hero section
-        function showHeroSection() {
-            console.log('Showing hero section');
-            document.getElementById('hero-section').classList.remove('hidden');
-            document.getElementById('description-section').classList.add('hidden');
-            document.getElementById('pattern-section').classList.add('hidden');
-            document.getElementById('questionnaire-section').classList.add('hidden');
-        }
-
-        // Show description section
-        function showDescriptionSection() {
-            console.log('Showing description section');
-            document.getElementById('hero-section').classList.add('hidden');
-            document.getElementById('description-section').classList.remove('hidden');
-            document.getElementById('pattern-section').classList.add('hidden');
-            document.getElementById('questionnaire-section').classList.add('hidden');
-        }
-
-        // Save description and proceed to patterns
-        function proceedToPatterns() {
-            console.log('Proceeding to patterns');
-            
-            // Save the description
-            const descriptionInput = document.getElementById('app-description-input');
-            if (descriptionInput && descriptionInput.value.trim()) {
-                selectedAnswers[0] = descriptionInput.value.trim();
-                console.log('Saved description:', selectedAnswers[0]);
-                // Store in localStorage as backup
-                localStorage.setItem('prd_description', selectedAnswers[0]);
-            } else {
-                alert('Please provide a description of your application before continuing.');
-                return;
-            }
-            
-            // Show patterns section
-            document.getElementById('description-section').classList.add('hidden');
-            document.getElementById('pattern-section').classList.remove('hidden');
-            document.getElementById('questionnaire-section').classList.add('hidden');
-        }
-
-        // Select a pattern (legacy single-select function)
-        function selectPattern(pattern) {
-            console.log('Selected pattern:', pattern);
-            selectedPattern = pattern;
-            document.getElementById('pattern-section').classList.add('hidden');
-            document.getElementById('questionnaire-section').classList.remove('hidden');
-            currentQuestion = 0; // Start with initial text question
-            updateProgress();
-            showCurrentQuestion();
-            updateNavigationButtons();
-        }
-
-        // New multi-pattern selection functionality
-        function togglePattern(patternId) {
-            console.log('Toggling pattern:', patternId);
-            
-            const checkbox = document.getElementById(`pattern-${patternId}`);
-            const isSelected = selectedPatterns.includes(patternId);
-            
-            if (isSelected) {
-                // Remove pattern from selection
-                selectedPatterns = selectedPatterns.filter(p => p !== patternId);
-                checkbox.checked = false;
-            } else {
-                // Add pattern to selection
-                selectedPatterns.push(patternId);
-                checkbox.checked = true;
-            }
-            
-            // Update continue button state
-            updateContinueButton();
-            
-            console.log('Selected patterns:', selectedPatterns);
-        }
-        
-        function updateContinueButton() {
-            const continueButton = document.getElementById('continue-button');
-            const selectedCount = selectedPatterns.length;
-            
-            if (selectedCount === 0) {
-                continueButton.disabled = true;
-                continueButton.innerHTML = '🔒 Select at least 1 pattern to continue';
-            } else {
-                continueButton.disabled = false;
-                continueButton.innerHTML = `✨ Continue with ${selectedCount} pattern${selectedCount > 1 ? 's' : ''} →`;
-            }
-        }
-        
-        function proceedToQuestionnaire() {
-            console.log('Proceeding to questionnaire with patterns:', selectedPatterns);
-            
-            if (selectedPatterns.length === 0) {
-                alert('Please select at least one pattern to continue.');
-                return;
-            }
-            
-            // Ensure description is preserved
-            if (!selectedAnswers[0] && localStorage.getItem('prd_description')) {
-                selectedAnswers[0] = localStorage.getItem('prd_description');
-                console.log('Restored description from localStorage:', selectedAnswers[0]);
-            }
-            
-            // For compatibility with existing system, set the first pattern as primary
-            selectedPattern = selectedPatterns[0];
-            
-            // Hide all other sections and show questionnaire
-            document.getElementById('description-section').classList.add('hidden');
-            document.getElementById('pattern-section').classList.add('hidden');
-            document.getElementById('questionnaire-section').classList.remove('hidden');
-            currentQuestion = 1; // Start with question 1 (description already captured)
-            updateProgress();
-            showCurrentQuestion();
-            updateNavigationButtons();
-        }
-
-        // Show current question
-        function showCurrentQuestion() {
-            // Fix: currentQuestion is 1-indexed but questions array is 0-indexed
-            // When currentQuestion = 1, we want questions[1] (second item)
-            // When currentQuestion = 2, we want questions[2] (third item), etc.
-            const questionData = questions[currentQuestion];
-            console.log('Showing question:', currentQuestion, questionData);
-            
-            // Better selector - use the questionnaire section and find the question card
-            const questionnaireSection = document.getElementById('questionnaire-section');
-            const questionCard = questionnaireSection.querySelector('.rounded-2xl.shadow-xl');
-            
-            // Update question title - find the h3 inside the question card
-            const questionTitle = questionCard.querySelector('h3');
-            console.log('Found h3 element:', questionTitle);
-            if (questionTitle) {
-                questionTitle.textContent = questionData.question;
-                console.log('Updated question text to:', questionData.question);
-            } else {
-                console.error('Could not find h3 element for question title');
-            }
-            
-            // Update question content
-            const questionContent = questionCard.querySelector('.space-y-3');
-            
-            if (questionData.type === 'text') {
-                questionContent.innerHTML = `
-                    <textarea id="text-input" class="w-full p-4 border-2 border-purple-500/30 rounded-lg focus:border-purple-500 focus:outline-none transition-all text-white bg-black/60" 
-                        rows="4" placeholder="${questionData.placeholder}">${selectedAnswers[currentQuestion] || ''}</textarea>
-                `;
-                
-                // Add event listener for text input
-                document.getElementById('text-input').addEventListener('input', (e) => {
-                    selectedAnswers[currentQuestion] = e.target.value;
-                });
-            } else {
-                const optionButtons = questionData.options.map(option => `
-                    <button class="w-full text-left p-4 border-2 border-purple-500/30 rounded-lg hover:border-purple-500 hover:bg-purple-500/20 transition-all text-white
-                        ${selectedAnswers[currentQuestion] === option ? 'border-purple-500 bg-purple-500/20' : ''}" 
-                        onclick="selectAnswer('${option}')">
-                        ${option}
-                    </button>
-                `);
-                
-                // Add custom input option if allowed
-                if (questionData.allowCustom) {
-                    const isCustomSelected = selectedAnswers[currentQuestion] && !questionData.options.includes(selectedAnswers[currentQuestion]);
-                    optionButtons.push(`
-                        <div class="space-y-2">
-                            <button class="w-full text-left p-4 border-2 border-purple-500/30 rounded-lg hover:border-purple-500 hover:bg-purple-500/20 transition-all text-white
-                                ${isCustomSelected ? 'border-purple-500 bg-purple-500/20' : ''}" 
-                                onclick="selectCustomOption()">
-                                Other (specify)
-                            </button>
-                            <div id="custom-input-container" class="${isCustomSelected ? '' : 'hidden'}">
-                                <textarea id="custom-input" class="w-full p-3 border-2 border-purple-500 rounded-lg focus:border-purple-500 focus:outline-none transition-all text-white bg-black/60" 
-                                    rows="2" placeholder="${questionData.customPlaceholder}">${isCustomSelected ? selectedAnswers[currentQuestion] : ''}</textarea>
-                            </div>
-                        </div>
-                    `);
-                }
-                
-                questionContent.innerHTML = optionButtons.join('');
-            }
-        }
-
-        // Select an answer for choice questions
-        function selectAnswer(answer) {
-            selectedAnswers[currentQuestion] = answer;
-            // Hide custom input if it exists
-            const customContainer = document.getElementById('custom-input-container');
-            if (customContainer) {
-                customContainer.classList.add('hidden');
-            }
-            // Update button states
-            const buttons = document.querySelectorAll('.space-y-3 button');
-            buttons.forEach(btn => {
-                btn.classList.remove('border-purple-500', 'bg-purple-500/20');
-                btn.classList.add('border-purple-500/30');
-                if (btn.textContent.trim() === answer) {
-                    btn.classList.add('border-purple-500', 'bg-purple-500/20');
-                    btn.classList.remove('border-purple-500/30');
-                }
-            });
-        }
-
-        // Select custom option for target audience
-        function selectCustomOption() {
-            // Show custom input container
-            const customContainer = document.getElementById('custom-input-container');
-            if (customContainer) {
-                customContainer.classList.remove('hidden');
-                const customInput = document.getElementById('custom-input');
-                customInput.focus();
-                
-                // Add event listener for custom input
-                customInput.addEventListener('input', (e) => {
-                    selectedAnswers[currentQuestion] = e.target.value;
-                });
-            }
-            
-            // Update button states - highlight "Other (specify)" button
-            const buttons = document.querySelectorAll('.space-y-3 button');
-            buttons.forEach(btn => {
-                btn.classList.remove('border-purple-500', 'bg-purple-500/20');
-                btn.classList.add('border-purple-500/30');
-                if (btn.textContent.trim() === 'Other (specify)') {
-                    btn.classList.add('border-purple-500', 'bg-purple-500/20');
-                    btn.classList.remove('border-purple-500/30');
-                }
-            });
-        }
-
-        // Navigate questions
-        function nextQuestion() {
-            // Save current answer if text input
-            if (questions[currentQuestion].type === 'text') {
-                const textInput = document.getElementById('text-input');
-                if (textInput) {
-                    selectedAnswers[currentQuestion] = textInput.value;
-                }
-            }
-            
-            // Save custom input if it exists and is visible
-            const customInput = document.getElementById('custom-input');
-            const customContainer = document.getElementById('custom-input-container');
-            if (customInput && customContainer && !customContainer.classList.contains('hidden')) {
-                selectedAnswers[currentQuestion] = customInput.value;
-            }
-            
-            if (currentQuestion < totalQuestions) {
-                currentQuestion++;
-                updateProgress();
-                showCurrentQuestion();
-                updateNavigationButtons();
-            } else {
-                // Generate comprehensive PRD
-                generateComprehensivePRD();
-            }
-        }
-
-        function previousQuestion() {
-            if (currentQuestion > 1) {
-                currentQuestion--;
-                updateProgress();
-                showCurrentQuestion();
-                updateNavigationButtons();
-            } else if (currentQuestion === 1) {
-                // Go back to pattern selection
-                showPatternsSection();
-            }
-        }
-
-        // Update progress bar
-        function updateProgress() {
-            // For questionnaire section: Questions 1-5 (5 questions total)
-            // currentQuestion ranges from 1 to 5
-            const questionnaireQuestions = 5; // Questions 1-5
-            const questionNumber = currentQuestion; // 1-5
-            const progress = (questionNumber / questionnaireQuestions) * 100;
-            document.getElementById('progress-bar').style.width = progress + '%';
-            document.getElementById('current-question').textContent = questionNumber;
-            document.getElementById('total-questions').textContent = questionnaireQuestions;
-        }
-
-        // Update navigation button states
-        function updateNavigationButtons() {
-            // Find the previous button in the questionnaire section
-            const questionnaireSection = document.getElementById('questionnaire-section');
-            if (questionnaireSection && !questionnaireSection.classList.contains('hidden')) {
-                const prevButton = questionnaireSection.querySelector('button[onclick="previousQuestion()"]');
-                if (prevButton) {
-                    // Previous button is always enabled - either goes to previous question or back to patterns
-                    prevButton.disabled = false;
-                    prevButton.classList.remove('opacity-50', 'cursor-not-allowed');
-                    prevButton.classList.add('hover:bg-purple-500/20', 'hover:text-white');
-                    
-                    // Update button text based on current question
-                    if (currentQuestion === 1) {
-                        prevButton.textContent = '← Back to Patterns';
-                    } else {
-                        prevButton.textContent = '← Previous';
-                    }
-                }
-            }
-        }
-
-        // Generate comprehensive PRD using the loaded system with multi-pattern support
-        function generateComprehensivePRD() {
-            console.log('Generating comprehensive PRD with patterns:', selectedPatterns, 'and answers:', selectedAnswers);
-            
-            // Check if comprehensive PRD generator is available
-            if (typeof generateMultiPatternPRD !== 'undefined' && typeof patternConfigs !== 'undefined') {
-                // Try multi-pattern generation first
-                try {
-                    const comprehensivePRD = generateMultiPatternPRD(selectedPatterns, selectedAnswers, patternConfigs);
-                    showPRDResults(comprehensivePRD);
-                    return;
-                } catch (error) {
-                    console.log('Multi-pattern generator not available, falling back to single pattern');
-                }
-            }
-            
-            // Fallback to single pattern generation for compatibility
-            if (typeof generateComprehensivePRD !== 'undefined' && typeof patternConfigs !== 'undefined') {
-                // Use the primary pattern (first selected)
-                const primaryPattern = selectedPatterns.length > 0 ? selectedPatterns[0] : selectedPattern;
-                const patternConfig = patternConfigs[primaryPattern];
-                
-                if (patternConfig) {
-                    // Generate PRD with pattern mixing information
-                    let prdContent = generateSinglePatternPRD(primaryPattern, selectedAnswers, patternConfig);
-                    
-                    // Add multi-pattern context if multiple patterns selected
-                    if (selectedPatterns.length > 1) {
-                        const additionalPatterns = selectedPatterns.slice(1);
-                        prdContent = addMultiPatternContext(prdContent, primaryPattern, additionalPatterns, patternConfigs);
-                    }
-                    
-                    showPRDResults(prdContent);
-                } else {
-                    console.error('Pattern configuration not found for:', primaryPattern);
-                    showBasicPRD();
-                }
-            } else {
-                console.error('Comprehensive PRD generator not loaded, falling back to basic PRD');
-                showBasicPRD();
-            }
-        }
-
-        // Helper function to generate single pattern PRD (compatibility)
-        function generateSinglePatternPRD(pattern, answers, config) {
-            // This will call the external generateComprehensivePRD function
-            if (typeof window.generateComprehensivePRD === 'function') {
-                return window.generateComprehensivePRD(pattern, answers, config);
-            }
-            return `<h3>PRD for ${pattern}</h3><p>Basic PRD generation - external system not loaded.</p>`;
-        }
-
-        // Helper function to add multi-pattern context
-        function addMultiPatternContext(basePRD, primaryPattern, additionalPatterns, configs) {
-            const additionalFeatures = additionalPatterns.map(pattern => {
-                const config = configs[pattern];
-                return config ? `
-                    <div class="mt-4 p-4 bg-gradient-to-r from-purple-500/10 to-cyan-500/10 rounded-lg border-l-4 border-cyan-500">
-                        <h5 class="text-lg font-semibold text-cyan-400">Integrated Features from ${config.name || pattern}</h5>
-                        <p class="text-purple-300">${config.description || 'Additional functionality'}</p>
-                        <div class="mt-2 text-sm text-blue-600">
-                            <strong>Key Components:</strong> ${config.keyFeatures ? config.keyFeatures.slice(0, 3).join(', ') : 'Core features'}
-                        </div>
-                    </div>
-                ` : '';
-            }).join('');
-
-            // Insert additional features after the executive summary
-            const updatedPRD = basePRD.replace(
-                /(<\/div>\s*<div[^>]*>\s*<h4[^>]*>(?:Business Model|Key Features|Technical Architecture))/i, 
-                `${additionalFeatures}$1`
-            );
-
-            return updatedPRD;
-        }
-
-        // Show PRD results
-        function showPRDResults(prdContent) {
-            document.getElementById('questionnaire-section').classList.add('hidden');
-            
-            // Create PRD results section
-            const resultsSection = document.createElement('section');
-            resultsSection.id = 'prd-results-section';
-            resultsSection.className = 'container mx-auto px-6 py-16';
-            resultsSection.innerHTML = `
-                <div class="max-w-4xl mx-auto">
-                    <div class="text-center mb-8">
-                        <h2 class="text-3xl font-bold text-gray-900 mb-4">Your Professional PRD</h2>
-                        <p class="text-lg text-gray-600">Ready to handoff to Claude Code for implementation</p>
-                    </div>
-                    
-                    <div class="bg-white/5 rounded-2xl shadow-xl p-8 mb-6 border border-white/10">
-                        ${prdContent}
-                    </div>
-                    
-                    <div class="flex justify-center space-x-4">
-                        <button onclick="exportPRD('markdown')" class="px-6 py-3 bg-gradient-to-r from-indigo-500 to-pink-500 text-white rounded-lg hover:shadow-lg transition-all">
-                            📥 Download Markdown
-                        </button>
-                        <button onclick="exportPRD('copy')" class="px-6 py-3 border-2 border-purple-500 text-purple-400 rounded-lg hover:bg-purple-500/20 hover:text-white transition-all">
-                            📋 Copy to Clipboard
-                        </button>
-                        <button onclick="window.location.href='/ide'" class="px-6 py-3 bg-gradient-to-r from-green-500 to-blue-500 text-white rounded-lg hover:shadow-lg transition-all">
-                            🚀 Launch Coder1 IDE
-                        </button>
-                    </div>
-                    
-                    <div class="mt-8 text-center">
-                        <button onclick="showHeroSection(); document.getElementById('prd-results-section').remove();" class="text-gray-600 hover:text-gray-900">
-                            ← Start Over
-                        </button>
-                    </div>
-                </div>
-            `;
-            
-            document.querySelector('.pt-20').appendChild(resultsSection);
-        }
-
-        // Professional PRD Generation with comprehensive content
-        function showBasicPRD() {
-            const patternsText = selectedPatterns.length > 0 
-                ? selectedPatterns.map(p => p.charAt(0).toUpperCase() + p.slice(1)).join(', ')
-                : 'No patterns selected';
-            
-            // Pattern-specific architectural insights
-            const patternArchitectures = {
-                github: { name: 'GitHub', tech: 'Git-based version control, Ruby on Rails backend, React frontend', features: ['Repository management', 'Pull request workflows', 'CI/CD webhooks', 'Issue tracking'] },
-                slack: { name: 'Slack', tech: 'WebSocket real-time messaging, Node.js microservices, React Native mobile', features: ['Channel-based communication', 'Thread conversations', 'File sharing', 'Bot integration API'] },
-                asana: { name: 'Asana', tech: 'PostgreSQL, Redis caching, React SPA, GraphQL API', features: ['Task dependencies', 'Timeline views', 'Custom fields', 'Progress tracking'] },
-                stripe: { name: 'Stripe', tech: 'Payment processing infrastructure, API-first design, Webhooks', features: ['PCI compliance', 'Subscription billing', 'Multi-currency', 'Fraud detection'] },
-                notion: { name: 'Notion', tech: 'Block-based content system, Real-time collaboration, SQLite/PostgreSQL', features: ['Rich text editing', 'Database views', 'Templates', 'API access'] },
-                figma: { name: 'Figma', tech: 'WebGL canvas rendering, Operational transformation for collaboration', features: ['Vector graphics', 'Component libraries', 'Auto-layout', 'Design systems'] },
-                zoom: { name: 'Zoom', tech: 'WebRTC video streaming, Scalable media servers, End-to-end encryption', features: ['HD video/audio', 'Screen sharing', 'Recording', 'Virtual backgrounds'] },
-                shopify: { name: 'Shopify', tech: 'Multi-tenant SaaS, Liquid templating, GraphQL Storefront API', features: ['Product catalog', 'Payment processing', 'Inventory management', 'Theme customization'] },
-                spotify: { name: 'Spotify', tech: 'Audio streaming CDN, Recommendation ML models, OAuth 2.0', features: ['Music streaming', 'Playlist management', 'Offline sync', 'Social features'] },
-                linkedin: { name: 'LinkedIn', tech: 'Graph database (Neo4j), Kafka event streaming, Machine learning', features: ['Professional profiles', 'Connection network', 'Feed algorithm', 'Job matching'] },
-                airbnb: { name: 'Airbnb', tech: 'Service-oriented architecture, PostgreSQL, React/Rails', features: ['Search & filtering', 'Booking system', 'Reviews', 'Host tools'] },
-                netflix: { name: 'Netflix', tech: 'Microservices, CDN distribution, Recommendation engine', features: ['Video streaming', 'Personalization', 'Download for offline', 'Multiple profiles'] },
-                uber: { name: 'Uber', tech: 'Real-time matching, Location services, Dynamic pricing', features: ['GPS tracking', 'Driver dispatch', 'Payment processing', 'Rating system'] },
-                salesforce: { name: 'Salesforce', tech: 'Multi-tenant architecture, Apex platform, Lightning Web Components', features: ['CRM database', 'Workflow automation', 'Reports & dashboards', 'Email integration'] },
-                dropbox: { name: 'Dropbox', tech: 'Block-level sync, Distributed storage, Client encryption', features: ['File sync', 'Version history', 'Shared folders', 'Smart Sync'] },
-                discord: { name: 'Discord', tech: 'Elixir/Erlang for scale, Voice over IP, WebSocket connections', features: ['Voice channels', 'Server management', 'Role permissions', 'Bot ecosystem'] }
-            };
-            
-            const selectedArchitectures = selectedPatterns.map(p => patternArchitectures[p] || { name: p, tech: 'Modern web stack', features: [] });
-                
-            const comprehensivePRD = `
-                <div class="gradient-text text-3xl font-bold mb-6">Professional Requirements Document</div>
-                
-                <!-- Executive Summary -->
-                <div class="mb-8 p-6 bg-gradient-to-r from-purple-500/10 to-cyan-500/10 rounded-xl border border-purple-500/30">
-                    <h3 class="text-2xl font-bold text-white mb-4">📋 Executive Summary</h3>
-                    <div class="space-y-3 text-gray-300">
-                        <div><strong class="text-purple-400">Vision:</strong> ${selectedAnswers[0] || 'Comprehensive application platform'}</div>
-                        <div><strong class="text-purple-400">Category:</strong> ${selectedAnswers[1] || 'Software Platform'}</div>
-                        <div><strong class="text-purple-400">Target Market:</strong> ${selectedAnswers[2] || 'Professional Users'}</div>
-                        <div><strong class="text-purple-400">Revenue Model:</strong> ${selectedAnswers[3] || 'Subscription-based'}</div>
-                        <div><strong class="text-purple-400">Development Timeline:</strong> ${selectedAnswers[4] || '3-6 months'}</div>
-                        <div><strong class="text-purple-400">Team Composition:</strong> ${selectedAnswers[5] || '5-10 professionals'}</div>
-                    </div>
-                </div>
-                
-                <!-- Multi-Pattern Architecture -->
-                <div class="mb-8 p-6 bg-gradient-to-r from-indigo-500/10 to-pink-500/10 rounded-xl border border-indigo-500/30">
-                    <h3 class="text-2xl font-bold text-white mb-4">🏗️ Hybrid Architecture Pattern</h3>
-                    <p class="text-gray-300 mb-4">This platform strategically combines ${selectedPatterns.length} proven architectural patterns to create a unique, scalable solution:</p>
-                    
-                    ${selectedArchitectures.map((arch, index) => `
-                    <div class="mb-6 p-4 bg-black/30 rounded-lg border-l-4 border-cyan-500">
-                        <h4 class="text-xl font-bold text-cyan-400 mb-2">${arch.name} Pattern Integration</h4>
-                        <div class="text-gray-300 mb-2"><strong>Technology Stack:</strong> ${arch.tech}</div>
-                        <div class="text-gray-300">
-                            <strong>Key Components:</strong>
-                            <ul class="list-disc list-inside mt-2 ml-4">
-                                ${arch.features.map(f => `<li>${f}</li>`).join('')}
-                            </ul>
-                        </div>
-                    </div>
-                    `).join('')}
-                </div>
-                
-                <!-- Technical Specifications -->
-                <div class="mb-8 p-6 bg-gradient-to-r from-green-500/10 to-blue-500/10 rounded-xl border border-green-500/30">
-                    <h3 class="text-2xl font-bold text-white mb-4">⚙️ Technical Specifications</h3>
-                    
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                        <div class="p-4 bg-black/30 rounded-lg">
-                            <h4 class="text-lg font-bold text-green-400 mb-2">Frontend Architecture</h4>
-                            <ul class="text-gray-300 space-y-1 text-sm">
-                                <li>• React 18+ with TypeScript</li>
-                                <li>• Next.js 14 for SSR/SSG</li>
-                                <li>• Tailwind CSS for styling</li>
-                                <li>• Redux Toolkit for state</li>
-                                <li>• WebSocket for real-time</li>
-                            </ul>
-                        </div>
-                        
-                        <div class="p-4 bg-black/30 rounded-lg">
-                            <h4 class="text-lg font-bold text-blue-400 mb-2">Backend Infrastructure</h4>
-                            <ul class="text-gray-300 space-y-1 text-sm">
-                                <li>• Node.js with Express/Fastify</li>
-                                <li>• PostgreSQL primary database</li>
-                                <li>• Redis for caching & sessions</li>
-                                <li>• GraphQL & REST APIs</li>
-                                <li>• Microservices architecture</li>
-                            </ul>
-                        </div>
-                    </div>
-                    
-                    <div class="p-4 bg-black/30 rounded-lg">
-                        <h4 class="text-lg font-bold text-purple-400 mb-2">DevOps & Deployment</h4>
-                        <ul class="text-gray-300 space-y-1 text-sm grid grid-cols-2">
-                            <li>• Docker containerization</li>
-                            <li>• Kubernetes orchestration</li>
-                            <li>• CI/CD with GitHub Actions</li>
-                            <li>• AWS/GCP cloud hosting</li>
-                            <li>• Terraform infrastructure</li>
-                            <li>• Monitoring with Datadog</li>
-                        </ul>
-                    </div>
-                </div>
-                
-                <!-- Core Features & User Stories -->
-                <div class="mb-8 p-6 bg-gradient-to-r from-pink-500/10 to-orange-500/10 rounded-xl border border-pink-500/30">
-                    <h3 class="text-2xl font-bold text-white mb-4">✨ Core Features & User Stories</h3>
-                    
-                    <div class="space-y-4">
-                        ${selectedPatterns.slice(0, 3).map((pattern, index) => {
-                            const features = patternArchitectures[pattern]?.features || [];
-                            return `
-                            <div class="p-4 bg-black/30 rounded-lg">
-                                <h4 class="text-lg font-bold text-orange-400 mb-2">Epic ${index + 1}: ${patternArchitectures[pattern]?.name || pattern} Features</h4>
-                                <div class="space-y-2">
-                                    ${features.slice(0, 2).map(f => `
-                                    <div class="text-gray-300">
-                                        <strong>User Story:</strong> As a user, I want to ${f.toLowerCase()} so that I can efficiently manage my workflow.
-                                        <div class="text-sm text-gray-400 mt-1">
-                                            <strong>Acceptance Criteria:</strong> System provides ${f.toLowerCase()} functionality with < 200ms response time
-                                        </div>
-                                    </div>
-                                    `).join('')}
-                                </div>
-                            </div>
-                            `;
-                        }).join('')}
-                    </div>
-                </div>
-                
-                <!-- Security & Compliance -->
-                <div class="mb-8 p-6 bg-gradient-to-r from-red-500/10 to-yellow-500/10 rounded-xl border border-red-500/30">
-                    <h3 class="text-2xl font-bold text-white mb-4">🔒 Security & Compliance</h3>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <ul class="text-gray-300 space-y-2">
-                            <li>✓ End-to-end encryption for sensitive data</li>
-                            <li>✓ OAuth 2.0 / JWT authentication</li>
-                            <li>✓ Role-based access control (RBAC)</li>
-                            <li>✓ GDPR & CCPA compliance</li>
-                        </ul>
-                        <ul class="text-gray-300 space-y-2">
-                            <li>✓ SOC 2 Type II certification path</li>
-                            <li>✓ Regular security audits</li>
-                            <li>✓ DDoS protection via Cloudflare</li>
-                            <li>✓ Automated vulnerability scanning</li>
-                        </ul>
-                    </div>
-                </div>
-                
-                <!-- Success Metrics -->
-                <div class="mb-8 p-6 bg-gradient-to-r from-teal-500/10 to-emerald-500/10 rounded-xl border border-teal-500/30">
-                    <h3 class="text-2xl font-bold text-white mb-4">📊 Success Metrics & KPIs</h3>
-                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        <div class="text-center p-3 bg-black/30 rounded-lg">
-                            <div class="text-2xl font-bold text-teal-400">< 200ms</div>
-                            <div class="text-sm text-gray-400">API Response Time</div>
-                        </div>
-                        <div class="text-center p-3 bg-black/30 rounded-lg">
-                            <div class="text-2xl font-bold text-emerald-400">99.9%</div>
-                            <div class="text-sm text-gray-400">Uptime SLA</div>
-                        </div>
-                        <div class="text-center p-3 bg-black/30 rounded-lg">
-                            <div class="text-2xl font-bold text-cyan-400">< 3s</div>
-                            <div class="text-sm text-gray-400">Page Load Time</div>
-                        </div>
-                        <div class="text-center p-3 bg-black/30 rounded-lg">
-                            <div class="text-2xl font-bold text-green-400">80+</div>
-                            <div class="text-sm text-gray-400">NPS Score</div>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Implementation Roadmap -->
-                <div class="mb-8 p-6 bg-gradient-to-r from-violet-500/10 to-fuchsia-500/10 rounded-xl border border-violet-500/30">
-                    <h3 class="text-2xl font-bold text-white mb-4">🗓️ Implementation Roadmap</h3>
-                    <div class="space-y-3">
-                        <div class="flex items-center">
-                            <div class="w-20 text-sm font-bold text-violet-400">Phase 1</div>
-                            <div class="flex-1 p-3 bg-black/30 rounded-lg text-gray-300">
-                                Foundation (Weeks 1-4): Core infrastructure, authentication, basic UI
-                            </div>
-                        </div>
-                        <div class="flex items-center">
-                            <div class="w-20 text-sm font-bold text-fuchsia-400">Phase 2</div>
-                            <div class="flex-1 p-3 bg-black/30 rounded-lg text-gray-300">
-                                Core Features (Weeks 5-8): Primary functionality from selected patterns
-                            </div>
-                        </div>
-                        <div class="flex items-center">
-                            <div class="w-20 text-sm font-bold text-pink-400">Phase 3</div>
-                            <div class="flex-1 p-3 bg-black/30 rounded-lg text-gray-300">
-                                Integration (Weeks 9-12): API integrations, real-time features, testing
-                            </div>
-                        </div>
-                        <div class="flex items-center">
-                            <div class="w-20 text-sm font-bold text-purple-400">Phase 4</div>
-                            <div class="flex-1 p-3 bg-black/30 rounded-lg text-gray-300">
-                                Launch Prep (Weeks 13-16): Performance optimization, security audit, deployment
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Budget Estimation -->
-                <div class="mb-8 p-6 bg-gradient-to-r from-amber-500/10 to-orange-500/10 rounded-xl border border-amber-500/30">
-                    <h3 class="text-2xl font-bold text-white mb-4">💰 Budget Estimation</h3>
-                    <div class="text-gray-300">
-                        <p class="mb-3">Based on team size of ${selectedAnswers[5] || '5-10 people'} over ${selectedAnswers[4] || '3-6 months'}:</p>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div class="p-4 bg-black/30 rounded-lg">
-                                <h4 class="font-bold text-amber-400 mb-2">Development Costs</h4>
-                                <ul class="space-y-1 text-sm">
-                                    <li>• Engineering: $150-250k</li>
-                                    <li>• Design & UX: $30-50k</li>
-                                    <li>• Project Management: $20-30k</li>
-                                    <li>• QA & Testing: $25-40k</li>
-                                </ul>
-                            </div>
-                            <div class="p-4 bg-black/30 rounded-lg">
-                                <h4 class="font-bold text-orange-400 mb-2">Infrastructure & Tools</h4>
-                                <ul class="space-y-1 text-sm">
-                                    <li>• Cloud hosting: $2-5k/month</li>
-                                    <li>• Third-party APIs: $1-3k/month</li>
-                                    <li>• Development tools: $500-1k/month</li>
-                                    <li>• Security & monitoring: $1-2k/month</li>
-                                </ul>
-                            </div>
-                        </div>
-                        <div class="mt-4 p-3 bg-gradient-to-r from-amber-500/20 to-orange-500/20 rounded-lg text-center">
-                            <strong>Estimated Total Investment: $300-500k</strong>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Next Steps -->
-                <div class="p-6 bg-gradient-to-r from-green-500/20 to-emerald-500/20 rounded-xl border border-green-500/30">
-                    <h3 class="text-2xl font-bold text-white mb-4">🚀 Next Steps</h3>
-                    <ol class="list-decimal list-inside space-y-2 text-gray-300">
-                        <li>Review and approve this PRD with stakeholders</li>
-                        <li>Assemble the development team based on skill requirements</li>
-                        <li>Set up development environment and CI/CD pipeline</li>
-                        <li>Create detailed technical design documents</li>
-                        <li>Begin Sprint 1 with authentication and core infrastructure</li>
-                        <li>Schedule weekly progress reviews and adjust roadmap as needed</li>
-                    </ol>
-                </div>
-            `;
-            showPRDResults(comprehensivePRD);
-        }
-
-        // Export functionality
-        function exportPRD(format) {
-            const prdContent = document.querySelector('#prd-results-section .bg-white').innerHTML;
-            
-            if (format === 'markdown') {
-                // Convert HTML to Markdown (basic conversion)
-                const markdownContent = prdContent
-                    .replace(/<h([1-6])[^>]*>(.*?)<\/h[1-6]>/g, (match, level, text) => '#'.repeat(parseInt(level)) + ' ' + text + '\n\n')
-                    .replace(/<p[^>]*>(.*?)<\/p>/g, '$1\n\n')
-                    .replace(/<div[^>]*>(.*?)<\/div>/gs, '$1\n')
-                    .replace(/<[^>]*>/g, '')
-                    .replace(/\n\s*\n\s*\n/g, '\n\n')
-                    .trim();
-                
-                const blob = new Blob([markdownContent], { type: 'text/markdown' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `prd-${selectedPattern}-${Date.now()}.md`;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-                
-            } else if (format === 'copy') {
-                navigator.clipboard.writeText(prdContent.replace(/<[^>]*>/g, '')).then(() => {
-                    alert('PRD copied to clipboard!');
-                }).catch(err => {
-                    console.error('Could not copy text: ', err);
-                });
-            }
-        }
-
-        // Initialize
-        console.log('Smart PRD Generator ready!');
-        
-        // Initialize continue button state
-        updateContinueButton();
-        
-        // Load patterns from API
-        fetch('/api/smart-prd/patterns')
-            .then(res => res.json())
-            .then(data => {
-                console.log('Patterns loaded:', data);
-            })
-            .catch(err => console.error('Error loading patterns:', err));
-    </script>
-        </div> <!-- End fade-in -->
-    </div> <!-- End container -->
+    <!-- JavaScript -->
+    <script src="smart-prd-generator.js"></script>
 </body>
 </html>

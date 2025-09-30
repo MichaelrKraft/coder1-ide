@@ -125,6 +125,14 @@ export function filterThinkingAnimations(terminalData: string): string {
   // CRITICAL: Statusline task messages - the main cause of checkpoint replay issues
   // These patterns catch the actual task descriptions that previous fixes missed
   const statuslineTaskPatterns = [
+    // CRITICAL FIX: Handle "? for shortcuts" pattern with multiple ANSI codes (September 26-27th issue)
+    // Pattern: \u001b[2m\u001b[38;2;136;136;136m (repeated) + "? for shortcuts" + \u001b[22m
+    /(?:\u001b\[2m\u001b\[38;2;\d+;\d+;\d+m){1,5}\s*\u001b\[2m\?\s*for\s*shortcuts\u001b\[22m.*?\r?\n/g,
+    // Simpler fallback for "? for shortcuts" with any ANSI codes
+    /.*\u001b\[.*?m.*\?\s*for\s*shortcuts.*?\r?\n/g,
+    // Basic "? for shortcuts" pattern without ANSI codes
+    /.*\?\s*for\s*shortcuts.*?\r?\n/gi,
+    
     // CRITICAL: Handle ANSI codes within statusline messages
     // These patterns match statusline messages with embedded ANSI escape sequences
     /.*\u001b\[\d+m\(esc to interrupt.*$/gm,  // Matches [2m(esc to interrupt...

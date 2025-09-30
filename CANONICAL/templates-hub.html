@@ -991,11 +991,32 @@
             background: var(--bg-card);
             border: 1px solid var(--border-subtle);
             border-radius: 16px;
-            max-width: 800px;
-            width: 100%;
-            max-height: 90vh;
+            max-width: 600px;
+            width: 95%;
+            max-height: 80vh;
             overflow-y: auto;
             animation: slideUp 0.3s ease-out;
+        }
+
+        /* Tablet-specific responsive styles */
+        @media (max-width: 1024px) {
+            .modal-content {
+                max-width: 500px;
+                width: 90%;
+                max-height: 75vh;
+                margin: 10px;
+            }
+        }
+
+        /* Mobile responsive styles */
+        @media (max-width: 768px) {
+            .modal-content {
+                max-width: 100%;
+                width: 95%;
+                max-height: 85vh;
+                margin: 5px;
+                border-radius: 12px;
+            }
         }
 
         @keyframes slideUp {
@@ -2452,30 +2473,6 @@ export const Button: React.FC<ButtonProps> = ({
             }, 100);
         }
 
-        // Force update counts as a test
-        setTimeout(() => {
-            console.log('Force updating category counts...');
-            console.log('Templates available:', templates.length);
-            
-            // Manually set correct counts
-            const counts = {
-                'all': 13,
-                'ai-agents': 4,
-                'mcp': 6,
-                'commands': 1,
-                'hooks': 1,
-                'ide': 1
-            };
-            
-            document.querySelectorAll('.category-pill').forEach(pill => {
-                const category = pill.dataset.category;
-                const countElem = pill.querySelector('.category-count');
-                if (countElem && counts[category]) {
-                    countElem.textContent = counts[category];
-                    console.log('Forced', category, 'count to:', counts[category]);
-                }
-            });
-        }, 2000);
 
         function setupEventListeners() {
             // Category filter

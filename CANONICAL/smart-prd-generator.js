@@ -12,9 +12,11 @@ class SmartPRDGenerator {
         this.currentQuestionIndex = 0;
         this.answers = {};
         this.selectedPattern = null;
+        this.selectedMode = null; // 'quick' or 'professional'
         this.generatedPRD = null;
         this.handoffId = null;
         this.patterns = [];
+        this.totalQuestions = 5; // Will be updated based on mode
         
         this.init();
     }
@@ -133,10 +135,26 @@ class SmartPRDGenerator {
             this.startQuestionnaire();
         }, 1000);
     }
+    
+    selectMode(mode) {
+        this.selectedMode = mode;
+        console.log(`📋 Selected mode: ${mode}`);
+        
+        // Update total questions based on mode
+        this.totalQuestions = mode === 'quick' ? 5 : 12;
+        
+        // Show success message
+        const modeTitle = mode === 'quick' ? 'Quick Mode' : 'Professional Mode';
+        const timeEstimate = mode === 'quick' ? '3-5 minutes' : '10-15 minutes';
+        this.showToast(`${modeTitle} selected (${timeEstimate})`, 'success');
+        
+        // Move to pattern selection
+        this.showSection('pattern-selection');
+    }
 
     async startQuestionnaire() {
         try {
-            // Create questionnaire session
+            // Create questionnaire session with mode
             const response = await fetch('/api/smart-prd/sessions', {
                 method: 'POST',
                 headers: {
@@ -145,7 +163,9 @@ class SmartPRDGenerator {
                 body: JSON.stringify({
                     userContext: {
                         selectedPattern: this.selectedPattern?.id,
-                        category: this.selectedPattern?.category
+                        category: this.selectedPattern?.category,
+                        mode: this.selectedMode,
+                        questionCount: this.totalQuestions
                     }
                 })
             });
@@ -319,7 +339,40 @@ class SmartPRDGenerator {
         }
         
         if (progressText) {
-            progressText.textContent = `Question ${progress.questionsAnswered + 1} of ${progress.estimatedTotal}`;
+            const modeLabel = this.selectedMode === 'quick' ? '⚡ Quick' : '🏆 Professional';
+            progressText.textContent = `${modeLabel} - Question ${progress.questionsAnswered + 1} of ${progress.estimatedTotal}`;
+        }
+    }
+    
+    async skipToGenerate() {
+        console.log('⏭️ Skipping to generation with current answers');
+        
+        // Show loading message
+        this.showToast('Using AI to fill in remaining details...', 'info');
+        
+        // Mark session as ready for generation
+        try {
+            const response = await fetch(`/api/smart-prd/sessions/${this.sessionId}/skip-to-generate`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    currentAnswers: this.answers,
+                    mode: this.selectedMode
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                await this.generatePRD();
+            } else {
+                throw new Error(data.error || 'Failed to skip to generation');
+            }
+        } catch (error) {
+            console.error('Failed to skip to generation:', error);
+            this.showToast('Failed to skip to generation', 'error');
         }
     }
 
@@ -546,7 +599,7 @@ class SmartPRDGenerator {
 
     showSection(sectionId) {
         // Hide all sections
-        const sections = ['hero-section', 'pattern-selection', 'questionnaire-section', 'prd-generation', 'handoff-section'];
+        const sections = ['hero-section', 'mode-selection', 'pattern-selection', 'questionnaire-section', 'prd-generation', 'handoff-section'];
         sections.forEach(id => {
             const section = document.getElementById(id);
             if (section) {
@@ -677,6 +730,14 @@ function startQuestionnaire() {
     window.prdGenerator.startQuestionnaire();
 }
 
+function showModeSelection() {
+    window.prdGenerator.showSection('mode-selection');
+}
+
+function selectMode(mode) {
+    window.prdGenerator.selectMode(mode);
+}
+
 function showPatterns() {
     window.prdGenerator.showPatterns();
 }
@@ -687,6 +748,10 @@ function showAbout() {
 
 function nextQuestion() {
     window.prdGenerator.nextQuestion();
+}
+
+function skipToGenerate() {
+    window.prdGenerator.skipToGenerate();
 }
 
 function previousQuestion() {

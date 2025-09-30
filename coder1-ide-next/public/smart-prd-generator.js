@@ -11,16 +11,22 @@ class SmartPRDGenerator {
         this.currentQuestion = null;
         this.currentQuestionIndex = 0;
         this.answers = {};
-        this.selectedPattern = null;
+        this.selectedPattern = null; // For backward compatibility
+        this.selectedPatterns = []; // Array for multiple pattern selection
+        this.selectedMode = null; // 'quick' or 'professional'
         this.generatedPRD = null;
         this.handoffId = null;
         this.patterns = [];
+        this.totalQuestions = 5; // Will be updated based on mode
         
         this.init();
     }
 
     async init() {
         console.log('🎯 Smart PRD Generator initialized');
+        
+        // Initialize dark mode from localStorage
+        this.initDarkMode();
         
         // Load available patterns
         await this.loadPatterns();
@@ -30,6 +36,43 @@ class SmartPRDGenerator {
         
         // Show initial hero section
         this.showSection('hero-section');
+    }
+    
+    initDarkMode() {
+        // Check localStorage for theme preference
+        const darkMode = localStorage.getItem('prd-generator-dark-mode') === 'true';
+        
+        if (darkMode) {
+            document.documentElement.classList.add('dark');
+            // Update toggle button icon if it exists
+            const sunIcon = document.getElementById('sun-icon');
+            const moonIcon = document.getElementById('moon-icon');
+            if (sunIcon) sunIcon.style.display = 'block';
+            if (moonIcon) moonIcon.style.display = 'none';
+        }
+    }
+    
+    toggleDarkMode() {
+        const isDark = document.documentElement.classList.toggle('dark');
+        
+        // Save preference to localStorage
+        localStorage.setItem('prd-generator-dark-mode', isDark);
+        
+        // Update toggle button icons
+        const sunIcon = document.getElementById('sun-icon');
+        const moonIcon = document.getElementById('moon-icon');
+        
+        if (isDark) {
+            // Dark mode: show sun icon, hide moon icon
+            if (sunIcon) sunIcon.style.display = 'block';
+            if (moonIcon) moonIcon.style.display = 'none';
+        } else {
+            // Light mode: show moon icon, hide sun icon
+            if (sunIcon) sunIcon.style.display = 'none';
+            if (moonIcon) moonIcon.style.display = 'block';
+        }
+        
+        console.log(`🌙 Dark mode ${isDark ? 'enabled' : 'disabled'}`);
     }
 
     setupEventListeners() {
@@ -53,7 +96,7 @@ class SmartPRDGenerator {
 
     async loadPatterns() {
         try {
-            const response = await fetch('/api/smart-prd/patterns');
+            const response = await fetch('/api/smart-prd/patterns/');
             const data = await response.json();
             
             if (data.success) {
@@ -73,6 +116,7 @@ class SmartPRDGenerator {
 
         grid.innerHTML = this.patterns.map(pattern => `
             <div class="pattern-card bg-white rounded-xl shadow-lg p-6 cursor-pointer border-2 border-transparent hover:border-primary transition-all"
+                 data-pattern-id="${pattern.id}"
                  onclick="prdGenerator.selectPattern('${pattern.id}')">
                 <div class="flex items-center justify-between mb-4">
                     <h3 class="text-xl font-bold text-gray-900">${pattern.name}</h3>
@@ -88,20 +132,20 @@ class SmartPRDGenerator {
                         <svg class="w-4 h-4 mr-1 text-green-500" fill="currentColor" viewBox="0 0 20 20">
                             <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
                         </svg>
-                        ${Math.round(pattern.successRate * 100)}% success
+                        ${pattern.successRate}% success
                     </span>
-                    <span>${pattern.avgTimeToPMF}</span>
+                    <span>${pattern.timeToMarket}</span>
                 </div>
                 
                 <div class="flex flex-wrap gap-2">
-                    ${pattern.tags.slice(0, 3).map(tag => 
+                    ${(pattern.technical?.primaryTech || []).slice(0, 3).map(tag => 
                         `<span class="px-2 py-1 bg-gray-100 text-gray-600 rounded text-xs">${tag}</span>`
                     ).join('')}
                 </div>
                 
                 <div class="mt-4 pt-4 border-t border-gray-100">
                     <button class="w-full bg-gradient-to-r from-primary to-secondary text-white py-2 rounded-lg hover:shadow-lg transition-all">
-                        Select This Pattern
+                        <span class="pattern-select-text">Select This Pattern</span>
                     </button>
                 </div>
             </div>
@@ -123,20 +167,94 @@ class SmartPRDGenerator {
     }
 
     selectPattern(patternId) {
-        this.selectedPattern = this.patterns.find(p => p.id === patternId);
-        console.log('🎯 Selected pattern:', this.selectedPattern?.name);
+        const pattern = this.patterns.find(p => p.id === patternId);
+        if (!pattern) return;
         
-        this.showToast(`Selected ${this.selectedPattern?.name}`, 'success');
+        // Toggle pattern selection
+        const index = this.selectedPatterns.findIndex(p => p.id === patternId);
+        if (index > -1) {
+            // Deselect pattern
+            this.selectedPatterns.splice(index, 1);
+            console.log('❌ Deselected pattern:', pattern.name);
+        } else {
+            // Select pattern
+            this.selectedPatterns.push(pattern);
+            console.log('✅ Selected pattern:', pattern.name);
+        }
         
-        // Start questionnaire for this pattern
+        // Update UI
+        this.updatePatternSelection();
+        
+        // For backward compatibility
+        this.selectedPattern = this.selectedPatterns[0] || null;
+    }
+    
+    updatePatternSelection() {
+        // Update pattern cards visual state
+        const cards = document.querySelectorAll('.pattern-card');
+        cards.forEach(card => {
+            const patternId = card.getAttribute('data-pattern-id');
+            const isSelected = this.selectedPatterns.some(p => p.id === patternId);
+            if (isSelected) {
+                card.classList.add('ring-4', 'ring-primary', 'bg-blue-50');
+            } else {
+                card.classList.remove('ring-4', 'ring-primary', 'bg-blue-50');
+            }
+        });
+        
+        // Update selected patterns display
+        const selectedDisplay = document.getElementById('selected-patterns');
+        const selectedList = document.getElementById('selected-patterns-list');
+        
+        if (this.selectedPatterns.length > 0) {
+            selectedDisplay?.classList.remove('hidden');
+            if (selectedList) {
+                selectedList.textContent = this.selectedPatterns.map(p => p.name).join(', ');
+            }
+        } else {
+            selectedDisplay?.classList.add('hidden');
+        }
+    }
+    
+    proceedWithPatterns() {
+        if (this.selectedPatterns.length === 0) {
+            this.showToast('Please select at least one pattern', 'warning');
+            return;
+        }
+        
+        console.log(`🎯 Proceeding with ${this.selectedPatterns.length} pattern(s)`);
+        this.showToast(`Selected ${this.selectedPatterns.length} pattern(s)`, 'success');
+        
+        // Start questionnaire
         setTimeout(() => {
             this.startQuestionnaire();
-        }, 1000);
+        }, 500);
+    }
+    
+    goBack(targetSection) {
+        // Navigate back to the specified section
+        this.showSection(targetSection);
+    }
+    
+    selectMode(mode) {
+        this.selectedMode = mode;
+        console.log(`📋 Selected mode: ${mode}`);
+        
+        // Update total questions based on mode
+        this.totalQuestions = mode === 'quick' ? 5 : 12;
+        
+        // Show success message
+        const modeTitle = mode === 'quick' ? 'Quick Mode' : 'Professional Mode';
+        const timeEstimate = mode === 'quick' ? '3-5 minutes' : '10-15 minutes';
+        this.showToast(`${modeTitle} selected (${timeEstimate})`, 'success');
+        
+        // Move to pattern selection
+        this.showSection('pattern-selection');
     }
 
     async startQuestionnaire() {
         try {
-            // Create questionnaire session
+            // Create questionnaire session with mode
             const response = await fetch('/api/smart-prd/sessions', {
                 method: 'POST',
                 headers: {
@@ -145,7 +263,11 @@ class SmartPRDGenerator {
                 body: JSON.stringify({
                     userContext: {
                         selectedPattern: this.selectedPattern?.id,
-                        category: this.selectedPattern?.category
+                        selectedPatterns: this.selectedPatterns.map(p => p.id),
+                        category: this.selectedPattern?.category,
+                        categories: this.selectedPatterns.map(p => p.category),
+                        mode: this.selectedMode,
+                        questionCount: this.totalQuestions
                     }
                 })
             });
@@ -319,7 +441,40 @@ class SmartPRDGenerator {
         }
         
         if (progressText) {
-            progressText.textContent = `Question ${progress.questionsAnswered + 1} of ${progress.estimatedTotal}`;
+            const modeLabel = this.selectedMode === 'quick' ? '⚡ Quick' : '🏆 Professional';
+            progressText.textContent = `${modeLabel} - Question ${progress.questionsAnswered + 1} of ${progress.estimatedTotal}`;
+        }
+    }
+    
+    async skipToGenerate() {
+        console.log('⏭️ Skipping to generation with current answers');
+        
+        // Show loading message
+        this.showToast('Using AI to fill in remaining details...', 'info');
+        
+        // Mark session as ready for generation
+        try {
+            const response = await fetch(`/api/smart-prd/sessions/${this.sessionId}/skip-to-generate`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    currentAnswers: this.answers,
+                    mode: this.selectedMode
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                await this.generatePRD();
+            } else {
+                throw new Error(data.error || 'Failed to skip to generation');
+            }
+        } catch (error) {
+            console.error('Failed to skip to generation:', error);
+            this.showToast('Failed to skip to generation', 'error');
         }
     }
 
@@ -348,10 +503,24 @@ class SmartPRDGenerator {
             
             if (data.success) {
                 this.answers[this.currentQuestion.id] = answer;
-                this.currentQuestionIndex++;
                 
-                // Get next question
-                await this.getNextQuestion();
+                if (data.complete) {
+                    // Questionnaire complete, generate PRD
+                    console.log('✅ Questionnaire completed');
+                    await this.generatePRD();
+                } else if (data.nextQuestion) {
+                    // Update to next question
+                    this.currentQuestionIndex = data.currentIndex - 1;
+                    this.currentQuestion = data.nextQuestion;
+                    this.renderQuestion(data.nextQuestion);
+                    this.updateProgress({
+                        current: data.currentIndex,
+                        total: data.totalQuestions,
+                        percentage: Math.round((data.currentIndex / data.totalQuestions) * 100)
+                    });
+                } else {
+                    throw new Error('No next question provided');
+                }
             } else {
                 throw new Error(data.error || 'Failed to submit answer');
             }
@@ -408,6 +577,9 @@ class SmartPRDGenerator {
                 // Show completion
                 document.getElementById('generation-loading').classList.add('hidden');
                 document.getElementById('generation-complete').classList.remove('hidden');
+                
+                // Render PRD preview
+                this.renderPRDPreview(data.prd);
                 
                 // Track conversion event
                 this.trackEvent('prd_generated', {
@@ -519,6 +691,30 @@ class SmartPRDGenerator {
         }
     }
 
+    renderPRDPreview(prdContent) {
+        const previewContainer = document.getElementById('prd-preview');
+        if (!previewContainer) return;
+        
+        // Convert markdown to HTML for better preview
+        // For now, we'll do a simple conversion - in production you'd use a markdown parser
+        const htmlContent = prdContent
+            .replace(/^### (.*$)/gim, '<h3 class="text-lg font-bold mt-4 mb-2">$1</h3>')
+            .replace(/^## (.*$)/gim, '<h2 class="text-xl font-bold mt-6 mb-3 text-primary">$1</h2>')
+            .replace(/^# (.*$)/gim, '<h1 class="text-2xl font-bold mb-4">$1</h1>')
+            .replace(/^\- (.*$)/gim, '<li class="ml-4">• $1</li>')
+            .replace(/\*\*(.*)\*\*/g, '<strong>$1</strong>')
+            .replace(/\*(.*)\*/g, '<em>$1</em>')
+            .replace(/```[a-z]*\n([\s\S]*?)```/g, '<pre class="bg-gray-100 p-3 rounded my-2 text-sm overflow-x-auto"><code>$1</code></pre>')
+            .replace(/\n\n/g, '</p><p class="mb-4">')
+            .replace(/\n/g, '<br>');
+        
+        previewContainer.innerHTML = `
+            <div class="prose prose-lg max-w-none">
+                <p class="mb-4">${htmlContent}</p>
+            </div>
+        `;
+    }
+
     downloadPRD() {
         if (!this.generatedPRD) {
             this.showToast('No PRD available for download', 'error');
@@ -526,11 +722,11 @@ class SmartPRDGenerator {
         }
 
         // Create and download file
-        const blob = new Blob([this.generatedPRD.document], { type: 'text/markdown' });
+        const blob = new Blob([this.generatedPRD], { type: 'text/markdown' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `${this.generatedPRD.metadata.projectName || 'PRD'}.md`;
+        a.download = `PRD_${this.selectedPattern?.id || 'custom'}_${new Date().toISOString().split('T')[0]}.md`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
@@ -546,7 +742,7 @@ class SmartPRDGenerator {
 
     showSection(sectionId) {
         // Hide all sections
-        const sections = ['hero-section', 'pattern-selection', 'questionnaire-section', 'prd-generation', 'handoff-section'];
+        const sections = ['hero-section', 'mode-selection', 'pattern-selection', 'questionnaire-section', 'prd-generation', 'handoff-section'];
         sections.forEach(id => {
             const section = document.getElementById(id);
             if (section) {
@@ -677,6 +873,14 @@ function startQuestionnaire() {
     window.prdGenerator.startQuestionnaire();
 }
 
+function showModeSelection() {
+    window.prdGenerator.showSection('mode-selection');
+}
+
+function selectMode(mode) {
+    window.prdGenerator.selectMode(mode);
+}
+
 function showPatterns() {
     window.prdGenerator.showPatterns();
 }
@@ -687,6 +891,10 @@ function showAbout() {
 
 function nextQuestion() {
     window.prdGenerator.nextQuestion();
+}
+
+function skipToGenerate() {
+    window.prdGenerator.skipToGenerate();
 }
 
 function previousQuestion() {
@@ -712,3 +920,20 @@ function launchCoder1() {
 function showHelp() {
     window.prdGenerator.showHelp();
 }
+
+// Add global function for dark mode toggle
+function toggleDarkMode() {
+    console.log('Toggle dark mode clicked');
+    if (window.prdGenerator) {
+        window.prdGenerator.toggleDarkMode();
+    } else {
+        console.error('PRD Generator not initialized');
+        // Fallback: try to toggle dark mode directly
+        const isDark = document.documentElement.classList.toggle('dark');
+        localStorage.setItem('prd-generator-dark-mode', isDark);
+        console.log(`Dark mode ${isDark ? 'enabled' : 'disabled'} (fallback)`);
+    }
+}
+
+// Make functions globally available immediately
+window.toggleDarkMode = toggleDarkMode;

@@ -18,8 +18,28 @@ export const MODEL_PRICING = {
     output: 0.00125  // $1.25 per million
   },
   'claude-3-5-sonnet': { 
-    input: 0.003,    // $3 per million (latest Sonnet)
+    input: 0.003,    // $3 per million 
     output: 0.015    // $15 per million
+  },
+  'claude-3-5-haiku-20241022': { 
+    input: 0.00025,  // $0.25 per million
+    output: 0.00125  // $1.25 per million
+  },
+  'claude-3-7-sonnet-20250224': { 
+    input: 0.0025,   // $2.50 per million (estimated)
+    output: 0.0125   // $12.50 per million (estimated)
+  },
+  'claude-4-sonnet-20250510': { 
+    input: 0.003,    // $3 per million (estimated)
+    output: 0.015    // $15 per million (estimated)
+  },
+  'claude-4-5-sonnet-20250930': { 
+    input: 0.0035,   // $3.50 per million (estimated for latest model)
+    output: 0.0175   // $17.50 per million (estimated)
+  },
+  'claude-4-opus-20250805': { 
+    input: 0.015,    // $15 per million
+    output: 0.075    // $75 per million
   },
   'gpt-4': { 
     input: 0.03,     // $30 per million

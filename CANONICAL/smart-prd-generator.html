@@ -125,7 +125,7 @@ Claude Agents: This is the OFFICIAL version - do not modify copies elsewhere
                 </p>
                 
                 <div class="flex flex-col sm:flex-row gap-4 justify-center mb-12">
-                    <button onclick="startQuestionnaire()" class="bg-gradient-to-r from-primary to-secondary text-white px-8 py-4 rounded-lg text-lg font-semibold hover:shadow-xl transition-all transform hover:scale-105">
+                    <button onclick="showModeSelection()" class="bg-gradient-to-r from-primary to-secondary text-white px-8 py-4 rounded-lg text-lg font-semibold hover:shadow-xl transition-all transform hover:scale-105">
                         🚀 Generate My PRD (Free)
                     </button>
                     <button onclick="showPatterns()" class="border-2 border-primary text-primary px-8 py-4 rounded-lg text-lg font-semibold hover:bg-primary hover:text-white transition-all">
@@ -141,13 +141,129 @@ Claude Agents: This is the OFFICIAL version - do not modify copies elsewhere
                     </div>
                     <div class="flex items-center space-x-2">
                         <span class="w-3 h-3 bg-accent rounded-full"></span>
-                        <span>70%+ Success Rate</span>
+                        <span>Quick or Comprehensive</span>
                     </div>
                     <div class="flex items-center space-x-2">
                         <span class="w-3 h-3 bg-accent rounded-full"></span>
-                        <span>5-Page Professional PRDs</span>
+                        <span>5-20 Page PRDs</span>
                     </div>
                 </div>
+            </div>
+        </section>
+
+        <!-- Mode Selection Section -->
+        <section id="mode-selection" class="hidden max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl font-bold text-gray-900 mb-4">Choose Your Documentation Depth</h2>
+                <p class="text-lg text-gray-600">Select based on your timeline and needs</p>
+            </div>
+            
+            <div class="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+                <!-- Quick Mode Card -->
+                <div class="mode-card bg-white rounded-2xl shadow-xl p-8 border-2 border-transparent hover:border-primary transition-all cursor-pointer transform hover:scale-105" onclick="selectMode('quick')">
+                    <div class="text-center mb-6">
+                        <div class="w-20 h-20 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <span class="text-4xl">⚡</span>
+                        </div>
+                        <h3 class="text-2xl font-bold text-gray-900 mb-2">Quick Mode</h3>
+                        <p class="text-sm text-gray-500">Perfect when you need solid documentation fast</p>
+                    </div>
+                    
+                    <div class="space-y-3 mb-6">
+                        <div class="flex items-center text-gray-700">
+                            <svg class="w-5 h-5 mr-3 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                            </svg>
+                            <span>3-5 minutes to complete</span>
+                        </div>
+                        <div class="flex items-center text-gray-700">
+                            <svg class="w-5 h-5 mr-3 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                            </svg>
+                            <span>5-8 page PRD document</span>
+                        </div>
+                        <div class="flex items-center text-gray-700">
+                            <svg class="w-5 h-5 mr-3 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                            </svg>
+                            <span>3-5 smart questions</span>
+                        </div>
+                        <div class="flex items-center text-gray-700">
+                            <svg class="w-5 h-5 mr-3 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                            </svg>
+                            <span>AI fills in the gaps</span>
+                        </div>
+                        <div class="flex items-center text-gray-700">
+                            <svg class="w-5 h-5 mr-3 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                            </svg>
+                            <span>Essential sections only</span>
+                        </div>
+                    </div>
+                    
+                    <div class="text-center">
+                        <button class="w-full bg-gradient-to-r from-yellow-400 to-orange-500 text-white py-3 rounded-lg font-semibold hover:shadow-lg transition-all">
+                            Choose Quick Mode
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Professional Mode Card -->
+                <div class="mode-card bg-white rounded-2xl shadow-xl p-8 border-2 border-transparent hover:border-primary transition-all cursor-pointer transform hover:scale-105" onclick="selectMode('professional')">
+                    <div class="text-center mb-6">
+                        <div class="w-20 h-20 bg-gradient-to-br from-primary to-secondary rounded-full flex items-center justify-center mx-auto mb-4">
+                            <span class="text-4xl">🏆</span>
+                        </div>
+                        <h3 class="text-2xl font-bold text-gray-900 mb-2">Professional Mode</h3>
+                        <p class="text-sm text-gray-500">Comprehensive documentation for serious builders</p>
+                    </div>
+                    
+                    <div class="space-y-3 mb-6">
+                        <div class="flex items-center text-gray-700">
+                            <svg class="w-5 h-5 mr-3 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                            </svg>
+                            <span>10-15 minutes to complete</span>
+                        </div>
+                        <div class="flex items-center text-gray-700">
+                            <svg class="w-5 h-5 mr-3 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                            </svg>
+                            <span>15-20 page PRD document</span>
+                        </div>
+                        <div class="flex items-center text-gray-700">
+                            <svg class="w-5 h-5 mr-3 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                            </svg>
+                            <span>8-12 detailed questions</span>
+                        </div>
+                        <div class="flex items-center text-gray-700">
+                            <svg class="w-5 h-5 mr-3 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                            </svg>
+                            <span>Includes visuals & diagrams</span>
+                        </div>
+                        <div class="flex items-center text-gray-700">
+                            <svg class="w-5 h-5 mr-3 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                            </svg>
+                            <span>Full technical specs</span>
+                        </div>
+                    </div>
+                    
+                    <div class="text-center">
+                        <button class="w-full bg-gradient-to-r from-primary to-secondary text-white py-3 rounded-lg font-semibold hover:shadow-lg transition-all">
+                            Choose Professional Mode
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="text-center mt-8">
+                <p class="text-sm text-gray-500">
+                    Not sure? Start with Quick Mode - you can always generate a Professional version later
+                </p>
             </div>
         </section>
 

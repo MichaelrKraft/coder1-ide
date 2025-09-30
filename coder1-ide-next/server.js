@@ -161,9 +161,195 @@ const handle = app.getRequestHandler();
 const terminalSessions = new Map();
 const sessionMetadata = new Map();
 
+// Claude Code session state tracking
+const claudeCodeSessions = new Map(); // sessionId -> { inClaudeSession: boolean, sessionStartTime: Date }
+
 // Context capture integration
 const terminalDataBuffers = new Map(); // Buffer terminal data for context capture
 const contextSessions = new Map(); // Map terminal sessions to context sessions
+
+// Claude Code session management helpers
+function isInClaudeCodeSession(sessionId) {
+  const sessionState = claudeCodeSessions.get(sessionId);
+  return sessionState ? sessionState.inClaudeSession : false;
+}
+
+function startClaudeCodeSession(sessionId) {
+  claudeCodeSessions.set(sessionId, {
+    inClaudeSession: true,
+    sessionStartTime: new Date()
+  });
+  console.log(`[Claude Session] Started Claude Code session for terminal ${sessionId}`);
+}
+
+function endClaudeCodeSession(sessionId) {
+  const sessionState = claudeCodeSessions.get(sessionId);
+  if (sessionState) {
+    claudeCodeSessions.set(sessionId, {
+      ...sessionState,
+      inClaudeSession: false
+    });
+    console.log(`[Claude Session] Ended Claude Code session for terminal ${sessionId}`);
+  }
+}
+
+function detectClaudeCodeSessionStart(input) {
+  // Claude Code session start patterns (from context-processor.ts)
+  const sessionStartPatterns = [
+    /^claude\s*$/i,                     // just "claude"
+    /^claude\s+(.+)$/i,                 // claude with command
+    /^claude-code\s*$/i,                // claude-code variant
+    /^claude-code\s+(.+)$/i,           // claude-code with command
+    /^cc\s*$/i,                        // cc shorthand
+    /^cc\s+(.+)$/i,                    // cc with command
+    /^\$\s*claude\s*$/i,               // with bash prompt
+    /^\$\s*claude\s+(.+)$/i,           // with bash prompt and command
+    /^>\s*claude\s*$/i,                // with > prompt
+    /^>\s*claude\s+(.+)$/i,            // with > prompt and command
+    /^➜\s*.*claude\s*$/i,              // with zsh prompt
+    /^➜\s*.*claude\s+(.+)$/i,          // with zsh prompt and command
+    /^\[.*\]\$\s*claude\s*$/i,         // with git prompt
+    /^\[.*\]\$\s*claude\s+(.+)$/i      // with git prompt and command
+  ];
+  
+  return sessionStartPatterns.some(pattern => pattern.test(input.trim()));
+}
+
+function detectClaudeCodeSessionEnd(input) {
+  // Common Claude Code session exit patterns
+  const sessionEndPatterns = [
+    /^exit\s*$/i,                      // exit command
+    /^quit\s*$/i,                      // quit command
+    /^bye\s*$/i,                       // bye command
+    /^\x03/,                           // Ctrl+C
+    /^\x04/                            // Ctrl+D
+  ];
+  
+  return sessionEndPatterns.some(pattern => pattern.test(input));
+}
+
+function createClaudePromptForSlashCommand(slashCommand) {
+  // Create Claude-formatted prompts for slash commands that work well in Claude Code sessions
+  const claudePrompts = {
+    // Feature Implementation
+    'implement': 'I need help implementing a new feature. Please ask me what feature I want to build, then guide me through the implementation with architectural planning and best practices.',
+    'design': 'I need help with UI/UX design. Please ask me what interface or component I need to design, then provide mockup suggestions and implementation guidance.',
+    
+    // Build & Test
+    'build': 'Help me with building and compilation. Please analyze my project structure and provide the appropriate build commands, handle any build errors, and optimize the build process.',
+    'test': 'Generate comprehensive tests for my code. Please analyze the current codebase and create unit tests, integration tests, and suggest testing strategies.',
+    'deploy': 'Guide me through deploying to production. Please check my deployment configuration, suggest best practices, and help with any deployment issues.',
+    
+    // Code Analysis & Debugging
+    'analyze': 'Perform a deep analysis of my codebase. Please review the architecture, identify potential issues, suggest improvements, and provide a comprehensive audit report.',
+    'troubleshoot': 'Help me debug a complex issue. Please ask me about the problem, analyze error messages, review relevant code, and guide me to a solution.',
+    'explain': 'Explain this code in detail. I will show you code and you should provide clear explanations of what it does, how it works, and document it thoroughly.',
+    
+    // Quality Assurance
+    'improve': 'Analyze my code for optimization opportunities. Please review performance, suggest refactoring, improve code quality, and modernize patterns.',
+    'cleanup': 'Help me clean up and standardize my code. Please fix formatting issues, remove dead code, improve naming conventions, and ensure consistency.',
+    
+    // Project Management
+    'document': 'Generate comprehensive documentation for my project. Please create README files, API documentation, inline comments, and user guides.',
+    'git': 'Help with Git workflow. Please assist with commits, branching strategies, merge conflicts, and repository management.',
+    'estimate': 'Help me estimate this project. Please analyze requirements, break down tasks, estimate time and resources, and create a project timeline.',
+    'task': 'Help me manage tasks and track progress. Please create a task list, prioritize work, track dependencies, and monitor completion.',
+    'index': 'Index and analyze my codebase structure. Please create a searchable index of functions, classes, dependencies, and provide codebase insights.',
+    'load': 'Load and analyze specific files or contexts. Please help me understand code relationships and dependencies in my project.',
+    'spawn': 'Help me spawn a multi-agent task force. Please coordinate multiple AI agents to work on different aspects of my project simultaneously.',
+    
+    // Git & Version Control
+    'commit': 'Help me create a git commit. Please review my changes, suggest a clear commit message, and ensure proper git hygiene.',
+    'push': 'Help me push changes to the repository. Please check for conflicts, review changes, and ensure safe deployment.',
+    'pull': 'Help me pull the latest changes. Please handle merge conflicts, review incoming changes, and update my local repository safely.',
+    
+    // Development
+    'help': 'Show me available slash commands and how to use them in this context.',
+    'status': 'Show me the current status of my project and development environment.'
+  };
+  
+  const prompt = claudePrompts[slashCommand];
+  if (prompt) {
+    return `The user executed the /${slashCommand} command. ${prompt}`;
+  }
+  
+  // Fallback for unknown commands
+  return `The user executed the /${slashCommand} command. Please help them with this request or explain what this command should do if you're familiar with it.`;
+}
+
+async function routeSlashCommandToClaudeCode(sessionId, slashCommand, claudePrompt, socket, session) {
+  try {
+    // Check if bridge is available
+    if (!bridgeManager) {
+      socket.emit('terminal:data', {
+        id: sessionId,
+        data: '\r\n❌ Bridge not available. Slash commands in Claude Code require the bridge connection.\r\n'
+      });
+      return;
+    }
+    
+    // Get user ID from session
+    const userId = session.userId || 'default';
+    const bridgeStatus = bridgeManager.getBridgeStatus?.(userId);
+    
+    if (!bridgeStatus?.connected) {
+      socket.emit('terminal:data', {
+        id: sessionId,
+        data: '\r\n⚠️  Claude Bridge not connected.\r\n'
+      });
+      socket.emit('terminal:data', {
+        id: sessionId,
+        data: 'To use slash commands in Claude Code:\r\n'
+      });
+      socket.emit('terminal:data', {
+        id: sessionId,
+        data: '1. Click "🌉 Connect Bridge" in the status bar\r\n'
+      });
+      socket.emit('terminal:data', {
+        id: sessionId,
+        data: '2. Follow the connection instructions\r\n\r\n'
+      });
+      return;
+    }
+    
+    // Execute the slash command through bridge as a properly formatted Claude command
+    const commandRequest = {
+      sessionId,
+      commandId: `slash_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      command: `claude ${claudePrompt}`,  // Format as proper Claude CLI command
+      context: {
+        workingDirectory: process.cwd(),
+        currentFile: null,
+        selection: null,
+        slashCommand: slashCommand  // Add context about the original slash command
+      },
+      timestamp: new Date()
+    };
+    
+    console.log(`[Terminal] Executing slash command /${slashCommand} through bridge for user ${userId}`);
+    
+    const result = await bridgeManager.executeCommand(userId, commandRequest);
+    
+    if (!result.success) {
+      socket.emit('terminal:data', {
+        id: sessionId,
+        data: `\r\n❌ Error processing /${slashCommand}: ${result.error}\r\n`
+      });
+    } else {
+      socket.emit('terminal:data', {
+        id: sessionId,
+        data: `\r\n✅ /${slashCommand} command sent to Claude Code successfully.\r\n`
+      });
+    }
+    
+  } catch (error) {
+    console.error(`[Terminal] Error routing slash command /${slashCommand}:`, error);
+    socket.emit('terminal:data', {
+      id: sessionId,
+      data: `\r\n❌ Error processing /${slashCommand}: ${error.message}\r\n`
+    });
+  }
+}
 
 // Initialize enhanced tmux service
 let tmuxService;
@@ -928,6 +1114,7 @@ app.prepare().then(() => {
     // Handle terminal input with Conductor command detection
     socket.on('terminal:input', async ({ id, data, selectedClaudeModel }) => {
       console.log(`⌨️ TERMINAL INPUT: Session ${id}, Data length: ${data?.length}, Model: ${selectedClaudeModel || 'default'}`);
+      console.log(`⌨️ TERMINAL DEBUG: Data content: "${data}"`);
       
       const sessionId = id || currentSessionId;
       
@@ -944,9 +1131,21 @@ app.prepare().then(() => {
         
         // Check if Enter is being pressed (command complete)
         if (data.includes('\r') || data.includes('\n')) {
-          const command = buffer.trim();
+          // If data includes the command and enter (like "/design\r"), extract the command
+          let command = buffer.trim();
+          if (command === '' && data.length > 1) {
+            // Command came with Enter in single input, extract it
+            command = data.replace(/[\r\n]/g, '').trim();
+          }
           const commandLower = command.toLowerCase();
           console.log('[Terminal] Command completed:', commandLower);
+          
+          // 🚀 Claude Code session detection and management
+          if (detectClaudeCodeSessionStart(command)) {
+            startClaudeCodeSession(sessionId);
+          } else if (detectClaudeCodeSessionEnd(command)) {
+            endClaudeCodeSession(sessionId);
+          }
           
           // Track command with token integration for Claude usage monitoring
           if (terminalTokenIntegration && command.length > 0) {
@@ -1101,6 +1300,276 @@ app.prepare().then(() => {
             // Clear the command buffer 
             commandBuffers.set(sessionId, '');
             return; // Exit early - don't send anything to PTY
+          }
+          
+          // Intercept slash commands before they reach the shell
+          if (command.startsWith('/') && command.length > 1) {
+            console.log('[Terminal] Slash command intercepted:', command);
+            const slashCommand = command.substring(1).toLowerCase(); // Remove leading slash
+            
+            // Check if we're in a Claude Code session
+            const inClaudeSession = isInClaudeCodeSession(sessionId);
+            console.log(`[Terminal] In Claude Code session: ${inClaudeSession}`);
+            
+            if (inClaudeSession) {
+              // 🚀 CLAUDE CODE SESSION: Route slash command as formatted prompt through bridge
+              console.log('[Terminal] Routing slash command to Claude Code via bridge:', slashCommand);
+              
+              // Create Claude-formatted prompt for the slash command
+              const claudePrompt = createClaudePromptForSlashCommand(slashCommand);
+              
+              // Clear bash's input buffer
+              const backspaces = '\b'.repeat(buffer.length);
+              session.write(backspaces);
+              
+              // Clear the line visually
+              socket.emit('terminal:data', {
+                id: sessionId,
+                data: '\r\x1b[K'
+              });
+              
+              // Show processing message
+              socket.emit('terminal:data', {
+                id: sessionId,
+                data: `\r\n🎯 Processing /${slashCommand} command...\r\n`
+              });
+              
+              // Route through bridge to Claude Code
+              await routeSlashCommandToClaudeCode(sessionId, slashCommand, claudePrompt, socket, session);
+              
+              // Clear command buffer and exit early
+              commandBuffers.set(sessionId, '');
+              return;
+            }
+            
+            // 🔧 BASH SESSION: Original slash command processing
+            // Clear bash's input buffer
+            const backspaces = '\b'.repeat(buffer.length);
+            session.write(backspaces);
+            
+            // Clear the line visually
+            socket.emit('terminal:data', {
+              id: sessionId,
+              data: '\r\x1b[K'
+            });
+            
+            // Process slash command for bash session
+            let response = '';
+            let claudePrompt = null;
+            
+            // Map slash commands to Claude prompts or local actions
+            switch(slashCommand) {
+              // Feature Implementation
+              case 'implement':
+                claudePrompt = 'Help me implement a new feature. First, ask me what feature I want to build, then guide me through the implementation with architectural planning and best practices.';
+                break;
+              case 'design':
+                claudePrompt = 'Help me with UI/UX design. Ask me what interface or component I need to design, then provide mockup suggestions and implementation guidance.';
+                break;
+              
+              // Build & Test
+              case 'build':
+                claudePrompt = 'Help me with building and compilation. Analyze my project structure and provide the appropriate build commands, handle any build errors, and optimize the build process.';
+                break;
+              case 'test':
+                claudePrompt = 'Generate comprehensive tests for my code. Analyze the current codebase and create unit tests, integration tests, and suggest testing strategies.';
+                break;
+              case 'deploy':
+                claudePrompt = 'Guide me through deploying to production. Check my deployment configuration, suggest best practices, and help with any deployment issues.';
+                break;
+              case 'clean':
+                response = 'Cleaning build files...\r\n';
+                // Could add actual clean logic here
+                socket.emit('terminal:data', {
+                  id: sessionId, 
+                  data: response + 'Build files cleaned successfully.\r\n'
+                });
+                break;
+              
+              // Code Analysis & Debugging
+              case 'analyze':
+                claudePrompt = 'Perform a deep analysis of my codebase. Review the architecture, identify potential issues, suggest improvements, and provide a comprehensive audit report.';
+                break;
+              case 'troubleshoot':
+                claudePrompt = 'Help me debug a complex issue. Ask me about the problem, analyze error messages, review relevant code, and guide me to a solution.';
+                break;
+              case 'explain':
+                claudePrompt = 'Explain this code in detail. I will show you code and you should provide clear explanations of what it does, how it works, and document it thoroughly.';
+                break;
+              
+              // Quality Assurance
+              case 'improve':
+                claudePrompt = 'Analyze my code for optimization opportunities. Review performance, suggest refactoring, improve code quality, and modernize patterns.';
+                break;
+              case 'cleanup':
+                claudePrompt = 'Help me clean up and standardize my code. Fix formatting issues, remove dead code, improve naming conventions, and ensure consistency.';
+                break;
+              
+              // Project Management
+              case 'document':
+                claudePrompt = 'Generate comprehensive documentation for my project. Create README files, API documentation, inline comments, and user guides.';
+                break;
+              case 'git':
+                claudePrompt = 'Help with Git workflow. Assist with commits, branching strategies, merge conflicts, and repository management.';
+                break;
+              case 'estimate':
+                claudePrompt = 'Help me estimate this project. Analyze requirements, break down tasks, estimate time and resources, and create a project timeline.';
+                break;
+              case 'task':
+                claudePrompt = 'Help me manage tasks and track progress. Create a task list, prioritize work, track dependencies, and monitor completion.';
+                break;
+              case 'index':
+                claudePrompt = 'Index and analyze my codebase structure. Create a searchable index of functions, classes, dependencies, and provide codebase insights.';
+                break;
+              case 'load':
+                claudePrompt = 'Load and analyze specific files or contexts. Help me understand code relationships and dependencies in my project.';
+                break;
+              case 'spawn':
+                claudePrompt = 'Help me spawn a multi-agent task force. Coordinate multiple AI agents to work on different aspects of my project simultaneously.';
+                break;
+              
+              // Git & Version Control
+              case 'commit':
+                claudePrompt = 'Help me create a git commit. Review my changes, suggest a clear commit message, and ensure proper git hygiene.';
+                break;
+              case 'push':
+                claudePrompt = 'Help me push changes to the repository. Check for conflicts, review changes, and ensure safe deployment.';
+                break;
+              case 'pull':
+                claudePrompt = 'Help me pull the latest changes. Handle merge conflicts, review incoming changes, and update my local repository safely.';
+                break;
+              
+              // Development
+              case 'help':
+                response = `\r\n╔═══════════════════════════════════════════════════════════════════╗\r\n`;
+                response += `║                    📚 Available Slash Commands                      ║\r\n`;
+                response += `╠═══════════════════════════════════════════════════════════════════╣\r\n`;
+                response += `║ Feature Implementation:                                             ║\r\n`;
+                response += `║   /implement - Plan and implement new features                     ║\r\n`;
+                response += `║   /design    - UI/UX design and mockups                           ║\r\n`;
+                response += `║                                                                     ║\r\n`;
+                response += `║ Build & Test:                                                      ║\r\n`;
+                response += `║   /build     - Compilation and bundling                           ║\r\n`;
+                response += `║   /test      - Generate and run tests                             ║\r\n`;
+                response += `║   /deploy    - Deploy to production                               ║\r\n`;
+                response += `║                                                                     ║\r\n`;
+                response += `║ Code Analysis:                                                     ║\r\n`;
+                response += `║   /analyze   - Deep codebase analysis                             ║\r\n`;
+                response += `║   /troubleshoot - Debug complex issues                            ║\r\n`;
+                response += `║   /explain   - Code explanation and docs                          ║\r\n`;
+                response += `║                                                                     ║\r\n`;
+                response += `║ Type 'claude' for AI assistance with any command                  ║\r\n`;
+                response += `╚═══════════════════════════════════════════════════════════════════╝\r\n\r\n`;
+                socket.emit('terminal:data', {
+                  id: sessionId,
+                  data: response
+                });
+                break;
+                
+              case 'clear':
+                // Send clear screen sequence
+                socket.emit('terminal:data', {
+                  id: sessionId,
+                  data: '\x1b[2J\x1b[H'
+                });
+                break;
+                
+              case 'status':
+                response = '📊 Project Status: Active\r\n';
+                response += `Session ID: ${sessionId}\r\n`;
+                response += `Terminal: Connected ✓\r\n`;
+                socket.emit('terminal:data', {
+                  id: sessionId,
+                  data: response
+                });
+                break;
+                
+              default:
+                response = `❌ Unknown command: /${slashCommand}\r\n`;
+                response += `Type /help to see available commands.\r\n`;
+                socket.emit('terminal:data', {
+                  id: sessionId,
+                  data: response
+                });
+            }
+            
+            // If we have a Claude prompt, route it through the bridge
+            if (claudePrompt) {
+              console.log('[Terminal] Routing slash command to Claude:', slashCommand);
+              
+              // Check if bridge is available
+              if (bridgeManager) {
+                const userId = session.userId || 'default';
+                const bridgeStatus = bridgeManager.getBridgeStatus?.(userId);
+                
+                if (bridgeStatus?.connected) {
+                  // Send to Claude through bridge
+                  socket.emit('terminal:data', {
+                    id: sessionId,
+                    data: `\r\n🤖 Processing /${slashCommand} with Claude...\r\n`
+                  });
+                  
+                  // Route through bridge
+                  try {
+                    const result = await bridgeManager.sendToClaude(userId, claudePrompt, {
+                      sessionId,
+                      command: slashCommand
+                    });
+                    
+                    if (result && result.response) {
+                      socket.emit('terminal:data', {
+                        id: sessionId,
+                        data: `\r\n${result.response}\r\n`
+                      });
+                    }
+                  } catch (error) {
+                    console.error('[Terminal] Bridge error:', error);
+                    socket.emit('terminal:data', {
+                      id: sessionId,
+                      data: `\r\n❌ Error: Could not process command. Bridge error.\r\n`
+                    });
+                  }
+                } else {
+                  // Bridge not connected, show helpful message
+                  socket.emit('terminal:data', {
+                    id: sessionId,
+                    data: `\r\n⚠️  Claude Bridge not connected.\r\n`
+                  });
+                  socket.emit('terminal:data', {
+                    id: sessionId,
+                    data: `To use /${slashCommand}, please:\r\n`
+                  });
+                  socket.emit('terminal:data', {
+                    id: sessionId,
+                    data: `1. Click "🌉 Connect Bridge" in the status bar\r\n`
+                  });
+                  socket.emit('terminal:data', {
+                    id: sessionId,
+                    data: `2. Follow the connection instructions\r\n\r\n`
+                  });
+                }
+              } else {
+                // No bridge manager available
+                socket.emit('terminal:data', {
+                  id: sessionId,
+                  data: `\r\n💡 /${slashCommand}: ${claudePrompt.substring(0, 100)}...\r\n`
+                });
+                socket.emit('terminal:data', {
+                  id: sessionId,
+                  data: `\r\n(Claude integration pending - showing prompt preview)\r\n\r\n`
+                });
+              }
+            }
+            
+            // Show prompt after response
+            socket.emit('terminal:data', {
+              id: sessionId,
+              data: 'coder1:coder1-ide-next$ '
+            });
+            
+            // Clear command buffer and exit early
+            commandBuffers.set(sessionId, '');
+            return;
           }
           
           // Clear buffer after command

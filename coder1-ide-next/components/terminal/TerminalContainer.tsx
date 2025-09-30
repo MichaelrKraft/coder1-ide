@@ -44,6 +44,7 @@ interface TerminalContainerProps {
   onTerminalData?: (data: string) => void;
   onTerminalCommand?: (command: string) => void;
   onTerminalReady?: (sessionId: any, ready: any) => void;
+  onComposerVisibilityChange?: (visible: boolean) => void;
 }
 
 export default function TerminalContainer({
@@ -52,8 +53,22 @@ export default function TerminalContainer({
   onClaudeTyped,
   onTerminalData,
   onTerminalCommand,
-  onTerminalReady
+  onTerminalReady,
+  onComposerVisibilityChange
 }: TerminalContainerProps) {
+  // Format checkpoint timestamp for display (e.g., "Sep 26, 4:55 pm")
+  const formatCheckpointDate = (timestamp: string) => {
+    const date = new Date(timestamp);
+    const month = date.toLocaleDateString('en-US', { month: 'short' });
+    const day = date.getDate();
+    const time = date.toLocaleTimeString('en-US', { 
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true
+    }).toLowerCase();
+    return `${month} ${day}, ${time}`;
+  };
+
   const [activeTab, setActiveTab] = useState<'main' | 'sandbox'>('main');
   const [sandboxSession, setSandboxSession] = useState<SandboxSession | null>(null);
   
@@ -400,7 +415,11 @@ export default function TerminalContainer({
               title={`Checkpoint Sandbox - ${sandboxSession.name}`}
             >
               <FolderOpen className="w-3 h-3 text-orange-400" />
-              <span className="truncate max-w-40">Sandbox Terminal</span>
+              <span className="truncate max-w-40">
+                {sandboxSession.checkpointData?.timestamp 
+                  ? formatCheckpointDate(sandboxSession.checkpointData.timestamp)
+                  : 'Sandbox Terminal'}
+              </span>
             </button>
             
             {/* Close button - separate from main tab button */}
@@ -485,6 +504,7 @@ export default function TerminalContainer({
             onTerminalData={onTerminalData}
             onTerminalCommand={onTerminalCommand}
             onTerminalReady={onTerminalReady}
+            onComposerVisibilityChange={onComposerVisibilityChange}
             isVisible={activeSessionId === 'main'}
           />
         </div>
@@ -500,6 +520,7 @@ export default function TerminalContainer({
               onTerminalData={onTerminalData}
               onTerminalCommand={onTerminalCommand}
               onTerminalReady={onTerminalReady}
+              onComposerVisibilityChange={onComposerVisibilityChange}
               sandboxMode={true}
               sandboxSession={sandboxSession}
               isVisible={activeSessionId === 'sandbox'}
@@ -521,6 +542,7 @@ export default function TerminalContainer({
               onTerminalData={onTerminalData}
               onTerminalCommand={onTerminalCommand}
               onTerminalReady={onTerminalReady}
+              onComposerVisibilityChange={onComposerVisibilityChange}
               sandboxMode={false} // Phase 2: Enable interactive mode for agent terminals
               agentMode={true} // New prop to indicate this is an agent terminal
               agentSession={{

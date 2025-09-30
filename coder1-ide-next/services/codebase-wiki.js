@@ -107,6 +107,13 @@ class CodebaseWiki extends EventEmitter {
             const files = await this.findCodeFiles();
             this.logger.log(`📄 [CODEBASE-WIKI] Found ${files.length} files to index`);
             
+            // Safety limit to prevent memory exhaustion
+            const MAX_FILES = 5000;
+            if (files.length > MAX_FILES) {
+                this.logger.warn(`⚠️ [CODEBASE-WIKI] Too many files (${files.length}). Limiting to ${MAX_FILES} files`);
+                files.length = MAX_FILES; // Truncate array
+            }
+            
             // Clear existing index
             this.clearIndex();
             

@@ -272,17 +272,17 @@ export default function TerminalSettings({
             </div>
             <div className="space-y-2">
               {[
-                { model: 'claude-4-opus-20250805', label: 'Claude Opus 4.1', description: 'Most Capable', cost: '$15/$75' },
-                { model: 'claude-4-sonnet-20250510', label: 'Claude Sonnet 4.0', description: 'Balanced (Default)', cost: '$3/$15' },
-                { model: 'claude-3-7-sonnet-20250224', label: 'Claude 3.7 Sonnet', description: 'Fast + Reasoning', cost: '$3/$15' },
-                { model: 'claude-3-5-haiku-20241022', label: 'Claude 3.5 Haiku', description: 'Ultra Fast', cost: '$0.80/$4' }
+                { model: 'claude-4-opus-20250805', label: 'Claude Opus 4.1', description: 'Most Capable' },
+                { model: 'claude-4-5-sonnet-20250930', label: 'Claude Sonnet 4.5', description: '🆕 Latest (Default)' },
+                { model: 'claude-4-sonnet-20250510', label: 'Claude Sonnet 4.0', description: 'Balanced' },
+                { model: 'claude-3-7-sonnet-20250224', label: 'Claude 3.7 Sonnet', description: 'Fast + Reasoning' },
+                { model: 'claude-3-5-haiku-20241022', label: 'Claude 3.5 Haiku', description: 'Ultra Fast' }
               ].map((item) => (
                 <button
                   key={item.model}
                   onClick={() => {
                     setSelectedClaudeModel(item.model);
                     xtermRef.current?.writeln(`\r\nClaude model changed to: ${item.label}`);
-                    xtermRef.current?.writeln(`Cost: ${item.cost} per million tokens (input/output)`);
                   }}
                   className={`w-full flex items-center justify-between px-3 py-2 text-sm rounded hover:bg-bg-tertiary transition-colors ${
                     selectedClaudeModel === item.model ? 'text-coder1-cyan bg-coder1-purple bg-opacity-20' : 'text-text-secondary'
@@ -295,7 +295,6 @@ export default function TerminalSettings({
                       <span className="text-xs text-text-muted">{item.description}</span>
                     </div>
                   </div>
-                  <span className="text-xs text-text-muted">{item.cost}</span>
                 </button>
               ))}
             </div>

@@ -1,78 +1,71 @@
 /**
  * API endpoint for getting Claude usage statistics
- * Executes the ccusage command to get current token usage
+ * Tracks token usage per session
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { exec } from 'child_process';
-import { promisify } from 'util';
 import { logger } from '@/lib/logger';
 
-const execAsync = promisify(exec);
+// In-memory session metrics storage (in production, use a database)
+const sessionMetrics = new Map<string, {
+  inputTokens: number;
+  outputTokens: number;
+  commandCount: number;
+  lastUpdate: number;
+}>();
 
 export async function GET(request: NextRequest) {
   try {
-    // Execute ccusage command to get current usage
-    const { stdout, stderr } = await execAsync('ccusage 2>/dev/null || echo "0"');
+    const { searchParams } = new URL(request.url);
+    const sessionId = searchParams.get('sessionId');
     
-    if (stderr && !stderr.includes('command not found')) {
-      logger.error('ccusage error:', stderr);
-    }
-    
-    // Parse the output - ccusage typically returns a number
-    const usage = stdout.trim();
-    let tokens = 0;
-    let cost = 0;
-    
-    // Try to parse as number
-    const parsedUsage = parseInt(usage, 10);
-    if (!isNaN(parsedUsage)) {
-      tokens = parsedUsage;
-      // Estimate cost based on Claude pricing
-      // Assuming $3 per million input tokens, $15 per million output tokens
-      // Using average of $9 per million tokens for estimation
-      cost = (tokens / 1000000) * 9;
-    }
-    
-    // Also try to get more detailed info if available
-    try {
-      // Try to get session info from claude CLI if available
-      const { stdout: sessionInfo } = await execAsync('claude session info 2>/dev/null || echo "{}"');
-      
-      let sessionData = {};
-      try {
-        // Parse session info if it's JSON
-        if (sessionInfo.trim().startsWith('{')) {
-          sessionData = JSON.parse(sessionInfo.trim());
-        }
-      } catch (e) {
-        // Session info might not be JSON, ignore
-      }
-      
+    if (!sessionId) {
       return NextResponse.json({
-        success: true,
-        tokens,
-        cost: cost.toFixed(4),
-        formattedCost: `$${cost.toFixed(4)}`,
-        sessionData,
-        timestamp: new Date().toISOString()
-      });
-    } catch (e) {
-      // Fall back to basic response
-      return NextResponse.json({
-        success: true,
-        tokens,
-        cost: cost.toFixed(4),
-        formattedCost: `$${cost.toFixed(4)}`,
-        timestamp: new Date().toISOString()
+        success: false,
+        error: 'Session ID required'
       });
     }
+    
+    // Get or create session metrics
+    let metrics = sessionMetrics.get(sessionId);
+    if (!metrics) {
+      metrics = {
+        inputTokens: 0,
+        outputTokens: 0,
+        commandCount: 0,
+        lastUpdate: Date.now()
+      };
+      sessionMetrics.set(sessionId, metrics);
+    }
+    
+    // Simulate token usage based on command count
+    // In production, this would track actual API usage
+    const estimatedInputTokens = metrics.commandCount * 150; // Avg ~150 tokens per command
+    const estimatedOutputTokens = metrics.commandCount * 500; // Avg ~500 tokens per response
+    
+    // Calculate cost based on Claude pricing
+    // Claude 3 Sonnet: $3 per million input tokens, $15 per million output tokens
+    const inputCost = (estimatedInputTokens / 1000000) * 3;
+    const outputCost = (estimatedOutputTokens / 1000000) * 15;
+    const totalCost = inputCost + outputCost;
+    
+    return NextResponse.json({
+      success: true,
+      inputTokens: estimatedInputTokens,
+      outputTokens: estimatedOutputTokens,
+      commandCount: metrics.commandCount,
+      cost: totalCost,
+      formattedCost: `$${totalCost.toFixed(4)}`,
+      timestamp: new Date().toISOString()
+    });
   } catch (error) {
     logger.error('Failed to get Claude usage:', error);
     return NextResponse.json({
       success: false,
-      tokens: 0,
-      cost: "0.0000",
+      inputTokens: 0,
+      outputTokens: 0,
+      commandCount: 0,
+      cost: 0,
       formattedCost: "$0.0000",
       error: 'Failed to retrieve usage data',
       timestamp: new Date().toISOString()
@@ -80,21 +73,63 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// Reset usage counter endpoint
+// Increment command counter or reset usage
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { action } = body;
+    const { action, sessionId, tokens } = body;
     
-    if (action === 'reset') {
-      // Try to reset the usage counter
-      // This might require specific ccusage commands or clearing a file
-      const { stdout, stderr } = await execAsync('ccusage --reset 2>/dev/null || echo "reset not supported"');
+    if (!sessionId) {
+      return NextResponse.json({
+        success: false,
+        error: 'Session ID required'
+      });
+    }
+    
+    // Get or create session metrics
+    let metrics = sessionMetrics.get(sessionId);
+    if (!metrics) {
+      metrics = {
+        inputTokens: 0,
+        outputTokens: 0,
+        commandCount: 0,
+        lastUpdate: Date.now()
+      };
+      sessionMetrics.set(sessionId, metrics);
+    }
+    
+    if (action === 'increment') {
+      // Increment command counter
+      metrics.commandCount += 1;
+      metrics.lastUpdate = Date.now();
+      
+      // If token counts provided, use them
+      if (tokens) {
+        metrics.inputTokens += tokens.input || 0;
+        metrics.outputTokens += tokens.output || 0;
+      }
+      
+      sessionMetrics.set(sessionId, metrics);
       
       return NextResponse.json({
         success: true,
-        message: 'Usage counter reset attempted',
-        output: stdout.trim()
+        message: 'Command counter incremented',
+        commandCount: metrics.commandCount
+      });
+    }
+    
+    if (action === 'reset') {
+      // Reset the usage counter for this session
+      sessionMetrics.set(sessionId, {
+        inputTokens: 0,
+        outputTokens: 0,
+        commandCount: 0,
+        lastUpdate: Date.now()
+      });
+      
+      return NextResponse.json({
+        success: true,
+        message: 'Usage counter reset for session'
       });
     }
     
@@ -103,10 +138,10 @@ export async function POST(request: NextRequest) {
       error: 'Invalid action'
     });
   } catch (error) {
-    logger.error('Failed to reset usage:', error);
+    logger.error('Failed to update usage:', error);
     return NextResponse.json({
       success: false,
-      error: 'Failed to reset usage counter'
+      error: 'Failed to update usage counter'
     });
   }
 }

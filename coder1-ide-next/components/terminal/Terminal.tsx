@@ -141,12 +141,12 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
     templates
   } = useEnhancedSupervision();
   const [terminalMode, setTerminalMode] = useState<'normal' | 'vim' | 'emacs'>('normal');
-  // Load Claude model from localStorage or use default
+  // Load Claude model from localStorage or use default (Sonnet 4.5 is latest)
   const [selectedClaudeModel, setSelectedClaudeModel] = useState<string>(() => {
     if (typeof window !== 'undefined') {
-      return localStorage.getItem('coder1-selected-claude-model') || 'claude-4-sonnet-20250510';
+      return localStorage.getItem('coder1-selected-claude-model') || 'claude-4-5-sonnet-20250930';
     }
-    return 'claude-4-sonnet-20250510';
+    return 'claude-4-5-sonnet-20250930';
   });
   const [showModelDropdown, setShowModelDropdown] = useState(false);
 
@@ -216,6 +216,24 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
   // Planning mode state
   const [planningMode, setPlanningMode] = useState(false);
   const [plannedCommands, setPlannedCommands] = useState<string[]>([]);
+  
+  // Terminal session state - needed for various features
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [terminalReady, setTerminalReady] = useState(false);
+  const [lastError, setLastError] = useState<string | null>(null);
+  const [errorDoctorActive, setErrorDoctorActive] = useState(true);
+  const socketRef = useRef<any>(null); // Will be Socket instance after async init
+  
+  // Error Doctor modal states - MUST be declared before useEffects that use them
+  const [showErrorDoctorModal, setShowErrorDoctorModal] = useState(false);
+  const [hasActiveError, setHasActiveError] = useState(false);
+  const [errorHistory, setErrorHistory] = useState<string[]>([]);
+  
+  // Console capture states
+  const [consoleErrors, setConsoleErrors] = useState<CapturedConsoleError[]>([]);
+  const [isAnalyzingWithClaude, setIsAnalyzingWithClaude] = useState(false);
+  const [currentLineBuffer, setCurrentLineBuffer] = useState('');
+  const [selectedSoundPreset, setSelectedSoundPreset] = useState<SoundPreset>('gentle');
   
   // Context menu state
   const [contextMenuVisible, setContextMenuVisible] = useState(false);
@@ -375,11 +393,36 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
     };
   }, []);
 
+  // Initialize console capture service explicitly
+  useEffect(() => {
+    // Ensure console capture service is started
+    if (!consoleCaptureService.isCapturing()) {
+      console.log('🔍 Starting console capture service...');
+      consoleCaptureService.start();
+      
+      // Expose on window for debugging
+      if (typeof window !== 'undefined') {
+        (window as any).consoleCaptureService = consoleCaptureService;
+        console.log('✅ Console capture service exposed on window.consoleCaptureService');
+      }
+    }
+    
+    return () => {
+      // Keep service running across component unmounts
+      // consoleCaptureService.stop();
+    };
+  }, []);
+  
   // Sync console errors and update error indicator
   useEffect(() => {
     const updateConsoleErrors = () => {
       const captured = consoleCaptureService.getErrors();
       setConsoleErrors(captured);
+      
+      // Debug logging
+      if (captured.length > 0) {
+        console.log(`🔍 Console errors captured: ${captured.length} errors`);
+      }
       
       // Update hasActiveError using a callback to get current state
       setHasActiveError(prev => {
@@ -393,11 +436,20 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
     // Update immediately
     updateConsoleErrors();
 
-    // Set up periodic sync (every 2 seconds)
-    const interval = setInterval(updateConsoleErrors, 2000);
+    // Set up periodic sync (every 500ms for better responsiveness)
+    const interval = setInterval(updateConsoleErrors, 500);
 
     return () => clearInterval(interval);
   }, []); // Remove errorHistory dependency to avoid stale closures
+  
+  // Sync immediately when Error Doctor modal opens
+  useEffect(() => {
+    if (showErrorDoctorModal) {
+      const captured = consoleCaptureService.getErrors();
+      setConsoleErrors(captured);
+      console.log(`🔍 Error Doctor opened - syncing ${captured.length} console errors`);
+    }
+  }, [showErrorDoctorModal]);
 
 
   // Initialize companion service connection for Claude Code CLI access
@@ -591,23 +643,7 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
     localStorage.setItem('coder1-terminal-settings', JSON.stringify(terminalSettings));
   }, [terminalSettings]);
 
-  // State declarations - moved before useEffect hooks that use them
-  const [sessionId, setSessionId] = useState<string | null>(null);
-  const [terminalReady, setTerminalReady] = useState(false);
-  const [lastError, setLastError] = useState<string | null>(null);
-  const [errorDoctorActive, setErrorDoctorActive] = useState(true);
-  const socketRef = useRef<any>(null); // Will be Socket instance after async init
-  
-  // Error Doctor modal states
-  const [showErrorDoctorModal, setShowErrorDoctorModal] = useState(false);
-  const [hasActiveError, setHasActiveError] = useState(false);
-  const [errorHistory, setErrorHistory] = useState<string[]>([]);
-  
-  // Console capture states
-  const [consoleErrors, setConsoleErrors] = useState<CapturedConsoleError[]>([]);
-  const [isAnalyzingWithClaude, setIsAnalyzingWithClaude] = useState(false);
-  const [currentLineBuffer, setCurrentLineBuffer] = useState('');
-  const [selectedSoundPreset, setSelectedSoundPreset] = useState<SoundPreset>('gentle');
+  // These states are declared at the beginning of the component with all other states
 
   // Separate effect to update error state when errorHistory changes
   useEffect(() => {
@@ -2480,6 +2516,7 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
             
             // Line 3: Status and model
             const modelDisplay = selectedClaudeModel.includes('4-opus') ? 'Opus 4.1' :
+                                selectedClaudeModel.includes('4-5-sonnet') ? 'Sonnet 4.5' :
                                 selectedClaudeModel.includes('4-sonnet') ? 'Sonnet 4.0' :
                                 selectedClaudeModel.includes('3-7-sonnet') ? 'Sonnet 3.7' :
                                 selectedClaudeModel.includes('3-5-sonnet') ? 'Sonnet 3.5' :
@@ -3033,73 +3070,47 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
       return;
     }
 
-    // If images are present, save them temporarily and send command with image references
+    // If images are present, show a helpful message about Claude Code limitations
     if (images && images.length > 0) {
-      console.log(`🖼️ Processing ${images.length} image(s) with Claude CLI`);
+      console.log(`🖼️ Detected ${images.length} image(s) - showing guidance`);
       
-      // Save images to temp files
-      const imagePaths: string[] = [];
+      // Claude Code CLI doesn't support image input in the terminal
+      // We need to guide users to use the web interface instead
+      xtermRef.current?.writeln('\r\n\x1b[33m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\x1b[0m');
+      xtermRef.current?.writeln('\x1b[36m📸 Image Processing Notice\x1b[0m');
+      xtermRef.current?.writeln('\x1b[33m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\x1b[0m\r\n');
+      
+      xtermRef.current?.writeln(`You've attached ${images.length} image(s) with your command.`);
+      xtermRef.current?.writeln('\r\n\x1b[33m⚠️  Important:\x1b[0m Claude Code CLI in the terminal doesn\'t support image input.');
+      xtermRef.current?.writeln('');
+      xtermRef.current?.writeln('To use images with Claude Code:');
+      xtermRef.current?.writeln('  1. Open Claude Code in your browser: \x1b[36mhttps://claude.ai/code\x1b[0m');
+      xtermRef.current?.writeln('  2. Drag and drop your images directly into the chat');
+      xtermRef.current?.writeln('  3. Add your command: \x1b[32m' + command.substring(0, 50) + (command.length > 50 ? '...' : '') + '\x1b[0m');
+      xtermRef.current?.writeln('');
+      xtermRef.current?.writeln('Your command (without images) has been copied to clipboard.');
+      xtermRef.current?.writeln('You can paste it in Claude Code after uploading the images.');
+      xtermRef.current?.writeln('\r\n\x1b[33m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\x1b[0m\r\n');
+      
+      // Copy the command to clipboard for easy pasting in Claude Code
       try {
-        for (let i = 0; i < images.length; i++) {
-          const img = images[i];
-          const tempPath = `/tmp/claude-image-${Date.now()}-${i}.${img.mimeType.split('/')[1]}`;
-          
-          // Save base64 image to file via API
-          const saveResponse = await fetch('/api/files/save-temp-image', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              base64: img.base64,
-              mimeType: img.mimeType,
-              path: tempPath
-            })
-          });
-          
-          if (saveResponse.ok) {
-            const { path } = await saveResponse.json();
-            imagePaths.push(path);
-          }
-        }
-        
-        // Build Claude command with image paths
-        let claudeCommand = 'claude ';
-        imagePaths.forEach(path => {
-          claudeCommand += `-i "${path}" `;
-        });
-        claudeCommand += `"${command}"`;
-        
-        console.log(`🚀 Sending Claude CLI command: ${claudeCommand}`);
-        
-        // Send the complete Claude command to terminal
-        for (let i = 0; i < claudeCommand.length; i++) {
-          socketRef.current.emit('terminal:input', {
-            id: sessionId,
-            data: claudeCommand[i],
-            selectedClaudeModel
-          });
-          await new Promise(resolve => setTimeout(resolve, 5));
-        }
-        
-        // Send Enter key
-        socketRef.current.emit('terminal:input', {
-          id: sessionId,
-          data: '\r',
-          selectedClaudeModel
-        });
-        
-      } catch (error) {
-        console.error('Error processing images:', error);
-        xtermRef.current?.writeln(`\r\n\x1b[31mError: Failed to process images\x1b[0m\r\n`);
-      } finally {
-        setIsProcessingCommand(false);
-        setComposerVisible(false);
-        setStagedCommand('');
-        // Focus terminal
-        if (xtermRef.current) {
-          xtermRef.current.focus();
-        }
+        await navigator.clipboard.writeText(command);
+        console.log('✅ Command copied to clipboard');
+      } catch (err) {
+        console.error('Failed to copy command to clipboard:', err);
       }
-      return; // Don't send regular command if we have images
+      
+      // Close composer and reset state
+      setIsProcessingCommand(false);
+      setComposerVisible(false);
+      setStagedCommand('');
+      
+      // Focus terminal
+      if (xtermRef.current) {
+        xtermRef.current.focus();
+      }
+      
+      return; // Don't send command to terminal
     }
 
     // If in planning mode, add to planned commands instead of executing
@@ -3116,28 +3127,30 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
       return;
     }
 
+    // Safety check: Prevent processing of extremely large texts that could cause token explosions
+    const MAX_COMMAND_LENGTH = 50000; // ~12.5K tokens at 4 chars/token
+    if (command.length > MAX_COMMAND_LENGTH) {
+      console.warn(`🚨 Command too large: ${command.length} chars (max ${MAX_COMMAND_LENGTH})`);
+      xtermRef.current?.writeln(`\r\n⚠️ Command too large (${Math.round(command.length/1000)}K chars). Max allowed: ${Math.round(MAX_COMMAND_LENGTH/1000)}K chars.`);
+      xtermRef.current?.writeln('Please reduce the text size or split into smaller commands.\r\n');
+      setIsProcessingCommand(false);
+      setComposerVisible(false);
+      setStagedCommand('');
+      return;
+    }
+
     setIsProcessingCommand(true);
 
-    // Send ONLY the command text to terminal (no base64 data!)
-    for (let i = 0; i < command.length; i++) {
-      socketRef.current.emit('terminal:input', {
-        id: sessionId,
-        data: command[i],
-        selectedClaudeModel,
-        // Include image metadata if present
-        ...(images && images.length > 0 && i === 0 ? { 
-          attachedImages: images 
-        } : {})
-      });
-      // Small delay to mimic typing
-      await new Promise(resolve => setTimeout(resolve, 5));
-    }
-    
-    // Send Enter key
+    // Send command as single input to prevent character-by-character processing
+    // This fixes the infinite loop issue with large PDF text (was causing 1.7M token usage)
     socketRef.current.emit('terminal:input', {
       id: sessionId,
-      data: '\r',
-      selectedClaudeModel
+      data: command + '\r', // Include Enter key to execute command
+      selectedClaudeModel,
+      // Include image metadata if present
+      ...(images && images.length > 0 ? { 
+        attachedImages: images 
+      } : {})
     });
     
     // Increment command counter for metrics
@@ -4080,12 +4093,24 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
               </div>
               
               <div className="flex gap-2">
-                {/* Send to Claude Code Button */}
-                {(errorHistory.length > 0 || consoleErrors.length > 0) && (
-                  <button
-                    onClick={async () => {
-                      setIsAnalyzingWithClaude(true);
-                      try {
+                {/* Send to Claude Code Button - Always visible for better UX */}
+                <button
+                  onClick={async () => {
+                    const hasErrors = errorHistory.length > 0 || consoleErrors.length > 0;
+                    
+                    // If no errors, show helpful message
+                    if (!hasErrors) {
+                      addToast('ℹ️ No errors to send. Generate some errors first, then try again.', 'info');
+                      console.log('📊 No errors available - Terminal: 0, Console: 0');
+                      
+                      // Enable debug mode for better capture
+                      consoleCaptureService.enableDebugMode();
+                      console.log('🔍 Enabled debug mode for console capture - all console output will be captured');
+                      return;
+                    }
+                    
+                    setIsAnalyzingWithClaude(true);
+                    try {
                         // Prepare error report for Claude Code
                         const terminalErrors = errorHistory.join('\n\n');
                         const consoleErrorReport = consoleErrors.map(error => 
@@ -4142,7 +4167,6 @@ Context: Running in Coder1 IDE development environment`;
                       </>
                     )}
                   </button>
-                )}
                 
                 <button
                   onClick={() => setShowErrorDoctorModal(false)}

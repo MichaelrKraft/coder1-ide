@@ -762,7 +762,7 @@ export default function SessionsPanel({ isVisible = true }: SessionsPanelProps) 
               return (
                 <div
                   key={session.id}
-                  className={`group relative p-2 rounded transition-all ${
+                  className={`group relative p-2 rounded transition-all border-b border-b-coder1-cyan/50 shadow-glow-cyan ${
                     isRestoring 
                       ? 'bg-coder1-cyan/10 border border-coder1-cyan/20' 
                       : 'bg-bg-primary hover:bg-bg-tertiary cursor-pointer'

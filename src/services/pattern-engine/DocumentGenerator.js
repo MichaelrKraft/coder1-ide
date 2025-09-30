@@ -116,17 +116,20 @@ class DocumentGenerator extends EventEmitter {
                 generatedAt: new Date().toISOString(),
                 sessionId: options.sessionId || this.generateSessionId(),
                 projectName: this.generateProjectName(pattern, userAnswers),
+                mode: options.mode || 'quick', // Default to quick mode
                 ...options
             };
 
-            // Generate document sections
-            const sections = await this.generateDocumentSections(context);
+            // Generate document sections based on mode
+            const sections = context.mode === 'quick' 
+                ? await this.generateQuickModeSections(context)
+                : await this.generateProfessionalModeSections(context);
             
             // Compile into final document
             const document = await this.compileDocument(sections, context);
             
-            // Generate visuals if requested
-            if (this.config.includeVisuals) {
+            // Generate visuals if requested (Professional mode)
+            if (context.mode === 'professional' && this.config.includeVisuals) {
                 document.visuals = await this.generateVisuals(context);
             }
             
@@ -134,21 +137,24 @@ class DocumentGenerator extends EventEmitter {
             const formattedDocument = await this.formatDocument(document, options.format || 'markdown');
             
             // Create result with metadata
+            const expectedPages = context.mode === 'quick' ? '5-8' : '15-20';
             const result = {
                 document: formattedDocument,
                 rawDocument: document,
                 metadata: {
                     pattern: pattern.metadata.name,
+                    mode: context.mode,
                     generatedAt: context.generatedAt,
                     sessionId: context.sessionId,
                     projectName: context.projectName,
                     format: options.format || 'markdown',
                     wordCount: formattedDocument.split(' ').length,
-                    pageCount: Math.ceil(formattedDocument.split(' ').length / 250) // ~250 words per page
+                    pageCount: Math.ceil(formattedDocument.split(' ').length / 250), // ~250 words per page
+                    expectedPages: expectedPages
                 }
             };
             
-            this.logger.info(`📄 Generated PRD for pattern ${pattern.id} (${result.metadata.wordCount} words)`);
+            this.logger.info(`📄 Generated ${context.mode} mode PRD for pattern ${pattern.id} (${result.metadata.wordCount} words)`);
             
             return result;
             
@@ -159,18 +165,50 @@ class DocumentGenerator extends EventEmitter {
     }
 
     /**
-     * Generate individual document sections
+     * Generate Quick Mode sections (5-8 pages)
      */
-    async generateDocumentSections(context) {
+    async generateQuickModeSections(context) {
         const sections = {};
         
         sections.executiveSummary = await this.generateExecutiveSummary(context);
+        sections.problemSolution = await this.generateProblemSolution(context);
+        sections.coreFeatures = await this.generateCoreFeatures(context);
+        sections.technicalOverview = await this.generateTechnicalOverview(context);
+        sections.implementationTimeline = await this.generateImplementationTimeline(context);
+        sections.nextSteps = await this.generateNextSteps(context);
+        
+        return sections;
+    }
+    
+    /**
+     * Generate Professional Mode sections (15-20 pages)
+     */
+    async generateProfessionalModeSections(context) {
+        const sections = {};
+        
+        // Core sections
+        sections.executiveSummary = await this.generateExecutiveSummary(context);
+        sections.marketAnalysis = await this.generateMarketAnalysis(context);
+        sections.userResearch = await this.generateUserResearch(context);
+        sections.detailedRequirements = await this.generateDetailedRequirements(context);
         sections.technicalArchitecture = await this.generateTechnicalArchitecture(context);
+        sections.uxDesign = await this.generateUXDesign(context);
         sections.implementationRoadmap = await this.generateImplementationRoadmap(context);
+        sections.testingStrategy = await this.generateTestingStrategy(context);
         sections.riskAssessment = await this.generateRiskAssessment(context);
         sections.resourceRequirements = await this.generateResourceRequirements(context);
         
         return sections;
+    }
+
+    /**
+     * Generate individual document sections (legacy - kept for compatibility)
+     */
+    async generateDocumentSections(context) {
+        // Use appropriate mode-based generation
+        return context.mode === 'quick' 
+            ? await this.generateQuickModeSections(context)
+            : await this.generateProfessionalModeSections(context);
     }
 
     /**
@@ -658,6 +696,215 @@ class DocumentGenerator extends EventEmitter {
     C --> D[Testing]
     D --> E[Deployment]
     E --> F[Monitoring]`;
+    }
+
+    /**
+     * Quick Mode helper methods
+     */
+    async generateProblemSolution(context) {
+        const { pattern, userAnswers } = context;
+        
+        return {
+            title: 'Problem & Solution',
+            content: {
+                problem: {
+                    statement: userAnswers['problem'] || `Users need a better way to ${pattern.metadata.problemSpace}`,
+                    impact: `This affects ${pattern.metadata.targetMarket} users who struggle with current solutions`,
+                    currentSolutions: pattern.metadata.competitors || []
+                },
+                solution: {
+                    overview: userAnswers['solution'] || pattern.metadata.solutionOverview,
+                    keyBenefits: pattern.metadata.benefits || [],
+                    differentiators: pattern.metadata.differentiators || []
+                }
+            }
+        };
+    }
+    
+    async generateCoreFeatures(context) {
+        const { pattern, userAnswers } = context;
+        
+        return {
+            title: 'Core Features & Requirements',
+            content: {
+                mustHaveFeatures: pattern.coreFeatures?.mustHave || [],
+                niceToHaveFeatures: pattern.coreFeatures?.niceToHave || [],
+                technicalRequirements: pattern.technicalRequirements?.essential || [],
+                userStories: this.generateTopUserStories(pattern, userAnswers, 5)
+            }
+        };
+    }
+    
+    async generateTechnicalOverview(context) {
+        const { pattern, userAnswers } = context;
+        
+        return {
+            title: 'Technical Overview',
+            content: {
+                architecture: pattern.architecture?.overview || 'Modern microservices architecture',
+                techStack: pattern.techStack || {},
+                integrations: pattern.integrations || [],
+                dataModel: pattern.dataModel?.simplified || {}
+            }
+        };
+    }
+    
+    async generateImplementationTimeline(context) {
+        const { pattern, userAnswers } = context;
+        const timeline = userAnswers['timeline'] || '3 months';
+        
+        return {
+            title: 'Implementation Timeline',
+            content: {
+                phases: this.generateImplementationPhases(pattern, userAnswers, timeline),
+                milestones: pattern.milestones || [],
+                mvpScope: pattern.mvpScope || {},
+                estimatedLaunch: this.calculateLaunchDate(timeline)
+            }
+        };
+    }
+    
+    async generateNextSteps(context) {
+        const { pattern } = context;
+        
+        return {
+            title: 'Next Steps & Coder1 Handoff',
+            content: {
+                immediateActions: [
+                    'Review and approve this PRD',
+                    'Finalize technical requirements',
+                    'Set up development environment',
+                    'Begin implementation with Coder1'
+                ],
+                handoffDetails: {
+                    patternSelected: pattern.metadata.name,
+                    readyForImplementation: true,
+                    estimatedDevelopmentTime: pattern.metadata.estimatedTime || '3-4 months',
+                    recommendedTeamSize: pattern.metadata.teamSize || '2-3 developers'
+                },
+                coderOneIntegration: {
+                    message: 'This PRD is optimized for direct handoff to Coder1 IDE',
+                    benefits: [
+                        'Automated project setup based on selected pattern',
+                        'AI-assisted code generation following PRD specifications',
+                        'Built-in best practices from successful startups',
+                        'Continuous alignment with PRD requirements'
+                    ]
+                }
+            }
+        };
+    }
+    
+    /**
+     * Professional Mode additional methods
+     */
+    async generateMarketAnalysis(context) {
+        const { pattern, userAnswers } = context;
+        
+        return {
+            title: 'Market Analysis & Opportunity',
+            content: {
+                marketSize: pattern.marketData?.size || 'To be researched',
+                growthRate: pattern.marketData?.growth || '15-20% annually',
+                targetSegments: pattern.marketData?.segments || [],
+                competitiveLandscape: pattern.marketData?.competitors || [],
+                goToMarket: pattern.marketData?.gtmStrategy || {}
+            }
+        };
+    }
+    
+    async generateUserResearch(context) {
+        const { pattern, userAnswers } = context;
+        
+        return {
+            title: 'User Research & Personas',
+            content: {
+                personas: pattern.personas || [],
+                journeyMaps: pattern.journeyMaps || [],
+                painPoints: pattern.painPoints || [],
+                userStories: this.generateTopUserStories(pattern, userAnswers, 15) // More detailed for professional
+            }
+        };
+    }
+    
+    async generateDetailedRequirements(context) {
+        const { pattern } = context;
+        
+        return {
+            title: 'Detailed Requirements',
+            content: {
+                functionalRequirements: pattern.requirements?.functional || [],
+                nonFunctionalRequirements: pattern.requirements?.nonFunctional || [],
+                acceptanceCriteria: pattern.requirements?.acceptance || [],
+                edgeCases: pattern.requirements?.edgeCases || []
+            }
+        };
+    }
+    
+    async generateUXDesign(context) {
+        const { pattern } = context;
+        
+        return {
+            title: 'UX/UI Design',
+            content: {
+                informationArchitecture: pattern.design?.infoArch || {},
+                wireframes: pattern.design?.wireframes || [],
+                designSystem: pattern.design?.system || {},
+                accessibilityStandards: pattern.design?.accessibility || []
+            }
+        };
+    }
+    
+    async generateTestingStrategy(context) {
+        const { pattern } = context;
+        
+        return {
+            title: 'Testing Strategy',
+            content: {
+                testStrategy: pattern.testing?.strategy || {},
+                testScenarios: pattern.testing?.scenarios || [],
+                qaRequirements: pattern.testing?.qa || [],
+                performanceBenchmarks: pattern.testing?.performance || {}
+            }
+        };
+    }
+    
+    /**
+     * Helper methods
+     */
+    generateTopUserStories(pattern, userAnswers, count) {
+        const stories = pattern.userStories || [];
+        return stories.slice(0, count);
+    }
+    
+    generateImplementationPhases(pattern, userAnswers, timeline) {
+        // Generate phases based on timeline
+        const phases = [];
+        const timelineMonths = parseInt(timeline) || 3;
+        
+        if (timelineMonths <= 2) {
+            phases.push({ name: 'MVP Development', duration: '6-8 weeks' });
+            phases.push({ name: 'Testing & Launch', duration: '2-4 weeks' });
+        } else if (timelineMonths <= 4) {
+            phases.push({ name: 'Foundation', duration: '4 weeks' });
+            phases.push({ name: 'Core Features', duration: '8 weeks' });
+            phases.push({ name: 'Polish & Launch', duration: '4 weeks' });
+        } else {
+            phases.push({ name: 'Discovery & Design', duration: '4 weeks' });
+            phases.push({ name: 'Foundation', duration: '6 weeks' });
+            phases.push({ name: 'Core Features', duration: '10 weeks' });
+            phases.push({ name: 'Advanced Features', duration: '6 weeks' });
+            phases.push({ name: 'Testing & Launch', duration: '4 weeks' });
+        }
+        
+        return phases;
+    }
+    
+    calculateLaunchDate(timeline) {
+        const months = parseInt(timeline) || 3;
+        const launchDate = new Date();
+        launchDate.setMonth(launchDate.getMonth() + months);
+        return launchDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
     }
 
     /**

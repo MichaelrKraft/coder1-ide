@@ -10,15 +10,18 @@ import { v4 as uuidv4 } from 'uuid';
 import os from 'os';
 import Tesseract from 'tesseract.js';
 
-// Dynamic imports to handle optional dependencies
+// Dynamic imports to handle optional dependencies (server-side only)
 let pdf: any;
 let mammoth: any;
 let XLSX: any;
 
-try {
-  pdf = require('pdf-parse');
-} catch (e) {
-  console.warn('pdf-parse not available');
+// Only import pdf-parse on server-side to prevent browser bundling issues
+if (typeof window === 'undefined') {
+  try {
+    pdf = require('pdf-parse');
+  } catch (e) {
+    console.warn('pdf-parse not available');
+  }
 }
 
 try {

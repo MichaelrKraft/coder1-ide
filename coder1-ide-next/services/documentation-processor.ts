@@ -3,15 +3,18 @@
  * Handles processing of various file types for the Documentation Hub
  */
 
-// Dynamic imports for optional dependencies
+// Dynamic imports for optional dependencies (server-side only)
 let pdfParse: any;
 let csvParse: any;
 let sharp: any;
 
-try {
-  pdfParse = require('pdf-parse');
-} catch (e) {
-  console.warn('pdf-parse not available in documentation processor');
+// Only import pdf-parse on server-side to prevent browser bundling issues
+if (typeof window === 'undefined') {
+  try {
+    pdfParse = require('pdf-parse');
+  } catch (e) {
+    console.warn('pdf-parse not available in documentation processor');
+  }
 }
 
 try {

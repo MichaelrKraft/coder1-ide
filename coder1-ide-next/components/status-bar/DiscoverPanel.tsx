@@ -318,7 +318,7 @@ export default function DiscoverPanel() {
 
       const success = injectCommand(`/${command.action}`, {
         focusTerminal: true,
-        addNewline: false,
+        addNewline: true,
         replace: false
       });
       

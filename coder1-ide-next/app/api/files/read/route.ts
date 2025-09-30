@@ -8,7 +8,9 @@ export const dynamic = 'force-dynamic';
 
 // Get project root directory
 const getProjectRoot = () => {
-    return process.cwd();
+    // Go up one directory to access autonomous_vibe_interface root
+    // from coder1-ide-next to autonomous_vibe_interface
+    return path.join(process.cwd(), '..');
 };
 
 // Blocked sensitive files and patterns

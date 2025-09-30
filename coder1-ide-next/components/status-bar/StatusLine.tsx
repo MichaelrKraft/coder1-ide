@@ -121,87 +121,11 @@ export default function StatusLine() {
   };
   
   return (
-    <div className="h-7 bg-bg-tertiary border-t border-border-default flex items-center px-4 text-xs select-none">
-      <div className="flex items-center gap-6">
-        {/* Model Selector */}
-        <div className="relative" ref={dropdownRef}>
-          <button
-            onClick={() => setShowModelDropdown(!showModelDropdown)}
-            className="flex items-center gap-1.5 px-2 py-1 rounded hover:bg-bg-secondary transition-colors"
-          >
-            <span className={currentModelInfo.color}>{currentModelInfo.icon}</span>
-            <span className="text-text-secondary font-medium">{currentModelInfo.name}</span>
-            <ChevronDown className="w-3 h-3 text-text-muted" />
-          </button>
-          
-          {/* Model Dropdown */}
-          {showModelDropdown && (
-            <div className="absolute bottom-full left-0 mb-1 w-56 bg-bg-secondary border border-border-default rounded-lg shadow-xl z-50">
-              <div className="p-2">
-                <div className="text-text-muted text-[10px] uppercase tracking-wider px-2 py-1">
-                  Select AI Model
-                </div>
-                {AI_MODELS.map((model) => (
-                  <button
-                    key={model.id}
-                    onClick={() => handleModelSelect(model.id)}
-                    className={`w-full flex items-center gap-2 px-2 py-1.5 rounded hover:bg-bg-primary transition-colors ${
-                      model.id === aiState.currentModel ? 'bg-bg-primary' : ''
-                    }`}
-                  >
-                    <span className={model.color}>{model.icon}</span>
-                    <span className="text-text-primary text-xs">{model.name}</span>
-                    {model.id === aiState.currentModel && (
-                      <span className="ml-auto text-coder1-cyan text-[10px]">✓</span>
-                    )}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-        
-        {/* Token Usage */}
-        <div className="flex items-center gap-4 text-text-muted">
-          <div className="flex items-center gap-1" title="Input tokens">
-            <Hash className="w-3 h-3 text-blue-400" />
-            <span>{formatTokens(aiState.tokenUsage.input)}</span>
-            <span className="text-[10px] text-text-tertiary">in</span>
-          </div>
-          
-          <div className="flex items-center gap-1" title="Output tokens">
-            <Hash className="w-3 h-3 text-green-400" />
-            <span>{formatTokens(aiState.tokenUsage.output)}</span>
-            <span className="text-[10px] text-text-tertiary">out</span>
-          </div>
-          
-          <div className="flex items-center gap-1" title="Total tokens">
-            <Hash className="w-3 h-3 text-orange-400" />
-            <span className="text-text-secondary font-medium">
-              {formatTokens(aiState.tokenUsage.total)}
-            </span>
-            <span className="text-[10px] text-text-tertiary">total</span>
-          </div>
-          
-          {/* Estimated Cost */}
-          {aiState.tokenUsage.total > 0 && (
-            <div className="flex items-center gap-1 text-yellow-400" title="Estimated cost">
-              <span className="text-[10px]">≈</span>
-              <span className="font-medium">
-                {calculateCost(aiState.currentModel, aiState.tokenUsage.total)}
-              </span>
-            </div>
-          )}
-        </div>
-        
-        {/* Separator */}
-        <div className="h-4 w-px bg-border-default" />
-        
-        {/* Current Date/Time */}
-        <div className="flex items-center gap-1 text-text-muted">
-          <Clock className="w-3 h-3" />
-          <span>{currentDate ? formatDate(currentDate) : '--'}</span>
-        </div>
+    <div className="h-6 bg-bg-tertiary border-t border-border-default flex items-center justify-center px-4 text-xs select-none">
+      {/* Simple Time Display Only */}
+      <div className="flex items-center gap-1 text-text-muted">
+        <Clock className="w-3 h-3" />
+        <span>{currentDate ? formatDate(currentDate) : '--'}</span>
       </div>
     </div>
   );
