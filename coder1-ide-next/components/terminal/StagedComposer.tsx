@@ -3,7 +3,8 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { X, Send, Clock, Hash, FileText, Image as ImageIcon, ChevronDown, GitBranch, Eye, FilePlus } from 'lucide-react';
 import { commandHistoryService, CommandHistoryEntry } from '@/services/command-history-service';
-import { createWorker } from 'tesseract.js';
+// OCR functionality is optional - only import if available
+// import { createWorker } from 'tesseract.js';
 
 interface StagedComposerProps {
   isVisible: boolean;
@@ -488,14 +489,12 @@ export default function StagedComposer({
   // OCR Processing with Smart Content Detection
   const processImageWithOCR = async (file: File): Promise<{ text: string; confidence: number; contentType: string }> => {
     try {
-      console.log(`🔍 Starting OCR processing for ${file.name}...`);
+      console.log(`🔍 OCR processing disabled for deployment - would process ${file.name}...`);
       
-      const worker = await createWorker('eng');
-      const { data } = await worker.recognize(file);
-      await worker.terminate();
-      
-      const extractedText = data.text.trim();
-      const confidence = data.confidence;
+      // OCR functionality disabled for deployment to avoid tesseract.js dependency
+      // To enable, install tesseract.js: npm install tesseract.js
+      const extractedText = `[OCR disabled] Image file: ${file.name}`;
+      const confidence = 0;
       
       // Smart content detection
       const contentType = detectContentType(extractedText);

@@ -98,16 +98,18 @@ export async function POST(request: NextRequest) {
       ip_address: ip,
     });
     
-    // Sync user to Go High Level CRM
+    // Sync user to Go High Level CRM - disabled for deployment
     try {
       if (process.env.ENABLE_GHL_INTEGRATION === 'true') {
-        const { ghlUserSync } = await import('@/services/ghl-user-sync');
-        await ghlUserSync.syncNewUser({
-          id: user.id,
-          email: user.email,
-          username: user.username,
-          subscriptionTier: user.subscription_tier,
-        });
+        // GHL integration temporarily disabled for deployment
+        // const { ghlUserSync } = await import('@/services/ghl-user-sync');
+        // await ghlUserSync.syncNewUser({
+        //   id: user.id,
+        //   email: user.email,
+        //   username: user.username,
+        //   subscriptionTier: user.subscription_tier,
+        // });
+        console.log('[GHL] User sync disabled for deployment');
       }
     } catch (ghlError) {
       // Don't fail registration if GHL sync fails

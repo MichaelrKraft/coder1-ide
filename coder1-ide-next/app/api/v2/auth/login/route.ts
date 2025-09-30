@@ -43,11 +43,13 @@ export async function POST(request: NextRequest) {
     // Update last login
     updateLastLogin(user.id);
     
-    // Sync login event to Go High Level
+    // Sync login event to Go High Level - disabled for deployment
     try {
       if (process.env.ENABLE_GHL_INTEGRATION === 'true') {
-        const { ghlUserSync } = await import('@/services/ghl-user-sync');
-        await ghlUserSync.syncUserLogin(user.id);
+        // GHL integration temporarily disabled for deployment
+        // const { ghlUserSync } = await import('@/services/ghl-user-sync');
+        // await ghlUserSync.syncUserLogin(user.id);
+        console.log('[GHL] Login sync disabled for deployment');
       }
     } catch (ghlError) {
       // Don't fail login if GHL sync fails
