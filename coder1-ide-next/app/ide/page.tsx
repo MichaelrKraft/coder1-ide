@@ -55,6 +55,9 @@ import { SessionProvider } from "@/contexts/SessionContext";
 import { TerminalCommandProvider } from "@/contexts/TerminalCommandContext";
 
 function IDEPageContent() {
+  // Feature flags
+  const FOCUS_MODE_ENABLED = false; // 🛡️ SAFETY: Disabled by default, enable after testing
+  
   // Tour state
   const [showTour, setShowTour] = useState(false);
   
@@ -72,6 +75,9 @@ function IDEPageContent() {
   const [explorerVisible, setExplorerVisible] = useState(true);
   const [terminalVisible, setTerminalVisible] = useState(true);
   const [outputVisible, setOutputVisible] = useState(false);
+  
+  // Focus mode state
+  const [focusMode, setFocusMode] = useState(false);
   
   // Terminal state
   const [agentsActive, setAgentsActive] = useState(false);
@@ -592,6 +598,15 @@ function IDEPageContent() {
     setOutputVisible(prev => !prev);
   }, []);
 
+  const handleToggleFocusMode = useCallback(() => {
+    if (!FOCUS_MODE_ENABLED) {
+      console.log('🚫 Focus mode is disabled by feature flag');
+      return;
+    }
+    setFocusMode(prev => !prev);
+    console.log(`🎯 Focus mode ${!focusMode ? 'enabled' : 'disabled'}`);
+  }, [focusMode, FOCUS_MODE_ENABLED]);
+
   const handleZoomIn = useCallback(() => {
     setFontSize(prev => Math.min(prev + 2, 30));
     menuActionsRef.current?.zoomIn();
@@ -726,6 +741,9 @@ function IDEPageContent() {
       } else if (ctrlKey && e.shiftKey && e.key === 'U') {
         e.preventDefault();
         handleToggleOutput();
+      } else if (ctrlKey && e.shiftKey && e.key === 'F') {
+        e.preventDefault();
+        handleToggleFocusMode();
       } else if (ctrlKey && e.key === '=') {
         e.preventDefault();
         handleZoomIn();
@@ -755,7 +773,7 @@ function IDEPageContent() {
   }, [
     handleNewFile, handleOpenFile, handleSaveFile, handleSaveAs, handleCloseFile,
     handleFind, handleReplace, handleToggleExplorer, handleToggleTerminal,
-    handleToggleOutput, handleZoomIn, handleZoomOut, handleResetZoom,
+    handleToggleOutput, handleToggleFocusMode, handleZoomIn, handleZoomOut, handleResetZoom,
     handleRunCode, handleDebug, handleStop
   ]);
 
