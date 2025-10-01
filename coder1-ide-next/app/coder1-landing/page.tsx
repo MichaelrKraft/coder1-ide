@@ -3,6 +3,7 @@
 import React from 'react';
 import Image from 'next/image';
 import { MacbookScroll } from "@/components/ui/macbook-scroll";
+import { BackgroundGradient } from "@/components/ui/background-gradient";
 
 export default function Coder1LandingPage() {
   return (
@@ -163,7 +164,8 @@ export default function Coder1LandingPage() {
 
           {/* Feature Grid Preview */}
           <div className="grid md:grid-cols-2 gap-8 mb-12">
-            <div className="p-8 bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 hover:border-purple-500/50 transition-all hover:shadow-xl hover:shadow-purple-500/10">
+            <BackgroundGradient className="rounded-2xl">
+              <div className="p-8 bg-white dark:bg-gray-900 rounded-2xl">
               <div className="flex items-start gap-4">
                 <div className="w-12 h-12 bg-gradient-to-r from-purple-600 to-cyan-500 rounded-lg flex items-center justify-center text-white font-bold">1</div>
                 <div className="flex-1">
@@ -184,7 +186,8 @@ export default function Coder1LandingPage() {
               </div>
             </div>
 
-            <div className="p-8 bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 hover:border-purple-500/50 transition-all hover:shadow-xl hover:shadow-purple-500/10">
+            <BackgroundGradient className="rounded-2xl">
+              <div className="p-8 bg-white dark:bg-gray-900 rounded-2xl">
               <div className="flex items-start gap-4">
                 <div className="w-12 h-12 bg-gradient-to-r from-purple-600 to-cyan-500 rounded-lg flex items-center justify-center text-white font-bold">2</div>
                 <div className="flex-1">
@@ -221,14 +224,15 @@ export default function Coder1LandingPage() {
       <section id="all-features" className="py-20 bg-white dark:bg-black">
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center mb-16">
-            <h2 className="text-5xl font-bold mb-4 text-gray-900 dark:text-white">All 10 Revolutionary Features</h2>
+            <h2 className="text-5xl font-bold mb-4 text-gray-900 dark:text-white">10 Revolutionary Features</h2>
             <p className="text-xl text-gray-700 dark:text-gray-400">Built on our advanced multi-agent AI orchestration system</p>
           </div>
 
           {/* Complete Feature Grid */}
           <div className="grid md:grid-cols-2 gap-8 mb-16">
             {/* Feature 1: Contextual Memory */}
-            <div className="p-8 bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 hover:border-purple-500/50 transition-all hover:shadow-xl hover:shadow-purple-500/10">
+            <BackgroundGradient className="rounded-2xl">
+              <div className="p-8 bg-white dark:bg-gray-900 rounded-2xl">
               <div className="flex items-start gap-4">
                 <div className="w-12 h-12 bg-gradient-to-r from-purple-600 to-cyan-500 rounded-lg flex items-center justify-center text-white font-bold">1</div>
                 <div className="flex-1">
@@ -245,28 +249,32 @@ export default function Coder1LandingPage() {
                 </div>
               </div>
             </div>
+            </BackgroundGradient>
 
-            {/* Feature 2: Multi-Agent Orchestration */}
-            <div className="p-8 bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 hover:border-purple-500/50 transition-all hover:shadow-xl hover:shadow-purple-500/10">
-              <div className="flex items-start gap-4">
-                <div className="w-12 h-12 bg-gradient-to-r from-purple-600 to-cyan-500 rounded-lg flex items-center justify-center text-white font-bold">2</div>
-                <div className="flex-1">
-                  <h3 className="text-2xl font-bold mb-2 flex items-center gap-2 text-gray-900 dark:text-white">
-                    <span>🤖</span> Multi-Agent Orchestration
-                  </h3>
-                  <p className="text-gray-600 dark:text-gray-400 mb-3">Spawn teams of specialized AI agents that work together to build complete projects from requirements.</p>
-                  <div className="space-y-2">
-                    <div className="p-3 bg-green-50 dark:bg-green-900/20 border-l-4 border-green-500 rounded">
-                      <div className="text-xs font-bold text-green-600 dark:text-green-400 uppercase mb-1">Benefit</div>
-                      <div className="font-medium text-gray-800 dark:text-gray-200">Multiple AI experts working on your project simultaneously</div>
+            {/* Feature 2: Speech-to-Text Built-in */}
+            <BackgroundGradient className="rounded-2xl">
+              <div className="p-8 bg-white dark:bg-gray-900 rounded-2xl">
+                <div className="flex items-start gap-4">
+                  <div className="w-12 h-12 bg-gradient-to-r from-purple-600 to-cyan-500 rounded-lg flex items-center justify-center text-white font-bold">2</div>
+                  <div className="flex-1">
+                    <h3 className="text-2xl font-bold mb-2 flex items-center gap-2 text-gray-900 dark:text-white">
+                      <span>🎤</span> Speech-to-Text Built-in
+                    </h3>
+                    <p className="text-gray-600 dark:text-gray-400 mb-3">Native voice recognition powered by Web Speech API for hands-free coding and natural language commands.</p>
+                    <div className="space-y-2">
+                      <div className="p-3 bg-green-50 dark:bg-green-900/20 border-l-4 border-green-500 rounded">
+                        <div className="text-xs font-bold text-green-600 dark:text-green-400 uppercase mb-1">Benefit</div>
+                        <div className="font-medium text-gray-800 dark:text-gray-200">Code faster with voice commands and dictation support</div>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
+            </BackgroundGradient>
 
             {/* Feature 3: Workflow Templates */}
-            <div className="p-8 bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 hover:border-purple-500/50 transition-all hover:shadow-xl hover:shadow-purple-500/10">
+            <BackgroundGradient className="rounded-2xl">
+              <div className="p-8 bg-white dark:bg-gray-900 rounded-2xl">
               <div className="flex items-start gap-4">
                 <div className="w-12 h-12 bg-gradient-to-r from-purple-600 to-cyan-500 rounded-lg flex items-center justify-center text-white font-bold">3</div>
                 <div className="flex-1">
@@ -283,28 +291,32 @@ export default function Coder1LandingPage() {
                 </div>
               </div>
             </div>
+            </BackgroundGradient>
 
-            {/* Feature 4: Agent Dashboard */}
-            <div className="p-8 bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 hover:border-purple-500/50 transition-all hover:shadow-xl hover:shadow-purple-500/10">
-              <div className="flex items-start gap-4">
-                <div className="w-12 h-12 bg-gradient-to-r from-purple-600 to-cyan-500 rounded-lg flex items-center justify-center text-white font-bold">4</div>
-                <div className="flex-1">
-                  <h3 className="text-2xl font-bold mb-2 flex items-center gap-2 text-gray-900 dark:text-white">
-                    <span>🎯</span> Agent Dashboard
-                  </h3>
-                  <p className="text-gray-600 dark:text-gray-400 mb-3">Real-time monitoring of agent teams, progress tracking, and interactive agent communication.</p>
-                  <div className="space-y-2">
-                    <div className="p-3 bg-green-50 dark:bg-green-900/20 border-l-4 border-green-500 rounded">
-                      <div className="text-xs font-bold text-green-600 dark:text-green-400 uppercase mb-1">Benefit</div>
-                      <div className="font-medium text-gray-800 dark:text-gray-200">Full visibility into your AI development team</div>
+            {/* Feature 4: R&D Sandboxes */}
+            <BackgroundGradient className="rounded-2xl">
+              <div className="p-8 bg-white dark:bg-gray-900 rounded-2xl">
+                <div className="flex items-start gap-4">
+                  <div className="w-12 h-12 bg-gradient-to-r from-purple-600 to-cyan-500 rounded-lg flex items-center justify-center text-white font-bold">4</div>
+                  <div className="flex-1">
+                    <h3 className="text-2xl font-bold mb-2 flex items-center gap-2 text-gray-900 dark:text-white">
+                      <span>🧪</span> R&D Sandboxes
+                    </h3>
+                    <p className="text-gray-600 dark:text-gray-400 mb-3">Isolated development environments for experimenting with new features, testing risky changes, and prototyping without affecting main codebase.</p>
+                    <div className="space-y-2">
+                      <div className="p-3 bg-green-50 dark:bg-green-900/20 border-l-4 border-green-500 rounded">
+                        <div className="text-xs font-bold text-green-600 dark:text-green-400 uppercase mb-1">Benefit</div>
+                        <div className="font-medium text-gray-800 dark:text-gray-200">Safe experimentation with instant rollback and containerized isolation</div>
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
+            </BackgroundGradient>
 
             {/* Feature 5: Session Summaries */}
-            <div className="p-8 bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 hover:border-purple-500/50 transition-all hover:shadow-xl hover:shadow-purple-500/10">
+            <BackgroundGradient className="rounded-2xl">
+              <div className="p-8 bg-white dark:bg-gray-900 rounded-2xl">
               <div className="flex items-start gap-4">
                 <div className="w-12 h-12 bg-gradient-to-r from-purple-600 to-cyan-500 rounded-lg flex items-center justify-center text-white font-bold">5</div>
                 <div className="flex-1">
@@ -321,9 +333,11 @@ export default function Coder1LandingPage() {
                 </div>
               </div>
             </div>
+            </BackgroundGradient>
 
             {/* Feature 6: Terminal Integration */}
-            <div className="p-8 bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 hover:border-purple-500/50 transition-all hover:shadow-xl hover:shadow-purple-500/10">
+            <BackgroundGradient className="rounded-2xl">
+              <div className="p-8 bg-white dark:bg-gray-900 rounded-2xl">
               <div className="flex items-start gap-4">
                 <div className="w-12 h-12 bg-gradient-to-r from-purple-600 to-cyan-500 rounded-lg flex items-center justify-center text-white font-bold">6</div>
                 <div className="flex-1">
@@ -340,9 +354,11 @@ export default function Coder1LandingPage() {
                 </div>
               </div>
             </div>
+            </BackgroundGradient>
 
             {/* Feature 7: File System Integration */}
-            <div className="p-8 bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 hover:border-purple-500/50 transition-all hover:shadow-xl hover:shadow-purple-500/10">
+            <BackgroundGradient className="rounded-2xl">
+              <div className="p-8 bg-white dark:bg-gray-900 rounded-2xl">
               <div className="flex items-start gap-4">
                 <div className="w-12 h-12 bg-gradient-to-r from-purple-600 to-cyan-500 rounded-lg flex items-center justify-center text-white font-bold">7</div>
                 <div className="flex-1">
@@ -359,9 +375,11 @@ export default function Coder1LandingPage() {
                 </div>
               </div>
             </div>
+            </BackgroundGradient>
 
             {/* Feature 8: Smart Discovery */}
-            <div className="p-8 bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 hover:border-purple-500/50 transition-all hover:shadow-xl hover:shadow-purple-500/10">
+            <BackgroundGradient className="rounded-2xl">
+              <div className="p-8 bg-white dark:bg-gray-900 rounded-2xl">
               <div className="flex items-start gap-4">
                 <div className="w-12 h-12 bg-gradient-to-r from-purple-600 to-cyan-500 rounded-lg flex items-center justify-center text-white font-bold">8</div>
                 <div className="flex-1">
@@ -378,9 +396,11 @@ export default function Coder1LandingPage() {
                 </div>
               </div>
             </div>
+            </BackgroundGradient>
 
             {/* Feature 9: Revolutionary Supervision Agent */}
-            <div className="p-8 bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 hover:border-purple-500/50 transition-all hover:shadow-xl hover:shadow-purple-500/10">
+            <BackgroundGradient className="rounded-2xl">
+              <div className="p-8 bg-white dark:bg-gray-900 rounded-2xl">
               <div className="flex items-start gap-4">
                 <div className="w-12 h-12 bg-gradient-to-r from-purple-600 to-cyan-500 rounded-lg flex items-center justify-center text-white font-bold">9</div>
                 <div className="flex-1">
@@ -397,9 +417,11 @@ export default function Coder1LandingPage() {
                 </div>
               </div>
             </div>
+            </BackgroundGradient>
 
             {/* Feature 10: Agent Metrics */}
-            <div className="p-8 bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 hover:border-purple-500/50 transition-all hover:shadow-xl hover:shadow-purple-500/10">
+            <BackgroundGradient className="rounded-2xl">
+              <div className="p-8 bg-white dark:bg-gray-900 rounded-2xl">
               <div className="flex items-start gap-4">
                 <div className="w-12 h-12 bg-gradient-to-r from-purple-600 to-cyan-500 rounded-lg flex items-center justify-center text-white font-bold">10</div>
                 <div className="flex-1">
@@ -416,6 +438,7 @@ export default function Coder1LandingPage() {
                 </div>
               </div>
             </div>
+            </BackgroundGradient>
           </div>
 
           {/* CTA */}

@@ -127,7 +127,7 @@ export default function MenuBar({
       { label: 'Explorer', action: onToggleExplorer || (() => console.log('Toggle Explorer')), shortcut: 'Ctrl+Shift+E' },
       { label: 'Terminal', action: onToggleTerminal || (() => console.log('Toggle Terminal')), shortcut: 'Ctrl+`' },
       { label: 'Output', action: onToggleOutput || (() => console.log('Toggle Output')), shortcut: 'Ctrl+Shift+U' },
-      { label: 'Focus Mode', action: onToggleFocusMode || (() => console.log('Toggle Focus Mode')), shortcut: 'Ctrl+Shift+F' },
+      { label: 'Focus Mode', action: onToggleFocusMode || (() => console.log('Toggle Focus Mode')), shortcut: '⌘/Ctrl+Shift+F' },
       { separator: true },
       { label: 'Zoom In', action: onZoomIn || (() => console.log('Zoom In')), shortcut: 'Ctrl+=' },
       { label: 'Zoom Out', action: onZoomOut || (() => console.log('Zoom Out')), shortcut: 'Ctrl+-' },

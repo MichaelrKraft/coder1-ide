@@ -708,6 +708,11 @@ function IDEPageContent() {
       const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
       const ctrlKey = isMac ? e.metaKey : e.ctrlKey;
       
+      // Debug logging for focus mode
+      if (ctrlKey && e.shiftKey) {
+        console.log(`⌨️ Keyboard: Ctrl+Shift+${e.key} pressed`);
+      }
+      
       // File shortcuts
       if (ctrlKey && e.key === 'n') {
         e.preventDefault();
