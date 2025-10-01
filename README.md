@@ -3,9 +3,9 @@
 **⭐ Star us on GitHub to join 1000+ developers building the future of coding with AI**
 
 [![GitHub stars](https://img.shields.io/github/stars/michaelkraft/coder1-ide?style=social)](https://github.com/MichaelrKraft/coder1-ide)
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/MichaelrKraft/coder1-ide)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Live Demo](https://img.shields.io/badge/Live-Demo-brightgreen)](https://coder1-ide.vercel.app)
+[![Live Demo](https://img.shields.io/badge/Live-Demo-brightgreen)](https://coder1.ai)
+[![Deploy on Render](https://img.shields.io/badge/Deploy-Render-brightgreen)](https://render.com)
 
 > **🎉 FREE FOREVER** - Everything you need to code with AI, completely free. Optional $29/month for unlimited eternal memory.
 
@@ -21,22 +21,41 @@
 | Feature | Coder1 | Cursor | GitHub Copilot | Replit |
 |---------|---------|---------|----------------|---------|
 | **Price** | 🟢 FREE | $20/month | $10/month | $7/month |
-| **Claude Integration** | 🟢 Native | ❌ None | ❌ None | ❌ None |
+| **Claude Integration** | 🟢 Native + CLI Puppeteer | 🟡 API + CLI Support | ❌ None | ❌ None |
 | **Persistent Context** | 🟢 Eternal Memory | ❌ Session-only | ❌ Limited | ❌ Basic |
 | **Full IDE** | 🟢 Complete | 🟢 Complete | ❌ VS Code only | 🟢 Complete |
-| **Terminal AI** | 🟢 Supervised | ❌ Basic | ❌ None | 🟢 Basic |
+| **Terminal AI** | 🟢 Supervised | 🟡 Basic | ❌ None | 🟢 Basic |
 | **Session Handoffs** | 🟢 Perfect | ❌ Manual | ❌ Manual | ❌ Manual |
+
+### 🔍 **Claude Integration Methods Compared**
+
+#### **Coder1: Purpose-Built for Claude Code**
+- **Native CLI Puppeteer**: Cost-free automation using real Claude CLI instances
+- **Eternal Memory Integration**: Claude remembers everything across sessions
+- **Built-in Context Sharing**: Automatic project file and session history sharing
+- **AI Supervision**: Real-time guidance that activates when you type `claude`
+
+#### **Cursor: Retrofitted Claude Support**  
+- **Anthropic API Integration**: Configure API keys in settings for Claude models
+- **Claude Code CLI Support**: Can run Claude Code in integrated terminal
+- **VS Code Extension**: Manual installation of Claude Code extension (VSIX)
+- **Limited Context**: Session-based memory that resets on restart
+
+**Key Difference**: Coder1 is built from the ground up for Claude Code workflows, while Cursor retrofits Claude support into an existing GPT-focused IDE.
 
 ---
 
 ## ⚡ Get Started in 60 Seconds
 
 ### 🌐 **Option 1: Try the Live Demo** (Fastest)
-Click here: **[coder1-ide.vercel.app](https://coder1-ide.vercel.app)** → Start coding immediately!
+Click here: **[coder1.ai](https://coder1.ai)** → Start coding immediately!
 
-### 🚀 **Option 2: Deploy Your Own** (One Click)
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/MichaelrKraft/coder1-ide)
-[![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/MichaelrKraft/coder1-ide)
+### 🚀 **Option 2: Deploy Your Own** (Render)
+1. Fork this repository
+2. Connect your GitHub to [Render](https://render.com)
+3. Create a new Web Service
+4. Deploy with build command: `cd coder1-ide-next && npm install && npm run build`
+5. Start command: `cd coder1-ide-next && npm start`
 
 ### 💻 **Option 3: Run Locally** (Full Control)
 ```bash
@@ -234,7 +253,7 @@ Coder1 IDE features:
 ✅ Perfect for beginners AND pros
 
 ⭐ Star it: https://github.com/MichaelrKraft/coder1-ide
-🚀 Try demo: https://coder1-ide.vercel.app
+🚀 Try demo: https://coder1.ai
 
 #AI #ClaudeCode #IDE #OpenSource #Coding
 ```
@@ -272,9 +291,9 @@ Coder1 IDE features:
 
 ### 🎯 **Choose Your Adventure**
 
-**🌐 Try Demo** → [coder1-ide.vercel.app](https://coder1-ide.vercel.app)
+**🌐 Try Demo** → [coder1.ai](https://coder1.ai)
 
-**⚡ Deploy Now** → [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/MichaelrKraft/coder1-ide)
+**⚡ Deploy on Render** → [Deploy Guide](https://render.com) - Fork repo & connect to Render
 
 **💻 Run Locally** → `git clone https://github.com/MichaelrKraft/coder1-ide.git`
 

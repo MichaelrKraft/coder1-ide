@@ -117,6 +117,24 @@ const config: Config = {
     'shadow-glow-orange',
     'shadow-glow-cyan-intense',
     'shadow-glow-orange-intense',
+    // Homepage specific classes
+    'bg-gradient-to-r',
+    'from-coder1-cyan',
+    'to-blue-500',
+    'from-coder1-purple',
+    'to-purple-500',
+    'bg-bg-primary',
+    'bg-bg-secondary',
+    'border-border-default',
+    'text-coder1-cyan',
+    'text-coder1-purple',
+    'text-text-secondary',
+    'text-text-muted',
+    'text-text-primary',
+    'hover:shadow-2xl',
+    'group-hover:opacity-100',
+    'bg-clip-text',
+    'text-transparent',
   ]
 }
 export default config

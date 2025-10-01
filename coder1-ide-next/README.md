@@ -4,9 +4,16 @@ The first IDE built specifically for Claude Code and AI-powered development.
 
 ## 🎯 Quick Deploy to Production
 
-### 1. Deploy to Vercel (Recommended)
+### 1. Deploy to Render (Recommended)
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/yourusername/coder1-ide-next)
+**Live Demo**: [coder1.ai](https://coder1.ai)
+
+**Deploy Your Own**:
+1. Fork this repository
+2. Connect your GitHub to [Render](https://render.com)
+3. Create a new Web Service
+4. Deploy with build command: `npm install && npm run build`
+5. Start command: `npm start`
 
 **OR manually:**
 
@@ -18,8 +25,8 @@ cd coder1-ide-next
 # 2. Install dependencies
 npm install
 
-# 3. Deploy to Vercel
-npx vercel --prod
+# 3. Deploy to Render
+# Follow Render deployment guide at render.com
 ```
 
 ### 2. Required Environment Variables
@@ -88,7 +95,7 @@ CLAUDE_API_KEY=your-claude-code-api-key
 # 4. Start development server
 npm run dev
 
-# 5. Open http://localhost:3000/ide
+# 5. Open http://localhost:3001/ide
 ```
 
 ## 🚨 Security Notes
@@ -127,11 +134,12 @@ npm run dev
 
 ## 🚀 Deployment Platforms
 
-### Vercel (Recommended)
+### Render (Recommended)
 - Automatic builds from GitHub
 - Environment variable management
-- Edge functions for API routes
+- Native Node.js support
 - Zero configuration needed
+- Production-ready infrastructure
 
 ### Netlify
 ```bash

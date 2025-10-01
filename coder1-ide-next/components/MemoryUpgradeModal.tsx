@@ -179,22 +179,8 @@ export const useMemoryTrial = () => {
   const handleUpgrade = async () => {
     if (!userId) return;
     
-    // In a real app, this would integrate with Stripe
-    // For now, we'll simulate the upgrade
-    const success = memoryTrialService.upgradeToPaid(userId);
-    
-    if (success) {
-      setTrialStatus(prev => ({
-        ...prev,
-        isPaidUser: true,
-        isTrialUser: false,
-        shouldShowUpgrade: false
-      }));
-      setShowUpgradeModal(false);
-      
-      // Show success message
-      alert('Welcome to Coder1 Pro! Your eternal memory is now activated.');
-    }
+    // Redirect to the ultimate landing page for upgrade
+    window.open('/coder1-landing/', '_blank');
   };
 
   const canStoreMemory = userId ? memoryTrialService.canStoreMemory(userId) : false;

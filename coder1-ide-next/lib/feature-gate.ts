@@ -55,7 +55,7 @@ export class FeatureGate {
     return {
       allowed: false,
       reason: 'Memory persistence is a Pro feature. Your sessions will expire after 24 hours.',
-      upgradeUrl: '/pricing'
+      upgradeUrl: '/coder1-landing/'
     };
   }
 
@@ -75,7 +75,7 @@ export class FeatureGate {
       return {
         allowed: false,
         reason: 'Free tier is limited to 3 projects. Upgrade to Pro for unlimited projects.',
-        upgradeUrl: '/pricing'
+        upgradeUrl: '/coder1-landing/'
       };
     }
 
@@ -95,7 +95,7 @@ export class FeatureGate {
     return {
       allowed: false,
       reason: 'Search across all conversations is a Pro feature.',
-      upgradeUrl: '/pricing'
+      upgradeUrl: '/coder1-landing/'
     };
   }
 
@@ -137,7 +137,7 @@ export class FeatureGate {
           'No more context rebuilding'
         ],
         ctaText: 'Upgrade to Pro - $29/month',
-        ctaUrl: '/pricing'
+        ctaUrl: '/coder1-landing/'
       },
       unlimitedProjects: {
         title: 'Work on Unlimited Projects',
@@ -149,7 +149,7 @@ export class FeatureGate {
           'Full project history'
         ],
         ctaText: 'Get Unlimited Projects',
-        ctaUrl: '/pricing'
+        ctaUrl: '/coder1-landing/'
       },
       searchHistory: {
         title: 'Search Your Entire History',
@@ -161,7 +161,7 @@ export class FeatureGate {
           'Export search results'
         ],
         ctaText: 'Enable Search with Pro',
-        ctaUrl: '/pricing'
+        ctaUrl: '/coder1-landing/'
       },
       teamCollaboration: {
         title: 'Collaborate with Your Team',
@@ -185,7 +185,7 @@ export class FeatureGate {
           'Custom onboarding'
         ],
         ctaText: 'Upgrade for Support',
-        ctaUrl: '/pricing'
+        ctaUrl: '/coder1-landing/'
       },
       customIntegrations: {
         title: 'Custom Integrations',
@@ -235,7 +235,7 @@ export class FeatureGate {
     return {
       allowed: false,
       reason: `This feature requires a paid license.`,
-      upgradeUrl: '/pricing'
+      upgradeUrl: '/coder1-landing/'
     };
   }
 

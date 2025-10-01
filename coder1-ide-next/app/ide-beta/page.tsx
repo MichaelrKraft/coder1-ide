@@ -835,8 +835,39 @@ export default App;
         sessionId={terminalSessionId} 
         terminalReady={terminalReady}
       >
-        <div className="h-screen w-full flex flex-col bg-bg-primary">
-      {/* Menu Bar */}
+        <div className="beta-ide h-screen w-full flex flex-col bg-bg-primary">
+          {/* Beta IDE CSS Fix for Visibility Issues */}
+          <style jsx global>{`
+            /* Beta IDE: Fix Explorer text visibility */
+            .beta-ide .bg-bg-secondary {
+              background-color: #1a1a1a !important;
+            }
+            .beta-ide .text-text-primary,
+            .beta-ide .text-text-secondary {
+              color: #ffffff !important;
+            }
+            .beta-ide .text-text-muted {
+              color: #888888 !important;
+            }
+            /* Beta IDE: Fix footer button visibility */
+            .beta-ide .bg-bg-primary {
+              background-color: #000000 !important;
+            }
+            .beta-ide button {
+              background-color: #333333 !important;
+              color: #ffffff !important;
+              border: 1px solid #555555 !important;
+            }
+            /* Beta IDE: Ensure all text is visible */
+            .beta-ide * {
+              color: #ffffff !important;
+            }
+            .beta-ide .border-border-default {
+              border-color: #333333 !important;
+            }
+          `}</style>
+          
+          {/* Menu Bar */}
       <MenuBar 
         onNewFile={handleNewFile}
         onOpenFile={handleOpenFile}

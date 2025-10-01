@@ -59,7 +59,7 @@ export function SetupInstructionsModal({
                 📍 Setup Instructions
               </h2>
               
-              <div className="space-y-4">
+              <div className="space-y-8">
                 <div className="border-l-4 border-blue-500 pl-4">
                   <h3 className="font-semibold text-green-400 mb-2">Step 1: Open YOUR Local Terminal</h3>
                   <ul className="text-sm space-y-1 text-gray-300">

@@ -36,12 +36,14 @@ export default function MemoryPersistenceDemo() {
   const demoRef = useRef<HTMLDivElement>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
+  const timeoutsRef = useRef<NodeJS.Timeout[]>([]);
+  const isPlayingRef = useRef(false);
   
   // Auto-play on scroll into view
   useEffect(() => {
     observerRef.current = new IntersectionObserver(
       ([entry]) => {
-        if (entry.isIntersecting && !isPlaying) {
+        if (entry.isIntersecting && !isPlayingRef.current) {
           startDemo();
         }
       },
@@ -56,42 +58,64 @@ export default function MemoryPersistenceDemo() {
       if (observerRef.current) {
         observerRef.current.disconnect();
       }
+    };
+  }, []); // Remove isPlaying dependency to prevent cleanup
+  
+  // Separate cleanup effect for component unmount
+  useEffect(() => {
+    return () => {
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
       }
+      // Clear all timeouts on unmount
+      timeoutsRef.current.forEach(timeout => clearTimeout(timeout));
+      timeoutsRef.current = [];
     };
-  }, [isPlaying]);
+  }, []);
   
   const startDemo = () => {
+    // Clear any existing timeouts first
+    timeoutsRef.current.forEach(timeout => clearTimeout(timeout));
+    timeoutsRef.current = [];
+    
     setIsPlaying(true);
+    isPlayingRef.current = true;
     setCurrentMessages([]);
     setShowMetrics(false);
     
     // Schedule each message with cumulative delays
     demoScript.forEach((message, index) => {
-      setTimeout(() => {
+      const timeout = setTimeout(() => {
         setCurrentMessages(prev => [...prev, message]);
       }, message.delay);
+      timeoutsRef.current.push(timeout);
     });
     
     // Show metrics after all messages
-    setTimeout(() => {
+    const metricsTimeout = setTimeout(() => {
       setShowMetrics(true);
     }, 27000);
+    timeoutsRef.current.push(metricsTimeout);
     
     // Reset and loop after 35 seconds
-    setTimeout(() => {
+    const loopTimeout = setTimeout(() => {
       startDemo();
     }, 35000);
+    timeoutsRef.current.push(loopTimeout);
   };
   
   const resetDemo = () => {
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
     }
+    // Clear all scheduled timeouts
+    timeoutsRef.current.forEach(timeout => clearTimeout(timeout));
+    timeoutsRef.current = [];
+    
     setCurrentMessages([]);
     setShowMetrics(false);
     setIsPlaying(false);
+    isPlayingRef.current = false;
   };
   
   return (

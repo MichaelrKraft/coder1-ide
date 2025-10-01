@@ -70,6 +70,7 @@ function BetaTerminal({
   onTerminalReady 
 }: BetaTerminalProps) {
   const terminalRef = useRef<HTMLDivElement>(null);
+  const terminalContainerRef = useRef<HTMLDivElement>(null);  // BETA: Container ref for enhanced scrolling
   const xtermRef = useRef<XTerm | null>(null);
   const fitAddonRef = useRef<FitAddon | null>(null);
   const sessionIdForVoiceRef = useRef<string | null>(null);
@@ -95,6 +96,41 @@ function BetaTerminal({
   
   // Claude command detection
   const [currentLineBuffer, setCurrentLineBuffer] = useState('');
+  const [claudeCodeActive, setClaudeCodeActive] = useState(false);
+  
+  // BETA: Enhanced scroll function for Claude Code accessibility - REDUCED AGGRESSION
+  const lastScrollTime = useRef<number>(0);
+  const forceScrollToBottom = useCallback(() => {
+    if (!claudeCodeActive) return;
+    
+    // Throttle scrolling to prevent flickering - max once per 100ms
+    const now = Date.now();
+    if (now - lastScrollTime.current < 100) {
+      return;
+    }
+    lastScrollTime.current = now;
+    
+    const container = terminalContainerRef.current;
+    const term = xtermRef.current;
+    
+    if (container && term) {
+      try {
+        // Primary method: Container scroll (most reliable)
+        container.scrollTop = container.scrollHeight;
+        
+        // Secondary method: XTerm scroll (less aggressive)
+        requestAnimationFrame(() => {
+          if (term && claudeCodeActive) {
+            term.scrollToBottom();
+          }
+        });
+        
+        console.log('🎯 Beta Terminal: Throttled scroll executed - container height:', container.scrollHeight);
+      } catch (error) {
+        console.warn('🎯 Beta Terminal: Force scroll failed:', error);
+      }
+    }
+  }, [claudeCodeActive]);
   
   // ParaThinker State
   const [paraThinkActive, setParaThinkActive] = useState(false);
@@ -835,6 +871,40 @@ function BetaTerminal({
       if (id === sessionId && term) {
         term.write(data);
         
+        // ENHANCED Auto-scroll for Claude Code accessibility - REDUCED AGGRESSION to prevent flickering
+        if (claudeCodeActive) {
+          // Throttled scrolling for Claude Code sessions
+          forceScrollToBottom();
+          
+          // Single delayed attempt for persistence
+          setTimeout(() => {
+            if (claudeCodeActive) {
+              forceScrollToBottom();
+            }
+          }, 100);
+        } else {
+          // Normal scrolling for non-Claude Code sessions
+          try {
+            term.scrollToBottom();
+            setTimeout(() => {
+              if (term) {
+                const buffer = term.buffer.active;
+                term.scrollToLine(buffer.length);
+                
+                const terminalElement = terminalRef.current;
+                if (terminalElement) {
+                  const viewport = terminalElement.querySelector('.xterm-viewport');
+                  if (viewport) {
+                    viewport.scrollTop = viewport.scrollHeight;
+                  }
+                }
+              }
+            }, 10);
+          } catch (error) {
+            console.warn('Normal scroll failed:', error);
+          }
+        }
+        
         // Check for AI command patterns
         if (data.includes('ai:') || data.includes('claude:') || data.includes('/parathink')) {
           const lines = data.split('\n');
@@ -901,6 +971,13 @@ function BetaTerminal({
     
     // Create new handler and store the disposable - AFTER socket is ready
     onDataDisposableRef.current = term.onData((data) => {
+      // Handle Ctrl+L to clear terminal
+      if (data === '\f' || data === '\x0c') {
+        term.clear();
+        term.write('\r\n✅ Terminal cleared (Ctrl+L)\r\n$ ');
+        return;
+      }
+      
       // Check connection status
       if (!sessionId) {
         term.writeln('\r\n⚠️ Terminal session not initialized. Please refresh the page.');
@@ -920,6 +997,12 @@ function BetaTerminal({
       
       // Handle Claude command detection
       if (data === '\r' || data === '\n') {
+        const currentBuffer = currentLineBuffer.trim();
+        // Check if it's a new command (not a Claude Code continuation)
+        if (currentBuffer && !currentBuffer.toLowerCase().includes('claude') && claudeCodeActive) {
+          setClaudeCodeActive(false);
+          console.log('🎯 Beta Terminal: New command detected - deactivating Claude Code padding');
+        }
         setCurrentLineBuffer('');
       } else if (data === '\u007f' || data === '\b') {
         setCurrentLineBuffer(prev => prev.slice(0, -1));
@@ -934,6 +1017,9 @@ function BetaTerminal({
             if (onClaudeTyped) {
               onClaudeTyped();
             }
+            // Activate Claude Code padding
+            setClaudeCodeActive(true);
+            console.log('🎯 Beta Terminal: Claude Code detected - activating dynamic padding');
           }
           return newBuffer;
         });
@@ -1695,12 +1781,37 @@ function BetaTerminal({
         </div>
       </div>
 
-      {/* Terminal Content */}
-      <div className="flex-1 p-2 relative">
+      {/* Terminal Content - BETA: Enhanced scrolling for Claude Code */}
+      <div 
+        ref={terminalContainerRef}
+        className="flex-1 p-2 relative"
+        style={{
+          paddingBottom: claudeCodeActive ? '400px' : '20px',   // INCREASED: 400px for extra space during Claude Code
+          maxHeight: '100%',
+          overflow: 'auto',
+          position: 'relative',
+          // Ensure container can scroll beyond viewport during Claude Code
+          height: claudeCodeActive ? 'calc(100% + 400px)' : '100%'
+        }}
+        onScroll={(e) => {
+          // Track if user manually scrolled during Claude Code session
+          if (claudeCodeActive) {
+            const container = e.currentTarget;
+            const isAtBottom = container.scrollTop + container.clientHeight >= container.scrollHeight - 10;
+            if (!isAtBottom) {
+              console.log('🎯 Beta Terminal: User scrolled away from bottom during Claude Code');
+            }
+          }
+        }}
+      >
         <div 
           ref={terminalRef} 
-          className="h-full" 
+          className="h-full w-full" 
           onClick={handleTerminalClick}
+          style={{
+            minHeight: claudeCodeActive ? 'calc(100vh + 400px)' : '100%',  // Force terminal to be very tall during Claude Code
+            position: 'relative'
+          }}
         />
       </div>
 

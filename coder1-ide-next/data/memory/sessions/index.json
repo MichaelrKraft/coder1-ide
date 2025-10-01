@@ -1,5 +1,125 @@
 [
   {
+    "sessionId": "beta_session_1759284554606",
+    "filename": "2025-10-01T02-09-14-683Z.json",
+    "startTime": "2025-10-01T02:09:14.683Z",
+    "endTime": "2025-10-01T02:09:22.152Z",
+    "platform": "Claude Code",
+    "totalTokens": 0,
+    "interactionCount": 0,
+    "summary": "Claude Code session (0 interactions): "
+  },
+  {
+    "sessionId": "beta_session_1759284431689",
+    "filename": "2025-10-01T02-07-11-693Z.json",
+    "startTime": "2025-10-01T02:07:11.693Z",
+    "endTime": "2025-10-01T02:09:13.904Z",
+    "platform": "Claude Code",
+    "totalTokens": 0,
+    "interactionCount": 0,
+    "summary": "Claude Code session (0 interactions): "
+  },
+  {
+    "sessionId": "beta_session_1759284431689",
+    "filename": "2025-10-01T02-07-11-693Z.json",
+    "startTime": "2025-10-01T02:07:11.693Z",
+    "endTime": "2025-10-01T02:09:13.904Z",
+    "platform": "Claude Code",
+    "totalTokens": 0,
+    "interactionCount": 0,
+    "summary": "Claude Code session (0 interactions): "
+  },
+  {
+    "sessionId": "beta_session_1759284431689",
+    "filename": "2025-10-01T02-07-11-693Z.json",
+    "startTime": "2025-10-01T02:07:11.693Z",
+    "endTime": "2025-10-01T02:09:13.904Z",
+    "platform": "Claude Code",
+    "totalTokens": 0,
+    "interactionCount": 0,
+    "summary": "Claude Code session (0 interactions): "
+  },
+  {
+    "sessionId": "beta_session_1759284431689",
+    "filename": "2025-10-01T02-07-11-693Z.json",
+    "startTime": "2025-10-01T02:07:11.693Z",
+    "endTime": "2025-10-01T02:09:13.904Z",
+    "platform": "Claude Code",
+    "totalTokens": 0,
+    "interactionCount": 0,
+    "summary": "Claude Code session (0 interactions): "
+  },
+  {
+    "sessionId": "beta_session_1759284431689",
+    "filename": "2025-10-01T02-07-11-693Z.json",
+    "startTime": "2025-10-01T02:07:11.693Z",
+    "endTime": "2025-10-01T02:09:13.904Z",
+    "platform": "Claude Code",
+    "totalTokens": 0,
+    "interactionCount": 0,
+    "summary": "Claude Code session (0 interactions): "
+  },
+  {
+    "sessionId": "alpha_session_1759280842851",
+    "filename": "2025-10-01T01-07-22-857Z.json",
+    "startTime": "2025-10-01T01:07:22.857Z",
+    "endTime": "2025-10-01T01:46:52.777Z",
+    "platform": "Claude Code",
+    "totalTokens": 0,
+    "interactionCount": 0,
+    "summary": "Claude Code session (0 interactions): "
+  },
+  {
+    "sessionId": "beta_session_1759283073540",
+    "filename": "2025-10-01T01-44-33-558Z.json",
+    "startTime": "2025-10-01T01:44:33.558Z",
+    "endTime": "2025-10-01T01:45:38.168Z",
+    "platform": "Claude Code",
+    "totalTokens": 0,
+    "interactionCount": 0,
+    "summary": "Claude Code session (0 interactions): "
+  },
+  {
+    "sessionId": "beta_session_1759272084942",
+    "filename": "2025-09-30T22-41-24-945Z.json",
+    "startTime": "2025-09-30T22:41:24.945Z",
+    "endTime": "2025-09-30T22:42:40.754Z",
+    "platform": "Claude Code",
+    "totalTokens": 0,
+    "interactionCount": 0,
+    "summary": "Claude Code session (0 interactions): "
+  },
+  {
+    "sessionId": "beta_session_1759272040981",
+    "filename": "2025-09-30T22-40-40-983Z.json",
+    "startTime": "2025-09-30T22:40:40.983Z",
+    "endTime": "2025-09-30T22:41:15.974Z",
+    "platform": "Claude Code",
+    "totalTokens": 0,
+    "interactionCount": 0,
+    "summary": "Claude Code session (0 interactions): "
+  },
+  {
+    "sessionId": "beta_session_1759271879400",
+    "filename": "2025-09-30T22-37-59-403Z.json",
+    "startTime": "2025-09-30T22:37:59.403Z",
+    "endTime": "2025-09-30T22:39:03.251Z",
+    "platform": "Claude Code",
+    "totalTokens": 0,
+    "interactionCount": 0,
+    "summary": "Claude Code session (0 interactions): "
+  },
+  {
+    "sessionId": "alpha_session_1759271044594",
+    "filename": "2025-09-30T22-24-04-601Z.json",
+    "startTime": "2025-09-30T22:24:04.601Z",
+    "endTime": "2025-09-30T22:25:12.522Z",
+    "platform": "Claude Code",
+    "totalTokens": 0,
+    "interactionCount": 0,
+    "summary": "Claude Code session (0 interactions): "
+  },
+  {
     "sessionId": "alpha_session_1759254238820",
     "filename": "2025-09-30T17-43-58-828Z.json",
     "startTime": "2025-09-30T17:43:58.828Z",

@@ -2389,32 +2389,73 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
         outputBufferRef.current = [];
         term.write(output);
         
-        // Removed forced scroll to bottom to prevent aggressive scrolling
-        // Users should be able to scroll up to read history without being forced down
-        
-        // Smart auto-scroll logic for better Claude session tracking
-        if (term.buffer && term.buffer.active) {
-          const buffer = term.buffer.active;
-          const viewportY = buffer.viewportY;
-          const baseY = buffer.baseY;
-          
-          // Calculate how far from bottom (in lines)
-          const linesFromBottom = baseY - viewportY;
-          
-          // Smart auto-scroll conditions (less aggressive):
-          // 1. If exactly at bottom
-          // 2. If within 2 lines of bottom (very close)
-          // 3. If Claude is active, only scroll if user hasn't manually scrolled
-          const shouldAutoScroll = 
-            viewportY === baseY || // Exactly at bottom
-            linesFromBottom <= 2 || // Within 2 lines (very close)
-            (claudeActive && linesFromBottom <= 5 && !isUserScrolled); // Claude active, only if not manually scrolled
-          
-          if (shouldAutoScroll) {
+        // ENHANCED Auto-scroll for Claude Code accessibility - AGGRESSIVE scrolling during active sessions
+        if (claudeActive) {
+          // Aggressive scrolling for Claude Code sessions - use multiple methods
+          try {
+            // Immediate scroll attempt
             term.scrollToBottom();
-            // Reset user scroll flag only if we're at the very bottom
-            if (isUserScrolled && linesFromBottom <= 1) {
-              setIsUserScrolled(false);
+            
+            // Container-level scroll (critical for Claude Code prompt access)
+            const terminalContainer = terminalRef.current?.parentElement;
+            if (terminalContainer) {
+              terminalContainer.scrollTop = terminalContainer.scrollHeight;
+            }
+            
+            // Multiple delayed attempts to ensure scrolling during active output
+            [5, 15, 50, 100].forEach(delay => {
+              setTimeout(() => {
+                if (term && claudeActive) {
+                  try {
+                    const buffer = term.buffer.active;
+                    term.scrollToLine(buffer.length);
+                    
+                    // Force viewport scroll
+                    const terminalElement = terminalRef.current;
+                    if (terminalElement) {
+                      const viewport = terminalElement.querySelector('.xterm-viewport');
+                      if (viewport) {
+                        viewport.scrollTop = viewport.scrollHeight;
+                      }
+                      
+                      // Also force parent container scroll
+                      const parent = terminalElement.parentElement;
+                      if (parent) {
+                        parent.scrollTop = parent.scrollHeight;
+                      }
+                    }
+                  } catch (e) {
+                    console.warn(`Aggressive scroll attempt ${delay}ms failed:`, e);
+                  }
+                }
+              }, delay);
+            });
+          } catch (error) {
+            console.warn('Enhanced Claude Code scroll failed:', error);
+          }
+        } else {
+          // Smart auto-scroll logic for non-Claude sessions
+          if (term.buffer && term.buffer.active) {
+            const buffer = term.buffer.active;
+            const viewportY = buffer.viewportY;
+            const baseY = buffer.baseY;
+            
+            // Calculate how far from bottom (in lines)
+            const linesFromBottom = baseY - viewportY;
+            
+            // Smart auto-scroll conditions (less aggressive):
+            // 1. If exactly at bottom
+            // 2. If within 2 lines of bottom (very close)
+            const shouldAutoScroll = 
+              viewportY === baseY || // Exactly at bottom
+              linesFromBottom <= 2; // Within 2 lines (very close)
+            
+            if (shouldAutoScroll) {
+              term.scrollToBottom();
+              // Reset user scroll flag only if we're at the very bottom
+              if (isUserScrolled && linesFromBottom <= 1) {
+                setIsUserScrolled(false);
+              }
             }
           }
         }
@@ -3736,11 +3777,12 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
 
       {/* Terminal Content - Let xterm.js handle scrolling */}
       <div 
-        className="flex-1 relative"
+        className="flex-1 relative overflow-auto"
         style={{
           backgroundColor: '#0a0a0a',
-          overflow: 'auto',
-          paddingBottom: '200px'  // Increased black box space to clear footer/status bar
+          paddingBottom: claudeActive ? '300px' : '20px',  // DYNAMIC: 300px when Claude Code is active, 20px normal
+          maxHeight: '100%',
+          minHeight: claudeActive ? 'calc(100% + 300px)' : '100%'  // Force container to be taller when Claude Code active
         }}
         onClick={() => {
           // Focus the terminal when clicked
@@ -3755,7 +3797,7 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
           onContextMenu={handleContextMenu}
           style={{
             width: '100%',
-            minHeight: '100%'
+            minHeight: claudeActive ? 'calc(100% + 250px)' : '100%'  // Ensure terminal is taller during Claude Code
           }}
         />
       </div>

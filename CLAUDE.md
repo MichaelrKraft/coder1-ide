@@ -166,10 +166,10 @@ We're building an IDE that bridges the gap between AI capabilities and human cre
 ## 🌟 What Makes Coder1 Special
 
 ### For Claude Code Users
-- **Native Integration**: Built from the ground up to work perfectly with Claude Code CLI
-- **Session Intelligence**: AI understands your entire development context
-- **Smart Handoffs**: Seamlessly transition between human and AI coding sessions
-- **Supervision Mode**: Claude watches and assists as you code in real-time
+- **Purpose-Built Integration**: Designed specifically for Claude Code workflows with native CLI puppeteer system
+- **Session Intelligence**: AI understands your entire development context with Eternal Memory
+- **Smart Handoffs**: Seamlessly transition between human and AI coding sessions with comprehensive summaries
+- **AI Supervision Mode**: Claude watches and assists as you code in real-time when you type `claude`
 
 ### For Vibe Coders & Beginners
 - **Friendly UI**: Dark theme with intuitive controls - no intimidating interfaces

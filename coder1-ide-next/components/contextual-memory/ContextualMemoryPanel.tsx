@@ -241,7 +241,7 @@ export const ContextualMemoryPanel: React.FC<ContextualMemoryPanelProps> = ({
   // Handle upgrade click
   const handleUpgradeClick = () => {
     // This would open the upgrade modal or navigate to pricing page
-    window.open('/pricing', '_blank');
+    window.open('/coder1-landing/', '_blank');
   };
 
   // Track learning events when memories are used
