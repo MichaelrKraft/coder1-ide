@@ -56,7 +56,7 @@ import { TerminalCommandProvider } from "@/contexts/TerminalCommandContext";
 
 function IDEPageContent() {
   // Feature flags
-  const FOCUS_MODE_ENABLED = false; // 🛡️ SAFETY: Disabled by default, enable after testing
+  const FOCUS_MODE_ENABLED = true; // ✅ ENABLED: Focus mode feature is now active
   
   // Tour state
   const [showTour, setShowTour] = useState(false);
