@@ -124,10 +124,25 @@ app.use(express.static(staticPath));
 
 // Health check endpoint
 app.get('/health', (req, res) => {
+  const uptime = process.uptime();
+  const memory = process.memoryUsage();
+  
   res.json({
     status: 'healthy',
     message: 'Coder1 Platform is running!',
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
+    uptime: {
+      seconds: Math.floor(uptime),
+      formatted: `${Math.floor(uptime / 3600)}h ${Math.floor((uptime % 3600) / 60)}m ${Math.floor(uptime % 60)}s`
+    },
+    memory: {
+      rss: `${Math.round(memory.rss / 1024 / 1024)}MB`,
+      heapUsed: `${Math.round(memory.heapUsed / 1024 / 1024)}MB`,
+      heapTotal: `${Math.round(memory.heapTotal / 1024 / 1024)}MB`
+    },
+    version: require('../package.json').version,
+    node: process.version,
+    port: process.env.PORT || 3000
   });
 });
 

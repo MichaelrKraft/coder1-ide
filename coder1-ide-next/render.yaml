@@ -18,6 +18,7 @@ services:
     buildCommand: |
       apt-get update && apt-get install -y python3 make g++ build-essential
       NODE_OPTIONS="--max-old-space-size=1200" npm ci
+      npm run copy-canonical
       NODE_OPTIONS="--max-old-space-size=1200" npm run build
       rm -rf .next/cache node_modules/.cache
       npm prune --production
