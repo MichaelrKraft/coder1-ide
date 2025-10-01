@@ -1,23 +1,32 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Save } from 'lucide-react';
+import { X, Save, Brain, Sparkles } from 'lucide-react';
+import type { MemoryDetectionResult } from '@/services/memory-detection-service';
 
 interface CheckpointNameModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (name: string) => void;
+  onSave: (name: string, createMemory?: boolean, memoryData?: { title: string; description: string; tags: string[] }) => void;
   isLoading?: boolean;
+  memoryDetection?: MemoryDetectionResult | null;
 }
 
 export default function CheckpointNameModal({
   isOpen,
   onClose,
   onSave,
-  isLoading = false
+  isLoading = false,
+  memoryDetection = null
 }: CheckpointNameModalProps) {
   const [name, setName] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
+  
+  // Memory creation state
+  const [createMemory, setCreateMemory] = useState(false);
+  const [memoryTitle, setMemoryTitle] = useState('');
+  const [memoryDescription, setMemoryDescription] = useState('');
+  const [memoryTags, setMemoryTags] = useState('');
 
   // Auto-focus input when modal opens
   useEffect(() => {
@@ -26,12 +35,30 @@ export default function CheckpointNameModal({
     }
   }, [isOpen]);
 
-  // Reset input when modal closes
+  // Reset inputs when modal closes
   useEffect(() => {
     if (!isOpen) {
       setName('');
+      setCreateMemory(false);
+      setMemoryTitle('');
+      setMemoryDescription('');
+      setMemoryTags('');
     }
   }, [isOpen]);
+  
+  // Auto-populate memory fields when detection changes
+  useEffect(() => {
+    if (memoryDetection?.isMemoryWorthy && isOpen) {
+      setCreateMemory(memoryDetection.autoGenerationRecommended);
+      setMemoryTitle(memoryDetection.suggestedMemoryTitle);
+      setMemoryDescription(memoryDetection.suggestedMemoryDescription);
+      
+      // Convert events to tags
+      const allTags = memoryDetection.events.flatMap(event => event.suggestedTags);
+      const uniqueTags = [...new Set(allTags)];
+      setMemoryTags(uniqueTags.join(', '));
+    }
+  }, [memoryDetection, isOpen]);
 
   // Handle keyboard shortcuts
   useEffect(() => {
@@ -51,7 +78,13 @@ export default function CheckpointNameModal({
   }, [isOpen, name]);
 
   const handleSave = () => {
-    onSave(name.trim());
+    const memoryData = createMemory ? {
+      title: memoryTitle.trim(),
+      description: memoryDescription.trim(),
+      tags: memoryTags.split(',').map(tag => tag.trim()).filter(Boolean)
+    } : undefined;
+    
+    onSave(name.trim(), createMemory, memoryData);
   };
 
   if (!isOpen) return null;
@@ -118,6 +151,90 @@ export default function CheckpointNameModal({
                 </>
               )}
             </div>
+            
+            {/* Memory Creation Section */}
+            {memoryDetection?.isMemoryWorthy && (
+              <div className="border-t border-border-primary pt-4 mt-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <Brain className="w-4 h-4 text-cyan-400" />
+                  <h3 className="text-sm font-medium text-text-primary">Memory Creation</h3>
+                  <span className="px-2 py-1 bg-cyan-600/20 text-cyan-300 text-xs rounded-full">
+                    {Math.round(memoryDetection.confidence * 100)}% confidence
+                  </span>
+                </div>
+                
+                <div className="flex items-start gap-3 mb-3">
+                  <input
+                    type="checkbox"
+                    id="create-memory"
+                    checked={createMemory}
+                    onChange={(e) => setCreateMemory(e.target.checked)}
+                    className="mt-1 w-4 h-4 text-cyan-600 bg-bg-tertiary border-border-primary rounded focus:ring-cyan-500"
+                    disabled={isLoading}
+                  />
+                  <div className="flex-1">
+                    <label htmlFor="create-memory" className="text-sm font-medium text-text-primary cursor-pointer">
+                      Create Memory from this Session
+                    </label>
+                    <p className="text-xs text-text-muted mt-1">
+                      AI detected {memoryDetection.events.length} memory-worthy event(s): {memoryDetection.events.map(e => e.type).join(', ')}
+                    </p>
+                  </div>
+                </div>
+                
+                {createMemory && (
+                  <div className="space-y-3 pl-7">
+                    <div>
+                      <label htmlFor="memory-title" className="block text-xs font-medium text-text-primary mb-1">
+                        Memory Title
+                      </label>
+                      <input
+                        id="memory-title"
+                        type="text"
+                        value={memoryTitle}
+                        onChange={(e) => setMemoryTitle(e.target.value)}
+                        placeholder="Descriptive title for this learning moment..."
+                        className="w-full px-2 py-1 text-xs bg-bg-tertiary border border-border-primary rounded text-text-primary placeholder-text-muted focus:outline-none focus:ring-1 focus:ring-cyan-500"
+                        disabled={isLoading}
+                      />
+                    </div>
+                    
+                    <div>
+                      <label htmlFor="memory-description" className="block text-xs font-medium text-text-primary mb-1">
+                        Memory Description
+                      </label>
+                      <textarea
+                        id="memory-description"
+                        value={memoryDescription}
+                        onChange={(e) => setMemoryDescription(e.target.value)}
+                        placeholder="What was learned or accomplished in this session..."
+                        rows={2}
+                        className="w-full px-2 py-1 text-xs bg-bg-tertiary border border-border-primary rounded text-text-primary placeholder-text-muted focus:outline-none focus:ring-1 focus:ring-cyan-500 resize-none"
+                        disabled={isLoading}
+                      />
+                    </div>
+                    
+                    <div>
+                      <label htmlFor="memory-tags" className="block text-xs font-medium text-text-primary mb-1">
+                        Tags
+                      </label>
+                      <input
+                        id="memory-tags"
+                        type="text"
+                        value={memoryTags}
+                        onChange={(e) => setMemoryTags(e.target.value)}
+                        placeholder="bug-fix, feature, learning, breakthrough..."
+                        className="w-full px-2 py-1 text-xs bg-bg-tertiary border border-border-primary rounded text-text-primary placeholder-text-muted focus:outline-none focus:ring-1 focus:ring-cyan-500"
+                        disabled={isLoading}
+                      />
+                      <p className="text-xs text-text-muted mt-1">
+                        Comma-separated tags for organization
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Footer */}
@@ -141,8 +258,8 @@ export default function CheckpointNameModal({
                 </>
               ) : (
                 <>
-                  <Save className="w-4 h-4" />
-                  Save Checkpoint
+                  {createMemory ? <Sparkles className="w-4 h-4" /> : <Save className="w-4 h-4" />}
+                  {createMemory ? 'Save Checkpoint + Memory' : 'Save Checkpoint'}
                 </>
               )}
             </button>

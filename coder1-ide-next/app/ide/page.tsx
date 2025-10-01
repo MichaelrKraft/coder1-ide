@@ -603,9 +603,14 @@ function IDEPageContent() {
       console.log('🚫 Focus mode is disabled by feature flag');
       return;
     }
-    setFocusMode(prev => !prev);
-    console.log(`🎯 Focus mode ${!focusMode ? 'enabled' : 'disabled'}`);
-  }, [focusMode, FOCUS_MODE_ENABLED]);
+    setFocusMode(prev => {
+      const newState = !prev;
+      console.log(`🎯 Focus mode ${newState ? 'ENABLED' : 'DISABLED'}`);
+      console.log(`   Left panel will be: ${explorerVisible && !newState ? 'visible' : 'hidden'}`);
+      console.log(`   Right panel will be: ${!newState ? 'visible' : 'hidden'}`);
+      return newState;
+    });
+  }, [FOCUS_MODE_ENABLED, explorerVisible]);
 
   const handleZoomIn = useCallback(() => {
     setFontSize(prev => Math.min(prev + 2, 30));
@@ -741,8 +746,10 @@ function IDEPageContent() {
       } else if (ctrlKey && e.shiftKey && e.key === 'U') {
         e.preventDefault();
         handleToggleOutput();
-      } else if (ctrlKey && e.shiftKey && e.key === 'F') {
+      } else if (ctrlKey && e.shiftKey && (e.key === 'F' || e.key === 'f')) {
+        console.log('🎯 Focus mode keyboard shortcut triggered!');
         e.preventDefault();
+        e.stopPropagation();
         handleToggleFocusMode();
       } else if (ctrlKey && e.key === '=') {
         e.preventDefault();

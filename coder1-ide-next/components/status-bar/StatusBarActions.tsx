@@ -17,6 +17,7 @@ import { useUIStore } from '@/stores/useUIStore';
 import { useContextActivation } from '@/lib/hooks/useContextActivation';
 import { glows } from '@/lib/design-tokens';
 import type { IDEFile } from '@/types';
+import { memoryDetectionService, type MemoryDetectionResult } from '@/services/memory-detection-service';
 
 interface StatusBarActionsProps {
   activeFile?: string | null;
@@ -47,6 +48,10 @@ const StatusBarActions = React.memo(function StatusBarActions({
   // Checkpoint naming modal state
   const [isCheckpointModalOpen, setIsCheckpointModalOpen] = React.useState(false);
   
+  // Memory detection state
+  const [memoryDetection, setMemoryDetection] = React.useState<MemoryDetectionResult | null>(null);
+  const [isAnalyzingMemory, setIsAnalyzingMemory] = React.useState(false);
+  
   React.useEffect(() => {
     // Only access localStorage on client side
     const storedId = typeof window !== 'undefined' ? localStorage.getItem('currentSessionId') : null;
@@ -61,6 +66,34 @@ const StatusBarActions = React.memo(function StatusBarActions({
       localStorage.setItem('currentSessionId', newSessionId);
     }
   }, [currentSession]);
+  
+  // Memory detection effect - analyze session for memory-worthy events
+  React.useEffect(() => {
+    const analyzeSession = async () => {
+      if (isAnalyzingMemory || !openFiles.length) return;
+      
+      setIsAnalyzingMemory(true);
+      
+      try {
+        const result = memoryDetectionService.analyzeSession(
+          openFiles,
+          activeFile,
+          terminalHistory,
+          terminalCommands
+        );
+        
+        setMemoryDetection(result);
+      } catch (error) {
+        console.error('Memory detection failed:', error);
+      } finally {
+        setIsAnalyzingMemory(false);
+      }
+    };
+    
+    // Debounce to avoid excessive analysis
+    const timeoutId = setTimeout(analyzeSession, 2000);
+    return () => clearTimeout(timeoutId);
+  }, [openFiles, activeFile, terminalHistory, terminalCommands, isAnalyzingMemory]);
 
   // Button hover effects
   const applyHoverEffect = (e: React.MouseEvent<HTMLButtonElement>, isLoading: boolean) => {
@@ -80,7 +113,7 @@ const StatusBarActions = React.memo(function StatusBarActions({
     setIsCheckpointModalOpen(true);
   };
 
-  const handleCheckpointSave = async (customName: string) => {
+  const handleCheckpointSave = async (customName: string, createMemory?: boolean, memoryData?: { title: string; description: string; tags: string[] }) => {
     setIsCheckpointModalOpen(false);
     
     try {
@@ -365,15 +398,29 @@ const StatusBarActions = React.memo(function StatusBarActions({
   return (
     <>
       <div className="flex items-center gap-2">
-        {/* CheckPoint Button */}
-        <div data-tour="checkpoint-timeline" className="p-[1px] rounded-md" style={{background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', boxShadow: glows.purple.intense}}>
+        {/* CheckPoint Button - Enhanced with memory detection */}
+        <div 
+          data-tour="checkpoint-timeline" 
+          className="p-[1px] rounded-md" 
+          style={{
+            background: memoryDetection?.isMemoryWorthy && memoryDetection.confidence > 0.6
+              ? 'linear-gradient(135deg, #FB923C, #F97316)' // Orange gradient for memory-worthy sessions
+              : 'linear-gradient(135deg, #6366f1, #8b5cf6)', // Default purple
+            boxShadow: memoryDetection?.isMemoryWorthy && memoryDetection.confidence > 0.6
+              ? glows.orange.intense
+              : glows.purple.intense
+          }}
+        >
           <button
             onClick={handleCheckpoint}
             disabled={isLoadingState('checkpoint')}
             className="flex items-center gap-1.5 px-4 py-1.5 text-sm font-medium text-text-secondary hover:text-text-primary rounded transition-all duration-200 disabled:opacity-50 bg-bg-secondary w-full"
             onMouseEnter={(e) => applyHoverEffect(e, isLoadingState('checkpoint'))}
             onMouseLeave={removeHoverEffect}
-            title="CheckPoint - Save a snapshot of your current work state for easy rollback (Ctrl+Shift+S)"
+            title={memoryDetection?.isMemoryWorthy 
+              ? `CheckPoint - Memory-worthy session detected! Save with memory creation (${Math.round(memoryDetection.confidence * 100)}% confidence)`
+              : "CheckPoint - Save a snapshot of your current work state for easy rollback (Ctrl+Shift+S)"
+            }
           >
             {isLoadingState('checkpoint') ? (
               <Loader2 className="w-4 h-4 animate-spin" />
@@ -486,6 +533,7 @@ const StatusBarActions = React.memo(function StatusBarActions({
         onClose={() => setIsCheckpointModalOpen(false)}
         onSave={handleCheckpointSave}
         isLoading={isLoadingState('checkpoint')}
+        memoryDetection={memoryDetection}
       />
     </>
   );
