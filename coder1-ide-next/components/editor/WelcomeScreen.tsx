@@ -86,6 +86,11 @@ export function WelcomeScreen({ onDismiss, onBridgeClick }: WelcomeScreenProps =
                     </span>
                   </div>
                 </div>
+                
+                <div>
+                  <span className="text-green-400 font-medium">4. Bridge</span>
+                  <span className="text-gray-300 ml-1">→ Click the Bridge button below and enter the code into the terminal where it is requested</span>
+                </div>
               </div>
             </div>
 

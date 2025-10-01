@@ -156,6 +156,10 @@ export function filterThinkingAnimations(terminalData: string): string {
     /^\s*⎿\s*Next:.*$/gm,
     /.*⎿.*Next:.*$/gm,
     
+    // Match "Tip:" indicators with the special arrow character
+    /^\s*⎿\s*Tip:.*$/gm,
+    /.*⎿.*Tip:.*$/gm,
+    
     // Match task descriptions with status symbols and control hints (most common pattern)
     /^[✶✳✢·✻✽✦☆★▪▫◆◇○●]\s+[^(]+\(esc to interrupt.*?\).*$/gm,
     
@@ -167,6 +171,9 @@ export function filterThinkingAnimations(terminalData: string): string {
     
     // Clean up orphaned "Next:" lines without context
     /^\s*Next:.*$/gm,
+    
+    // Clean up orphaned "Tip:" lines without context
+    /^\s*Tip:.*$/gm,
     
     // Remove standalone control hints that might be left over
     /^\s*\(esc to interrupt.*?\).*$/gm,
@@ -213,6 +220,37 @@ export function filterThinkingAnimations(terminalData: string): string {
     /.*?\w+\s*-\s*\w+.*?\(MCP\)\(.*?$/gm
   ];
   
+  // DISCOVERED MISSING PATTERNS - Additional Claude Code patterns found during comprehensive analysis
+  const additionalClaudePatterns = [
+    // Window title sequences (ANSI escape codes that set terminal title)
+    /\u001b\]0;[^]*?\u0007/g,
+    
+    // Warning messages with warning symbol
+    /.*⚠.*?will impact performance.*?\r?\n/g,
+    /.*⚠.*?Large.*?CLAUDE\.md.*?\r?\n/g,
+    /.*⚠.*?Claude Bridge not connected.*?\r?\n/g,
+    
+    // Excessive ANSI color sequence repetition (cleanup visual noise)
+    /(\u001b\[2m\u001b\[38;2;153;153;153m\s*){5,}/g,
+    /(\u001b\[2m\u001b\[38;2;[\d;]+m\s*){3,}/g,
+    
+    // Claude CLI tip messages (from Claude Code CLI itself)
+    /.*Send messages to Claude while it works to steer Claude in real-time.*?\r?\n/g,
+    /.*Tip:\s*Send messages to Claude.*?\r?\n/g,
+    
+    // Additional escape sequences that create noise
+    /\u001b\[2J\u001b\[3J\u001b\[H/g,  // Clear screen sequences
+    /(\u001b\[2m\u001b\[38;2;153;153;153m\r?\n){2,}/g,  // Repeated grayed-out lines
+    
+    // Warning pattern variations found in logs
+    /.*⚠️.*not available.*?\r?\n/g,
+    /.*⚠️.*not found.*?\r?\n/g,
+    /.*⚠️.*failed.*?\r?\n/g,
+    
+    // Other system messages that create checkpoint noise
+    /.*bash-.*?\u001b\[\?25[lh].*?\r?\n/g,  // Bash prompt sequences
+  ];
+  
   // Apply thinking animation filters
   for (const pattern of thinkingPatterns) {
     filtered = filtered.replace(pattern, '');
@@ -240,6 +278,11 @@ export function filterThinkingAnimations(terminalData: string): string {
   
   // Apply MCP tool call filters - CRITICAL FOR TOOL INVOCATION CLEANUP
   for (const pattern of mcpToolPatterns) {
+    filtered = filtered.replace(pattern, '');
+  }
+  
+  // Apply additional Claude Code pattern filters - COMPREHENSIVE CLEANUP
+  for (const pattern of additionalClaudePatterns) {
     filtered = filtered.replace(pattern, '');
   }
   

@@ -83,7 +83,9 @@ export default function TimelinePage() {
           if (snapshot.terminal) localStorage.setItem('terminalHistory', snapshot.terminal);
           if (snapshot.editor) localStorage.setItem('editorContent', snapshot.editor);
         }
-        alert('Checkpoint restored successfully! Please refresh the IDE.');
+        
+        // Navigate back to IDE with restore indicator
+        window.location.href = `/ide?restored=true&checkpointId=${checkpointId}&sessionId=${sessionId}`;
       }
     } catch (error) {
       // logger?.error('Failed to restore checkpoint:', error);

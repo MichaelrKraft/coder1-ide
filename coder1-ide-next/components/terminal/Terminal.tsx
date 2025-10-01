@@ -1344,6 +1344,32 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
         xtermRef.current = term;
         fitAddonRef.current = fitAddon;
 
+        // Check for restored terminal history from checkpoint
+        if (typeof window !== 'undefined') {
+          const restoredHistory = localStorage.getItem('terminalHistory');
+          if (restoredHistory && restoredHistory.trim()) {
+            console.log('🔄 Terminal: Restoring terminal history from checkpoint');
+            
+            // Clear the terminal first
+            term.clear();
+            
+            // Filter and clean the restored data
+            let filteredHistory = filterThinkingAnimations(restoredHistory);
+            filteredHistory = cleanStatusLines(filteredHistory);
+            
+            // Write the restored history
+            term.write(filteredHistory);
+            
+            // Add separator to show this was restored
+            term.writeln('\r\n' + '='.repeat(50));
+            term.writeln('\r\n✅ Terminal history restored from checkpoint');
+            term.writeln('\r\n' + '='.repeat(50) + '\r\n');
+            
+            // Clear the localStorage after restoration to prevent re-applying
+            localStorage.removeItem('terminalHistory');
+          }
+        }
+
         // ENHANCED SCROLL TRACKING: Better user intent detection
         let lastViewportY = 0;
         const checkScrollPosition = () => {
@@ -4177,16 +4203,23 @@ Please analyze these errors and provide:
 
 Context: Running in Coder1 IDE development environment`;
 
-                        // Copy to clipboard for now (Phase 1)
-                        await navigator.clipboard.writeText(fullReport);
-                        addToast('📋 Error report copied to clipboard! Paste into Claude Code for analysis.', 'success');
-                        
-                        // Future: Direct Claude Code API integration
-                        // const response = await fetch('/api/claude-code/analyze', {
-                        //   method: 'POST',
-                        //   headers: { 'Content-Type': 'application/json' },
-                        //   body: JSON.stringify({ errorReport: fullReport })
-                        // });
+                        // Check if Claude Code is active and send directly
+                        if (claudeActive && socket?.connected && sessionId) {
+                          // Send directly to active Claude Code session
+                          socket.emit('terminal:input', {
+                            id: sessionId,
+                            data: fullReport + '\r'
+                          });
+                          addToast('✅ Error report sent to Claude Code for analysis!', 'success');
+                        } else {
+                          // Fallback: Copy to clipboard if Claude not active
+                          await navigator.clipboard.writeText(fullReport);
+                          if (!claudeActive) {
+                            addToast('📋 Claude Code not active. Error report copied to clipboard - type "claude" first, then paste.', 'info');
+                          } else {
+                            addToast('📋 Terminal not connected. Error report copied to clipboard.', 'info');
+                          }
+                        }
                         
                       } catch (error) {
                         console.error('Failed to send errors to Claude Code:', error);
@@ -4205,7 +4238,7 @@ Context: Running in Coder1 IDE development environment`;
                       </>
                     ) : (
                       <>
-                        🧠 Send to Claude Code
+                        Send to Claude Code
                       </>
                     )}
                   </button>

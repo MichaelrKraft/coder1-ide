@@ -332,54 +332,29 @@ export default function MonacoEditor({
       );
     }
     
-    if (!setupViewed) {
-      // First time user - show bridge setup instructions
-      console.log('🔵 Showing WelcomeScreen for first-time user');
-      // DON'T automatically mark as viewed - let user dismiss it manually
-      // This ensures they can see it until they're ready
-      return (
-        <div className="relative h-full">
-          <WelcomeScreen 
-            onDismiss={() => {
-              // Mark as viewed when user explicitly dismisses
-              console.log('🎆 WelcomeScreen dismissed, marking setup as viewed');
-              if (typeof window !== 'undefined') {
-                localStorage.setItem('coder1-bridge-setup-viewed', 'true');
-                console.log('💾 Stored setup completion in localStorage');
-              }
-              setSetupViewed(true);
-            }}
-            onBridgeClick={() => {
-              // Bridge button now handles itself in WelcomeScreen
-              console.log('🌉 Bridge button clicked in WelcomeScreen');
-            }}
-          />
-        </div>
-      );
-    } else {
-      // Returning user - show the hero section with dismiss and tour callbacks
-      console.log('🟢 Showing HeroSection for returning user');
-      return <HeroSection 
-        onDismiss={() => {
-          console.log('🔴 HeroSection dismissed by user interaction');
-          // Mark as dismissed for this component instance
-          setHeroSectionDismissed(true);
-          // Also store in sessionStorage to prevent re-showing on navigation within same session
-          if (typeof window !== 'undefined') {
-            sessionStorage.setItem('coder1-hero-dismissed', 'true');
-            console.log('💾 Stored hero dismissal in sessionStorage');
-          }
-        }}
-        onTourStart={() => {
-          console.log('🎯 Interactive Tour started from HeroSection');
-          // Don't dismiss hero section when tour starts
-          // The tour will handle hero visibility
-          if (onTourStart) {
-            onTourStart();
-          }
-        }}
-      />;
-    }
+    // Always show HeroSection instead of WelcomeScreen (bridge setup)
+    // This change requested by user to remove bridge setup from IDE welcome area
+    console.log('🟢 Showing HeroSection instead of bridge setup');
+    return <HeroSection 
+      onDismiss={() => {
+        console.log('🔴 HeroSection dismissed by user interaction');
+        // Mark as dismissed for this component instance
+        setHeroSectionDismissed(true);
+        // Also store in sessionStorage to prevent re-showing on navigation within same session
+        if (typeof window !== 'undefined') {
+          sessionStorage.setItem('coder1-hero-dismissed', 'true');
+          console.log('💾 Stored hero dismissal in sessionStorage');
+        }
+      }}
+      onTourStart={() => {
+        console.log('🎯 Interactive Tour started from HeroSection');
+        // Don't dismiss hero section when tour starts
+        // The tour will handle hero visibility
+        if (onTourStart) {
+          onTourStart();
+        }
+      }}
+    />
   }
 
   return (

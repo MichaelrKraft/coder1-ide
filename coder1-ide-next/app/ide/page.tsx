@@ -89,6 +89,44 @@ function IDEPageContent() {
     }
   }, [recentTerminalInput]);
 
+  // Handle checkpoint restore from timeline page
+  const searchParams = useSearchParams();
+  useEffect(() => {
+    const restored = searchParams.get('restored');
+    const checkpointId = searchParams.get('checkpointId');
+    const sessionId = searchParams.get('sessionId');
+    
+    if (restored === 'true' && checkpointId) {
+      console.log('🔄 Checkpoint restore detected:', { checkpointId, sessionId });
+      
+      // Show success notification
+      setTimeout(() => {
+        if (typeof window !== 'undefined') {
+          // Create a temporary toast notification
+          const toast = document.createElement('div');
+          toast.className = 'fixed top-4 right-4 bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg z-50 transition-all duration-300';
+          toast.innerHTML = `✅ Checkpoint restored successfully! (${checkpointId.substring(0, 8)}...)`;
+          document.body.appendChild(toast);
+          
+          // Remove toast after 4 seconds
+          setTimeout(() => {
+            toast.style.opacity = '0';
+            setTimeout(() => document.body.removeChild(toast), 300);
+          }, 4000);
+        }
+      }, 500);
+      
+      // Clean up URL parameters
+      if (typeof window !== 'undefined') {
+        const url = new URL(window.location.href);
+        url.searchParams.delete('restored');
+        url.searchParams.delete('checkpointId');
+        url.searchParams.delete('sessionId');
+        window.history.replaceState(null, '', url.toString());
+      }
+    }
+  }, [searchParams]);
+
   // Terminal session tracking for TerminalCommandProvider
   const [terminalSessionId, setTerminalSessionId] = useState<string | null>(
     null,
@@ -721,9 +759,6 @@ function IDEPageContent() {
     handleRunCode, handleDebug, handleStop
   ]);
 
-  // Get search params for component loading
-  const searchParams = useSearchParams();
-  
   // Load component from query params if present
   useEffect(() => {
     const componentId = searchParams.get('loadComponent');
