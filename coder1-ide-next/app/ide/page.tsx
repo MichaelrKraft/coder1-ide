@@ -828,6 +828,7 @@ function IDEPageContent() {
               onToggleExplorer={handleToggleExplorer}
               onToggleTerminal={handleToggleTerminal}
               onToggleOutput={handleToggleOutput}
+              onToggleFocusMode={handleToggleFocusMode}
               onZoomIn={handleZoomIn}
               onZoomOut={handleZoomOut}
               onResetZoom={handleResetZoom}
