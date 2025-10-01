@@ -861,7 +861,7 @@ function IDEPageContent() {
             <div className="flex-1 flex flex-col min-h-0">
               <ThreePanelLayout
                 leftPanel={
-                  explorerVisible ? (
+                  explorerVisible && !focusMode ? (
                     <LeftPanel
                       onFileSelect={handleFileSelect}
                       activeFile={activeFile}
@@ -953,20 +953,22 @@ function IDEPageContent() {
                   </PanelGroup>
                 }
                 rightPanel={
-                  <PreviewPanel 
-                    activeFile={activeFile}
-                    editorContent={activeFile ? files[activeFile] || "" : ""}
-                    fileOpen={!!activeFile}
-                    isPreviewable={
-                      // SAFETY: Mark files as previewable based on extension
-                      activeFile ? 
-                      /\.(html|htm|tsx|jsx|css|js|ts)$/i.test(activeFile) : 
-                      false
-                    }
-                    onOpenFile={handleOpenFileFromPath}
-                    recentTerminalInput={recentTerminalInput}
-                    terminalCommands={terminalCommands}
-                  />
+                  !focusMode ? (
+                    <PreviewPanel 
+                      activeFile={activeFile}
+                      editorContent={activeFile ? files[activeFile] || "" : ""}
+                      fileOpen={!!activeFile}
+                      isPreviewable={
+                        // SAFETY: Mark files as previewable based on extension
+                        activeFile ? 
+                        /\.(html|htm|tsx|jsx|css|js|ts)$/i.test(activeFile) : 
+                        false
+                      }
+                      onOpenFile={handleOpenFileFromPath}
+                      recentTerminalInput={recentTerminalInput}
+                      terminalCommands={terminalCommands}
+                    />
+                  ) : null
                 }
               />
             </div>
