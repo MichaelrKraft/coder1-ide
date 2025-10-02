@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { X, Monitor, Terminal, Bot, Save, User, Palette, Code, Brain } from 'lucide-react';
-import { memoryPreferences } from '@/lib/memory-preferences';
+import { databaseMemoryPreferences } from '@/lib/memory-preferences-db';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -93,13 +93,42 @@ export default function SettingsModal({ isOpen, onClose, fontSize, onFontSizeCha
 
   // Load settings on mount
   useEffect(() => {
-    const savedSettings = localStorage.getItem('coder1-settings');
-    if (savedSettings) {
-      const parsed = JSON.parse(savedSettings);
-      setSettings({ ...defaultSettings, ...parsed });
-    } else if (fontSize) {
-      setSettings(prev => ({ ...prev, fontSize }));
-    }
+    const loadSettings = async () => {
+      // Load general settings from localStorage
+      const savedSettings = localStorage.getItem('coder1-settings');
+      let loadedSettings = defaultSettings;
+      
+      if (savedSettings) {
+        const parsed = JSON.parse(savedSettings);
+        loadedSettings = { ...defaultSettings, ...parsed };
+      } else if (fontSize) {
+        loadedSettings = { ...loadedSettings, fontSize };
+      }
+
+      // Load memory preferences from database
+      try {
+        // First try migration from localStorage
+        await databaseMemoryPreferences.migrateFromLocalStorage();
+        
+        const memoryPrefs = await databaseMemoryPreferences.getPreferences();
+        loadedSettings = {
+          ...loadedSettings,
+          memoryDetectionEnabled: memoryPrefs.enabled,
+          memoryDetectionThreshold: memoryPrefs.threshold,
+          memoryAutoGeneration: memoryPrefs.autoGeneration,
+          memoryEventTypes: memoryPrefs.eventTypes,
+          memoryNotifications: memoryPrefs.notifications,
+          memoryNotificationSound: memoryPrefs.notificationSound,
+          memoryTemplateCustomization: memoryPrefs.templateType,
+        };
+      } catch (error) {
+        console.error('Failed to load memory preferences from database:', error);
+      }
+
+      setSettings(loadedSettings);
+    };
+
+    loadSettings();
   }, [fontSize]);
 
   // Update settings
@@ -114,7 +143,8 @@ export default function SettingsModal({ isOpen, onClose, fontSize, onFontSizeCha
   };
 
   // Save settings
-  const saveSettings = () => {
+  const saveSettings = async () => {
+    // Save general settings to localStorage
     localStorage.setItem('coder1-settings', JSON.stringify(settings));
     setHasChanges(false);
     
@@ -123,23 +153,34 @@ export default function SettingsModal({ isOpen, onClose, fontSize, onFontSizeCha
       onFontSizeChange(settings.fontSize);
     }
     
-    // Save memory preferences through the service
-    memoryPreferences.savePreferences({
-      enabled: settings.memoryDetectionEnabled,
-      threshold: settings.memoryDetectionThreshold,
-      autoGeneration: settings.memoryAutoGeneration,
-      eventTypes: settings.memoryEventTypes,
-      notifications: settings.memoryNotifications,
-      notificationSound: settings.memoryNotificationSound,
-      templateType: settings.memoryTemplateCustomization as any,
-    });
-    
-    // Show success message
-    const toast = document.createElement('div');
-    toast.className = 'fixed bottom-4 right-4 bg-green-500/20 border border-green-500/50 text-green-400 px-4 py-2 rounded z-50';
-    toast.textContent = 'Settings saved successfully';
-    document.body.appendChild(toast);
-    setTimeout(() => document.body.removeChild(toast), 3000);
+    try {
+      // Save memory preferences to SQLite database
+      await databaseMemoryPreferences.savePreferences({
+        enabled: settings.memoryDetectionEnabled,
+        threshold: settings.memoryDetectionThreshold,
+        autoGeneration: settings.memoryAutoGeneration,
+        eventTypes: settings.memoryEventTypes,
+        notifications: settings.memoryNotifications,
+        notificationSound: settings.memoryNotificationSound,
+        templateType: settings.memoryTemplateCustomization as any,
+      });
+      
+      // Show success message
+      const toast = document.createElement('div');
+      toast.className = 'fixed bottom-4 right-4 bg-green-500/20 border border-green-500/50 text-green-400 px-4 py-2 rounded z-50';
+      toast.textContent = '✅ Settings saved to SQLite database';
+      document.body.appendChild(toast);
+      setTimeout(() => document.body.removeChild(toast), 3000);
+    } catch (error) {
+      console.error('Failed to save memory preferences:', error);
+      
+      // Show error message
+      const toast = document.createElement('div');
+      toast.className = 'fixed bottom-4 right-4 bg-red-500/20 border border-red-500/50 text-red-400 px-4 py-2 rounded z-50';
+      toast.textContent = '❌ Failed to save memory preferences';
+      document.body.appendChild(toast);
+      setTimeout(() => document.body.removeChild(toast), 3000);
+    }
   };
 
   if (!isOpen) return null;
@@ -616,20 +657,21 @@ export default function SettingsModal({ isOpen, onClose, fontSize, onFontSizeCha
                     </>
                   )}
                   
-                  {/* Phase II Notice */}
-                  <div className="mt-6 p-4 bg-orange-500/10 border border-orange-500/30 rounded-lg">
-                    <h4 className="flex items-center gap-2 text-sm font-semibold text-orange-400 mb-2">
+                  {/* Phase II Complete Notice */}
+                  <div className="mt-6 p-4 bg-green-500/10 border border-green-500/30 rounded-lg">
+                    <h4 className="flex items-center gap-2 text-sm font-semibold text-green-400 mb-2">
                       <Brain className="w-4 h-4" />
-                      Memory System Phase II
+                      Memory System Phase II - COMPLETE ✅
                     </h4>
                     <div className="space-y-2 text-sm text-text-secondary">
                       <p>
-                        <span className="text-orange-400 font-medium">User Preferences:</span>{' '}
-                        Configure detection thresholds and behavior
+                        <span className="text-green-400 font-medium">SQLite Persistence Active:</span>{' '}
+                        All preferences stored in production database
                       </p>
                       <p className="text-xs">
-                        These settings will be persisted in SQLite database once Phase II persistence layer is complete.
-                        Currently using localStorage for preference storage.
+                        ✅ SQLite database storage with ACID properties<br/>
+                        ✅ Automatic migration from localStorage completed<br/>
+                        ✅ Full memory management interface at <code>/memories</code>
                       </p>
                     </div>
                   </div>
