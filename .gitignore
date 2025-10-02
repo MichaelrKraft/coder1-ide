@@ -7,6 +7,12 @@ npm-debug.log*
 .env.local
 .env.*.local
 
+# Production environment files (SECURITY: Never commit these)
+*/.env.production
+*/.env.production.*
+coder1-ide-next/.env.production
+coder1-ide-next/.env.production.alpha
+
 # IDE
 .vscode/
 .idea/
