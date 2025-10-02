@@ -14,7 +14,7 @@ import {
   Play, TestTube, Upload, Trash2, HelpCircle, RotateCcw, Activity,
   Wrench, Palette, Bug, MessageSquare, Zap, ClipboardList, FileSearch,
   Database, FolderOpen, Users, Calculator, ListTodo, Hash,
-  Shield, Rocket, Monitor, Server
+  Shield, Rocket, Monitor, Server, Brain, Clock, Archive
 } from 'lucide-react';
 import WcyganCommandsSection from '../WcyganCommandsSection';
 import { useUIStore } from '@/stores/useUIStore';
@@ -25,6 +25,8 @@ import { logger } from '@/lib/logger';
 import type { Command } from '@/types';
 import { useSession } from '@/contexts/SessionContext';
 import EnhancedSessionCreationModal from '@/components/session/EnhancedSessionCreationModal';
+import { memoryDetectionService } from '@/lib/memory-detection-client';
+import type { MemoryDetectionResult } from '@/lib/memory-detection-client';
 
 interface TaskCommand {
   id: string;
@@ -67,10 +69,44 @@ export default function DiscoverPanel() {
   // Enhanced session creation modal state
   const [showEnhancedSessionModal, setShowEnhancedSessionModal] = useState<boolean>(false);
   
+  // Memory detection state
+  const [memoryStats, setMemoryStats] = useState<{
+    totalMemories: number;
+    lastMemoryDate?: string;
+    currentDetection?: MemoryDetectionResult;
+  }>({
+    totalMemories: 0
+  });
+  
   // Debug: Track modal state changes
   useEffect(() => {
     console.log('🔍 Debug: showEnhancedSessionModal changed to:', showEnhancedSessionModal);
   }, [showEnhancedSessionModal]);
+  
+  // Fetch memory statistics
+  useEffect(() => {
+    const fetchMemoryStats = async () => {
+      try {
+        // Get stored memories count from localStorage (temporary until SQLite)
+        const storedMemories = JSON.parse(localStorage.getItem('coder1-memories') || '[]');
+        const lastDetection = localStorage.getItem('coder1-last-memory-detection');
+        
+        setMemoryStats({
+          totalMemories: storedMemories.length,
+          lastMemoryDate: storedMemories.length > 0 ? storedMemories[0].createdAt : undefined,
+          currentDetection: lastDetection ? JSON.parse(lastDetection) : undefined
+        });
+      } catch (error) {
+        console.error('Failed to fetch memory stats:', error);
+      }
+    };
+    
+    fetchMemoryStats();
+    // Refresh every time panel opens
+    if (isOpen) {
+      fetchMemoryStats();
+    }
+  }, [isOpen]);
   
   // Helper function: Get icon for wcygan category
   const getIconForCategory = (category: string) => {
@@ -485,6 +521,72 @@ export default function DiscoverPanel() {
 
           {/* Separator */}
           <div className="border-t border-border-default my-6"></div>
+
+          {/* Memory Detection Section */}
+          <div className="mb-4 p-3 border-2 border-orange-500/50 rounded-lg bg-orange-500/5">
+            <div className="flex items-center justify-between mb-3">
+              <h4 className="text-xs font-semibold text-orange-400 uppercase tracking-wider flex items-center gap-2">
+                <Brain className="w-3 h-3" />
+                MEMORY SYSTEM
+              </h4>
+              {memoryStats.currentDetection?.isMemoryWorthy && (
+                <span className="px-2 py-1 bg-orange-500/20 text-orange-300 text-xs rounded-full">
+                  {Math.round((memoryStats.currentDetection?.confidence || 0) * 100)}% confidence
+                </span>
+              )}
+            </div>
+            
+            <div className="space-y-2 text-sm">
+              {/* Memory Stats */}
+              <div className="flex items-center justify-between text-text-secondary">
+                <span className="flex items-center gap-2">
+                  <Archive className="w-3 h-3 text-text-muted" />
+                  Total Memories
+                </span>
+                <span className="text-orange-400 font-medium">{memoryStats.totalMemories}</span>
+              </div>
+              
+              {memoryStats.lastMemoryDate && (
+                <div className="flex items-center justify-between text-text-secondary">
+                  <span className="flex items-center gap-2">
+                    <Clock className="w-3 h-3 text-text-muted" />
+                    Last Memory
+                  </span>
+                  <span className="text-xs text-text-muted">
+                    {new Date(memoryStats.lastMemoryDate).toLocaleDateString()}
+                  </span>
+                </div>
+              )}
+              
+              {/* Current Session Detection */}
+              {memoryStats.currentDetection?.isMemoryWorthy && (
+                <div className="mt-3 p-2 bg-orange-500/10 rounded border border-orange-500/30">
+                  <p className="text-xs text-orange-300 font-medium mb-1">
+                    Memory-worthy session detected!
+                  </p>
+                  <p className="text-xs text-text-muted">
+                    {memoryStats.currentDetection.events.length} event(s): {memoryStats.currentDetection.events.map(e => e.type).join(', ')}
+                  </p>
+                </div>
+              )}
+              
+              {/* Quick Actions */}
+              <div className="flex gap-2 mt-3">
+                <button
+                  onClick={() => window.location.href = '/memory-test'}
+                  className="flex-1 px-2 py-1 text-xs bg-bg-primary border border-border-default rounded hover:border-orange-500 hover:text-orange-400 transition-colors"
+                >
+                  Test Detection
+                </button>
+                <button
+                  onClick={() => addToast({ message: 'Memory browser coming soon!', type: 'info' })}
+                  className="flex-1 px-2 py-1 text-xs bg-bg-primary border border-border-default rounded hover:border-orange-500 hover:text-orange-400 transition-colors"
+                >
+                  Browse Memories
+                </button>
+              </div>
+            </div>
+          </div>
 
           {/* AI Tools Section */}
           <div className="mb-4 p-3 border-2 border-coder1-purple rounded-lg bg-coder1-purple/5">

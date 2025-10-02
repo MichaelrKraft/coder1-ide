@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Save, Brain, Sparkles } from 'lucide-react';
-import type { MemoryDetectionResult } from '@/services/memory-detection-service';
+import type { MemoryDetectionResult } from '@/lib/memory-detection-client';
 
 interface CheckpointNameModalProps {
   isOpen: boolean;

@@ -756,6 +756,11 @@ function IDEPageContent() {
         e.preventDefault();
         e.stopPropagation();
         handleToggleFocusMode();
+      } else if (ctrlKey && e.shiftKey && (e.key === 'D' || e.key === 'd')) {
+        console.log('🎯 Focus mode alternate shortcut (Ctrl+Shift+D) triggered!');
+        e.preventDefault();
+        e.stopPropagation();
+        handleToggleFocusMode();
       } else if (ctrlKey && e.key === '=') {
         e.preventDefault();
         handleZoomIn();

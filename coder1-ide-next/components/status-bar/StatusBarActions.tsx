@@ -17,7 +17,7 @@ import { useUIStore } from '@/stores/useUIStore';
 import { useContextActivation } from '@/lib/hooks/useContextActivation';
 import { glows } from '@/lib/design-tokens';
 import type { IDEFile } from '@/types';
-import { memoryDetectionService, type MemoryDetectionResult } from '@/services/memory-detection-service';
+import { memoryDetectionService, type MemoryDetectionResult } from '@/lib/memory-detection-client';
 
 interface StatusBarActionsProps {
   activeFile?: string | null;
@@ -70,11 +70,29 @@ const StatusBarActions = React.memo(function StatusBarActions({
   // Memory detection effect - analyze session for memory-worthy events
   React.useEffect(() => {
     const analyzeSession = async () => {
-      if (isAnalyzingMemory || !openFiles.length) return;
+      console.log('🧠 [MEMORY] Analyzing session...', {
+        openFilesCount: openFiles.length,
+        activeFile,
+        terminalHistoryLength: terminalHistory?.length || 0,
+        terminalCommandsCount: terminalCommands?.length || 0,
+        isAnalyzing: isAnalyzingMemory
+      });
+      
+      if (isAnalyzingMemory) {
+        console.log('🧠 [MEMORY] Skip - already analyzing');
+        return;
+      }
+      
+      // Allow detection even with no files for testing
+      // if (!openFiles.length) {
+      //   console.log('🧠 [MEMORY] Skip - no open files');
+      //   return;
+      // }
       
       setIsAnalyzingMemory(true);
       
       try {
+        console.log('🧠 [MEMORY] Calling detection service...');
         const result = memoryDetectionService.analyzeSession(
           openFiles,
           activeFile,
@@ -82,11 +100,20 @@ const StatusBarActions = React.memo(function StatusBarActions({
           terminalCommands
         );
         
+        console.log('🧠 [MEMORY] Detection result:', {
+          isMemoryWorthy: result.isMemoryWorthy,
+          confidence: result.confidence,
+          eventsCount: result.events.length,
+          events: result.events.map(e => ({ type: e.type, confidence: e.confidence })),
+          autoGenRecommended: result.autoGenerationRecommended
+        });
+        
         setMemoryDetection(result);
       } catch (error) {
-        console.error('Memory detection failed:', error);
+        console.error('🧠 [MEMORY] Detection failed:', error);
       } finally {
         setIsAnalyzingMemory(false);
+        console.log('🧠 [MEMORY] Analysis complete');
       }
     };
     
@@ -114,6 +141,7 @@ const StatusBarActions = React.memo(function StatusBarActions({
   };
 
   const handleCheckpointSave = async (customName: string, createMemory?: boolean, memoryData?: { title: string; description: string; tags: string[] }) => {
+    console.log('💾 [CHECKPOINT] Saving checkpoint with memory:', { customName, createMemory, memoryData });
     setIsCheckpointModalOpen(false);
     
     try {

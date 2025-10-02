@@ -1,10 +1,19 @@
 'use client';
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { X, Send, Clock, Hash, FileText, Image as ImageIcon, ChevronDown, GitBranch, Eye, FilePlus } from 'lucide-react';
+import { X, Send, Clock, Hash, FileText, Image as ImageIcon, ChevronDown, GitBranch, Eye, FilePlus, Undo2, Redo2, Bookmark, Plus, Save, Expand, Minimize, Mic, MicOff } from 'lucide-react';
 import { commandHistoryService, CommandHistoryEntry } from '@/services/command-history-service';
+import { commandSnippetsService, CommandSnippet } from '@/services/command-snippets-service';
 // OCR functionality is optional - only import if available
 // import { createWorker } from 'tesseract.js';
+
+// TypeScript declarations for Web Speech API
+declare global {
+  interface Window {
+    webkitSpeechRecognition: any;
+    SpeechRecognition: any;
+  }
+}
 
 interface StagedComposerProps {
   isVisible: boolean;
@@ -33,6 +42,11 @@ export default function StagedComposer({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [tokenEstimate, setTokenEstimate] = useState(0);
   
+  // Undo/Redo state
+  const [undoStack, setUndoStack] = useState<string[]>([]);
+  const [redoStack, setRedoStack] = useState<string[]>([]);
+  const lastSavedCommand = useRef<string>('');
+  
   // OCR and PDF processing state
   const [isProcessingOCR, setIsProcessingOCR] = useState(false);
   const [isProcessingPDF, setIsProcessingPDF] = useState(false);
@@ -48,6 +62,34 @@ export default function StagedComposer({
   // Template state
   const [showTemplates, setShowTemplates] = useState(false);
   
+  // AI suggestions state
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [selectedSuggestion, setSelectedSuggestion] = useState(0);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
+  
+  // Snippets state
+  const [snippets, setSnippets] = useState<CommandSnippet[]>([]);
+  const [showSnippets, setShowSnippets] = useState(false);
+  const [selectedSnippet, setSelectedSnippet] = useState(0);
+  const [showSnippetManager, setShowSnippetManager] = useState(false);
+  const [snippetSearch, setSnippetSearch] = useState('');
+  const [newSnippetName, setNewSnippetName] = useState('');
+  const [newSnippetCategory, setNewSnippetCategory] = useState('other');
+  
+  // Multi-line mode state
+  const [multilineMode, setMultilineMode] = useState(false);
+  
+  // Voice input state
+  const [recognition, setRecognition] = useState<any>(null);
+  const [voiceListening, setVoiceListening] = useState(false);
+  
+  // Error handling and user feedback state
+  const [errorMessage, setErrorMessage] = useState<string>('');
+  const [successMessage, setSuccessMessage] = useState<string>('');
+  const [warningMessage, setWarningMessage] = useState<string>('');
+  const [isInitialized, setIsInitialized] = useState(false);
+  
   // Common command templates
   const templates = [
     { name: 'Debug Error', template: 'Help me debug this error: {error_message}' },
@@ -61,6 +103,319 @@ export default function StagedComposer({
     { name: 'Documentation', template: 'Write documentation for {component_or_api}' },
     { name: 'Code Review', template: 'Please review this code and suggest improvements: {code}' }
   ];
+
+  // Debounce utility for undo/redo
+  const debounce = (func: Function, wait: number) => {
+    let timeout: NodeJS.Timeout;
+    return (...args: any[]) => {
+      clearTimeout(timeout);
+      timeout = setTimeout(() => func(...args), wait);
+    };
+  };
+
+  // User feedback utilities
+  const showError = useCallback((message: string, duration = 5000) => {
+    console.error('🚨 User Error:', message);
+    setErrorMessage(message);
+    setSuccessMessage('');
+    setWarningMessage('');
+    setTimeout(() => setErrorMessage(''), duration);
+  }, []);
+
+  const showSuccess = useCallback((message: string, duration = 3000) => {
+    console.log('✅ User Success:', message);
+    setSuccessMessage(message);
+    setErrorMessage('');
+    setWarningMessage('');
+    setTimeout(() => setSuccessMessage(''), duration);
+  }, []);
+
+  const showWarning = useCallback((message: string, duration = 4000) => {
+    console.warn('⚠️ User Warning:', message);
+    setWarningMessage(message);
+    setErrorMessage('');
+    setSuccessMessage('');
+    setTimeout(() => setWarningMessage(''), duration);
+  }, []);
+
+  // Record command changes for undo/redo
+  const recordChange = useCallback(debounce((text: string) => {
+    console.log('📝 RECORD CHANGE TRIGGERED');
+    console.log('📊 New text:', text);
+    console.log('📊 Last saved:', lastSavedCommand.current);
+    console.log('📊 Text different?', text !== lastSavedCommand.current);
+    console.log('📊 Last saved not empty?', lastSavedCommand.current !== '');
+    
+    if (text !== lastSavedCommand.current && lastSavedCommand.current !== '') {
+      console.log('✅ Recording change to undo stack');
+      setUndoStack(prev => {
+        const newUndoStack = [...prev, lastSavedCommand.current].slice(-50);
+        console.log('📤 New undo stack:', newUndoStack);
+        return newUndoStack;
+      });
+      setRedoStack([]); // Clear redo stack when new change is made
+      console.log('🧹 Cleared redo stack');
+    } else {
+      console.log('❌ Not recording change (same as last or last is empty)');
+    }
+    lastSavedCommand.current = text;
+    console.log('💾 Updated last saved command to:', text);
+  }, 500), []);
+
+  // Undo function
+  const handleUndo = useCallback(() => {
+    console.log('🔄 UNDO TRIGGERED');
+    console.log('📊 Undo stack length:', undoStack.length);
+    console.log('📊 Current command:', command);
+    console.log('📊 Undo stack contents:', undoStack);
+    
+    if (undoStack.length > 0) {
+      const previousCommand = undoStack[undoStack.length - 1];
+      console.log('⬅️ Previous command:', previousCommand);
+      
+      setRedoStack(prev => {
+        const newRedoStack = [command, ...prev].slice(0, 50);
+        console.log('📤 Updated redo stack:', newRedoStack);
+        return newRedoStack;
+      });
+      
+      setUndoStack(prev => {
+        const newUndoStack = prev.slice(0, -1);
+        console.log('📤 Updated undo stack:', newUndoStack);
+        return newUndoStack;
+      });
+      
+      console.log('🔄 Setting command to:', previousCommand);
+      setCommand(previousCommand);
+      lastSavedCommand.current = previousCommand;
+      
+      // Focus textarea after undo
+      if (textareaRef.current) {
+        textareaRef.current.focus();
+        textareaRef.current.setSelectionRange(previousCommand.length, previousCommand.length);
+        console.log('📍 Focused textarea and set cursor position');
+      }
+      console.log('✅ UNDO COMPLETED');
+    } else {
+      console.log('❌ No undo history available');
+    }
+  }, [undoStack, command]);
+
+  // Redo function
+  const handleRedo = useCallback(() => {
+    console.log('🔄 REDO TRIGGERED');
+    console.log('📊 Redo stack length:', redoStack.length);
+    console.log('📊 Current command:', command);
+    console.log('📊 Redo stack contents:', redoStack);
+    
+    if (redoStack.length > 0) {
+      const nextCommand = redoStack[0];
+      console.log('➡️ Next command:', nextCommand);
+      
+      setUndoStack(prev => {
+        const newUndoStack = [...prev, command].slice(-50);
+        console.log('📤 Updated undo stack:', newUndoStack);
+        return newUndoStack;
+      });
+      
+      setRedoStack(prev => {
+        const newRedoStack = prev.slice(1);
+        console.log('📤 Updated redo stack:', newRedoStack);
+        return newRedoStack;
+      });
+      
+      console.log('🔄 Setting command to:', nextCommand);
+      setCommand(nextCommand);
+      lastSavedCommand.current = nextCommand;
+      
+      // Focus textarea after redo
+      if (textareaRef.current) {
+        textareaRef.current.focus();
+        textareaRef.current.setSelectionRange(nextCommand.length, nextCommand.length);
+        console.log('📍 Focused textarea and set cursor position');
+      }
+      console.log('✅ REDO COMPLETED');
+    } else {
+      console.log('❌ No redo history available');
+    }
+  }, [redoStack, command]);
+
+  // Fetch AI suggestions
+  const fetchSuggestions = useCallback(async (query: string) => {
+    console.log('🔍 FETCH SUGGESTIONS TRIGGERED');
+    console.log('📊 Query:', query);
+    console.log('📊 Query length:', query.length);
+    
+    if (!query.trim() || query.length < 2) {
+      console.log('❌ Query too short, clearing suggestions');
+      setSuggestions([]);
+      setShowSuggestions(false);
+      return;
+    }
+
+    console.log('🚀 Starting suggestions fetch...');
+    setIsLoadingSuggestions(true);
+    
+    try {
+      // Get frequent commands from history
+      console.log('📚 Fetching frequent commands from history...');
+      const frequentCommands = await commandHistoryService.getFrequentCommands(5);
+      console.log('📚 Frequent commands:', frequentCommands);
+      
+      const historySuggestions = frequentCommands
+        .filter(cmd => cmd.command.toLowerCase().includes(query.toLowerCase()))
+        .map(cmd => cmd.command);
+      console.log('📚 History suggestions:', historySuggestions);
+
+      // Get codebase suggestions
+      console.log('🔍 Fetching codebase suggestions...');
+      const apiUrl = `/api/codebase/suggest?q=${encodeURIComponent(query)}&limit=5`;
+      console.log('🔍 API URL:', apiUrl);
+      
+      const response = await fetch(apiUrl);
+      console.log('🔍 API Response status:', response.status);
+      console.log('🔍 API Response ok:', response.ok);
+      
+      const data = await response.json();
+      console.log('🔍 API Response data:', data);
+      
+      const codebaseSuggestions = data.success ? data.suggestions.map((s: any) => {
+        const suggestion = s.suggestion || s.name || s;
+        console.log('🔍 Mapped suggestion:', suggestion);
+        return suggestion;
+      }) : [];
+      console.log('🔍 Codebase suggestions:', codebaseSuggestions);
+
+      // Add common command patterns
+      const gitSuggestions = query.toLowerCase().includes('git') ? ['git status', 'git add .', 'git commit -m ""', 'git push'] : [];
+      const npmSuggestions = query.toLowerCase().includes('npm') ? ['npm install', 'npm run dev', 'npm run build', 'npm test'] : [];
+      const findSuggestions = query.toLowerCase().includes('find') ? ['find . -name "*.js"', 'find . -type f -name "*.ts"'] : [];
+      
+      console.log('🎯 Pattern suggestions:', { gitSuggestions, npmSuggestions, findSuggestions });
+
+      // Combine and deduplicate suggestions
+      const combinedSuggestions = [
+        ...historySuggestions,
+        ...codebaseSuggestions,
+        ...gitSuggestions,
+        ...npmSuggestions,
+        ...findSuggestions,
+      ];
+      console.log('🔗 Combined suggestions:', combinedSuggestions);
+
+      const uniqueSuggestions = Array.from(new Set(combinedSuggestions))
+        .filter(suggestion => suggestion.toLowerCase().includes(query.toLowerCase()))
+        .slice(0, 8);
+      console.log('✨ Final unique suggestions:', uniqueSuggestions);
+
+      setSuggestions(uniqueSuggestions);
+      setSelectedSuggestion(0);
+      setShowSuggestions(uniqueSuggestions.length > 0);
+      
+      console.log('✅ Suggestions updated:', {
+        count: uniqueSuggestions.length,
+        showing: uniqueSuggestions.length > 0
+      });
+    } catch (error) {
+      console.error('❌ Failed to fetch suggestions:', error);
+      setSuggestions([]);
+      setShowSuggestions(false);
+    } finally {
+      setIsLoadingSuggestions(false);
+      console.log('🏁 Suggestions fetch completed');
+    }
+  }, []);
+
+  // Debounced suggestion fetching
+  const debouncedFetchSuggestions = useCallback(debounce(fetchSuggestions, 300), [fetchSuggestions]);
+
+  // Apply selected suggestion
+  const applySuggestion = useCallback((suggestion: string) => {
+    setCommand(suggestion);
+    setShowSuggestions(false);
+    setSuggestions([]);
+    
+    // Focus textarea and position cursor at end
+    if (textareaRef.current) {
+      textareaRef.current.focus();
+      textareaRef.current.setSelectionRange(suggestion.length, suggestion.length);
+    }
+  }, []);
+
+  // Load snippets
+  const loadSnippets = useCallback(async () => {
+    console.log('📦 LOAD SNIPPETS TRIGGERED');
+    try {
+      console.log('📦 Calling commandSnippetsService.getAllSnippets()...');
+      const allSnippets = await commandSnippetsService.getAllSnippets();
+      console.log('📦 Retrieved snippets:', allSnippets);
+      console.log('📦 Number of snippets:', allSnippets.length);
+      setSnippets(allSnippets);
+      console.log('✅ Snippets loaded successfully');
+    } catch (error) {
+      console.error('❌ Failed to load snippets:', error);
+      setSnippets([]); // Ensure we clear snippets on error
+      showError('Failed to load command snippets. Please try again.');
+    }
+  }, []);
+
+  // Search snippets
+  const searchSnippets = useCallback(async (query: string) => {
+    try {
+      if (query.trim()) {
+        const results = await commandSnippetsService.searchSnippets(query);
+        setSnippets(results);
+      } else {
+        await loadSnippets();
+      }
+    } catch (error) {
+      console.error('Failed to search snippets:', error);
+      showError('Failed to search command snippets. Please try again.');
+    }
+  }, [loadSnippets]);
+
+  // Apply snippet
+  const applySnippet = useCallback(async (snippet: CommandSnippet) => {
+    setCommand(snippet.command);
+    setShowSnippets(false);
+    showSuccess(`Applied snippet: ${snippet.name}`);
+    
+    // Record usage
+    try {
+      await commandSnippetsService.useSnippet(snippet.id);
+      await loadSnippets(); // Refresh to update sort order
+    } catch (error) {
+      console.error('Failed to record snippet usage:', error);
+      showWarning('Snippet applied but usage tracking failed');
+    }
+    
+    // Focus textarea and position cursor at end
+    if (textareaRef.current) {
+      textareaRef.current.focus();
+      textareaRef.current.setSelectionRange(snippet.command.length, snippet.command.length);
+    }
+  }, [loadSnippets, showSuccess, showWarning]);
+
+  // Save current command as snippet
+  const saveAsSnippet = useCallback(async () => {
+    if (!command.trim() || !newSnippetName.trim()) return;
+    
+    try {
+      await commandSnippetsService.addSnippet({
+        name: newSnippetName,
+        command: command.trim(),
+        description: `Saved from command composer`,
+        tags: [newSnippetCategory],
+        category: newSnippetCategory
+      });
+      
+      setNewSnippetName('');
+      await loadSnippets();
+      setShowSnippetManager(false);
+    } catch (error) {
+      console.error('Failed to save snippet:', error);
+    }
+  }, [command, newSnippetName, newSnippetCategory, loadSnippets]);
 
   // Focus textarea when component becomes visible
   useEffect(() => {
@@ -76,8 +431,98 @@ export default function StagedComposer({
   useEffect(() => {
     if (currentCommand) {
       setCommand(currentCommand);
+      lastSavedCommand.current = currentCommand;
     }
   }, [currentCommand]);
+
+  // Track command changes for undo/redo
+  useEffect(() => {
+    console.log('🔍 COMMAND CHANGE EFFECT TRIGGERED');
+    console.log('📊 Current command:', command);
+    console.log('📊 Last saved command:', lastSavedCommand.current);
+    console.log('📊 Commands different?', command !== lastSavedCommand.current);
+    
+    if (command !== lastSavedCommand.current) {
+      console.log('🚀 Calling recordChange with:', command);
+      recordChange(command);
+    } else {
+      console.log('⚪ Skipping recordChange (same command)');
+    }
+  }, [command, recordChange]);
+
+  // Add immediate recording for significant changes (non-debounced)
+  useEffect(() => {
+    // Record immediately when command becomes empty or when it's a significant change
+    const currentLength = command.length;
+    const lastLength = lastSavedCommand.current.length;
+    const lengthDiff = Math.abs(currentLength - lastLength);
+    
+    // Immediate recording conditions:
+    // 1. Command becomes empty (clear)
+    // 2. Large change (paste, template application)
+    // 3. First character typed
+    if (
+      (command === '' && lastSavedCommand.current !== '') ||
+      (lengthDiff > 10) ||
+      (lastSavedCommand.current === '' && command.length > 0)
+    ) {
+      console.log('🔥 IMMEDIATE RECORD TRIGGERED:', { 
+        reason: command === '' ? 'cleared' : lengthDiff > 10 ? 'large-change' : 'first-char',
+        currentLength, 
+        lastLength,
+        lengthDiff
+      });
+      
+      // Record the previous state immediately (before debounce)
+      if (lastSavedCommand.current !== '') {
+        setUndoStack(prev => {
+          const newStack = [...prev, lastSavedCommand.current].slice(-50);
+          console.log('🔥 Immediate undo stack update:', newStack);
+          return newStack;
+        });
+        setRedoStack([]); // Clear redo stack
+      }
+      lastSavedCommand.current = command;
+    }
+  }, [command]);
+
+  // Fetch suggestions when command changes
+  useEffect(() => {
+    if (command && command.length >= 2) {
+      debouncedFetchSuggestions(command);
+    } else {
+      setShowSuggestions(false);
+      setSuggestions([]);
+    }
+  }, [command, debouncedFetchSuggestions]);
+
+  // Handle @prefix for snippets
+  useEffect(() => {
+    console.log('🎯 @PREFIX HANDLER TRIGGERED');
+    console.log('📊 Current command:', command);
+    console.log('📊 Starts with @?', command.startsWith('@'));
+    
+    if (command.startsWith('@')) {
+      const query = command.slice(1); // Remove @ prefix
+      console.log('📊 @ query:', query);
+      console.log('📊 Query length:', query.length);
+      
+      if (query.length >= 1) {
+        console.log('🔍 Searching snippets with query:', query);
+        searchSnippets(query);
+        setShowSnippets(true);
+        setSelectedSnippet(0);
+        console.log('✅ Showing snippets dropdown');
+      } else {
+        console.log('❌ Query too short, clearing snippets');
+        setSnippets([]);
+        setShowSnippets(false);
+      }
+    } else {
+      console.log('⚪ Not @ command, hiding snippets');
+      setShowSnippets(false);
+    }
+  }, [command, searchSnippets]);
 
   // Estimate tokens (rough approximation: ~4 chars per token)
   useEffect(() => {
@@ -90,8 +535,9 @@ export default function StagedComposer({
   useEffect(() => {
     if (isVisible) {
       loadHistory();
+      loadSnippets();
     }
-  }, [isVisible, sessionId]);
+  }, [isVisible, sessionId, loadSnippets]);
 
   // Debug effect to monitor dragActive state changes
   useEffect(() => {
@@ -117,7 +563,167 @@ export default function StagedComposer({
     return () => document.removeEventListener('keydown', handleEscape);
   }, [dragActive]);
 
+  // Initialize speech recognition
+  useEffect(() => {
+    console.log('🎤 SPEECH RECOGNITION INIT');
+    console.log('📊 Window defined?', typeof window !== 'undefined');
+    console.log('📊 webkitSpeechRecognition available?', typeof window !== 'undefined' && 'webkitSpeechRecognition' in window);
+    console.log('📊 SpeechRecognition available?', typeof window !== 'undefined' && 'SpeechRecognition' in window);
+    
+    if (typeof window !== 'undefined' && ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
+      console.log('✅ Speech recognition supported, initializing...');
+      const SpeechRecognition = window.webkitSpeechRecognition || window.SpeechRecognition;
+      const recognitionInstance = new SpeechRecognition();
+      console.log('✅ Speech recognition instance created');
+      
+      recognitionInstance.continuous = false;
+      recognitionInstance.interimResults = true;
+      recognitionInstance.lang = 'en-US';
+      recognitionInstance.maxAlternatives = 1;
+      
+      recognitionInstance.onresult = (event: any) => {
+        let finalTranscript = '';
+        
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const result = event.results[i];
+          if (result.isFinal) {
+            finalTranscript += result[0].transcript;
+          }
+        }
+        
+        if (finalTranscript && finalTranscript.trim()) {
+          const cleanTranscript = finalTranscript.trim();
+          
+          // Insert voice text at current cursor position or append
+          if (textareaRef.current) {
+            const textarea = textareaRef.current;
+            const cursorPosition = textarea.selectionStart;
+            const textBefore = command.slice(0, cursorPosition);
+            const textAfter = command.slice(cursorPosition);
+            
+            const newCommand = textBefore + (textBefore ? ' ' : '') + cleanTranscript + textAfter;
+            setCommand(newCommand);
+            
+            // Set cursor position after inserted text
+            setTimeout(() => {
+              if (textareaRef.current) {
+                const newPosition = cursorPosition + cleanTranscript.length + (textBefore ? 1 : 0);
+                textareaRef.current.focus();
+                textareaRef.current.setSelectionRange(newPosition, newPosition);
+              }
+            }, 10);
+          }
+        }
+      };
+      
+      recognitionInstance.onerror = (event: any) => {
+        console.error('Speech recognition error:', event.error);
+        setVoiceListening(false);
+        
+        // Show user-friendly error message
+        let errorMessage = 'Voice recognition failed';
+        switch (event.error) {
+          case 'not-allowed':
+            errorMessage = 'Microphone access denied. Please allow microphone access in your browser settings.';
+            break;
+          case 'no-speech':
+            errorMessage = 'No speech detected. Please speak clearly and try again.';
+            break;
+          case 'audio-capture':
+            errorMessage = 'Audio capture failed. Please check your microphone connection.';
+            break;
+          case 'network':
+            errorMessage = 'Network error. Please check your internet connection.';
+            break;
+          default:
+            errorMessage = `Voice recognition error: ${event.error}`;
+        }
+        showError(errorMessage);
+      };
+      
+      recognitionInstance.onend = () => {
+        if (voiceListening && recognitionInstance) {
+          try {
+            setTimeout(() => {
+              if (voiceListening) {
+                recognitionInstance.start();
+              }
+            }, 100);
+          } catch (error) {
+            setVoiceListening(false);
+          }
+        } else {
+          setVoiceListening(false);
+        }
+      };
+      
+      setRecognition(recognitionInstance);
+      console.log('✅ Speech recognition fully configured');
+    } else {
+      console.log('❌ Speech recognition not supported in this browser');
+    }
+  }, [command, voiceListening]);
 
+  // Toggle voice recognition
+  const toggleVoiceRecognition = useCallback(async () => {
+    if (!recognition) {
+      console.log('Speech recognition not supported in this browser');
+      return;
+    }
+    
+    if (voiceListening) {
+      recognition.stop();
+      setVoiceListening(false);
+    } else {
+      try {
+        // Request microphone permission first
+        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+          try {
+            await navigator.mediaDevices.getUserMedia({ audio: true });
+          } catch (permError) {
+            console.error('Microphone permission denied');
+            return;
+          }
+        }
+        
+        recognition.start();
+        setVoiceListening(true);
+      } catch (error) {
+        console.error('Failed to start speech recognition:', error);
+        setVoiceListening(false);
+      }
+    }
+  }, [recognition, voiceListening]);
+
+  // Manual test functions for debugging (expose to window for console testing)
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      (window as any).testUndo = () => {
+        console.log('🧪 Manual test: triggering undo');
+        handleUndo();
+      };
+      (window as any).testRedo = () => {
+        console.log('🧪 Manual test: triggering redo');
+        handleRedo();
+      };
+      (window as any).testAddToUndo = (text: string) => {
+        console.log('🧪 Manual test: adding to undo stack:', text);
+        if (lastSavedCommand.current !== '') {
+          setUndoStack(prev => [...prev, lastSavedCommand.current]);
+        }
+        lastSavedCommand.current = text;
+        setCommand(text);
+      };
+      (window as any).getUndoState = () => {
+        return {
+          undoStack,
+          redoStack,
+          currentCommand: command,
+          lastSavedCommand: lastSavedCommand.current
+        };
+      };
+    }
+  }, [undoStack, redoStack, command, handleUndo, handleRedo]);
 
   const loadHistory = async () => {
     try {
@@ -177,18 +783,112 @@ export default function StagedComposer({
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    // Ctrl/Cmd + Enter to send
+    // Handle snippets navigation when snippets are visible
+    if (showSnippets && snippets.length > 0) {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setSelectedSnippet(prev => (prev + 1) % snippets.length);
+        return;
+      }
+      if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setSelectedSnippet(prev => prev === 0 ? snippets.length - 1 : prev - 1);
+        return;
+      }
+      if (e.key === 'Tab' || e.key === 'Enter') {
+        e.preventDefault();
+        applySnippet(snippets[selectedSnippet]);
+        return;
+      }
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        setShowSnippets(false);
+        return;
+      }
+    }
+
+    // Handle suggestions navigation when suggestions are visible
+    if (showSuggestions && suggestions.length > 0) {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setSelectedSuggestion(prev => (prev + 1) % suggestions.length);
+        return;
+      }
+      if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setSelectedSuggestion(prev => prev === 0 ? suggestions.length - 1 : prev - 1);
+        return;
+      }
+      if (e.key === 'Tab' || e.key === 'Enter') {
+        e.preventDefault();
+        applySuggestion(suggestions[selectedSuggestion]);
+        return;
+      }
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        setShowSuggestions(false);
+        setSuggestions([]);
+        return;
+      }
+    }
+
+    // Ctrl/Cmd + Z for undo
+    if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+      e.preventDefault();
+      handleUndo();
+      return;
+    }
+    // Ctrl/Cmd + Shift + Z for redo
+    if ((e.ctrlKey || e.metaKey) && e.key === 'z' && e.shiftKey) {
+      e.preventDefault();
+      handleRedo();
+      return;
+    }
+    // Ctrl/Cmd + Y for redo (alternative)
+    if ((e.ctrlKey || e.metaKey) && e.key === 'y') {
+      e.preventDefault();
+      handleRedo();
+      return;
+    }
+    // Ctrl/Cmd + Enter to send (always works)
     if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
       e.preventDefault();
       handleSend();
+      return;
+    }
+    // Enter behavior depends on mode
+    if (e.key === 'Enter' && !e.shiftKey) {
+      if (multilineMode) {
+        // In multi-line mode, Enter adds new line, Shift+Enter sends
+        // Let default behavior happen (new line)
+        return;
+      } else {
+        // In single-line mode, Enter sends, Shift+Enter adds new line
+        e.preventDefault();
+        handleSend();
+        return;
+      }
+    }
+    // Shift+Enter behavior depends on mode
+    if (e.key === 'Enter' && e.shiftKey) {
+      if (multilineMode) {
+        // In multi-line mode, Shift+Enter sends
+        e.preventDefault();
+        handleSend();
+        return;
+      } else {
+        // In single-line mode, Shift+Enter adds new line
+        // Let default behavior happen
+        return;
+      }
     }
     // Escape to close
     if (e.key === 'Escape') {
       e.preventDefault();
       onClose();
     }
-    // Up arrow for previous command in history
-    if (e.key === 'ArrowUp' && !e.shiftKey) {
+    // Up arrow for previous command in history (only when suggestions not visible)
+    if (e.key === 'ArrowUp' && !e.shiftKey && !showSuggestions) {
       e.preventDefault();
       if (historyIndex < history.length - 1) {
         const newIndex = historyIndex + 1;
@@ -196,8 +896,8 @@ export default function StagedComposer({
         setCommand(history[newIndex].command);
       }
     }
-    // Down arrow for next command in history
-    if (e.key === 'ArrowDown' && !e.shiftKey) {
+    // Down arrow for next command in history (only when suggestions not visible)
+    if (e.key === 'ArrowDown' && !e.shiftKey && !showSuggestions) {
       e.preventDefault();
       if (historyIndex > 0) {
         const newIndex = historyIndex - 1;
@@ -767,6 +1467,20 @@ export default function StagedComposer({
               </span>
             )}
             <span className="text-xs text-text-muted">~{tokenEstimate} tokens</span>
+            
+            {/* Multi-line mode toggle */}
+            <button
+              onClick={() => setMultilineMode(!multilineMode)}
+              className={`flex items-center gap-1 px-2 py-1 rounded transition-colors text-xs ${
+                multilineMode 
+                  ? 'bg-cyan-600/20 text-cyan-400 hover:bg-cyan-600/30' 
+                  : 'text-text-muted hover:text-text-primary hover:bg-bg-tertiary'
+              }`}
+              title={multilineMode ? 'Switch to single-line mode' : 'Switch to multi-line mode'}
+            >
+              {multilineMode ? <Minimize className="w-3 h-3" /> : <Expand className="w-3 h-3" />}
+              <span>{multilineMode ? 'Multi' : 'Single'}</span>
+            </button>
           </div>
           <button
             onClick={onClose}
@@ -776,6 +1490,30 @@ export default function StagedComposer({
             <X className="w-4 h-4 text-text-secondary" />
           </button>
         </div>
+
+        {/* User feedback messages */}
+        {(errorMessage || successMessage || warningMessage) && (
+          <div className="px-4 py-2 border-b border-border-primary">
+            {errorMessage && (
+              <div className="flex items-center gap-2 p-3 mb-2 bg-red-500/10 border border-red-500/20 rounded-md">
+                <span className="text-red-400 text-sm">❌</span>
+                <span className="text-red-400 text-sm font-medium">{errorMessage}</span>
+              </div>
+            )}
+            {successMessage && (
+              <div className="flex items-center gap-2 p-3 mb-2 bg-green-500/10 border border-green-500/20 rounded-md">
+                <span className="text-green-400 text-sm">✅</span>
+                <span className="text-green-400 text-sm font-medium">{successMessage}</span>
+              </div>
+            )}
+            {warningMessage && (
+              <div className="flex items-center gap-2 p-3 mb-2 bg-yellow-500/10 border border-yellow-500/20 rounded-md">
+                <span className="text-yellow-400 text-sm">⚠️</span>
+                <span className="text-yellow-400 text-sm font-medium">{warningMessage}</span>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Text area */}
         <div className="p-4">
@@ -789,10 +1527,16 @@ export default function StagedComposer({
               isProcessingOCR ? "🔍 Processing images with OCR... Please wait..." :
               isProcessingPDF ? "📄 Processing PDF files... Please wait..." :
               dragActive ? "🖼️ Drop images or PDFs to extract text automatically..." : 
-              "Type or paste your command here... (Drag images/PDFs to extract text)"
+              multilineMode ? "Type your command here... (Enter for new line, Shift+Enter to send)" :
+              "Type your command here... (Enter to send, Shift+Enter for new line, @ for snippets)"
             }
-            className="w-full h-24 px-3 py-2 bg-bg-primary border border-border-primary rounded-md text-text-primary placeholder-text-muted resize-none focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent font-mono text-sm"
-            style={{ minHeight: '96px', pointerEvents: dragActive ? 'none' : 'auto' }}
+            className={`w-full px-3 py-2 bg-bg-primary border border-border-primary rounded-md text-text-primary placeholder-text-muted resize-none focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent font-mono text-sm transition-all duration-200 ${
+              multilineMode ? 'h-40' : 'h-24'
+            }`}
+            style={{ 
+              minHeight: multilineMode ? '160px' : '96px', 
+              pointerEvents: dragActive ? 'none' : 'auto' 
+            }}
             onDragOver={(e) => {
               e.preventDefault();
               e.stopPropagation();
@@ -802,6 +1546,48 @@ export default function StagedComposer({
               e.stopPropagation();
             }}
           />
+
+          {/* AI Suggestions dropdown */}
+          {showSuggestions && suggestions.length > 0 && (
+            <div className="absolute left-4 right-4 mt-1 bg-bg-secondary border border-border-primary rounded-md shadow-xl max-h-64 overflow-hidden z-50">
+              <div className="p-2 border-b border-border-primary">
+                <div className="text-xs text-text-muted flex items-center gap-2">
+                  <Hash className="w-3 h-3" />
+                  AI Suggestions
+                  {isLoadingSuggestions && <span className="animate-pulse">Loading...</span>}
+                </div>
+              </div>
+              <div className="max-h-52 overflow-y-auto">
+                {suggestions.map((suggestion, index) => (
+                  <button
+                    key={index}
+                    onClick={() => applySuggestion(suggestion)}
+                    className={`w-full px-3 py-2 text-left transition-colors border-b border-border-primary/50 last:border-0 ${
+                      index === selectedSuggestion 
+                        ? 'bg-cyan-600/20 text-cyan-400' 
+                        : 'hover:bg-bg-tertiary'
+                    }`}
+                  >
+                    <div className="text-xs font-mono text-text-primary truncate">
+                      {suggestion}
+                    </div>
+                    <div className="text-xs text-text-muted mt-1">
+                      {suggestion.startsWith('git') ? '🔗 Git command' :
+                       suggestion.startsWith('npm') ? '📦 NPM command' :
+                       suggestion.startsWith('find') ? '🔍 Search command' :
+                       suggestion.includes('/') ? '📁 File path' :
+                       '💡 Suggestion'}
+                    </div>
+                  </button>
+                ))}
+              </div>
+              <div className="p-2 border-t border-border-primary bg-bg-primary/30">
+                <div className="text-xs text-text-muted">
+                  Navigate: ↑/↓ • Select: Tab/Enter • Cancel: Esc
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Image previews */}
           {images.length > 0 && (
@@ -850,6 +1636,47 @@ export default function StagedComposer({
               Templates
               <ChevronDown className={`w-3 h-3 transition-transform ${showTemplates ? 'rotate-180' : ''}`} />
             </button>
+            <button
+              onClick={() => {
+                loadSnippets();
+                setShowSnippetManager(!showSnippetManager);
+                if (!showSnippetManager) {
+                  setShowHistory(false);
+                  setShowTemplates(false);
+                }
+              }}
+              className="flex items-center gap-1 hover:text-text-primary transition-colors"
+            >
+              <Bookmark className="w-3 h-3" />
+              Snippets
+              <ChevronDown className={`w-3 h-3 transition-transform ${showSnippetManager ? 'rotate-180' : ''}`} />
+            </button>
+            
+            {/* Undo/Redo buttons */}
+            <button
+              onClick={() => {
+                console.log('🖱️ UNDO BUTTON CLICKED');
+                handleUndo();
+              }}
+              disabled={undoStack.length === 0}
+              className="flex items-center gap-1 hover:text-text-primary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              title={`Undo (Ctrl+Z) - ${undoStack.length} actions available`}
+            >
+              <Undo2 className="w-3 h-3" />
+              <span className="text-xs">({undoStack.length})</span>
+            </button>
+            <button
+              onClick={() => {
+                console.log('🖱️ REDO BUTTON CLICKED');
+                handleRedo();
+              }}
+              disabled={redoStack.length === 0}
+              className="flex items-center gap-1 hover:text-text-primary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              title={`Redo (Ctrl+Shift+Z) - ${redoStack.length} actions available`}
+            >
+              <Redo2 className="w-3 h-3" />
+              <span className="text-xs">({redoStack.length})</span>
+            </button>
             {onPlanningModeToggle && (
               <button
                 onClick={onPlanningModeToggle}
@@ -883,6 +1710,31 @@ export default function StagedComposer({
             )}
           </div>
           <div className="flex items-center gap-2">
+            {command.trim() && (
+              <button
+                onClick={() => setShowSnippetManager(true)}
+                className="flex items-center gap-1 px-2 py-1 text-xs bg-bg-tertiary hover:bg-bg-secondary text-text-secondary hover:text-text-primary rounded transition-colors"
+                title="Save as snippet"
+              >
+                <Save className="w-3 h-3" />
+                Save
+              </button>
+            )}
+            
+            {/* Voice input button */}
+            <button
+              onClick={toggleVoiceRecognition}
+              className={`flex items-center gap-1 px-2 py-1 text-xs rounded transition-colors ${
+                voiceListening 
+                  ? 'bg-red-600/20 text-red-400 hover:bg-red-600/30' 
+                  : 'bg-bg-tertiary hover:bg-bg-secondary text-text-secondary hover:text-text-primary'
+              }`}
+              title={voiceListening ? 'Stop voice input' : 'Start voice input'}
+            >
+              {voiceListening ? <MicOff className="w-3 h-3" /> : <Mic className="w-3 h-3" />}
+              {voiceListening && <span>Listening</span>}
+            </button>
+            
             <button
               onClick={handleSend}
               disabled={!command.trim() && images.length === 0}
@@ -957,6 +1809,140 @@ export default function StagedComposer({
                   </button>
                 ))
               )}
+            </div>
+          </div>
+        )}
+
+        {/* Snippets dropdown panel */}
+        {showSnippetManager && (
+          <div className="absolute bottom-full mb-2 left-0 right-0 bg-bg-secondary border border-border-primary rounded-lg shadow-xl max-h-80 overflow-hidden">
+            {/* Header with search and save */}
+            <div className="p-3 border-b border-border-primary">
+              <div className="flex items-center gap-2 mb-2">
+                <Bookmark className="w-4 h-4 text-text-muted" />
+                <span className="text-sm font-medium text-text-primary">Command Snippets</span>
+                <span className="text-xs text-text-muted">({snippets.length})</span>
+              </div>
+              
+              {/* Search */}
+              <input
+                type="text"
+                placeholder="Search snippets..."
+                value={snippetSearch}
+                onChange={(e) => {
+                  setSnippetSearch(e.target.value);
+                  searchSnippets(e.target.value);
+                }}
+                className="w-full px-2 py-1 mb-2 bg-bg-primary border border-border-primary rounded text-xs text-text-primary placeholder-text-muted focus:outline-none focus:ring-1 focus:ring-cyan-500"
+              />
+              
+              {/* Save new snippet */}
+              {command.trim() && (
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    placeholder="Snippet name..."
+                    value={newSnippetName}
+                    onChange={(e) => setNewSnippetName(e.target.value)}
+                    className="flex-1 px-2 py-1 bg-bg-primary border border-border-primary rounded text-xs text-text-primary placeholder-text-muted focus:outline-none focus:ring-1 focus:ring-cyan-500"
+                  />
+                  <select
+                    value={newSnippetCategory}
+                    onChange={(e) => setNewSnippetCategory(e.target.value)}
+                    className="px-2 py-1 bg-bg-primary border border-border-primary rounded text-xs text-text-primary focus:outline-none focus:ring-1 focus:ring-cyan-500"
+                  >
+                    {commandSnippetsService.getCategories().map(cat => (
+                      <option key={cat} value={cat}>{cat}</option>
+                    ))}
+                  </select>
+                  <button
+                    onClick={saveAsSnippet}
+                    disabled={!newSnippetName.trim()}
+                    className="px-2 py-1 bg-cyan-600 hover:bg-cyan-500 disabled:bg-gray-600 disabled:cursor-not-allowed text-white text-xs rounded transition-colors"
+                  >
+                    <Plus className="w-3 h-3" />
+                  </button>
+                </div>
+              )}
+            </div>
+            
+            {/* Snippets list */}
+            <div className="max-h-48 overflow-y-auto">
+              {snippets.length === 0 ? (
+                <div className="p-3 text-center text-xs text-text-muted">
+                  {snippetSearch ? 'No snippets found' : 'No snippets yet. Type @ to use snippets.'}
+                </div>
+              ) : (
+                snippets.map((snippet, index) => (
+                  <button
+                    key={snippet.id}
+                    onClick={() => applySnippet(snippet)}
+                    className="w-full px-3 py-2 text-left hover:bg-bg-tertiary transition-colors border-b border-border-primary/50 last:border-0"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="text-xs font-medium text-text-primary">{snippet.name}</div>
+                      <div className="flex items-center gap-1 text-xs text-text-muted">
+                        <span className="px-1 rounded bg-bg-tertiary">{snippet.category}</span>
+                        {snippet.useCount > 0 && <span>({snippet.useCount}x)</span>}
+                      </div>
+                    </div>
+                    <div className="text-xs text-text-muted mt-1 font-mono truncate">
+                      {snippet.command}
+                    </div>
+                    {snippet.description && (
+                      <div className="text-xs text-text-muted mt-1 opacity-75">
+                        {snippet.description}
+                      </div>
+                    )}
+                  </button>
+                ))
+              )}
+            </div>
+            
+            <div className="p-2 border-t border-border-primary bg-bg-primary/30">
+              <div className="text-xs text-text-muted">
+                Type @ followed by keywords to quickly find snippets
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* @snippets dropdown (when typing @) */}
+        {showSnippets && snippets.length > 0 && (
+          <div className="absolute left-4 right-4 mt-1 bg-bg-secondary border border-border-primary rounded-md shadow-xl max-h-64 overflow-hidden z-50">
+            <div className="p-2 border-b border-border-primary">
+              <div className="text-xs text-text-muted flex items-center gap-2">
+                <Bookmark className="w-3 h-3" />
+                Snippets ({snippets.length})
+              </div>
+            </div>
+            <div className="max-h-52 overflow-y-auto">
+              {snippets.map((snippet, index) => (
+                <button
+                  key={snippet.id}
+                  onClick={() => applySnippet(snippet)}
+                  className={`w-full px-3 py-2 text-left transition-colors border-b border-border-primary/50 last:border-0 ${
+                    index === selectedSnippet 
+                      ? 'bg-cyan-600/20 text-cyan-400' 
+                      : 'hover:bg-bg-tertiary'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="text-xs font-medium text-text-primary">{snippet.name}</div>
+                    <div className="text-xs text-text-muted px-1 rounded bg-bg-tertiary">
+                      {snippet.category}
+                    </div>
+                  </div>
+                  <div className="text-xs font-mono text-text-muted mt-1 truncate">
+                    {snippet.command}
+                  </div>
+                </button>
+              ))}
+            </div>
+            <div className="p-2 border-t border-border-primary bg-bg-primary/30">
+              <div className="text-xs text-text-muted">
+                Navigate: ↑/↓ • Select: Tab/Enter • Cancel: Esc
+              </div>
             </div>
           </div>
         )}

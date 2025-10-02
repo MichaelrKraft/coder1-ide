@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { X, Monitor, Terminal, Bot, Save, User, Palette, Code } from 'lucide-react';
+import { X, Monitor, Terminal, Bot, Save, User, Palette, Code, Brain } from 'lucide-react';
+import { memoryPreferences } from '@/lib/memory-preferences';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -10,7 +11,7 @@ interface SettingsModalProps {
   onFontSizeChange?: (size: number) => void;
 }
 
-type SettingsTab = 'general' | 'editor' | 'terminal' | 'ai';
+type SettingsTab = 'general' | 'editor' | 'terminal' | 'ai' | 'memory';
 
 interface Settings {
   // General
@@ -35,6 +36,22 @@ interface Settings {
   aiSuggestions: boolean;
   claudeApiKey: string;
   openaiApiKey: string;
+  
+  // Memory
+  memoryDetectionEnabled: boolean;
+  memoryDetectionThreshold: number;
+  memoryAutoGeneration: boolean;
+  memoryEventTypes: {
+    bugFix: boolean;
+    featureCompletion: boolean;
+    breakthrough: boolean;
+    learning: boolean;
+    architectureDecision: boolean;
+    solutionDiscovery: boolean;
+  };
+  memoryNotifications: boolean;
+  memoryNotificationSound: boolean;
+  memoryTemplateCustomization: string;
 }
 
 const defaultSettings: Settings = {
@@ -53,6 +70,20 @@ const defaultSettings: Settings = {
   aiSuggestions: true,
   claudeApiKey: '',
   openaiApiKey: '',
+  memoryDetectionEnabled: true,
+  memoryDetectionThreshold: 70,
+  memoryAutoGeneration: true,
+  memoryEventTypes: {
+    bugFix: true,
+    featureCompletion: true,
+    breakthrough: true,
+    learning: true,
+    architectureDecision: false,
+    solutionDiscovery: false,
+  },
+  memoryNotifications: true,
+  memoryNotificationSound: false,
+  memoryTemplateCustomization: 'default',
 };
 
 export default function SettingsModal({ isOpen, onClose, fontSize, onFontSizeChange }: SettingsModalProps) {
@@ -92,6 +123,17 @@ export default function SettingsModal({ isOpen, onClose, fontSize, onFontSizeCha
       onFontSizeChange(settings.fontSize);
     }
     
+    // Save memory preferences through the service
+    memoryPreferences.savePreferences({
+      enabled: settings.memoryDetectionEnabled,
+      threshold: settings.memoryDetectionThreshold,
+      autoGeneration: settings.memoryAutoGeneration,
+      eventTypes: settings.memoryEventTypes,
+      notifications: settings.memoryNotifications,
+      notificationSound: settings.memoryNotificationSound,
+      templateType: settings.memoryTemplateCustomization as any,
+    });
+    
     // Show success message
     const toast = document.createElement('div');
     toast.className = 'fixed bottom-4 right-4 bg-green-500/20 border border-green-500/50 text-green-400 px-4 py-2 rounded z-50';
@@ -107,6 +149,7 @@ export default function SettingsModal({ isOpen, onClose, fontSize, onFontSizeCha
     { id: 'editor' as SettingsTab, label: 'Editor', icon: Code },
     { id: 'terminal' as SettingsTab, label: 'Terminal', icon: Terminal },
     { id: 'ai' as SettingsTab, label: 'AI', icon: Bot },
+    { id: 'memory' as SettingsTab, label: 'Memory', icon: Brain },
   ];
 
   return (
@@ -398,6 +441,197 @@ export default function SettingsModal({ isOpen, onClose, fontSize, onFontSizeCha
                     <p className="text-xs text-text-muted mt-1">
                       Used as fallback when Claude is unavailable
                     </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'memory' && (
+              <div className="space-y-6">
+                <h3 className="text-lg font-semibold text-text-primary mb-4">Memory System Settings</h3>
+                
+                <div className="space-y-4">
+                  {/* Master Toggle */}
+                  <div>
+                    <label className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={settings.memoryDetectionEnabled}
+                        onChange={(e) => updateSetting('memoryDetectionEnabled', e.target.checked)}
+                        className="rounded border-border-default"
+                      />
+                      <span className="text-sm text-text-primary font-medium">Enable Memory Detection</span>
+                    </label>
+                    <p className="text-xs text-text-muted mt-1 ml-6">
+                      Automatically detect and suggest memory-worthy events during coding sessions
+                    </p>
+                  </div>
+
+                  {settings.memoryDetectionEnabled && (
+                    <>
+                      {/* Detection Threshold */}
+                      <div>
+                        <label className="block text-sm font-medium text-text-primary mb-2">
+                          Detection Threshold: {settings.memoryDetectionThreshold}%
+                        </label>
+                        <input
+                          type="range"
+                          value={settings.memoryDetectionThreshold}
+                          onChange={(e) => updateSetting('memoryDetectionThreshold', parseInt(e.target.value))}
+                          min="0"
+                          max="100"
+                          step="5"
+                          className="w-full"
+                        />
+                        <div className="flex justify-between text-xs text-text-muted mt-1">
+                          <span>Conservative (0%)</span>
+                          <span>Balanced (70%)</span>
+                          <span>Aggressive (100%)</span>
+                        </div>
+                      </div>
+
+                      {/* Auto-Generation */}
+                      <div>
+                        <label className="flex items-center gap-2">
+                          <input
+                            type="checkbox"
+                            checked={settings.memoryAutoGeneration}
+                            onChange={(e) => updateSetting('memoryAutoGeneration', e.target.checked)}
+                            className="rounded border-border-default"
+                          />
+                          <span className="text-sm text-text-primary">Auto-generate memories above threshold</span>
+                        </label>
+                        <p className="text-xs text-text-muted mt-1 ml-6">
+                          Automatically create memories when confidence exceeds {settings.memoryDetectionThreshold}%
+                        </p>
+                      </div>
+
+                      {/* Event Type Toggles */}
+                      <div>
+                        <label className="block text-sm font-medium text-text-primary mb-2">
+                          Detect Event Types
+                        </label>
+                        <div className="space-y-2 ml-2">
+                          <label className="flex items-center gap-2">
+                            <input
+                              type="checkbox"
+                              checked={settings.memoryEventTypes.bugFix}
+                              onChange={(e) => updateSetting('memoryEventTypes', {...settings.memoryEventTypes, bugFix: e.target.checked})}
+                              className="rounded border-border-default"
+                            />
+                            <span className="text-sm text-text-secondary">🐛 Bug Fixes</span>
+                          </label>
+                          <label className="flex items-center gap-2">
+                            <input
+                              type="checkbox"
+                              checked={settings.memoryEventTypes.featureCompletion}
+                              onChange={(e) => updateSetting('memoryEventTypes', {...settings.memoryEventTypes, featureCompletion: e.target.checked})}
+                              className="rounded border-border-default"
+                            />
+                            <span className="text-sm text-text-secondary">✨ Feature Completions</span>
+                          </label>
+                          <label className="flex items-center gap-2">
+                            <input
+                              type="checkbox"
+                              checked={settings.memoryEventTypes.breakthrough}
+                              onChange={(e) => updateSetting('memoryEventTypes', {...settings.memoryEventTypes, breakthrough: e.target.checked})}
+                              className="rounded border-border-default"
+                            />
+                            <span className="text-sm text-text-secondary">🎯 Breakthroughs</span>
+                          </label>
+                          <label className="flex items-center gap-2">
+                            <input
+                              type="checkbox"
+                              checked={settings.memoryEventTypes.learning}
+                              onChange={(e) => updateSetting('memoryEventTypes', {...settings.memoryEventTypes, learning: e.target.checked})}
+                              className="rounded border-border-default"
+                            />
+                            <span className="text-sm text-text-secondary">📚 Learning Moments</span>
+                          </label>
+                          <label className="flex items-center gap-2">
+                            <input
+                              type="checkbox"
+                              checked={settings.memoryEventTypes.architectureDecision}
+                              onChange={(e) => updateSetting('memoryEventTypes', {...settings.memoryEventTypes, architectureDecision: e.target.checked})}
+                              className="rounded border-border-default"
+                            />
+                            <span className="text-sm text-text-secondary">🏗️ Architecture Decisions</span>
+                          </label>
+                          <label className="flex items-center gap-2">
+                            <input
+                              type="checkbox"
+                              checked={settings.memoryEventTypes.solutionDiscovery}
+                              onChange={(e) => updateSetting('memoryEventTypes', {...settings.memoryEventTypes, solutionDiscovery: e.target.checked})}
+                              className="rounded border-border-default"
+                            />
+                            <span className="text-sm text-text-secondary">💡 Solution Discoveries</span>
+                          </label>
+                        </div>
+                      </div>
+
+                      {/* Notifications */}
+                      <div>
+                        <label className="flex items-center gap-2">
+                          <input
+                            type="checkbox"
+                            checked={settings.memoryNotifications}
+                            onChange={(e) => updateSetting('memoryNotifications', e.target.checked)}
+                            className="rounded border-border-default"
+                          />
+                          <span className="text-sm text-text-primary">Show memory notifications</span>
+                        </label>
+                        {settings.memoryNotifications && (
+                          <label className="flex items-center gap-2 ml-6 mt-2">
+                            <input
+                              type="checkbox"
+                              checked={settings.memoryNotificationSound}
+                              onChange={(e) => updateSetting('memoryNotificationSound', e.target.checked)}
+                              className="rounded border-border-default"
+                            />
+                            <span className="text-sm text-text-secondary">Play notification sound</span>
+                          </label>
+                        )}
+                      </div>
+
+                      {/* Template Customization */}
+                      <div>
+                        <label className="block text-sm font-medium text-text-primary mb-2">
+                          Memory Template
+                        </label>
+                        <select
+                          value={settings.memoryTemplateCustomization}
+                          onChange={(e) => updateSetting('memoryTemplateCustomization', e.target.value)}
+                          className="w-full px-3 py-2 bg-bg-primary border border-border-default rounded text-text-primary"
+                        >
+                          <option value="default">Default Template</option>
+                          <option value="detailed">Detailed Template</option>
+                          <option value="minimal">Minimal Template</option>
+                          <option value="technical">Technical Template</option>
+                          <option value="learning">Learning-Focused Template</option>
+                        </select>
+                        <p className="text-xs text-text-muted mt-1">
+                          Choose how memories are formatted and what details to include
+                        </p>
+                      </div>
+                    </>
+                  )}
+                  
+                  {/* Phase II Notice */}
+                  <div className="mt-6 p-4 bg-orange-500/10 border border-orange-500/30 rounded-lg">
+                    <h4 className="flex items-center gap-2 text-sm font-semibold text-orange-400 mb-2">
+                      <Brain className="w-4 h-4" />
+                      Memory System Phase II
+                    </h4>
+                    <div className="space-y-2 text-sm text-text-secondary">
+                      <p>
+                        <span className="text-orange-400 font-medium">User Preferences:</span>{' '}
+                        Configure detection thresholds and behavior
+                      </p>
+                      <p className="text-xs">
+                        These settings will be persisted in SQLite database once Phase II persistence layer is complete.
+                        Currently using localStorage for preference storage.
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>
