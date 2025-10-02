@@ -135,6 +135,16 @@ const config: Config = {
     'group-hover:opacity-100',
     'bg-clip-text',
     'text-transparent',
+    // Drag functionality classes
+    'cursor-move',
+    'cursor-grabbing',
+    'select-none',
+    'shadow-glow-cyan',
+    'ring-2',
+    'ring-cyan-400',
+    'ring-cyan-500',
+    'border-cyan-500',
+    'animate-pulse',
   ]
 }
 export default config

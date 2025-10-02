@@ -45,19 +45,59 @@ export function useContextActivation(): UseContextActivationReturn {
         // Show user feedback
         addToast(`🧠 Activating AI context for ${trigger}...`, 'info');
         
-        // Activate context session via browser session manager
+        // Activate context session via browser session manager with enhanced error handling
         const sessionId = await browserSessionManager.activateContextSession();
         
         setContextSessionId(sessionId);
         setIsContextActive(true);
         
         console.log(`✅ Context activated: ${sessionId.substring(0, 8)}... (trigger: ${trigger})`);
-        addToast('✅ AI context activated - Claude is now learning from your session', 'success');
+        
+        // Check if we're in production mode for appropriate messaging
+        const isProduction = process.env.NODE_ENV === 'production';
+        const successMessage = isProduction 
+          ? '✅ AI context activated - Limited features in production mode'
+          : '✅ AI context activated - Claude is now learning from your session';
+        
+        addToast(successMessage, 'success');
         
         return true;
       } catch (error) {
         console.error('Context activation failed:', error);
-        addToast('⚠️ AI context activation failed - features may be limited', 'error');
+        
+        // Enhanced error handling based on error type
+        let errorMessage = '⚠️ AI context activation failed - features may be limited';
+        let shouldRetry = false;
+        
+        if (error instanceof Error) {
+          if (error.message.includes('Context activation failed: 500')) {
+            errorMessage = '⚠️ Context system temporarily unavailable - continuing in limited mode';
+          } else if (error.message.includes('fetch')) {
+            errorMessage = '⚠️ Network error during context activation - retrying available';
+            shouldRetry = true;
+          } else if (error.message.includes('path')) {
+            errorMessage = '⚠️ File system error - continuing in production mode';
+          }
+        }
+        
+        addToast(errorMessage, shouldRetry ? 'warning' : 'error');
+        
+        // In production environments, we continue with degraded functionality
+        const isProduction = process.env.NODE_ENV === 'production' || 
+                           typeof window !== 'undefined' && window.location.hostname.includes('render');
+        
+        if (isProduction) {
+          console.log('🌐 Production environment detected - continuing with degraded context functionality');
+          
+          // Create a minimal fallback session ID for basic functionality
+          const fallbackSessionId = `fallback_${Date.now()}_${trigger.replace(/\s+/g, '_')}`;
+          setContextSessionId(fallbackSessionId);
+          setIsContextActive(true);
+          
+          addToast('🔧 Running in production compatibility mode', 'info');
+          return true;
+        }
+        
         return false;
       } finally {
         setIsActivating(false);

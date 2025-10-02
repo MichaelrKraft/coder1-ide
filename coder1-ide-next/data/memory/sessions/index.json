@@ -1,5 +1,43 @@
 [
   {
+    "sessionId": "alpha_session_1759418762830",
+    "filename": "2025-10-02T15-26-02-864Z.json",
+    "startTime": "2025-10-02T15:26:02.864Z",
+    "platform": "Claude Code",
+    "totalTokens": 0,
+    "interactionCount": 0,
+    "summary": "Claude Code session (0 interactions): "
+  },
+  {
+    "sessionId": "alpha_session_1759418663944",
+    "filename": "2025-10-02T15-24-24-027Z.json",
+    "startTime": "2025-10-02T15:24:24.027Z",
+    "endTime": "2025-10-02T15:25:53.722Z",
+    "platform": "Claude Code",
+    "totalTokens": 0,
+    "interactionCount": 0,
+    "summary": "Claude Code session (0 interactions): "
+  },
+  {
+    "sessionId": "alpha_session_1759418595419",
+    "filename": "2025-10-02T15-23-15-468Z.json",
+    "startTime": "2025-10-02T15:23:15.468Z",
+    "platform": "Claude Code",
+    "totalTokens": 0,
+    "interactionCount": 0,
+    "summary": "Claude Code session (0 interactions): "
+  },
+  {
+    "sessionId": "alpha_session_1759418027067",
+    "filename": "2025-10-02T15-13-47-080Z.json",
+    "startTime": "2025-10-02T15:13:47.080Z",
+    "endTime": "2025-10-02T15:22:36.911Z",
+    "platform": "Claude Code",
+    "totalTokens": 0,
+    "interactionCount": 0,
+    "summary": "Claude Code session (0 interactions): "
+  },
+  {
     "sessionId": "session_1759289946226_uic3osk2v3",
     "filename": "2025-10-01T03-39-06-266Z.json",
     "startTime": "2025-10-01T03:39:06.266Z",

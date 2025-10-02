@@ -26,6 +26,16 @@ class ContextFileWatcher {
    */
   async watchProject(projectPath: string): Promise<void> {
     try {
+      // Check if we're in a production environment
+      const isProduction = process.env.NODE_ENV === 'production';
+      const isRender = process.env.RENDER_SERVICE_NAME !== undefined;
+      const productionMode = isProduction || isRender;
+      
+      if (productionMode) {
+        logger.debug('🌐 Production environment detected - file watching disabled for performance and stability');
+        return;
+      }
+
       // Don't watch the same path twice
       if (this.watchers.has(projectPath)) {
         logger.debug(`Already watching project: ${projectPath}`);
@@ -352,11 +362,19 @@ class ContextFileWatcher {
     isWatching: boolean;
     watchedPaths: string[];
     bufferedChanges: number;
+    environment: string;
+    productionMode: boolean;
   } {
+    const isProduction = process.env.NODE_ENV === 'production';
+    const isRender = process.env.RENDER_SERVICE_NAME !== undefined;
+    const productionMode = isProduction || isRender;
+    
     return {
       isWatching: this.isWatching,
       watchedPaths: Array.from(this.watchers.keys()),
-      bufferedChanges: this.changeBuffer.length
+      bufferedChanges: this.changeBuffer.length,
+      environment: productionMode ? (isRender ? 'render' : 'production') : 'development',
+      productionMode
     };
   }
 }

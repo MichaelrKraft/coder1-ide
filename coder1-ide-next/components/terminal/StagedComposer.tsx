@@ -94,7 +94,7 @@ export default function StagedComposer({
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [position, setPosition] = useState(() => {
-    // Try to restore position from localStorage, or use default center position
+    // Try to restore position from localStorage, or use default above footer position
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('coder1-composer-position');
       if (saved) {
@@ -104,13 +104,13 @@ export default function StagedComposer({
           console.warn('Failed to parse saved composer position:', e);
         }
       }
-      // Default to center of screen
+      // Default to well above footer in middle of screen
       return {
         x: Math.max(0, (window.innerWidth - 720) / 2),
-        y: Math.max(0, (window.innerHeight - 400) / 2)
+        y: Math.max(50, window.innerHeight - 450) // Much higher above footer
       };
     }
-    return { x: 100, y: 100 };
+    return { x: 100, y: window.innerHeight - 450 };
   });
   
   // Common command templates
@@ -718,74 +718,94 @@ export default function StagedComposer({
     }
   }, [recognition, voiceListening]);
 
-  // Drag functionality handlers
-  const handleMouseDown = useCallback((e: React.MouseEvent) => {
-    // Only allow dragging from the header
-    if (!(e.target as Element).closest('[data-drag-handle]')) {
+  // Drag functionality - completely rewritten for reliability
+  const isDraggingRef = useRef(false);
+  const dragStartPos = useRef({ x: 0, y: 0 });
+  const composerStartPos = useRef({ x: 0, y: 0 });
+
+  const startDrag = useCallback((e: React.MouseEvent) => {
+    if (e.button !== 0) return; // Only left mouse button
+    
+    e.preventDefault();
+    e.stopPropagation();
+    
+    console.log('🖱️ DRAG START at:', e.clientX, e.clientY);
+    
+    isDraggingRef.current = true;
+    setIsDragging(true);
+    
+    // Record where the drag started
+    dragStartPos.current = { x: e.clientX, y: e.clientY };
+    composerStartPos.current = { x: position.x, y: position.y };
+    
+    console.log('📍 Composer start pos:', composerStartPos.current);
+    
+    // Add global listeners
+    document.addEventListener('mousemove', onMouseMove, { passive: false });
+    document.addEventListener('mouseup', onMouseUp);
+    document.body.style.userSelect = 'none';
+    document.body.style.cursor = 'grabbing';
+  }, [position]);
+
+  const onMouseMove = useCallback((e: MouseEvent) => {
+    if (!isDraggingRef.current) {
+      console.log('❌ Move event but not dragging');
       return;
     }
     
     e.preventDefault();
-    console.log('🖱️ DRAG START');
     
-    setIsDragging(true);
-    const rect = e.currentTarget.getBoundingClientRect();
-    setDragOffset({
-      x: e.clientX - rect.left,
-      y: e.clientY - rect.top
-    });
+    // Calculate how far the mouse has moved from the start
+    const deltaX = e.clientX - dragStartPos.current.x;
+    const deltaY = e.clientY - dragStartPos.current.y;
     
-    // Add global mouse event listeners
-    document.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mouseup', handleMouseUp);
+    // Calculate new position
+    let newX = composerStartPos.current.x + deltaX;
+    let newY = composerStartPos.current.y + deltaY;
     
-    // Prevent text selection during drag
-    document.body.style.userSelect = 'none';
+    // Constrain to viewport
+    newX = Math.max(10, Math.min(window.innerWidth - 730, newX));
+    newY = Math.max(10, Math.min(window.innerHeight - 200, newY));
+    
+    console.log('🖱️ DRAG MOVE:', { deltaX, deltaY, newX, newY });
+    
+    setPosition({ x: newX, y: newY });
   }, []);
 
-  const handleMouseMove = useCallback((e: MouseEvent) => {
-    if (!isDragging) return;
-    
-    e.preventDefault();
-    
-    const newPosition = {
-      x: Math.max(0, Math.min(window.innerWidth - 720, e.clientX - dragOffset.x)),
-      y: Math.max(0, Math.min(window.innerHeight - 400, e.clientY - dragOffset.y))
-    };
-    
-    setPosition(newPosition);
-  }, [isDragging, dragOffset]);
-
-  const handleMouseUp = useCallback(() => {
-    if (!isDragging) return;
+  const onMouseUp = useCallback(() => {
+    if (!isDraggingRef.current) return;
     
     console.log('🖱️ DRAG END');
+    
+    isDraggingRef.current = false;
     setIsDragging(false);
     
     // Remove global listeners
-    document.removeEventListener('mousemove', handleMouseMove);
-    document.removeEventListener('mouseup', handleMouseUp);
-    
-    // Restore text selection
+    document.removeEventListener('mousemove', onMouseMove);
+    document.removeEventListener('mouseup', onMouseUp);
     document.body.style.userSelect = '';
+    document.body.style.cursor = '';
     
-    // Save position to localStorage
-    try {
-      localStorage.setItem('coder1-composer-position', JSON.stringify(position));
-      console.log('💾 Saved composer position:', position);
-    } catch (error) {
-      console.warn('Failed to save composer position:', error);
-    }
-  }, [isDragging, position, handleMouseMove]);
+    // Save position
+    setTimeout(() => {
+      try {
+        localStorage.setItem('coder1-composer-position', JSON.stringify(position));
+        console.log('💾 Saved position:', position);
+      } catch (error) {
+        console.warn('Failed to save position:', error);
+      }
+    }, 100);
+  }, [position]);
 
-  // Cleanup drag listeners on unmount
+  // Cleanup on unmount
   useEffect(() => {
     return () => {
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup', onMouseUp);
       document.body.style.userSelect = '';
+      document.body.style.cursor = '';
     };
-  }, [handleMouseMove, handleMouseUp]);
+  }, [onMouseMove, onMouseUp]);
 
   // Manual test functions for debugging (expose to window for console testing)
   useEffect(() => {
@@ -1521,16 +1541,19 @@ export default function StagedComposer({
       <div
         className={`fixed bg-bg-secondary border border-border-primary rounded-lg shadow-2xl z-[999999] transition-all duration-200 ${
           dragActive ? 'ring-2 ring-cyan-500 border-cyan-500' : ''
-        } ${isDragging ? 'shadow-glow-cyan ring-2 ring-cyan-400' : ''}`}
+        } ${isDragging ? 'ring-2 ring-cyan-400' : ''}`}
         style={{
           minWidth: '720px',
           maxWidth: '1152px',
           width: '720px',
           left: `${position.x}px`,
           top: `${position.y}px`,
-          transform: 'none'
+          transform: 'none',
+          boxShadow: isDragging 
+            ? '0 0 20px rgba(0, 217, 255, 0.4), 0 20px 40px rgba(0, 0, 0, 0.3)' 
+            : '0 10px 30px rgba(0, 0, 0, 0.2)'
         }}
-        onMouseDown={handleMouseDown}
+        data-composer-container="true"
         onDrop={handleDrop}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
@@ -1544,15 +1567,25 @@ export default function StagedComposer({
       >
         {/* Header */}
         <div 
-          className={`flex items-center justify-between px-4 py-2 border-b border-border-primary bg-bg-primary/50 rounded-t-lg ${
-            isDragging ? 'cursor-grabbing' : 'cursor-move'
-          } select-none`}
-          data-drag-handle="true"
+          className={`flex items-center justify-between px-4 py-2 border-b border-border-primary bg-bg-primary/50 rounded-t-lg select-none`}
+          style={{ 
+            cursor: isDragging ? 'grabbing' : 'move',
+            userSelect: 'none'
+          }}
+          onMouseDown={startDrag}
           title="Drag to move the composer around the screen"
         >
           <div className="flex items-center gap-3">
             <span className="text-sm font-medium text-text-primary flex items-center gap-2">
-              <span className="text-text-muted">⋮⋮</span>
+              <span 
+                className="text-text-muted hover:text-cyan-400 transition-colors" 
+                style={{ 
+                  fontSize: '14px',
+                  cursor: isDragging ? 'grabbing' : 'move'
+                }}
+              >
+                ⋮⋮⋮
+              </span>
               Staged Command Composer
               {isDragging && <span className="text-cyan-400 animate-pulse">Moving...</span>}
             </span>

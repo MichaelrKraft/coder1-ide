@@ -52,6 +52,17 @@ services:
       - key: MEMORY_PANIC_THRESHOLD_MB
         value: 1800
       
+      # Production Environment Configuration (Error Doctor Fix)
+      # These settings prevent file system errors and enable fallback modes
+      - key: PROJECT_PATH
+        value: /app  # Correct working directory for Render deployment
+      - key: CONTEXT_PRODUCTION_MODE
+        value: true  # Enables production-safe context initialization
+      - key: DISABLE_FILE_WATCHING
+        value: true  # Prevents file watcher issues in ephemeral environments
+      - key: ENABLE_ERROR_DOCTOR_FALLBACK
+        value: true  # Enables graceful degradation for Error Doctor
+      
       # Security (add via Render Dashboard)
       - key: JWT_SECRET
         sync: false # Set manually in Render Dashboard
