@@ -3,11 +3,18 @@
 import React, { useState, useEffect } from 'react';
 import { memoryDetectionService } from '@/lib/memory-detection-client';
 import type { MemoryDetectionResult } from '@/lib/memory-detection-client';
+import { X } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
 export default function MemoryTestPage() {
   const [detectionResult, setDetectionResult] = useState<MemoryDetectionResult | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [testScenario, setTestScenario] = useState('bug-fix');
+  const router = useRouter();
+
+  const handleClose = () => {
+    router.push('/ide');
+  };
 
   // Mock data for different scenarios
   const mockScenarios = {
@@ -89,7 +96,16 @@ export default function MemoryTestPage() {
   }, [testScenario]);
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white p-8">
+    <div className="min-h-screen bg-gray-900 text-white p-8 relative">
+      {/* Close Button */}
+      <button
+        onClick={handleClose}
+        className="fixed top-4 right-4 z-50 p-2 bg-gray-800 hover:bg-gray-700 border border-gray-600 rounded-full transition-colors"
+        title="Close and return to IDE"
+      >
+        <X className="w-6 h-6 text-gray-300 hover:text-white" />
+      </button>
+
       <div className="max-w-4xl mx-auto">
         <h1 className="text-3xl font-bold mb-8">Memory Detection Test Page</h1>
         

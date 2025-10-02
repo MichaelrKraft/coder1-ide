@@ -332,20 +332,35 @@ export default function MonacoEditor({
       );
     }
     
-    // Always show HeroSection instead of WelcomeScreen (bridge setup)
-    // This change requested by user to remove bridge setup from IDE welcome area
-    console.log('🟢 Showing HeroSection instead of bridge setup');
-    return <HeroSection 
-      onDismiss={() => {
-        console.log('🔴 HeroSection dismissed by user interaction');
-        // Mark as dismissed for this component instance
-        setHeroSectionDismissed(true);
-        // Also store in sessionStorage to prevent re-showing on navigation within same session
-        if (typeof window !== 'undefined') {
-          sessionStorage.setItem('coder1-hero-dismissed', 'true');
-          console.log('💾 Stored hero dismissal in sessionStorage');
-        }
-      }}
+    // Show appropriate welcome experience based on user status
+    if (!setupViewed) {
+      // First-time user - show comprehensive setup instructions
+      console.log('🟡 First-time user detected, showing WelcomeScreen with setup instructions');
+      return <WelcomeScreen 
+        onDismiss={() => {
+          console.log('🔴 WelcomeScreen dismissed by user');
+          // Mark setup as viewed
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('coder1-bridge-setup-viewed', 'true');
+            console.log('💾 Marked setup as viewed for future visits');
+          }
+          setSetupViewed(true);
+        }}
+      />;
+    } else {
+      // Returning user - show HeroSection
+      console.log('🟢 Returning user detected, showing HeroSection');
+      return <HeroSection 
+        onDismiss={() => {
+          console.log('🔴 HeroSection dismissed by user interaction');
+          // Mark as dismissed for this component instance
+          setHeroSectionDismissed(true);
+          // Also store in sessionStorage to prevent re-showing on navigation within same session
+          if (typeof window !== 'undefined') {
+            sessionStorage.setItem('coder1-hero-dismissed', 'true');
+            console.log('💾 Stored hero dismissal in sessionStorage');
+          }
+        }}
       onTourStart={() => {
         console.log('🎯 Interactive Tour started from HeroSection');
         // Don't dismiss hero section when tour starts
@@ -354,7 +369,8 @@ export default function MonacoEditor({
           onTourStart();
         }
       }}
-    />
+    />;
+    }
   }
 
   return (

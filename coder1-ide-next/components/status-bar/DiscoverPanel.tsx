@@ -58,6 +58,9 @@ export default function DiscoverPanel() {
   const [searchInput, setSearchInput] = useState('');
   const searchInputRef = useRef<HTMLInputElement>(null);
   
+  // Panel ref for click-outside-to-close functionality
+  const panelRef = useRef<HTMLDivElement>(null);
+  
   // Slash commands scrolling state
   const [slashCommandOffset, setSlashCommandOffset] = useState(0);
   
@@ -229,6 +232,26 @@ export default function DiscoverPanel() {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, showAddForm, toggleDiscoverPanel, toggleAddCommandForm]);
+
+  // Click outside to close functionality
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (panelRef.current && !panelRef.current.contains(event.target as Node)) {
+        toggleDiscoverPanel();
+        setSearchInput('');
+      }
+    };
+
+    // Only add listener when panel is open
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    // Cleanup function
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isOpen, toggleDiscoverPanel]);
 
   // Task-organized commands (expanded with user's requested commands)
   const taskCommands: TaskCommand[] = [
@@ -439,6 +462,7 @@ export default function DiscoverPanel() {
 
       {/* Panel */}
       <div 
+        ref={panelRef}
         data-tour="discover-menu"
         className={`absolute bottom-full left-0 mb-2 w-96 bg-bg-secondary border border-border-default rounded-lg shadow-xl transition-all duration-200 z-50 ${
         isOpen ? 'opacity-100 visible tour-discover-menu' : 'opacity-0 invisible'
@@ -516,6 +540,69 @@ export default function DiscoverPanel() {
                   </button>
                 );
               })}
+            </div>
+          </div>
+
+          {/* Add Custom Command */}
+          <div className="mb-4">
+            <button 
+              onClick={toggleAddCommandForm}
+              className="w-full flex items-center gap-2 px-3 py-2 text-sm text-coder1-cyan hover:bg-bg-primary rounded-lg transition-colors border border-dashed border-border-default hover:border-coder1-cyan"
+              title="Add custom command - Create your own terminal shortcuts and workflows"
+            >
+              {showAddForm ? (
+                <>
+                  <X className="w-4 h-4" />
+                  Cancel
+                </>
+              ) : (
+                <>
+                  <Plus className="w-4 h-4" />
+                  Add Custom Command
+                </>
+              )}
+            </button>
+
+            {/* Add Command Form */}
+            <div className={`overflow-hidden transition-all duration-200 ${showAddForm ? 'max-h-64 mt-2' : 'max-h-0'}`}>
+              <div className="p-3 bg-bg-tertiary rounded-lg border border-border-default space-y-2">
+                <input
+                  type="text"
+                  placeholder="Command name (without /)"
+                  value={newCommand.name}
+                  onChange={(e) => updateNewCommand('name', e.target.value)}
+                  className="w-full px-3 py-2 text-sm bg-bg-primary border border-border-default rounded outline-none text-text-primary placeholder-text-muted focus:border-coder1-cyan"
+                />
+                <input
+                  type="text"
+                  placeholder="Description"
+                  value={newCommand.description}
+                  onChange={(e) => updateNewCommand('description', e.target.value)}
+                  className="w-full px-3 py-2 text-sm bg-bg-primary border border-border-default rounded outline-none text-text-primary placeholder-text-muted focus:border-coder1-cyan"
+                />
+                <input
+                  type="text"
+                  placeholder="Action/Command"
+                  value={newCommand.action}
+                  onChange={(e) => updateNewCommand('action', e.target.value)}
+                  className="w-full px-3 py-2 text-sm bg-bg-primary border border-border-default rounded outline-none text-text-primary placeholder-text-muted focus:border-coder1-cyan"
+                />
+                <div className="flex gap-2">
+                  <button
+                    onClick={handleSaveCommand}
+                    disabled={!newCommand.name.trim() || !newCommand.description.trim() || !newCommand.action.trim()}
+                    className="px-3 py-2 text-sm bg-coder1-cyan text-black rounded hover:bg-coder1-cyan-secondary disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    Save
+                  </button>
+                  <button
+                    onClick={handleCancelAddCommand}
+                    className="px-3 py-2 text-sm bg-bg-primary border border-border-default rounded hover:bg-bg-secondary text-text-secondary transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -645,69 +732,6 @@ export default function DiscoverPanel() {
               </div>
             </div>
           )}
-
-          {/* Add Custom Command */}
-          <div className="mb-4">
-            <button 
-              onClick={toggleAddCommandForm}
-              className="w-full flex items-center gap-2 px-3 py-2 text-sm text-coder1-cyan hover:bg-bg-primary rounded-lg transition-colors border border-dashed border-border-default hover:border-coder1-cyan"
-              title="Add custom command - Create your own terminal shortcuts and workflows"
-            >
-              {showAddForm ? (
-                <>
-                  <X className="w-4 h-4" />
-                  Cancel
-                </>
-              ) : (
-                <>
-                  <Plus className="w-4 h-4" />
-                  Add Custom Command
-                </>
-              )}
-            </button>
-
-            {/* Add Command Form */}
-            <div className={`overflow-hidden transition-all duration-200 ${showAddForm ? 'max-h-64 mt-2' : 'max-h-0'}`}>
-              <div className="p-3 bg-bg-tertiary rounded-lg border border-border-default space-y-2">
-                <input
-                  type="text"
-                  placeholder="Command name (without /)"
-                  value={newCommand.name}
-                  onChange={(e) => updateNewCommand('name', e.target.value)}
-                  className="w-full px-3 py-2 text-sm bg-bg-primary border border-border-default rounded outline-none text-text-primary placeholder-text-muted focus:border-coder1-cyan"
-                />
-                <input
-                  type="text"
-                  placeholder="Description"
-                  value={newCommand.description}
-                  onChange={(e) => updateNewCommand('description', e.target.value)}
-                  className="w-full px-3 py-2 text-sm bg-bg-primary border border-border-default rounded outline-none text-text-primary placeholder-text-muted focus:border-coder1-cyan"
-                />
-                <input
-                  type="text"
-                  placeholder="Action/Command"
-                  value={newCommand.action}
-                  onChange={(e) => updateNewCommand('action', e.target.value)}
-                  className="w-full px-3 py-2 text-sm bg-bg-primary border border-border-default rounded outline-none text-text-primary placeholder-text-muted focus:border-coder1-cyan"
-                />
-                <div className="flex gap-2">
-                  <button
-                    onClick={handleSaveCommand}
-                    disabled={!newCommand.name.trim() || !newCommand.description.trim() || !newCommand.action.trim()}
-                    className="px-3 py-2 text-sm bg-coder1-cyan text-black rounded hover:bg-coder1-cyan-secondary disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                  >
-                    Save
-                  </button>
-                  <button
-                    onClick={handleCancelAddCommand}
-                    className="px-3 py-2 text-sm bg-bg-primary border border-border-default rounded hover:bg-bg-secondary text-text-secondary transition-colors"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
 
         </div>
       </div>

@@ -83,6 +83,13 @@ export default function StagedComposer({
   // Voice input state
   const [recognition, setRecognition] = useState<any>(null);
   const [voiceListening, setVoiceListening] = useState(false);
+
+  // Debug effect for multilineMode changes
+  useEffect(() => {
+    console.log('🔄 MultilineMode changed to:', multilineMode);
+    console.log('📏 Textarea should be:', multilineMode ? '120px' : '80px');
+    console.log('📐 Composer height: 264px');
+  }, [multilineMode]);
   
   // Error handling and user feedback state
   const [errorMessage, setErrorMessage] = useState<string>('');
@@ -104,13 +111,13 @@ export default function StagedComposer({
           console.warn('Failed to parse saved composer position:', e);
         }
       }
-      // Default to well above footer in middle of screen
+      // Default to above footer in middle of screen
       return {
         x: Math.max(0, (window.innerWidth - 720) / 2),
-        y: Math.max(50, window.innerHeight - 450) // Much higher above footer
+        y: Math.max(50, window.innerHeight - 284) // Positioned just above footer buttons for 264px height
       };
     }
-    return { x: 100, y: window.innerHeight - 450 };
+    return { x: 100, y: window.innerHeight - 284 };
   });
   
   // Common command templates
@@ -723,21 +730,39 @@ export default function StagedComposer({
   const dragStartPos = useRef({ x: 0, y: 0 });
   const composerStartPos = useRef({ x: 0, y: 0 });
 
+  // Use refs for current position to avoid stale closures
+  const positionRef = useRef(position);
+  positionRef.current = position;
+
   const startDrag = useCallback((e: React.MouseEvent) => {
-    if (e.button !== 0) return; // Only left mouse button
+    console.log('🖱️ START DRAG CALLED - Button:', e.button, 'Type:', e.type);
+    
+    if (e.button !== 0) {
+      console.log('❌ Not left mouse button, ignoring');
+      return;
+    }
+    
+    // Don't start mouse drag if file drag is active
+    if (dragActive) {
+      console.log('❌ File drag active, ignoring mouse drag');
+      return;
+    }
     
     e.preventDefault();
     e.stopPropagation();
     
-    console.log('🖱️ DRAG START at:', e.clientX, e.clientY);
+    // Get current position from ref to avoid stale closure
+    const currentPosition = positionRef.current;
+    console.log('🖱️ DRAG START at:', e.clientX, e.clientY, 'Current position:', currentPosition);
     
     isDraggingRef.current = true;
     setIsDragging(true);
     
     // Record where the drag started
     dragStartPos.current = { x: e.clientX, y: e.clientY };
-    composerStartPos.current = { x: position.x, y: position.y };
+    composerStartPos.current = { x: currentPosition.x, y: currentPosition.y };
     
+    console.log('📍 Drag start pos:', dragStartPos.current);
     console.log('📍 Composer start pos:', composerStartPos.current);
     
     // Add global listeners
@@ -745,7 +770,9 @@ export default function StagedComposer({
     document.addEventListener('mouseup', onMouseUp);
     document.body.style.userSelect = 'none';
     document.body.style.cursor = 'grabbing';
-  }, [position]);
+    
+    console.log('✅ Event listeners added, body cursor set to grabbing');
+  }, []);
 
   const onMouseMove = useCallback((e: MouseEvent) => {
     if (!isDraggingRef.current) {
@@ -763,9 +790,9 @@ export default function StagedComposer({
     let newX = composerStartPos.current.x + deltaX;
     let newY = composerStartPos.current.y + deltaY;
     
-    // Constrain to viewport
-    newX = Math.max(10, Math.min(window.innerWidth - 730, newX));
-    newY = Math.max(10, Math.min(window.innerHeight - 200, newY));
+    // Constrain to viewport (account for 264px height) - more permissive bounds
+    newX = Math.max(0, Math.min(window.innerWidth - 720, newX));
+    newY = Math.max(0, Math.min(window.innerHeight - 284, newY));
     
     console.log('🖱️ DRAG MOVE:', { deltaX, deltaY, newX, newY });
     
@@ -786,16 +813,17 @@ export default function StagedComposer({
     document.body.style.userSelect = '';
     document.body.style.cursor = '';
     
-    // Save position
+    // Save position using ref to avoid stale closure
     setTimeout(() => {
       try {
-        localStorage.setItem('coder1-composer-position', JSON.stringify(position));
-        console.log('💾 Saved position:', position);
+        const currentPosition = positionRef.current;
+        localStorage.setItem('coder1-composer-position', JSON.stringify(currentPosition));
+        console.log('💾 Saved position:', currentPosition);
       } catch (error) {
         console.warn('Failed to save position:', error);
       }
     }, 100);
-  }, [position]);
+  }, []);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -1539,19 +1567,22 @@ export default function StagedComposer({
 
       {/* Composer overlay */}
       <div
-        className={`fixed bg-bg-secondary border border-border-primary rounded-lg shadow-2xl z-[999999] transition-all duration-200 ${
+        className={`fixed bg-bg-secondary border border-border-primary rounded-lg shadow-2xl z-[999999] transition-all duration-200 flex flex-col ${
           dragActive ? 'ring-2 ring-cyan-500 border-cyan-500' : ''
         } ${isDragging ? 'ring-2 ring-cyan-400' : ''}`}
         style={{
           minWidth: '720px',
           maxWidth: '1152px',
           width: '720px',
+          height: '264px',
           left: `${position.x}px`,
           top: `${position.y}px`,
           transform: 'none',
           boxShadow: isDragging 
-            ? '0 0 20px rgba(0, 217, 255, 0.4), 0 20px 40px rgba(0, 0, 0, 0.3)' 
-            : '0 10px 30px rgba(0, 0, 0, 0.2)'
+            ? '0 0 30px rgba(0, 217, 255, 0.8), 0 20px 60px rgba(0, 0, 0, 0.4)' 
+            : '0 10px 30px rgba(0, 0, 0, 0.2)',
+          opacity: isDragging ? 0.9 : 1,
+          transition: isDragging ? 'none' : 'all 0.2s ease'
         }}
         data-composer-container="true"
         onDrop={handleDrop}
@@ -1559,35 +1590,23 @@ export default function StagedComposer({
         onDragLeave={handleDragLeave}
         onDragEnter={handleDragEnter}
         onDragEnd={() => {
-          // Failsafe: clear overlay when drag ends
-          console.log('🔴 Drag ended - clearing overlay');
-          dragCounterRef.current = 0;
-          setDragActive(false);
+          // Only handle file drag end if not in mouse drag mode
+          if (!isDraggingRef.current) {
+            console.log('🔴 File drag ended - clearing overlay');
+            dragCounterRef.current = 0;
+            setDragActive(false);
+          }
         }}
       >
         {/* Header */}
         <div 
-          className={`flex items-center justify-between px-4 py-2 border-b border-border-primary bg-bg-primary/50 rounded-t-lg select-none`}
-          style={{ 
-            cursor: isDragging ? 'grabbing' : 'move',
-            userSelect: 'none'
-          }}
+          className="flex items-center justify-between px-4 py-2 border-b border-border-primary bg-bg-primary/50 rounded-t-lg cursor-move hover:bg-bg-secondary/70 transition-colors duration-200"
           onMouseDown={startDrag}
-          title="Drag to move the composer around the screen"
+          title="Click and drag to move the Command Center"
         >
           <div className="flex items-center gap-3">
-            <span className="text-sm font-medium text-text-primary flex items-center gap-2">
-              <span 
-                className="text-text-muted hover:text-cyan-400 transition-colors" 
-                style={{ 
-                  fontSize: '14px',
-                  cursor: isDragging ? 'grabbing' : 'move'
-                }}
-              >
-                ⋮⋮⋮
-              </span>
-              Staged Command Composer
-              {isDragging && <span className="text-cyan-400 animate-pulse">Moving...</span>}
+            <span className="text-sm font-medium text-text-primary">
+              Command Center
             </span>
             {isProcessing && (
               <span className="text-xs text-text-muted animate-pulse">Claude is processing...</span>
@@ -1608,7 +1627,20 @@ export default function StagedComposer({
             
             {/* Multi-line mode toggle */}
             <button
-              onClick={() => setMultilineMode(!multilineMode)}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('🔄 Single/Double line button clicked!');
+                console.log('📊 Current multilineMode:', multilineMode);
+                console.log('📊 Setting multilineMode to:', !multilineMode);
+                setMultilineMode(!multilineMode);
+                console.log('✅ setMultilineMode called with:', !multilineMode);
+              }}
+              onMouseDown={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('🖱️ Button mousedown - preventing drag');
+              }}
               className={`flex items-center gap-1 px-2 py-1 rounded transition-colors text-xs ${
                 multilineMode 
                   ? 'bg-cyan-600/20 text-cyan-400 hover:bg-cyan-600/30' 
@@ -1621,9 +1653,17 @@ export default function StagedComposer({
             </button>
           </div>
           <button
-            onClick={onClose}
-            className="p-1 hover:bg-bg-tertiary rounded transition-colors"
-            title="Close (Esc)"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onClose();
+            }}
+            onMouseDown={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+            }}
+            className="p-1 hover:bg-red-500/20 hover:text-red-400 rounded transition-colors"
+            title="Close Command Center (Esc)"
           >
             <X className="w-4 h-4 text-text-secondary" />
           </button>
@@ -1654,7 +1694,7 @@ export default function StagedComposer({
         )}
 
         {/* Text area */}
-        <div className="p-4">
+        <div className="p-4 flex-1 overflow-hidden">
           <textarea
             ref={textareaRef}
             value={command}
@@ -1668,12 +1708,12 @@ export default function StagedComposer({
               multilineMode ? "Type your command here... (Enter for new line, Shift+Enter to send)" :
               "Type your command here... (Enter to send, Shift+Enter for new line, @ for snippets)"
             }
-            className={`w-full px-3 py-2 bg-bg-primary border border-border-primary rounded-md text-text-primary placeholder-text-muted resize-none focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent font-mono text-sm transition-all duration-200 ${
-              multilineMode ? 'h-40' : 'h-24'
-            }`}
+            className={`w-full px-3 py-2 bg-bg-primary border border-border-primary rounded-md text-text-primary placeholder-text-muted resize-none focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent font-mono text-sm transition-all duration-200`}
             style={{ 
-              minHeight: multilineMode ? '160px' : '96px', 
-              pointerEvents: dragActive ? 'none' : 'auto' 
+              height: multilineMode ? '120px' : '80px',
+              pointerEvents: dragActive ? 'none' : 'auto',
+              border: multilineMode ? '2px solid #22d3ee' : '1px solid rgb(var(--border-primary))',
+              transition: 'all 0.2s ease'
             }}
             onDragOver={(e) => {
               e.preventDefault();
@@ -1752,12 +1792,72 @@ export default function StagedComposer({
         {/* Footer with actions */}
         <div className="flex items-center justify-between px-4 py-3 border-t border-border-primary bg-bg-primary/30 rounded-b-lg">
           <div className="flex items-center gap-3 text-xs text-text-muted">
+            {/* Voice input button - moved to left of history dropdown */}
+            <button
+              onClick={toggleVoiceRecognition}
+              className={`flex items-center gap-1 px-2 py-1 text-sm rounded transition-all duration-200 hover:scale-105 ${
+                voiceListening 
+                  ? 'bg-red-600/20 text-red-400 hover:bg-red-600/30 animate-pulse' 
+                  : 'bg-bg-tertiary hover:bg-bg-secondary text-text-secondary hover:text-orange-400 hover:shadow-md hover:shadow-orange-500/20'
+              }`}
+              style={{
+                filter: voiceListening ? 'none' : 'brightness(1.1)',
+                boxShadow: !voiceListening ? '0 0 0 1px rgba(251, 146, 60, 0)' : undefined,
+                transition: 'all 0.2s ease'
+              }}
+              onMouseEnter={(e) => {
+                if (!voiceListening) {
+                  e.currentTarget.style.filter = 'brightness(1.3)';
+                  e.currentTarget.style.boxShadow = '0 0 12px rgba(251, 146, 60, 0.6)';
+                  e.currentTarget.style.color = '#FB923C';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!voiceListening) {
+                  e.currentTarget.style.filter = 'brightness(1.1)';
+                  e.currentTarget.style.boxShadow = '0 0 0 1px rgba(251, 146, 60, 0)';
+                  e.currentTarget.style.color = '';
+                }
+              }}
+              title={voiceListening ? 'Stop voice input' : 'Start voice input'}
+            >
+              {voiceListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+              {voiceListening && <span>Listening</span>}
+            </button>
+            
+            {/* Undo/Redo buttons - moved next to microphone */}
+            <button
+              onClick={() => {
+                console.log('🖱️ UNDO BUTTON CLICKED');
+                handleUndo();
+              }}
+              disabled={undoStack.length === 0}
+              className="flex items-center gap-1 hover:text-text-primary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              title={`Undo text changes - Revert your last edit (Ctrl+Z). ${undoStack.length} actions available`}
+            >
+              <Undo2 className="w-3 h-3" />
+              <span className="text-xs">({undoStack.length})</span>
+            </button>
+            <button
+              onClick={() => {
+                console.log('🖱️ REDO BUTTON CLICKED');
+                handleRedo();
+              }}
+              disabled={redoStack.length === 0}
+              className="flex items-center gap-1 hover:text-text-primary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              title={`Redo text changes - Restore your last undone edit (Ctrl+Shift+Z). ${redoStack.length} actions available`}
+            >
+              <Redo2 className="w-3 h-3" />
+              <span className="text-xs">({redoStack.length})</span>
+            </button>
+            
             <button
               onClick={() => {
                 setShowHistory(!showHistory);
                 if (!showHistory) setShowTemplates(false);
               }}
               className="flex items-center gap-1 hover:text-text-primary transition-colors"
+              title="Browse command history - View and reuse previously executed commands"
             >
               <Clock className="w-3 h-3" />
               History
@@ -1769,6 +1869,7 @@ export default function StagedComposer({
                 if (!showTemplates) setShowHistory(false);
               }}
               className="flex items-center gap-1 hover:text-text-primary transition-colors"
+              title="Command templates - Quick access to pre-built command patterns and scaffolds"
             >
               <FileText className="w-3 h-3" />
               Templates
@@ -1784,36 +1885,11 @@ export default function StagedComposer({
                 }
               }}
               className="flex items-center gap-1 hover:text-text-primary transition-colors"
+              title="Command snippets - Save, organize and quickly access your custom command snippets. Type @ to search."
             >
               <Bookmark className="w-3 h-3" />
               Snippets
               <ChevronDown className={`w-3 h-3 transition-transform ${showSnippetManager ? 'rotate-180' : ''}`} />
-            </button>
-            
-            {/* Undo/Redo buttons */}
-            <button
-              onClick={() => {
-                console.log('🖱️ UNDO BUTTON CLICKED');
-                handleUndo();
-              }}
-              disabled={undoStack.length === 0}
-              className="flex items-center gap-1 hover:text-text-primary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              title={`Undo (Ctrl+Z) - ${undoStack.length} actions available`}
-            >
-              <Undo2 className="w-3 h-3" />
-              <span className="text-xs">({undoStack.length})</span>
-            </button>
-            <button
-              onClick={() => {
-                console.log('🖱️ REDO BUTTON CLICKED');
-                handleRedo();
-              }}
-              disabled={redoStack.length === 0}
-              className="flex items-center gap-1 hover:text-text-primary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              title={`Redo (Ctrl+Shift+Z) - ${redoStack.length} actions available`}
-            >
-              <Redo2 className="w-3 h-3" />
-              <span className="text-xs">({redoStack.length})</span>
             </button>
             {onPlanningModeToggle && (
               <button
@@ -1823,6 +1899,7 @@ export default function StagedComposer({
                     ? 'bg-yellow-600/20 text-yellow-400 hover:bg-yellow-600/30' 
                     : 'hover:text-text-primary'
                 }`}
+                title="Planning mode - Toggle between immediate execution and planning/review mode"
               >
                 <GitBranch className="w-3 h-3" />
                 <span>{planningMode ? 'Planning On' : 'Planning'}</span>
@@ -1852,31 +1929,18 @@ export default function StagedComposer({
               <button
                 onClick={() => setShowSnippetManager(true)}
                 className="flex items-center gap-1 px-2 py-1 text-xs bg-bg-tertiary hover:bg-bg-secondary text-text-secondary hover:text-text-primary rounded transition-colors"
-                title="Save as snippet"
+                title="Save command as snippet - Store your current command for quick reuse later"
               >
                 <Save className="w-3 h-3" />
                 Save
               </button>
             )}
             
-            {/* Voice input button */}
-            <button
-              onClick={toggleVoiceRecognition}
-              className={`flex items-center gap-1 px-2 py-1 text-xs rounded transition-colors ${
-                voiceListening 
-                  ? 'bg-red-600/20 text-red-400 hover:bg-red-600/30' 
-                  : 'bg-bg-tertiary hover:bg-bg-secondary text-text-secondary hover:text-text-primary'
-              }`}
-              title={voiceListening ? 'Stop voice input' : 'Start voice input'}
-            >
-              {voiceListening ? <MicOff className="w-3 h-3" /> : <Mic className="w-3 h-3" />}
-              {voiceListening && <span>Listening</span>}
-            </button>
-            
             <button
               onClick={handleSend}
               disabled={!command.trim() && images.length === 0}
               className="flex items-center gap-2 px-4 py-2 bg-cyan-600 hover:bg-cyan-500 disabled:bg-gray-600 disabled:cursor-not-allowed text-white text-sm font-medium rounded-md transition-colors"
+              title="Send command to Claude - Execute your command with any attached images (Ctrl+Enter or Enter)"
             >
               <Send className="w-4 h-4" />
               Send
@@ -2098,11 +2162,6 @@ export default function StagedComposer({
             </div>
           </div>
         )}
-        
-        {/* Debug indicator - always visible to show drag state */}
-        <div className="absolute top-1 right-1 text-xs bg-black/70 text-white px-2 py-1 rounded pointer-events-none z-[100]">
-          Drag: {dragActive ? '✅ ON' : '⭕ OFF'}
-        </div>
       </div>
     </>
   );

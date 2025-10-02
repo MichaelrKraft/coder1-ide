@@ -48,7 +48,7 @@ export function WelcomeScreen({ onDismiss, onBridgeClick }: WelcomeScreenProps =
       <div className="max-w-xl w-full">
         <div className="bg-bg-secondary border border-border-default rounded-lg p-3 shadow-xl">
           <h1 className="text-lg font-bold mb-2 text-center bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
-            🌉 Connect Claude Code
+            Connect Claude Code
           </h1>
           
           <div className="bg-red-500/10 border border-red-500/50 rounded-lg p-1 mb-2">
@@ -71,6 +71,7 @@ export function WelcomeScreen({ onDismiss, onBridgeClick }: WelcomeScreenProps =
                 
                 <div>
                   <span className="text-green-400 font-medium">2. Install</span>
+                  <span className="text-gray-300 ml-1">→ Copy-paste code below into terminal</span>
                   <div className="bg-black rounded p-1 font-mono text-xs">
                     <span className="text-green-400">$</span> <span className="text-white">
                       curl -sL {isProduction ? 'https://coder1-ide.onrender.com' : 'http://localhost:3001'}/install-bridge.sh | bash
@@ -102,7 +103,7 @@ export function WelcomeScreen({ onDismiss, onBridgeClick }: WelcomeScreenProps =
                 className="px-4 py-2 bg-bg-secondary border border-cyan-500 text-cyan-400 rounded-md hover:bg-cyan-500/10 transition-all duration-200 font-semibold text-sm shadow-[0_0_15px_rgba(0,217,255,0.2)]"
                 title="Get your pairing code to connect Claude Code CLI"
               >
-                {isLoading ? 'Loading...' : '🌉 Bridge'}
+                {isLoading ? 'Loading...' : 'Bridge'}
               </button>
               {onDismiss && (
                 <>
