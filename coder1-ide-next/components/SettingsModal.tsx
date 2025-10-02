@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { X, Monitor, Terminal, Bot, Save, User, Palette, Code, Brain } from 'lucide-react';
-import { databaseMemoryPreferences } from '@/lib/memory-preferences-db';
+import { clientMemoryPreferences } from '@/lib/memory-preferences-client';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -108,9 +108,9 @@ export default function SettingsModal({ isOpen, onClose, fontSize, onFontSizeCha
       // Load memory preferences from database
       try {
         // First try migration from localStorage
-        await databaseMemoryPreferences.migrateFromLocalStorage();
+        await clientMemoryPreferences.migrateFromLocalStorage();
         
-        const memoryPrefs = await databaseMemoryPreferences.getPreferences();
+        const memoryPrefs = await clientMemoryPreferences.getPreferences();
         loadedSettings = {
           ...loadedSettings,
           memoryDetectionEnabled: memoryPrefs.enabled,
@@ -155,7 +155,7 @@ export default function SettingsModal({ isOpen, onClose, fontSize, onFontSizeCha
     
     try {
       // Save memory preferences to SQLite database
-      await databaseMemoryPreferences.savePreferences({
+      await clientMemoryPreferences.savePreferences({
         enabled: settings.memoryDetectionEnabled,
         threshold: settings.memoryDetectionThreshold,
         autoGeneration: settings.memoryAutoGeneration,

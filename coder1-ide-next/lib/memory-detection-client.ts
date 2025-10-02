@@ -4,7 +4,7 @@
  */
 
 import { SessionSummaryService } from '@/services/SessionSummaryService';
-import { databaseMemoryPreferences } from '@/lib/memory-preferences-db';
+import { clientMemoryPreferences } from '@/lib/memory-preferences-client';
 
 export interface MemoryWorthyEvent {
   type: 'bug-fix' | 'feature-completion' | 'breakthrough' | 'learning' | 'architecture-decision' | 'solution-discovery';
@@ -54,7 +54,7 @@ export class MemoryDetectionService {
     terminalCommands: string[] = []
   ): MemoryDetectionResult {
     // Check if memory detection is enabled
-    if (!databaseMemoryPreferences.isEnabled()) {
+    if (!clientMemoryPreferences.isEnabled()) {
       return {
         isMemoryWorthy: false,
         confidence: 0,
@@ -66,9 +66,9 @@ export class MemoryDetectionService {
     }
     
     console.log('🔍 [MEMORY-DETECT] Starting analysis with preferences:', {
-      enabled: databaseMemoryPreferences.isEnabled(),
-      threshold: databaseMemoryPreferences.getThreshold(),
-      enabledEventTypes: databaseMemoryPreferences.getEnabledEventTypes()
+      enabled: clientMemoryPreferences.isEnabled(),
+      threshold: clientMemoryPreferences.getThreshold(),
+      enabledEventTypes: clientMemoryPreferences.getEnabledEventTypes()
     });
     
     const sessionData = this.sessionSummaryService.collectSessionData(
@@ -89,22 +89,22 @@ export class MemoryDetectionService {
     let overallConfidence = 0;
 
     // Detect different types of memory-worthy events based on preferences
-    if (databaseMemoryPreferences.isEventTypeEnabled('bugFix')) {
+    if (clientMemoryPreferences.isEventTypeEnabled('bugFix')) {
       const bugFixes = this.detectBugFixes(sessionData);
       events.push(...bugFixes);
     }
     
-    if (databaseMemoryPreferences.isEventTypeEnabled('featureCompletion')) {
+    if (clientMemoryPreferences.isEventTypeEnabled('featureCompletion')) {
       const features = this.detectFeatureCompletions(sessionData);
       events.push(...features);
     }
     
-    if (databaseMemoryPreferences.isEventTypeEnabled('breakthrough')) {
+    if (clientMemoryPreferences.isEventTypeEnabled('breakthrough')) {
       const breakthroughs = this.detectBreakthroughs(sessionData);
       events.push(...breakthroughs);
     }
     
-    if (databaseMemoryPreferences.isEventTypeEnabled('learning')) {
+    if (clientMemoryPreferences.isEventTypeEnabled('learning')) {
       const learning = this.detectLearningMoments(sessionData);
       events.push(...learning);
     }
@@ -122,7 +122,7 @@ export class MemoryDetectionService {
     }
 
     // Apply threshold from preferences
-    const threshold = databaseMemoryPreferences.getThreshold() / 100; // Convert percentage to decimal
+    const threshold = clientMemoryPreferences.getThreshold() / 100; // Convert percentage to decimal
     const meetsThreshold = overallConfidence >= threshold;
 
     // Determine if session is memory-worthy with threshold
@@ -132,7 +132,7 @@ export class MemoryDetectionService {
     const suggestions = this.generateMemorySuggestions(sessionData, events);
 
     // Check auto-generation based on preferences
-    const autoGenerationRecommended = isMemoryWorthy && databaseMemoryPreferences.isAutoGenerationEnabled();
+    const autoGenerationRecommended = isMemoryWorthy && clientMemoryPreferences.isAutoGenerationEnabled();
 
     const result = {
       isMemoryWorthy,
@@ -146,8 +146,8 @@ export class MemoryDetectionService {
     console.log('🔍 [MEMORY-DETECT] Final result with preferences applied:', result);
     
     // Show notification if memory-worthy event detected
-    if (isMemoryWorthy && databaseMemoryPreferences.areNotificationsEnabled()) {
-      databaseMemoryPreferences.showNotification(
+    if (isMemoryWorthy && clientMemoryPreferences.areNotificationsEnabled()) {
+      clientMemoryPreferences.showNotification(
         `Memory-worthy session detected! (${Math.round(overallConfidence * 100)}% confidence)`,
         'info'
       );

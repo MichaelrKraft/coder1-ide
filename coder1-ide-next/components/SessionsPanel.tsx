@@ -729,6 +729,7 @@ export default function SessionsPanel({ isVisible = true }: SessionsPanelProps) 
           <button
             onClick={handleStartSession}
             className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-coder1-cyan/10 hover:bg-coder1-cyan/20 text-coder1-cyan rounded transition-colors"
+            title="Start a new development session to track your work and create checkpoints"
           >
             <Play className="w-4 h-4" />
             <span className="text-sm font-medium">Start New Session</span>

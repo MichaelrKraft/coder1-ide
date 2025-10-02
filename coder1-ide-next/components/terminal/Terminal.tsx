@@ -3535,7 +3535,7 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
                   ? 'terminal-btn-active-orange' 
                   : 'hover:bg-bg-tertiary'
               }`}
-              title="Open staged command composer (Ctrl+Space)"
+              title="Open Command Center (Ctrl+Space)"
             >
               <Edit3 className={`w-4 h-4 ${composerVisible ? 'text-orange-400' : 'text-text-secondary'}`} />
             </button>
