@@ -132,7 +132,7 @@ services:
     
     # Auto-Deploy Configuration
     autoDeploy: true
-    branch: main # Change to your deployment branch
+    branch: master # Deploying from master branch
     
     # Custom Headers for WebSocket Support
     headers:
