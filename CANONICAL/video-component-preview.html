@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>video element</title>
+    <!-- Source: https://www.verdent.ai/verdent-deck -->
+    <style>
+        /* Reset styles for isolated preview */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            padding: 20px;
+            background: #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        
+        /* Component styles */
+        .captured-component { 
+            display: block;
+            max-width: 100%;
+            height: auto;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        }
+    </style>
+</head>
+<body>
+    <!-- Captured Component -->
+    <video class="verdent-video svelte-4wmprw captured-component" width="606" height="332" autoplay loop muted playsinline src="https://www.verdent.ai/_app/immutable/assets/verdent.C98G9d7l.mp4"></video>
+</body>
+</html>

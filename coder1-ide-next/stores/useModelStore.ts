@@ -20,8 +20,6 @@ interface ModelState {
 const VALID_MODELS = [
   'claude-sonnet-4-5-20250929',
   'claude-opus-4-1-20250805',
-  'claude-sonnet-4-0-20250510',
-  'claude-sonnet-3-7-20250224',
   'claude-haiku-3-5-20241022'
 ] as const;
 
@@ -50,8 +48,6 @@ export const useModelStore = create<ModelState>()(
         // Map internal model names to user-friendly display names
         if (model.includes('opus')) return 'Opus 4.1';
         if (model.includes('sonnet-4-5')) return 'Sonnet 4.5';
-        if (model.includes('sonnet-4-0')) return 'Sonnet 4.0';
-        if (model.includes('sonnet-3-7')) return 'Sonnet 3.7';
         if (model.includes('haiku')) return 'Haiku 3.5';
         
         return 'Unknown Model';

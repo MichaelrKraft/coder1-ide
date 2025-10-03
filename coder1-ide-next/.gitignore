@@ -34,3 +34,11 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+# Personal usage tracking - not for version control
+agents/data/cost-tracker.json
+
+# Test scripts - not for production
+agents/create-approval-test.js
+agents/create-test-issue.js
+agents/trigger-test.js
+agents/verify-gmail.js

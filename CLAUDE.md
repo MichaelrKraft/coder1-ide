@@ -290,24 +290,28 @@ cp -r build/* ../../public/ide/
 
 ## 🔧 Terminal Issues
 
-### ✅ **CHECKPOINT SYSTEM ISSUES - FULLY RESOLVED** (September 25, 2025)
+### ✅ **CHECKPOINT SYSTEM ISSUES - FULLY RESOLVED** (September-October 2025)
 
-**🎉 MAJOR BREAKTHROUGH**: All three critical checkpoint issues have been **permanently solved**:
+**🎉 MAJOR BREAKTHROUGH**: All four critical checkpoint issues have been **permanently solved**:
 
-1. **✅ Repeating Status Lines**: Fixed at source by filtering terminal history before saving
-2. **✅ Slow Checkpoint Loading**: 3-5x faster with parallel file I/O  
-3. **✅ Wrong Terminal Display**: Checkpoints now properly open in sandbox terminal
+1. **✅ Repeating Status Lines**: Fixed at source by filtering terminal history before saving (Sep 25)
+2. **✅ Slow Checkpoint Loading**: 3-5x faster with parallel file I/O (Sep 25)
+3. **✅ Wrong Terminal Display**: Checkpoints now properly open in sandbox terminal (Sep 25)
+4. **✅ Content Bleeding into Main Terminal**: Fixed with event listener filtering (Oct 3)
 
 **📚 Complete Documentation Available**:
 - **For Agent Handoffs**: `/coder1-ide-next/CHECKPOINT_FIXES_COMPLETE_SESSION_SUMMARY.md`
 - **For Technical Reference**: `/coder1-ide-next/docs/guides/CHECKPOINT_SYSTEM_FIXES.md`
+- **For Content Bleeding Issue**: `/coder1-ide-next/docs/troubleshooting/CHECKPOINT_CONTENT_BLEEDING_QUICK_FIX.md`
 
 **Key Files Fixed**:
 - `/coder1-ide-next/app/api/checkpoint/route.ts` - Source filtering + parallel I/O
 - `/coder1-ide-next/lib/checkpoint-utils.ts` - MCP pattern coverage  
 - `/coder1-ide-next/components/terminal/TerminalContainer.tsx` - State management
+- `/coder1-ide-next/components/terminal/Terminal.tsx` - Event listener filtering (Oct 3)
+- `/coder1-ide-next/components/SessionsPanel.tsx` - localStorage isolation (Oct 3)
 
-**Success Rate**: 3/3 issues completely resolved in single debugging session.
+**Success Rate**: 4/4 issues completely resolved. Latest fix (content bleeding) achieved through "ultrathink" debugging methodology discovering global event listener pollution as root cause.
 
 ---
 

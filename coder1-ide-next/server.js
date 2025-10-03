@@ -1134,6 +1134,60 @@ app.prepare().then(() => {
       }
     });
     
+    /**
+     * Intercepts claude commands and injects --model flag
+     * @param {string} command - The command string (e.g., "claude fix bug")
+     * @param {string} selectedModel - Model ID from useModelStore
+     * @returns {string} Modified command with --model flag injected (or original if not applicable)
+     */
+    function interceptClaudeCommand(command, selectedModel) {
+      // 0. Strip ANSI escape codes (arrow keys, etc.) before checking
+      // eslint-disable-next-line no-control-regex
+      const cleanCommand = command ? command.replace(/\x1b\[[^m]*m?/g, '').replace(/\[[A-Z]/g, '') : '';
+      
+      // 1. Check if command starts with 'claude'
+      if (!cleanCommand || !cleanCommand.trim().startsWith('claude')) {
+        return command;  // Not a claude command
+      }
+      
+      // 2. Check if --model flag already exists
+      if (cleanCommand.includes('--model')) {
+        return command;  // Already has model flag - don't duplicate
+      }
+      
+      // 3. Map our internal model IDs to Claude CLI aliases
+      // Claude CLI accepts simple aliases: 'sonnet', 'opus', 'haiku'
+      let modelAlias = 'sonnet';  // Default to sonnet
+      
+      if (selectedModel) {
+        if (selectedModel.includes('haiku')) {
+          modelAlias = 'haiku';
+        } else if (selectedModel.includes('opus')) {
+          modelAlias = 'opus';
+        } else if (selectedModel.includes('sonnet')) {
+          modelAlias = 'sonnet';
+        }
+      }
+      
+      // 4. Extract: "claude" + args (use clean command without escape codes)
+      const trimmedCommand = cleanCommand.trim();
+      const parts = trimmedCommand.split(/\s+/);  // Split on whitespace
+      const claudeCmd = parts[0];  // "claude"
+      const args = parts.slice(1).join(' ');  // "fix bug" or empty string
+      
+      // 5. Inject model flag: "claude --model sonnet fix bug"
+      // If no args, just add model flag
+      if (!args) {
+        return `${claudeCmd} --model ${modelAlias}`;
+      }
+      
+      // Otherwise inject between claude and args
+      const injectedCommand = `${claudeCmd} --model ${modelAlias} ${args}`;
+      
+      console.log(`🎯 Model injection: "${trimmedCommand}" → "${injectedCommand}" (using alias: ${modelAlias})`);
+      return injectedCommand;
+    }
+    
     // Handle terminal input with Conductor command detection
     socket.on('terminal:input', async ({ id, data, selectedClaudeModel }) => {
       console.log(`⌨️ TERMINAL INPUT: Session ${id}, Data length: ${data?.length}, Model: ${selectedClaudeModel || 'default'}`);
@@ -1595,11 +1649,29 @@ app.prepare().then(() => {
             return;
           }
           
+          // 🎯 MODEL INJECTION: Check if this is a claude command that needs model flag
+          const finalCommand = interceptClaudeCommand(buffer.trim(), selectedClaudeModel);
+          
+          if (finalCommand !== buffer.trim()) {
+            // Model flag was injected - we need to clear the typed command and replace it
+            console.log(`✅ Injecting model into command: ${selectedClaudeModel || 'default'}`);
+            
+            // Clear the typed command from terminal (backspace each character)
+            const backspaces = '\b'.repeat(buffer.length);
+            session.write(backspaces);
+            
+            // Clear the line visually
+            session.write('\r\x1b[K');
+            
+            // Write the modified command and execute it
+            session.write(finalCommand + '\r');
+          } else {
+            // Not a claude command or already has --model flag - execute normally
+            session.write(data);
+          }
+          
           // Clear buffer after command
           commandBuffers.set(sessionId, '');
-          
-          // Send the Enter key to execute the command (not intercepted)
-          session.write(data);
         } else {
           // For non-Enter keys, build buffer AND send to PTY
           buffer += data;

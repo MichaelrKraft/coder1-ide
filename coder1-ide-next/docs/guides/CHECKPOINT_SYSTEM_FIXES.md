@@ -1,11 +1,30 @@
 # 🔧 Checkpoint System Fixes - Technical Reference
 
-**Last Updated**: September 25, 2025  
+**Last Updated**: October 3, 2025  
 **Status**: ✅ Production-ready solutions implemented
 
 ## 🎯 **Quick Reference for Common Checkpoint Issues**
 
-This document provides immediate technical solutions for the three most common checkpoint system problems that have been **permanently resolved**.
+This document provides immediate technical solutions for the four most common checkpoint system problems that have been **permanently resolved**.
+
+### 🆕 **NEW: Issue #4 - Checkpoint Content Bleeding (October 3, 2025)**
+
+**For immediate fix, see**: [`/docs/troubleshooting/CHECKPOINT_CONTENT_BLEEDING_QUICK_FIX.md`](../troubleshooting/CHECKPOINT_CONTENT_BLEEDING_QUICK_FIX.md)
+
+**Symptoms**: Checkpoint content appears in main terminal when closing sandbox tab  
+**Root Cause**: Global window event listeners causing both terminals to receive checkpoint events  
+**Solution**: Event listener filtering with `sandboxMode` check  
+
+**Complete Documentation**:
+- **Quick Fix**: [`/docs/troubleshooting/CHECKPOINT_CONTENT_BLEEDING_QUICK_FIX.md`](../troubleshooting/CHECKPOINT_CONTENT_BLEEDING_QUICK_FIX.md)
+- **Complete Guide**: [`/docs/troubleshooting/CHECKPOINT_CONTENT_BLEEDING_COMPLETE_GUIDE.md`](../troubleshooting/CHECKPOINT_CONTENT_BLEEDING_COMPLETE_GUIDE.md)
+- **Session Summary**: [`/docs/troubleshooting/CHECKPOINT_CONTENT_BLEEDING_SESSION_SUMMARY.md`](../troubleshooting/CHECKPOINT_CONTENT_BLEEDING_SESSION_SUMMARY.md)
+
+---
+
+## 📚 **Original Three Issues (September 2025)**
+
+This document covers the original three checkpoint system issues resolved in September 2025.
 
 ---
 

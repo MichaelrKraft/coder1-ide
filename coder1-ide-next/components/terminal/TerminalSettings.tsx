@@ -275,8 +275,6 @@ export default function TerminalSettings({
               {[
                 { model: 'claude-sonnet-4-5-20250929', label: 'Claude Sonnet 4.5', description: '🆕 Latest (Default)' },
                 { model: 'claude-opus-4-1-20250805', label: 'Claude Opus 4.1', description: 'Most Capable' },
-                { model: 'claude-sonnet-4-0-20250510', label: 'Claude Sonnet 4.0', description: 'Balanced' },
-                { model: 'claude-sonnet-3-7-20250224', label: 'Claude Sonnet 3.7', description: 'Fast + Reasoning' },
                 { model: 'claude-haiku-3-5-20241022', label: 'Claude Haiku 3.5', description: 'Ultra Fast' }
               ].map((item) => (
                 <button

@@ -142,21 +142,15 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
     templates
   } = useEnhancedSupervision();
   const [terminalMode, setTerminalMode] = useState<'normal' | 'vim' | 'emacs'>('normal');
-  // Load Claude model from localStorage or use default (Sonnet 4.5 is latest)
-  const [selectedClaudeModel, setSelectedClaudeModel] = useState<string>(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('coder1-selected-claude-model') || 'claude-4-5-sonnet-20250930';
-    }
-    return 'claude-4-5-sonnet-20250930';
-  });
+  
+  // ✅ READ MODEL FROM ZUSTAND STORE - This ensures real-time updates when model is changed
+  const selectedClaudeModel = useModelStore(state => state.selectedModel);
+  
   const [showModelDropdown, setShowModelDropdown] = useState(false);
 
-  // Handle Claude model changes with persistence
+  // Handle Claude model changes - updates Zustand store (no local state needed)
   const handleModelChange = (model: string) => {
-    setSelectedClaudeModel(model);
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('coder1-selected-claude-model', model);
-    }
+    useModelStore.getState().setSelectedModel(model);
   };
   const [audioAlertsEnabled, setAudioAlertsEnabled] = useState(false);
   const [recognition, setRecognition] = useState<any | null>(null);
@@ -1101,7 +1095,8 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
                       console.log('🚀 Auto-running claude command for tab:', agentSession.name);
                       socket.emit('terminal:input', {
                         id: sessionId,
-                        data: 'claude\r'
+                        data: 'claude\r',
+                        selectedClaudeModel: useModelStore.getState().selectedModel
                       });
                     }
                   }, 1000);
@@ -1347,9 +1342,19 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
 
         // Check for restored terminal history from checkpoint
         if (typeof window !== 'undefined') {
-          const restoredHistory = localStorage.getItem('terminalHistory');
-          if (restoredHistory && restoredHistory.trim()) {
-            console.log('🔄 Terminal: Restoring terminal history from checkpoint');
+          // 🚨 CRITICAL FIX: Use terminal-type-specific localStorage keys
+          // Sandbox terminals use sandboxTerminalHistory_${sessionId}
+          // Main terminal uses mainTerminalHistory
+          // This prevents sandbox content from bleeding into main terminal
+          const storageKey = sandboxMode && sandboxSession 
+            ? `sandboxTerminalHistory_${sandboxSession.id}`
+            : 'mainTerminalHistory';
+          
+          const restoredHistory = localStorage.getItem(storageKey);
+          
+          // Only restore if terminal is visible (prevents race conditions during tab switching)
+          if (restoredHistory && restoredHistory.trim() && isVisible) {
+            console.log(`🔄 Terminal: Restoring terminal history from ${storageKey}`);
             
             // Clear the terminal first
             term.clear();
@@ -1363,11 +1368,12 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
             
             // Add separator to show this was restored
             term.writeln('\r\n' + '='.repeat(50));
-            term.writeln('\r\n✅ Terminal history restored from checkpoint');
+            term.writeln(`\r\n✅ Terminal history restored from ${sandboxMode ? 'checkpoint' : 'session'}`);
             term.writeln('\r\n' + '='.repeat(50) + '\r\n');
             
             // Clear the localStorage after restoration to prevent re-applying
-            localStorage.removeItem('terminalHistory');
+            localStorage.removeItem(storageKey);
+            console.log(`🗑️ Cleared ${storageKey} from localStorage`);
           }
         }
 
@@ -1966,11 +1972,23 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
     
     // Wrapper to handle the event listener properly
     const handleCheckpointRestored = (event: CustomEvent) => {
+      // 🚨 CRITICAL FIX: Only sandbox terminals should handle checkpoint restoration events
+      // Main terminal should ignore these events to prevent content duplication
+      if (!sandboxMode) {
+        console.log('🚫 Main terminal: Ignoring checkpoint restoration event (sandbox-only)');
+        return;
+      }
       debouncedCheckpointRestore(event);
     };
     
     const handleIdeStateChanged = (event: CustomEvent) => {
       if (event.detail?.type === 'checkpoint-restored') {
+        // 🚨 CRITICAL FIX: Only sandbox terminals should handle checkpoint IDE state changes
+        if (!sandboxMode) {
+          console.log('🚫 Main terminal: Ignoring IDE state change (sandbox-only)');
+          return;
+        }
+        
         // For ideStateChanged: event.detail.data IS the snapshot
         const terminalData = event.detail?.data?.terminal;
         
@@ -2124,7 +2142,7 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
               socket.emit('terminal:input', { 
                 id: currentSessionId, 
                 data: cleanTranscript,
-                selectedClaudeModel 
+                selectedClaudeModel: useModelStore.getState().selectedModel
               });
               
               // Auto-execute for Claude commands  
@@ -2133,7 +2151,7 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
                 socket.emit('terminal:input', { 
                   id: currentSessionId, 
                   data: '\r',
-                  selectedClaudeModel 
+                  selectedClaudeModel: useModelStore.getState().selectedModel
                 });
               }
             } else {
@@ -2275,7 +2293,7 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
           socket.emit('terminal:input', { 
             id: currentSessionId, 
             data: bufferedData,
-            selectedClaudeModel 
+            selectedClaudeModel: useModelStore.getState().selectedModel
           });
         }
       }
@@ -2895,7 +2913,7 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
       socket.emit('terminal:input', { 
         id: currentSessionId, 
         data,
-        selectedClaudeModel 
+        selectedClaudeModel: useModelStore.getState().selectedModel
       });
       
       // Process any buffered input
@@ -4256,7 +4274,8 @@ Context: Running in Coder1 IDE development environment`;
                           // Send directly to active Claude Code session
                           socket.emit('terminal:input', {
                             id: sessionId,
-                            data: fullReport + '\r'
+                            data: fullReport + '\r',
+                            selectedClaudeModel: useModelStore.getState().selectedModel
                           });
                           addToast('✅ Error report sent to Claude Code for analysis!', 'success');
                         } else {

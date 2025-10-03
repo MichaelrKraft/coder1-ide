@@ -256,8 +256,12 @@ export default function SessionsPanel({ isVisible = true }: SessionsPanelProps) 
             console.log('🏪 DIAGNOSTIC: Terminal data being stored length:', snapshot.terminal.length);
             console.log('🏪 DIAGNOSTIC: Terminal data contains "plan mode on":', 
               (snapshot.terminal.match(/plan mode on/gi) || []).length, 'times');
-            localStorage.setItem('terminalHistory', snapshot.terminal);
-            console.log('🏪 DIAGNOSTIC: Set terminalHistory to localStorage');
+            
+            // 🚨 CRITICAL FIX: Use checkpoint-specific key to prevent localStorage pollution
+            // This prevents sandbox terminal content from appearing in main terminal
+            const storageKey = `sandboxTerminalHistory_${checkpoint.id}`;
+            localStorage.setItem(storageKey, snapshot.terminal);
+            console.log(`🏪 DIAGNOSTIC: Set ${storageKey} to localStorage (isolated from main terminal)`);
           }
           
           if (snapshot.editor) {

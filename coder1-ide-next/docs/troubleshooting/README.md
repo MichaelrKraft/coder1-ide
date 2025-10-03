@@ -13,6 +13,29 @@ This directory contains comprehensive troubleshooting guides for common Coder1 I
 
 Complete documentation of the terminal scrolling issue that affected multiple agents for 1+ month. Includes root cause analysis, historical timeline of failed attempts, proven solution, and prevention strategies.
 
+### 🔄 **Checkpoint Issues**
+
+#### **[Checkpoint Content Bleeding - Quick Fix](./CHECKPOINT_CONTENT_BLEEDING_QUICK_FIX.md)**
+**Status**: 🔥 EMERGENCY REFERENCE  
+**For**: Immediate problem resolution  
+**Time to Read**: 2 minutes  
+
+Emergency fix for when checkpoint content appears in main terminal after closing sandbox tab. 100% success rate with event listener filtering.
+
+#### **[Checkpoint Content Bleeding - Complete Guide](./CHECKPOINT_CONTENT_BLEEDING_COMPLETE_GUIDE.md)**
+**Status**: ✅ RESOLVED  
+**For**: Comprehensive understanding and root cause analysis  
+**Time to Read**: 10-15 minutes  
+
+Complete technical documentation of the checkpoint terminal isolation bug. Includes dual root cause analysis (global event listeners + localStorage), 4 failed attempts, and successful two-part solution.
+
+#### **[Checkpoint Content Bleeding - Session Summary](./CHECKPOINT_CONTENT_BLEEDING_SESSION_SUMMARY.md)**
+**Status**: 📖 LEARNING RESOURCE  
+**For**: Understanding debugging methodology  
+**Time to Read**: 15-20 minutes  
+
+Chronological debugging session narrative showing the evolution from localStorage hypothesis to event listener discovery. Valuable for agent training and debugging methodology.
+
 #### **[Terminal Quick Fix](./TERMINAL_QUICK_FIX.md)**
 **Status**: 🔥 EMERGENCY REFERENCE  
 **For**: Immediate problem resolution  
@@ -31,10 +54,20 @@ Structured template for documenting terminal issues when handing off between AI 
 
 ## 🚀 **Quick Start**
 
+### **If Checkpoint Content Appears in Main Terminal**
+1. Go to → **[Checkpoint Content Bleeding Quick Fix](./CHECKPOINT_CONTENT_BLEEDING_QUICK_FIX.md)**
+2. Add `!sandboxMode` check to event handlers (2 minutes)
+3. Restart server and test
+
 ### **If Terminal is Broken RIGHT NOW**
 1. Go to → **[Terminal Quick Fix](./TERMINAL_QUICK_FIX.md)**
 2. Follow 3-step process (takes 2-3 minutes)
 3. If that doesn't work, see complete guide
+
+### **If You're Investigating Checkpoint Issues**
+1. Start with → **[Quick Fix](./CHECKPOINT_CONTENT_BLEEDING_QUICK_FIX.md)**
+2. Read → **[Complete Guide](./CHECKPOINT_CONTENT_BLEEDING_COMPLETE_GUIDE.md)** for root cause
+3. Learn from → **[Session Summary](./CHECKPOINT_CONTENT_BLEEDING_SESSION_SUMMARY.md)**
 
 ### **If You're Investigating Terminal Issues**
 1. Start with → **[Complete Guide](./TERMINAL_SCROLLING_ISSUE_COMPLETE_GUIDE.md)**
@@ -42,9 +75,10 @@ Structured template for documenting terminal issues when handing off between AI 
 3. Document with → **[Handoff Template](./TERMINAL_ISSUE_HANDOFF_TEMPLATE.md)**
 
 ### **If You're a New Agent**
-1. Read → **[Complete Guide - Future Agent Guidelines](./TERMINAL_SCROLLING_ISSUE_COMPLETE_GUIDE.md#-future-agent-guidelines)**
-2. Bookmark → **[Quick Fix](./TERMINAL_QUICK_FIX.md)** for emergencies
-3. Use → **[Handoff Template](./TERMINAL_ISSUE_HANDOFF_TEMPLATE.md)** for reporting
+1. Read → **[Checkpoint Session Summary](./CHECKPOINT_CONTENT_BLEEDING_SESSION_SUMMARY.md)** (learn debugging methodology)
+2. Read → **[Terminal Complete Guide - Future Agent Guidelines](./TERMINAL_SCROLLING_ISSUE_COMPLETE_GUIDE.md#-future-agent-guidelines)**
+3. Bookmark → **[Quick Fixes](./CHECKPOINT_CONTENT_BLEEDING_QUICK_FIX.md)** for emergencies
+4. Use → **[Handoff Template](./TERMINAL_ISSUE_HANDOFF_TEMPLATE.md)** for reporting
 
 ---
 
@@ -52,6 +86,7 @@ Structured template for documenting terminal issues when handing off between AI 
 
 | Issue | Status | Last Updated | Success Rate |
 |-------|--------|--------------|-------------|
+| Checkpoint Content Bleeding | ✅ RESOLVED | Oct 3, 2025 | 100% with event filtering |
 | Terminal Scrolling | ✅ RESOLVED | Oct 1, 2025 | 90%+ with restart |
 | Terminal Flickering | ✅ RESOLVED | Oct 1, 2025 | Fixed in beta |
 | Memory Issues | ✅ RESOLVED | Oct 1, 2025 | NODE_OPTIONS fix |
@@ -59,6 +94,15 @@ Structured template for documenting terminal issues when handing off between AI 
 ---
 
 ## 🔧 **Common Solutions**
+
+### **Checkpoint Content Bleeding**
+```typescript
+// Add to Terminal.tsx event handlers (100% fix rate)
+if (!sandboxMode) {
+  console.log('🚫 Main terminal: Ignoring checkpoint event');
+  return;
+}
+```
 
 ### **Terminal Issues** 
 ```bash
