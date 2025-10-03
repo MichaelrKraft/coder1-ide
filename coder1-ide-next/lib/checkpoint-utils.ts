@@ -344,9 +344,9 @@ export function processCheckpointDataForSave(snapshot: any): any {
  * Processes terminal data in chunks to avoid blocking Node.js event loop
  * 🚨 CRITICAL FIX: Prevents 134+ second event loop blocks on large checkpoint restores
  */
-async function filterThinkingAnimationsAsync(
+export async function filterThinkingAnimationsAsync(
   terminalData: string,
-  chunkSize = 10000  // 10KB chunks
+  chunkSize = 5000  // 5KB chunks - larger to reduce boundary issues with ANSI codes
 ): Promise<string> {
   if (!terminalData) return terminalData;
   

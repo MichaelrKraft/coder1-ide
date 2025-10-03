@@ -273,11 +273,11 @@ export default function TerminalSettings({
             </div>
             <div className="space-y-2">
               {[
-                { model: 'claude-sonnet-4-5-20250929', label: 'Claude Sonnet 4.5', description: '🆕 Latest (Default)' },
-                { model: 'claude-opus-4-1-20250805', label: 'Claude Opus 4.1', description: 'Most Capable' },
-                { model: 'claude-sonnet-4-0-20250510', label: 'Claude Sonnet 4.0', description: 'Balanced' },
-                { model: 'claude-sonnet-3-7-20250224', label: 'Claude Sonnet 3.7', description: 'Fast + Reasoning' },
-                { model: 'claude-haiku-3-5-20241022', label: 'Claude Haiku 3.5', description: 'Ultra Fast' }
+                { model: 'claude-4-5-sonnet-20250930', label: 'Claude Sonnet 4.5', description: '🆕 Latest (Default)' },
+                { model: 'claude-4-opus-20250805', label: 'Claude Opus 4.1', description: 'Most Capable' },
+                { model: 'claude-4-sonnet-20250510', label: 'Claude Sonnet 4.0', description: 'Balanced' },
+                { model: 'claude-3-7-sonnet-20250224', label: 'Claude 3.7 Sonnet', description: 'Fast + Reasoning' },
+                { model: 'claude-3-5-haiku-20241022', label: 'Claude 3.5 Haiku', description: 'Ultra Fast' }
               ].map((item) => (
                 <button
                   key={item.model}

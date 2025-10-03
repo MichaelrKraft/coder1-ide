@@ -2698,9 +2698,8 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
         // REMOVED: // REMOVED: console.log('✅ Terminal connected to Express backend');
         setIsConnected(true);
         
-        // 🚨 CRITICAL FIX: Only restore sandbox history if terminal is actually visible
-        // This prevents sandbox content from appearing in main terminal during cleanup
-        if (sandboxMode && sandboxSession && term && isVisible) {
+        // For sandbox mode, restore the terminal history from checkpoint
+        if (sandboxMode && sandboxSession && term) {
           // Check if this is an agent terminal (Phase 2)
           const isAgentTerminal = !!(sandboxSession.checkpointData?.role || sandboxSession.checkpointData?.teamId);
           
@@ -4308,9 +4307,7 @@ Context: Running in Coder1 IDE development environment`;
 
 // Model Indicator Component - Shows current Claude model selection
 function ModelIndicator() {
-  // ✅ Use selector pattern for Zustand reactivity
-  const displayName = useModelStore(state => state.getModelDisplayName());
-  const selectedModel = useModelStore(state => state.selectedModel);
+  const { selectedModel, getModelDisplayName } = useModelStore();
   
   return (
     <div 
@@ -4319,7 +4316,7 @@ function ModelIndicator() {
     >
       <Zap className="w-3.5 h-3.5 text-coder1-cyan" />
       <span className="text-xs font-medium text-text-secondary">
-        {displayName}
+        {getModelDisplayName()}
       </span>
     </div>
   );

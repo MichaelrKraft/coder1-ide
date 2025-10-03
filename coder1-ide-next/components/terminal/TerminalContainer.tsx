@@ -206,14 +206,26 @@ export default function TerminalContainer({
                           JSON.stringify(sandboxSession.checkpointData).substring(0, 100);
       createdSandboxesRef.current.delete(checkpointId);
       
-      setSandboxSession(null);
+      // 🚨 CRITICAL FIX: Switch to main FIRST, THEN clear sandbox
+      // This ensures main terminal is visible before sandbox unmounts
       if (agentTabsEnabled) {
         setActiveSessionId('main');
       } else {
         setActiveTab('main');
       }
+      
+      // Use requestAnimationFrame to wait for render cycle before clearing
+      requestAnimationFrame(() => {
+        console.log('🗑️ Clearing sandbox session after tab switch');
+        setSandboxSession(null);
+        
+        // Additional cleanup after unmount
+        setTimeout(() => {
+          console.log('✅ Sandbox cleanup complete');
+        }, 50);
+      });
     }
-  }, [sandboxSession]);
+  }, [sandboxSession, agentTabsEnabled]);
 
   // Handle copying commands from sandbox to main terminal
   const handleCopyToMain = useCallback((command: string) => {

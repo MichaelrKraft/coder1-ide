@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import path from 'path';
 import fs from 'fs/promises';
-import { processCheckpointDataForRestore } from '@/lib/checkpoint-utils';
 
 export async function POST(
   request: NextRequest,
@@ -18,14 +17,14 @@ export async function POST(
     try {
       const checkpointData = JSON.parse(await fs.readFile(checkpointFile, 'utf8'));
       
-      // Apply filtering to ensure clean restore data
-      // 🚨 CRITICAL: Now uses async filtering to prevent 134+ second event loop blocks
-      const filteredCheckpoint = await processCheckpointDataForRestore(checkpointData);
+      // ✅ NO FILTERING NEEDED: Data is already filtered during save operation
+      // This makes restoration INSTANT (was taking 58+ seconds with async filtering)
+      // The checkpoint save operation now filters terminal history asynchronously
       
       return NextResponse.json({
         success: true,
-        checkpoint: filteredCheckpoint,
-        message: 'Checkpoint data retrieved for restoration (filtered asynchronously)'
+        checkpoint: checkpointData,
+        message: 'Checkpoint data retrieved for instant restoration (pre-filtered)'
       });
       
     } catch (error) {
