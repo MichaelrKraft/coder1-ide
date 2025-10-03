@@ -3,6 +3,9 @@
  * Handles all Claude Code API interactions
  */
 
+import { useModelStore } from '@/stores/useModelStore';
+import { logger } from '@/lib/logger';
+
 export interface ClaudeMessage {
   role: 'user' | 'assistant';
   content: string;
@@ -67,6 +70,13 @@ class ClaudeAPIService {
       throw new Error('Claude API key not configured');
     }
 
+    // Sync model from store before API call
+    const currentModel = useModelStore.getState().selectedModel;
+    if (currentModel && currentModel !== this.model) {
+      logger.info(`📡 Syncing model from store: ${this.model} → ${currentModel}`);
+      this.model = currentModel;
+    }
+
     // Add context if provided (file contents, project structure, etc.)
     let fullMessage = message;
     if (context) {
@@ -75,6 +85,9 @@ class ClaudeAPIService {
 
     // Add to conversation history
     this.conversationHistory.push({ role: 'user', content: fullMessage });
+
+    // Log API request with model info
+    logger.debug(`🤖 Claude API Request: model=${this.model}, message_length=${message.length}`);
 
     try {
       const response = await fetch(`${this.baseURL}/messages`, {
@@ -109,10 +122,20 @@ class ClaudeAPIService {
         content: claudeResponse.content 
       });
 
+      // Log successful response with token usage
+      if (claudeResponse.usage) {
+        logger.debug(
+          `✅ Claude API Response: ` +
+          `input_tokens=${claudeResponse.usage.input_tokens}, ` +
+          `output_tokens=${claudeResponse.usage.output_tokens}, ` +
+          `model=${this.model}`
+        );
+      }
+
       return claudeResponse;
 
     } catch (error) {
-      logger?.error('Claude API error:', error);
+      logger.error('Claude API error:', error);
       throw error;
     }
   }

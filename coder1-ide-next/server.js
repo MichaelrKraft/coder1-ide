@@ -771,6 +771,8 @@ app.prepare().then(() => {
   const socketToSession = new Map();
   
   // Initialize Socket.IO with Render-specific configuration
+  // UPDATED: Increased timeouts to prevent connection drops during idle periods
+  // UPDATED: Added Chrome extension conflict protection
   const io = new Server(server, {
     cors: {
       origin: dev 
@@ -782,17 +784,25 @@ app.prepare().then(() => {
         : process.env.NODE_ENV === 'production'
           ? ['https://*.onrender.com', process.env.RENDER_EXTERNAL_URL || '*']
           : true,
-      credentials: true
+      credentials: true,
+      methods: ['GET', 'POST'], // ADDED: Explicit methods to prevent extension blocking
+      allowedHeaders: ['Content-Type', 'Authorization'] // ADDED: Prevent extension header injection
     },
     path: '/socket.io/',
     transports: ['polling', 'websocket'], // Start with polling, upgrade to websocket
     allowEIO3: true, // Support older clients
-    pingTimeout: 60000, // Increase for Render's proxy (default is 20000)
-    pingInterval: 25000, // How often to ping (default is 25000)
+    pingTimeout: 120000, // INCREASED: 2 minutes (was 60s) - prevents idle disconnects
+    pingInterval: 30000, // INCREASED: 30 seconds (was 25s) - more stable heartbeat
     upgradeTimeout: 30000, // Time to wait for upgrade from polling to websocket
     allowUpgrades: true, // Allow upgrade from polling to websocket
     perMessageDeflate: false, // Disable compression for better reliability on Render
-    httpCompression: false // Disable HTTP compression for better reliability
+    httpCompression: false, // Disable HTTP compression for better reliability
+    connectTimeout: 45000, // ADDED: 45 seconds for initial connection
+    maxHttpBufferSize: 1e6, // ADDED: 1MB max buffer (prevents memory issues)
+    // ADDED: Chrome extension conflict protection
+    cookie: false, // Disable cookies to prevent extension interference
+    destroyUpgrade: false, // Keep upgrade connections alive
+    destroyUpgradeTimeout: 1000 // But clean up failed upgrades quickly
   });
 
   // Add WebSocket authentication middleware (if available)
@@ -980,6 +990,19 @@ app.prepare().then(() => {
     socket.emit('test:echo', { time: Date.now() });
     socket.on('test:echo:response', (data) => {
       console.log('✅ Socket bidirectional test passed:', data);
+    });
+    
+    // ADDED: Client heartbeat keepalive handler - prevents idle disconnects
+    socket.on('ping', (data) => {
+      const now = Date.now();
+      const latency = now - (data?.timestamp || now);
+      console.log(`💓 Heartbeat ping received from ${socket.id} (latency: ${latency}ms)`);
+      
+      // Respond with pong including original timestamp for RTT calculation
+      socket.emit('pong', { 
+        timestamp: data?.timestamp || now,
+        serverTime: now
+      });
     });
     
     let currentSessionId = null;

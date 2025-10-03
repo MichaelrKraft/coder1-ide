@@ -19,12 +19,13 @@ export async function POST(
       const checkpointData = JSON.parse(await fs.readFile(checkpointFile, 'utf8'));
       
       // Apply filtering to ensure clean restore data
-      const filteredCheckpoint = processCheckpointDataForRestore(checkpointData);
+      // 🚨 CRITICAL: Now uses async filtering to prevent 134+ second event loop blocks
+      const filteredCheckpoint = await processCheckpointDataForRestore(checkpointData);
       
       return NextResponse.json({
         success: true,
         checkpoint: filteredCheckpoint,
-        message: 'Checkpoint data retrieved for restoration (filtered)'
+        message: 'Checkpoint data retrieved for restoration (filtered asynchronously)'
       });
       
     } catch (error) {

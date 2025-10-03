@@ -6,6 +6,7 @@ import { Settings, Zap, Speaker, ChevronDown, Shield, BarChart, Sliders } from '
 import { soundAlertService, SoundPreset } from '@/lib/sound-alert-service';
 import { logger } from '@/lib/logger';
 import { useEnhancedStatusline } from '@/components/statusline/EnhancedStatusline';
+import { useModelStore } from '@/stores/useModelStore';
 
 interface TerminalSettingsProps {
   // Claude model selection props
@@ -282,7 +283,9 @@ export default function TerminalSettings({
                   key={item.model}
                   onClick={() => {
                     setSelectedClaudeModel(item.model);
-                    xtermRef.current?.writeln(`\r\nClaude model changed to: ${item.label}`);
+                    useModelStore.getState().setSelectedModel(item.model);
+                    xtermRef.current?.writeln(`\r\n✅ Claude model changed to: ${item.label}`);
+                    xtermRef.current?.writeln(`📌 Model will apply to all future commands`);
                   }}
                   className={`w-full flex items-center justify-between px-3 py-2 text-sm rounded hover:bg-bg-tertiary transition-colors ${
                     selectedClaudeModel === item.model ? 'text-coder1-cyan bg-coder1-purple bg-opacity-20' : 'text-text-secondary'

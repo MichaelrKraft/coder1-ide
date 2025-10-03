@@ -94,14 +94,21 @@ export const getSocket = async (sessionId?: string, bridgeAuth: boolean = false)
           path: '/socket.io/',
           transports: ['polling', 'websocket'], // Start with polling for Render compatibility
           reconnection: true,
-          reconnectionAttempts: 10,
+          reconnectionAttempts: 15, // INCREASED: More retry attempts
           reconnectionDelay: 1000,
-          reconnectionDelayMax: 5000,
-          timeout: 20000,
+          reconnectionDelayMax: 10000, // INCREASED: Max backoff to 10 seconds
+          timeout: 45000, // INCREASED: Match server connectTimeout
           forceNew: false,
-          // Match server ping settings to prevent timeout
-          pingTimeout: 60000,  // Match server setting
-          pingInterval: 25000  // Match server setting
+          // UPDATED: Match server ping settings to prevent timeout
+          pingTimeout: 120000,  // Match server: 2 minutes
+          pingInterval: 30000,  // Match server: 30 seconds
+          // ADDED: Additional stability settings
+          autoConnect: true,
+          withCredentials: true,
+          upgrade: true,
+          rememberUpgrade: true,
+          // ADDED: Keep connection alive during idle
+          closeOnBeforeunload: false
         });
 
         // Verify socket was created properly
@@ -172,6 +179,55 @@ export const getSocket = async (sessionId?: string, bridgeAuth: boolean = false)
 
       newSocket.on('reconnect_failed', () => {
         console.error('💀 SOCKET.IO RECONNECT FAILED - All attempts exhausted');
+      });
+
+      // ADDED: Client-side heartbeat keepalive to prevent idle disconnects
+      let heartbeatInterval: NodeJS.Timeout | null = null;
+      let lastPongTime = Date.now();
+      
+      const startHeartbeat = () => {
+        if (heartbeatInterval) clearInterval(heartbeatInterval);
+        
+        // Send ping every 20 seconds (more frequent than server's 30s interval)
+        heartbeatInterval = setInterval(() => {
+          if (newSocket?.connected) {
+            const now = Date.now();
+            const timeSinceLastPong = now - lastPongTime;
+            
+            // If we haven't received a pong in 90 seconds, connection may be stale
+            if (timeSinceLastPong > 90000) {
+              console.warn(`⚠️ No pong received for ${Math.round(timeSinceLastPong/1000)}s - connection may be stale`);
+            }
+            
+            newSocket.emit('ping', { timestamp: now });
+            console.log('💓 Heartbeat ping sent');
+          }
+        }, 20000); // 20 seconds
+      };
+      
+      const stopHeartbeat = () => {
+        if (heartbeatInterval) {
+          clearInterval(heartbeatInterval);
+          heartbeatInterval = null;
+        }
+      };
+      
+      // Listen for pong responses
+      newSocket.on('pong', (data: any) => {
+        lastPongTime = Date.now();
+        const latency = lastPongTime - (data?.timestamp || lastPongTime);
+        console.log(`💚 Heartbeat pong received (latency: ${latency}ms)`);
+      });
+      
+      // Start heartbeat when connected
+      newSocket.on('connect', () => {
+        lastPongTime = Date.now();
+        startHeartbeat();
+      });
+      
+      // Stop heartbeat when disconnected
+      newSocket.on('disconnect', () => {
+        stopHeartbeat();
       });
 
       // Assign to module variable after setup

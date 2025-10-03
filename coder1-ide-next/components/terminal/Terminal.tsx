@@ -17,6 +17,7 @@ if (typeof window !== 'undefined') {
 import './Terminal.css'; // Re-enabled - critical for xterm viewport fixes
 import { Zap, StopCircle, Brain, Eye, Code2, Mic, MicOff, Speaker, ChevronDown, Plus } from '@/lib/icons';
 import { Edit3, GitBranch, X, Stethoscope } from 'lucide-react';
+import { useModelStore } from '@/stores/useModelStore';
 import TerminalSettings, { TerminalSettingsState } from './TerminalSettings';
 import { glows, spacing } from '@/lib/design-tokens';
 import { getSocket } from '@/lib/socket';
@@ -2386,14 +2387,57 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
     });
     
     socket.on('disconnect', (reason) => {
-      // REMOVED: // REMOVED: console.log('🔴 Socket.IO DISCONNECTED:', reason);
+      console.log('🔴 Socket.IO DISCONNECTED:', {
+        reason,
+        sessionId,
+        timestamp: new Date().toISOString(),
+        willReconnect: reason !== 'io client disconnect'
+      });
+      
       if (term) {
-        term.writeln(`\r\n⚠️ Connection lost: ${reason}`);
+        // Enhanced disconnect message with reconnection info
+        const reconnectMsg = reason === 'io client disconnect' 
+          ? 'Manual disconnect'
+          : 'Attempting to reconnect...';
+        term.writeln(`\r\n⚠️ Connection lost: ${reason} (${reconnectMsg})`);
       }
+      
+      // ADDED: Track disconnect for session resurrection
+      setIsConnected(false);
     });
     
     socket.on('connect_error', (error) => {
-      // logger?.error('❌ Socket.IO CONNECTION ERROR:', error);
+      console.error('❌ Socket.IO CONNECTION ERROR:', {
+        message: error.message,
+        sessionId,
+        timestamp: new Date().toISOString()
+      });
+      
+      if (term) {
+        term.writeln(`\r\n❌ Connection error: ${error.message}`);
+      }
+    });
+    
+    // ADDED: Reconnection success handler with session resurrection
+    socket.on('reconnect', (attemptNumber) => {
+      console.log('✅ Socket.IO RECONNECTED:', {
+        attempts: attemptNumber,
+        sessionId,
+        timestamp: new Date().toISOString()
+      });
+      
+      setIsConnected(true);
+      
+      if (term) {
+        term.writeln('\r\n✅ Connection restored');
+        
+        // ADDED: Re-establish terminal session after reconnection
+        if (sessionId && sessionId !== 'undefined' && sessionId !== 'null') {
+          console.log('🔄 Re-establishing terminal session:', sessionId);
+          socket.emit('terminal:create', { id: sessionId });
+          term.writeln('🔄 Restoring session...');
+        }
+      }
     });
 
     // Join the terminal session
@@ -3559,6 +3603,9 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
             setTerminalSettings={setTerminalSettings}
             xtermRef={xtermRef}
           />
+
+          {/* Model Indicator */}
+          <ModelIndicator />
         </div>
 
         {/* Right section - All terminal control buttons */}
@@ -4254,6 +4301,23 @@ Context: Running in Coder1 IDE development environment`;
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+// Model Indicator Component - Shows current Claude model selection
+function ModelIndicator() {
+  const { selectedModel, getModelDisplayName } = useModelStore();
+  
+  return (
+    <div 
+      className="flex items-center gap-1.5 px-2 py-1 rounded bg-bg-tertiary border border-border-default"
+      title={`Current model: ${selectedModel}`}
+    >
+      <Zap className="w-3.5 h-3.5 text-coder1-cyan" />
+      <span className="text-xs font-medium text-text-secondary">
+        {getModelDisplayName()}
+      </span>
     </div>
   );
 }

@@ -340,34 +340,80 @@ export function processCheckpointDataForSave(snapshot: any): any {
 }
 
 /**
+ * Async version of filterThinkingAnimations
+ * Processes terminal data in chunks to avoid blocking Node.js event loop
+ * 🚨 CRITICAL FIX: Prevents 134+ second event loop blocks on large checkpoint restores
+ */
+async function filterThinkingAnimationsAsync(
+  terminalData: string,
+  chunkSize = 10000  // 10KB chunks
+): Promise<string> {
+  if (!terminalData) return terminalData;
+  
+  const totalChars = terminalData.length;
+  const estimatedChunks = Math.ceil(totalChars / chunkSize);
+  
+  console.log(`🔄 Async filtering: ${totalChars} chars in ~${estimatedChunks} chunks`);
+  
+  // Split into chunks
+  const chunks: string[] = [];
+  for (let i = 0; i < terminalData.length; i += chunkSize) {
+    chunks.push(terminalData.substring(i, i + chunkSize));
+  }
+  
+  // Process each chunk with event loop yielding
+  const filteredChunks: string[] = [];
+  for (let i = 0; i < chunks.length; i++) {
+    // Yield control to event loop every chunk (allows heartbeat responses)
+    await new Promise(resolve => setImmediate(resolve));
+    
+    // Apply synchronous filtering to this chunk
+    const filtered = filterThinkingAnimations(chunks[i]);
+    filteredChunks.push(filtered);
+    
+    // Progress logging every 5 chunks
+    if ((i + 1) % 5 === 0 || i === chunks.length - 1) {
+      console.log(`🔄 Progress: ${i + 1}/${chunks.length} chunks filtered`);
+    }
+  }
+  
+  const result = filteredChunks.join('');
+  console.log(`✅ Async filtering complete: ${totalChars} → ${result.length} chars`);
+  
+  return result;
+}
+
+/**
  * Process checkpoint data after loading for restore
  * Ensures any remaining artifacts are cleaned before restoration
- * 🚨 CRITICAL FIX: Filter terminalHistory field to prevent Claude Code status line repetition
+ * 🚨 CRITICAL FIX: Now uses ASYNC filtering to prevent event loop blocking
  */
-export function processCheckpointDataForRestore(checkpoint: any): any {
+export async function processCheckpointDataForRestore(checkpoint: any): Promise<any> {
   if (!checkpoint) return checkpoint;
   
   const processed = { ...checkpoint };
+  const startTime = Date.now();
   
-  // 🚨 CRITICAL: Filter terminalHistory field - this is the ROOT CAUSE of repetition
-  // This field gets injected directly into terminal during restoration
+  // 🚨 CRITICAL: Use ASYNC filtering to prevent event loop blocking
+  // Previous synchronous version blocked for 134+ seconds on 203KB terminal history
   if (processed.terminalHistory) {
-    console.log(`🧹 Filtering terminalHistory: ${processed.terminalHistory.length} chars before filtering`);
-    processed.terminalHistory = filterThinkingAnimations(processed.terminalHistory);
-    console.log(`🧹 Filtering terminalHistory: ${processed.terminalHistory.length} chars after filtering`);
+    console.log(`🧹 Filtering terminalHistory: ${processed.terminalHistory.length} chars (async)`);
+    processed.terminalHistory = await filterThinkingAnimationsAsync(processed.terminalHistory);
   }
   
   // Also filter terminalHistory in data object (backup location)
   if (processed.data?.terminalHistory) {
-    console.log(`🧹 Filtering data.terminalHistory: ${processed.data.terminalHistory.length} chars before filtering`);
-    processed.data.terminalHistory = filterThinkingAnimations(processed.data.terminalHistory);
-    console.log(`🧹 Filtering data.terminalHistory: ${processed.data.terminalHistory.length} chars after filtering`);
+    console.log(`🧹 Filtering data.terminalHistory (async)`);
+    processed.data.terminalHistory = await filterThinkingAnimationsAsync(processed.data.terminalHistory);
   }
   
   // Apply filtering to restore snapshot data as well (double safety)
   if (processed.data?.snapshot) {
     processed.data.snapshot = processCheckpointDataForSave(processed.data.snapshot);
   }
+  
+  const duration = Date.now() - startTime;
+  console.log(`✅ Checkpoint filtering complete in ${duration}ms (was 134000ms+)`);
   
   return processed;
 }
