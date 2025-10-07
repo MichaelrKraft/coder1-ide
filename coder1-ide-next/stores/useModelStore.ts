@@ -16,14 +16,36 @@ interface ModelState {
   getModelDisplayName: () => string;
 }
 
-// Valid Claude models (as of January 2025)
+// Valid Claude models, GLM model, and Gemini model (as of January 2025)
 const VALID_MODELS = [
   'claude-sonnet-4-5-20250929',
   'claude-opus-4-1-20250805',
-  'claude-haiku-3-5-20241022'
+  'claude-haiku-3-5-20241022',
+  'glm-4.6',        // GLM 4.6 (overflow capacity)
+  'gemini-2.5-flash-lite'
 ] as const;
 
 const DEFAULT_MODEL = 'claude-sonnet-4-5-20250929';
+
+// Migration map for old model IDs to current ones
+const MODEL_MIGRATIONS: Record<string, string> = {
+  'glm-4-flash': 'glm-4.6',      // Old Flash → GLM 4.6
+  'glm-4-air': 'glm-4.6',        // Old Air → GLM 4.6
+  'glm-4-plus': 'glm-4.6',       // Old Plus → GLM 4.6
+  'glm-4-0520': 'glm-4.6',       // Old date version → GLM 4.6
+  'glm-4.5': 'glm-4.6',          // Deprecated GLM 4.5 → GLM 4.6
+  'glm-4.5-air': 'glm-4.6',      // Deprecated GLM 4.5 Air → GLM 4.6
+  'gemini-2.5-flash': 'gemini-2.5-flash-lite'  // Deprecated Flash → Flash-Lite
+};
+
+// Migrate old model ID to new one if needed
+function migrateModel(model: string): string {
+  if (MODEL_MIGRATIONS[model]) {
+    logger.info(`🔄 Migrating model: ${model} → ${MODEL_MIGRATIONS[model]}`);
+    return MODEL_MIGRATIONS[model];
+  }
+  return model;
+}
 
 export const useModelStore = create<ModelState>()(
   persist(
@@ -33,11 +55,13 @@ export const useModelStore = create<ModelState>()(
       setSelectedModel: (model: string) => {
         // Validate model string
         if (!VALID_MODELS.includes(model as any)) {
+          console.warn(`⚠️ [MODEL STORE] Invalid model selected: ${model}, using default`);
           logger.warn(`⚠️ Invalid model selected: ${model}, using default`);
           set({ selectedModel: DEFAULT_MODEL });
           return;
         }
         
+        console.log(`✅ [MODEL STORE] Model updated to: ${model}`);
         logger.info(`✅ Model updated to: ${model}`);
         set({ selectedModel: model });
       },
@@ -50,20 +74,62 @@ export const useModelStore = create<ModelState>()(
         if (model.includes('sonnet-4-5')) return 'Sonnet 4.5';
         if (model.includes('haiku')) return 'Haiku 3.5';
         
+        // GLM model
+        if (model === 'glm-4.6') return 'GLM 4.6';
+        
+        // Gemini model
+        if (model === 'gemini-2.5-flash-lite') return 'Gemini 2.5 Flash-Lite';
+        
         return 'Unknown Model';
       }
     }),
     { 
       name: 'coder1-model-selection',
-      version: 1,
+      version: 6,  // AGGRESSIVE VERSION 6 - Force reset to Sonnet 4.5 (Oct 2025)
       
-      // Handle rehydration errors gracefully
-      onRehydrateStorage: () => (state, error) => {
-        if (error) {
-          logger.error('Failed to rehydrate model store:', error);
-          // Reset to default on error
-          useModelStore.setState({ selectedModel: DEFAULT_MODEL });
+      // MIGRATION FUNCTION - Runs regardless of version
+      migrate: (persistedState: any, version: number) => {
+        console.log(`🔄 [MODEL STORE] MIGRATE FUNCTION CALLED - persisted version: ${version}, code version: 6`);
+        console.log(`🔄 [MODEL STORE] Persisted state:`, persistedState);
+        
+        // NUCLEAR OPTION: Clear old localStorage completely
+        if (typeof window !== 'undefined') {
+          const oldData = localStorage.getItem('coder1-model-selection');
+          console.log(`🔄 [MODEL STORE] Old localStorage data:`, oldData);
+          
+          // Force clear and set new state
+          localStorage.removeItem('coder1-model-selection');
+          console.log(`🧹 [MODEL STORE] Cleared old localStorage`);
         }
+        
+        // Return fresh state with Sonnet 4.5
+        const freshState = {
+          state: { selectedModel: DEFAULT_MODEL },
+          version: 6
+        };
+        console.log(`✅ [MODEL STORE] Migration complete - returning:`, freshState);
+        return freshState;
+      },
+      
+      // Migrate and validate on rehydration
+      onRehydrateStorage: () => (state, error) => {
+        console.log(`🔄 [MODEL STORE] onRehydrateStorage CALLED`);
+        console.log(`🔄 [MODEL STORE] Rehydrated state:`, state);
+        console.log(`🔄 [MODEL STORE] Error:`, error);
+        
+        if (error) {
+          console.error('❌ [MODEL STORE] Failed to rehydrate model store:', error);
+          logger.error('Failed to rehydrate model store:', error);
+          useModelStore.setState({ selectedModel: DEFAULT_MODEL });
+          return;
+        }
+        
+        // FORCE RESET on version 6: Always use Sonnet 4.5 as default
+        // This ensures all users get Claude Sonnet 4.5 regardless of previous selection
+        console.log(`🔄 [MODEL STORE] Version 6 migration: Forcing reset to ${DEFAULT_MODEL}`);
+        logger.info(`🔄 Version 6 migration: Forcing reset to ${DEFAULT_MODEL}`);
+        useModelStore.setState({ selectedModel: DEFAULT_MODEL });
+        console.log(`✅ [MODEL STORE] Reset complete - current model: ${useModelStore.getState().selectedModel}`);
       }
     }
   )

@@ -12,6 +12,7 @@ import { Eye, GitBranch, FileText, Brain } from 'lucide-react';
 import StatusBarActions from './StatusBarActions';
 import DiscoverPanel from './DiscoverPanel';
 import { TeamStatusIndicator } from './TeamStatusIndicator';
+import CostDisplay from '../terminal/CostDisplay';
 import { useIDEStore } from '@/stores/useIDEStore';
 import { useSessionStore } from '@/stores/useSessionStore';
 import { useUIStore } from '@/stores/useUIStore';
@@ -123,6 +124,9 @@ export default function StatusBarCore({
           <div className="relative">
             <DiscoverPanel />
           </div>
+          
+          {/* Gemini/GLM Cost Display (next to Discover button) */}
+          <CostDisplay />
           
           {/* Supervision Indicator */}
           {supervisionActive && (

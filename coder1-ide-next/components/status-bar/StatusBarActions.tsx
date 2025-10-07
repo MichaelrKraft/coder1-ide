@@ -263,15 +263,27 @@ const StatusBarActions = React.memo(function StatusBarActions({
 
 
   const handleSessionSummary = async () => {
+    console.log('🔍 [SESSION SUMMARY] Button clicked - starting handleSessionSummary', {
+      sessionId,
+      activeFile,
+      openFilesCount: openFiles.length,
+      terminalHistoryLength: terminalHistory.length
+    });
+    
     try {
       // PHASE 3: Enhanced session summary with companion service integration
+      console.log('🔍 [SESSION SUMMARY] Activating context...');
       await activateContext('Session Summary');
+      console.log('🔍 [SESSION SUMMARY] Context activated successfully');
       
       // Check if companion service is available for enhanced summaries
+      console.log('🔍 [SESSION SUMMARY] Importing companion client...');
       const { getCompanionClient } = await import('@/lib/companion-client');
       const companionClient = getCompanionClient();
+      console.log('🔍 [SESSION SUMMARY] Companion client imported, checking connection...');
       
       if (companionClient.isConnected()) {
+        console.log('🔍 [SESSION SUMMARY] Companion service is connected, using enhanced path');
         // Use companion service for AI-powered session analysis via headless Claude
         const sessionData = {
           sessionId,
@@ -308,13 +320,20 @@ const StatusBarActions = React.memo(function StatusBarActions({
         } else {
           throw new Error('Failed to generate AI session summary');
         }
+      } else {
+        console.log('🔍 [SESSION SUMMARY] Companion service NOT connected, using modal path');
       }
       
       // Always open the modal for display
+      console.log('🔍 [SESSION SUMMARY] Opening sessionSummary modal...');
       openModal('sessionSummary');
+      console.log('🔍 [SESSION SUMMARY] Modal open command sent');
       
     } catch (error) {
       // Fallback to original session summary system
+      console.error('🔍 [SESSION SUMMARY] Error in handleSessionSummary:', error);
+      console.log('🔍 [SESSION SUMMARY] Falling back to basic session summary');
+      
       await activateContext('Session Summary');
       openModal('sessionSummary');
       

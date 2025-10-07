@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { ChevronDown, Home, Grid, FileText, Code, Sparkles, BookOpen, SettingsIcon, Info, HelpCircle, Keyboard, AlertCircle } from '@/lib/icons';
 import { glows } from '@/lib/design-tokens';
 import { SetupInstructionsModal } from './bridge/SetupInstructionsModal';
+import { GlmSetupModal } from './GlmSetupModal';
 
 interface MenuItem {
   label?: string;
@@ -85,6 +86,7 @@ export default function MenuBar({
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [setupModalOpen, setSetupModalOpen] = useState(false);
+  const [glmSetupModalOpen, setGlmSetupModalOpen] = useState(false);
   const menuBarRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -141,6 +143,7 @@ export default function MenuBar({
     ],
     Help: [
       { label: 'Bridge Setup Instructions', action: () => setSetupModalOpen(true), shortcut: '' },
+      { label: 'GLM 4.6 Setup Guide', action: () => setGlmSetupModalOpen(true), shortcut: '' },
       { separator: true },
       { label: 'About Coder1', action: onShowAbout || (() => alert('Coder1 IDE v2.0.0\nBuilt for Claude Code and vibe coders')), shortcut: '' },
       { label: 'Documentation', action: () => window.dispatchEvent(new CustomEvent('openDocumentationPanel')), shortcut: '' },
@@ -444,6 +447,12 @@ export default function MenuBar({
         isOpen={setupModalOpen} 
         onClose={() => setSetupModalOpen(false)}
         showDontShowAgain={false}
+      />
+      
+      {/* GLM Setup Modal */}
+      <GlmSetupModal 
+        isOpen={glmSetupModalOpen} 
+        onClose={() => setGlmSetupModalOpen(false)}
       />
     </div>
   );

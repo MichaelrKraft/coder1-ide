@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { Settings, Zap, Speaker, ChevronDown, Shield, BarChart, Sliders } from 'lucide-react';
+import { Settings, Zap, Speaker, ChevronDown, Shield, BarChart, Sliders, Info } from 'lucide-react';
 import { soundAlertService, SoundPreset } from '@/lib/sound-alert-service';
 import { logger } from '@/lib/logger';
 import { useEnhancedStatusline } from '@/components/statusline/EnhancedStatusline';
@@ -264,6 +264,59 @@ export default function TerminalSettings({
             </div>
           </div>
 
+          {/* AI Backend Selection (Z.AI GLM vs Anthropic) */}
+          <div className="p-4 border-b border-border-default">
+            <div className="flex items-center gap-2 mb-3">
+              <Shield className="w-4 h-4 text-coder1-cyan" />
+              <span className="text-sm font-medium text-text-primary">AI Backend</span>
+              <span className="text-xs text-text-muted">(requires restart)</span>
+            </div>
+            <div className="space-y-2">
+              <button
+                onClick={async () => {
+                  // Note: Backend change requires server restart to take effect
+                  xtermRef.current?.writeln('\r\n⚠️  Backend selection requires restarting Coder1 IDE');
+                  xtermRef.current?.writeln('📝 To enable GLM backend:');
+                  xtermRef.current?.writeln('   1. Edit .env.local: USE_GLM_BACKEND=true');
+                  xtermRef.current?.writeln('   2. Restart server: npm run dev');
+                  xtermRef.current?.writeln('   3. Benefits: $0.10/M tokens with full tool use (90% success)');
+                }}
+                className="w-full flex items-center justify-between px-3 py-2 text-sm rounded hover:bg-bg-tertiary transition-colors text-text-secondary"
+              >
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-border-default" />
+                  <div className="flex flex-col items-start">
+                    <span>⚡ Anthropic (Claude)</span>
+                    <span className="text-xs text-text-muted">$15/M tokens - Default</span>
+                  </div>
+                </div>
+              </button>
+              <button
+                onClick={async () => {
+                  xtermRef.current?.writeln('\r\n💰 GLM Backend (via Z.AI)');
+                  xtermRef.current?.writeln('✅ Full tool use support (file access, commands, MCP)');
+                  xtermRef.current?.writeln('💵 Cost: $0.10/M tokens (150x cheaper!)');
+                  xtermRef.current?.writeln('🎯 Success rate: 90% tool invocation');
+                  xtermRef.current?.writeln('\r\n📝 Setup:');
+                  xtermRef.current?.writeln('   1. Get API key: https://api.z.ai or https://docs.z.ai');
+                  xtermRef.current?.writeln('   2. Edit .env.local:');
+                  xtermRef.current?.writeln('      ZAI_API_KEY=your-key');
+                  xtermRef.current?.writeln('      USE_GLM_BACKEND=true');
+                  xtermRef.current?.writeln('   3. Restart: npm run dev');
+                }}
+                className="w-full flex items-center justify-between px-3 py-2 text-sm rounded hover:bg-bg-tertiary transition-colors text-text-secondary"
+              >
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-border-default" />
+                  <div className="flex flex-col items-start">
+                    <span>💰 GLM 4.6 (Z.AI)</span>
+                    <span className="text-xs text-text-muted">$0.10/M - 150x cheaper!</span>
+                  </div>
+                </div>
+              </button>
+            </div>
+          </div>
+
           {/* Claude Model Selection Section */}
           <div className="p-4 border-b border-border-default">
             <div className="flex items-center gap-2 mb-3">
@@ -273,9 +326,11 @@ export default function TerminalSettings({
             </div>
             <div className="space-y-2">
               {[
-                { model: 'claude-sonnet-4-5-20250929', label: 'Claude Sonnet 4.5', description: '🆕 Latest (Default)' },
-                { model: 'claude-opus-4-1-20250805', label: 'Claude Opus 4.1', description: 'Most Capable' },
-                { model: 'claude-haiku-3-5-20241022', label: 'Claude Haiku 3.5', description: 'Ultra Fast' }
+                { model: 'claude-sonnet-4-5-20250929', label: 'Claude Sonnet 4.5', description: '🆕 Latest (Default)', category: 'Claude', helpText: '' },
+                { model: 'claude-opus-4-1-20250805', label: 'Claude Opus 4.1', description: 'Most Capable', category: 'Claude', helpText: '' },
+                { model: 'glm-4.6', label: 'GLM 4.6', description: '💰 Overflow Backend ($0.10/M)', category: 'GLM', helpText: '🔄 Switch here when Claude hits rate limits. Requires Z.AI setup - see Help → GLM 4.6 Setup Guide' },
+                { model: 'claude-haiku-3-5-20241022', label: 'Claude Haiku 3.5', description: 'Ultra Fast', category: 'Claude', helpText: '' },
+                { model: 'gemini-2.5-flash-lite', label: 'Gemini 2.5 Flash-Lite', description: '⚡ Cost-Effective ($0.10/M)', category: 'Gemini', helpText: '' }
               ].map((item) => (
                 <button
                   key={item.model}
@@ -288,11 +343,17 @@ export default function TerminalSettings({
                   className={`w-full flex items-center justify-between px-3 py-2 text-sm rounded hover:bg-bg-tertiary transition-colors ${
                     selectedClaudeModel === item.model ? 'text-coder1-cyan bg-coder1-purple bg-opacity-20' : 'text-text-secondary'
                   }`}
+                  title={item.helpText || ''}
                 >
                   <div className="flex items-center gap-2">
                     <div className={`w-2 h-2 rounded-full ${selectedClaudeModel === item.model ? 'bg-coder1-cyan' : 'bg-border-default'}`} />
                     <div className="flex flex-col items-start">
-                      <span>{item.label}</span>
+                      <div className="flex items-center gap-1">
+                        <span>{item.label}</span>
+                        {item.helpText && (
+                          <Info className="w-3 h-3 text-cyan-400 opacity-50" />
+                        )}
+                      </div>
                       <span className="text-xs text-text-muted">{item.description}</span>
                     </div>
                   </div>

@@ -4002,38 +4002,6 @@
                 </div>
             </div>
 
-            <!-- Git Mastery Card (Combined) -->
-            <div class="card">
-                <div class="card-title">Git Mastery</div>
-                <div class="git-mastery-grid">
-                    <div class="git-command-section">
-                        <div class="command-spotlight-mini">
-                            <div class="command-name" id="topCommand">git commit</div>
-                            <div class="command-count" id="commandCount">Used 0 times</div>
-                        </div>
-                        <div class="command-explanation" id="commandExplanation">
-                            Saves a snapshot of your code
-                        </div>
-                    </div>
-                    <div class="git-stats-section">
-                        <div class="push-stats-mini">
-                            <div class="stat-item-mini">
-                                <div class="stat-number" id="pushCount">0</div>
-                                <div class="stat-label">Pushes</div>
-                            </div>
-                            <div class="stat-item-mini">
-                                <div class="streak-fire">🔥</div>
-                                <div class="stat-number" id="streakCount">0</div>
-                                <div class="stat-label">Streak</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="git-tip-bar">
-                    <span id="gitMessage">💡 Try 'git commit -m' for faster commits!</span>
-                </div>
-            </div>
-
             <!-- Smart Hooks Card -->
             <div class="card hooks-card">
                 <div class="card-title">
@@ -4100,13 +4068,6 @@
                     </button>
                 </div>
             </div>
-
-
-
-        </div>
-
-        <!-- Third Row: AI Memory & Context -->
-        <div class="third-row-container">
 
             <!-- AI Memory & Context Card -->
             <div class="card memory-card">
@@ -5155,20 +5116,22 @@ Execute as a single Task with multiple sub-agents working in parallel.`;
 
             async loadClaudeUsageData() {
                 try {
-                    const response = await fetch('/api/analytics/claude-usage');
+                    const response = await fetch('/api/usage/stats/');
                     if (response.ok) {
                         const result = await response.json();
                         if (result.success && result.data) {
                             this.updateTokenUsage(result.data);
-                            console.log('✅ [DASHBOARD] Real Claude usage data loaded:', result.source);
+                            console.log('✅ [DASHBOARD] Real usage data loaded from cost-tracker.json:', result.source);
                         } else {
+                            console.warn('⚠️ [DASHBOARD] Failed to load real data, using mock');
                             this.updateTokenUsageMock();
                         }
                     } else {
+                        console.warn('⚠️ [DASHBOARD] API returned non-OK status, using mock');
                         this.updateTokenUsageMock();
                     }
                 } catch (error) {
-                    console.log('📊 [DASHBOARD] Using mock token usage data:', error.message);
+                    console.error('❌ [DASHBOARD] Error loading usage data:', error);
                     this.updateTokenUsageMock();
                 }
             }

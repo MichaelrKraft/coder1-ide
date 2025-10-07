@@ -195,10 +195,26 @@ class SmartPRDGenerator {
         cards.forEach(card => {
             const patternId = card.getAttribute('data-pattern-id');
             const isSelected = this.selectedPatterns.some(p => p.id === patternId);
+            const button = card.querySelector('.pattern-select-text');
+            
             if (isSelected) {
-                card.classList.add('ring-4', 'ring-primary', 'bg-blue-50');
+                // Selected state: prominent border and background
+                card.classList.add('border-primary', 'border-4', 'bg-blue-50', 'dark:bg-blue-900');
+                card.classList.remove('border-transparent', 'border-2', 'bg-white', 'dark:bg-gray-800');
+                if (button) {
+                    button.textContent = '✓ Selected';
+                    button.parentElement.classList.add('bg-green-500', 'hover:bg-green-600');
+                    button.parentElement.classList.remove('bg-gradient-to-r', 'from-primary', 'to-secondary');
+                }
             } else {
-                card.classList.remove('ring-4', 'ring-primary', 'bg-blue-50');
+                // Unselected state: default styling
+                card.classList.remove('border-primary', 'border-4', 'bg-blue-50', 'dark:bg-blue-900');
+                card.classList.add('border-transparent', 'border-2', 'bg-white', 'dark:bg-gray-800');
+                if (button) {
+                    button.textContent = 'Select This Pattern';
+                    button.parentElement.classList.remove('bg-green-500', 'hover:bg-green-600');
+                    button.parentElement.classList.add('bg-gradient-to-r', 'from-primary', 'to-secondary');
+                }
             }
         });
         
@@ -416,6 +432,28 @@ class SmartPRDGenerator {
     }
 
     renderTextQuestion(question) {
+        // Generate example HTML if examples exist
+        let examplesHTML = '';
+        if (question.examples && question.examples.length > 0) {
+            examplesHTML = `
+                <details class="mt-4">
+                    <summary class="text-sm text-primary hover:text-secondary cursor-pointer font-medium inline-flex items-center">
+                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        Show example answers
+                    </summary>
+                    <div class="mt-3 space-y-2 pl-5">
+                        ${question.examples.map((example, i) => `
+                            <div class="text-sm text-gray-600 bg-gray-50 dark:bg-gray-700 p-3 rounded border border-gray-200 dark:border-gray-600">
+                                <span class="font-medium text-gray-700 dark:text-gray-300">Example ${i + 1}:</span> ${example}
+                            </div>
+                        `).join('')}
+                    </div>
+                </details>
+            `;
+        }
+        
         return `
             <div>
                 <textarea 
@@ -426,6 +464,7 @@ class SmartPRDGenerator {
                     rows="4"
                 ></textarea>
                 <p class="text-xs text-gray-500 mt-2">Maximum ${question.maxLength || 500} characters</p>
+                ${examplesHTML}
             </div>
         `;
     }
@@ -598,14 +637,27 @@ class SmartPRDGenerator {
 
     async startHandoff() {
         try {
+            // Ensure we have a PRD generated
+            if (!this.generatedPRD) {
+                this.showToast('Please generate a PRD first', 'warning');
+                return;
+            }
+            
+            // Extract product name from answers or PRD
+            const productName = this.answers['product-name'] || 
+                                this.answers['productName'] || 
+                                'New Product';
+            
             const response = await fetch('/api/coder1-handoff/create', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
+                    prdContent: this.generatedPRD,
                     sessionId: this.sessionId,
-                    prdResult: this.generatedPRD
+                    productName: productName,
+                    patterns: this.selectedPatterns.map(p => p.name)
                 })
             });
 
@@ -621,7 +673,8 @@ class SmartPRDGenerator {
                 // Track conversion event
                 this.trackEvent('handoff_started', {
                     handoffId: this.handoffId,
-                    sessionId: this.sessionId
+                    sessionId: this.sessionId,
+                    productName: productName
                 });
                 
             } else {
@@ -903,6 +956,29 @@ function previousQuestion() {
 
 function downloadPRD() {
     window.prdGenerator.downloadPRD();
+}
+
+function exportPDFWrapper() {
+    if (window.PRDExportUtils && window.prdGenerator && window.prdGenerator.generatedPRD) {
+        window.PRDExportUtils.exportAsPDF(window.prdGenerator.generatedPRD);
+    } else {
+        console.error('Export utilities or PRD content not available');
+        alert('Unable to export PDF. Please ensure the PRD has been generated.');
+    }
+}
+
+function exportJSONWrapper() {
+    if (window.PRDExportUtils && window.prdGenerator && window.prdGenerator.generatedPRD) {
+        window.PRDExportUtils.exportAsJSON(
+            window.prdGenerator.generatedPRD,
+            window.prdGenerator.answers || {},
+            window.prdGenerator.selectedPatterns || [],
+            window.prdGenerator.selectedMode || 'unknown'
+        );
+    } else {
+        console.error('Export utilities or PRD content not available');
+        alert('Unable to export JSON. Please ensure the PRD has been generated.');
+    }
 }
 
 function startHandoff() {

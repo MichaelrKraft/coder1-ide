@@ -35,6 +35,8 @@ import { filterThinkingAnimations, extractClaudeCommands } from '@/lib/checkpoin
 import { getCompanionClient } from '@/lib/companion-client';
 import { terminalCommandHandler } from '@/lib/terminal-commands';
 import { debounce } from '@/lib/debounce';
+import { RateLimitDetector } from '@/lib/rate-limit-detector';
+import { TerminalModeManager } from '@/lib/terminal-mode-manager';
 // import EnhancedStatusline from '@/components/statusline/EnhancedStatusline'; // Temporarily disabled for debugging
 import StagedComposer from './StagedComposer';
 import SessionMetricsBar from './SessionMetricsBar';
@@ -128,6 +130,11 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
   const [companionConnected, setCompanionConnected] = useState(false);
   const companionClientRef = useRef<any>(null);
   const currentCommandBuffer = useRef<string>('');
+  const lineBufferRef = useRef<string>(''); // Sync ref for currentLineBuffer state (avoids React timing issues)
+  
+  // GLM Integration: Rate limit detection and mode management
+  const rateLimitDetectorRef = useRef<RateLimitDetector>(new RateLimitDetector());
+  const modeManagerRef = useRef<TerminalModeManager>(new TerminalModeManager());
   
   // Use enhanced supervision context
   const { 
@@ -145,6 +152,38 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
   
   // ✅ READ MODEL FROM ZUSTAND STORE - This ensures real-time updates when model is changed
   const selectedClaudeModel = useModelStore(state => state.selectedModel);
+  
+  // Auto-switch terminal mode based on selected model
+  useEffect(() => {
+    const modeManager = modeManagerRef.current;
+    const xterm = xtermRef.current;
+    
+    if (!xterm || !modeManager) return;
+    
+    const currentMode = modeManager.getCurrentMode();
+    console.log('🔄 [MODE-SWITCH-EFFECT] Triggered - Model:', selectedClaudeModel, 'Current Mode:', currentMode);
+    
+    const notifyUser = (message: string) => {
+      xterm.writeln(`\r\n${message}`);
+    };
+    
+    // Only switch if we're not already in the correct mode
+    if (selectedClaudeModel.startsWith('gemini-') && currentMode !== 'GEMINI_API') {
+      console.log('🔄 Switching to GEMINI_API');
+      // Switch to Gemini mode
+      modeManager.switchToGemini(xterm, { notifyUser }).catch(err => {
+        console.error('Failed to switch to Gemini:', err);
+      });
+    } else if ((selectedClaudeModel.startsWith('claude-') || selectedClaudeModel.startsWith('glm-')) && currentMode !== 'CLAUDE_CLI') {
+      console.log('🔄 Switching to CLAUDE_CLI (model:', selectedClaudeModel, ')');
+      // Switch to Claude CLI for Claude models and GLM (GLM uses Z.AI backend)
+      modeManager.switchToClaude({ notifyUser }).catch(err => {
+        console.error('Failed to switch to Claude:', err);
+      });
+    } else {
+      console.log('✅ [MODE-SWITCH-EFFECT] Already in correct mode, skipping switch');
+    }
+  }, [selectedClaudeModel]);
   
   const [showModelDropdown, setShowModelDropdown] = useState(false);
 
@@ -1323,10 +1362,30 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
                 term.writeln('──────────────────────────────────────────────');
                 term.writeln('');
               } else {
-                term.writeln('Coder1 Terminal Ready');
-                term.writeln("Type 'claude' to start AI-assisted coding");
-                term.writeln('──────────────────────────────────────────────');
-                term.writeln('');
+                // Show mode-specific welcome message
+                const currentMode = modeManagerRef.current?.getCurrentMode() || 'CLAUDE_CLI';
+                const modelName = useModelStore.getState().getModelDisplayName();
+                
+                if (currentMode === 'GLM_API') {
+                  term.writeln(`\x1b[38;5;141mCoder1 Terminal - ${modelName} Mode\x1b[0m`);
+                  term.writeln('\x1b[38;5;245mType your message and press Enter to chat\x1b[0m');
+                  term.writeln('──────────────────────────────────────────────');
+                  term.writeln('');
+                  term.write('$ '); // Show prompt for GLM mode
+                } else if (currentMode === 'GEMINI_API') {
+                  term.writeln(`\x1b[38;5;141mCoder1 Terminal - ${modelName} Mode\x1b[0m`);
+                  term.writeln('\x1b[38;5;245mType your message and press Enter to chat\x1b[0m');
+                  term.writeln('──────────────────────────────────────────────');
+                  term.writeln('');
+                  term.write('$ '); // Show prompt for Gemini mode
+                } else {
+                  // CLAUDE_CLI mode (includes Claude models and GLM via Z.AI backend)
+                  term.writeln(`\x1b[38;5;141mCoder1 Terminal - ${modelName}\x1b[0m`);
+                  term.writeln('\x1b[38;5;245mConnected to bash shell with Claude Code CLI\x1b[0m');
+                  term.writeln("Type 'claude' to start AI-assisted coding");
+                  term.writeln('──────────────────────────────────────────────');
+                  term.writeln('');
+                }
               }
             }
             
@@ -1340,6 +1399,9 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
         xtermRef.current = term;
         fitAddonRef.current = fitAddon;
 
+        // ✅ Mode switching is handled by useEffect (lines 157-192)
+        // Removed duplicate mode-switching code here to prevent race conditions
+        
         // Check for restored terminal history from checkpoint
         if (typeof window !== 'undefined') {
           // 🚨 CRITICAL FIX: Use terminal-type-specific localStorage keys
@@ -2382,6 +2444,8 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
     };
 
     // Add connection status listeners for debugging
+    // Remove existing listener to prevent duplicates
+    socket.off('connect');
     socket.on('connect', () => {
       // REMOVED: // REMOVED: console.log('🟢 Socket.IO CONNECTED to backend');
       // If reconnecting, re-establish terminal session
@@ -2393,6 +2457,8 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
     });
     
     // Handle terminal created response from server
+    // Remove existing listener to prevent duplicates
+    socket.off('terminal:created');
     socket.on('terminal:created', ({ sessionId: serverSessionId, pid }) => {
       console.log('✅ Terminal created on server:', { sessionId: serverSessionId, pid });
       
@@ -2404,6 +2470,8 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
       }
     });
     
+    // Remove existing listener to prevent duplicates
+    socket.off('disconnect');
     socket.on('disconnect', (reason) => {
       console.log('🔴 Socket.IO DISCONNECTED:', {
         reason,
@@ -2424,6 +2492,8 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
       setIsConnected(false);
     });
     
+    // Remove existing listener to prevent duplicates
+    socket.off('connect_error');
     socket.on('connect_error', (error) => {
       console.error('❌ Socket.IO CONNECTION ERROR:', {
         message: error.message,
@@ -2437,6 +2507,8 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
     });
     
     // ADDED: Reconnection success handler with session resurrection
+    // Remove existing listener to prevent duplicates
+    socket.off('reconnect');
     socket.on('reconnect', (attemptNumber) => {
       console.log('✅ Socket.IO RECONNECTED:', {
         attempts: attemptNumber,
@@ -2552,6 +2624,8 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
     };
 
     // 🧠 CONTEXTUAL MEMORY FIX: Handle commands from server for contextual memory
+    // Remove existing listener to prevent duplicates
+    socket.off('terminal:command');
     socket.on('terminal:command', ({ id, command }: { id: string; command: string }) => {
       if (id === sessionIdForVoiceRef.current) {
         console.log('🧠 [CLIENT] Received command from server for contextual memory:', command);
@@ -2565,11 +2639,89 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
     });
 
     // Handle terminal output from backend
+    // Remove existing listener to prevent duplicates (CRITICAL FIX for repeating output bug)
+    socket.off('terminal:data');
     socket.on('terminal:data', ({ id, data }: { id: string; data: string }) => {
       // Use the ref which gets updated immediately when session is created
       if (id === sessionIdForVoiceRef.current && term) {
         // Buffer the output for performance
         outputBufferRef.current.push(data);
+        
+        // GLM Integration: Check for rate limit indicators
+        const rateLimitEvent = rateLimitDetectorRef.current.detectRateLimit(data);
+        if (rateLimitEvent.detected && rateLimitEvent.suggestGLM) {
+          // Show toast with action buttons (using ToastAction interface)
+          const cooldownMinutes = rateLimitDetectorRef.current.estimateCooldownMinutes();
+          addToast({
+            id: `rate-limit-${Date.now()}`,
+            message: `⚠️ ${rateLimitEvent.reason}. Switch to cost-effective GLM 4 Flash?`,
+            type: rateLimitEvent.severity === 'error' ? 'error' : 'warning',
+            duration: 15000,
+            dismissible: true,
+            actions: [
+              {
+                label: 'Switch to GLM',
+                onClick: async () => {
+                  const success = await modeManagerRef.current.switchToGLM(
+                    term,
+                    {
+                      notifyUser: (msg) => term.writeln('\r\n' + msg),
+                      maxContextLines: 200
+                    }
+                  );
+                  
+                  if (success) {
+                    addToast({
+                      message: '✅ Switched to GLM 4 Flash. Context preserved!',
+                      type: 'success',
+                      duration: 5000
+                    });
+                    
+                    // Schedule auto-switch back after cooldown
+                    modeManagerRef.current.scheduleAutoSwitchBack(
+                      cooldownMinutes,
+                      () => {
+                        addToast({
+                          message: `⏰ Claude cooldown complete (${cooldownMinutes} min). Ready to switch back?`,
+                          type: 'info',
+                          duration: 10000,
+                          actions: [
+                            {
+                              label: 'Switch to Claude',
+                              onClick: async () => {
+                                await modeManagerRef.current.switchToClaude({
+                                  notifyUser: (msg) => term.writeln('\r\n' + msg)
+                                });
+                                addToast({
+                                  message: '✅ Switched back to Claude CLI',
+                                  type: 'success',
+                                  duration: 3000
+                                });
+                              },
+                              style: 'primary'
+                            }
+                          ]
+                        });
+                      }
+                    );
+                  }
+                },
+                style: 'primary'
+              },
+              {
+                label: `Wait ${cooldownMinutes} min`,
+                onClick: () => {
+                  addToast({
+                    message: `⏳ Waiting for Claude cooldown (~${cooldownMinutes} minutes)`,
+                    type: 'info',
+                    duration: 3000
+                  });
+                },
+                style: 'secondary'
+              }
+            ]
+          });
+        }
         
         // Cancel any pending flush
         if (outputFlushTimeoutRef.current) {
@@ -2785,6 +2937,8 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
     });
 
     // Handle errors
+    // Remove existing listener to prevent duplicates
+    socket.off('terminal:error');
     socket.on('terminal:error', ({ message }: { message: string }) => {
       // logger?.error('Terminal error:', message);
       term.writeln(`\r\n❌ Terminal error: ${message}`);
@@ -2910,11 +3064,74 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
       
       // Send input to backend via Socket.IO with current session ID
       console.log('📤 Sending terminal input for session:', currentSessionId);
-      socket.emit('terminal:input', { 
-        id: currentSessionId, 
-        data,
-        selectedClaudeModel: useModelStore.getState().selectedModel
-      });
+      
+      // Route through mode manager for Gemini/GLM, direct socket for Claude
+      const modeManager = modeManagerRef.current;
+      const currentMode = modeManager?.getCurrentMode();
+      
+      if (currentMode === 'GEMINI_API') {
+        // GEMINI_API mode: chat-style interaction (no PTY)
+        // Note: GLM now uses CLAUDE_CLI mode with Z.AI backend
+        
+        // Handle Enter key - send message to API
+        if (data === '\r') {
+          const bufferValue = lineBufferRef.current; // Use ref for immediate value
+          if (bufferValue.trim()) {
+            const message = bufferValue.trim();
+            
+            // Intercept 'claude' command in API mode
+            if (message.startsWith('claude')) {
+              const modelName = useModelStore.getState().getModelDisplayName();
+              term.writeln(`\r\n\x1b[38;5;214m⚠️  You're currently in ${modelName} mode.\x1b[0m`);
+              term.writeln('\x1b[38;5;245mTo use Claude Code CLI, switch to a Claude model from the dropdown.\x1b[0m');
+              term.writeln(`\x1b[38;5;245mOr type your message to continue chatting with ${modelName}.\x1b[0m`);
+              term.write('\r\n$ ');
+              // Don't send this to API or bash
+              // Let Enter key fall through to clear buffer
+            } else {
+              // Normal API message handling
+              modeManager?.sendMessage(message, (event: string, data: any) => socket.emit(event, data))
+                .then(response => {
+                  if (response) {
+                    // Format response for terminal display
+                    const formattedResponse = response
+                      .split('\n')
+                      .map((line: string) => line.trimEnd()) // Remove trailing whitespace
+                      .join('\r\n'); // Use proper line endings for terminal
+                    
+                    term.writeln('\r\n' + formattedResponse);
+                    term.write('\r\n$ '); // Show prompt after response
+                  }
+                })
+                .catch(err => {
+                  console.error('❌ Mode manager error:', err);
+                  term.writeln('\r\n❌ Error: ' + err.message);
+                  term.write('\r\n$ ');
+                });
+            }
+          }
+          // Let Enter key fall through to normal buffer clearing below
+        } else if (data === '\x7F') {
+          // Backspace - need to handle visually for API mode
+          if (lineBufferRef.current.length > 0) {
+            // Move cursor back, write space, move cursor back again (erase character)
+            term.write('\b \b');
+          }
+          // Let backspace fall through to update buffer state below
+        } else {
+          // API modes need local echo for regular characters (no PTY to echo back)
+          term.write(data);
+        }
+        // For all keys (including Enter), continue to update buffer state below
+        // Don't send to PTY socket for API modes
+      } else {
+        // Use direct socket for Claude CLI mode (PTY)
+        socket.emit('terminal:input', { 
+          id: currentSessionId, 
+          data,
+          selectedClaudeModel: useModelStore.getState().selectedModel
+        });
+      }
       
       // Process any buffered input
       processInputBuffer();
@@ -3026,13 +3243,19 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
           }
         }
         setCurrentLineBuffer('');
+        lineBufferRef.current = ''; // Sync ref clear
       } else if (data === '\x7F') {
         // Backspace
-        setCurrentLineBuffer(prev => prev.slice(0, -1));
+        setCurrentLineBuffer(prev => {
+          const newBuffer = prev.slice(0, -1);
+          lineBufferRef.current = newBuffer; // Sync update
+          return newBuffer;
+        });
       } else if (data >= ' ' || data === '\t') {
         // Regular character
         setCurrentLineBuffer(prev => {
           const newBuffer = prev + data;
+          lineBufferRef.current = newBuffer; // Sync update for immediate access
           // Check if "claude" has been typed
           if (newBuffer.toLowerCase().includes('claude')) {
             // Activate supervision when claude is typed
@@ -3872,9 +4095,9 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
         className="flex-1 relative overflow-auto"
         style={{
           backgroundColor: '#0a0a0a',
-          paddingBottom: claudeActive ? '300px' : '20px',  // DYNAMIC: 300px when Claude Code is active, 20px normal
+          paddingBottom: '300px',  // Always use 300px padding to prevent bottom cutoff
           maxHeight: '100%',
-          minHeight: claudeActive ? 'calc(100% + 300px)' : '100%'  // Force container to be taller when Claude Code active
+          minHeight: 'calc(100% + 300px)'  // Force container to be taller for scrolling
         }}
         onClick={() => {
           // Focus the terminal when clicked
@@ -3889,7 +4112,7 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
           onContextMenu={handleContextMenu}
           style={{
             width: '100%',
-            minHeight: claudeActive ? 'calc(100% + 250px)' : '100%'  // Ensure terminal is taller during Claude Code
+            minHeight: 'calc(100% + 250px)'  // Always ensure terminal is taller to prevent bottom cutoff
           }}
         />
       </div>

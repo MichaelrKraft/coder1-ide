@@ -26,6 +26,13 @@ export default function StatusBarModals({
   terminalHistory = '',
   terminalCommands = []
 }: StatusBarModalsProps) {
+  console.log('🔍 [MODAL] StatusBarModals component mounting', {
+    activeFile,
+    openFilesCount: openFiles.length,
+    terminalHistoryLength: terminalHistory.length,
+    terminalCommandsCount: terminalCommands.length
+  });
+  
   const [activeTab, setActiveTab] = useState<'summary' | 'insights' | 'nextSteps'>('summary');
   const [copySuccess, setCopySuccess] = useState(false);
   const [storeSuccess, setStoreSuccess] = useState(false);
@@ -59,13 +66,23 @@ export default function StatusBarModals({
 
   // Start generation on mount if not already generated
   React.useEffect(() => {
+    console.log('🔍 [MODAL] useEffect triggered', {
+      hasGenerated,
+      isGenerating,
+      willGenerate: !hasGenerated && !isGenerating
+    });
+    
     if (!hasGenerated && !isGenerating) {
+      console.log('🔍 [MODAL] Calling generateSummary from useEffect...');
       generateSummary({
         openFiles,
         activeFile,
         terminalHistory,
         terminalCommands
       });
+      console.log('🔍 [MODAL] generateSummary call completed');
+    } else {
+      console.log('🔍 [MODAL] Skipping generateSummary - already generated or generating');
     }
   }, []);
 
