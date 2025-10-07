@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { AlertCircle, CheckCircle, XCircle, Lightbulb, Loader2 } from 'lucide-react';
 import { useContextActivation } from '@/lib/hooks/useContextActivation';
+import { useModelStore } from '@/stores/useModelStore';
 
 interface ErrorDoctorProps {
   lastError: string | null;
@@ -29,35 +30,58 @@ export default function ErrorDoctor({ lastError, isActive }: ErrorDoctorProps) {
     // PHASE 3: Activate context when Error Doctor analyzes errors
     await activateContext('Error Doctor');
     
-    // Simulate error analysis (in production, this would call an AI service)
-    setTimeout(() => {
-      if (error.includes('command not found')) {
-        setErrorType('error');
-        setDiagnosis('Command not recognized. Try: ls, pwd, cd, clear, or type "claude" to enter AI conversation mode.');
-      } else if (error.includes('permission denied')) {
-        setErrorType('error');
-        setDiagnosis('Permission denied. Try running with sudo or check file permissions with "ls -la".');
-      } else if (error.includes('cannot find module')) {
-        setErrorType('error');
-        setDiagnosis('Module not found. Run "npm install" to install dependencies or check the import path.');
-      } else if (error.includes('syntax error')) {
-        setErrorType('error');
-        setDiagnosis('Syntax error detected. Check for missing semicolons, brackets, or typos in your code.');
-      } else if (error.includes('deprecated')) {
-        setErrorType('warning');
-        setDiagnosis('This feature is deprecated. Consider updating to the latest recommended approach.');
-      } else if (error.includes('404')) {
-        setErrorType('error');
-        setDiagnosis('Resource not found (404). Check the URL or file path and ensure the resource exists.');
-      } else if (error.includes('timeout')) {
-        setErrorType('warning');
-        setDiagnosis('Operation timed out. Check your network connection or try increasing the timeout limit.');
+    try {
+      const currentModel = useModelStore.getState().model;
+      
+      const response = await fetch('/api/error-doctor/analyze', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ error, model: currentModel }),
+      });
+      
+      if (!response.ok) {
+        throw new Error('API request failed');
+      }
+      
+      const data = await response.json();
+      
+      if (data.success && data.diagnosis) {
+        if (error.includes('permission denied') || error.includes('failed') || error.includes('Error')) {
+          setErrorType('error');
+        } else if (error.includes('warning') || error.includes('deprecated')) {
+          setErrorType('warning');
+        } else {
+          setErrorType('info');
+        }
+        
+        const diagnosisText = data.usedAI 
+          ? `${data.diagnosis}\n\n✨ Analyzed with ${getModelDisplayName(data.model)}`
+          : data.diagnosis;
+        
+        setDiagnosis(diagnosisText);
       } else {
         setErrorType('info');
-        setDiagnosis('Analyzing error patterns... Consider checking logs for more details.');
+        setDiagnosis('Error analysis temporarily unavailable. Please check the error message manually.');
       }
+    } catch (error) {
+      console.error('Error Doctor analysis failed:', error);
+      setErrorType('info');
+      setDiagnosis('Error analysis temporarily unavailable. Please check the error message manually.');
+    } finally {
       setIsAnalyzing(false);
-    }, 1000);
+    }
+  };
+  
+  const getModelDisplayName = (model?: string): string => {
+    if (!model) return 'AI';
+    if (model === 'glm-4.6') return 'GLM 4.6';
+    if (model.includes('claude-sonnet')) return 'Claude Sonnet 4.5';
+    if (model.includes('claude-opus')) return 'Claude Opus 4.1';
+    if (model.includes('claude-haiku')) return 'Claude Haiku 3.5';
+    if (model.includes('gemini')) return 'Gemini 2.5 Flash';
+    return 'AI';
   };
 
   if (!isActive) {
