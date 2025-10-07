@@ -1440,16 +1440,39 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
           // Only restore if terminal is visible (prevents race conditions during tab switching)
           if (historyToRestore && historyToRestore.trim() && isVisible) {
             console.log(`🔄 Terminal: Restoring terminal history from ${historySource}`);
+            console.log(`  - Original length: ${historyToRestore.length}`);
+            console.log(`  - First 200 chars:`, historyToRestore.substring(0, 200));
             
             // Clear the terminal first
             term.clear();
             
             // Filter and clean the restored data
             let filteredHistory = filterThinkingAnimations(historyToRestore);
+            console.log(`  - After filterThinkingAnimations: ${filteredHistory.length}`);
+            
             filteredHistory = cleanStatusLines(filteredHistory);
+            console.log(`  - After cleanStatusLines: ${filteredHistory.length}`);
+            console.log(`  - Final first 200 chars:`, filteredHistory.substring(0, 200));
             
             // Write the restored history
-            term.write(filteredHistory);
+            if (filteredHistory && filteredHistory.trim()) {
+              console.log(`✅ Writing ${filteredHistory.length} chars to terminal`);
+              
+              // Split into lines and write each line separately
+              // This ensures proper rendering instead of using term.write() which might have cursor positioning issues
+              const lines = filteredHistory.split(/\r?\n/);
+              console.log(`📊 Restored history contains ${lines.length} lines`);
+              
+              // Write each line
+              for (let i = 0; i < lines.length; i++) {
+                if (i === 0) console.log(`📝 First line:`, lines[i].substring(0, 100));
+                if (i === lines.length - 1) console.log(`📝 Last line:`, lines[i].substring(0, 100));
+                term.writeln(lines[i]);
+              }
+              console.log(`✅ Wrote ${lines.length} lines to terminal`);
+            } else {
+              console.warn(`⚠️ No content to write after filtering!`);
+            }
             
             // Add separator to show this was restored
             term.writeln('\r\n' + '='.repeat(50));
@@ -3961,11 +3984,6 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
             >
               <Brain className={`w-4 h-4 ${memoryActivity.isActive ? 'text-coder1-cyan' : ''}`} />
               <span>Memory</span>
-              {memory.memoryMode !== MemoryMode.OFF && (
-                <span className="text-xs ml-1 text-gray-400">
-                  ({memory.memoryMode === MemoryMode.SAFE ? 'Safe' : 'On'})
-                </span>
-              )}
             </button>
             
             {/* Enhanced Memory dropdown with modes */}
