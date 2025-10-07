@@ -101,6 +101,7 @@ interface TerminalProps {
     createdAt: Date;
   }; // Agent session data
   isVisible?: boolean; // Whether this terminal is currently visible
+  restoredHistory?: string | null; // Terminal history from checkpoint restore
 }
 
 /**
@@ -114,7 +115,7 @@ interface TerminalProps {
  * 
  * DO NOT MODIFY button positioning without checking original
  */
-export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped, onTerminalData, onTerminalCommand, onTerminalReady, onComposerVisibilityChange, sandboxMode = false, sandboxSession, agentMode = false, agentSession, isVisible = true }: TerminalProps) {
+export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped, onTerminalData, onTerminalCommand, onTerminalReady, onComposerVisibilityChange, sandboxMode = false, sandboxSession, agentMode = false, agentSession, isVisible = true, restoredHistory = null }: TerminalProps) {
   // REMOVED: // REMOVED: console.log('🖥️ Terminal component rendering...');
   const terminalRef = useRef<HTMLDivElement>(null);
   const xtermRef = useRef<XTerm | null>(null);
@@ -1404,25 +1405,47 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
         
         // Check for restored terminal history from checkpoint
         if (typeof window !== 'undefined') {
-          // 🚨 CRITICAL FIX: Use terminal-type-specific localStorage keys
-          // Sandbox terminals use sandboxTerminalHistory_${sessionId}
-          // Main terminal uses mainTerminalHistory
-          // This prevents sandbox content from bleeding into main terminal
-          const storageKey = sandboxMode && sandboxSession 
-            ? `sandboxTerminalHistory_${sandboxSession.id}`
-            : 'mainTerminalHistory';
+          let historyToRestore: string | null = null;
+          let historySource = '';
           
-          const restoredHistory = localStorage.getItem(storageKey);
+          // Priority 1: Use restoredHistory prop from checkpoint restore
+          if (restoredHistory && !sandboxMode && !agentMode) {
+            historyToRestore = restoredHistory;
+            historySource = 'checkpoint restore (prop)';
+            console.log('📜 Using restored history from prop, length:', restoredHistory.length);
+          }
+          
+          // Priority 2: Check localStorage with terminal-type-specific keys
+          if (!historyToRestore) {
+            // 🚨 CRITICAL FIX: Use terminal-type-specific localStorage keys
+            // Sandbox terminals use sandboxTerminalHistory_${sessionId}
+            // Main terminal uses mainTerminalHistory OR terminalHistory (from checkpoint restore)
+            // This prevents sandbox content from bleeding into main terminal
+            const storageKey = sandboxMode && sandboxSession 
+              ? `sandboxTerminalHistory_${sandboxSession.id}`
+              : 'mainTerminalHistory';
+            
+            historyToRestore = localStorage.getItem(storageKey);
+            historySource = `localStorage (${storageKey})`;
+            
+            // Also check 'terminalHistory' key (used by timeline checkpoint restore)
+            if (!historyToRestore && !sandboxMode && !agentMode) {
+              historyToRestore = localStorage.getItem('terminalHistory');
+              if (historyToRestore) {
+                historySource = 'localStorage (terminalHistory)';
+              }
+            }
+          }
           
           // Only restore if terminal is visible (prevents race conditions during tab switching)
-          if (restoredHistory && restoredHistory.trim() && isVisible) {
-            console.log(`🔄 Terminal: Restoring terminal history from ${storageKey}`);
+          if (historyToRestore && historyToRestore.trim() && isVisible) {
+            console.log(`🔄 Terminal: Restoring terminal history from ${historySource}`);
             
             // Clear the terminal first
             term.clear();
             
             // Filter and clean the restored data
-            let filteredHistory = filterThinkingAnimations(restoredHistory);
+            let filteredHistory = filterThinkingAnimations(historyToRestore);
             filteredHistory = cleanStatusLines(filteredHistory);
             
             // Write the restored history
@@ -1434,8 +1457,9 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
             term.writeln('\r\n' + '='.repeat(50) + '\r\n');
             
             // Clear the localStorage after restoration to prevent re-applying
-            localStorage.removeItem(storageKey);
-            console.log(`🗑️ Cleared ${storageKey} from localStorage`);
+            localStorage.removeItem('mainTerminalHistory');
+            localStorage.removeItem('terminalHistory');
+            console.log(`🗑️ Cleared terminal history from localStorage`);
           }
         }
 
@@ -2915,8 +2939,43 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
             term.write('\r\n');
           }
         } else if (!sandboxMode && term) {
-          // Normal mode - just show connection message
-          term.write('\r\n✅ Connected to backend terminal\r\n');
+          // Check for restored history from checkpoint restore (timeline page)
+          if (restoredHistory && restoredHistory.trim() && isVisible) {
+            console.log('📜 Restoring terminal history from checkpoint (prop)');
+            console.log('  - Original length:', restoredHistory.length);
+            console.log('  - First 200 chars:', restoredHistory.substring(0, 200));
+            
+            // Use the same comprehensive cleaning as sandbox restore
+            let cleanedHistory = filterThinkingAnimations(restoredHistory);
+            console.log('  - After filterThinkingAnimations:', cleanedHistory.length);
+            
+            cleanedHistory = cleanStatusLines(cleanedHistory);
+            console.log('  - After cleanStatusLines:', cleanedHistory.length);
+            console.log('  - Final first 200 chars:', cleanedHistory.substring(0, 200));
+            
+            // Write the history if there's anything left after filtering
+            if (cleanedHistory && cleanedHistory.trim()) {
+              term.write(cleanedHistory);
+              term.write('\r\n\r\n');
+            } else {
+              console.warn('⚠️ No content left after filtering - history was entirely removed');
+            }
+            
+            // Add a separator to show where history ends
+            term.write('\x1b[38;5;174m══════════════════════════════════════════════════════════════════════════════\x1b[0m\r\n');
+            term.write('\x1b[38;5;174m✅ Terminal history restored from session\x1b[0m\r\n');
+            term.write('\x1b[38;5;174m══════════════════════════════════════════════════════════════════════════════\x1b[0m\r\n');
+            term.write('\r\n');
+          } else {
+            console.log('📜 No restored history to display:', {
+              hasRestoredHistory: !!restoredHistory,
+              length: restoredHistory?.length || 0,
+              trimmedLength: restoredHistory?.trim()?.length || 0,
+              isVisible
+            });
+            // Normal mode - just show connection message
+            term.write('\r\n✅ Connected to backend terminal\r\n');
+          }
         }
         connectionInProgressRef.current = false; // Connection complete
         
@@ -4047,7 +4106,7 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
             title="Error Doctor - AI-powered error analysis (double-click to test)"
           >
             <Stethoscope className={`w-4 h-4 ${hasActiveError ? 'text-red-400' : ''}`} />
-            <span>Error Doctor</span>
+            <span>Error Dr.</span>
             {hasActiveError && (
               <span className="ml-1 w-2 h-2 bg-red-500 rounded-full animate-pulse" />
             )}
