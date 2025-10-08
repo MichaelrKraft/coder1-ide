@@ -397,17 +397,34 @@ class TerminalSession {
         process.env.PATH
       ].filter(Boolean).join(':');
       
+      // Z.AI GLM Backend Configuration (YouTube architecture)
+      // When USE_GLM_BACKEND is true, configure Claude CLI to use GLM via Z.AI's Anthropic-compatible API
+      const useGLMBackend = process.env.USE_GLM_BACKEND === 'true';
+      const baseEnv = {
+        ...process.env,
+        PATH: enhancedPath,
+        CODER1_IDE: 'true',
+        TERMINAL_SESSION_ID: id
+      };
+      
+      // Add Z.AI configuration for GLM backend (enables full tool use at $0.10/M)
+      if (useGLMBackend && process.env.ZAI_API_KEY && process.env.ZAI_BASE_URL) {
+        Object.assign(baseEnv, {
+          ANTHROPIC_BASE_URL: process.env.ZAI_BASE_URL,
+          ANTHROPIC_AUTH_TOKEN: process.env.ZAI_API_KEY,
+          ANTHROPIC_DEFAULT_SONNET_MODEL: 'glm-4.6',
+          ANTHROPIC_DEFAULT_HAIKU_MODEL: 'glm-4.6',
+          ANTHROPIC_DEFAULT_OPUS_MODEL: 'glm-4.6'
+        });
+        console.log(`🚀 [Terminal] GLM Backend enabled for session ${id} via Z.AI (90% tool use success rate)`);
+      }
+      
       this.pty = pty.spawn(shell, [], {
         name: 'xterm-color',
         cols: 80,
         rows: 30,
         cwd: finalWorkingDir,
-        env: {
-          ...process.env,
-          PATH: enhancedPath,
-          CODER1_IDE: 'true',
-          TERMINAL_SESSION_ID: id
-        }
+        env: baseEnv
       });
       
       // Critical diagnostic: Verify PTY was actually created
@@ -1157,6 +1174,15 @@ app.prepare().then(() => {
       
       // 3. Map our internal model IDs to Claude CLI aliases
       // Claude CLI accepts simple aliases: 'sonnet', 'opus', 'haiku'
+      // IMPORTANT: GLM models should NOT get --model flag (Z.AI backend handles routing)
+      
+      console.log(`🔍 interceptClaudeCommand: selectedModel="${selectedModel}", command="${cleanCommand.trim()}"`);
+      
+      if (selectedModel && selectedModel.startsWith('glm-')) {
+        console.log(`✅ GLM model detected (${selectedModel}) - skipping model injection (using Z.AI backend)`);
+        return command;  // Don't inject model flag for GLM - let Z.AI backend handle it
+      }
+      
       let modelAlias = 'sonnet';  // Default to sonnet
       
       if (selectedModel) {
@@ -1351,7 +1377,7 @@ app.prepare().then(() => {
                 '╠═══════════════════════════════════════════════════════════════════╣\r\n',
                 '║                                                                     ║\r\n',
                 '║  Quick Setup:                                                      ║\r\n',
-                '║  1. Click the "🌉 Connect Bridge" button in the status bar         ║\r\n',
+                '║  1. Click the Help button and select Bridge setup instructions.   ║\r\n',
                 '║  2. Follow the popup instructions                                  ║\r\n',
                 '║  3. Type "claude" to start AI-assisted coding                     ║\r\n',
                 '║                                                                     ║\r\n',
@@ -1650,6 +1676,7 @@ app.prepare().then(() => {
           }
           
           // 🎯 MODEL INJECTION: Check if this is a claude command that needs model flag
+          console.log(`🔍 Before intercept: buffer="${buffer.trim()}", selectedClaudeModel="${selectedClaudeModel}"`);
           const finalCommand = interceptClaudeCommand(buffer.trim(), selectedClaudeModel);
           
           if (finalCommand !== buffer.trim()) {
