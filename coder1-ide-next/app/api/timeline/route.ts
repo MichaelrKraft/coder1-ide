@@ -14,7 +14,8 @@ interface TimelineEvent {
 
 // Get database connection using dynamic import to avoid webpack bundling issues
 const getDatabase = async () => {
-  const Database = (await import('better-sqlite3')).default;
+  const BetterSqlite3 = await import('better-sqlite3');
+  const Database = BetterSqlite3.default || BetterSqlite3;
   const dbPath = path.join(process.cwd(), 'db', 'context-memory.db');
   return new Database(dbPath);
 };

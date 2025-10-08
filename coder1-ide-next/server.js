@@ -50,6 +50,19 @@ try {
   WebSocketEventBridge = null;
 }
 
+// Eternal Memory Context Loader for automatic session context injection
+let eternalMemoryLoader = null;
+if (process.env.ENABLE_ETERNAL_MEMORY === 'true') {
+  try {
+    // Dynamic import since this is TypeScript
+    const eternalMemoryModule = require('./services/eternal-memory-context-loader.ts');
+    eternalMemoryLoader = eternalMemoryModule.eternalMemoryContextLoader;
+    console.log('✨ Eternal Memory enabled - previous sessions will be auto-loaded');
+  } catch (error) {
+    console.warn('⚠️ Eternal Memory not available:', error.message);
+  }
+}
+
 // Agent Terminal Manager for Phase 2: Interactive Agent Terminals
 let agentTerminalManager;
 try {
@@ -1308,11 +1321,39 @@ app.prepare().then(() => {
                 data: `\r\n🤖 Executing: ${buffer.trim()}\r\n`
               });
               
-              // Execute command through bridge
+              // 🌟 ETERNAL MEMORY: Load and inject previous session context
+              let commandToExecute = buffer.trim();
+              if (eternalMemoryLoader) {
+                try {
+                  const eternalContext = await eternalMemoryLoader.loadLastSessionContext();
+                  
+                  if (eternalContext.hasContext) {
+                    // Show user that context was loaded
+                    const contextMessage = eternalMemoryLoader.createContextLoadedMessage(eternalContext);
+                    socket.emit('terminal:data', {
+                      id: sessionId,
+                      data: contextMessage
+                    });
+                    
+                    // Prepend context to command
+                    const { prependEternalMemoryToCommand } = require('./lib/eternal-memory-formatter.ts');
+                    commandToExecute = prependEternalMemoryToCommand(commandToExecute, eternalContext.contextPrompt);
+                    
+                    console.log('[Eternal Memory] Context injected - Claude now remembers previous session');
+                  } else if (eternalContext.error) {
+                    console.log(`[Eternal Memory] ${eternalContext.error}`);
+                  }
+                } catch (error) {
+                  console.error('[Eternal Memory] Failed to load context:', error);
+                  // Continue without context - don't break the flow
+                }
+              }
+              
+              // Execute command through bridge (with eternal memory context if available)
               const commandRequest = {
                 sessionId,
                 commandId: `cmd_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-                command: buffer.trim(),
+                command: commandToExecute, // May include eternal memory context
                 context: {
                   workingDirectory: process.cwd(),
                   currentFile: null,

@@ -55,6 +55,11 @@ test-*.js
 test-*.html
 test-pty/
 
+# Legacy dual-server architecture (Phase III cleanup - Oct 7, 2025)
+src/
+package-lock.json
+tasks/prd-generator-code/
+
 # Database files
 db/*.db
 db/*.db-shm

@@ -666,7 +666,7 @@ export default function DiscoverPanel() {
                   Test Detection
                 </button>
                 <button
-                  onClick={() => addToast({ message: 'Memory browser coming soon!', type: 'info' })}
+                  onClick={() => window.location.href = '/timeline'}
                   className="flex-1 px-2 py-1 text-xs bg-bg-primary border border-border-default rounded hover:border-orange-500 hover:text-orange-400 transition-colors"
                 >
                   Browse Memories
