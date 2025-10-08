@@ -42,3 +42,34 @@ agents/create-approval-test.js
 agents/create-test-issue.js
 agents/trigger-test.js
 agents/verify-gmail.js
+
+# Build artifacts and temporary files
+.next/
+.claude-parallel-dev/
+
+# Nested project dependencies
+tasks/*/node_modules
+
+# Runtime data directories
+data/sessions/
+data/memory/
+data/documentation/
+data/usage/
+data/captured-components/
+
+# Database files
+*.db
+*.db-shm
+*.db-wal
+
+# Session artifacts
+summaries/
+exports/
+checkpoints/
+
+# Logs
+*.log
+server.log
+
+# Admin temporary files
+admin-temp/

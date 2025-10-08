@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>📋 Content Review Dashboard - Coder1</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    .header {
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+      margin-bottom: 30px;
+    }
+
+    .header h1 {
+      color: #667eea;
+      font-size: 32px;
+      margin-bottom: 10px;
+    }
+
+    .header p {
+      color: #666;
+      font-size: 16px;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+
+    .stat-card {
+      background: white;
+      padding: 25px;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+      text-align: center;
+    }
+
+    .stat-value {
+      font-size: 48px;
+      font-weight: bold;
+      color: #667eea;
+      margin-bottom: 10px;
+    }
+
+    .stat-label {
+      color: #666;
+      font-size: 14px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .items-grid {
+      display: grid;
+      gap: 20px;
+    }
+
+    .item-card {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+      overflow: hidden;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .item-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+    }
+
+    .item-header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 20px;
+    }
+
+    .item-type {
+      display: inline-block;
+      background: rgba(255,255,255,0.2);
+      padding: 5px 15px;
+      border-radius: 20px;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 10px;
+    }
+
+    .item-title {
+      font-size: 24px;
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+
+    .item-meta {
+      font-size: 14px;
+      opacity: 0.9;
+    }
+
+    .item-content {
+      padding: 30px;
+    }
+
+    .content-preview {
+      background: #f8f9fa;
+      padding: 20px;
+      border-radius: 8px;
+      border-left: 4px solid #667eea;
+      margin-bottom: 20px;
+      max-height: 400px;
+      overflow-y: auto;
+    }
+
+    .content-preview pre {
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+      font-size: 14px;
+      line-height: 1.6;
+      color: #333;
+    }
+
+    .actions {
+      display: flex;
+      gap: 15px;
+      padding: 20px 30px;
+      background: #f8f9fa;
+      border-top: 1px solid #e0e0e0;
+    }
+
+    .btn {
+      flex: 1;
+      padding: 15px 30px;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
+
+    .btn-approve {
+      background: #10b981;
+      color: white;
+    }
+
+    .btn-approve:hover {
+      background: #059669;
+    }
+
+    .btn-edit {
+      background: #f59e0b;
+      color: white;
+    }
+
+    .btn-edit:hover {
+      background: #d97706;
+    }
+
+    .btn-reject {
+      background: #ef4444;
+      color: white;
+    }
+
+    .btn-reject:hover {
+      background: #dc2626;
+    }
+
+    .btn-expand {
+      background: #667eea;
+      color: white;
+      padding: 10px 20px;
+      font-size: 14px;
+    }
+
+    .btn-expand:hover {
+      background: #5568d3;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 100px;
+      color: white;
+      font-size: 24px;
+    }
+
+    .empty {
+      text-align: center;
+      padding: 100px;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    }
+
+    .empty h2 {
+      color: #667eea;
+      font-size: 36px;
+      margin-bottom: 20px;
+    }
+
+    .empty p {
+      color: #666;
+      font-size: 18px;
+    }
+
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.7);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal.active {
+      display: flex;
+    }
+
+    .modal-content {
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+      max-width: 800px;
+      width: 90%;
+      max-height: 80vh;
+      overflow-y: auto;
+    }
+
+    .modal-header {
+      margin-bottom: 20px;
+    }
+
+    .modal-header h2 {
+      color: #667eea;
+      margin-bottom: 10px;
+    }
+
+    .modal-body textarea {
+      width: 100%;
+      min-height: 400px;
+      padding: 15px;
+      border: 2px solid #e0e0e0;
+      border-radius: 8px;
+      font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+      font-size: 14px;
+      resize: vertical;
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 15px;
+      margin-top: 20px;
+    }
+
+    .confidence {
+      display: inline-block;
+      background: #10b981;
+      color: white;
+      padding: 5px 15px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: bold;
+      margin-left: 10px;
+    }
+
+    .content-expanded {
+      max-height: none !important;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .item-card {
+      animation: fadeIn 0.5s ease-out;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>📋 Content Review Dashboard</h1>
+      <p>Review and manage AI-generated content awaiting approval</p>
+    </div>
+
+    <div class="stats">
+      <div class="stat-card">
+        <div class="stat-value" id="pending-count">-</div>
+        <div class="stat-label">Pending Review</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="approved-count">-</div>
+        <div class="stat-label">Approved</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="rejected-count">-</div>
+        <div class="stat-label">Rejected</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="total-count">-</div>
+        <div class="stat-label">Total Items</div>
+      </div>
+    </div>
+
+    <div id="items-container" class="loading">
+      Loading items...
+    </div>
+  </div>
+
+  <!-- Edit Modal -->
+  <div id="edit-modal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>✏️ Edit Content</h2>
+        <p id="edit-item-title"></p>
+      </div>
+      <div class="modal-body">
+        <textarea id="edit-textarea"></textarea>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-approve" onclick="saveEdit()">Save Changes</button>
+        <button class="btn btn-reject" onclick="closeModal()">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API_BASE = '/api/review-queue';
+    let currentEditItem = null;
+
+    // Load stats and items on page load
+    async function init() {
+      await loadStats();
+      await loadItems();
+    }
+
+    // Load stats
+    async function loadStats() {
+      try {
+        const response = await fetch(`${API_BASE}/stats`);
+        const data = await response.json();
+        
+        if (data.success) {
+          document.getElementById('pending-count').textContent = data.stats.pending;
+          document.getElementById('approved-count').textContent = data.stats.approved;
+          document.getElementById('rejected-count').textContent = data.stats.rejected;
+          document.getElementById('total-count').textContent = data.stats.total;
+        }
+      } catch (error) {
+        console.error('Error loading stats:', error);
+      }
+    }
+
+    // Load pending items
+    async function loadItems() {
+      const container = document.getElementById('items-container');
+      
+      try {
+        const response = await fetch(`${API_BASE}/pending`);
+        const data = await response.json();
+        
+        if (data.success && data.items.length > 0) {
+          container.className = 'items-grid';
+          container.innerHTML = data.items.map(item => renderItem(item)).join('');
+        } else {
+          container.className = 'empty';
+          container.innerHTML = `
+            <h2>🎉 All Clear!</h2>
+            <p>No items pending review. Great job!</p>
+          `;
+        }
+      } catch (error) {
+        console.error('Error loading items:', error);
+        container.className = 'empty';
+        container.innerHTML = `
+          <h2>❌ Error</h2>
+          <p>Could not load items. Make sure the server is running.</p>
+        `;
+      }
+    }
+
+    // Store full content for each item
+    const itemsContent = {};
+
+    // Render single item card
+    function renderItem(item) {
+      const content = item.content || item.draft_response || item.script || 'No content available';
+      const title = item.topic || item.title || 'Untitled';
+      const date = new Date(item.created_at).toLocaleString();
+      const confidence = item.confidence ? `<span class="confidence">${item.confidence}% Confidence</span>` : '';
+      
+      // Store full content in memory
+      itemsContent[item.id] = {
+        content: content,
+        title: title
+      };
+      
+      return `
+        <div class="item-card" data-id="${item.id}">
+          <div class="item-header">
+            <div class="item-type">${item.type}</div>
+            <div class="item-title">${title}${confidence}</div>
+            <div class="item-meta">ID: ${item.id} • Created: ${date}</div>
+          </div>
+          <div class="item-content">
+            <div class="content-preview" id="preview-${item.id}">
+              <pre>${escapeHtml(content.substring(0, 1000))}</pre>
+              ${content.length > 1000 ? '<button class="btn btn-expand" onclick="expandContent(\'' + item.id + '\')">Show Full Content</button>' : ''}
+            </div>
+          </div>
+          <div class="actions">
+            <button class="btn btn-approve" onclick="approveItem('${item.id}')">
+              ✓ Approve
+            </button>
+            <button class="btn btn-edit" onclick="editItem('${item.id}')">
+              ✏️ Edit
+            </button>
+            <button class="btn btn-reject" onclick="rejectItem('${item.id}')">
+              ✗ Reject
+            </button>
+          </div>
+        </div>
+      `;
+    }
+
+    // Expand content to show full text
+    function expandContent(id) {
+      const preview = document.getElementById(`preview-${id}`);
+      const itemData = itemsContent[id];
+      
+      if (itemData) {
+        preview.classList.add('content-expanded');
+        preview.innerHTML = `<pre>${escapeHtml(itemData.content)}</pre>`;
+      }
+    }
+
+    // Approve item
+    async function approveItem(id) {
+      if (!confirm('Approve this item?')) return;
+      
+      try {
+        const response = await fetch(`${API_BASE}/approve/${id}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ approver: 'manual-dashboard' })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+          alert('✅ Item approved successfully!');
+          await init(); // Reload page
+        } else {
+          alert('❌ Error approving item: ' + data.error);
+        }
+      } catch (error) {
+        alert('❌ Error approving item: ' + error.message);
+      }
+    }
+
+    // Reject item
+    async function rejectItem(id) {
+      const reason = prompt('Reason for rejection (optional):');
+      if (reason === null) return; // Cancelled
+      
+      try {
+        const response = await fetch(`${API_BASE}/reject/${id}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            rejector: 'manual-dashboard',
+            reason: reason || 'No reason provided'
+          })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+          alert('❌ Item rejected successfully!');
+          await init(); // Reload page
+        } else {
+          alert('❌ Error rejecting item: ' + data.error);
+        }
+      } catch (error) {
+        alert('❌ Error rejecting item: ' + error.message);
+      }
+    }
+
+    // Edit item
+    function editItem(id) {
+      const itemData = itemsContent[id];
+      
+      if (itemData) {
+        currentEditItem = id;
+        document.getElementById('edit-item-title').textContent = itemData.title;
+        document.getElementById('edit-textarea').value = itemData.content;
+        document.getElementById('edit-modal').classList.add('active');
+      }
+    }
+
+    // Save edit
+    async function saveEdit() {
+      if (!currentEditItem) return;
+      
+      const content = document.getElementById('edit-textarea').value;
+      
+      try {
+        const response = await fetch(`${API_BASE}/edit/${currentEditItem}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            content: content,
+            draft_response: content,
+            script: content
+          })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+          alert('✏️ Item updated successfully!');
+          closeModal();
+          await init(); // Reload page
+        } else {
+          alert('❌ Error updating item: ' + data.error);
+        }
+      } catch (error) {
+        alert('❌ Error updating item: ' + error.message);
+      }
+    }
+
+    // Close modal
+    function closeModal() {
+      document.getElementById('edit-modal').classList.remove('active');
+      currentEditItem = null;
+    }
+
+    // Escape HTML
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    // Initialize on load
+    init();
+  </script>
+</body>
+</html>

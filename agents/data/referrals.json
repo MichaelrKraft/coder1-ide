@@ -1,0 +1,54 @@
+{
+  "users": {
+    "user-123": {
+      "user_id": "user-123",
+      "email": "user@example.com",
+      "referral_code": "32D1614E",
+      "created_at": "2025-10-04T05:38:33.005Z",
+      "referrals_made": 1,
+      "conversions": 1,
+      "total_value": 29,
+      "current_tier": 0,
+      "rewards_earned": [
+        {
+          "tier": 0,
+          "reward": "1 month Pro free",
+          "value": 29,
+          "earned_at": "2025-10-04T05:38:33.029Z"
+        }
+      ]
+    }
+  },
+  "referrals": [
+    {
+      "id": "ref-1759556313017",
+      "referrer_id": "user-123",
+      "referred_user_id": "user-456",
+      "referred_user_email": "newuser@example.com",
+      "referral_code": "32D1614E",
+      "created_at": "2025-10-04T05:38:33.017Z",
+      "converted": true,
+      "conversion_date": "2025-10-04T05:38:33.029Z",
+      "plan_type": "pro",
+      "value": 29
+    }
+  ],
+  "conversions": [
+    {
+      "id": "ref-1759556313017",
+      "referrer_id": "user-123",
+      "referred_user_id": "user-456",
+      "referred_user_email": "newuser@example.com",
+      "referral_code": "32D1614E",
+      "created_at": "2025-10-04T05:38:33.017Z",
+      "converted": true,
+      "conversion_date": "2025-10-04T05:38:33.029Z",
+      "plan_type": "pro",
+      "value": 29,
+      "processed_at": "2025-10-04T05:38:33.029Z"
+    }
+  ],
+  "total_users": 1,
+  "total_referrals": 1,
+  "total_conversions": 1
+}

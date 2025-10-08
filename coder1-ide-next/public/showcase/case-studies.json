@@ -1,0 +1,22 @@
+{
+  "case_studies": [
+    {
+      "id": "case-1759556312392",
+      "title": "Building a REST API in 2 Hours",
+      "summary": "- **Time Saved**: 6 hours compared to traditional development...",
+      "technologies": [
+        "TypeScript",
+        "Express",
+        "Node.js"
+      ],
+      "published_date": "2025-10-04",
+      "content_file": "building-a-rest-api-in-2-hours.md",
+      "featured": false,
+      "stats": {
+        "development_time": "2 Hour",
+        "files_created": 15
+      }
+    }
+  ],
+  "last_updated": "2025-10-04T05:38:32.393Z"
+}

@@ -45,6 +45,7 @@ interface TerminalContainerProps {
   onTerminalCommand?: (command: string) => void;
   onTerminalReady?: (sessionId: any, ready: any) => void;
   onComposerVisibilityChange?: (visible: boolean) => void;
+  restoredTerminalHistory?: string | null;
 }
 
 export default function TerminalContainer({
@@ -54,8 +55,19 @@ export default function TerminalContainer({
   onTerminalData,
   onTerminalCommand,
   onTerminalReady,
-  onComposerVisibilityChange
+  onComposerVisibilityChange,
+  restoredTerminalHistory
 }: TerminalContainerProps) {
+  // Debug: Log when restoredTerminalHistory prop changes
+  useEffect(() => {
+    if (restoredTerminalHistory) {
+      console.log('📜 TERMINAL CONTAINER: Received restoredTerminalHistory prop, length:', restoredTerminalHistory.length);
+      console.log('📜 TERMINAL CONTAINER: First 200 chars:', restoredTerminalHistory.substring(0, 200));
+    } else {
+      console.log('📜 TERMINAL CONTAINER: No restoredTerminalHistory prop');
+    }
+  }, [restoredTerminalHistory]);
+  
   // Format checkpoint timestamp for display (e.g., "Sep 26, 4:55 pm")
   const formatCheckpointDate = (timestamp: string) => {
     const date = new Date(timestamp);
@@ -518,6 +530,7 @@ export default function TerminalContainer({
             onTerminalReady={onTerminalReady}
             onComposerVisibilityChange={onComposerVisibilityChange}
             isVisible={activeSessionId === 'main'}
+            restoredHistory={restoredTerminalHistory}
           />
         </div>
         

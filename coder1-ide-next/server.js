@@ -1381,10 +1381,6 @@ app.prepare().then(() => {
                 '║  2. Follow the popup instructions                                  ║\r\n',
                 '║  3. Type "claude" to start AI-assisted coding                     ║\r\n',
                 '║                                                                     ║\r\n',
-                '║  Alternative: Run Locally                                         ║\r\n',
-                '║  git clone https://github.com/MichaelrKraft/coder1-ide            ║\r\n',
-                '║  cd coder1-ide/coder1-ide-next && npm install && npm run dev      ║\r\n',
-                '║                                                                     ║\r\n',
                 '╚═══════════════════════════════════════════════════════════════════╝\r\n',
                 '\r\n'
               ].join('');

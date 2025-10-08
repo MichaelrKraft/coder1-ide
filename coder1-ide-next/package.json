@@ -54,6 +54,7 @@
     "framer-motion": "^12.23.12",
     "glob": "^11.0.3",
     "jsonwebtoken": "^9.0.2",
+    "jspdf": "^3.0.3",
     "lucide-react": "^0.539.0",
     "mammoth": "^1.11.0",
     "monaco-editor": "^0.52.2",

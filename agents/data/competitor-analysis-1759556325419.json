@@ -1,0 +1,113 @@
+{
+  "analyzed_at": "2025-10-04T05:38:45.418Z",
+  "competitors": [
+    {
+      "competitor": "cursor-ai",
+      "recent_repos": [
+        {
+          "name": "KinnariTamhane/job-search-dashboard",
+          "stars": 0,
+          "description": "HireBoard is a responsive job search app built using Next.js 15, TypeScript, and TailwindCSS. It was created with help from Cursor AI to build features and UI faster with AI support."
+        },
+        {
+          "name": "KinnariTamhane/social-media-web-app",
+          "stars": 0,
+          "description": "A modern social media web application built with the help of Trae AI and Cursor AI to accelerate development and enhance code quality."
+        },
+        {
+          "name": "SHANMUGAM070106/cursor-free-vip",
+          "stars": 87,
+          "description": "[Support 0.48.x]（Reset Cursor AI MachineID & Auto Sign Up / In & Bypass Higher Token Limit）自动注册 Cursor Ai ，自动重置机器ID ， 免费升级使用Pro功能: You've reached your trial request limit. / Too many free trial accounts used on this machine. Please upgrade to pro. We have this limit in place to prevent abuse. Please let us know if you believe this is a mistake."
+        }
+      ],
+      "total_results": 3911
+    },
+    {
+      "competitor": "windsurf",
+      "recent_repos": [
+        {
+          "name": "j0KZ/mcp-agents",
+          "stars": 0,
+          "description": "8 powerful AI development tools for Claude Code, Cursor, Windsurf - Code review, testing, architecture, security, and more"
+        },
+        {
+          "name": "brianstittsr/windsurf_DewayneDraftKings",
+          "stars": 0,
+          "description": null
+        },
+        {
+          "name": "pooja819/Cursor_Windsurf_Reset",
+          "stars": 2,
+          "description": "🔄 Reset Cursor and Windsurf data effortlessly with this tool, supporting the latest versions and offering smart, cross-platform functionality."
+        }
+      ],
+      "total_results": 2212
+    },
+    {
+      "competitor": "github/copilot",
+      "recent_repos": [
+        {
+          "name": "kouboyz/github-copilot-training",
+          "stars": 0,
+          "description": "GitHub Copilotのビギナー向けトレーニング"
+        },
+        {
+          "name": "GlazMichelFranckDodo225/ai-for-developers-github-copilot-cursor-ai-chatgpt-ums",
+          "stars": 0,
+          "description": "AI For Developers With GitHub Copilot, Cursor AI & ChatGPT"
+        },
+        {
+          "name": "huynguyen03dev/copilot-proxy",
+          "stars": 1,
+          "description": "Local proxy that exposes GitHub Copilot as an OpenAI-compatible endpoint, enabling any OpenAI API client to use GitHub Copilot with secure OAuth authentication and full streaming support."
+        }
+      ],
+      "total_results": 87888
+    },
+    {
+      "competitor": "replit",
+      "recent_repos": [
+        {
+          "name": "applelectricals/microjpeg",
+          "stars": 0,
+          "description": "Replit Final Backup"
+        },
+        {
+          "name": "philipjj/is-replit-down",
+          "stars": 0,
+          "description": "Simple live status checker for Replit. Is it down?"
+        },
+        {
+          "name": "christcr2012/oldReplit",
+          "stars": 0,
+          "description": null
+        }
+      ],
+      "total_results": 15183
+    },
+    {
+      "competitor": "stackblitz",
+      "recent_repos": [
+        {
+          "name": "LeoC9025/Debugging",
+          "stars": 0,
+          "description": "Created with StackBlitz ⚡️"
+        },
+        {
+          "name": "rakshitha-dell/Event-mangement-application",
+          "stars": 0,
+          "description": "Created with StackBlitz ⚡️"
+        },
+        {
+          "name": "rakshitha-dell/Student-Project-Tracker",
+          "stars": 0,
+          "description": "Created with StackBlitz ⚡️"
+        }
+      ],
+      "total_results": 236434
+    }
+  ],
+  "insights": [
+    "5 out of 5 competitors have active community projects"
+  ]
+}

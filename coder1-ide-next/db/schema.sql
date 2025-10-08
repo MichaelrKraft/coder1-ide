@@ -122,6 +122,26 @@ JOIN context_folders cf ON cs.folder_id = cf.id
 LEFT JOIN claude_conversations cc ON cs.id = cc.session_id
 GROUP BY cs.id;
 
+-- Checkpoints - IDE session snapshots for restoration
+CREATE TABLE IF NOT EXISTS checkpoints (
+    id TEXT PRIMARY KEY,
+    session_id TEXT NOT NULL,
+    name TEXT NOT NULL,
+    description TEXT NULL,
+    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+    terminal_history TEXT NULL,         -- Terminal output (can be large)
+    terminal_history_size INTEGER DEFAULT 0, -- Original size in bytes
+    files_snapshot TEXT NULL,            -- JSON: editor files and content
+    metadata TEXT NULL,                  -- JSON: tags, auto_generated, etc.
+    created_from_json BOOLEAN DEFAULT FALSE, -- Flag for migration tracking
+    FOREIGN KEY (session_id) REFERENCES context_sessions(id) ON DELETE CASCADE
+);
+
+-- Indexes for checkpoint queries
+CREATE INDEX IF NOT EXISTS idx_checkpoints_session_id ON checkpoints(session_id);
+CREATE INDEX IF NOT EXISTS idx_checkpoints_timestamp ON checkpoints(timestamp);
+CREATE INDEX IF NOT EXISTS idx_checkpoints_size ON checkpoints(terminal_history_size);
+
 -- Initial data - Create default folder for current project
 INSERT OR IGNORE INTO context_folders (id, project_path, name, auto_created)
 VALUES ('default', '/Users/michaelkraft/autonomous_vibe_interface', 'Coder1 IDE', TRUE);

@@ -9,15 +9,31 @@
     "execute": "node scripts/execute.js",
     "cost-report": "node scripts/cost-report.js",
     "test": "node orchestrator.js --test",
-    "start": "node orchestrator.js"
+    "start": "node orchestrator.js",
+    "content:blog": "node content-agent/blog-generator.js",
+    "content:youtube": "node content-agent/youtube-scripter.js",
+    "content:cases": "node content-agent/case-study-creator.js",
+    "content:docs": "node content-agent/docs-generator.js",
+    "content:all": "npm run content:blog && npm run content:youtube && npm run content:cases",
+    "growth:star": "node growth-agent/repo-star-automator.js",
+    "growth:star:dry": "node growth-agent/repo-star-automator.js --dry-run",
+    "growth:digest": "node growth-agent/digest-emailer.js",
+    "growth:attribution": "node growth-agent/attribution-tracker.js",
+    "growth:referrals": "node growth-agent/referral-manager.js",
+    "data:github": "node data-collectors/github-activity-collector.js",
+    "data:sessions": "node data-collectors/session-analyzer.js",
+    "data:trends": "node data-collectors/trend-detector.js",
+    "publish:medium": "node publishers/medium-publisher.js",
+    "publish:docs": "node publishers/git-docs-publisher.js",
+    "publish:showcase": "node publishers/showcase-publisher.js"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.63.0",
-    "@octokit/rest": "^20.0.2",
+    "@octokit/rest": "^20.1.2",
     "@sendgrid/mail": "^8.1.0",
+    "dotenv": "^16.3.1",
     "nodemailer": "^6.9.7",
-    "uuid": "^9.0.1",
-    "dotenv": "^16.3.1"
+    "uuid": "^9.0.1"
   },
   "author": "Mike Kraft",
   "license": "MIT"

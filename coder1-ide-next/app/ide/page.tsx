@@ -95,6 +95,9 @@ function IDEPageContent() {
     }
   }, [recentTerminalInput]);
 
+  // Terminal history from checkpoint restore
+  const [restoredTerminalHistory, setRestoredTerminalHistory] = useState<string | null>(null);
+
   // Handle checkpoint restore from timeline page
   const searchParams = useSearchParams();
   useEffect(() => {
@@ -104,6 +107,25 @@ function IDEPageContent() {
     
     if (restored === 'true' && checkpointId) {
       console.log('🔄 Checkpoint restore detected:', { checkpointId, sessionId });
+      
+      // Load terminal history from localStorage
+      if (typeof window !== 'undefined') {
+        const terminalHistory = localStorage.getItem('terminalHistory');
+        if (terminalHistory) {
+          console.log('📜 IDE PAGE: Restored terminal history from localStorage, length:', terminalHistory.length);
+          console.log('📜 IDE PAGE: First 200 chars:', terminalHistory.substring(0, 200));
+          setRestoredTerminalHistory(terminalHistory);
+          
+          // 🔧 FIX: Also set terminalHistory state to preserve content for future checkpoints
+          // This ensures that if user creates a checkpoint immediately after restore,
+          // it will include the restored terminal history instead of being empty
+          setTerminalHistory(terminalHistory);
+          console.log('📜 IDE PAGE: Both restoredTerminalHistory and terminalHistory state updated');
+          console.log('📜 IDE PAGE: Future checkpoints will include this restored content');
+        } else {
+          console.warn('⚠️ IDE PAGE: No terminal history found in localStorage');
+        }
+      }
       
       // Show success notification
       setTimeout(() => {
@@ -813,6 +835,81 @@ function IDEPageContent() {
     }
   }, [searchParams]); // Only run when search params change
 
+  // Handle PRD handoff from Smart PRD Generator
+  useEffect(() => {
+    const prdHandoffId = searchParams.get('prdHandoff');
+    
+    if (prdHandoffId) {
+      console.log('🤝 PRD Handoff detected:', prdHandoffId);
+      
+      // Fetch handoff data and set up session
+      (async () => {
+        try {
+          const response = await fetch(`/api/coder1-handoff/${prdHandoffId}`);
+          const data = await response.json();
+          
+          if (data.success) {
+            const { handoff } = data;
+            console.log('✅ Handoff loaded:', handoff.productName);
+            
+            // Import PRD prompt injector
+            const { formatPRDPrompt, createPRDSessionMetadata } = await import('@/lib/prd-prompt-injector');
+            
+            // Format the PRD into an optimal Claude prompt
+            const formattedPrompt = formatPRDPrompt({
+              prdContent: handoff.prdContent,
+              productName: handoff.productName,
+              patterns: handoff.patterns,
+              sessionId: handoff.sessionId
+            });
+            
+            // Create session metadata
+            const sessionMetadata = createPRDSessionMetadata({
+              prdContent: handoff.prdContent,
+              productName: handoff.productName,
+              patterns: handoff.patterns,
+              sessionId: handoff.sessionId
+            });
+            
+            // Store the formatted prompt for terminal injection
+            (window as any).prdPromptToInject = formattedPrompt;
+            
+            // Show success notification
+            window.dispatchEvent(new CustomEvent('showToast', {
+              detail: {
+                message: `✅ PRD loaded: "${handoff.productName}"`,
+                type: 'success'
+              }
+            }));
+            
+            console.log('📋 PRD ready for implementation:', {
+              productName: handoff.productName,
+              promptLength: formattedPrompt.prompt.length,
+              steps: formattedPrompt.recommendedFirstSteps
+            });
+            
+          } else {
+            console.error('❌ Failed to load handoff:', data.error);
+            window.dispatchEvent(new CustomEvent('showToast', {
+              detail: {
+                message: '❌ Failed to load PRD handoff',
+                type: 'error'
+              }
+            }));
+          }
+        } catch (error) {
+          console.error('❌ Handoff error:', error);
+          window.dispatchEvent(new CustomEvent('showToast', {
+            detail: {
+              message: '❌ Error loading PRD',
+              type: 'error'
+            }
+          }));
+        }
+      })();
+    }
+  }, [searchParams]);
+
   return (
     <SessionProvider>
       <EnhancedSupervisionProvider>
@@ -963,6 +1060,7 @@ function IDEPageContent() {
                               onTerminalCommand={handleTerminalCommand}
                               onTerminalReady={handleTerminalReady}
                               onComposerVisibilityChange={setComposerVisible}
+                              restoredTerminalHistory={restoredTerminalHistory}
                             />
                           </div>
                         </Panel>

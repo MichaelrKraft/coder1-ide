@@ -1,0 +1,34 @@
+name: Autonomous Agent Response
+
+on:
+  issues:
+    types: [opened]
+  discussion:
+    types: [created]
+
+jobs:
+  respond:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Call Autonomous Agent API
+        env:
+          AGENT_ENDPOINT: ${{ secrets.AUTONOMOUS_AGENT_ENDPOINT }}
+          WEBHOOK_SECRET: ${{ secrets.WEBHOOK_SECRET }}
+        run: |
+          curl -X POST "$AGENT_ENDPOINT" \
+            -H "Content-Type: application/json" \
+            -H "X-Hub-Signature-256: $WEBHOOK_SECRET" \
+            -d "${{ toJson(github.event) }}"
+
+      - name: Log Response
+        if: always()
+        run: |
+          echo "Autonomous agent triggered for:"
+          echo "Repository: ${{ github.repository }}"
+          echo "Event: ${{ github.event_name }}"
+          echo "Issue/Discussion: ${{ github.event.issue.number || github.event.discussion.number }}"

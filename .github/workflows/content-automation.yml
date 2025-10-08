@@ -1,0 +1,224 @@
+name: Content & Growth Automation
+
+on:
+  schedule:
+    # Blog posts: Tuesday and Thursday at 10 AM UTC
+    - cron: '0 10 * * 2,4'
+    # YouTube scripts: Monday at 1 PM UTC
+    - cron: '0 13 * * 1'
+    # Case studies: Friday at 2 PM UTC
+    - cron: '0 14 * * 5'
+    # Daily digest: Every day at 9 AM UTC
+    - cron: '0 9 * * *'
+    # Repo starring: Every 6 hours
+    - cron: '0 */6 * * *'
+  
+  workflow_dispatch:
+    inputs:
+      task:
+        description: 'Task to run'
+        required: true
+        type: choice
+        options:
+          - blog-posts
+          - youtube-scripts
+          - case-studies
+          - docs-update
+          - repo-star
+          - daily-digest
+          - all-content
+
+jobs:
+  blog-generation:
+    runs-on: ubuntu-latest
+    if: |
+      (github.event.schedule == '0 10 * * 2,4') ||
+      (github.event_name == 'workflow_dispatch' && (github.event.inputs.task == 'blog-posts' || github.event.inputs.task == 'all-content'))
+    
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+      
+      - name: Install dependencies
+        run: |
+          cd agents
+          npm install
+      
+      - name: Generate blog posts
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # SMTP Configuration (Gmail)
+          SMTP_HOST: smtp.gmail.com
+          SMTP_PORT: 587
+          SMTP_SECURE: false
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASS: ${{ secrets.SMTP_PASS }}
+          APPROVAL_EMAIL: ${{ secrets.APPROVAL_EMAIL }}
+        run: |
+          cd agents
+          node content-agent/blog-generator.js
+
+  youtube-scripts:
+    runs-on: ubuntu-latest
+    if: |
+      (github.event.schedule == '0 13 * * 1') ||
+      (github.event_name == 'workflow_dispatch' && (github.event.inputs.task == 'youtube-scripts' || github.event.inputs.task == 'all-content'))
+    
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+      
+      - name: Install dependencies
+        run: |
+          cd agents
+          npm install
+      
+      - name: Generate YouTube scripts
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          # SMTP Configuration (Gmail)
+          SMTP_HOST: smtp.gmail.com
+          SMTP_PORT: 587
+          SMTP_SECURE: false
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASS: ${{ secrets.SMTP_PASS }}
+          APPROVAL_EMAIL: ${{ secrets.APPROVAL_EMAIL }}
+        run: |
+          cd agents
+          node content-agent/youtube-scripter.js
+
+  case-studies:
+    runs-on: ubuntu-latest
+    if: |
+      (github.event.schedule == '0 14 * * 5') ||
+      (github.event_name == 'workflow_dispatch' && (github.event.inputs.task == 'case-studies' || github.event.inputs.task == 'all-content'))
+    
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+      
+      - name: Install dependencies
+        run: |
+          cd agents
+          npm install
+      
+      - name: Generate case studies
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          # SMTP Configuration (Gmail)
+          SMTP_HOST: smtp.gmail.com
+          SMTP_PORT: 587
+          SMTP_SECURE: false
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASS: ${{ secrets.SMTP_PASS }}
+          APPROVAL_EMAIL: ${{ secrets.APPROVAL_EMAIL }}
+        run: |
+          cd agents
+          node content-agent/case-study-creator.js
+
+  repo-starring:
+    runs-on: ubuntu-latest
+    if: |
+      (github.event.schedule == '0 */6 * * *') ||
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.task == 'repo-star')
+    
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+      
+      - name: Install dependencies
+        run: |
+          cd agents
+          npm install
+      
+      - name: Auto-star repositories
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cd agents
+          node growth-agent/repo-star-automator.js --limit 3
+
+  daily-digest:
+    runs-on: ubuntu-latest
+    if: |
+      (github.event.schedule == '0 9 * * *') ||
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.task == 'daily-digest')
+    
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+      
+      - name: Install dependencies
+        run: |
+          cd agents
+          npm install
+      
+      - name: Send daily digest
+        env:
+          # SMTP Configuration (Gmail)
+          SMTP_HOST: smtp.gmail.com
+          SMTP_PORT: 587
+          SMTP_SECURE: false
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASS: ${{ secrets.SMTP_PASS }}
+          APPROVAL_EMAIL: ${{ secrets.APPROVAL_EMAIL }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          cd agents
+          node growth-agent/digest-emailer.js
+
+  docs-update:
+    runs-on: ubuntu-latest
+    if: |
+      github.event_name == 'workflow_dispatch' && github.event.inputs.task == 'docs-update'
+    
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 2
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+      
+      - name: Install dependencies
+        run: |
+          cd agents
+          npm install
+      
+      - name: Update documentation
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          # SMTP Configuration (Gmail)
+          SMTP_HOST: smtp.gmail.com
+          SMTP_PORT: 587
+          SMTP_SECURE: false
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASS: ${{ secrets.SMTP_PASS }}
+          APPROVAL_EMAIL: ${{ secrets.APPROVAL_EMAIL }}
+        run: |
+          cd agents
+          node content-agent/docs-generator.js

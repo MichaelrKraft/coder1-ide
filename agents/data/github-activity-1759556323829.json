@@ -1,0 +1,334 @@
+{
+  "repository": "MichaelrKraft/coder1-ide",
+  "collected_at": "2025-10-04T05:38:43.829Z",
+  "issues": [
+    {
+      "number": 9,
+      "title": "Final Test: Email automation should work now",
+      "state": "open",
+      "created_at": "2025-10-04T02:50:06Z",
+      "labels": [],
+      "user": "MichaelrKraft",
+      "comments": 0
+    },
+    {
+      "number": 8,
+      "title": "Test: Workflow should trigger after default branch fix",
+      "state": "open",
+      "created_at": "2025-10-04T01:36:26Z",
+      "labels": [],
+      "user": "MichaelrKraft",
+      "comments": 0
+    },
+    {
+      "number": 7,
+      "title": "Email Workflow Test: Does the autonomous agent send emails?",
+      "state": "open",
+      "created_at": "2025-10-03T22:59:24Z",
+      "labels": [
+        "test"
+      ],
+      "user": "MichaelrKraft",
+      "comments": 0
+    },
+    {
+      "number": 6,
+      "title": "Bug Report: Terminal not responding to keyboard input",
+      "state": "open",
+      "created_at": "2025-10-03T21:26:41Z",
+      "labels": [
+        "bug"
+      ],
+      "user": "MichaelrKraft",
+      "comments": 0
+    },
+    {
+      "number": 5,
+      "title": "Feature Request: Add dark mode theme toggle",
+      "state": "open",
+      "created_at": "2025-10-03T20:56:45Z",
+      "labels": [
+        "enhancement",
+        "good first issue"
+      ],
+      "user": "MichaelrKraft",
+      "comments": 1
+    },
+    {
+      "number": 4,
+      "title": "Test: Autonomous Agent Response",
+      "state": "open",
+      "created_at": "2025-10-03T17:23:38Z",
+      "labels": [],
+      "user": "MichaelrKraft",
+      "comments": 1
+    },
+    {
+      "number": 3,
+      "title": "Test: Autonomous Agent Response",
+      "state": "open",
+      "created_at": "2025-10-03T17:22:03Z",
+      "labels": [],
+      "user": "MichaelrKraft",
+      "comments": 0
+    }
+  ],
+  "pull_requests": [],
+  "stars": [],
+  "commits": [
+    {
+      "sha": "8b342c3",
+      "message": "Update GitHub Agent workflow - add reopened trigger to force GitHub recognition",
+      "author": "Agentfrontend-engineer",
+      "date": "2025-10-03T23:13:46Z"
+    },
+    {
+      "sha": "03afcdf",
+      "message": "fix: Resolve checkpoint content bleeding and add model injection",
+      "author": "Agentfrontend-engineer",
+      "date": "2025-10-03T22:31:33Z"
+    },
+    {
+      "sha": "4af902b",
+      "message": "Enable email approval workflow for autonomous agent",
+      "author": "Agentfrontend-engineer",
+      "date": "2025-10-03T21:22:36Z"
+    },
+    {
+      "sha": "7cb64d8",
+      "message": "fix: Model indicator reactivity and string validation",
+      "author": "Agentfrontend-engineer",
+      "date": "2025-10-03T16:05:28Z"
+    },
+    {
+      "sha": "a4d068f",
+      "message": "feat: Phase I model switching + Phase II foundation complete",
+      "author": "Agentfrontend-engineer",
+      "date": "2025-10-03T15:22:08Z"
+    },
+    {
+      "sha": "7b67245",
+      "message": "security: Remove production env files and prevent future exposure",
+      "author": "Agentfrontend-engineer",
+      "date": "2025-10-02T20:03:16Z"
+    },
+    {
+      "sha": "1776a1f",
+      "message": "fix: Remove problematic coder1-landing page causing production build errors",
+      "author": "Agentfrontend-engineer",
+      "date": "2025-10-02T18:56:56Z"
+    },
+    {
+      "sha": "0ace353",
+      "message": "fix: Resolve black screen issue with client-safe memory preferences",
+      "author": "Agentfrontend-engineer",
+      "date": "2025-10-02T18:54:44Z"
+    },
+    {
+      "sha": "ec8b7a5",
+      "message": "fix: Update render.yaml to deploy from master branch",
+      "author": "Agentfrontend-engineer",
+      "date": "2025-10-02T18:31:02Z"
+    },
+    {
+      "sha": "2d14cf0",
+      "message": "feat: UI improvements and test page enhancements",
+      "author": "Agentfrontend-engineer",
+      "date": "2025-10-02T18:30:19Z"
+    },
+    {
+      "sha": "a295071",
+      "message": "feat: Activate Phase II SQLite persistence for memory system",
+      "author": "Agentfrontend-engineer",
+      "date": "2025-10-02T18:29:23Z"
+    },
+    {
+      "sha": "5af4ad5",
+      "message": "fix: Resolve Error Doctor production deployment issues",
+      "author": "Agentfrontend-engineer",
+      "date": "2025-10-02T15:26:56Z"
+    },
+    {
+      "sha": "b8515c7",
+      "message": "feat: Add drag functionality to StagedComposer with position persistence",
+      "author": "Agentfrontend-engineer",
+      "date": "2025-10-02T15:07:56Z"
+    },
+    {
+      "sha": "7e33381",
+      "message": "feat: Memory System Phase II + Command Composer - Complete Implementation",
+      "author": "Agentfrontend-engineer",
+      "date": "2025-10-02T05:02:15Z"
+    },
+    {
+      "sha": "91c0364",
+      "message": "fix: Add debugging for Focus Mode keyboard shortcut",
+      "author": "Agentfrontend-engineer",
+      "date": "2025-10-01T23:45:01Z"
+    },
+    {
+      "sha": "b0e786e",
+      "message": "fix: Improve Focus Mode keyboard shortcut handling",
+      "author": "Agentfrontend-engineer",
+      "date": "2025-10-01T23:35:49Z"
+    },
+    {
+      "sha": "2a6e226",
+      "message": "feat: Complete Focus Mode implementation - Phase 1",
+      "author": "Agentfrontend-engineer",
+      "date": "2025-10-01T22:51:45Z"
+    },
+    {
+      "sha": "8d555fe",
+      "message": "feat: Add Focus Mode option to View menu",
+      "author": "Agentfrontend-engineer",
+      "date": "2025-10-01T22:30:40Z"
+    },
+    {
+      "sha": "94f2878",
+      "message": "feat: Add focus mode conditional rendering to ThreePanelLayout",
+      "author": "Agentfrontend-engineer",
+      "date": "2025-10-01T22:28:02Z"
+    },
+    {
+      "sha": "32eba0b",
+      "message": "feat: Add focus mode state and keyboard shortcut to IDE page",
+      "author": "Agentfrontend-engineer",
+      "date": "2025-10-01T21:59:36Z"
+    },
+    {
+      "sha": "0c4d0ac",
+      "message": "refactor: Simplify homepage and separate marketing content",
+      "author": "Agentfrontend-engineer",
+      "date": "2025-10-01T14:38:49Z"
+    },
+    {
+      "sha": "7dab5ef",
+      "message": "fix: Remove white bar from PRD generator by fixing selected patterns styling",
+      "author": "Agentfrontend-engineer",
+      "date": "2025-10-01T05:38:38Z"
+    },
+    {
+      "sha": "e0d9a1f",
+      "message": "fix: Replace symlinks with actual files and add CANONICAL copy process",
+      "author": "Agentfrontend-engineer",
+      "date": "2025-10-01T05:03:11Z"
+    },
+    {
+      "sha": "cf52eb9",
+      "message": "refactor: Complete clean-phase1 refactoring with latest IDE improvements",
+      "author": "Agentfrontend-engineer",
+      "date": "2025-10-01T04:38:42Z"
+    },
+    {
+      "sha": "8744ace",
+      "message": "feat: Post-alpha launch improvements - Enhanced terminal, memory persistence, and template expansion",
+      "author": "Agentfrontend-engineer",
+      "date": "2025-10-01T02:46:20Z"
+    },
+    {
+      "sha": "d34d04c",
+      "message": "fix: Resolve remaining build dependencies for Render deployment",
+      "author": "Agentfrontend-engineer",
+      "date": "2025-09-30T18:25:03Z"
+    },
+    {
+      "sha": "10fa36b",
+      "message": "fix: Resolve Render deployment build issues",
+      "author": "Agentfrontend-engineer",
+      "date": "2025-09-30T18:17:31Z"
+    },
+    {
+      "sha": "2be4536",
+      "message": "docs: Add comprehensive Render deployment guide",
+      "author": "Agentfrontend-engineer",
+      "date": "2025-09-30T18:07:47Z"
+    },
+    {
+      "sha": "f801662",
+      "message": "feat: Add Render deployment configuration",
+      "author": "Agentfrontend-engineer",
+      "date": "2025-09-30T18:06:38Z"
+    },
+    {
+      "sha": "011d170",
+      "message": "feat: Remove IDE Config category from templates page",
+      "author": "Agentfrontend-engineer",
+      "date": "2025-09-30T17:42:10Z"
+    },
+    {
+      "sha": "ff9458c",
+      "message": "fix: Update category counts to reflect davila7 template additions",
+      "author": "Agentfrontend-engineer",
+      "date": "2025-09-30T17:39:07Z"
+    },
+    {
+      "sha": "24e4e2f",
+      "message": "feat: Integrate davila7 Claude Code Templates into CoderOne",
+      "author": "Agentfrontend-engineer",
+      "date": "2025-09-30T17:27:33Z"
+    },
+    {
+      "sha": "3ea8326",
+      "message": "feat: Implement automatic memory context system for Claude Code",
+      "author": "Agentfrontend-engineer",
+      "date": "2025-09-30T00:11:26Z"
+    }
+  ],
+  "metrics": {
+    "total_issues": 7,
+    "total_prs": 0,
+    "total_stars": 0,
+    "total_commits": 33
+  },
+  "patterns": {
+    "most_active_contributors": [
+      {
+        "user": "MichaelrKraft",
+        "activity_score": 7
+      }
+    ],
+    "common_issue_labels": [
+      {
+        "label": "test",
+        "count": 1
+      },
+      {
+        "label": "bug",
+        "count": 1
+      },
+      {
+        "label": "enhancement",
+        "count": 1
+      },
+      {
+        "label": "good first issue",
+        "count": 1
+      }
+    ],
+    "trending_topics": [
+      "automation",
+      "should",
+      "workflow",
+      "trigger",
+      "default",
+      "branch",
+      "autonomous",
+      "emails?",
+      "report:",
+      "terminal",
+      "responding",
+      "keyboard",
+      "feature",
+      "request:",
+      "toggle",
+      "response"
+    ],
+    "activity_summary": {
+      "total_activity_items": 40,
+      "average_daily_activity": "5.7",
+      "issue_to_pr_ratio": "7.00",
+      "recent_star_velocity": 0
+    }
+  }
+}

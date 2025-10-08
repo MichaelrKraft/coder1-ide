@@ -261,6 +261,35 @@ Please check the agent logs for more information.
       console.error('Failed to send error notification:', sendError);
     }
   }
+
+  /**
+   * Send a generic email (used by digest emailer)
+   */
+  async sendEmail(to, subject, content) {
+    if (!this.transporter) {
+      console.log('📧 Email service not configured - would send to:', to);
+      console.log('Subject:', subject);
+      console.log('Content preview:', content.substring(0, 200));
+      return { success: false, message: 'Email service not configured' };
+    }
+
+    try {
+      const info = await this.transporter.sendMail({
+        from: this.config.email.from_address || 'agents@coder1-ide.dev',
+        to: to,
+        subject: subject,
+        text: content,
+        html: content.replace(/\n/g, '<br>')
+      });
+      
+      console.log('✅ Email sent successfully to:', to);
+      console.log('   Message ID:', info.messageId);
+      return { success: true, messageId: info.messageId };
+    } catch (error) {
+      console.error('❌ Email send error:', error.message);
+      throw error;
+    }
+  }
 }
 
 module.exports = EmailSender;

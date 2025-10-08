@@ -1479,6 +1479,28 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
             term.writeln(`\r\n✅ Terminal history restored from ${sandboxMode ? 'checkpoint' : 'session'}`);
             term.writeln('\r\n' + '='.repeat(50) + '\r\n');
             
+            // 🔧 FIX: Scroll to bottom after restoring terminal history
+            // This ensures the input prompt is visible and user can interact immediately
+            setTimeout(() => {
+              if (term && term.buffer && term.buffer.active) {
+                // Scroll the xterm buffer
+                term.scrollToBottom();
+                
+                // Also scroll the container div (which has the 300px padding)
+                if (terminalRef.current && terminalRef.current.parentElement) {
+                  const container = terminalRef.current.parentElement;
+                  container.scrollTop = container.scrollHeight;
+                  console.log('📜 Scrolled container to bottom:', {
+                    scrollTop: container.scrollTop,
+                    scrollHeight: container.scrollHeight,
+                    clientHeight: container.clientHeight
+                  });
+                }
+                
+                console.log('📜 Scrolled to bottom after terminal history restoration');
+              }
+            }, 200); // Increased timeout to ensure rendering is complete
+            
             // Clear the localStorage after restoration to prevent re-applying
             localStorage.removeItem('mainTerminalHistory');
             localStorage.removeItem('terminalHistory');

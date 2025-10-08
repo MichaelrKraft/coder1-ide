@@ -1,0 +1,804 @@
+{
+  "detected_at": "2025-10-04T05:38:44.949Z",
+  "time_period_days": 7,
+  "languages": [
+    "javascript",
+    "typescript"
+  ],
+  "total_repos_analyzed": 60,
+  "trending_topics": [
+    {
+      "name": "hacktoberfest",
+      "count": 2,
+      "popularity_score": 2
+    },
+    {
+      "name": "smart-contracts",
+      "count": 2,
+      "popularity_score": 2
+    },
+    {
+      "name": "trading-bot",
+      "count": 2,
+      "popularity_score": 2
+    },
+    {
+      "name": "omarchy",
+      "count": 1,
+      "popularity_score": 1
+    },
+    {
+      "name": "omarchy-theme",
+      "count": 1,
+      "popularity_score": 1
+    },
+    {
+      "name": "hacktoberfest-accepted",
+      "count": 1,
+      "popularity_score": 1
+    },
+    {
+      "name": "hacktoberfest2025",
+      "count": 1,
+      "popularity_score": 1
+    },
+    {
+      "name": "hacktoberfest2025-approved",
+      "count": 1,
+      "popularity_score": 1
+    },
+    {
+      "name": "hactoberfest2025-accepted",
+      "count": 1,
+      "popularity_score": 1
+    },
+    {
+      "name": "architecture-diagram",
+      "count": 1,
+      "popularity_score": 1
+    },
+    {
+      "name": "architecture-diagrams",
+      "count": 1,
+      "popularity_score": 1
+    },
+    {
+      "name": "architecture-diagrams-generation",
+      "count": 1,
+      "popularity_score": 1
+    },
+    {
+      "name": "call-stack",
+      "count": 1,
+      "popularity_score": 1
+    },
+    {
+      "name": "code-map",
+      "count": 1,
+      "popularity_score": 1
+    },
+    {
+      "name": "code-visualization",
+      "count": 1,
+      "popularity_score": 1
+    }
+  ],
+  "trending_technologies": [
+    {
+      "name": "AI",
+      "count": 7,
+      "popularity_score": 7
+    },
+    {
+      "name": "REST API",
+      "count": 6,
+      "popularity_score": 6
+    },
+    {
+      "name": "Next.js",
+      "count": 3,
+      "popularity_score": 3
+    },
+    {
+      "name": "React",
+      "count": 2,
+      "popularity_score": 2
+    },
+    {
+      "name": "TypeScript",
+      "count": 2,
+      "popularity_score": 2
+    },
+    {
+      "name": "Angular",
+      "count": 1,
+      "popularity_score": 1
+    },
+    {
+      "name": "Vue",
+      "count": 1,
+      "popularity_score": 1
+    },
+    {
+      "name": "Tailwind",
+      "count": 1,
+      "popularity_score": 1
+    },
+    {
+      "name": "OpenAI",
+      "count": 1,
+      "popularity_score": 1
+    }
+  ],
+  "content_opportunities": [
+    {
+      "type": "youtube_tutorial",
+      "title": "AI Development with Coder1 in 10 Minutes",
+      "confidence": 100,
+      "trending_score": 7,
+      "suggested_angle": "Quick start guide for AI developers"
+    },
+    {
+      "type": "youtube_tutorial",
+      "title": "REST API Development with Coder1 in 10 Minutes",
+      "confidence": 90,
+      "trending_score": 6,
+      "suggested_angle": "Quick start guide for REST API developers"
+    },
+    {
+      "type": "youtube_tutorial",
+      "title": "Next.js Development with Coder1 in 10 Minutes",
+      "confidence": 45,
+      "trending_score": 3,
+      "suggested_angle": "Quick start guide for Next.js developers"
+    },
+    {
+      "type": "case_study",
+      "title": "Building Hacktoberfest Apps with AI",
+      "confidence": 45,
+      "trending_score": 9,
+      "suggested_angle": "Real-world example combining popular technologies"
+    },
+    {
+      "type": "case_study",
+      "title": "Building Smart Contracts Apps with AI",
+      "confidence": 45,
+      "trending_score": 9,
+      "suggested_angle": "Real-world example combining popular technologies"
+    },
+    {
+      "type": "case_study",
+      "title": "Building Hacktoberfest Apps with REST API",
+      "confidence": 40,
+      "trending_score": 8,
+      "suggested_angle": "Real-world example combining popular technologies"
+    },
+    {
+      "type": "case_study",
+      "title": "Building Smart Contracts Apps with REST API",
+      "confidence": 40,
+      "trending_score": 8,
+      "suggested_angle": "Real-world example combining popular technologies"
+    }
+  ],
+  "raw_data": [
+    {
+      "name": "bingcicle/env_guard",
+      "description": "env_guard",
+      "stars": 152,
+      "language": "JavaScript",
+      "topics": [],
+      "url": "https://github.com/bingcicle/env_guard",
+      "created_at": "2025-09-29T15:04:09Z"
+    },
+    {
+      "name": "shovel-heroes-org/shovel-heroes",
+      "description": "鏟子英雄",
+      "stars": 118,
+      "language": "JavaScript",
+      "topics": [],
+      "url": "https://github.com/shovel-heroes-org/shovel-heroes",
+      "created_at": "2025-10-01T11:29:17Z"
+    },
+    {
+      "name": "jackrun123/cf_snippets_proxy",
+      "description": null,
+      "stars": 98,
+      "language": "JavaScript",
+      "topics": [],
+      "url": "https://github.com/jackrun123/cf_snippets_proxy",
+      "created_at": "2025-09-28T06:18:21Z"
+    },
+    {
+      "name": "jx-codes/codemode-mcp",
+      "description": "An implementation of the Codemode workflow detailed by Cloudflare.",
+      "stars": 72,
+      "language": "JavaScript",
+      "topics": [],
+      "url": "https://github.com/jx-codes/codemode-mcp",
+      "created_at": "2025-09-28T15:46:48Z"
+    },
+    {
+      "name": "bjarneo/tema",
+      "description": "Tēma, Omarchy theming the easy way",
+      "stars": 67,
+      "language": "JavaScript",
+      "topics": [
+        "omarchy",
+        "omarchy-theme"
+      ],
+      "url": "https://github.com/bjarneo/tema",
+      "created_at": "2025-09-28T12:02:56Z"
+    },
+    {
+      "name": "emusecl/automl",
+      "description": "Automated machine learning in JavaScript, in browser locally or in node.",
+      "stars": 40,
+      "language": "JavaScript",
+      "topics": [],
+      "url": "https://github.com/emusecl/automl",
+      "created_at": "2025-09-28T19:25:31Z"
+    },
+    {
+      "name": "Codegres-com/Simple-Whatsapp-API",
+      "description": "Simple Whatsapp API - Just connect with QR and start sending messages instantly.",
+      "stars": 38,
+      "language": "JavaScript",
+      "topics": [],
+      "url": "https://github.com/Codegres-com/Simple-Whatsapp-API",
+      "created_at": "2025-09-30T00:35:58Z"
+    },
+    {
+      "name": "Reborn14/chatgpt-conversation-timeline",
+      "description": "为 ChatGPT 会话页面添加一条可交互的对话时间轴，让你快速定位历史对话，提升效率与体验。",
+      "stars": 35,
+      "language": "JavaScript",
+      "topics": [],
+      "url": "https://github.com/Reborn14/chatgpt-conversation-timeline",
+      "created_at": "2025-09-28T04:59:39Z"
+    },
+    {
+      "name": "hehte03/savcoin",
+      "description": "A simple blockchain in Javascript. For educational purposes only.",
+      "stars": 34,
+      "language": "JavaScript",
+      "topics": [],
+      "url": "https://github.com/hehte03/savcoin",
+      "created_at": "2025-09-28T08:49:51Z"
+    },
+    {
+      "name": "bsyzwoo/automl",
+      "description": "Automated machine learning in JavaScript, in browser locally or in node.",
+      "stars": 31,
+      "language": "JavaScript",
+      "topics": [],
+      "url": "https://github.com/bsyzwoo/automl",
+      "created_at": "2025-09-28T19:13:41Z"
+    },
+    {
+      "name": "fdeyesla/automl",
+      "description": "Automated machine learning in JavaScript, in browser locally or in node.",
+      "stars": 26,
+      "language": "JavaScript",
+      "topics": [],
+      "url": "https://github.com/fdeyesla/automl",
+      "created_at": "2025-09-28T19:14:44Z"
+    },
+    {
+      "name": "berkmancenter/activitypub-fuzzer",
+      "description": "A small program to help build social media software on the Fediverse. It emulates known Fediverse software, helping solve the problem where developers have to manually test compatibility with dozens of other projects.",
+      "stars": 25,
+      "language": "JavaScript",
+      "topics": [],
+      "url": "https://github.com/berkmancenter/activitypub-fuzzer",
+      "created_at": "2025-10-01T14:38:43Z"
+    },
+    {
+      "name": "snowyfizz/Digital-Story-Creator",
+      "description": "📖 Digital-Story-Creator: An Interactive Storybook featuring animations, sound effects, dan clickable elements that advance the narrative based on user input. Focuses on multimedia synchronization. 📚",
+      "stars": 24,
+      "language": "JavaScript",
+      "topics": [],
+      "url": "https://github.com/snowyfizz/Digital-Story-Creator",
+      "created_at": "2025-10-03T03:47:57Z"
+    },
+    {
+      "name": "snowyfizz/RSS-Feed-Reader",
+      "description": "📰 RSS Feed Reader: Anews aggregator reader that subscribes to multiple RSS feeds. 🌐 Displays content in a clean, unified interface. Simplifies news consumption. 🔄 🗞️",
+      "stars": 24,
+      "language": "JavaScript",
+      "topics": [],
+      "url": "https://github.com/snowyfizz/RSS-Feed-Reader",
+      "created_at": "2025-10-03T03:45:27Z"
+    },
+    {
+      "name": "snowyfizz/Stealth-Game",
+      "description": "🔪 Stealth Game: An avoidance strategy game where the objective is to avoid detection by AI guards. 👤 Completes various tasks using line-of-sight dan noise mechanics. 🤖 🕶️",
+      "stars": 24,
+      "language": "JavaScript",
+      "topics": [],
+      "url": "https://github.com/snowyfizz/Stealth-Game",
+      "created_at": "2025-10-03T03:44:27Z"
+    },
+    {
+      "name": "snowyfizz/API-Rate-Limiter",
+      "description": "⏳ API-Rate-Limiter: A middleware component for limiting the number of API requests a user can make in a given time. 🛡️ Protects your services from abuse. 🚦",
+      "stars": 23,
+      "language": "JavaScript",
+      "topics": [],
+      "url": "https://github.com/snowyfizz/API-Rate-Limiter",
+      "created_at": "2025-10-03T03:46:57Z"
+    },
+    {
+      "name": "snowyfizz/WebRTC-Video-Chat",
+      "description": "🎥 WebRTC Video Chat: A simple video chat application demonstrating peer-to-peer connection. 📞 Handles video dan audio communication. Focuses on media streams dan network topology. 💬 🌐",
+      "stars": 23,
+      "language": "JavaScript",
+      "topics": [],
+      "url": "https://github.com/snowyfizz/WebRTC-Video-Chat",
+      "created_at": "2025-10-03T03:44:56Z"
+    },
+    {
+      "name": "snowyfizz/Realtime-Sync-Editor",
+      "description": "✍️ Realtime-Sync-Editor: A web-based text editor (like Google Docs) where multiple users can edit simultaneously. 🤝 Utilizes WebSockets for real-time synchronization. 📡",
+      "stars": 23,
+      "language": "JavaScript",
+      "topics": [],
+      "url": "https://github.com/snowyfizz/Realtime-Sync-Editor",
+      "created_at": "2025-10-03T03:48:28Z"
+    },
+    {
+      "name": "snowyfizz/2D-Physics-Sandbox",
+      "description": "🧱 2D Physics Sandbox: An interactive sandbox environment for experimenting with 2D physics concepts. 🚀 Create dan manipulate objects with realistic physics. 🎮",
+      "stars": 23,
+      "language": "JavaScript",
+      "topics": [],
+      "url": "https://github.com/snowyfizz/2D-Physics-Sandbox",
+      "created_at": "2025-10-03T03:46:27Z"
+    },
+    {
+      "name": "snowyfizz/Asteroids-Game",
+      "description": "☄️ Space Shooter Classic: An Asteroids recreation featuring angular velocity dan thrust physics. 🛰️ Manages complex projectile behavior. A foundational project for game development. 💥 🌠",
+      "stars": 23,
+      "language": "JavaScript",
+      "topics": [],
+      "url": "https://github.com/snowyfizz/Asteroids-Game",
+      "created_at": "2025-10-03T03:43:55Z"
+    },
+    {
+      "name": "snowyfizz/DevPulse-Dashboard",
+      "description": "📈 Real-time Analytics Dashboard: A DevPulse monitor for tracking real-time data using WebSockets. 📊 Essential for efficient charting and low-latency system monitoring. 💻",
+      "stars": 23,
+      "language": "JavaScript",
+      "topics": [],
+      "url": "https://github.com/snowyfizz/DevPulse-Dashboard",
+      "created_at": "2025-10-03T03:43:26Z"
+    },
+    {
+      "name": "snowyfizz/Sentiment-Analysis-API",
+      "description": "📈 Sentiment Analysis API: A web API that analyzes text dan returns its sentiment (positive, negative, neutral). 🧠 Built with a pre-trained NLP model. 📊",
+      "stars": 23,
+      "language": "JavaScript",
+      "topics": [],
+      "url": "https://github.com/snowyfizz/Sentiment-Analysis-API",
+      "created_at": "2025-10-03T03:45:57Z"
+    },
+    {
+      "name": "snowyfizz/Classic-Pinball-FX",
+      "description": "🎱 Classic-Pinball-FX: A 2D pinball game implementation focusing heavily on physics engines, elastic collisions, dan complex scoring mechanisms. A deep dive into physics code. ✨",
+      "stars": 23,
+      "language": "JavaScript",
+      "topics": [],
+      "url": "https://github.com/snowyfizz/Classic-Pinball-FX",
+      "created_at": "2025-10-03T03:47:26Z"
+    },
+    {
+      "name": "bangboongdev/Vue3Antdesign",
+      "description": "ant-design-vue-pro-template",
+      "stars": 21,
+      "language": "JavaScript",
+      "topics": [],
+      "url": "https://github.com/bangboongdev/Vue3Antdesign",
+      "created_at": "2025-09-29T11:21:34Z"
+    },
+    {
+      "name": "reezicyb/surprise-bday-website",
+      "description": null,
+      "stars": 21,
+      "language": "JavaScript",
+      "topics": [],
+      "url": "https://github.com/reezicyb/surprise-bday-website",
+      "created_at": "2025-09-30T14:07:15Z"
+    },
+    {
+      "name": "reezicyb/estrada-nextjs-components",
+      "description": null,
+      "stars": 21,
+      "language": "JavaScript",
+      "topics": [],
+      "url": "https://github.com/reezicyb/estrada-nextjs-components",
+      "created_at": "2025-09-29T11:52:33Z"
+    },
+    {
+      "name": "reezicyb/saren-nextjs-components",
+      "description": null,
+      "stars": 20,
+      "language": "JavaScript",
+      "topics": [],
+      "url": "https://github.com/reezicyb/saren-nextjs-components",
+      "created_at": "2025-10-02T10:20:15Z"
+    },
+    {
+      "name": "Gyanthakur/component-library",
+      "description": "This repository is an open-source Next.js + Tailwind CSS Component Library. It contains ready-to-use UI components like Buttons and Cards that you can plug into any project. Perfect for beginners to learn, practice, and contribute during Hacktoberfest",
+      "stars": 19,
+      "language": "JavaScript",
+      "topics": [
+        "hacktoberfest",
+        "hacktoberfest-accepted",
+        "hacktoberfest2025",
+        "hacktoberfest2025-approved",
+        "hactoberfest2025-accepted"
+      ],
+      "url": "https://github.com/Gyanthakur/component-library",
+      "created_at": "2025-10-01T06:39:02Z"
+    },
+    {
+      "name": "lio0165/listen",
+      "description": "Listen Notes ChatGPT Plugin for AI-powered podcast search. Powered by PodcastAPI.com and Cloudflare Pages.",
+      "stars": 19,
+      "language": "JavaScript",
+      "topics": [],
+      "url": "https://github.com/lio0165/listen",
+      "created_at": "2025-09-28T17:49:56Z"
+    },
+    {
+      "name": "ZENTCH-Q/DepViz-Dependency-Visualizer",
+      "description": "Function call & call stack diagrams for VS Code (Python/TS/JS). Architecture/UML, PlantUML export.",
+      "stars": 19,
+      "language": "JavaScript",
+      "topics": [
+        "architecture-diagram",
+        "architecture-diagrams",
+        "architecture-diagrams-generation",
+        "call-stack",
+        "code-map",
+        "code-visualization",
+        "code-visualization-tool",
+        "dependency-graph",
+        "dependency-graph-analysis",
+        "function-call",
+        "function-call-graph",
+        "plantuml",
+        "plantuml-diagrams",
+        "uml",
+        "uml-diagram",
+        "vscode-extension"
+      ],
+      "url": "https://github.com/ZENTCH-Q/DepViz-Dependency-Visualizer",
+      "created_at": "2025-10-03T00:54:47Z"
+    },
+    {
+      "name": "yottjane/crypto-arbitrage-bot",
+      "description": "A free, open-source, multifunctional crypto arbitrage bot",
+      "stars": 627,
+      "language": "TypeScript",
+      "topics": [
+        "arbitrage",
+        "arbitrage-bots",
+        "binance",
+        "bitcoin",
+        "crypto-trading",
+        "cryptocurrency",
+        "ethereum",
+        "smart-contracts",
+        "trading",
+        "trading-bot"
+      ],
+      "url": "https://github.com/yottjane/crypto-arbitrage-bot",
+      "created_at": "2025-09-30T14:08:29Z"
+    },
+    {
+      "name": "ryanntannn/zustand-sync",
+      "description": "A simple, barebones \"multiplayer\" middleware for zustand",
+      "stars": 146,
+      "language": "TypeScript",
+      "topics": [
+        "multiplayer",
+        "state-management",
+        "zustand"
+      ],
+      "url": "https://github.com/ryanntannn/zustand-sync",
+      "created_at": "2025-09-28T11:02:19Z"
+    },
+    {
+      "name": "numman-ali/opencode-openai-codex-auth",
+      "description": "OpenAI ChatGPT (Codex backend) OAuth auth plugin for opencode - use your ChatGPT Plus/Pro subscription instead of API credits",
+      "stars": 79,
+      "language": "TypeScript",
+      "topics": [],
+      "url": "https://github.com/numman-ali/opencode-openai-codex-auth",
+      "created_at": "2025-10-01T23:16:59Z"
+    },
+    {
+      "name": "rit3zh/expo-ios-popover",
+      "description": "🎯 SwiftUI Popovers in React Native — lightweight, native popovers with arrow support",
+      "stars": 67,
+      "language": "TypeScript",
+      "topics": [],
+      "url": "https://github.com/rit3zh/expo-ios-popover",
+      "created_at": "2025-10-02T18:45:57Z"
+    },
+    {
+      "name": "TheOrcDev/youtube-to-blog",
+      "description": "Simple YouTube url to MDX blog app",
+      "stars": 66,
+      "language": "TypeScript",
+      "topics": [],
+      "url": "https://github.com/TheOrcDev/youtube-to-blog",
+      "created_at": "2025-09-30T21:40:56Z"
+    },
+    {
+      "name": "dibongyu/protoken",
+      "description": "Blockchain coin and token profile collection",
+      "stars": 66,
+      "language": "TypeScript",
+      "topics": [],
+      "url": "https://github.com/dibongyu/protoken",
+      "created_at": "2025-09-28T07:27:58Z"
+    },
+    {
+      "name": "kubiks-inc/otel",
+      "description": null,
+      "stars": 64,
+      "language": "TypeScript",
+      "topics": [],
+      "url": "https://github.com/kubiks-inc/otel",
+      "created_at": "2025-10-02T16:48:26Z"
+    },
+    {
+      "name": "gunatppcap/VaxRecord",
+      "description": null,
+      "stars": 63,
+      "language": "TypeScript",
+      "topics": [],
+      "url": "https://github.com/gunatppcap/VaxRecord",
+      "created_at": "2025-09-28T03:14:27Z"
+    },
+    {
+      "name": "fengyumeng1/vector-mesh",
+      "description": "Migrated repository from migrated-repo",
+      "stars": 59,
+      "language": "TypeScript",
+      "topics": [],
+      "url": "https://github.com/fengyumeng1/vector-mesh",
+      "created_at": "2025-09-29T04:38:44Z"
+    },
+    {
+      "name": "belindagardy/datastream-hub",
+      "description": "Migrated repository from migrated-repo",
+      "stars": 59,
+      "language": "TypeScript",
+      "topics": [],
+      "url": "https://github.com/belindagardy/datastream-hub",
+      "created_at": "2025-09-29T04:54:11Z"
+    },
+    {
+      "name": "fengyumeng1/node-forge",
+      "description": "Migrated repository from migrated-repo",
+      "stars": 59,
+      "language": "TypeScript",
+      "topics": [],
+      "url": "https://github.com/fengyumeng1/node-forge",
+      "created_at": "2025-09-29T04:47:03Z"
+    },
+    {
+      "name": "GlennBrooka/meteor-flow",
+      "description": "Migrated repository from migrated-repo",
+      "stars": 54,
+      "language": "TypeScript",
+      "topics": [],
+      "url": "https://github.com/GlennBrooka/meteor-flow",
+      "created_at": "2025-09-29T02:48:17Z"
+    },
+    {
+      "name": "MayBiLisa/nexus-bridge",
+      "description": "Migrated repository from migrated-repo",
+      "stars": 53,
+      "language": "TypeScript",
+      "topics": [],
+      "url": "https://github.com/MayBiLisa/nexus-bridge",
+      "created_at": "2025-09-29T04:28:37Z"
+    },
+    {
+      "name": "kamoraseamus/celestial-runtime",
+      "description": "Migrated repository from migrated-repo",
+      "stars": 53,
+      "language": "TypeScript",
+      "topics": [],
+      "url": "https://github.com/kamoraseamus/celestial-runtime",
+      "created_at": "2025-09-29T04:17:27Z"
+    },
+    {
+      "name": "MayBiLisa/modular-core",
+      "description": "Migrated repository from migrated-repo",
+      "stars": 53,
+      "language": "TypeScript",
+      "topics": [],
+      "url": "https://github.com/MayBiLisa/modular-core",
+      "created_at": "2025-09-29T04:31:16Z"
+    },
+    {
+      "name": "dayvster/react-kata",
+      "description": "React Utils is a growing collection of React hooks for state, effects, events, storage, and more. Designed for clarity, performance, and real-world use—with a clean API, SSR compatibility, and TypeScript support. Use it to save time and avoid boilerplate as the library evolves.",
+      "stars": 52,
+      "language": "TypeScript",
+      "topics": [
+        "hooks",
+        "react",
+        "react-hooks",
+        "react-library",
+        "reactjs"
+      ],
+      "url": "https://github.com/dayvster/react-kata",
+      "created_at": "2025-09-30T14:47:33Z"
+    },
+    {
+      "name": "CornellCarpenter/eclipse-hub",
+      "description": "Migrated repository from migrated-repo",
+      "stars": 52,
+      "language": "TypeScript",
+      "topics": [],
+      "url": "https://github.com/CornellCarpenter/eclipse-hub",
+      "created_at": "2025-09-29T03:03:57Z"
+    },
+    {
+      "name": "mooncitydev/asterdex-hl-trading-bot",
+      "description": " A Bun-powered trading workstation for Aster and Hyperliquid perpetual contracts that ships two production-ready agents: an SMA30 trend follower and a dual-sided market maker. The CLI is built with Ink, synchronises risk state from the exchange, and automatically recovers from restarts or disconnects.",
+      "stars": 52,
+      "language": "TypeScript",
+      "topics": [
+        "aster",
+        "aster-defi",
+        "aster-dex",
+        "automated-trade-script",
+        "defi-trading",
+        "hyperliquid",
+        "hyperliquid-dex",
+        "multi-exchange",
+        "perpetual-futures",
+        "trading-bot",
+        "trading-strategy"
+      ],
+      "url": "https://github.com/mooncitydev/asterdex-hl-trading-bot",
+      "created_at": "2025-09-28T15:51:19Z"
+    },
+    {
+      "name": "kamoraseamus/streamline-kit",
+      "description": "Migrated repository from migrated-repo",
+      "stars": 50,
+      "language": "TypeScript",
+      "topics": [],
+      "url": "https://github.com/kamoraseamus/streamline-kit",
+      "created_at": "2025-09-29T04:21:23Z"
+    },
+    {
+      "name": "lamos22/Sexual-Repression-Calculator",
+      "description": "Sexual-Repression-Calculator",
+      "stars": 49,
+      "language": "TypeScript",
+      "topics": [],
+      "url": "https://github.com/lamos22/Sexual-Repression-Calculator",
+      "created_at": "2025-10-03T03:31:51Z"
+    },
+    {
+      "name": "mooncitydev/crypto-prediction-bot",
+      "description": "TypeScript bot for automated BNB-USD predictions on PancakeSwap & CandleGenie with smart betting strategies and auto-claiming features.",
+      "stars": 48,
+      "language": "TypeScript",
+      "topics": [
+        "automated-trading-in-financial-markets",
+        "bnb-trading",
+        "candlegenie",
+        "defi",
+        "ethers",
+        "pancakeswap",
+        "prediction",
+        "prediction-bot",
+        "smart-contracts",
+        "trading-bot-",
+        "web3"
+      ],
+      "url": "https://github.com/mooncitydev/crypto-prediction-bot",
+      "created_at": "2025-09-28T05:32:20Z"
+    },
+    {
+      "name": "Flixorui/flixor",
+      "description": null,
+      "stars": 47,
+      "language": "TypeScript",
+      "topics": [],
+      "url": "https://github.com/Flixorui/flixor",
+      "created_at": "2025-10-01T02:07:31Z"
+    },
+    {
+      "name": "True3DLabs/WindowMode",
+      "description": "Turn your screen into a Window into a virtual world",
+      "stars": 46,
+      "language": "TypeScript",
+      "topics": [],
+      "url": "https://github.com/True3DLabs/WindowMode",
+      "created_at": "2025-10-03T18:36:51Z"
+    },
+    {
+      "name": "hehte03/extlight",
+      "description": "The Bitcoin Lightning Browser Extension that brings deep Lightning & Nostr integration to the web. Wallet interface to multiple lightning nodes and key signer for Nostr, Liquid and onchain use.",
+      "stars": 39,
+      "language": "TypeScript",
+      "topics": [],
+      "url": "https://github.com/hehte03/extlight",
+      "created_at": "2025-09-28T08:46:24Z"
+    },
+    {
+      "name": "fazzlus/appler",
+      "description": " MCP server providing AI agents with instant access to Apple developer documentation via RAG technology",
+      "stars": 36,
+      "language": "TypeScript",
+      "topics": [],
+      "url": "https://github.com/fazzlus/appler",
+      "created_at": "2025-09-28T19:28:49Z"
+    },
+    {
+      "name": "TinyActive/nginx-love",
+      "description": "This project software that integrates nginx and modesecurity with management portal. Please secure the portal to prevent risks.",
+      "stars": 35,
+      "language": "TypeScript",
+      "topics": [
+        "hacktoberfest",
+        "high-performance",
+        "loadbalancer",
+        "nginx",
+        "waf",
+        "web-application-firewall"
+      ],
+      "url": "https://github.com/TinyActive/nginx-love",
+      "created_at": "2025-10-02T05:15:15Z"
+    },
+    {
+      "name": "zhihuanglab/TissueLab",
+      "description": "A Co-evolving Agentic AI System for Medical Imaging Analysis",
+      "stars": 32,
+      "language": "TypeScript",
+      "topics": [],
+      "url": "https://github.com/zhihuanglab/TissueLab",
+      "created_at": "2025-09-29T11:01:10Z"
+    },
+    {
+      "name": "amonngo/lobech",
+      "description": "🤖 / 🏪 Agent Index - This is the agent index for LobeChat. It accesses index.json from this repository to display a list of available agents for LobeChat to the agent market.",
+      "stars": 32,
+      "language": "TypeScript",
+      "topics": [],
+      "url": "https://github.com/amonngo/lobech",
+      "created_at": "2025-09-28T19:13:31Z"
+    },
+    {
+      "name": "iptag/jimeng-api",
+      "description": "即梦国内版官网转api，借鉴了几位大佬的项目，但他们的参数都有点老有些小问题，稍加改进下，稳定性强了不少，目前只测试了文生图和图生图功能，应该没啥问题了，如果有欢迎提issue",
+      "stars": 31,
+      "language": "TypeScript",
+      "topics": [],
+      "url": "https://github.com/iptag/jimeng-api",
+      "created_at": "2025-09-28T14:29:05Z"
+    },
+    {
+      "name": "anshuman008/pumpfun-grpc-sniper",
+      "description": null,
+      "stars": 26,
+      "language": "TypeScript",
+      "topics": [],
+      "url": "https://github.com/anshuman008/pumpfun-grpc-sniper",
+      "created_at": "2025-10-02T19:46:27Z"
+    }
+  ]
+}

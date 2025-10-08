@@ -250,6 +250,39 @@ Make it informative, engaging, and authentic. About 500 words.`;
   }
 
   /**
+   * Generic method to generate content with Claude
+   * Used by content generators (blog, YouTube, case studies)
+   */
+  async generateResponse(prompt, options = {}) {
+    const model = options.model || this.getModel('standard');
+    const maxTokens = options.max_tokens || 2000;
+    
+    try {
+      const response = await this.client.messages.create({
+        model: model,
+        max_tokens: maxTokens,
+        temperature: options.temperature || 0.7,
+        messages: [{
+          role: 'user',
+          content: prompt
+        }]
+      });
+
+      // Track usage and cost
+      const inputTokens = prompt.length / 4; // Rough estimate
+      const outputTokens = response.content[0].text.length / 4;
+      const cost = await this.trackUsage(inputTokens, outputTokens, model);
+      
+      console.log(`💰 Request cost: $${cost.toFixed(4)} (${model})`);
+
+      return response.content[0].text;
+    } catch (error) {
+      console.error('Claude API error:', error.message);
+      throw error; // Let caller handle fallback
+    }
+  }
+
+  /**
    * Calculate confidence score for a response
    */
   calculateConfidence(response) {

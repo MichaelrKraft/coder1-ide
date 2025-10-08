@@ -56,6 +56,7 @@ NEXT_PUBLIC_ENABLE_TWEAKCC=true
 - **🎯 Agent Dashboard**: Multi-agent AI orchestration
 - **📊 Session Summaries**: AI-generated development session reports
 - **🔍 Smart Discovery**: AI tools and command palette
+- **🔗 Smart PRD Handoff**: One-click transition from requirements to implementation with intelligent prompt formatting
 
 ## 📚 Documentation
 
@@ -64,6 +65,7 @@ NEXT_PUBLIC_ENABLE_TWEAKCC=true
 
 ### Technical Documentation  
 - **[CLAUDE.md](./CLAUDE.md)** - Complete technical documentation and configuration guide
+- **[PRD Handoff System](./PRD_HANDOFF_SYSTEM.md)** - One-click PRD-to-IDE handoff with intelligent prompt formatting
 
 ## 🏗️ Architecture
 

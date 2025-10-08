@@ -40,6 +40,14 @@ export const useSessionSummary = () => {
   });
 
   const generateSummary = useCallback(async (params: GenerateSummaryParams = {}) => {
+    console.log('🔍 [HOOK] generateSummary called', {
+      paramsProvided: !!params,
+      openFilesCount: params.openFiles?.length || 0,
+      activeFile: params.activeFile,
+      terminalHistoryLength: params.terminalHistory?.length || 0,
+      terminalCommandsCount: params.terminalCommands?.length || 0
+    });
+    
     setState(prev => ({
       ...prev,
       isGenerating: true,
@@ -47,8 +55,11 @@ export const useSessionSummary = () => {
       progress: 0,
       currentStep: 'Initializing session analysis...'
     }));
+    
+    console.log('🔍 [HOOK] State updated - isGenerating set to true');
 
     try {
+      console.log('🔍 [HOOK] Starting progress simulation...');
       // Simulate progress updates
       const progressSteps = [
         { progress: 10, step: '📊 Analyzing session type and context' },
@@ -77,19 +88,34 @@ export const useSessionSummary = () => {
       }, 800);
 
       // Collect session data
+      console.log('🔍 [HOOK] Collecting session data...');
       const sessionData = sessionSummaryService.collectSessionData(
         params.openFiles || [],
         params.activeFile || null,
         params.terminalHistory || '',
         params.terminalCommands || []
       );
+      console.log('🔍 [HOOK] Session data collected:', {
+        sessionType: sessionData.sessionType,
+        openFilesCount: sessionData.openFiles?.length || 0,
+        terminalCommandsCount: sessionData.terminalCommands?.length || 0
+      });
 
       // Generate the summary
+      console.log('🔍 [HOOK] Calling sessionSummaryService.generateSessionSummary...');
       const result = await sessionSummaryService.generateSessionSummary(sessionData);
+      console.log('🔍 [HOOK] Service returned result:', {
+        success: result.success,
+        hasSummary: !!result.summary,
+        hasError: !!result.error,
+        summaryLength: result.summary?.length || 0
+      });
 
       // Generate insights and next steps
+      console.log('🔍 [HOOK] Generating insights and next steps...');
       const insights = generateInsights(result.summary || '', sessionData);
       const nextSteps = generateNextSteps(result.summary || '', sessionData);
+      console.log('🔍 [HOOK] Insights and next steps generated');
 
       clearInterval(progressInterval);
 
@@ -104,6 +130,8 @@ export const useSessionSummary = () => {
         progress: 100,
         currentStep: 'Complete'
       }));
+      
+      console.log('🔍 [HOOK] Final state updated - generation complete');
 
       // Reset progress after a moment
       setTimeout(() => {
@@ -111,6 +139,7 @@ export const useSessionSummary = () => {
       }, 1000);
 
     } catch (error) {
+      console.error('🔍 [HOOK] Error in generateSummary:', error);
       setState(prev => ({
         ...prev,
         isGenerating: false,
@@ -118,6 +147,7 @@ export const useSessionSummary = () => {
         progress: 0,
         currentStep: ''
       }));
+      console.log('🔍 [HOOK] Error state set');
     }
   }, []);
 
