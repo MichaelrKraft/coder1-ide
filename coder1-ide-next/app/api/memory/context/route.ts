@@ -1,78 +1,85 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { promises as fs } from 'fs';
-import path from 'path';
+import { EternalMemorySearch } from '@/services/eternal-memory-search';
 
-// Force dynamic rendering for this route
 export const dynamic = 'force-dynamic';
 
+/**
+ * Memory Context API
+ * 
+ * Retrieves relevant context from previous sessions for AI continuity.
+ * Uses direct database access via EternalMemorySearch service.
+ */
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const query = searchParams.get('query') || '';
-    const maxTokens = parseInt(searchParams.get('maxTokens') || '1000');
+    const maxTokensParam = searchParams.get('maxTokens') || '1000';
+    const maxTokens = parseInt(maxTokensParam, 10);
     
-    const memoryDir = path.join(process.cwd(), 'data', 'memory', 'sessions');
-    const indexPath = path.join(memoryDir, 'index.json');
+    const search = new EternalMemorySearch();
     
-    // Read index
-    let index = [];
-    try {
-      const indexContent = await fs.readFile(indexPath, 'utf-8');
-      index = JSON.parse(indexContent);
-    } catch (error) {
-      return NextResponse.json({
-        recentSummary: '',
-        relevantContext: [],
-        totalTokens: 0,
-        sessionCount: 0
-      });
-    }
+    // Search for relevant context
+    const { results, stats } = await search.search({
+      text: query || 'recent work',
+      limit: 5,
+      minRelevance: 0.3
+    });
     
-    // Build context
-    const context = {
-      recentSummary: '',
-      relevantContext: [] as string[],
-      totalTokens: 0,
-      sessionCount: 0
-    };
+    // Format context for AI consumption
+    let relevantContext: Array<{
+      sessionId: string;
+      summary: string;
+      relevance: number;
+      timestamp: string;
+    }> = [];
     
-    // Get most recent session summary
-    if (index.length > 0) {
-      const recentMeta = index[0];
-      context.recentSummary = recentMeta.summary || 
-        `Recent ${recentMeta.platform} session: ${recentMeta.interactionCount} interactions`;
-      context.totalTokens += Math.ceil(context.recentSummary.length / 4);
-    }
+    let totalTokens = 0;
+    const APPROX_TOKENS_PER_CHAR = 0.25;
     
-    // Find relevant sessions based on query
-    const relevantSessions = query 
-      ? index.filter(session => 
-          session.summary?.toLowerCase().includes(query.toLowerCase()) ||
-          session.platform?.toLowerCase().includes(query.toLowerCase())
-        )
-      : index.slice(1, 4); // Just get recent ones if no query
-    
-    // Add relevant context up to token limit
-    for (const sessionMeta of relevantSessions) {
-      const summary = sessionMeta.summary || 
-        `${sessionMeta.platform} session: ${sessionMeta.interactionCount} interactions`;
-      const tokens = Math.ceil(summary.length / 4);
+    for (const result of results) {
+      const contextEntry = {
+        sessionId: result.sessionId,
+        summary: result.summary,
+        relevance: result.relevanceScore,
+        timestamp: new Date(result.timestamp).toISOString()
+      };
       
-      if (context.totalTokens + tokens <= maxTokens) {
-        context.relevantContext.push(summary);
-        context.totalTokens += tokens;
-        context.sessionCount++;
+      const estimatedTokens = Math.ceil(result.summary.length * APPROX_TOKENS_PER_CHAR);
+      
+      if (totalTokens + estimatedTokens <= maxTokens) {
+        relevantContext.push(contextEntry);
+        totalTokens += estimatedTokens;
       } else {
         break;
       }
     }
     
-    return NextResponse.json(context);
+    const recentSummary = results.length > 0 
+      ? `Found ${results.length} relevant session(s). Most recent: ${new Date(results[0].timestamp).toLocaleDateString()}`
+      : 'No relevant sessions found';
+    
+    search.close();
+    
+    return NextResponse.json({
+      recentSummary,
+      relevantContext,
+      totalTokens,
+      sessionCount: relevantContext.length,
+      searchStats: {
+        query: stats.query,
+        resultsFound: stats.resultsFound,
+        executionTimeMs: stats.executionTimeMs
+      }
+    });
+    
   } catch (error) {
-    console.error('Error getting context:', error);
-    return NextResponse.json(
-      { error: 'Failed to get context' },
-      { status: 500 }
-    );
+    console.error('Error getting memory context:', error);
+    return NextResponse.json({
+      recentSummary: '',
+      relevantContext: [],
+      totalTokens: 0,
+      sessionCount: 0,
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
   }
 }

@@ -1,49 +1,50 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { promises as fs } from 'fs';
-import path from 'path';
+import { EternalMemorySearch } from '@/services/eternal-memory-search';
 
-// Force dynamic rendering for this route
 export const dynamic = 'force-dynamic';
 
+/**
+ * Recent Sessions API
+ * 
+ * Loads recent development sessions for context and continuity.
+ * Uses direct database access via EternalMemorySearch service.
+ */
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const limit = parseInt(searchParams.get('limit') || '10');
+    const limitParam = searchParams.get('limit') || '10';
+    const limit = parseInt(limitParam, 10);
     
-    const memoryDir = path.join(process.cwd(), 'data', 'memory', 'sessions');
-    const indexPath = path.join(memoryDir, 'index.json');
+    const search = new EternalMemorySearch();
     
-    // Read index file
-    let index = [];
-    try {
-      const indexContent = await fs.readFile(indexPath, 'utf-8');
-      index = JSON.parse(indexContent);
-    } catch (error) {
-      // No sessions yet
-      return NextResponse.json([]);
-    }
+    // Search with generic term to get all sessions, sorted by timestamp
+    const { results } = await search.search({
+      text: 'session',
+      limit: limit,
+      minRelevance: 0.0
+    });
     
-    // Load the requested number of recent sessions
-    const recentSessions = [];
-    const sessionFiles = index.slice(0, limit);
+    // Transform to simplified format for recent sessions API
+    const sessions = results.map(result => ({
+      sessionId: result.sessionId,
+      summary: result.summary,
+      filesWorked: result.filesWorked,
+      keyDecisions: result.keyDecisions,
+      nextSteps: result.nextSteps,
+      timestamp: result.timestamp,
+      date: new Date(result.timestamp).toISOString()
+    }));
     
-    for (const sessionMeta of sessionFiles) {
-      try {
-        const sessionPath = path.join(memoryDir, sessionMeta.filename);
-        const sessionContent = await fs.readFile(sessionPath, 'utf-8');
-        const session = JSON.parse(sessionContent);
-        recentSessions.push(session);
-      } catch (error) {
-        console.warn(`Failed to load session ${sessionMeta.filename}:`, error);
-      }
-    }
+    search.close();
     
-    return NextResponse.json(recentSessions);
+    return NextResponse.json({ sessions, count: sessions.length });
+    
   } catch (error) {
     console.error('Error loading recent sessions:', error);
-    return NextResponse.json(
-      { error: 'Failed to load recent sessions' },
-      { status: 500 }
-    );
+    return NextResponse.json({ 
+      sessions: [], 
+      count: 0,
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
   }
 }

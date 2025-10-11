@@ -2,15 +2,20 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { getSocket } from '../lib/socket';
+import { premiumClient } from '@/lib/premium-client';
 
 interface SupervisionContextType {
   isSupervisionActive: boolean;
   supervisionStatus: string;
   lastSupervisionCheck: Date | null;
-  enableSupervision: () => void;
-  disableSupervision: () => void;
-  toggleSupervision: () => void;
+  enableSupervision: () => Promise<void>;
+  disableSupervision: () => Promise<void>;
+  toggleSupervision: () => Promise<void>;
   updateSupervisionStatus: (status: string) => void;
+  hasPremiumAccess: boolean;
+  requiresPremium: boolean;
+  showUpgradeModal: boolean;
+  setShowUpgradeModal: (show: boolean) => void;
 }
 
 const SupervisionContext = createContext<SupervisionContextType | undefined>(undefined);
@@ -19,6 +24,17 @@ export function SupervisionProvider({ children }: { children: ReactNode }) {
   const [isSupervisionActive, setIsSupervisionActive] = useState(false);
   const [supervisionStatus, setSupervisionStatus] = useState('inactive');
   const [lastSupervisionCheck, setLastSupervisionCheck] = useState<Date | null>(null);
+  const [hasPremiumAccess, setHasPremiumAccess] = useState(false);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+
+  useEffect(() => {
+    // Check premium access on mount
+    const checkPremiumAccess = async () => {
+      const hasAccess = await premiumClient.hasPremiumAccess();
+      setHasPremiumAccess(hasAccess);
+    };
+    checkPremiumAccess();
+  }, []);
 
   useEffect(() => {
     let mounted = true;
@@ -27,7 +43,7 @@ export function SupervisionProvider({ children }: { children: ReactNode }) {
       try {
         const socket = await getSocket();
 
-        if (!mounted) return; // Component unmounted before socket connected
+        if (!mounted) return;
 
         // Listen for supervision state changes from backend
         socket.on('supervision:activated', (data: { timestamp: string, triggeredBy: string }) => {
@@ -50,8 +66,17 @@ export function SupervisionProvider({ children }: { children: ReactNode }) {
           setSupervisionStatus(data.status);
         });
 
-        // Request current supervision status on mount
-        socket.emit('supervision:get-status');
+        // Listen for premium requirement response
+        socket.on('supervision:requires-premium', () => {
+          if (!mounted) return;
+          setSupervisionStatus('requires-premium');
+          setShowUpgradeModal(true);
+        });
+
+        // Request current supervision status on mount (only if has premium access)
+        if (hasPremiumAccess) {
+          socket.emit('supervision:get-status');
+        }
 
         return socket;
       } catch (error) {
@@ -69,13 +94,24 @@ export function SupervisionProvider({ children }: { children: ReactNode }) {
           socket.off('supervision:activated');
           socket.off('supervision:deactivated');
           socket.off('supervision:status');
+          socket.off('supervision:requires-premium');
         }
       });
     };
-  }, []);
+  }, [hasPremiumAccess]);
 
   const enableSupervision = async () => {
     try {
+      // Check premium access first
+      const hasAccess = await premiumClient.hasPremiumAccess();
+      
+      if (!hasAccess) {
+        setSupervisionStatus('requires-premium');
+        setShowUpgradeModal(true);
+        console.info('💎 AI Supervision requires active trial or Pro subscription');
+        return;
+      }
+
       const socket = await getSocket();
       socket.emit('supervision:enable', { 
         source: 'manual',
@@ -86,6 +122,7 @@ export function SupervisionProvider({ children }: { children: ReactNode }) {
       setLastSupervisionCheck(new Date());
     } catch (error) {
       console.error('Failed to enable supervision:', error);
+      setSupervisionStatus('error');
     }
   };
 
@@ -102,11 +139,11 @@ export function SupervisionProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const toggleSupervision = () => {
+  const toggleSupervision = async () => {
     if (isSupervisionActive) {
-      disableSupervision();
+      await disableSupervision();
     } else {
-      enableSupervision();
+      await enableSupervision();
     }
   };
 
@@ -124,7 +161,11 @@ export function SupervisionProvider({ children }: { children: ReactNode }) {
         enableSupervision,
         disableSupervision,
         toggleSupervision,
-        updateSupervisionStatus
+        updateSupervisionStatus,
+        hasPremiumAccess,
+        requiresPremium: !hasPremiumAccess,
+        showUpgradeModal,
+        setShowUpgradeModal
       }}
     >
       {children}

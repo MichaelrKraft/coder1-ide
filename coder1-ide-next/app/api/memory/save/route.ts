@@ -1,63 +1,85 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { promises as fs } from 'fs';
-import path from 'path';
 
+/**
+ * Eternal Memory Save API - Premium Feature
+ * 
+ * This is a premium feature that requires an active trial or Pro subscription.
+ * 
+ * Features:
+ * - Persistent session memory across Claude sessions
+ * - Intelligent context preservation
+ * - 30-day memory retention after trial expiry
+ * 
+ * To use this feature:
+ * 1. Start your 7-day free trial
+ * 2. Or upgrade to Pro ($29/month)
+ */
 export async function POST(request: NextRequest) {
   try {
     const session = await request.json();
     
-    // Create memory directory if it doesn't exist
-    const memoryDir = path.join(process.cwd(), 'data', 'memory', 'sessions');
-    await fs.mkdir(memoryDir, { recursive: true });
+    // Premium API endpoint (closed source, not included in open source version)
+    const premiumEndpoint = process.env.PREMIUM_API_URL || 'http://localhost:3003';
     
-    // Generate filename from session timestamp
-    const timestamp = new Date(session.startTime).toISOString().replace(/[:.]/g, '-');
-    const filename = `${timestamp}.json`;
-    const filepath = path.join(memoryDir, filename);
-    
-    // Save session to file
-    await fs.writeFile(filepath, JSON.stringify(session, null, 2));
-    
-    // Update index file
-    const indexPath = path.join(memoryDir, 'index.json');
-    let index = [];
-    
-    try {
-      const indexContent = await fs.readFile(indexPath, 'utf-8');
-      index = JSON.parse(indexContent);
-    } catch (error) {
-      // Index doesn't exist yet, start with empty array
+    // Check if premium API is configured
+    if (!premiumEndpoint) {
+      return NextResponse.json({ 
+        success: false,
+        requiresPremium: true,
+        message: 'Eternal Memory is a premium feature',
+        action: 'start_trial',
+        trialDays: 7,
+        proPrice: '$29/month'
+      }, { status: 403 });
     }
     
-    // Add session metadata to index
-    index.unshift({
-      sessionId: session.sessionId,
-      filename,
-      startTime: session.startTime,
-      endTime: session.endTime,
-      platform: session.platform,
-      totalTokens: session.totalTokens,
-      interactionCount: session.interactions?.length || 0,
-      summary: session.summary
+    // Forward request to premium API
+    const response = await fetch(`${premiumEndpoint}/api/premium/memory/store`, {
+      method: 'POST',
+      headers: { 
+        'Content-Type': 'application/json',
+        'X-User-Id': request.headers.get('X-User-Id') || 'unknown'
+      },
+      body: JSON.stringify({
+        userId: request.headers.get('X-User-Id') || 'unknown',
+        sessionId: session.sessionId,
+        sessionData: session
+      }),
     });
     
-    // Keep only last 100 sessions in index
-    if (index.length > 100) {
-      index = index.slice(0, 100);
+    if (!response.ok) {
+      const errorData = await response.json();
+      
+      // Handle premium feature access denied
+      if (response.status === 403) {
+        return NextResponse.json({ 
+          success: false,
+          requiresPremium: true,
+          message: errorData.message || 'Eternal Memory requires active trial or Pro subscription',
+          action: 'start_trial',
+          trialDays: 7,
+          proPrice: '$29/month'
+        }, { status: 403 });
+      }
+      
+      throw new Error(errorData.message || 'Premium API error');
     }
     
-    await fs.writeFile(indexPath, JSON.stringify(index, null, 2));
+    const result = await response.json();
+    return NextResponse.json(result);
     
-    return NextResponse.json({ 
-      success: true, 
-      filename,
-      message: 'Session saved successfully' 
-    });
   } catch (error) {
-    console.error('Error saving session:', error);
-    return NextResponse.json(
-      { error: 'Failed to save session' },
-      { status: 500 }
-    );
+    console.error('Error saving session to premium memory:', error);
+    
+    // Return premium feature message on any error
+    return NextResponse.json({ 
+      success: false,
+      requiresPremium: true,
+      message: 'Eternal Memory is a premium feature. Start your 7-day trial to enable persistent memory.',
+      action: 'start_trial',
+      trialDays: 7,
+      proPrice: '$29/month',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    }, { status: 403 });
   }
 }
