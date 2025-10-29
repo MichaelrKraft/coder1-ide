@@ -148,7 +148,7 @@ services:
         value: 60000
 
     # Auto-deploy from GitHub
-    autoDeploy: false # Set to true after initial testing
+    autoDeploy: true # Auto-deploy enabled for continuous deployment
     
     # Branch to deploy from
     branch: master # or your production branch
