@@ -399,6 +399,64 @@ export default function InteractiveTour({ onClose, onStepChange, onTourComplete 
     console.log(`[InteractiveTour] 🎉 Tour completed in ${totalMinutes}m ${totalSeconds}s`);
     console.log(`[InteractiveTour] 📊 Completed steps: ${completedSteps.length + 1}/${tourSteps.length}`);
     
+    // Add bridge setup instructions to editor
+    const bridgeInstructions = `# 🌉 Welcome to Coder1 IDE, Alpha Tester!
+
+## Next Step: Connect Your Claude Code Bridge
+
+To use Claude Code within the IDE, you need to connect the bridge:
+
+### Option 1: Quick Setup (Recommended)
+1. Click the blue "🌉 Connect Bridge" button in the bottom status bar
+2. Follow the popup instructions to:
+   - Install the bridge CLI on your local machine
+   - Enter the 6-digit pairing code
+   - Connect your local Claude CLI to the web IDE
+
+### Option 2: Manual Setup
+If you prefer to set up manually:
+
+\`\`\`bash
+# On YOUR local computer (not in this web terminal):
+# 1. Install the bridge
+curl -sL https://coder1-ide.onrender.com/install-bridge.sh | bash
+
+# 2. Start the bridge and enter the pairing code
+coder1-bridge start
+\`\`\`
+
+### Important Notes:
+- The bridge runs on YOUR computer, not in the web browser
+- It connects your local Claude CLI to this web IDE
+- Once connected, you can type \`claude\` in the terminal and it will work!
+
+### Need Help?
+- Read the full guide: Click "Documentation" in the Menu dropdown
+- The bridge is safe: All code runs locally on your machine
+- Questions? Check the alpha tester docs
+
+---
+
+**Ready to start coding?** Click "🌉 Connect Bridge" in the status bar below! 🚀
+`;
+    
+    // Inject instructions into Monaco editor
+    window.dispatchEvent(new CustomEvent('tour:addCode', { 
+      detail: { code: bridgeInstructions } 
+    }));
+    
+    // Also try to set it directly if Monaco is available
+    const monacoContainer = document.querySelector('[data-tour="monaco-editor"]');
+    if (monacoContainer) {
+      const codeDisplay = document.createElement('div');
+      codeDisplay.className = 'p-4 text-sm font-mono bg-[#1a1b26] overflow-auto h-full';
+      codeDisplay.style.whiteSpace = 'pre-wrap';
+      codeDisplay.style.color = '#a9b1d6';
+      codeDisplay.innerHTML = `<pre style="margin: 0;">${bridgeInstructions}</pre>`;
+      monacoContainer.innerHTML = '';
+      monacoContainer.appendChild(codeDisplay);
+    }
+    
     // Mark tour as completed
     localStorage.setItem('coder1-tour-status', 'completed');
     localStorage.setItem('coder1-tour-timestamp', new Date().toISOString());
