@@ -8,9 +8,16 @@
  * - Integrates tmux orchestration
  */
 
-// Load environment variables from .env.local FIRST
+// Load environment variables from .env.local (development only)
+// In production (Render), environment variables are provided directly by the platform
 const path = require('path');
-require('dotenv').config({ path: path.join(__dirname, '.env.local') });
+if (process.env.NODE_ENV !== 'production') {
+  try {
+    require('dotenv').config({ path: path.join(__dirname, '.env.local') });
+  } catch (err) {
+    console.log('dotenv not available - using system environment variables');
+  }
+}
 
 const { createServer } = require('http');
 const { parse } = require('url');
