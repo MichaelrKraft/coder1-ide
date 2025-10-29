@@ -46,6 +46,7 @@ interface TerminalContainerProps {
   onTerminalReady?: (sessionId: any, ready: any) => void;
   onComposerVisibilityChange?: (visible: boolean) => void;
   restoredTerminalHistory?: string | null;
+  restoredSessionId?: string | null;
 }
 
 export default function TerminalContainer({
@@ -56,7 +57,8 @@ export default function TerminalContainer({
   onTerminalCommand,
   onTerminalReady,
   onComposerVisibilityChange,
-  restoredTerminalHistory
+  restoredTerminalHistory,
+  restoredSessionId
 }: TerminalContainerProps) {
   // Debug: Log when restoredTerminalHistory prop changes
   useEffect(() => {
@@ -531,6 +533,7 @@ export default function TerminalContainer({
             onComposerVisibilityChange={onComposerVisibilityChange}
             isVisible={activeSessionId === 'main'}
             restoredHistory={restoredTerminalHistory}
+            restoredSessionId={restoredSessionId}
           />
         </div>
         

@@ -175,13 +175,16 @@ class ContextProcessor {
       let inClaudeSession = false;
       let filesInvolved: Set<string> = new Set();
       
-      logger.debug(`🔍 Processing ${chunks.length} chunks for Claude dialogs`);
+      logger.info(`🔍 Processing ${chunks.length} chunks for Claude dialogs`);
       
       for (let i = 0; i < chunks.length; i++) {
         const chunk = chunks[i];
         const content = chunk.content.toLowerCase();
         
-        logger.debug(`🔎 Chunk ${i}: type="${chunk.type}" content="${chunk.content.substring(0, 50)}..."`);
+        // PERFORMANCE FIX (Oct 23, 2025): Removed per-chunk debug logging
+        // This was creating 100+ console messages per command, causing browser DevTools
+        // to show thousands of "hidden" messages and degrading performance
+        // Old code: logger.debug(`🔎 Chunk ${i}: type="${chunk.type}" content="${chunk.content.substring(0, 50)}..."`);
         
         // Detect Claude Code session start patterns
         const sessionStartPatterns = [
@@ -370,7 +373,8 @@ class ContextProcessor {
           };
           
           conversations.push(conversation);
-          logger.info(`✅ CAPTURED CONVERSATION: "${currentUserInput}" -> "${currentClaudeReply.substring(0, 100)}..." (${currentClaudeReply.length} chars)`);
+          // 🔇 Reduced logging verbosity (Oct 24, 2025) - only show summary, not full content
+          logger.info(`✅ CAPTURED: "${currentUserInput.substring(0, 40)}${currentUserInput.length > 40 ? '...' : ''}" (${currentClaudeReply.length} chars)`);
           
           // Reset for next conversation
           currentUserInput = '';

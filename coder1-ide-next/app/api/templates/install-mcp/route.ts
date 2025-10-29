@@ -11,7 +11,7 @@ import os from 'os';
 // Load template data to get MCP configurations
 async function loadTemplateData() {
   try {
-    const templatesPath = path.join(process.cwd(), '../src/data/coderone-templates');
+    const templatesPath = path.join(process.cwd(), 'data/coderone-templates');
     const mcpIntegrationsPath = path.join(templatesPath, 'mcp-integrations.json');
     
     const mcpData = JSON.parse(await fs.readFile(mcpIntegrationsPath, 'utf8'));

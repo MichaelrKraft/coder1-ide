@@ -4,6 +4,7 @@
  */
 
 import { useModelStore } from '@/stores/useModelStore';
+import { useIDEStore } from '@/stores/useIDEStore';
 import { logger } from '@/lib/logger';
 
 export interface ClaudeMessage {
@@ -130,6 +131,24 @@ class ClaudeAPIService {
           `output_tokens=${claudeResponse.usage.output_tokens}, ` +
           `model=${this.model}`
         );
+
+        // Update token usage in store with REAL API data (not estimates)
+        if (typeof window !== 'undefined') {
+          const store = useIDEStore.getState();
+          const currentUsage = store.aiState.tokenUsage;
+          
+          store.updateTokenUsage({
+            input: currentUsage.input + claudeResponse.usage.input_tokens,
+            output: currentUsage.output + claudeResponse.usage.output_tokens,
+            total: currentUsage.total + claudeResponse.usage.input_tokens + claudeResponse.usage.output_tokens
+          });
+          
+          logger.debug(
+            `📊 Token Usage Updated: ` +
+            `input=${currentUsage.input + claudeResponse.usage.input_tokens}, ` +
+            `output=${currentUsage.output + claudeResponse.usage.output_tokens}`
+          );
+        }
       }
 
       return claudeResponse;

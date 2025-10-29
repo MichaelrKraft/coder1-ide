@@ -39,8 +39,9 @@ interface EternalMemoryContext {
 export class EternalMemoryContextLoader {
   private static instance: EternalMemoryContextLoader;
   private summariesDir: string;
-  private maxContextTokens: number = 3000; // Keep context under ~3K tokens
-  private maxSessionAge: number = 168; // 7 days in hours
+  private maxContextTokens: number = 1500; // REDUCED: Keep context under ~1.5K tokens to prevent crashes
+  private maxSessionAge: number = 720; // 30 days in hours (increased for testing)
+  private maxContextChars: number = 6000; // ADDED: Hard limit on character count (~1500 tokens)
 
   constructor() {
     this.summariesDir = path.join(process.cwd(), 'summaries');
@@ -226,6 +227,7 @@ export class EternalMemoryContextLoader {
 
   /**
    * Format extracted context as concise Claude-friendly prompt
+   * 🔧 FIXED: Ultra-minimal format to match simplified display message
    */
   private formatContextPrompt(
     context: ReturnType<typeof this.extractKeyContext>,
@@ -237,55 +239,15 @@ export class EternalMemoryContextLoader {
         ? `${Math.floor(metadata.age)} hours ago`
         : `${Math.floor(metadata.age / 24)} days ago`;
 
-    let prompt = `📝 Context from your last session (${ageText}):\n\n`;
-
-    // Files worked on
-    if (context.filesWorked.length > 0) {
-      prompt += `Files you were working on:\n`;
-      context.filesWorked.forEach(file => {
-        prompt += `  • ${file}\n`;
-      });
-      prompt += '\n';
-    }
-
-    // Key decisions
-    if (context.keyDecisions.length > 0) {
-      prompt += `Key decisions you made:\n`;
-      context.keyDecisions.forEach(decision => {
-        prompt += `  • ${decision}\n`;
-      });
-      prompt += '\n';
-    }
-
-    // Current state
-    if (context.currentState) {
-      prompt += `Where you left off:\n`;
-      prompt += `  ${context.currentState}\n\n`;
-    }
-
-    // Next steps
-    if (context.nextSteps.length > 0) {
-      prompt += `Planned next steps:\n`;
-      context.nextSteps.forEach((step, i) => {
-        prompt += `  ${i + 1}. ${step}\n`;
-      });
-      prompt += '\n';
-    }
-
-    prompt += `---\n`;
-    prompt += `You now have full context from your last session. `;
-    prompt += `Ready to continue where you left off!\n\n`;
-
-    // Truncate if too long (should be under 3K tokens = ~2K words = ~12K chars)
-    if (prompt.length > 12000) {
-      prompt = prompt.substring(0, 12000) + '\n\n[Context truncated - keeping most recent info]';
-    }
-
-    return prompt;
+    // Simple one-line context matching the display message
+    // Just provide enough context for Claude to understand this is a continuation
+    const stateInfo = context.currentState || 'Working on Coder1 IDE development';
+    return `Context from your last session (${ageText}): ${stateInfo}`;
   }
 
   /**
    * Create user-friendly message about loaded context
+   * 🔧 FIXED: Ultra-minimal single line to avoid terminal clutter
    */
   public createContextLoadedMessage(context: EternalMemoryContext): string {
     if (!context.hasContext) {
@@ -294,25 +256,12 @@ export class EternalMemoryContextLoader {
 
     const sessionInfo = context.sessionInfo;
     if (!sessionInfo) {
-      return '📝 Context loaded from previous session\n\n';
+      return '📝 Eternal memory loaded\n';
     }
 
-    let message = '╔════════════════════════════════════════════════════════════════╗\n';
-    message += '║          📝 Eternal Memory: Context Loaded                     ║\n';
-    message += '╠════════════════════════════════════════════════════════════════╣\n';
-    message += `║  Last Session: ${sessionInfo.lastSessionDate.padEnd(48)}║\n`;
-    
-    if (sessionInfo.filesWorked.length > 0) {
-      message += `║  Files: ${sessionInfo.filesWorked.slice(0, 2).join(', ').substring(0, 55).padEnd(55)}║\n`;
-    }
-    
-    if (sessionInfo.nextSteps.length > 0) {
-      message += `║  Next: ${sessionInfo.nextSteps[0].substring(0, 56).padEnd(56)}║\n`;
-    }
-    
-    message += '╚════════════════════════════════════════════════════════════════╝\n\n';
-    
-    return message;
+    // Simple one-liner with session age
+    const ageText = sessionInfo.lastSessionDate;
+    return `📝 Eternal memory loaded (last session: ${ageText})\n`;
   }
 }
 

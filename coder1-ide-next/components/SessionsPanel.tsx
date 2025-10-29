@@ -279,23 +279,9 @@ export default function SessionsPanel({ isVisible = true }: SessionsPanelProps) 
             switchSession(checkpointSession);
           }
           
-          // Stage 3: Dispatch restoration events for terminal and conversation history
-          setRestorationStage('Restoring terminal and conversation history...');
-          console.log('📢 DIAGNOSTIC: About to dispatch restoration events...');
-          
-          console.log('📢 DIAGNOSTIC: Dispatching checkpointRestored event...');
-          window.dispatchEvent(new CustomEvent('checkpointRestored', {
-            detail: { checkpoint: restoreData.checkpoint, snapshot }
-          }));
-          console.log('📢 DIAGNOSTIC: checkpointRestored event dispatched');
-          
-          console.log('📢 DIAGNOSTIC: Dispatching ideStateChanged event...');
-          window.dispatchEvent(new CustomEvent('ideStateChanged', {
-            detail: { type: 'checkpoint-restored', data: snapshot, checkpoint: restoreData.checkpoint }
-          }));
-          console.log('📢 DIAGNOSTIC: ideStateChanged event dispatched');
-          
-          console.log('📢 DIAGNOSTIC: All restoration events dispatched');
+          // Stage 3: Skip early event dispatch - moved to AFTER sandbox creation
+          // This ensures the sandbox terminal exists before checkpoint content is sent
+          setRestorationStage('Preparing checkpoint sandbox...');
           
           // Stage 4: Create sandbox for checkpoint exploration
           setRestorationStage('Creating checkpoint sandbox...');
@@ -426,6 +412,23 @@ export default function SessionsPanel({ isVisible = true }: SessionsPanelProps) 
           }));
           
           console.log('🏖️ DIAGNOSTIC: terminal:createSandbox event dispatched');
+          
+          // 🔧 FIX: Dispatch checkpoint restoration events AFTER sandbox is created
+          // This ensures the sandbox terminal exists before receiving checkpoint content
+          // Adding 150ms delay to allow TerminalContainer to create sandbox tab
+          setTimeout(() => {
+            console.log('📢 DIAGNOSTIC: Dispatching checkpointRestored event (after sandbox creation)...');
+            window.dispatchEvent(new CustomEvent('checkpointRestored', {
+              detail: { checkpoint: restoreData.checkpoint, snapshot }
+            }));
+            
+            console.log('📢 DIAGNOSTIC: Dispatching ideStateChanged event (after sandbox creation)...');
+            window.dispatchEvent(new CustomEvent('ideStateChanged', {
+              detail: { type: 'checkpoint-restored', data: snapshot, checkpoint: restoreData.checkpoint }
+            }));
+            
+            console.log('📢 DIAGNOSTIC: All restoration events dispatched after sandbox creation');
+          }, 150); // 150ms delay for sandbox terminal creation
           
           // Final stage: Show detailed success message
           setRestorationStage('Finalizing restoration...');

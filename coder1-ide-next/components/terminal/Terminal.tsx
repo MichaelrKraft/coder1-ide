@@ -24,10 +24,9 @@ import { getSocket } from '@/lib/socket';
 import ErrorDoctor from './ErrorDoctor';
 import { soundAlertService, SoundPreset } from '@/lib/sound-alert-service';
 import { consoleCaptureService, CapturedConsoleError } from '@/lib/console-capture-service';
+import { logger } from '@/lib/logger';
 import { useEnhancedSupervision } from '@/contexts/EnhancedSupervisionContext';
 import SupervisionConfigModal from '@/components/supervision/SupervisionConfigModal';
-import { useSessionMemory } from '@/hooks/useSessionMemory';
-import { MemoryMode } from '@/lib/memory-types';
 import { features } from '@/lib/feature-flags';
 import { useUIStore } from '@/stores/useUIStore';
 import { useIDEStore } from '@/stores/useIDEStore';
@@ -46,20 +45,19 @@ import TerminalTokenStats from './TerminalTokenStats';
 const cleanStatusLines = (data: string): string => {
   if (!data) return data;
   
-  // Critical patterns that MUST be filtered
+  // 🔒 CRITICAL FIX (Oct 28, 2025): DO NOT strip ANSI codes from history!
+  // Claude Code's beautiful UI depends on ANSI escape sequences for colors and formatting
+  // Stripping them removes 99% of the content, leaving only plain text
+  // We ONLY need to remove focus codes (\x1b[I and \x1b[O) which are handled separately
+  
   let cleaned = data;
   
-  // Remove any line with "esc to interrupt" control hint
-  cleaned = cleaned.replace(/.*\(esc to interrupt.*?\).*$/gm, '');
+  // Remove bracketed paste mode codes (these are safe to remove)
+  cleaned = cleaned.replace(/\[200~/g, '');
+  cleaned = cleaned.replace(/\[201~/g, '');
   
-  // Remove "Next:" indicators with special arrow
-  cleaned = cleaned.replace(/.*⎿\s*Next:.*$/gm, '');
-  
-  // Remove lines with "ctrl+t" hints
-  cleaned = cleaned.replace(/.*ctrl\+t.*todos.*$/gm, '');
-  
-  // Remove statusline task symbols followed by text
-  cleaned = cleaned.replace(/^[✶✳✢·✻✽✦☆★▪▫◆◇○●]\s+.*$/gm, '');
+  // REMOVED: ANSI stripping that was destroying Claude's output
+  // The focus codes are now handled in the terminal:history handler
   
   return cleaned;
 };
@@ -102,6 +100,7 @@ interface TerminalProps {
   }; // Agent session data
   isVisible?: boolean; // Whether this terminal is currently visible
   restoredHistory?: string | null; // Terminal history from checkpoint restore
+  restoredSessionId?: string | null; // Terminal session ID to reconnect to
 }
 
 /**
@@ -115,7 +114,7 @@ interface TerminalProps {
  * 
  * DO NOT MODIFY button positioning without checking original
  */
-export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped, onTerminalData, onTerminalCommand, onTerminalReady, onComposerVisibilityChange, sandboxMode = false, sandboxSession, agentMode = false, agentSession, isVisible = true, restoredHistory = null }: TerminalProps) {
+export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped, onTerminalData, onTerminalCommand, onTerminalReady, onComposerVisibilityChange, sandboxMode = false, sandboxSession, agentMode = false, agentSession, isVisible = true, restoredHistory = null, restoredSessionId = null }: TerminalProps) {
   // REMOVED: // REMOVED: console.log('🖥️ Terminal component rendering...');
   const terminalRef = useRef<HTMLDivElement>(null);
   const xtermRef = useRef<XTerm | null>(null);
@@ -125,6 +124,16 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
   const onDataDisposableRef = useRef<any>(null); // Store onData disposable
   const connectionInProgressRef = useRef(false); // Prevent concurrent connections
   const pasteHandlerRef = useRef<((e: ClipboardEvent) => Promise<void>) | null>(null); // Store paste handler for cleanup
+  const isSelectingRef = useRef(false); // Track text selection state
+  const scrollIntervalRef = useRef<number | null>(null); // Track auto-scroll animation frame
+  const mouseYRef = useRef<number>(0); // Track current mouse Y position globally
+  const selectionChangeDisposableRef = useRef<any>(null); // Store xterm onSelectionChange disposable
+  const selectionHandlersRef = useRef<{
+    mousedown: ((e: MouseEvent) => void) | null;
+    mouseup: ((e: MouseEvent) => void) | null;
+    mousemove: ((e: MouseEvent) => void) | null;
+  }>({ mousedown: null, mouseup: null, mousemove: null }); // Store selection handlers for cleanup
+  const initialLoadComplete = useRef(false); // Track if initial header has been displayed (prevents auto-scroll on first load)
   const [isConnected, setIsConnected] = useState(false);
   const [agentsRunning, setAgentsRunning] = useState(false);
   const [voiceListening, setVoiceListening] = useState(false);
@@ -136,6 +145,30 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
   // GLM Integration: Rate limit detection and mode management
   const rateLimitDetectorRef = useRef<RateLimitDetector>(new RateLimitDetector());
   const modeManagerRef = useRef<TerminalModeManager>(new TerminalModeManager());
+  
+  // 🎯 CRITICAL FIX (Oct 28, 2025): Store Socket.IO handler refs for proper cleanup
+  // Without this, socket.off() removes ALL listeners including ones from new component instances
+  const socketHandlersRef = useRef<{
+    terminalHistory: ((data: any) => void) | null;
+    terminalData: ((data: any) => void) | null;
+    terminalCommand: ((data: any) => void) | null;
+    terminalCreated: ((data: any) => void) | null;
+    connect: (() => void) | null;
+    disconnect: ((reason: string) => void) | null;
+    connectError: ((error: Error) => void) | null;
+    reconnect: ((attemptNumber: number) => void) | null;
+    terminalExit: ((data: any) => void) | null;
+  }>({
+    terminalHistory: null,
+    terminalData: null,
+    terminalCommand: null,
+    terminalCreated: null,
+    connect: null,
+    disconnect: null,
+    connectError: null,
+    reconnect: null,
+    terminalExit: null,
+  });
   
   // Use enhanced supervision context
   const { 
@@ -210,28 +243,6 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
   });
   const [blockResetTime, setBlockResetTime] = useState<string>('--:--:--');
   
-  // Memory system integration
-  const [memoryEnabled, setMemoryEnabled] = useState(true);
-  const memory = useSessionMemory({
-    enabled: memoryEnabled,
-    sessionId: sessionIdForVoiceRef.current || `alpha_session_${Date.now()}`,
-    platform: 'Claude Code',
-    autoInject: true
-  });
-
-  // Memory activity indicator state
-  const [memoryActivity, setMemoryActivity] = useState<{
-    isActive: boolean;
-    tokensUsed: number;
-    sessionsUsed: number;
-    lastActivity: Date | null;
-  }>({
-    isActive: false,
-    tokensUsed: 0,
-    sessionsUsed: 0,
-    lastActivity: null
-  });
-  
   // UI Store for toasts
   const { addToast } = useUIStore();
   
@@ -278,6 +289,40 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
   useEffect(() => {
     onComposerVisibilityChange?.(composerVisible);
   }, [composerVisible, onComposerVisibilityChange]);
+  
+  // Restore terminal session ID from previous navigation
+  // 🐛 CRITICAL FIX (Oct 24, 2025): Removed !sessionId condition
+  // When navigating Timeline → IDE, Terminal component stays mounted with old sessionId
+  // The !sessionId check prevented restoration when returning to same session
+  useEffect(() => {
+    console.log('🔄 [TERMINAL-RESTORE] Effect triggered');
+    console.log('   restoredSessionId:', restoredSessionId);
+    console.log('   current sessionId:', sessionId);
+    
+    if (restoredSessionId && restoredSessionId !== 'null') {
+      console.log('\ud83d\udd04 Restoring terminal session ID from navigation:', restoredSessionId);
+      setSessionId(restoredSessionId);
+      sessionIdForVoiceRef.current = restoredSessionId;
+    }
+  }, [restoredSessionId]);
+  
+  // 🔧 FIX (Oct 24, 2025): Reset session creation flag on navigation
+  // When navigating IDE → Timeline → IDE, Terminal component stays mounted (React optimization)
+  // This causes sessionCreatedRef to stay true, blocking session restoration
+  // Solution: Reset the flag when we receive a restoredSessionId from navigation
+  // CRITICAL: Must work even when returning to SAME session (restoredSessionId === sessionId)
+  useEffect(() => {
+    if (restoredSessionId && restoredSessionId !== 'null') {
+      // Reset flag if:
+      // 1. Session changed (different ID) OR
+      // 2. Component stayed mounted (flag is true, indicating navigation without unmount)
+      if (restoredSessionId !== sessionId || sessionCreatedRef.current) {
+        console.log('🔄 Navigation detected - resetting session creation flag');
+        console.log('   restoredSessionId:', restoredSessionId, 'sessionId:', sessionId, 'flagWasSet:', sessionCreatedRef.current);
+        sessionCreatedRef.current = false;
+      }
+    }
+  }, [restoredSessionId, sessionId]);
   
   // Default terminal settings - guaranteed structure
   const defaultTerminalSettings: TerminalSettingsState = {
@@ -429,18 +474,21 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
   }, []);
 
   // Initialize console capture service explicitly
+  // 🚨 DISABLED: Console capture causes browser console spam (2000+ hidden messages)
+  // The service intercepts ALL console calls, creating performance issues
+  // Error Doctor still works via terminal error detection
   useEffect(() => {
-    // Ensure console capture service is started
-    if (!consoleCaptureService.isCapturing()) {
-      console.log('🔍 Starting console capture service...');
-      consoleCaptureService.start();
-      
-      // Expose on window for debugging
-      if (typeof window !== 'undefined') {
-        (window as any).consoleCaptureService = consoleCaptureService;
-        console.log('✅ Console capture service exposed on window.consoleCaptureService');
-      }
-    }
+    // DISABLED - Re-enable if Error Doctor console monitoring is needed
+    // if (!consoleCaptureService.isCapturing()) {
+    //   console.log('🔍 Starting console capture service...');
+    //   consoleCaptureService.start();
+    //   
+    //   // Expose on window for debugging
+    //   if (typeof window !== 'undefined') {
+    //     (window as any).consoleCaptureService = consoleCaptureService;
+    //     console.log('✅ Console capture service exposed on window.consoleCaptureService');
+    //   }
+    // }
     
     return () => {
       // Keep service running across component unmounts
@@ -468,13 +516,18 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
       });
     };
 
+    // 🚨 DISABLED: Console capture causes browser console spam (2000+ hidden messages)
+    // The interval was running every 500ms, intercepting ALL console calls
+    // This creates performance issues and console pollution
+    // Error Doctor still works via terminal error detection and manual sync when modal opens
+    
     // Update immediately
-    updateConsoleErrors();
-
+    // updateConsoleErrors(); // DISABLED
+    
     // Set up periodic sync (every 500ms for better responsiveness)
-    const interval = setInterval(updateConsoleErrors, 500);
-
-    return () => clearInterval(interval);
+    // const interval = setInterval(updateConsoleErrors, 500); // DISABLED
+    
+    // return () => clearInterval(interval); // DISABLED
   }, []); // Remove errorHistory dependency to avoid stale closures
   
   // Sync immediately when Error Doctor modal opens
@@ -710,8 +763,6 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
   const [showSoundPresetDropdown, setShowSoundPresetDropdown] = useState(false);
   const soundButtonRef = useRef<HTMLButtonElement>(null);
   const soundDropdownRef = useRef<HTMLDivElement>(null);
-  const [showMemoryDropdown, setShowMemoryDropdown] = useState(false);
-  const memoryDropdownRef = useRef<HTMLDivElement>(null);
   
   // State for Claude copy button (drag-drop files)
   const [showClaudeCopyButton, setShowClaudeCopyButton] = useState(false);
@@ -761,11 +812,26 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
       return;
     }
     
+    // Wait for prop restoration to complete
+    // If restoredSessionId exists but sessionId isn't set yet, the prop restoration effect hasn't run
+    if (restoredSessionId && !sessionId) {
+      console.log('⏳ Waiting for prop restoration to set sessionId...');
+      return; // Exit early, will run again when sessionId is set
+    }
+    
     const createTerminalSession = async () => {
-      // Always create a fresh terminal session on page load
-      // This ensures terminal starts clean on refresh
+      // 🔧 FIX: Session ID restoration now handled via restoredSessionId prop from IDE page
+      // This prevents race conditions and provides single source of truth
       
       sessionCreatedRef.current = true;
+      
+      // Check if we already have a session ID from prop restoration
+      if (sessionId && !sandboxMode && !agentMode) {
+        console.log('🔄 Using existing session ID from prop:', sessionId);
+        setTerminalReady(true);
+        notifyTerminalReady(sessionId, true);
+        return; // Server will reconnect to this session
+      }
       // REMOVED: // REMOVED: console.log('🚀 CREATING TERMINAL SESSION...');
       
       try {
@@ -800,6 +866,11 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
           // Make session ID globally available for drag-drop
           if (typeof window !== 'undefined') {
             (window as any).terminalSessionId = data.sessionId;
+            // 🔧 FIX: Store session ID in localStorage for persistence
+            if (!sandboxMode && !agentMode) {
+              localStorage.setItem('ide-terminalSessionId', data.sessionId);
+              console.log('💾 Stored terminal session ID for reconnection');
+            }
             console.log('🔌 Terminal session ID made globally available for drag-drop');
           }
           setTerminalReady(true);
@@ -826,7 +897,7 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
     return () => {
       // Session cleanup will be handled in separate effect
     };
-  }, []);
+  }, [restoredSessionId, sessionId]); // Depend on both prop and state to handle restoration
   
   // Store whether component is mounted
   const isMountedRef = useRef(true);
@@ -883,6 +954,28 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
         clearTimeout(scrollDebounceRef.current);
         scrollDebounceRef.current = null;
       }
+      
+      // Clean up auto-scroll during selection
+      if (scrollIntervalRef.current) {
+        cancelAnimationFrame(scrollIntervalRef.current);
+        scrollIntervalRef.current = null;
+      }
+      
+      // ✅ Dispose xterm onSelectionChange listener
+      if (selectionChangeDisposableRef.current) {
+        selectionChangeDisposableRef.current.dispose();
+        selectionChangeDisposableRef.current = null;
+      }
+      
+      // Remove mouse listener from .xterm-screen canvas
+      const handlers = selectionHandlersRef.current;
+      if (handlers.mousemove && terminalRef.current) {
+        const xtermScreen = terminalRef.current.querySelector('.xterm-screen') as HTMLElement;
+        if (xtermScreen) {
+          xtermScreen.removeEventListener('mousemove', handlers.mousemove);
+        }
+      }
+      selectionHandlersRef.current = { mousedown: null, mouseup: null, mousemove: null };
       
       // Clean up output buffering timers
       if (outputFlushTimeoutRef.current) {
@@ -1089,6 +1182,93 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
           document.addEventListener('paste', handleImagePaste, true);
           console.log('📋 Image paste handler initialized');
         }, 100);
+        
+        // ✅ AUTO-SCROLL DURING TEXT SELECTION - v3 (Using xterm.js Selection API)
+        // Implements auto-scroll when user drags to select text near viewport edges
+        const SCROLL_THRESHOLD = 50; // Pixels from edge to trigger scroll
+        const SCROLL_SPEED = 3; // Lines to scroll per frame
+        
+        // Scroll loop - recalculates direction EVERY FRAME
+        const scrollLoop = () => {
+          if (!isSelectingRef.current || !terminalRef.current || !term) {
+            // Stop if selection ended
+            if (scrollIntervalRef.current) {
+              cancelAnimationFrame(scrollIntervalRef.current);
+              scrollIntervalRef.current = null;
+            }
+            return;
+          }
+          
+          // Recalculate scroll direction every frame based on current mouse position
+          const terminalRect = terminalRef.current.getBoundingClientRect();
+          const mouseY = mouseYRef.current;
+          const distanceFromTop = mouseY - terminalRect.top;
+          const distanceFromBottom = terminalRect.bottom - mouseY;
+          
+          // Check if should scroll
+          const shouldScrollDown = distanceFromBottom < SCROLL_THRESHOLD && distanceFromBottom > 0;
+          const shouldScrollUp = distanceFromTop < SCROLL_THRESHOLD && distanceFromTop > 0;
+          
+          if (shouldScrollDown) {
+            term.scrollLines(SCROLL_SPEED);
+            scrollIntervalRef.current = requestAnimationFrame(scrollLoop);
+          } else if (shouldScrollUp) {
+            term.scrollLines(-SCROLL_SPEED);
+            scrollIntervalRef.current = requestAnimationFrame(scrollLoop);
+          } else {
+            // Mouse not near edges, stop scrolling
+            if (scrollIntervalRef.current) {
+              cancelAnimationFrame(scrollIntervalRef.current);
+              scrollIntervalRef.current = null;
+            }
+          }
+        };
+        
+        // ✅ Use xterm.js onSelectionChange to detect when user is selecting text
+        // IMPORTANT: This fires VERY frequently during selection, so we optimize carefully
+        selectionChangeDisposableRef.current = term.onSelectionChange(() => {
+          const hasSelection = term.hasSelection();
+          const wasSelecting = isSelectingRef.current;
+          
+          // Only update state if it actually changed (prevents redundant work)
+          if (hasSelection === wasSelecting) return;
+          
+          isSelectingRef.current = hasSelection;
+          
+          // Start scroll loop when selection begins (only if not already running)
+          if (hasSelection && !scrollIntervalRef.current) {
+            scrollIntervalRef.current = requestAnimationFrame(scrollLoop);
+          }
+          
+          // Stop scroll loop when selection ends
+          if (!hasSelection && scrollIntervalRef.current) {
+            cancelAnimationFrame(scrollIntervalRef.current);
+            scrollIntervalRef.current = null;
+          }
+        });
+        
+        // ✅ Track mouse position on xterm's canvas (where rendering happens)
+        setTimeout(() => {
+          const xtermScreen = terminalRef.current?.querySelector('.xterm-screen') as HTMLElement;
+          if (xtermScreen) {
+            const handleMouseMove = (e: MouseEvent) => {
+              mouseYRef.current = e.clientY;
+            };
+            
+            xtermScreen.addEventListener('mousemove', handleMouseMove);
+            
+            // Store handler for cleanup
+            selectionHandlersRef.current = {
+              mousedown: null,
+              mouseup: null,
+              mousemove: handleMouseMove
+            };
+            
+            console.log('✅ Auto-scroll during selection enabled (v3 - xterm.js API)');
+          } else {
+            console.warn('⚠️ Could not find .xterm-screen element for auto-scroll');
+          }
+        }, 100); // Wait for xterm to render DOM
         
         // Use same timing as ResizeObserver which works correctly
         setTimeout(() => {
@@ -1419,7 +1599,7 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
           if (!historyToRestore) {
             // 🚨 CRITICAL FIX: Use terminal-type-specific localStorage keys
             // Sandbox terminals use sandboxTerminalHistory_${sessionId}
-            // Main terminal uses mainTerminalHistory OR terminalHistory (from checkpoint restore)
+            // Main terminal uses mainTerminalHistory
             // This prevents sandbox content from bleeding into main terminal
             const storageKey = sandboxMode && sandboxSession 
               ? `sandboxTerminalHistory_${sandboxSession.id}`
@@ -1428,11 +1608,17 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
             historyToRestore = localStorage.getItem(storageKey);
             historySource = `localStorage (${storageKey})`;
             
-            // Also check 'terminalHistory' key (used by timeline checkpoint restore)
-            if (!historyToRestore && !sandboxMode && !agentMode) {
-              historyToRestore = localStorage.getItem('terminalHistory');
-              if (historyToRestore) {
-                historySource = 'localStorage (terminalHistory)';
+            // 🔒 CORRUPTION DETECTION (Oct 28, 2025)
+            // ONLY check for focus codes - ANSI codes are legitimate for Claude Code conversations
+            if (historyToRestore) {
+              const hasFocusCodes = historyToRestore.includes('\x1b[I') || historyToRestore.includes('\x1b[O');
+              
+              if (hasFocusCodes) {
+                console.warn(`⚠️ CORRUPTED TERMINAL HISTORY DETECTED (focus codes)`);
+                console.warn(`  - Clearing corrupted data from localStorage`);
+                localStorage.removeItem(storageKey);
+                historyToRestore = null;
+                historySource = 'none (corruption detected)';
               }
             }
           }
@@ -1501,10 +1687,10 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
               }
             }, 200); // Increased timeout to ensure rendering is complete
             
-            // Clear the localStorage after restoration to prevent re-applying
-            localStorage.removeItem('mainTerminalHistory');
-            localStorage.removeItem('terminalHistory');
-            console.log(`🗑️ Cleared terminal history from localStorage`);
+            // 🔒 CRITICAL FIX (Oct 28, 2025): DO NOT clear localStorage after restoration!
+            // We need to keep it so users can navigate Timeline -> IDE -> Timeline -> IDE repeatedly
+            // The history should persist until explicitly cleared or terminal session ends
+            console.log(`✅ Terminal history restored and kept in localStorage for future navigation`);
           }
         }
 
@@ -1668,16 +1854,11 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
           !soundButtonRef.current.contains(event.target as Node)) {
         setShowSoundPresetDropdown(false);
       }
-      if (showMemoryDropdown && 
-          memoryDropdownRef.current && 
-          !memoryDropdownRef.current.contains(event.target as Node)) {
-        setShowMemoryDropdown(false);
-      }
     };
 
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [showSoundPresetDropdown, showMemoryDropdown]);
+  }, [showSoundPresetDropdown]);
 
   // Load sound preferences
   useEffect(() => {
@@ -1747,11 +1928,80 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
       console.log('🤖 Agent terminal mode - enabling backend connection for:', agentSession?.name);
     }
     
+    // 🔍 DIAGNOSTIC: Log connection check values
+    console.log('═══════════════════════════════════════════════════════════');
+    console.log('🔍 [CONNECTION CHECK] useEffect running');
+    console.log('📊 Values:', {
+      terminalReady,
+      hasXtermRef: !!xtermRef.current,
+      isConnected,
+      connectionInProgress: connectionInProgressRef.current,
+      sessionId,
+      sandboxMode,
+      agentMode
+    });
+    console.log('═══════════════════════════════════════════════════════════');
+    
     // Connect when terminal is ready (session ID can be created by server if needed)
     if (terminalReady && xtermRef.current && !isConnected && !connectionInProgressRef.current) {
       console.log('🚀 Terminal ready, connecting to backend...', { sessionId, agentMode, agentSession });
       connectToBackend(xtermRef.current);
+    } else {
+      console.log('❌ Connection condition failed - not connecting');
     }
+    
+    // 🎯 CRITICAL FIX (Oct 28, 2025): Cleanup Socket.IO listeners on unmount
+    // UPDATED: Use handler refs to remove only THIS component's listeners, not ALL global listeners
+    // Previous bug: socket.off('event') removed ALL listeners including ones from new component instances
+    // This caused race condition where cleanup removed listeners registered by remounted component
+    return () => {
+      // Synchronous cleanup using stored socket ref
+      if (socketRef.current) {
+        console.log('🧹 Cleaning up Socket.IO event listeners for session:', sessionIdForVoiceRef.current);
+        
+        // Remove only THIS component's specific handler functions
+        if (socketHandlersRef.current.terminalHistory) {
+          socketRef.current.off('terminal:history', socketHandlersRef.current.terminalHistory);
+        }
+        if (socketHandlersRef.current.terminalData) {
+          socketRef.current.off('terminal:data', socketHandlersRef.current.terminalData);
+        }
+        if (socketHandlersRef.current.terminalCommand) {
+          socketRef.current.off('terminal:command', socketHandlersRef.current.terminalCommand);
+        }
+        if (socketHandlersRef.current.terminalCreated) {
+          socketRef.current.off('terminal:created', socketHandlersRef.current.terminalCreated);
+        }
+        if (socketHandlersRef.current.connect) {
+          socketRef.current.off('connect', socketHandlersRef.current.connect);
+        }
+        if (socketHandlersRef.current.disconnect) {
+          socketRef.current.off('disconnect', socketHandlersRef.current.disconnect);
+        }
+        if (socketHandlersRef.current.connectError) {
+          socketRef.current.off('connect_error', socketHandlersRef.current.connectError);
+        }
+        if (socketHandlersRef.current.reconnect) {
+          socketRef.current.off('reconnect', socketHandlersRef.current.reconnect);
+        }
+        if (socketHandlersRef.current.terminalExit) {
+          socketRef.current.off('terminal:exit', socketHandlersRef.current.terminalExit);
+        }
+        
+        // 🔒 CRITICAL FIX (Oct 28, 2025): Disconnect socket on unmount
+        // This triggers server cleanup timer, which makes next connection a "reconnection"
+        // Server will then send terminal:history to restore the conversation
+        console.log('🔌 Disconnecting socket to trigger server cleanup timer');
+        socketRef.current.disconnect();
+        
+        // 🔧 CRITICAL FIX (Oct 29, 2025): Reset isConnected state on cleanup
+        // Without this, remounted component thinks it's still connected and won't call connectToBackend
+        // This fixes Timeline → Back to IDE reconnection failure
+        setIsConnected(false);
+        
+        console.log('✅ Cleanup complete - removed listeners, disconnected socket, reset connection state');
+      }
+    };
   }, [sessionId, terminalReady, isConnected, sandboxMode, agentMode]);
 
   // Handle terminal dimension recalculation when sandbox mode changes
@@ -1825,7 +2075,7 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
       clearTimeout(focusTimer);
       document.removeEventListener('click', handleTerminalAreaClick);
     };
-  }, [terminalReady, isVisible, sessionId]);
+  }, [terminalReady, isVisible, sessionId, isConnected]);
 
   // Handle visibility changes - focus when becoming visible
   useEffect(() => {
@@ -2513,9 +2763,8 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
     };
 
     // Add connection status listeners for debugging
-    // Remove existing listener to prevent duplicates
-    socket.off('connect');
-    socket.on('connect', () => {
+    // Remove existing listener using specific handler ref
+    const connectHandler = () => {
       // REMOVED: // REMOVED: console.log('🟢 Socket.IO CONNECTED to backend');
       // If reconnecting, re-establish terminal session
       if (isConnected && sessionId) {
@@ -2523,25 +2772,87 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
         socket.emit('terminal:create', { id: sessionId });
         focusOnConnect();
       }
-    });
+    };
+    if (socketHandlersRef.current.connect) {
+      socket.off('connect', socketHandlersRef.current.connect);
+    }
+    socketHandlersRef.current.connect = connectHandler;
+    socket.on('connect', connectHandler);
     
     // Handle terminal created response from server
-    // Remove existing listener to prevent duplicates
-    socket.off('terminal:created');
-    socket.on('terminal:created', ({ sessionId: serverSessionId, pid }) => {
+    // Remove existing listener using specific handler ref
+    const terminalCreatedHandler = ({ sessionId: serverSessionId, pid }: { sessionId: string; pid: number }) => {
       console.log('✅ Terminal created on server:', { sessionId: serverSessionId, pid });
       
+      // Check if this is a NEW terminal or a RECONNECTION
+      const isNewTerminal = !sessionId || sessionId === 'undefined' || sessionId === 'null';
+      
       // If we didn't have a session ID, use the one from the server
-      if (!sessionId || sessionId === 'undefined' || sessionId === 'null') {
+      if (isNewTerminal) {
         console.log('📝 Updating session ID from server:', serverSessionId);
         setSessionId(serverSessionId);
         sessionIdForVoiceRef.current = serverSessionId;
       }
-    });
+      
+      // 🎯 CRITICAL FIX (Oct 28, 2025): Only scroll to top for NEW terminals
+      // Don't scroll to top when reconnecting because history restoration handles scrolling
+      // Previous bug: Aggressive scroll-to-top was fighting with history restoration scroll-to-bottom
+      if (isNewTerminal) {
+        // 🔧 FIX: Aggressively scroll to TOP multiple times to ensure header stays visible
+        // Use the same aggressive multi-method scrolling as Claude Code mode
+        const scrollToTop = () => {
+          if (term) {
+            try {
+              // Method 1: XTerm scroll to line 0
+              term.scrollToLine(0);
+              
+              // Method 2: Container-level scroll
+              const terminalContainer = terminalRef.current?.parentElement;
+              if (terminalContainer) {
+                terminalContainer.scrollTop = 0;
+              }
+              
+              // Method 3: Force viewport scroll
+              const terminalElement = terminalRef.current;
+              if (terminalElement) {
+                const viewport = terminalElement.querySelector('.xterm-viewport');
+                if (viewport) {
+                  viewport.scrollTop = 0;
+                }
+              }
+              
+              console.log('📜 Aggressively scrolled to top');
+            } catch (e) {
+              console.warn('Scroll to top failed:', e);
+            }
+          }
+        };
+        
+        // Scroll to top repeatedly during initial load period
+        // This fights against any other code trying to scroll to bottom
+        [100, 500, 1000, 1500, 2000, 2500].forEach(delay => {
+          setTimeout(scrollToTop, delay);
+        });
+        
+        // Enable normal auto-scroll after 3 seconds
+        setTimeout(() => {
+          initialLoadComplete.current = true;
+          console.log('✅ Initial load complete - auto-scroll now enabled');
+        }, 3000);
+      } else {
+        console.log('🔄 Reconnection detected - skipping aggressive scroll-to-top (history restoration will handle scrolling)');
+        // For reconnections, enable auto-scroll immediately
+        initialLoadComplete.current = true;
+      }
+    };
+    if (socketHandlersRef.current.terminalCreated) {
+      socket.off('terminal:created', socketHandlersRef.current.terminalCreated);
+    }
+    socketHandlersRef.current.terminalCreated = terminalCreatedHandler;
+    socket.on('terminal:created', terminalCreatedHandler);
     
-    // Remove existing listener to prevent duplicates
-    socket.off('disconnect');
-    socket.on('disconnect', (reason) => {
+    // Handle disconnect
+    const disconnectHandler = (reason: string) => {
       console.log('🔴 Socket.IO DISCONNECTED:', {
         reason,
         sessionId,
@@ -2559,11 +2870,15 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
       
       // ADDED: Track disconnect for session resurrection
       setIsConnected(false);
-    });
+    };
+    if (socketHandlersRef.current.disconnect) {
+      socket.off('disconnect', socketHandlersRef.current.disconnect);
+    }
+    socketHandlersRef.current.disconnect = disconnectHandler;
+    socket.on('disconnect', disconnectHandler);
     
-    // Remove existing listener to prevent duplicates
-    socket.off('connect_error');
-    socket.on('connect_error', (error) => {
+    // Handle connection errors
+    const connectErrorHandler = (error: Error) => {
       console.error('❌ Socket.IO CONNECTION ERROR:', {
         message: error.message,
         sessionId,
@@ -2573,12 +2888,15 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
       if (term) {
         term.writeln(`\r\n❌ Connection error: ${error.message}`);
       }
-    });
+    };
+    if (socketHandlersRef.current.connectError) {
+      socket.off('connect_error', socketHandlersRef.current.connectError);
+    }
+    socketHandlersRef.current.connectError = connectErrorHandler;
+    socket.on('connect_error', connectErrorHandler);
     
     // ADDED: Reconnection success handler with session resurrection
-    // Remove existing listener to prevent duplicates
-    socket.off('reconnect');
-    socket.on('reconnect', (attemptNumber) => {
+    const reconnectHandler = (attemptNumber: number) => {
       console.log('✅ Socket.IO RECONNECTED:', {
         attempts: attemptNumber,
         sessionId,
@@ -2597,18 +2915,171 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
           term.writeln('🔄 Restoring session...');
         }
       }
-    });
+    };
+    if (socketHandlersRef.current.reconnect) {
+      socket.off('reconnect', socketHandlersRef.current.reconnect);
+    }
+    socketHandlersRef.current.reconnect = reconnectHandler;
+    socket.on('reconnect', reconnectHandler);
+
+    // 🎯 CRITICAL FIX (Oct 28, 2025): Register terminal:history listener BEFORE emitting terminal:create
+    // Race condition: Server emits history immediately upon terminal:create, must listen first!
+    // UPDATED: Store handler in ref so cleanup can remove only THIS component's listener
+    const terminalHistoryHandler = ({ id, history, chunkCount }: { id: string; history: string; chunkCount: number }) => {
+      // 🚨 DIAGNOSTIC LOGGING - Race Condition & Session ID Debugging
+      const timestamp = new Date().toISOString();
+      const clientSessionId = sessionIdForVoiceRef.current;
+      const sessionMatch = id === clientSessionId;
+      
+      console.log('═══════════════════════════════════════════════════════');
+      console.log('🔍 [CLIENT] terminal:history EVENT RECEIVED');
+      console.log(`⏰ Timestamp: ${timestamp}`);
+      console.log(`📥 Server sent session ID: "${id}"`);
+      console.log(`💻 Client expects session ID: "${clientSessionId}"`);
+      console.log(`✅ Session IDs match: ${sessionMatch}`);
+      console.log(`📦 Chunks received: ${chunkCount}`);
+      console.log(`📏 History length: ${history?.length || 0} chars`);
+      console.log(`📝 First 100 chars: ${history?.substring(0, 100)}`);
+      console.log('═══════════════════════════════════════════════════════');
+      
+      if (!sessionMatch) {
+        console.error('🚨 SESSION ID MISMATCH - Event will be ignored!');
+        console.error(`Expected: ${clientSessionId}`);
+        console.error(`Received: ${id}`);
+        return; // Don't process mismatched sessions
+      }
+      
+      if (id === sessionIdForVoiceRef.current && term) {
+        console.log(`📜 Received terminal history on reconnection: ${chunkCount} chunks, ${history.length} chars`);
+        
+        // 🔧 CRITICAL FIX (Oct 29, 2025): Different filtering for reconnection vs checkpoint viewing
+        // Two scenarios require different filtering levels:
+        // 1. Timeline → Back to IDE (reconnection): Show FULL conversation including Claude responses
+        // 2. Checkpoint viewing (sandboxMode): Show CLEAN terminal without status lines/animations
+        let cleanedHistory = history;
+        
+        if (sandboxMode) {
+          // Scenario 2: Viewing checkpoint/summary - apply FULL aggressive filtering
+          console.log('📜 Checkpoint viewing mode - applying full filtering');
+          cleanedHistory = filterThinkingAnimations(history);
+          cleanedHistory = cleanStatusLines(cleanedHistory);
+        } else {
+          // Scenario 1: Reconnection to live session - apply MINIMAL filtering only
+          console.log('📜 Reconnection mode - applying minimal filtering');
+          // Only remove codes that corrupt display, keep all conversation content
+        }
+        
+        // 🔒 CRITICAL FIX (Oct 28, 2025): Strip focus codes that corrupt terminal display
+        // Focus codes like \x1b[I and \x1b[O at the start of restored history corrupt the display
+        // These codes cause Claude to show internal commands instead of proper welcome message
+        cleanedHistory = cleanedHistory.replace(/\x1b\[I/g, '').replace(/\x1b\[O/g, '');
+        
+        // 🔒 Remove bracketed paste mode codes (safe to remove in both scenarios)
+        cleanedHistory = cleanedHistory.replace(/\[200~/g, '');
+        cleanedHistory = cleanedHistory.replace(/\[201~/g, '');
+        
+        // 🔒 CRITICAL FIX (Oct 28, 2025): Remove old reconnection warnings from restored history
+        // These warnings were written during previous navigation attempts and should not be restored
+        cleanedHistory = cleanedHistory
+          .split('\n')
+          .filter(line => !line.includes('Connection lost. Reconnecting'))
+          .join('\n');
+        
+        console.log(`📜 After filtering: ${cleanedHistory.length} chars (removed ${history.length - cleanedHistory.length} chars)`);
+        
+        // 🎯 CRITICAL FIX (Oct 28, 2025): Always restore history when reconnecting to existing session
+        // The key insight: If we're receiving terminal:history event, it means we're RECONNECTING
+        // to an existing session that was preserved during navigation (Timeline → IDE)
+        // We should ALWAYS restore that history to show the user their previous work
+        
+        const hasCleanedHistory = cleanedHistory && cleanedHistory.trim();
+        
+        console.log(`📜 Restoration decision: history length = ${cleanedHistory.length} chars`);
+        console.log(`📜 This is a RECONNECTION to preserved session - restoring history`);
+        
+        const shouldRestoreHistory = hasCleanedHistory;
+        
+        if (shouldRestoreHistory) {
+          // 🔒 CRITICAL FIX (Oct 28, 2025): Save to localStorage so it persists on navigation!
+          // This was the missing piece - we receive history from server but never save it to localStorage
+          if (typeof window !== 'undefined') {
+            const storageKey = sandboxMode && sandboxSession 
+              ? `sandboxTerminalHistory_${sandboxSession.id}`
+              : 'mainTerminalHistory';
+            
+            console.log(`💾 Saving terminal history to localStorage (${storageKey}): ${cleanedHistory.length} chars`);
+            localStorage.setItem(storageKey, cleanedHistory);
+          }
+          
+          // Clear terminal before writing history
+          term.clear();
+          term.write(cleanedHistory);
+          term.write('\r\n\r\n');
+          term.write('\x1b[38;5;174m' + '═'.repeat(80) + '\x1b[0m\r\n');
+          term.write('\x1b[38;5;174m✅ Terminal history restored from session\x1b[0m\r\n');
+          term.write('\x1b[38;5;174m' + '═'.repeat(80) + '\x1b[0m\r\n');
+          term.write('\r\n');
+          
+          // Scroll to bottom
+          setTimeout(() => {
+            if (term && term.buffer && term.buffer.active) {
+              const totalRows = term.buffer.active.length;
+              const viewportRows = term.rows;
+              const maxScrollback = term.options.scrollback || 1000;
+              const scrollPosition = Math.max(0, totalRows - viewportRows);
+              
+              if (term.scrollToLine) {
+                term.scrollToLine(scrollPosition);
+              } else if (term.scrollToBottom) {
+                term.scrollToBottom();
+              }
+              
+              console.log('📜 Scrolled to bottom after history restoration');
+            }
+          }, 200);
+        } else {
+          console.log('📜 Skipping minimal history - terminal already has fresh PTY content (hard refresh scenario)');
+        }
+      }
+    };
+    
+    // Remove old listener using specific handler ref (not global socket.off!)
+    if (socketHandlersRef.current.terminalHistory) {
+      socket.off('terminal:history', socketHandlersRef.current.terminalHistory);
+    }
+    
+    // Store new handler in ref for cleanup
+    socketHandlersRef.current.terminalHistory = terminalHistoryHandler;
+    
+    // 🚨 DIAGNOSTIC LOGGING - Event Listener Registration
+    console.log('═══════════════════════════════════════════════════════');
+    console.log('🎯 [CLIENT] Registering terminal:history event listener');
+    console.log(`🆔 For session ID: "${sessionIdForVoiceRef.current}"`);
+    console.log(`⏰ Registration time: ${new Date().toISOString()}`);
+    console.log('═══════════════════════════════════════════════════════');
+    
+    // Register new listener
+    socket.on('terminal:history', terminalHistoryHandler);
+    
+    console.log('✅ [CLIENT] terminal:history listener registered');
 
     // Join the terminal session
-    console.log('📡 Emitting terminal:create for session:', sessionId, 'Type:', typeof sessionId);
+    // 🚨 DIAGNOSTIC LOGGING - terminal:create Emission
+    console.log('═══════════════════════════════════════════════════════');
+    console.log('📤 [CLIENT] About to emit terminal:create');
+    console.log(`🆔 Session ID: "${sessionId}"`);
+    console.log(`⏰ Emission time: ${new Date().toISOString()}`);
+    console.log('═══════════════════════════════════════════════════════');
     
     // Critical fix: Don't send undefined or null as the session ID
     // Let the server generate one if we don't have a valid ID
     if (sessionId && sessionId !== 'undefined' && sessionId !== 'null') {
       socket.emit('terminal:create', { id: sessionId });
+      console.log('✅ [CLIENT] terminal:create emitted with session ID');
     } else {
       console.log('⚠️ No valid session ID, letting server generate one');
       socket.emit('terminal:create', {}); // Let server generate ID
+      console.log('✅ [CLIENT] terminal:create emitted (server will generate ID)');
     }
 
     // Flush buffered output to terminal (performance optimization)
@@ -2617,6 +3088,41 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
         const output = outputBufferRef.current.join('');
         outputBufferRef.current = [];
         term.write(output);
+        
+        // 🔒 CRITICAL FIX (Oct 28, 2025): Save terminal content to localStorage incrementally
+        // This ensures history persists even if navigation happens mid-conversation
+        if (typeof window !== 'undefined' && term.buffer && term.buffer.active) {
+          try {
+            const storageKey = sandboxMode && sandboxSession 
+              ? `sandboxTerminalHistory_${sandboxSession.id}`
+              : 'mainTerminalHistory';
+            
+            // Get current terminal buffer content
+            const buffer = term.buffer.active;
+            const lines: string[] = [];
+            for (let i = 0; i < buffer.length; i++) {
+              const line = buffer.getLine(i);
+              if (line) {
+                lines.push(line.translateToString(true));
+              }
+            }
+            const currentContent = lines.join('\n');
+            
+            // Save to localStorage (throttled by flushOutput timing)
+            if (currentContent && currentContent.length > 10) {
+              localStorage.setItem(storageKey, currentContent);
+              console.log(`💾 [INCREMENTAL SAVE] Saved ${currentContent.length} chars to ${storageKey}`);
+            }
+          } catch (e) {
+            console.error('❌ Failed to save terminal history:', e);
+          }
+        }
+        
+        // 🔧 FIX: Skip auto-scroll during initial load to keep header visible
+        if (!initialLoadComplete.current) {
+          // Initial load - don't auto-scroll, let header remain visible
+          return;
+        }
         
         // ENHANCED Auto-scroll for Claude Code accessibility - AGGRESSIVE scrolling during active sessions
         if (claudeActive) {
@@ -2693,9 +3199,7 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
     };
 
     // 🧠 CONTEXTUAL MEMORY FIX: Handle commands from server for contextual memory
-    // Remove existing listener to prevent duplicates
-    socket.off('terminal:command');
-    socket.on('terminal:command', ({ id, command }: { id: string; command: string }) => {
+    const terminalCommandHandler = ({ id, command }: { id: string; command: string }) => {
       if (id === sessionIdForVoiceRef.current) {
         console.log('🧠 [CLIENT] Received command from server for contextual memory:', command);
         if (onTerminalCommand) {
@@ -2705,12 +3209,17 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
           console.warn('⚠️ [CLIENT] onTerminalCommand callback not available');
         }
       }
-    });
+    };
+    if (socketHandlersRef.current.terminalCommand) {
+      socket.off('terminal:command', socketHandlersRef.current.terminalCommand);
+    }
+    socketHandlersRef.current.terminalCommand = terminalCommandHandler;
+    socket.on('terminal:command', terminalCommandHandler);
 
+    // NOTE: terminal:history listener registered earlier (before socket.emit) to avoid race condition
+    
     // Handle terminal output from backend
-    // Remove existing listener to prevent duplicates (CRITICAL FIX for repeating output bug)
-    socket.off('terminal:data');
-    socket.on('terminal:data', ({ id, data }: { id: string; data: string }) => {
+    const terminalDataHandler = ({ id, data }: { id: string; data: string }) => {
       // Use the ref which gets updated immediately when session is created
       if (id === sessionIdForVoiceRef.current && term) {
         // Buffer the output for performance
@@ -2833,19 +3342,6 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
         // Use a very short timeout to batch rapid updates
         outputFlushTimeoutRef.current = setTimeout(flushOutput, 10);
         
-        // Memory system: Track Claude interactions
-        if (memory.isEnabled && sessionStorage.getItem('memory_context_injected') === 'true') {
-          const lastCommand = sessionStorage.getItem('last_claude_command');
-          if (lastCommand && data.length > 50) { // Only track substantial responses
-            // Add interaction to memory
-            memory.addInteraction(lastCommand, data, 'command').then(() => {
-              // Clear the tracking flags
-              sessionStorage.removeItem('last_claude_command');
-              sessionStorage.removeItem('memory_context_injected');
-            });
-          }
-        }
-        
         // Check if we should display statusline after command completion
         if (terminalSettings.statusLine.enabled && data.includes('\n')) {
           // Check for command prompt pattern (indicates command completed)
@@ -2929,7 +3425,12 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
           setErrorHistory(prev => [...prev.slice(-9), cleanedData]); // Keep last 10 errors
         }
       }
-    });
+    };
+    if (socketHandlersRef.current.terminalData) {
+      socket.off('terminal:data', socketHandlersRef.current.terminalData);
+    }
+    socketHandlersRef.current.terminalData = terminalDataHandler;
+    socket.on('terminal:data', terminalDataHandler);
 
     // Handle terminal creation confirmation
     socket.on('terminal:created', ({ id }: { id: string }) => {
@@ -3041,14 +3542,17 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
     });
 
     // Handle errors
-    // Remove existing listener to prevent duplicates
-    socket.off('terminal:error');
-    socket.on('terminal:error', ({ message }: { message: string }) => {
+    const terminalErrorHandler = ({ message }: { message: string }) => {
       // logger?.error('Terminal error:', message);
       term.writeln(`\r\n❌ Terminal error: ${message}`);
       setIsConnected(false);
       connectionInProgressRef.current = false; // Connection failed
-    });
+    };
+    if (socketHandlersRef.current.terminalExit) {
+      socket.off('terminal:error', socketHandlersRef.current.terminalExit);
+    }
+    socketHandlersRef.current.terminalExit = terminalErrorHandler;
+    socket.on('terminal:error', terminalErrorHandler);
 
     // Handle Claude session events
     socket.on('claude:output', ({ sessionId: claudeSessionId, data }: { sessionId: string; data: string }) => {
@@ -3309,33 +3813,6 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
             }
             
             // Not an AI command - continue with normal processing
-            // Memory system: Inject context for Claude commands
-            if (memory.isEnabled && memory.isActive && command.toLowerCase().includes('claude')) {
-              // Get memory context and inject it
-              memory.getInjectionContext().then(memoryContext => {
-                if (memoryContext) {
-                  // Prepend memory context to the command
-                  const contextPrefix = `\n[Memory Context: ${memoryContext}]\n`;
-                  // Note: Since we're using PTY, we can't modify the command that was already sent
-                  // Instead, we'll track it for response handling
-                  sessionStorage.setItem('last_claude_command', command);
-                  sessionStorage.setItem('memory_context_injected', 'true');
-                  
-                  // Update memory activity indicator
-                  setMemoryActivity({
-                    isActive: true,
-                    tokensUsed: memory.stats.tokens,
-                    sessionsUsed: memory.stats.sessions,
-                    lastActivity: new Date()
-                  });
-                  
-                  // Auto-hide the indicator after 10 seconds
-                  setTimeout(() => {
-                    setMemoryActivity(prev => ({ ...prev, isActive: false }));
-                  }, 10000);
-                }
-              });
-            }
           });
             
           // Notify parent component about the command
@@ -3984,152 +4461,6 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
           </button>
 
 
-          {/* Memory button with dropdown */}
-          <div className="relative">
-            {/* Memory Activity Indicator */}
-            {memoryActivity.isActive && (
-              <div className="absolute -top-2 -right-2 bg-coder1-cyan text-black text-xs px-1.5 py-0.5 rounded-full z-10 shadow-lg animate-pulse">
-                {memoryActivity.tokensUsed}t
-                <span className="text-xs opacity-80">
-                  /{memoryActivity.sessionsUsed}s
-                </span>
-              </div>
-            )}
-            
-            <button
-              data-tour="memory-button"
-              onClick={() => setShowMemoryDropdown(!showMemoryDropdown)}
-              className={`terminal-control-btn flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md ${
-                memoryActivity.isActive ? 'ring-1 ring-coder1-cyan ring-opacity-50' : ''
-              }`}
-              title="Memory system status and controls"
-            >
-              <Brain className={`w-4 h-4 ${memoryActivity.isActive ? 'text-coder1-cyan' : ''}`} />
-              <span>Memory</span>
-            </button>
-            
-            {/* Enhanced Memory dropdown with modes */}
-            {showMemoryDropdown && (
-              <div 
-                ref={memoryDropdownRef}
-                className="absolute top-full mt-2 right-0 bg-bg-secondary border border-border-default rounded-lg shadow-lg p-4 z-50 min-w-[280px]"
-              >
-                <div className="space-y-3">
-                  {/* Memory Mode Selection */}
-                  <div className="space-y-2">
-                    <div className="text-xs text-gray-400 uppercase tracking-wider mb-2">Memory Mode</div>
-                    <div className="space-y-1">
-                      <label className="flex items-center gap-2 cursor-pointer p-2 rounded hover:bg-bg-tertiary">
-                        <input
-                          type="radio"
-                          name="memoryMode"
-                          checked={memory.memoryMode === MemoryMode.OFF}
-                          onChange={() => memory.setMemoryMode(MemoryMode.OFF)}
-                          className="text-coder1-cyan"
-                        />
-                        <span className="text-sm">Off</span>
-                      </label>
-                      <label className="flex items-center gap-2 cursor-pointer p-2 rounded hover:bg-bg-tertiary">
-                        <input
-                          type="radio"
-                          name="memoryMode"
-                          checked={memory.memoryMode === MemoryMode.SAFE}
-                          onChange={() => memory.setMemoryMode(MemoryMode.SAFE)}
-                          className="text-coder1-cyan"
-                        />
-                        <span className="text-sm">Safe <span className="text-xs text-gray-400">(Recommended)</span></span>
-                      </label>
-                      <label className="flex items-center gap-2 cursor-pointer p-2 rounded hover:bg-bg-tertiary">
-                        <input
-                          type="radio"
-                          name="memoryMode"
-                          checked={memory.memoryMode === MemoryMode.ON}
-                          onChange={() => memory.setMemoryMode(MemoryMode.ON)}
-                          className="text-coder1-cyan"
-                        />
-                        <span className="text-sm">On</span>
-                      </label>
-                    </div>
-                  </div>
-
-                  {/* Separator */}
-                  <div className="border-t border-border-default"></div>
-
-                  {/* Current Context Preview */}
-                  {memory.isEnabled && memory.memoryMode !== MemoryMode.OFF && (
-                    <div className="text-xs space-y-1">
-                      <div className="text-gray-400">Current Context:</div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-white">{memory.stats.tokens} tokens from {memory.stats.sessions} sessions</span>
-                        {memory.memoryContext && (
-                          <button 
-                            onClick={() => console.log(memory.memoryContext)}
-                            className="text-coder1-cyan hover:text-coder1-purple text-xs"
-                          >
-                            View
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Memory Status */}
-                  <div className="text-xs space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-gray-400">Status:</span>
-                      <span className={memory.isActive ? "text-green-400" : "text-yellow-400"}>
-                        {memory.isActive ? 'Active' : memory.memoryMode === MemoryMode.OFF ? 'Disabled' : 'Initializing'}
-                      </span>
-                    </div>
-                    {memory.stats.interactions > 0 && (
-                      <div className="flex items-center justify-between">
-                        <span className="text-gray-400">This Session:</span>
-                        <span className="text-gray-300">{memory.stats.interactions} interactions</span>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Separator */}
-                  <div className="border-t border-border-default"></div>
-
-                  {/* Quick Actions */}
-                  <div className="space-y-2">
-                    <button
-                      onClick={() => {
-                        memory.markSessionVerified();
-                        setShowMemoryDropdown(false);
-                      }}
-                      className="w-full text-left px-2 py-1 text-sm hover:bg-bg-tertiary rounded"
-                      disabled={!memory.isActive}
-                    >
-                      Mark Session as Verified
-                    </button>
-                    <button
-                      onClick={() => {
-                        // TODO: Open correction modal
-                        console.log('Correct Memory clicked');
-                      }}
-                      className="w-full text-left px-2 py-1 text-sm hover:bg-bg-tertiary rounded"
-                    >
-                      Correct Memory
-                    </button>
-                    <button
-                      onClick={() => {
-                        if (confirm('Clear current session memory?')) {
-                          memory.endSession();
-                          memory.startSession();
-                        }
-                      }}
-                      className="w-full text-left px-2 py-1 text-sm hover:bg-bg-tertiary rounded text-red-400"
-                      disabled={!memory.isActive}
-                    >
-                      Clear Current Session
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
 
           {/* Error Doctor button - matches Memory button style exactly */}
           <button
@@ -4193,10 +4524,7 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
       <div 
         className="flex-1 relative overflow-auto"
         style={{
-          backgroundColor: '#0a0a0a',
-          paddingBottom: '300px',  // Always use 300px padding to prevent bottom cutoff
-          maxHeight: '100%',
-          minHeight: 'calc(100% + 300px)'  // Force container to be taller for scrolling
+          backgroundColor: '#0a0a0a'
         }}
         onClick={() => {
           // Focus the terminal when clicked
@@ -4211,7 +4539,7 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
           onContextMenu={handleContextMenu}
           style={{
             width: '100%',
-            minHeight: 'calc(100% + 250px)'  // Always ensure terminal is taller to prevent bottom cutoff
+            height: '100%'
           }}
         />
       </div>

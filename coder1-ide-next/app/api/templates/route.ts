@@ -10,7 +10,7 @@ import path from 'path';
 // Load MCP templates from JSON files
 function loadMCPTemplates() {
   try {
-    const templatesPath = path.join(process.cwd(), '../src/data/coderone-templates');
+    const templatesPath = path.join(process.cwd(), 'data/coderone-templates');
     const mcpIntegrationsPath = path.join(templatesPath, 'mcp-integrations.json');
     
     if (fs.existsSync(mcpIntegrationsPath)) {

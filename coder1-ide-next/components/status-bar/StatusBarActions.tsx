@@ -8,6 +8,7 @@
 'use client';
 
 import React from 'react';
+import { useRouter } from 'next/navigation';
 import { Save, Clock, FileText, BookOpen, Loader2, Brain, Link, Sparkles } from '@/lib/icons';
 import StatusBarModals from './StatusBarModals';
 import CheckpointNameModal from '@/components/modals/CheckpointNameModal';
@@ -25,6 +26,7 @@ interface StatusBarActionsProps {
   openFiles?: IDEFile[];
   terminalHistory?: string;
   terminalCommands?: string[];
+  terminalSessionId?: string | null; // 🔧 CRITICAL: Actual terminal session ID from IDE page
 }
 
 const StatusBarActions = React.memo(function StatusBarActions({
@@ -32,8 +34,12 @@ const StatusBarActions = React.memo(function StatusBarActions({
   isConnected = false,
   openFiles = [],
   terminalHistory = '',
-  terminalCommands = []
+  terminalCommands = [],
+  terminalSessionId // 🔧 CRITICAL: Use this instead of guessing from localStorage
 }: StatusBarActionsProps) {
+  // Get Next.js router for navigation
+  const router = useRouter();
+  
   // Get state from stores
   const { loading } = useIDEStore();
   const { currentSession, createCheckpoint } = useSessionStore();
@@ -53,19 +59,32 @@ const StatusBarActions = React.memo(function StatusBarActions({
   const [isAnalyzingMemory, setIsAnalyzingMemory] = React.useState(false);
   
   React.useEffect(() => {
-    // Only access localStorage on client side
-    const storedId = typeof window !== 'undefined' ? localStorage.getItem('currentSessionId') : null;
-    const newSessionId = currentSession?.metadata.sessionId || 
-                        storedId || 
-                        `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    // 🔧 CRITICAL FIX: Use terminalSessionId prop (ACTUAL value from IDE page state)
+    // Previous bug: Tried to guess from localStorage which was stale/wrong
+    // This caused Timeline button to pass wrong session ID, breaking "Back to IDE" navigation
     
-    setSessionId(newSessionId);
+    let effectiveSessionId: string;
     
-    // Update localStorage if needed
-    if (typeof window !== 'undefined' && !storedId) {
-      localStorage.setItem('currentSessionId', newSessionId);
+    if (terminalSessionId) {
+      // Use the ACTUAL terminal session ID passed from IDE page
+      effectiveSessionId = terminalSessionId;
+      console.log('📊 [STATUSBAR] Using ACTUAL terminal session ID from prop:', effectiveSessionId);
+    } else {
+      // Fallback only if no session ID provided (shouldn't happen normally)
+      const storedId = typeof window !== 'undefined' ? localStorage.getItem('ide-terminalSessionId') : null;
+      effectiveSessionId = currentSession?.metadata.sessionId || 
+                          storedId || 
+                          `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      console.warn('⚠️ [STATUSBAR] No terminalSessionId prop! Falling back to localStorage/generated:', effectiveSessionId);
     }
-  }, [currentSession]);
+    
+    setSessionId(effectiveSessionId);
+    
+    // Keep localStorage in sync with actual session ID
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('ide-terminalSessionId', effectiveSessionId);
+    }
+  }, [currentSession, terminalSessionId]);
   
   // Memory detection effect - analyze session for memory-worthy events
   React.useEffect(() => {
@@ -243,8 +262,10 @@ const StatusBarActions = React.memo(function StatusBarActions({
       const data = await response.json();
       
       if (response.ok) {
-        // REMOVED: // REMOVED: console.log('📊 Timeline data:', data);
-        window.location.href = `/timeline?sessionId=${sessionId}`;
+        // 🔧 FIX (Oct 24, 2025): Use Next.js router for client-side navigation
+        // Preserves terminal session by using router.push instead of window.location.href
+        console.log('📊 [TIMELINE] Navigating to timeline with sessionId:', sessionId);
+        router.push(`/timeline?sessionId=${sessionId}`);
         addToast({
           message: '📊 Opening timeline view',
           type: 'info'

@@ -13,9 +13,10 @@ interface FileNode {
 interface SafeFileExplorerProps {
   onFileSelect: (path: string) => void;
   activeFile: string | null;
+  refreshTrigger?: number;
 }
 
-export default function SafeFileExplorer({ onFileSelect, activeFile }: SafeFileExplorerProps) {
+export default function SafeFileExplorer({ onFileSelect, activeFile, refreshTrigger }: SafeFileExplorerProps) {
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set(['/']));
   const [fileTree, setFileTree] = useState<FileNode | null>(null);
   const [loading, setLoading] = useState(true);
@@ -78,7 +79,7 @@ export default function SafeFileExplorer({ onFileSelect, activeFile }: SafeFileE
 
   useEffect(() => {
     fetchFileTree(currentRoot || undefined);
-  }, [fetchFileTree, currentRoot]);
+  }, [fetchFileTree, currentRoot, refreshTrigger]);
 
   const toggleFolder = useCallback((path: string) => {
     setExpandedFolders(prev => {

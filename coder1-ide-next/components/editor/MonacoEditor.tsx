@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect, useState, useMemo } from 'react';
 import dynamic from 'next/dynamic';
 import type * as monaco from 'monaco-editor';
 import { WelcomeScreen } from './WelcomeScreen';
@@ -53,79 +53,76 @@ export default function MonacoEditor({
   onTourStart
 }: MonacoEditorProps) {
   const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
+  const lastFileRef = useRef<string | null>(null);
+  const lastValueRef = useRef<string | undefined>(undefined);
   const [setupViewed, setSetupViewed] = useState<boolean | null>(null);
   const [heroSectionDismissed, setHeroSectionDismissed] = useState<boolean | null>(null);
 
-  // Configure Monaco Editor to use CDN for reliable loading
-  useEffect(() => {
-    const configureMonaco = async () => {
-      try {
-        if (typeof window !== 'undefined') {
-          const { loader } = await import('@monaco-editor/react');
-          loader.config({
-            paths: {
-              vs: 'https://cdn.jsdelivr.net/npm/monaco-editor@0.52.2/min/vs'
-            }
-          });
-        }
-      } catch (error) {
-        console.warn('Monaco loader configuration failed, using default:', error);
-      }
-    };
-    configureMonaco();
-  }, []);
+  // Removed CDN configuration - using Monaco's default loading
 
   // Check if this is the user's first time
   useEffect(() => {
-    // For returning users, always mark setup as viewed
     const viewed = localStorage.getItem('coder1-bridge-setup-viewed');
     if (viewed === null) {
-      // First time user - will show WelcomeScreen
-      console.log('🟡 MonacoEditor: First-time user detected, showing WelcomeScreen');
       setSetupViewed(false);
     } else {
-      // Returning user - skip WelcomeScreen, prepare for HeroSection
-      console.log('🟢 MonacoEditor: Returning user detected, preparing HeroSection');
       setSetupViewed(true);
     }
     
-    // Check if hero was already dismissed during navigation (not refresh)
     const dismissed = sessionStorage.getItem('coder1-hero-dismissed');
     
     // Modern navigation detection using PerformanceNavigationTiming API
     const isPageReload = (() => {
       try {
         if (typeof window !== 'undefined' && window.performance) {
-          // Use modern PerformanceNavigationTiming API
           const navigationEntries = performance.getEntriesByType('navigation') as PerformanceNavigationTiming[];
           if (navigationEntries.length > 0) {
             const navigationType = navigationEntries[0].type;
-            console.log('🔍 Navigation type detected:', navigationType);
             return navigationType === 'reload';
           }
         }
-        // Fallback: assume it's a fresh page load if no navigation info
         return true;
       } catch (error) {
-        console.warn('Navigation detection failed, assuming fresh page load:', error);
+        console.error('[MonacoEditor] Navigation detection failed:', error);
         return true;
       }
     })();
     
-    // Simplified logic: Always show hero section on page load for returning users,
-    // unless it was explicitly dismissed in the current session (and not a reload)
     if (isPageReload || !dismissed) {
-      console.log('🎯 MonacoEditor: Showing hero section (page reload or not dismissed)');
       setHeroSectionDismissed(false);
-      // Clear sessionStorage on any page reload to ensure hero shows
       if (isPageReload && typeof window !== 'undefined') {
         sessionStorage.removeItem('coder1-hero-dismissed');
       }
     } else {
-      console.log('🔴 MonacoEditor: Hero section was dismissed in this session');
       setHeroSectionDismissed(true);
     }
   }, []);
+
+  // CRITICAL FIX: Auto-dismiss hero section when a file is opened
+  useEffect(() => {
+    if (file && file.trim() !== '') {
+      setHeroSectionDismissed(true);
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('coder1-hero-dismissed', 'true');
+      }
+    }
+  }, [file]);
+
+  // Update editor value when file content loads (after mount)
+  useEffect(() => {
+    if (!editorRef.current || !value) return;
+    
+    // Only update if this is actual file content (not placeholder)
+    if (value !== lastValueRef.current && value.length > 100) {
+      try {
+        editorRef.current.setValue(value);
+        lastValueRef.current = value;
+        lastFileRef.current = file;
+      } catch (error) {
+        console.error('[MonacoEditor] Failed to update editor value:', error);
+      }
+    }
+  }, [value, file]);
 
   // Update font size when prop changes
   useEffect(() => {
@@ -149,14 +146,7 @@ export default function MonacoEditor({
     };
 
     const handleSessionRefreshed = () => {
-      // Reset editor to clean welcome state on browser refresh
-      console.log('🔄 MonacoEditor: Session refresh detected, resetting to welcome screen');
-      setHeroSectionDismissed(false);
-      
-      // Clear editor content and reset to welcome message
-      if (editorRef.current) {
-        editorRef.current.setValue('// Welcome to Coder1 IDE\n// Open a file to start coding');
-      }
+      // CRITICAL: Don't reset heroSectionDismissed - prevents files from opening after refresh
     };
 
     window.addEventListener('tour:addCode', handleTourAddCode as EventListener);
@@ -182,6 +172,18 @@ export default function MonacoEditor({
 
   const handleEditorDidMount = (editor: any, monaco: any) => {
     editorRef.current = editor;
+    
+    // CRITICAL: Set initial value when editor mounts
+    const computedValue = value !== undefined ? value : getFileContent(file || null);
+    if (computedValue && editor) {
+      try {
+        editor.setValue(computedValue);
+        lastValueRef.current = computedValue;
+        lastFileRef.current = file;
+      } catch (error) {
+        console.error('[MonacoEditor] Failed to set initial value:', error);
+      }
+    }
     
     // Call the onMount prop if provided
     if (onMount) {
@@ -281,14 +283,17 @@ export default function MonacoEditor({
     return 'plaintext';
   };
 
-  // Use provided value or fall back to file-based content
-  const editorValue = value !== undefined ? value : getFileContent(file || null);
-  const editorLanguage = language || (file ? getLanguage(file) : 'javascript');
+  // Use provided value or fall back to file-based content (memoized to prevent re-renders)
+  const editorValue = useMemo(() => {
+    return value !== undefined ? value : getFileContent(file || null);
+  }, [value, file]);
+  
+  const editorLanguage = useMemo(() => {
+    return language || (file ? getLanguage(file) : 'javascript');
+  }, [language, file]);
 
   // Show welcome screen or hero section if no file is open and no value provided
   if (!file && value === undefined) {
-    console.log('🎯 MonacoEditor state:', { file, value, setupViewed, heroSectionDismissed });
-    
     // Wait for localStorage to be checked (avoid SSR issues)
     if (setupViewed === null || heroSectionDismissed === null) {
       return <div className="flex items-center justify-center h-full bg-bg-primary">
@@ -298,7 +303,6 @@ export default function MonacoEditor({
     
     // If HeroSection was dismissed in this session, show empty editor
     if (heroSectionDismissed === true) {
-      console.log('🟡 HeroSection was already dismissed in this session, showing editor');
       // Show empty editor with welcome message
       return (
         <div className="h-full w-full monaco-editor-container">
@@ -334,37 +338,23 @@ export default function MonacoEditor({
     
     // Show appropriate welcome experience based on user status
     if (!setupViewed) {
-      // First-time user - show comprehensive setup instructions
-      console.log('🟡 First-time user detected, showing WelcomeScreen with setup instructions');
       return <WelcomeScreen 
         onDismiss={() => {
-          console.log('🔴 WelcomeScreen dismissed by user');
-          // Mark setup as viewed
           if (typeof window !== 'undefined') {
             localStorage.setItem('coder1-bridge-setup-viewed', 'true');
-            console.log('💾 Marked setup as viewed for future visits');
           }
           setSetupViewed(true);
         }}
       />;
     } else {
-      // Returning user - show HeroSection
-      console.log('🟢 Returning user detected, showing HeroSection');
       return <HeroSection 
         onDismiss={() => {
-          console.log('🔴 HeroSection dismissed by user interaction');
-          // Mark as dismissed for this component instance
           setHeroSectionDismissed(true);
-          // Also store in sessionStorage to prevent re-showing on navigation within same session
           if (typeof window !== 'undefined') {
             sessionStorage.setItem('coder1-hero-dismissed', 'true');
-            console.log('💾 Stored hero dismissal in sessionStorage');
           }
         }}
       onTourStart={() => {
-        console.log('🎯 Interactive Tour started from HeroSection');
-        // Don't dismiss hero section when tour starts
-        // The tour will handle hero visibility
         if (onTourStart) {
           onTourStart();
         }
@@ -374,12 +364,12 @@ export default function MonacoEditor({
   }
 
   return (
-    <div className="h-full w-full monaco-editor-container">
+    <div className="h-full w-full monaco-editor-container relative">
       <Editor
         height="100%"
         defaultLanguage="typescript"
         language={editorLanguage}
-        value={editorValue}
+        defaultValue=""
         theme={theme}
         onMount={handleEditorDidMount}
         onChange={onChange}

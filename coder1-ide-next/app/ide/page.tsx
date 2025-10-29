@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useCallback, Suspense } from "react";
+import React, { useState, useEffect, useRef, useCallback, useMemo, Suspense } from "react";
 import dynamic from "next/dynamic";
 import { useSearchParams } from 'next/navigation';
 import { loadComponentForEditor } from '@/lib/component-formatter';
@@ -10,6 +10,7 @@ import SettingsModal from "@/components/SettingsModal";
 import KeyboardShortcutsModal from "@/components/KeyboardShortcutsModal";
 import { MenuActionsService, FileInfo } from '@/lib/services/menu-actions';
 import type { editor } from 'monaco-editor';
+import { filterThinkingAnimations } from '@/lib/checkpoint-utils';
 
 // Import core IDE components - using correct default exports
 import ThreePanelLayout from "@/components/layout/ThreePanelLayout";
@@ -69,6 +70,7 @@ function IDEPageContent() {
   // Editor state
   const [activeFile, setActiveFile] = useState<string | null>(null);
   const [files, setFiles] = useState<Record<string, string>>({});
+  const [fileTreeRefresh, setFileTreeRefresh] = useState(0);
   const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
   
   // Panel visibility state
@@ -97,6 +99,96 @@ function IDEPageContent() {
 
   // Terminal history from checkpoint restore
   const [restoredTerminalHistory, setRestoredTerminalHistory] = useState<string | null>(null);
+  
+  // Debounce timer for memory API calls (performance optimization)
+  const memoryDebounceRef = useRef<NodeJS.Timeout | null>(null);
+
+  // 🔧 FIX: Persist and restore session state on navigation
+  // Restore state from localStorage on mount
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
+    console.log('🔄 IDE: Restoring session state from localStorage...');
+    
+    // Restore files
+    const savedFiles = localStorage.getItem('ide-openFiles');
+    if (savedFiles) {
+      try {
+        const parsedFiles = JSON.parse(savedFiles);
+        setFiles(parsedFiles);
+        console.log('✅ Restored', Object.keys(parsedFiles).length, 'open files');
+      } catch (e) {
+        console.warn('Failed to parse saved files:', e);
+      }
+    }
+    
+    // Restore active file
+    const savedActiveFile = localStorage.getItem('ide-activeFile');
+    if (savedActiveFile && savedActiveFile !== 'null') {
+      setActiveFile(savedActiveFile);
+      console.log('✅ Restored active file:', savedActiveFile);
+    }
+    
+    // Restore terminal history (if not from checkpoint restore)
+    const urlParams = new URLSearchParams(window.location.search);
+    const isFromCheckpoint = urlParams.get('restored') === 'true';
+    if (!isFromCheckpoint) {
+      const savedTerminalHistory = localStorage.getItem('terminalHistory');
+      if (savedTerminalHistory) {
+        // 🔧 CRITICAL FIX: Filter statuslines when LOADING from localStorage
+        // This retroactively cleans up old unfiltered data (Jan 2025)
+        const filteredHistory = filterThinkingAnimations(savedTerminalHistory);
+        setTerminalHistory(filteredHistory);
+        setRestoredTerminalHistory(filteredHistory);
+        console.log('✅ Restored terminal history (filtered):', filteredHistory.length, 'characters', 
+                    '(original:', savedTerminalHistory.length, ')');
+      }
+    }
+    
+    // Restore panel visibility
+    const savedExplorerVisible = localStorage.getItem('ide-explorerVisible');
+    if (savedExplorerVisible !== null) {
+      setExplorerVisible(savedExplorerVisible === 'true');
+    }
+    
+    const savedTerminalVisible = localStorage.getItem('ide-terminalVisible');
+    if (savedTerminalVisible !== null) {
+      setTerminalVisible(savedTerminalVisible === 'true');
+    }
+    
+    // Terminal session ID is now initialized directly in useState (line 245)
+    // No need to restore it here - avoids race condition
+  }, []); // Run only once on mount
+
+  // Save state to localStorage whenever it changes
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    localStorage.setItem('ide-openFiles', JSON.stringify(files));
+  }, [files]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    localStorage.setItem('ide-activeFile', activeFile || '');
+  }, [activeFile]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (terminalHistory) {
+      // Filter out Claude Code statuslines and animations before saving
+      const filteredHistory = filterThinkingAnimations(terminalHistory);
+      localStorage.setItem('terminalHistory', filteredHistory);
+    }
+  }, [terminalHistory]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    localStorage.setItem('ide-explorerVisible', String(explorerVisible));
+  }, [explorerVisible]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    localStorage.setItem('ide-terminalVisible', String(terminalVisible));
+  }, [terminalVisible]);
 
   // Handle checkpoint restore from timeline page
   const searchParams = useSearchParams();
@@ -105,6 +197,16 @@ function IDEPageContent() {
     const checkpointId = searchParams.get('checkpointId');
     const sessionId = searchParams.get('sessionId');
     
+    // 🔧 CRITICAL FIX (Oct 29, 2025): Clear terminal session AND history on hard refresh
+    // If there's NO sessionId in URL (hard refresh), clear localStorage to start fresh
+    // Timeline → Back to IDE will have sessionId in URL and will restore properly
+    // Bug: We were only clearing session ID but not the history itself
+    if (!sessionId && typeof window !== 'undefined') {
+      console.log('🔄 Hard refresh detected (no sessionId in URL) - clearing terminal session AND history from localStorage');
+      localStorage.removeItem('ide-terminalSessionId');
+      localStorage.removeItem('mainTerminalHistory');  // CRITICAL: Also clear the history!
+    }
+    
     if (restored === 'true' && checkpointId) {
       console.log('🔄 Checkpoint restore detected:', { checkpointId, sessionId });
       
@@ -112,14 +214,18 @@ function IDEPageContent() {
       if (typeof window !== 'undefined') {
         const terminalHistory = localStorage.getItem('terminalHistory');
         if (terminalHistory) {
-          console.log('📜 IDE PAGE: Restored terminal history from localStorage, length:', terminalHistory.length);
-          console.log('📜 IDE PAGE: First 200 chars:', terminalHistory.substring(0, 200));
-          setRestoredTerminalHistory(terminalHistory);
+          // 🔧 CRITICAL FIX: Filter statuslines when LOADING from localStorage
+          // This retroactively cleans up old unfiltered data (Jan 2025)
+          const filteredHistory = filterThinkingAnimations(terminalHistory);
+          console.log('📜 IDE PAGE: Restored terminal history from localStorage (filtered)');
+          console.log('📜 IDE PAGE: Original length:', terminalHistory.length, '→ Filtered length:', filteredHistory.length);
+          console.log('📜 IDE PAGE: First 200 chars:', filteredHistory.substring(0, 200));
+          setRestoredTerminalHistory(filteredHistory);
           
           // 🔧 FIX: Also set terminalHistory state to preserve content for future checkpoints
           // This ensures that if user creates a checkpoint immediately after restore,
           // it will include the restored terminal history instead of being empty
-          setTerminalHistory(terminalHistory);
+          setTerminalHistory(filteredHistory);
           console.log('📜 IDE PAGE: Both restoredTerminalHistory and terminalHistory state updated');
           console.log('📜 IDE PAGE: Future checkpoints will include this restored content');
         } else {
@@ -156,10 +262,76 @@ function IDEPageContent() {
   }, [searchParams]);
 
   // Terminal session tracking for TerminalCommandProvider
-  const [terminalSessionId, setTerminalSessionId] = useState<string | null>(
-    null,
-  );
+  // 🔧 FIX (Oct 24, 2025): Check URL params FIRST for Timeline navigation persistence
+  // Initialize directly from URL or localStorage to avoid race condition
+  const [terminalSessionId, setTerminalSessionId] = useState<string | null>(() => {
+    if (typeof window === 'undefined') return null;
+    
+    // 🔧 ONE-TIME MIGRATION (Oct 24, 2025): Migrate old 'terminalHistory' key to 'mainTerminalHistory'
+    // This fixes the localStorage key mismatch that caused terminal corruption
+    const oldHistory = localStorage.getItem('terminalHistory');
+    if (oldHistory) {
+      console.log('🔄 [MIGRATION] Migrating old terminalHistory key to mainTerminalHistory');
+      localStorage.setItem('mainTerminalHistory', oldHistory);
+      localStorage.removeItem('terminalHistory');
+    }
+    
+    // 1. Check URL params first (for Timeline → IDE navigation)
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlSessionId = urlParams.get('sessionId');
+    
+    console.log('🔍 [INIT-URL] window.location.search:', window.location.search);
+    console.log('🔍 [INIT-URL] urlSessionId:', urlSessionId);
+    
+    // 🔧 CRITICAL FIX (Oct 29, 2025): Clear localStorage on hard refresh BEFORE reading it
+    // If there's NO sessionId in URL (hard refresh), clear EVERYTHING to start fresh
+    // This must happen HERE in useState initializer, NOT in useEffect (which runs too late)
+    if (!urlSessionId) {
+      console.log('🔄 Hard refresh detected (no sessionId in URL) - clearing ALL terminal data from localStorage');
+      localStorage.removeItem('ide-terminalSessionId');
+      localStorage.removeItem('mainTerminalHistory');
+      console.log('🔍 [INIT-FINAL] Hard refresh - returning null for fresh session');
+      return null;
+    }
+    
+    if (urlSessionId && urlSessionId !== 'null') {
+      console.log('🔄 [INIT] Restored terminal session ID from URL:', urlSessionId);
+      // Store in localStorage so it persists after URL cleanup
+      localStorage.setItem('ide-terminalSessionId', urlSessionId);
+      console.log('🔍 [INIT-FINAL] Returning sessionId from URL:', urlSessionId);
+      return urlSessionId;
+    }
+    
+    console.log('🔍 [INIT-FINAL] No sessionId found, returning null');
+    return null;
+  });
   const [terminalReady, setTerminalReady] = useState<boolean>(false);
+
+  // Save terminal session ID whenever it changes
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (terminalSessionId) {
+      localStorage.setItem('ide-terminalSessionId', terminalSessionId);
+      console.log('💾 Saved terminal session ID:', terminalSessionId);
+    }
+  }, [terminalSessionId]);
+  
+  // 🔧 FIX (Oct 24, 2025): Update terminalSessionId when URL params change
+  // This handles Timeline → IDE navigation where URL has ?sessionId=xyz
+  // useState initializer only runs once, so we need useEffect for navigation updates
+  // 🐛 CRITICAL FIX: Removed terminalSessionId from deps to prevent circular dependency
+  useEffect(() => {
+    const urlSessionId = searchParams.get('sessionId');
+    console.log('🔄 [URL-EFFECT] searchParams.sessionId:', urlSessionId);
+    console.log('🔄 [URL-EFFECT] current terminalSessionId:', terminalSessionId);
+    
+    if (urlSessionId && urlSessionId !== 'null') {
+      console.log('🔄 [URL-UPDATE] Setting sessionId from URL:', urlSessionId);
+      setTerminalSessionId(urlSessionId);
+      // Also update localStorage so it persists
+      localStorage.setItem('ide-terminalSessionId', urlSessionId);
+    }
+  }, [searchParams]); // ✅ FIX: Removed terminalSessionId from deps
 
   // File drop handling
   const [isProcessingFiles, setIsProcessingFiles] = useState(false);
@@ -446,15 +618,26 @@ function IDEPageContent() {
   const handleTerminalCommand = (command: string) => {
     console.log("⌨️ Terminal command:", command);
     
-    // Simple logging for contextual memory troubleshooting
-    
-    // Track commands for checkpoint creation
+    // Track commands for checkpoint creation (immediate - no debouncing needed)
     setTerminalCommands((prev) => [...prev.slice(-49), command]); // Keep last 50 commands
+    
+    // 🚀 PERFORMANCE FIX: Debounce memory API calls (3-second delay)
+    // Clear existing timer on new commands
+    if (memoryDebounceRef.current) {
+      clearTimeout(memoryDebounceRef.current);
+      console.log('⏱️ [MEMORY] Clearing previous debounce timer');
+    }
     
     // Extract user input for contextual memory (commands starting with user input)
     if (command.trim().length > 0 && !command.startsWith('$') && !command.startsWith('#')) {
-      console.log('🎯 [MEMORY] Setting contextual memory input:', command);
-      setRecentTerminalInput(command);
+      console.log('⏱️ [MEMORY] Scheduling contextual memory update (3s delay)');
+      
+      // Set new timer - only update after 3 seconds of inactivity
+      memoryDebounceRef.current = setTimeout(() => {
+        console.log('🎯 [MEMORY] Debounce complete - setting contextual memory input:', command);
+        setRecentTerminalInput(command);
+        memoryDebounceRef.current = null;
+      }, 3000); // 3 second delay
     } else {
       console.log('🚫 [MEMORY] Command filtered out (starts with $ or #)');
     }
@@ -473,33 +656,24 @@ function IDEPageContent() {
 
   const handleOpenFileFromPath = useCallback(async (path: string, line?: number) => {
     try {
-      console.log(`📁 Opening file: ${path}${line ? ` at line ${line}` : ''}`);
-      
-      // Clear any previous errors for this file
       setFileErrors(prev => {
         const newErrors = { ...prev };
         delete newErrors[path];
         return newErrors;
       });
       
-      // Check if file is already loaded
       if (files[path]) {
-        console.log('📁 File already loaded, switching to it');
         setActiveFile(path);
         return;
       }
 
-      // Set loading state
       setLoadingFiles(prev => new Set(prev).add(path));
 
-      // Clean path - remove leading "/" to make it relative for the file API
       const cleanPath = path.startsWith('/') ? path.substring(1) : path;
-      console.log(`📁 Cleaned path: "${path}" → "${cleanPath}"`);
-
-      // Fetch file content from API
-      console.log('📁 Fetching file content from API...');
       const encodedPath = encodeURIComponent(cleanPath);
-      const response = await fetch(`/api/files/read?path=${encodedPath}`);
+      const apiUrl = `/api/files/read/?path=${encodedPath}`;
+      
+      const response = await fetch(apiUrl);
 
       if (!response.ok) {
         let errorMessage = `Failed to read file: ${response.status}`;
@@ -513,15 +687,12 @@ function IDEPageContent() {
       }
 
       const data = await response.json();
-      console.log('📁 File loaded successfully');
       
-      // Add to files state and set as active
       setFiles(prev => ({ ...prev, [path]: data.content || '' }));
       setActiveFile(path);
 
       // TODO: Handle line positioning in Monaco editor
       if (line) {
-        console.log(`📁 TODO: Navigate to line ${line} in Monaco editor`);
         // Future enhancement: editor.revealLineInCenter(line);
         // Future enhancement: editor.setPosition({lineNumber: line, column: 1});
       }
@@ -561,7 +732,28 @@ function IDEPageContent() {
 
   // Menu action handlers
   const handleNewFile = useCallback(() => {
-    menuActionsRef.current?.newFile();
+    // Generate unique filename with extension
+    const timestamp = Date.now();
+    const newFileName = `Untitled-${timestamp}.txt`;
+    
+    // Add starter content so editor isn't empty
+    const starterContent = `// New File: ${newFileName}\n// Created: ${new Date().toLocaleString()}\n\n`;
+    
+    // Add file to state with starter content
+    setFiles(prev => ({ ...prev, [newFileName]: starterContent }));
+    
+    // Set as active file
+    setActiveFile(newFileName);
+    
+    // Visual feedback - alert user
+    alert(`✅ New file created: ${newFileName}\n\nThe editor is ready. Start typing!`);
+    
+    // Focus editor so user can immediately type
+    setTimeout(() => {
+      editorRef.current?.focus();
+    }, 100);
+    
+    console.log('✅ New file created:', newFileName);
   }, []);
 
   const handleOpenFile = useCallback(() => {
@@ -910,6 +1102,52 @@ function IDEPageContent() {
     }
   }, [searchParams]);
 
+  // Handle pending sandbox from Timeline checkpoint restoration
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
+    const pendingSandbox = sessionStorage.getItem('pendingSandbox');
+    if (pendingSandbox) {
+      try {
+        const sandboxData = JSON.parse(pendingSandbox);
+        console.log('🏖️ IDE: Found pending sandbox from Timeline:', sandboxData.name);
+        
+        // Wait for terminal to be ready before dispatching
+        const dispatchSandbox = () => {
+          window.dispatchEvent(new CustomEvent('terminal:createSandbox', {
+            detail: sandboxData
+          }));
+          console.log('✅ IDE: Sandbox creation event dispatched');
+        };
+        
+        // Check if terminal is already ready
+        if ((window as any).terminalSessionId) {
+          dispatchSandbox();
+        } else {
+          // Wait for terminal ready event
+          const handleTerminalReady = () => {
+            dispatchSandbox();
+            window.removeEventListener('terminalReady', handleTerminalReady);
+          };
+          window.addEventListener('terminalReady', handleTerminalReady);
+          
+          // Fallback timeout
+          setTimeout(() => {
+            if (!document.querySelector('[data-sandbox-tab]')) {
+              dispatchSandbox();
+            }
+          }, 2000);
+        }
+        
+        // Clear the pending sandbox
+        sessionStorage.removeItem('pendingSandbox');
+      } catch (error) {
+        console.error('❌ IDE: Failed to restore pending sandbox:', error);
+        sessionStorage.removeItem('pendingSandbox');
+      }
+    }
+  }, []);
+
   return (
     <SessionProvider>
       <EnhancedSupervisionProvider>
@@ -952,6 +1190,12 @@ function IDEPageContent() {
               onShowAbout={handleShowAbout}
               onShowKeyboardShortcuts={handleShowKeyboardShortcuts}
               onShowSettings={() => setShowSettingsModal(true)}
+              onFilesUploaded={(paths) => {
+                setFileTreeRefresh(prev => prev + 1);
+                if (paths.length > 0) {
+                  handleFileSelect(paths[0]);
+                }
+              }}
             />
 
             {/* Blue Banner - Agentic Development Environment */}
@@ -972,139 +1216,149 @@ function IDEPageContent() {
               </p>
             </div>
 
+            {/* Active File Display Bar */}
+            {activeFile && (
+              <div className="w-full h-8 flex items-center px-4 bg-bg-tertiary border-b border-border-default">
+                <div className="flex items-center gap-2 text-sm">
+                  <span className="w-2 h-2 rounded-full bg-coder1-cyan animate-pulse"></span>
+                  <span className="text-text-muted">Currently editing:</span>
+                  <span className="text-text-primary font-medium">{activeFile}</span>
+                </div>
+              </div>
+            )}
+
             {/* Main IDE Layout */}
             <div className="flex-1 flex flex-col min-h-0">
-              <ThreePanelLayout
-                leftPanel={
-                  explorerVisible && !focusMode ? (
-                    <LeftPanel
-                      onFileSelect={handleFileSelect}
-                      activeFile={activeFile}
-                    />
-                  ) : null
-                }
-                centerPanel={
-                  <PanelGroup direction="vertical" className="h-full">
-                    {/* Editor Panel */}
-                    <Panel
-                      defaultSize={terminalVisible ? 65 : 100}
-                      minSize={5}
-                    >
-                      <div className="h-full overflow-hidden">
-                        <MonacoEditor
-                          value={
-                            activeFile ? (
-                              loadingFiles.has(activeFile) ? 
-                                `// Loading ${activeFile}...\n// Please wait while the file is being loaded.` :
-                              fileErrors[activeFile] ? 
-                                `// Error loading ${activeFile}\n// ${fileErrors[activeFile]}\n// \n// Please check:\n// 1. File exists and is accessible\n// 2. You have permission to read the file\n// 3. The file path is correct\n// \n// Try refreshing the file explorer or check the terminal for more details.` :
-                              files[activeFile] || ""
-                            ) : undefined
-                          }
-                          onChange={(value) => {
-                            if (activeFile && value !== undefined && !loadingFiles.has(activeFile) && !fileErrors[activeFile]) {
-                              handleFileChange(activeFile, value);
-                            }
-                          }}
-                          onMount={(editor) => {
-                            editorRef.current = editor;
-                          }}
-                          file={activeFile}
-                          language="typescript"
-                          theme="tokyo-night"
-                          fontSize={fontSize}
-                          onTourStart={() => setShowTour(true)}
-                        />
-                      </div>
-                    </Panel>
+              <div className="flex-1 flex flex-col min-h-0">
+                <ThreePanelLayout
+                  leftPanel={
+                    explorerVisible && !focusMode ? (
+                      <LeftPanel
+                        onFileSelect={handleFileSelect}
+                        activeFile={activeFile}
+                        refreshTrigger={fileTreeRefresh}
+                      />
+                    ) : null
+                  }
+                  centerPanel={
+                    <PanelGroup direction="vertical" className="h-full">
+                      {/* Editor Panel */}
+                      <Panel
+                        defaultSize={terminalVisible ? 65 : 100}
+                        minSize={5}
+                      >
+                        <div className="h-full overflow-hidden" data-tour="monaco-editor">
+                          <MonacoEditor
+                            value={activeFile ? files[activeFile] : undefined}
+                            onChange={(value) => {
+                              if (activeFile && value !== undefined && !loadingFiles.has(activeFile) && !fileErrors[activeFile]) {
+                                handleFileChange(activeFile, value);
+                              }
+                            }}
+                            onMount={(editor) => {
+                              editorRef.current = editor;
+                            }}
+                            file={activeFile}
+                            language="typescript"
+                            theme="tokyo-night"
+                            fontSize={fontSize}
+                            onTourStart={() => setShowTour(true)}
+                          />
+                        </div>
+                      </Panel>
 
-                    {/* Resize Handle between Editor and Terminal */}
-                    {terminalVisible && (
-                      <>
-                        <PanelResizeHandle
-                          className="group h-1 bg-bg-secondary hover:bg-orange-400/20 transition-all duration-200 cursor-row-resize relative"
-                          style={{
-                            boxShadow: "0 0 0 0 rgba(251, 146, 60, 0)",
-                            transition: "all 0.3s ease",
-                          }}
-                          onMouseEnter={(e) => {
-                            (
-                              e.currentTarget as unknown as HTMLElement
-                            ).style.boxShadow =
-                              "0 0 20px rgba(251, 146, 60, 0.8), inset 0 0 10px rgba(251, 146, 60, 0.4)";
-                          }}
-                          onMouseLeave={(e) => {
-                            (
-                              e.currentTarget as unknown as HTMLElement
-                            ).style.boxShadow = "0 0 0 0 rgba(251, 146, 60, 0)";
-                          }}
-                        >
-                          <div className="h-full w-full flex items-center justify-center">
-                            <div
-                              className="h-0.5 w-8 bg-orange-400/50 group-hover:bg-orange-400 rounded-full transition-all duration-200"
-                              style={{
-                                boxShadow: "0 0 10px rgba(251, 146, 60, 0.6)",
-                              }}
-                            />
-                          </div>
-                        </PanelResizeHandle>
+                      {/* Resize Handle between Editor and Terminal */}
+                      {terminalVisible && (
+                        <>
+                          <PanelResizeHandle
+                            className="group h-1 bg-bg-secondary hover:bg-orange-400/20 transition-all duration-200 cursor-row-resize relative"
+                            style={{
+                              boxShadow: "0 0 0 0 rgba(251, 146, 60, 0)",
+                              transition: "all 0.3s ease",
+                            }}
+                            onMouseEnter={(e) => {
+                              (
+                                e.currentTarget as unknown as HTMLElement
+                              ).style.boxShadow =
+                                "0 0 20px rgba(251, 146, 60, 0.8), inset 0 0 10px rgba(251, 146, 60, 0.4)";
+                            }}
+                            onMouseLeave={(e) => {
+                              (
+                                e.currentTarget as unknown as HTMLElement
+                              ).style.boxShadow = "0 0 0 0 rgba(251, 146, 60, 0)";
+                            }}
+                          >
+                            <div className="h-full w-full flex items-center justify-center">
+                              <div
+                                className="h-0.5 w-8 bg-orange-400/50 group-hover:bg-orange-400 rounded-full transition-all duration-200"
+                                style={{
+                                  boxShadow: "0 0 10px rgba(251, 146, 60, 0.6)",
+                                }}
+                              />
+                            </div>
+                          </PanelResizeHandle>
 
-                        {/* Terminal Panel */}
-                        <Panel defaultSize={35} minSize={15} maxSize={95}>
-                          <div className="h-full bg-bg-primary">
-                            <LazyTerminalContainer
-                              onAgentsSpawn={handleAgentsSpawn}
-                              onTerminalClick={handleTerminalClick}
-                              onClaudeTyped={handleClaudeTyped}
-                              onTerminalData={handleTerminalData}
-                              onTerminalCommand={handleTerminalCommand}
-                              onTerminalReady={handleTerminalReady}
-                              onComposerVisibilityChange={setComposerVisible}
-                              restoredTerminalHistory={restoredTerminalHistory}
-                            />
-                          </div>
-                        </Panel>
-                      </>
-                    )}
-                  </PanelGroup>
-                }
-                rightPanel={
-                  !focusMode ? (
-                    <PreviewPanel 
-                      activeFile={activeFile}
-                      editorContent={activeFile ? files[activeFile] || "" : ""}
-                      fileOpen={!!activeFile}
-                      isPreviewable={
-                        // SAFETY: Mark files as previewable based on extension
-                        activeFile ? 
-                        /\.(html|htm|tsx|jsx|css|js|ts)$/i.test(activeFile) : 
-                        false
-                      }
-                      onOpenFile={handleOpenFileFromPath}
-                      recentTerminalInput={recentTerminalInput}
-                      terminalCommands={terminalCommands}
-                    />
-                  ) : null
-                }
+                          {/* Terminal Panel */}
+                          <Panel defaultSize={35} minSize={15} maxSize={95}>
+                            <div className="h-full bg-bg-primary" data-tour="terminal">
+                              <LazyTerminalContainer
+                                onAgentsSpawn={handleAgentsSpawn}
+                                onTerminalClick={handleTerminalClick}
+                                onClaudeTyped={handleClaudeTyped}
+                                onTerminalData={handleTerminalData}
+                                onTerminalCommand={handleTerminalCommand}
+                                onTerminalReady={handleTerminalReady}
+                                onComposerVisibilityChange={setComposerVisible}
+                                restoredTerminalHistory={restoredTerminalHistory}
+                                restoredSessionId={terminalSessionId}
+                              />
+                            </div>
+                          </Panel>
+                        </>
+                      )}
+                    </PanelGroup>
+                  }
+                  rightPanel={
+                    !focusMode ? (
+                      <PreviewPanel 
+                        activeFile={activeFile}
+                        editorContent={activeFile ? files[activeFile] || "" : ""}
+                        fileOpen={!!activeFile}
+                        isPreviewable={
+                          // SAFETY: Mark files as previewable based on extension
+                          activeFile ? 
+                          /\.(html|htm|tsx|jsx|css|js|ts)$/i.test(activeFile) : 
+                          false
+                        }
+                        onOpenFile={handleOpenFileFromPath}
+                        recentTerminalInput={recentTerminalInput}
+                        terminalCommands={terminalCommands}
+                      />
+                    ) : null
+                  }
+                />
+              </div>
+
+              {/* 🔧 FIX (Oct 24, 2025): Moved StatusBars INSIDE flex-1 container */}
+              {/* This allows terminal selection to extend to actual bottom of viewport */}
+              {/* Status Bar */}
+              <StatusBarCore
+                activeFile={activeFile}
+                isConnected={true} // Connected to terminal
+                openFiles={Object.keys(files).map((path) => ({
+                  path,
+                  name: path.split("/").pop() || path,
+                  content: files[path],
+                  isDirty: false, // TODO: Track dirty state properly
+                }))}
+                terminalHistory={terminalHistory}
+                terminalCommands={terminalCommands}
+                terminalSessionId={terminalSessionId}
               />
+              
+              {/* Status Line - Simple Time Display Only */}
+              <StatusLine />
             </div>
-
-            {/* Status Bar */}
-            <StatusBarCore
-              activeFile={activeFile}
-              isConnected={true} // Connected to terminal
-              openFiles={Object.keys(files).map((path) => ({
-                path,
-                name: path.split("/").pop() || path,
-                content: files[path],
-                isDirty: false, // TODO: Track dirty state properly
-              }))}
-              terminalHistory={terminalHistory}
-              terminalCommands={terminalCommands}
-            />
-            
-            {/* Status Line - Simple Time Display Only */}
-            <StatusLine />
             
             {/* Interactive Tour Overlay */}
             {showTour && (

@@ -86,6 +86,11 @@ export function WelcomeScreen({ onDismiss, onBridgeClick }: WelcomeScreenProps =
                       coder1-bridge start{isProduction ? ' &' : ' --dev'}
                     </span>
                   </div>
+                  {!isProduction && (
+                    <p className="text-xs text-yellow-400 mt-1">
+                      💡 <strong>--dev flag required</strong> for localhost
+                    </p>
+                  )}
                 </div>
                 
                 <div>

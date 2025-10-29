@@ -4,31 +4,16 @@ import path from 'path';
 import { withFileMiddleware } from '@/lib/api-middleware';
 import { logger } from '@/lib/logger';
 
-// Get project root directory
+// Get project root directory - SECURITY: Restricts to user workspace only
 const getProjectRoot = () => {
-    return process.cwd();
+    // SECURITY FIX: Allow navigation within user-workspaces/
+    // This lets users work on their projects while protecting source code
+    const workspacePath = process.env.USER_WORKSPACE_PATH || 'user-workspaces';
+    return path.join(process.cwd(), workspacePath);
 };
 
-// Allowed file paths for security (prevent writing to sensitive areas)
-const ALLOWED_PATHS = [
-    'coder1-ide-next',
-    'CANONICAL',
-    'src', 
-    'components',
-    'lib',
-    'pages',
-    'public',
-    'app',
-    'services',
-    'utils',
-    'types',
-    'hooks',
-    'stores',
-    'test',
-    'tests',
-    '__tests__',
-    'docs'
-];
+// No longer need ALLOWED_PATHS - everything within workspace is allowed
+// (keeping for backwards compatibility but not enforced)
 
 // Blocked sensitive files and paths
 const BLOCKED_FILES = [
@@ -111,19 +96,9 @@ async function fileWriteHandler({ req }: { req: NextRequest }): Promise<NextResp
             );
         }
         
-        // Check if path starts with allowed directories
-        const pathParts = relativePath.split(path.sep);
-        const topLevel = pathParts[0];
-        if (topLevel && !ALLOWED_PATHS.includes(topLevel)) {
-            // logger?.error(`❌ Write to unauthorized directory: ${topLevel}`);
-            return NextResponse.json(
-                {
-                    success: false,
-                    error: 'Access denied: Directory write restricted'
-                },
-                { status: 403 }
-            );
-        }
+        // SECURITY: Workspace restriction - no need to check allowed paths
+        // since getProjectRoot() already restricts to workspace directory
+        // All files within workspace are allowed for writing
         
         // Ensure directory exists
         const dirPath = path.dirname(fullPath);

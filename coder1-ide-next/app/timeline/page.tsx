@@ -2,7 +2,8 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Clock, FileEdit, Terminal, Save, AlertCircle, RefreshCw, Download } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { ArrowLeft, Clock, FileEdit, Terminal, Save, AlertCircle, RefreshCw, Download, History, X } from 'lucide-react';
 
 interface TimelineEvent {
   id: string;
@@ -12,20 +13,68 @@ interface TimelineEvent {
   details?: any;
 }
 
+interface Session {
+  id: string;
+  name: string;
+  createdAt: string;
+}
+
 export default function TimelinePage() {
+  const router = useRouter();
   const [events, setEvents] = useState<TimelineEvent[]>([]);
   const [loading, setLoading] = useState(true);
-  const [sessionId, setSessionId] = useState<string>('');
+  const [sessionId, setSessionId] = useState<string>(''); // Current viewing session (changes as user browses)
+  const [originalSessionId, setOriginalSessionId] = useState<string>(''); // Original session to return to (never changes)
+  const [sessions, setSessions] = useState<Session[]>([]);
+  const [selectedSession, setSelectedSession] = useState<string>('all');
 
   useEffect(() => {
-    // Get sessionId from URL params or localStorage
+    // Fetch all available sessions
+    fetchSessions();
+    
+    // 🔧 CRITICAL FIX: Use same localStorage key as IDE page ('ide-terminalSessionId')
+    // Previous bug: Timeline used 'currentSessionId' but IDE stores to 'ide-terminalSessionId'
+    // This caused Back to IDE button to navigate without sessionId, creating new blank terminal
     const params = new URLSearchParams(window.location.search);
     const urlSessionId = params.get('sessionId');
-    const storedSessionId = urlSessionId || localStorage.getItem('currentSessionId') || '';
-    setSessionId(storedSessionId);
+    const storedSessionId = urlSessionId || localStorage.getItem('ide-terminalSessionId') || '';
     
-    fetchTimeline(storedSessionId);
+    // 🎯 CRITICAL: Set BOTH session IDs
+    // - originalSessionId: The session we came FROM (frozen, never changes)
+    // - sessionId: Current viewing context (changes as user browses timeline)
+    setOriginalSessionId(storedSessionId); // Frozen - this is where "Back to IDE" returns
+    setSessionId(storedSessionId); // Can change as user views different sessions
+    
+    console.log('🔍 [TIMELINE INIT] Original session frozen:', storedSessionId);
+    
+    // Default to showing all sessions instead of filtering to current
+    setSelectedSession('all');
+    fetchTimeline(); // Fetch all sessions by default
   }, []);
+
+  const fetchSessions = async () => {
+    try {
+      const response = await fetch('/api/sessions');
+      const data = await response.json();
+      if (data.success && data.sessions) {
+        setSessions(data.sessions);
+      }
+    } catch (error) {
+      console.error('Failed to fetch sessions:', error);
+    }
+  };
+
+  const handleSessionChange = (newSessionId: string) => {
+    setSelectedSession(newSessionId);
+    setLoading(true);
+    if (newSessionId === 'all') {
+      fetchTimeline(); // No sessionId = all sessions
+    } else if (newSessionId === 'current') {
+      fetchTimeline(sessionId);
+    } else {
+      fetchTimeline(newSessionId);
+    }
+  };
 
   const fetchTimeline = async (sessionId?: string) => {
     try {
@@ -42,140 +91,174 @@ export default function TimelinePage() {
     }
   };
 
+  const handleDelete = async (checkpointId: string, checkpointSessionId: string) => {
+    if (!confirm('Are you sure you want to delete this checkpoint? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      const deleteUrl = `/api/sessions/${checkpointSessionId}/checkpoints/${checkpointId}`;
+      const response = await fetch(deleteUrl, {
+        method: 'DELETE'
+      });
+
+      if (response.ok) {
+        console.log('✅ Checkpoint deleted successfully');
+        // Remove from local state immediately
+        setEvents(events.filter(e => e.id !== checkpointId));
+        
+        // Show success notification
+        const toast = document.createElement('div');
+        toast.className = 'fixed top-4 right-4 bg-red-600 text-white px-6 py-3 rounded-lg shadow-lg z-50 transition-all duration-300';
+        toast.innerHTML = `🗑️ Checkpoint deleted`;
+        document.body.appendChild(toast);
+        
+        setTimeout(() => {
+          toast.style.opacity = '0';
+          setTimeout(() => document.body.removeChild(toast), 300);
+        }, 3000);
+      } else {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        alert(`Failed to delete checkpoint: ${errorData.error || 'Unknown error'}`);
+      }
+    } catch (error) {
+      console.error('❌ Failed to delete checkpoint:', error);
+      alert(`Failed to delete checkpoint: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  };
+
   const handleRefresh = () => {
     setLoading(true);
     fetchTimeline(sessionId);
   };
 
+  // Format checkpoint timestamp for display (e.g., "Sep 26, 4:55 pm")
+  const formatCheckpointDate = (timestamp: string | number) => {
+    const date = new Date(timestamp);
+    const month = date.toLocaleDateString('en-US', { month: 'short' });
+    const day = date.getDate();
+    const time = date.toLocaleTimeString('en-US', { 
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true
+    }).toLowerCase();
+    return `${month} ${day}, ${time}`;
+  };
+
   const handleRestore = async (checkpointId: string, checkpointSessionId: string) => {
-    if (!confirm('Are you sure you want to restore this checkpoint? Current work will be saved first.')) {
+    if (!confirm('Are you sure you want to restore this checkpoint? This will open it in a sandbox tab.')) {
       return;
     }
 
-    console.log('🔄 Restoring checkpoint:', { checkpointId, checkpointSessionId });
-    
-    // 🔍 DEBUG: Find and log the checkpoint being restored
-    const checkpointEvent = events.find(e => e.id === checkpointId && e.type === 'checkpoint');
-    if (checkpointEvent) {
-      const terminalHistory = checkpointEvent.details?.terminalHistory || 
-                             checkpointEvent.details?.data?.terminalHistory || 
-                             checkpointEvent.details?.snapshot?.terminal || '';
-      console.log(`📊 TIMELINE DEBUG: Restoring checkpoint with terminal history length: ${terminalHistory.length} characters`);
-      if (terminalHistory.length === 0) {
-        console.warn(`⚠️ TIMELINE WARNING: This checkpoint has NO terminal history!`);
-      }
-    }
+    console.log('🔄 TIMELINE: Restoring checkpoint to sandbox:', { checkpointId, checkpointSessionId });
 
     try {
-      // First save current state as a checkpoint
-      await fetch('/api/checkpoint', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          sessionId: sessionId || checkpointSessionId,
-          timestamp: new Date().toISOString(),
-          snapshot: {
-            files: localStorage.getItem('openFiles') || '[]',
-            terminal: localStorage.getItem('terminalHistory') || '',
-            editor: localStorage.getItem('editorContent') || '',
-            note: 'Auto-save before restore'
-          }
-        })
-      });
-
-      // Then restore the selected checkpoint using the checkpoint's own sessionId
+      // Fetch checkpoint data from restore API
       const restoreUrl = `/api/sessions/${checkpointSessionId}/checkpoints/${checkpointId}/restore`;
-      console.log('🔗 Restore URL:', restoreUrl);
+      console.log('🔗 TIMELINE: Restore URL:', restoreUrl);
       
       const restoreResponse = await fetch(restoreUrl, {
         method: 'POST'
       });
 
-      console.log('📡 Restore response:', { ok: restoreResponse.ok, status: restoreResponse.status });
-
-      if (restoreResponse.ok) {
-        const data = await restoreResponse.json();
-        console.log('✅ Restore successful, applying data to localStorage');
-        console.log('📦 Full restore data:', data);
-        console.log('📦 Checkpoint structure:', {
-          hasCheckpoint: !!data.checkpoint,
-          hasData: !!data.checkpoint?.data,
-          hasSnapshot: !!data.checkpoint?.data?.snapshot,
-          topLevelTerminalHistory: !!data.checkpoint?.terminalHistory,
-          dataLevelTerminalHistory: !!data.checkpoint?.data?.terminalHistory,
-          snapshotTerminal: !!data.checkpoint?.data?.snapshot?.terminal
-        });
-        
-        // Apply the restored data to localStorage with quota handling
-        if (data.checkpoint?.data?.snapshot) {
-          const snapshot = data.checkpoint.data.snapshot;
-          
-          // Files - should be small, restore normally
-          if (snapshot.files) {
-            try {
-              localStorage.setItem('openFiles', snapshot.files);
-            } catch (e) {
-              console.warn('⚠️ Could not restore files:', e);
-            }
-          }
-          
-          // 🔧 FIX: Terminal history can be in multiple locations in checkpoint JSON
-          // Check all possible locations to ensure we find it
-          const terminalHistory = 
-            data.checkpoint.terminalHistory ||           // Top-level (preferred location)
-            data.checkpoint.data?.terminalHistory ||     // Inside data object  
-            snapshot.terminal;                           // Legacy location (fallback)
-          
-          console.log('🔍 Terminal history extraction:', {
-            topLevel: !!data.checkpoint.terminalHistory,
-            dataLevel: !!data.checkpoint.data?.terminalHistory,
-            snapshotLevel: !!snapshot.terminal,
-            foundLength: terminalHistory?.length || 0
-          });
-          
-          // Terminal history - can be VERY large, truncate if needed
-          if (terminalHistory) {
-            try {
-              // First try to store as-is
-              localStorage.setItem('terminalHistory', terminalHistory);
-              console.log(`✅ Terminal history restored successfully (${terminalHistory.length} characters)`);
-            } catch (e) {
-              // If quota exceeded, truncate to last 100KB (roughly last 1000 lines)
-              console.warn(`⚠️ Terminal history too large for localStorage (${terminalHistory.length} chars), truncating...`);
-              const maxSize = 100 * 1024; // 100KB
-              const truncated = terminalHistory.slice(-maxSize);
-              try {
-                localStorage.setItem('terminalHistory', truncated);
-                console.log(`✅ Terminal history truncated: ${terminalHistory.length} → ${truncated.length} characters`);
-              } catch (e2) {
-                // If still too large, skip terminal history restoration
-                console.warn('⚠️ Could not restore terminal history even after truncation');
-                localStorage.removeItem('terminalHistory'); // Clear any existing data
-              }
-            }
-          } else {
-            console.warn('⚠️ No terminal history found in checkpoint');
-          }
-          
-          // Editor content - should be small, restore normally
-          if (snapshot.editor) {
-            try {
-              localStorage.setItem('editorContent', snapshot.editor);
-            } catch (e) {
-              console.warn('⚠️ Could not restore editor content:', e);
-            }
-          }
-        }
-        
-        // Navigate back to IDE with restore indicator
-        window.location.href = `/ide?restored=true&checkpointId=${checkpointId}&sessionId=${checkpointSessionId}`;
-      } else {
+      if (!restoreResponse.ok) {
         const errorData = await restoreResponse.json().catch(() => ({ error: 'Unknown error' }));
-        console.error('❌ Restore failed:', errorData);
+        console.error('❌ TIMELINE: Restore failed:', errorData);
         alert(`Failed to restore checkpoint: ${errorData.error || 'Unknown error'}`);
+        return;
       }
+
+      const restoreData = await restoreResponse.json();
+      console.log('✅ TIMELINE: Checkpoint data loaded:', {
+        hasCheckpoint: !!restoreData.checkpoint,
+        hasSnapshot: !!restoreData.checkpoint?.data?.snapshot,
+        timestamp: restoreData.checkpoint?.timestamp
+      });
+
+      const snapshot = restoreData.checkpoint?.data?.snapshot;
+      if (!snapshot) {
+        alert('Checkpoint data is incomplete');
+        return;
+      }
+
+      // Extract terminal history from multiple possible locations
+      const terminalHistory = 
+        restoreData.checkpoint.terminalHistory ||
+        restoreData.checkpoint.data?.terminalHistory ||
+        snapshot.terminal || '';
+
+      console.log('📊 TIMELINE: Terminal history length:', terminalHistory.length);
+
+      // Filter out thinking animations from terminal history
+      const { filterThinkingAnimations } = await import('@/lib/checkpoint-utils');
+      const cleanedTerminalHistory = terminalHistory ? filterThinkingAnimations(terminalHistory) : '';
+      
+      console.log('🧽 TIMELINE: Filtered terminal history:', {
+        before: terminalHistory.length,
+        after: cleanedTerminalHistory.length,
+        removed: terminalHistory.length - cleanedTerminalHistory.length
+      });
+
+      // Parse files and commands from snapshot
+      let filesArray = [];
+      if (snapshot.files) {
+        try {
+          const parsed = JSON.parse(snapshot.files);
+          filesArray = Array.isArray(parsed) ? parsed : [];
+        } catch (e) {
+          console.log('⚠️ TIMELINE: Failed to parse files:', e);
+        }
+      }
+
+      let commandsArray = [];
+      if (snapshot.terminal) {
+        // Extract commands from terminal history
+        const terminalLines = snapshot.terminal.split('\n');
+        const promptRegex = /(?:bash-\d+\.\d+\$|╰─\$|\$)\s+(.+)/;
+        commandsArray = terminalLines
+          .map(line => {
+            const match = line.match(promptRegex);
+            return match ? match[1].trim() : null;
+          })
+          .filter(cmd => cmd && cmd.length > 0)
+          .slice(-5); // Get last 5 commands
+      }
+
+      // Format checkpoint name with date
+      const checkpointName = formatCheckpointDate(restoreData.checkpoint.timestamp);
+      
+      // Create sandbox data matching SessionsPanel structure
+      const sandboxData = {
+        name: checkpointName,
+        files: filesArray,
+        commands: commandsArray,
+        timestamp: restoreData.checkpoint.timestamp,
+        description: 'Restored checkpoint from Timeline',
+        originalCheckpoint: restoreData.checkpoint,
+        terminalHistory: cleanedTerminalHistory,
+        checkpointData: {
+          files: filesArray,
+          commands: commandsArray,
+          timestamp: restoreData.checkpoint.timestamp,
+          terminalHistory: cleanedTerminalHistory
+        }
+      };
+
+      console.log('🏖️ TIMELINE: Creating sandbox with data:', {
+        name: sandboxData.name,
+        filesCount: filesArray.length,
+        commandsCount: commandsArray.length,
+        terminalHistoryLength: cleanedTerminalHistory.length
+      });
+
+      // Store sandbox data in sessionStorage for IDE to pick up
+      sessionStorage.setItem('pendingSandbox', JSON.stringify(sandboxData));
+      
+      // Navigate to IDE - it will create the sandbox on load
+      window.location.href = '/ide';
+      
     } catch (error) {
-      console.error('❌ Failed to restore checkpoint:', error);
+      console.error('❌ TIMELINE: Failed to restore checkpoint:', error);
       alert(`Failed to restore checkpoint: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   };
@@ -218,7 +301,18 @@ export default function TimelinePage() {
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8 flex items-center justify-between">
           <button 
-            onClick={() => window.history.back()} 
+            onClick={() => {
+              // 🎯 CRITICAL FIX: Use originalSessionId (frozen on mount), NOT sessionId (changes during browsing)
+              // originalSessionId = The session we came FROM (never changes)
+              // sessionId = Current viewing context (changes as user browses different sessions)
+              console.log('🔍 [TIMELINE] Back to IDE clicked');
+              console.log('   Original session (RETURNING TO):', originalSessionId);
+              console.log('   Current viewing session:', sessionId);
+              console.log('   These may differ if user browsed other sessions');
+              
+              // Always navigate back to the ORIGINAL session
+              router.push(`/ide${originalSessionId ? `?sessionId=${originalSessionId}` : ''}`);
+            }}
             className="inline-flex items-center gap-2 text-gray-400 hover:text-white transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
@@ -241,7 +335,29 @@ export default function TimelinePage() {
           </div>
         </div>
         
-        <h1 className="text-4xl font-bold text-white mb-8">Project Timeline</h1>
+        <div className="flex items-center justify-between mb-8">
+          <h1 className="text-4xl font-bold text-white">Project Timeline</h1>
+          
+          {/* Session Selector */}
+          <div className="flex items-center gap-2">
+            <History className="w-4 h-4 text-gray-400" />
+            <select
+              value={selectedSession}
+              onChange={(e) => handleSessionChange(e.target.value)}
+              className="bg-gray-800 border border-gray-700 text-white rounded px-3 py-2 text-sm focus:outline-none focus:border-cyan-500 transition-colors"
+            >
+              <option value="all">📊 All Sessions ({sessions.length})</option>
+              <option value="current">🎯 Current Session</option>
+              <optgroup label="─────────────────">
+                {sessions.slice(0, 20).map((session) => (
+                  <option key={session.id} value={session.id}>
+                    {session.name || session.id.substring(0, 20)}
+                  </option>
+                ))}
+              </optgroup>
+            </select>
+          </div>
+        </div>
         
         {loading ? (
           <div className="text-center text-gray-400">Loading timeline...</div>
@@ -252,7 +368,20 @@ export default function TimelinePage() {
             <p className="text-sm text-gray-500 mt-2">Events will appear here as you work on your project</p>
           </div>
         ) : (
-          <div className="space-y-4">
+          <>
+            {/* Stats Bar */}
+            <div className="mb-4 p-3 bg-gray-800 border border-gray-700 rounded-lg flex items-center justify-between text-sm">
+              <span className="text-gray-400">
+                Showing <span className="text-white font-semibold">{events.length}</span> checkpoint{events.length !== 1 ? 's' : ''}
+              </span>
+              <span className="text-gray-500">
+                {selectedSession === 'all' ? `From all ${sessions.length} sessions` : 
+                 selectedSession === 'current' ? 'Current session only' :
+                 'Selected session'}
+              </span>
+            </div>
+            
+            <div className="space-y-4">
             {events.map((event, index) => {
               const isFirst = index === 0;
               const isLast = index === events.length - 1;
@@ -279,7 +408,7 @@ export default function TimelinePage() {
                     </div>
                     
                     {/* Content */}
-                    <div className="flex-1 bg-gray-800 rounded-lg p-4 border border-gray-700 hover:border-gray-600 transition-colors">
+                    <div className="flex-1 bg-gray-800 rounded-lg p-4 border border-gray-700 hover:border-gray-600 transition-colors group">
                       <div className="flex items-start justify-between mb-2">
                         <div className="flex-1">
                           <h3 className="text-sm font-semibold text-white">
@@ -317,12 +446,21 @@ export default function TimelinePage() {
                             {formatTime(event.timestamp)}
                           </span>
                           {event.type === 'checkpoint' && event.details?.sessionId && (
-                            <button
-                              onClick={() => handleRestore(event.id, event.details.sessionId)}
-                              className="px-2 py-1 bg-cyan-600 hover:bg-cyan-500 rounded text-xs transition-colors"
-                            >
-                              Restore
-                            </button>
+                            <>
+                              <button
+                                onClick={() => handleRestore(event.id, event.details.sessionId)}
+                                className="px-2 py-1 bg-cyan-600 hover:bg-cyan-500 rounded text-xs transition-colors"
+                              >
+                                Restore
+                              </button>
+                              <button
+                                onClick={() => handleDelete(event.id, event.details.sessionId)}
+                                className="p-1 text-gray-500 hover:text-red-400 hover:bg-red-900/20 rounded transition-colors opacity-0 group-hover:opacity-100"
+                                title="Delete checkpoint"
+                              >
+                                <X className="w-4 h-4" />
+                              </button>
+                            </>
                           )}
                         </div>
                       </div>
@@ -349,6 +487,7 @@ export default function TimelinePage() {
               );
             })}
           </div>
+          </>
         )}
       </div>
     </div>

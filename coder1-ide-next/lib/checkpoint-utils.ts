@@ -194,7 +194,62 @@ export function filterThinkingAnimations(terminalData: string): string {
     /.*\u001b\[[\d;]+m[✶✳✢·✻✽✦☆★▪▫◆◇○●]\u001b.*\u001b\[\d+m\(esc to interrupt.*$/gm,
     
     // Catch any line ending with variations of "esc to interrupt"
-    /.*\besc to interrupt\b.*$/gm
+    /.*\besc to interrupt\b.*$/gm,
+    
+    // CRITICAL FIX: Bash(claude) running status messages (January 2025)
+    // These appear when Claude Code CLI is active and were being restored on every page load
+    /^\s*Bash\(claude\)\s*$/gm,
+    /.*Bash\(claude\).*\r?\n/g,
+    
+    // Match "Running…" status lines with the tree drawing character
+    /^\s*⎿\s*Running…\s*$/gm,
+    /.*⎿\s*Running….*\r?\n/g,
+    
+    // Match "ctrl+b to run in background" hints
+    /^\s*ctrl\+b to run in background\s*$/gm,
+    /.*ctrl\+b to run in background.*\r?\n/g,
+    
+    // Catch complete sequences of all three lines together
+    /(?:.*Bash\(claude\).*\r?\n)?(?:.*⎿\s*Running….*\r?\n)?(?:.*ctrl\+b to run in background.*\r?\n?)/g,
+    
+    // Generic catch-all for any claude command status
+    /.*Bash\([^)]+\).*\r?\n/g,
+    
+    // MCP health check messages (January 2025) - CRITICAL FIX
+    // These appear when Claude Code checks MCP server status
+    /.*⎿\s*Checking MCP server health.*\r?\n/g,
+    /^\s*⎿\s*Checking MCP server health.*$/gm,
+    
+    // Time duration indicators (4s), (10ms), etc.
+    /^\s*\(\d+[sm]s?\)\s*$/gm,
+    /.*\(\d+[sm]s?\).*\r?\n/g,
+    
+    // MCP command variations (claude mcp list, claude mcp status, etc.)
+    /.*Bash\(claude\s+mcp.*\).*\r?\n/g,
+    /.*claude\s+mcp\s+(list|status|check|health).*\r?\n/g,
+    
+    // Generic MCP server check messages
+    /.*MCP server.*health.*\r?\n/gi,
+    /.*Checking.*server.*\r?\n/gi,
+    
+    // Claude CLI status messages (October 2025) - CRITICAL FIX
+    // These appear when Claude Code is processing commands
+    /.*Mustering….*\r?\n/g,
+    /^\s*·\s*Mustering….*$/gm,
+    /.*Clauding….*\r?\n/g,
+    /^\s*·\s*Clauding….*$/gm,
+    /.*✻\s*Clauding….*\r?\n/g,
+    /^\s*✻\s*Clauding….*$/gm,
+    /.*\(esc to interrupt\).*\r?\n/g,
+    /^\s*\(esc to interrupt\).*$/gm,
+    
+    // Bracketed paste mode codes (terminal escape sequences)
+    /\[200~/g,
+    /\[201~/g,
+    
+    // ANSI cursor positioning codes that show as text
+    /\[I/g,
+    /\[O/g
   ];
   
   // MCP Tool Call Patterns - CRITICAL FOR FILTERING TOOL INVOCATIONS

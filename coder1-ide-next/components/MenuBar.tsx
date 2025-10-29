@@ -7,6 +7,7 @@ import { ChevronDown, Home, Grid, FileText, Code, Sparkles, BookOpen, SettingsIc
 import { glows } from '@/lib/design-tokens';
 import { SetupInstructionsModal } from './bridge/SetupInstructionsModal';
 import { GlmSetupModal } from './GlmSetupModal';
+import FileUploadDialog from './FileUploadDialog';
 
 interface MenuItem {
   label?: string;
@@ -22,6 +23,8 @@ interface MenuConfig {
 interface MenuBarProps {
   onNewFile?: () => void;
   onOpenFile?: () => void;
+  onOpenFileFromComputer?: () => void;
+  onFilesUploaded?: (filePaths: string[]) => void;
   onSave?: () => void;
   onSaveAs?: () => void;
   onToggleExplorer?: () => void;
@@ -60,6 +63,8 @@ interface MenuBarProps {
 export default function MenuBar({
   onNewFile,
   onOpenFile,
+  onOpenFileFromComputer,
+  onFilesUploaded,
   onSave,
   onSaveAs,
   onToggleExplorer,
@@ -87,6 +92,7 @@ export default function MenuBar({
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [setupModalOpen, setSetupModalOpen] = useState(false);
   const [glmSetupModalOpen, setGlmSetupModalOpen] = useState(false);
+  const [fileUploadOpen, setFileUploadOpen] = useState(false);
   const menuBarRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -106,7 +112,9 @@ export default function MenuBar({
   const menuConfig: MenuConfig = {
     File: [
       { label: 'New File', action: onNewFile || (() => {}), shortcut: 'Ctrl+N' },
+      { separator: true },
       { label: 'Open File...', action: onOpenFile || (() => {}), shortcut: 'Ctrl+O' },
+      { label: 'Open from Computer...', action: () => setFileUploadOpen(true), shortcut: 'Ctrl+Shift+O' },
       { separator: true },
       { label: 'Save', action: onSave || (() => {}), shortcut: 'Ctrl+S' },
       { label: 'Save As...', action: onSaveAs || (() => {}), shortcut: 'Ctrl+Shift+S' },
@@ -453,6 +461,18 @@ export default function MenuBar({
       <GlmSetupModal 
         isOpen={glmSetupModalOpen} 
         onClose={() => setGlmSetupModalOpen(false)}
+      />
+      
+      {/* File Upload Dialog */}
+      <FileUploadDialog
+        isOpen={fileUploadOpen}
+        onClose={() => setFileUploadOpen(false)}
+        onFilesUploaded={(paths) => {
+          setFileUploadOpen(false);
+          if (onFilesUploaded) {
+            onFilesUploaded(paths);
+          }
+        }}
       />
     </div>
   );

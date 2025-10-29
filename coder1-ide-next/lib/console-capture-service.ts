@@ -220,10 +220,15 @@ ${error.stack ? `Stack: ${error.stack.split('\n')[1] || 'No stack trace'}` : ''}
 // Create singleton instance
 export const consoleCaptureService = new ConsoleCaptureService();
 
+// 🚨 AUTO-START DISABLED (Oct 23, 2025) - Prevents console spam
+// The service was capturing ALL console calls (259 in Terminal.tsx alone)
+// This created thousands of "Hidden" messages in browser DevTools
+// To re-enable: Uncomment the code below and restart dev server
+// 
 // Auto-start in development mode
-if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
-  // Start capture after a short delay to avoid interfering with initial page load
-  setTimeout(() => {
-    consoleCaptureService.start();
-  }, 1000);
-}
+// if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
+//   // Start capture after a short delay to avoid interfering with initial page load
+//   setTimeout(() => {
+//     consoleCaptureService.start();
+//   }, 1000);
+// }

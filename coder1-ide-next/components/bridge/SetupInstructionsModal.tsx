@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { X } from 'lucide-react';
+import { X, Cable } from 'lucide-react';
+import '@/components/terminal/Terminal.css';
 
 interface SetupInstructionsModalProps {
   isOpen: boolean;
@@ -15,12 +16,47 @@ export function SetupInstructionsModal({
   showDontShowAgain = false 
 }: SetupInstructionsModalProps) {
   const [dontShowAgain, setDontShowAgain] = useState(false);
+  const [isLoadingCode, setIsLoadingCode] = useState(false);
+  const [pairingCode, setPairingCode] = useState<string | null>(null);
+  const [showCodeModal, setShowCodeModal] = useState(false);
+  const [copyButtonText, setCopyButtonText] = useState('📋 Copy Code');
+  const [isProduction, setIsProduction] = useState(true);
+  
+  // Detect if running on localhost or production
+  React.useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setIsProduction(!window.location.hostname.includes('localhost'));
+    }
+  }, []);
 
   const handleClose = () => {
     if (dontShowAgain) {
       localStorage.setItem('coder1-bridge-setup-viewed', 'true');
     }
     onClose();
+  };
+
+  const handleGetBridgeCode = async () => {
+    setIsLoadingCode(true);
+    try {
+      const userId = localStorage.getItem('userId') || `user_${Date.now()}`;
+      if (!localStorage.getItem('userId')) {
+        localStorage.setItem('userId', userId);
+      }
+
+      const response = await fetch(`/api/bridge/generate-code?userId=${userId}`);
+      const data = await response.json();
+      
+      if (data.code) {
+        setPairingCode(data.code);
+        setShowCodeModal(true);
+      }
+    } catch (error) {
+      console.error('Failed to generate pairing code:', error);
+      alert('Failed to generate pairing code. Please try again.');
+    } finally {
+      setIsLoadingCode(false);
+    }
   };
 
   if (!isOpen) return null;
@@ -89,24 +125,36 @@ export function SetupInstructionsModal({
                   <h3 className="font-semibold text-green-400 mb-2">Step 3: Connect Bridge (still on YOUR computer)</h3>
                   <div className="bg-black rounded p-3 font-mono text-sm flex items-center justify-between group">
                     <div>
-                      <span className="text-green-400">$</span> <span className="text-white select-all">coder1-bridge start</span>
+                      <span className="text-green-400">$</span> <span className="text-white select-all">coder1-bridge start{isProduction ? '' : ' --dev'}</span>
                     </div>
                     <button
-                      onClick={() => navigator.clipboard.writeText('coder1-bridge start')}
+                      onClick={() => navigator.clipboard.writeText(`coder1-bridge start${isProduction ? '' : ' --dev'}`)}
                       className="opacity-0 group-hover:opacity-100 transition-opacity px-2 py-1 text-xs bg-bg-secondary rounded hover:bg-bg-tertiary"
                       title="Copy command"
                     >
                       Copy
                     </button>
                   </div>
+                  {!isProduction && (
+                    <p className="text-xs text-yellow-400 mt-2">
+                      💡 <strong>--dev flag required</strong> when running IDE locally (localhost)
+                    </p>
+                  )}
                 </div>
 
                 <div className="border-l-4 border-blue-500 pl-4">
-                  <h3 className="font-semibold text-green-400 mb-2">Step 4: Enter the 6-digit code</h3>
-                  <p className="text-sm text-gray-300">
-                    Click the <span className="bg-blue-600 px-2 py-1 rounded text-white font-mono text-xs">Bridge</span> button 
-                    in the menu bar to get your pairing code
+                  <h3 className="font-semibold text-green-400 mb-2">Step 4: Get Your Pairing Code</h3>
+                  <p className="text-sm text-gray-300 mb-3">
+                    Click the Bridge button below to generate your 6-digit pairing code:
                   </p>
+                  <button
+                    onClick={handleGetBridgeCode}
+                    className="terminal-control-btn flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md"
+                    disabled={isLoadingCode}
+                  >
+                    <Cable className="w-4 h-4" />
+                    <span>{isLoadingCode ? 'Generating...' : 'Bridge'}</span>
+                  </button>
                 </div>
               </div>
             </div>
@@ -138,6 +186,71 @@ export function SetupInstructionsModal({
           )}
         </div>
       </div>
+      
+      {/* Pairing Code Sub-Modal */}
+      {showCodeModal && pairingCode && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+          <div 
+            className="fixed inset-0 bg-black/50" 
+            onClick={() => setShowCodeModal(false)} 
+          />
+          <div className="relative max-w-md w-full bg-bg-secondary rounded-lg p-6 shadow-2xl border border-cyan-500/50">
+            <button
+              onClick={() => setShowCodeModal(false)}
+              className="absolute top-4 right-4 text-gray-400 hover:text-white"
+            >
+              ✕
+            </button>
+            
+            <h2 className="text-xl font-bold mb-4 text-cyan-400">
+              Your Bridge Pairing Code
+            </h2>
+            
+            <div className="text-center mb-4">
+              <div className="text-4xl font-mono font-bold text-cyan-300 mb-2 select-all">
+                {pairingCode}
+              </div>
+              <p className="text-sm text-gray-400">
+                Enter this code in your terminal when prompted by <span className="font-mono bg-bg-tertiary px-1 rounded">coder1-bridge start</span>
+              </p>
+            </div>
+            
+            <div className="text-xs text-gray-500 text-center mb-3">
+              ⏱️ Code expires in 5 minutes
+            </div>
+            
+            <button
+              onClick={async () => {
+                try {
+                  await navigator.clipboard.writeText(pairingCode);
+                  setCopyButtonText('✅ Copied!');
+                  setTimeout(() => setCopyButtonText('📋 Copy Code'), 2000);
+                } catch (err) {
+                  console.error('Failed to copy:', err);
+                  // Fallback: Try to select the text
+                  const codeElement = document.querySelector('.select-all');
+                  if (codeElement) {
+                    const range = document.createRange();
+                    range.selectNode(codeElement);
+                    window.getSelection()?.removeAllRanges();
+                    window.getSelection()?.addRange(range);
+                    try {
+                      document.execCommand('copy');
+                      setCopyButtonText('✅ Copied!');
+                      setTimeout(() => setCopyButtonText('📋 Copy Code'), 2000);
+                    } catch (fallbackErr) {
+                      alert('Please manually select and copy the code above');
+                    }
+                  }
+                }
+              }}
+              className="w-full px-4 py-2 bg-cyan-500 hover:bg-cyan-400 text-black rounded-md font-semibold text-sm transition-colors"
+            >
+              {copyButtonText}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

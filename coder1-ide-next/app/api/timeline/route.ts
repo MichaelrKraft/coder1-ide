@@ -96,8 +96,10 @@ export async function GET(request: NextRequest) {
       console.warn('⚠️ Database read failed, falling back to JSON files:', dbError);
     }
     
-    // Fallback to JSON files if database returned no results
-    if (allCheckpoints.length === 0) {
+    // ALWAYS merge JSON files with database results for complete timeline
+    // Database might have some checkpoints, but JSON files are the historical source of truth
+    const jsonCheckpoints: TimelineEvent[] = [];
+    {
       const dataDir = path.join(process.cwd(), 'data');
       const sessionsDir = path.join(dataDir, 'sessions');
       
@@ -115,7 +117,7 @@ export async function GET(request: NextRequest) {
                   await fs.readFile(path.join(checkpointsDir, file), 'utf8')
                 );
                 
-                allCheckpoints.push({
+                jsonCheckpoints.push({
                   id: checkpointData.id,
                   timestamp: checkpointData.timestamp,
                   type: 'checkpoint' as const,
@@ -131,17 +133,17 @@ export async function GET(request: NextRequest) {
               }
             }
           } catch (error) {
-            // Session or checkpoints directory doesn't exist, return empty
-            console.log(`No JSON checkpoints found for session ${sessionId}, using database results`);
+            // Session or checkpoints directory doesn't exist
+            console.log(`No JSON checkpoints found for session ${sessionId}`);
           }
-          source = 'json_files';
         } else {
         // Get checkpoints from all sessions for comprehensive timeline
         try {
           const sessions = await fs.readdir(sessionsDir);
           
-          // Limit to recent 5 sessions for performance
-          const recentSessions = sessions.sort().slice(-5);
+          // 🔧 FIX: Show ALL sessions (not just 5) - user needs to see historical data
+          // Sort by name (which includes timestamp) to get chronological order
+          const recentSessions = sessions.sort();
           
           for (const sessionDir of recentSessions) {
             const checkpointsDir = path.join(sessionsDir, sessionDir, 'checkpoints');
@@ -164,7 +166,7 @@ export async function GET(request: NextRequest) {
                     await fs.readFile(path.join(checkpointsDir, file), 'utf8')
                   );
                   
-                  allCheckpoints.push({
+                  jsonCheckpoints.push({
                     id: checkpointData.id,
                     timestamp: checkpointData.timestamp,
                     type: 'checkpoint' as const,
@@ -182,19 +184,34 @@ export async function GET(request: NextRequest) {
               }
             } catch (error) {
               // Checkpoints directory doesn't exist for this session
-              // logger?.warn(`No checkpoints found for session ${sessionDir}`);
             }
           }
         } catch (error) {
           // Sessions directory doesn't exist
-          // logger?.warn('No sessions directory found');
         }
-        source = 'json_files';
         }
       } catch (error) {
-        // logger?.warn('Error reading session data:', error);
+        // Error reading JSON files
       }
     }
+    
+    // Merge database and JSON checkpoints, removing duplicates by ID
+    const mergedMap = new Map<string, TimelineEvent>();
+    
+    // Add database checkpoints first (newer migration path)
+    for (const checkpoint of allCheckpoints) {
+      mergedMap.set(checkpoint.id, checkpoint);
+    }
+    
+    // Add JSON checkpoints (legacy storage)
+    for (const checkpoint of jsonCheckpoints) {
+      if (!mergedMap.has(checkpoint.id)) {
+        mergedMap.set(checkpoint.id, checkpoint);
+      }
+    }
+    
+    allCheckpoints = Array.from(mergedMap.values());
+    source = allCheckpoints.length > dbCheckpoints.length ? 'merged' : 'database';
     
     // Sort by timestamp (newest first)
     allCheckpoints.sort((a, b) => {
@@ -205,8 +222,9 @@ export async function GET(request: NextRequest) {
     
     return NextResponse.json({ 
       success: true,
-      events: allCheckpoints.slice(0, 50), // Return last 50 events
-      total: allCheckpoints.length
+      events: allCheckpoints.slice(0, 200), // Return last 200 events (increased to show more history)
+      total: allCheckpoints.length,
+      showing: Math.min(allCheckpoints.length, 200)
     });
     
   } catch (error) {

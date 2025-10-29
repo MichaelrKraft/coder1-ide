@@ -7,19 +7,20 @@ import { logger } from '@/lib/logger';
 // Force dynamic rendering for this route
 export const dynamic = 'force-dynamic';
 
-// Get project root directory
+// Get project root directory - SECURITY: Restricts to user workspace only
 const getProjectRoot = (customPath?: string) => {
+    // SECURITY FIX: Allow navigation within user-workspaces/
+    // This lets users browse their projects while protecting source code
+    const workspacePath = process.env.USER_WORKSPACE_PATH || 'user-workspaces';
+    const workspaceRoot = path.join(process.cwd(), workspacePath);
+    
     if (customPath) {
         // Validate and resolve the custom path
         const resolvedPath = path.resolve(customPath);
         
-        // Security check - prevent access to system directories
-        const systemPaths = ['/etc', '/usr', '/var', '/bin', '/sbin', '/sys', '/proc', '/dev'];
-        const homeDir = require('os').homedir();
-        
-        // Only allow paths within user's home directory or current project
-        if (!resolvedPath.startsWith(homeDir) && !resolvedPath.startsWith(process.cwd())) {
-            throw new Error('Access denied: Path must be within user directory or project');
+        // CRITICAL SECURITY: Only allow paths within the user workspace
+        if (!resolvedPath.startsWith(workspaceRoot)) {
+            throw new Error('Access denied: Path must be within user workspace');
         }
         
         // Check if path exists and is accessible
@@ -31,7 +32,8 @@ const getProjectRoot = (customPath?: string) => {
         }
     }
     
-    return process.cwd();
+    // Return user workspace directory (NOT project source code)
+    return workspaceRoot;
 };
 
 // File extensions to include in search
@@ -62,7 +64,7 @@ const BLOCKED_FILES = [
  */
 async function buildFileTree(dirPath: string, relativePath: string = '', depth: number = 0): Promise<any[]> {
     const children = [];
-    const MAX_DEPTH = 2; // Limit scanning to 2 levels deep to prevent file handle exhaustion
+    const MAX_DEPTH = 10; // Allow deep navigation for user projects (was 2, too restrictive)
   
     try {
         const entries = await fs.readdir(dirPath, { withFileTypes: true });

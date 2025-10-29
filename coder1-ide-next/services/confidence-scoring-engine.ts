@@ -473,6 +473,10 @@ class ConfidenceScoringEngine {
   }
 
   private calculateTextSimilarity(text1: string, text2: string): number {
+    // DEFENSIVE FIX (Oct 24, 2025): Handle undefined/null inputs
+    // Previous code crashed with "[iclaude" command due to undefined experiment.suggestionText
+    if (!text1 || !text2) return 0;
+    
     // Simple word-based similarity
     const words1 = new Set(text1.toLowerCase().split(/\s+/));
     const words2 = new Set(text2.toLowerCase().split(/\s+/));

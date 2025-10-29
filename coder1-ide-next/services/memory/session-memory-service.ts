@@ -228,7 +228,13 @@ class SessionMemoryService extends EventEmitter {
       
       if (response.ok) {
         const sessions = await response.json();
-        this.recentSessions = sessions;
+        // Validate that sessions is an array
+        if (Array.isArray(sessions)) {
+          this.recentSessions = sessions;
+        } else {
+          logger.warn('⚠️ API returned non-array sessions data:', typeof sessions);
+          this.recentSessions = [];
+        }
       }
     } catch (error) {
       logger.warn('⚠️ Failed to load recent sessions:', error);
@@ -240,6 +246,12 @@ class SessionMemoryService extends EventEmitter {
    * Apply safe mode filtering to sessions
    */
   private applySafeModeFilter(sessions: SessionMemory[]): SessionMemory[] {
+    // Defensive check: ensure sessions is actually an array
+    if (!Array.isArray(sessions)) {
+      logger.warn('⚠️ applySafeModeFilter received non-array:', typeof sessions);
+      return [];
+    }
+
     if (this.config.memoryMode !== MemoryMode.SAFE) {
       return sessions;
     }
@@ -277,6 +289,12 @@ class SessionMemoryService extends EventEmitter {
    * Find sessions relevant to current input
    */
   private async findRelevantSessions(input?: string): Promise<SessionMemory[]> {
+    // Ensure recentSessions is an array before filtering
+    if (!Array.isArray(this.recentSessions)) {
+      logger.warn('⚠️ recentSessions is not an array, resetting to empty array');
+      this.recentSessions = [];
+    }
+
     // Apply safe mode filter first
     const filteredSessions = this.config.memoryMode === MemoryMode.OFF 
       ? []

@@ -68,17 +68,25 @@ const createMockSocket = (): Socket => {
 
 export const getSocket = async (sessionId?: string, bridgeAuth: boolean = false): Promise<Socket> => {
   try {
+    // 🔧 CRITICAL FIX (Oct 29, 2025): Reconnect disconnected sockets
+    // Bug: Terminal cleanup disconnects socket but doesn't null it out
+    // This caused reused sockets to stay disconnected forever
+    if (socket && !socket.connected) {
+      console.log('🔄 Reconnecting existing disconnected socket...');
+      socket.connect();
+    }
+    
     if (!socket) {
       connectionAttempts++;
       console.log(`🔌 CREATING SOCKET CONNECTION (attempt ${connectionAttempts})`);
       
       // Connect to the unified server (Next.js custom server)
-      // In production, explicitly use window.location.origin for Render compatibility
-      // In dev, use the current port or default to 3001
-      const unifiedUrl = typeof window !== 'undefined' && window.location.hostname !== 'localhost'
-        ? window.location.origin // Use explicit origin for production (Render needs this)
-        : (process.env.NEXT_PUBLIC_UNIFIED_SERVER_URL || 
-           (typeof window !== 'undefined' ? `http://localhost:${window.location.port || '3001'}` : 'http://localhost:3001'));
+      // 🎯 CRITICAL FIX (Oct 28, 2025): Always use window.location.origin (already includes port!)
+      // Previous bug: We were constructing URL with port when origin already had it
+      // This caused Socket.IO to use wrong URLs like /57132/health instead of /socket.io/
+      const unifiedUrl = typeof window !== 'undefined'
+        ? window.location.origin // ALWAYS use origin (works in both dev and production)
+        : (process.env.NEXT_PUBLIC_UNIFIED_SERVER_URL || 'http://localhost:3001');
       console.log(`🎯 CONNECTING TO UNIFIED SERVER: ${unifiedUrl}`);
       
       let newSocket: Socket;
@@ -100,8 +108,8 @@ export const getSocket = async (sessionId?: string, bridgeAuth: boolean = false)
           timeout: 45000, // INCREASED: Match server connectTimeout
           forceNew: false,
           // UPDATED: Match server ping settings to prevent timeout
-          pingTimeout: 120000,  // Match server: 2 minutes
-          pingInterval: 30000,  // Match server: 30 seconds
+          pingTimeout: 7200000,  // Match server: 2 hours
+          pingInterval: 300000,  // Match server: 5 minutes
           // ADDED: Additional stability settings
           autoConnect: true,
           withCredentials: true,
@@ -188,21 +196,21 @@ export const getSocket = async (sessionId?: string, bridgeAuth: boolean = false)
       const startHeartbeat = () => {
         if (heartbeatInterval) clearInterval(heartbeatInterval);
         
-        // Send ping every 20 seconds (more frequent than server's 30s interval)
+        // Send ping every 4 minutes (more frequent than server's 5-min interval)
         heartbeatInterval = setInterval(() => {
           if (newSocket?.connected) {
             const now = Date.now();
             const timeSinceLastPong = now - lastPongTime;
             
-            // If we haven't received a pong in 90 seconds, connection may be stale
-            if (timeSinceLastPong > 90000) {
+            // If we haven't received a pong in 100 minutes, connection may be stale
+            if (timeSinceLastPong > 6000000) {
               console.warn(`⚠️ No pong received for ${Math.round(timeSinceLastPong/1000)}s - connection may be stale`);
             }
             
             newSocket.emit('ping', { timestamp: now });
             console.log('💓 Heartbeat ping sent');
           }
-        }, 20000); // 20 seconds
+        }, 240000); // 4 minutes - matches new ping frequency
       };
       
       const stopHeartbeat = () => {

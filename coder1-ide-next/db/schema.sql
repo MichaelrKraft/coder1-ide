@@ -142,6 +142,56 @@ CREATE INDEX IF NOT EXISTS idx_checkpoints_session_id ON checkpoints(session_id)
 CREATE INDEX IF NOT EXISTS idx_checkpoints_timestamp ON checkpoints(timestamp);
 CREATE INDEX IF NOT EXISTS idx_checkpoints_size ON checkpoints(terminal_history_size);
 
+-- Session Summaries - For Eternal Memory search feature
+CREATE TABLE IF NOT EXISTS session_summaries (
+    id TEXT PRIMARY KEY,
+    session_id TEXT NOT NULL,
+    summary TEXT NOT NULL,
+    files_worked TEXT,      -- newline-separated file paths
+    key_decisions TEXT,     -- newline-separated decisions
+    next_steps TEXT,        -- newline-separated next steps
+    timestamp INTEGER NOT NULL,
+    FOREIGN KEY (session_id) REFERENCES context_sessions(id) ON DELETE CASCADE
+);
+
+-- FTS5 Virtual Table for full-text search of session summaries
+CREATE VIRTUAL TABLE IF NOT EXISTS session_summaries_fts USING fts5(
+    session_id UNINDEXED,
+    summary,
+    files_worked,
+    key_decisions,
+    next_steps,
+    content=session_summaries,
+    content_rowid=rowid
+);
+
+-- Triggers to keep FTS table in sync with session_summaries
+CREATE TRIGGER IF NOT EXISTS session_summaries_ai AFTER INSERT ON session_summaries BEGIN
+    INSERT INTO session_summaries_fts(rowid, session_id, summary, files_worked, key_decisions, next_steps)
+    VALUES (new.rowid, new.session_id, new.summary, new.files_worked, new.key_decisions, new.next_steps);
+END;
+
+CREATE TRIGGER IF NOT EXISTS session_summaries_ad AFTER DELETE ON session_summaries BEGIN
+    DELETE FROM session_summaries_fts WHERE rowid = old.rowid;
+END;
+
+CREATE TRIGGER IF NOT EXISTS session_summaries_au AFTER UPDATE ON session_summaries BEGIN
+    DELETE FROM session_summaries_fts WHERE rowid = old.rowid;
+    INSERT INTO session_summaries_fts(rowid, session_id, summary, files_worked, key_decisions, next_steps)
+    VALUES (new.rowid, new.session_id, new.summary, new.files_worked, new.key_decisions, new.next_steps);
+END;
+
+-- User Preferences - For memory detection settings
+CREATE TABLE IF NOT EXISTS user_preferences (
+    key TEXT PRIMARY KEY,
+    value TEXT NOT NULL,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Indexes for session summaries
+CREATE INDEX IF NOT EXISTS idx_session_summaries_session_id ON session_summaries(session_id);
+CREATE INDEX IF NOT EXISTS idx_session_summaries_timestamp ON session_summaries(timestamp);
+
 -- Initial data - Create default folder for current project
 INSERT OR IGNORE INTO context_folders (id, project_path, name, auto_created)
 VALUES ('default', '/Users/michaelkraft/autonomous_vibe_interface', 'Coder1 IDE', TRUE);

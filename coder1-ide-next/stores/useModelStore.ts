@@ -8,7 +8,6 @@
 
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { logger } from '@/lib/logger';
 
 interface ModelState {
   selectedModel: string;
@@ -41,7 +40,7 @@ const MODEL_MIGRATIONS: Record<string, string> = {
 // Migrate old model ID to new one if needed
 function migrateModel(model: string): string {
   if (MODEL_MIGRATIONS[model]) {
-    logger.info(`🔄 Migrating model: ${model} → ${MODEL_MIGRATIONS[model]}`);
+    console.log(`🔄 [MODEL STORE] Migrating model: ${model} → ${MODEL_MIGRATIONS[model]}`);
     return MODEL_MIGRATIONS[model];
   }
   return model;
@@ -56,13 +55,11 @@ export const useModelStore = create<ModelState>()(
         // Validate model string
         if (!VALID_MODELS.includes(model as any)) {
           console.warn(`⚠️ [MODEL STORE] Invalid model selected: ${model}, using default`);
-          logger.warn(`⚠️ Invalid model selected: ${model}, using default`);
           set({ selectedModel: DEFAULT_MODEL });
           return;
         }
         
         console.log(`✅ [MODEL STORE] Model updated to: ${model}`);
-        logger.info(`✅ Model updated to: ${model}`);
         set({ selectedModel: model });
       },
       
@@ -112,24 +109,19 @@ export const useModelStore = create<ModelState>()(
       },
       
       // Migrate and validate on rehydration
-      onRehydrateStorage: () => (state, error) => {
+      onRehydrateStorage: (state) => {
         console.log(`🔄 [MODEL STORE] onRehydrateStorage CALLED`);
-        console.log(`🔄 [MODEL STORE] Rehydrated state:`, state);
-        console.log(`🔄 [MODEL STORE] Error:`, error);
         
-        if (error) {
-          console.error('❌ [MODEL STORE] Failed to rehydrate model store:', error);
-          logger.error('Failed to rehydrate model store:', error);
-          useModelStore.setState({ selectedModel: DEFAULT_MODEL });
-          return;
+        // CRITICAL FIX: Don't call useModelStore methods during initialization
+        // Just modify the state object directly
+        if (state) {
+          console.log(`🔄 [MODEL STORE] Rehydrated state:`, state);
+          console.log(`🔄 [MODEL STORE] Version 6 migration: Forcing reset to ${DEFAULT_MODEL}`);
+          state.selectedModel = DEFAULT_MODEL;
+          console.log(`✅ [MODEL STORE] Reset complete - model set to ${DEFAULT_MODEL}`);
+        } else {
+          console.log(`⚠️ [MODEL STORE] No state to rehydrate, will use defaults`);
         }
-        
-        // FORCE RESET on version 6: Always use Sonnet 4.5 as default
-        // This ensures all users get Claude Sonnet 4.5 regardless of previous selection
-        console.log(`🔄 [MODEL STORE] Version 6 migration: Forcing reset to ${DEFAULT_MODEL}`);
-        logger.info(`🔄 Version 6 migration: Forcing reset to ${DEFAULT_MODEL}`);
-        useModelStore.setState({ selectedModel: DEFAULT_MODEL });
-        console.log(`✅ [MODEL STORE] Reset complete - current model: ${useModelStore.getState().selectedModel}`);
       }
     }
   )
@@ -142,11 +134,11 @@ if (typeof window !== 'undefined') {
       try {
         const newState = JSON.parse(e.newValue);
         if (newState?.state?.selectedModel) {
-          logger.debug('📡 Syncing model from other tab:', newState.state.selectedModel);
+          console.log('📡 [MODEL STORE] Syncing model from other tab:', newState.state.selectedModel);
           useModelStore.setState({ selectedModel: newState.state.selectedModel });
         }
       } catch (error) {
-        logger.error('Failed to sync model from storage event:', error);
+        console.error('❌ [MODEL STORE] Failed to sync model from storage event:', error);
       }
     }
   });

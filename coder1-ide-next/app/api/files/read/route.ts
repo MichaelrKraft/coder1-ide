@@ -6,11 +6,12 @@ import { logger } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
 
-// Get project root directory
+// Get project root directory - SECURITY: Restricts to user workspace only
 const getProjectRoot = () => {
-    // Go up one directory to access autonomous_vibe_interface root
-    // from coder1-ide-next to autonomous_vibe_interface
-    return path.join(process.cwd(), '..');
+    // SECURITY FIX: Allow navigation within user-workspaces/
+    // This lets users browse their projects while protecting source code
+    const workspacePath = process.env.USER_WORKSPACE_PATH || 'user-workspaces';
+    return path.join(process.cwd(), workspacePath);
 };
 
 // Blocked sensitive files and patterns

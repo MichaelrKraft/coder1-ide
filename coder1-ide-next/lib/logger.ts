@@ -25,7 +25,10 @@ class Logger {
   };
 
   constructor(config?: Partial<LoggerConfig>) {
-    this.isDevelopment = process.env.NODE_ENV !== 'production';
+    // Browser-safe environment check
+    this.isDevelopment = typeof process !== 'undefined' 
+      ? process.env.NODE_ENV !== 'production'
+      : true; // Default to development in browser
     this.config = {
       enableInProduction: false,
       minLevel: this.isDevelopment ? 'debug' : 'warn',

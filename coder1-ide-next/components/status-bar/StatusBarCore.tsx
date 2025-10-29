@@ -25,6 +25,7 @@ interface StatusBarCoreProps {
   openFiles?: IDEFile[];
   terminalHistory?: string;
   terminalCommands?: string[];
+  terminalSessionId?: string | null; // 🔧 CRITICAL: Actual terminal session ID from IDE page
 }
 
 export default function StatusBarCore({ 
@@ -32,7 +33,8 @@ export default function StatusBarCore({
   isConnected = false, 
   openFiles = [], 
   terminalHistory = '', 
-  terminalCommands = [] 
+  terminalCommands = [],
+  terminalSessionId // 🔧 CRITICAL: Pass through to StatusBarActions
 }: StatusBarCoreProps) {
   // Get state from stores
   const { connections } = useIDEStore();
@@ -118,7 +120,7 @@ export default function StatusBarCore({
   
   return (
     <>
-      <div className="h-11 bg-bg-secondary border-t border-border-default flex items-center px-4">
+      <div className="h-11 bg-bg-secondary border-t border-border-default flex items-center px-4" data-tour="status-bar">
         {/* Left section - Discover Button & Supervision Indicator */}
         <div className="flex items-center gap-4 text-sm text-text-muted flex-1">
           <div className="relative">
@@ -138,14 +140,6 @@ export default function StatusBarCore({
           
           {/* Team Status Indicator */}
           <TeamStatusIndicator />
-          
-          {/* Active File Indicator */}
-          {activeFile && (
-            <div className="flex items-center gap-1">
-              <span className="w-2 h-2 rounded-full bg-coder1-cyan animate-pulse"></span>
-              <span className="text-text-secondary">{activeFile}</span>
-            </div>
-          )}
         </div>
 
         {/* Center section - Action buttons */}
@@ -156,18 +150,12 @@ export default function StatusBarCore({
             openFiles={openFiles}
             terminalHistory={terminalHistory}
             terminalCommands={terminalCommands}
+            terminalSessionId={terminalSessionId}
           />
         </div>
 
         {/* Right section - Status info */}
         <div className="flex items-center gap-4 text-sm text-text-muted flex-1 justify-end">
-          {/* Git Modified Files Count (without branch name) */}
-          {gitInfo.modifiedCount > 0 && (
-            <div className="flex items-center gap-1" title={`${gitInfo.modifiedCount} file${gitInfo.modifiedCount > 1 ? 's' : ''} modified`}>
-              <FileText className="w-3 h-3 text-orange-400" />
-              <span className="text-orange-400">{gitInfo.modifiedCount} modified</span>
-            </div>
-          )}
           
           {/* Alpha Status Indicator */}
           <div className="flex items-center gap-1 text-orange-400/60 text-xs" title="Enhanced StatusLine features temporarily disabled during alpha">

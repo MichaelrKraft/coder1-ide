@@ -8,6 +8,10 @@
  * - Integrates tmux orchestration
  */
 
+// Load environment variables from .env.local FIRST
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '.env.local') });
+
 const { createServer } = require('http');
 const { parse } = require('url');
 const next = require('next');
@@ -15,7 +19,6 @@ const { Server } = require('socket.io');
 const pty = require('node-pty');
 const { v4: uuidv4 } = require('uuid');
 const os = require('os');
-const path = require('path');
 const fs = require('fs');
 const express = require('express');
 
@@ -174,12 +177,24 @@ const handle = app.getRequestHandler();
 const terminalSessions = new Map();
 const sessionMetadata = new Map();
 
+// 🔧 FIX (Oct 24, 2025): Session cleanup grace period for navigation persistence
+// Prevents killing PTY during Timeline ↔ IDE navigation while still cleaning up on actual close/refresh
+const sessionCleanupTimers = new Map(); // sessionId -> setTimeout timer
+
 // Claude Code session state tracking
 const claudeCodeSessions = new Map(); // sessionId -> { inClaudeSession: boolean, sessionStartTime: Date }
 
 // Context capture integration
 const terminalDataBuffers = new Map(); // Buffer terminal data for context capture
 const contextSessions = new Map(); // Map terminal sessions to context sessions
+
+// 🎯 CRITICAL FIX (Oct 28, 2025): Separate buffer for terminal history restoration
+// terminalDataBuffers filters out ANSI codes, making it useless for history display
+// This buffer keeps ANSI codes for proper terminal rendering on reconnection
+const terminalHistoryBuffers = new Map(); // sessionId -> array of terminal output chunks WITH ANSI codes
+
+// 🚀 PERFORMANCE FIX: Debounce timers for memory API calls
+const memoryDebounceTimers = new Map(); // sessionId -> timer reference
 
 // Claude Code session management helpers
 function isInClaudeCodeSession(sessionId) {
@@ -507,6 +522,11 @@ function getOrCreateSession(sessionId, userId = 'default') {
     session.pty.onExit(({ exitCode, signal }) => {
       // REMOVED: // REMOVED: // REMOVED: console.log(`[Terminal] Session ${sessionId} exited with code ${exitCode}`);
       terminalSessions.delete(sessionId);
+      
+      // 🎯 Clean up terminal history buffer
+      if (terminalHistoryBuffers.has(sessionId)) {
+        terminalHistoryBuffers.delete(sessionId);
+      }
     });
   }
   
@@ -821,8 +841,8 @@ app.prepare().then(() => {
     path: '/socket.io/',
     transports: ['polling', 'websocket'], // Start with polling, upgrade to websocket
     allowEIO3: true, // Support older clients
-    pingTimeout: 120000, // INCREASED: 2 minutes (was 60s) - prevents idle disconnects
-    pingInterval: 30000, // INCREASED: 30 seconds (was 25s) - more stable heartbeat
+    pingTimeout: 7200000, // INCREASED: 2 hours - covers any realistic idle period during development
+    pingInterval: 300000, // INCREASED: 5 minutes - still detects dead connections without spam
     upgradeTimeout: 30000, // Time to wait for upgrade from polling to websocket
     allowUpgrades: true, // Allow upgrade from polling to websocket
     perMessageDeflate: false, // Disable compression for better reliability on Render
@@ -1098,9 +1118,84 @@ app.prepare().then(() => {
         }
         session.connectedSockets.add(socket);
         
+        // 🔧 FIX (Oct 24, 2025): Cancel cleanup timer if reconnecting to existing session
+        // This happens when navigating Timeline → IDE with same sessionId
+        const hasCleanupTimer = sessionCleanupTimers.has(sessionId);
+        if (hasCleanupTimer) {
+          console.log(`♻️ Reconnected to session ${sessionId} - cancelling cleanup timer`);
+          clearTimeout(sessionCleanupTimers.get(sessionId));
+          sessionCleanupTimers.delete(sessionId);
+        }
+        
+        // 🎯 CRITICAL FIX (Oct 28, 2025): Check for terminal history to detect reconnections
+        // Don't rely on cleanup timer - it might have expired already!
+        // Check if history exists in memory OR persistent file
+        let terminalHistory = terminalHistoryBuffers.get(sessionId);
+        let historyText = '';
+        
+        // 🔒 CRITICAL FIX (Oct 28, 2025): Try loading from persistent file if not in memory
+        // This allows restoration even after PTY cleanup (grace period expired)
+        if (!terminalHistory || terminalHistory.length === 0) {
+          const fs = require('fs');
+          const historyFile = path.join(__dirname, 'data', 'terminal-history', `${sessionId}.txt`);
+          
+          if (fs.existsSync(historyFile)) {
+            historyText = fs.readFileSync(historyFile, 'utf8');
+            console.log(`💾 Loaded terminal history from file: ${historyFile} (${historyText.length} chars)`);
+            
+            // Restore to memory buffer for future reconnections
+            terminalHistory = [historyText];
+            terminalHistoryBuffers.set(sessionId, terminalHistory);
+          }
+        } else {
+          historyText = terminalHistory.join('');
+        }
+        
+        // Send history if this is a reconnection (has history in memory or file)
+        const isReconnection = historyText && historyText.length > 0;
+        if (isReconnection) {
+          console.log(`♻️ Reconnection detected - found ${historyText.length} chars of history`);
+          console.log(`📜 Sending ${terminalHistory ? terminalHistory.length : 1} terminal history chunks to reconnecting client`);
+          console.log(`📜 First 200 chars: ${historyText.substring(0, 200)}`);
+          
+          // 🚨 DIAGNOSTIC LOGGING - Server-Side Event Emission
+          const emissionTimestamp = new Date().toISOString();
+          console.log('═════════════════════════════════════════════════════════');
+          console.log('📤 [SERVER] About to emit terminal:history');
+          console.log(`⏰ Timestamp: ${emissionTimestamp}`);
+          console.log(`🆔 Session ID: "${sessionId}"`);
+          console.log(`🔌 Socket ID: "${socket.id}"`);
+          console.log(`📦 Chunks to send: ${terminalHistory ? terminalHistory.length : 1}`);
+          console.log(`📏 Total chars: ${historyText.length}`);
+          console.log(`📝 First 100 chars: ${historyText.substring(0, 100)}`);
+          console.log('═════════════════════════════════════════════════════════');
+          
+          // 🔧 CRITICAL FIX: Add 100ms delay to allow client listener to register
+          // Race condition: Client emits terminal:create and immediately registers listener,
+          // but Socket.IO's event loop might not have processed the registration yet.
+          // This delay ensures the client's terminal:history listener is ready.
+          setTimeout(() => {
+            console.log('⏰ [SERVER] Delay complete (100ms) - emitting terminal:history now');
+            
+            // Send history via Socket.IO event
+            socket.emit('terminal:history', { 
+              id: sessionId, 
+              history: historyText,
+              chunkCount: terminalHistory ? terminalHistory.length : 1
+            });
+            
+            console.log('✅ [SERVER] terminal:history emission completed');
+          }, 100);
+        } else {
+          console.log(`🆕 New session ${sessionId} - no history to restore`);
+        }
+        
         // Only set up PTY data handler once per session to avoid duplicates
         if (!session.dataHandlerSetup) {
           session.pty.onData((data) => {
+            // Update session activity on output so viewing logs/dev servers counts as active
+            session.lastActivity = new Date();
+            
             // Track terminal output with token integration for Claude response monitoring
             if (terminalTokenIntegration) {
               terminalTokenIntegration.onTerminalOutput(sessionId, data);
@@ -1112,30 +1207,118 @@ app.prepare().then(() => {
                 connectedSocket.emit('terminal:data', { id: sessionId, data });
               }
             });
-            // Buffer for context capture
-            bufferTerminalData(sessionId, 'terminal_output', data);
+            
+            // 🎯 CRITICAL FIX (Oct 28, 2025): Buffer ALL terminal output for history restoration
+            // Keep ANSI codes for proper rendering, only filter problematic focus codes
+            // IMPORTANT: Check for ANSI escape sequences \x1b[I and \x1b[O, not just [I and [O
+            const hasFocusCodes = data.includes('\x1b[I') || data.includes('\x1b[O');
+            if (!hasFocusCodes) {
+              // Buffer for terminal history (keeps ANSI codes for colors/formatting)
+              if (!terminalHistoryBuffers.has(sessionId)) {
+                terminalHistoryBuffers.set(sessionId, []);
+              }
+              const historyBuffer = terminalHistoryBuffers.get(sessionId);
+              historyBuffer.push(data);
+              
+              // Keep last 200 chunks (~50KB typical)
+              if (historyBuffer.length > 200) {
+                historyBuffer.splice(0, historyBuffer.length - 200);
+              }
+            } else {
+              // Log when we filter focus codes
+              if (data.length < 100) {
+                console.log(`🔍 [SERVER-HISTORY] Filtered focus code from history buffer: "${data.substring(0, 50)}"`);
+              }
+            }
+            
+            // 🔒 Buffer terminal output for context capture with ANSI filtering (Oct 24, 2025)
+            // CRITICAL: Only filter focus codes ([I], [O]), keep other ANSI codes for Claude conversations
+            // Claude Code output needs ANSI codes for proper rendering and history restoration
+            // IMPORTANT: Check for ANSI escape sequences \x1b[I and \x1b[O, not just [I and [O
+            const hasFocusCodesOnly = data.includes('\x1b[I') || data.includes('\x1b[O');
+            if (!hasFocusCodesOnly) {
+              bufferTerminalData(sessionId, 'terminal_output', data);
+            } else {
+              // Log filtered focus codes for debugging
+              if (data.length < 50) {
+                console.log(`🔍 [SERVER-CONTEXT] Blocked focus code from context capture: "${data}"`);
+              }
+            }
           });
           session.dataHandlerSetup = true;
         }
         
         // Clean up socket reference when it disconnects
         socket.on('disconnect', () => {
+          // 🔧 FIX (Oct 24, 2025): Use sessionId from closure (always available)
+          // socketToSession.get() can return undefined if socket wasn't properly registered
+          const disconnectSessionId = sessionId; // Use closure variable (guaranteed to exist)
+          
           if (session.connectedSockets) {
             session.connectedSockets.delete(socket);
+            
+            // 🔧 FIX (Oct 24, 2025): Grace period before killing PTY
+            // Allows Timeline ↔ IDE navigation (2-3s) while cleaning up actual close/refresh (30s)
+            if (session.connectedSockets.size === 0) {
+              console.log(`⏱️ Last socket disconnected for session ${disconnectSessionId} - starting 30s grace period`);
+              
+              // Start cleanup timer (30 seconds)
+              const cleanupTimer = setTimeout(() => {
+                // Kill PTY only if still no connections after grace period
+                if (session.connectedSockets && session.connectedSockets.size === 0) {
+                  console.log(`🎯 Grace period expired for session ${disconnectSessionId} - killing PTY`);
+                  try {
+                    // 🔒 CRITICAL FIX (Oct 28, 2025): Save terminal history to file BEFORE cleanup
+                    // This allows restoration even after PTY is killed and memory buffer is cleared
+                    if (terminalHistoryBuffers.has(disconnectSessionId)) {
+                      const historyBuffer = terminalHistoryBuffers.get(disconnectSessionId);
+                      const historyText = historyBuffer.join('');
+                      
+                      // Save to data/terminal-history/ directory
+                      const fs = require('fs');
+                      const historyDir = path.join(__dirname, 'data', 'terminal-history');
+                      if (!fs.existsSync(historyDir)) {
+                        fs.mkdirSync(historyDir, { recursive: true });
+                      }
+                      
+                      const historyFile = path.join(historyDir, `${disconnectSessionId}.txt`);
+                      fs.writeFileSync(historyFile, historyText, 'utf8');
+                      console.log(`💾 Saved terminal history to file: ${historyFile} (${historyText.length} chars)`);
+                      
+                      // Now clean up memory buffer
+                      terminalHistoryBuffers.delete(disconnectSessionId);
+                      console.log(`🗑️ Cleaned up history buffer from memory for session ${disconnectSessionId}`);
+                    }
+                    
+                    session.pty.kill();
+                    terminalSessions.delete(disconnectSessionId);
+                    sessionCleanupTimers.delete(disconnectSessionId);
+                    
+                    console.log(`✅ PTY killed and session cleaned up: ${disconnectSessionId}`);
+                  } catch (error) {
+                    console.error(`❌ Error killing PTY for session ${disconnectSessionId}:`, error);
+                  }
+                } else {
+                  console.log(`♻️ Session ${disconnectSessionId} reconnected during grace period - cleanup cancelled`);
+                  sessionCleanupTimers.delete(disconnectSessionId);
+                }
+              }, 300000); // 5 minute grace period (enough for Timeline browsing and testing)
+              
+              sessionCleanupTimers.set(disconnectSessionId, cleanupTimer);
+            }
           }
           
           // Clean up command buffer for this session
-          const sessionId = socketToSession.get(socket.id);
-          if (sessionId && commandBuffers.has(sessionId)) {
-            commandBuffers.delete(sessionId);
+          if (disconnectSessionId && commandBuffers.has(disconnectSessionId)) {
+            commandBuffers.delete(disconnectSessionId);
             if (process.env.NODE_ENV === 'production') {
-              console.log(`[Memory] Cleaned up command buffer for session: ${sessionId}`);
+              console.log(`[Memory] Cleaned up command buffer for session: ${disconnectSessionId}`);
             }
           }
           
           // End session in token integration for usage tracking
-          if (terminalTokenIntegration && sessionId) {
-            terminalTokenIntegration.endSession(sessionId);
+          if (terminalTokenIntegration && disconnectSessionId) {
+            terminalTokenIntegration.endSession(disconnectSessionId);
           }
           
           // Clean up socket-to-session mapping
@@ -1199,32 +1382,92 @@ app.prepare().then(() => {
       let modelAlias = 'sonnet';  // Default to sonnet
       
       if (selectedModel) {
-        if (selectedModel.includes('haiku')) {
+        // 🔧 FIX (Oct 24, 2025): Use full model ID for Sonnet 4.5
+        // Claude CLI's 'sonnet' alias defaults to Sonnet 4, not 4.5
+        // Must use exact model ID to get correct version
+        if (selectedModel.includes('sonnet-4-5') || selectedModel.includes('4.5')) {
+          modelAlias = 'claude-sonnet-4-5-20250929';  // Use exact model ID
+          console.log(`✅ Detected Sonnet 4.5, using full model ID: ${modelAlias}`);
+        } else if (selectedModel.includes('haiku')) {
           modelAlias = 'haiku';
         } else if (selectedModel.includes('opus')) {
           modelAlias = 'opus';
         } else if (selectedModel.includes('sonnet')) {
-          modelAlias = 'sonnet';
+          modelAlias = 'sonnet';  // Generic sonnet (will default to Sonnet 4)
         }
       }
       
       // 4. Extract: "claude" + args (use clean command without escape codes)
+      // IMPORTANT: Command may already have eternal memory's --append-system-prompt flag
       const trimmedCommand = cleanCommand.trim();
       const parts = trimmedCommand.split(/\s+/);  // Split on whitespace
       const claudeCmd = parts[0];  // "claude"
-      const args = parts.slice(1).join(' ');  // "fix bug" or empty string
+      const restOfCommand = parts.slice(1).join(' ');  // Everything after "claude"
       
-      // 5. Inject model flag: "claude --model sonnet fix bug"
-      // If no args, just add model flag
-      if (!args) {
-        return `${claudeCmd} --model ${modelAlias}`;
-      }
-      
-      // Otherwise inject between claude and args
-      const injectedCommand = `${claudeCmd} --model ${modelAlias} ${args}`;
+      // 5. Inject --model flag RIGHT after "claude" command
+      // This ensures proper flag order: claude --model X --append-system-prompt "..." query
+      const injectedCommand = restOfCommand 
+        ? `${claudeCmd} --model ${modelAlias} ${restOfCommand}`
+        : `${claudeCmd} --model ${modelAlias}`;
       
       console.log(`🎯 Model injection: "${trimmedCommand}" → "${injectedCommand}" (using alias: ${modelAlias})`);
       return injectedCommand;
+    }
+    
+    // 🧠 ETERNAL MEMORY: Helper function to inject context into claude commands
+    // This works for BOTH local development and production
+    async function injectEternalMemoryContext(command, sessionId, socket) {
+      // Only process claude commands
+      if (!command || !command.trim().toLowerCase().startsWith('claude')) {
+        return command;
+      }
+      
+      if (!eternalMemoryLoader) {
+        return command; // Eternal memory not enabled
+      }
+      
+      try {
+        const eternalContext = await eternalMemoryLoader.loadLastSessionContext();
+        
+        if (eternalContext.hasContext) {
+          // SAFETY: Log context size before injection
+          const contextSize = eternalContext.contextPrompt?.length || 0;
+          const estimatedTokens = Math.ceil(contextSize / 4);
+          console.log(`[Eternal Memory] Context size: ${contextSize} chars (~${estimatedTokens} tokens)`);
+          
+          // SAFETY: Skip if context is unreasonably large (>10K chars)
+          if (contextSize > 10000) {
+            console.error(`[Eternal Memory] Context too large (${contextSize} chars) - SKIPPING to prevent crash`);
+            socket.emit('terminal:data', {
+              id: sessionId,
+              data: '\r\n⚠️  Previous session context too large - continuing without memory\r\n'
+            });
+            return command;
+          }
+          
+          // Show user that context was loaded
+          const contextMessage = eternalMemoryLoader.createContextLoadedMessage(eternalContext);
+          socket.emit('terminal:data', {
+            id: sessionId,
+            data: contextMessage
+          });
+          
+          // CORRECT METHOD: Inject context using --append-system-prompt flag
+          const { injectContextIntoClaudeCommand } = require('./lib/eternal-memory-formatter.ts');
+          const commandWithContext = injectContextIntoClaudeCommand(command, eternalContext.contextPrompt);
+          
+          console.log('[Eternal Memory] Context injected via --append-system-prompt flag');
+          console.log(`[Eternal Memory] Final command: ${commandWithContext.substring(0, 150)}...`);
+          return commandWithContext;
+        } else if (eternalContext.error) {
+          console.log(`[Eternal Memory] ${eternalContext.error}`);
+        }
+      } catch (error) {
+        console.error('[Eternal Memory] Failed to load context:', error);
+        // Continue without context - don't break the flow
+      }
+      
+      return command; // Return original command if no context available
     }
     
     // Handle terminal input with Conductor command detection
@@ -1269,17 +1512,32 @@ app.prepare().then(() => {
           }
           
           // 🧠 CONTEXTUAL MEMORY FIX: Send command to frontend for contextual memory processing
+          // 🚀 PERFORMANCE FIX: Debounce to reduce memory API calls (3-second delay)
           // Only send conversational commands (not shell commands starting with $ or #)
           if (command.length > 0 && !commandLower.startsWith('$') && !commandLower.startsWith('#')) {
-            console.log('🧠 [SERVER] Sending command to frontend for contextual memory:', commandLower);
-            session.connectedSockets.forEach(connectedSocket => {
-              if (connectedSocket.connected) {
-                connectedSocket.emit('terminal:command', { 
-                  id: sessionId, 
-                  command: commandLower 
-                });
-              }
-            });
+            // Clear existing timer for this session
+            if (memoryDebounceTimers.has(sessionId)) {
+              clearTimeout(memoryDebounceTimers.get(sessionId));
+              console.log('⏱️ [SERVER] Clearing previous memory debounce timer for session:', sessionId);
+            }
+            
+            console.log('⏱️ [SERVER] Scheduling memory update (3s delay) for command:', commandLower);
+            
+            // Set new timer - only emit after 3 seconds of inactivity
+            const timer = setTimeout(() => {
+              console.log('🧠 [SERVER] Debounce complete - sending command to frontend for contextual memory:', commandLower);
+              session.connectedSockets.forEach(connectedSocket => {
+                if (connectedSocket.connected) {
+                  connectedSocket.emit('terminal:command', { 
+                    id: sessionId, 
+                    command: commandLower 
+                  });
+                }
+              });
+              memoryDebounceTimers.delete(sessionId);
+            }, 3000); // 3 second delay
+            
+            memoryDebounceTimers.set(sessionId, timer);
           }
           
           // ALWAYS intercept claude commands, even if bridgeManager fails to load
@@ -1321,33 +1579,8 @@ app.prepare().then(() => {
                 data: `\r\n🤖 Executing: ${buffer.trim()}\r\n`
               });
               
-              // 🌟 ETERNAL MEMORY: Load and inject previous session context
-              let commandToExecute = buffer.trim();
-              if (eternalMemoryLoader) {
-                try {
-                  const eternalContext = await eternalMemoryLoader.loadLastSessionContext();
-                  
-                  if (eternalContext.hasContext) {
-                    // Show user that context was loaded
-                    const contextMessage = eternalMemoryLoader.createContextLoadedMessage(eternalContext);
-                    socket.emit('terminal:data', {
-                      id: sessionId,
-                      data: contextMessage
-                    });
-                    
-                    // Prepend context to command
-                    const { prependEternalMemoryToCommand } = require('./lib/eternal-memory-formatter.ts');
-                    commandToExecute = prependEternalMemoryToCommand(commandToExecute, eternalContext.contextPrompt);
-                    
-                    console.log('[Eternal Memory] Context injected - Claude now remembers previous session');
-                  } else if (eternalContext.error) {
-                    console.log(`[Eternal Memory] ${eternalContext.error}`);
-                  }
-                } catch (error) {
-                  console.error('[Eternal Memory] Failed to load context:', error);
-                  // Continue without context - don't break the flow
-                }
-              }
+              // 🧠 ETERNAL MEMORY: Inject previous session context (unified function)
+              let commandToExecute = await injectEternalMemoryContext(buffer.trim(), sessionId, socket);
               
               // Execute command through bridge (with eternal memory context if available)
               const commandRequest = {
@@ -1712,41 +1945,104 @@ app.prepare().then(() => {
             return;
           }
           
-          // 🎯 MODEL INJECTION: Check if this is a claude command that needs model flag
-          console.log(`🔍 Before intercept: buffer="${buffer.trim()}", selectedClaudeModel="${selectedClaudeModel}"`);
-          const finalCommand = interceptClaudeCommand(buffer.trim(), selectedClaudeModel);
+          // 🧠 SILENT CONTEXT INJECTION (Oct 27, 2025 FIX)
+          // OLD BUG: Command replacement (backspace/clear/rewrite) broke WebSocket message channel
+          // NEW FIX: Inject flags silently, let terminal echo handle display naturally
+          let displayCommand = buffer.trim(); // What user typed
+          let executionCommand = displayCommand; // What actually runs (with injected flags)
+          let needsInjection = false;
           
-          if (finalCommand !== buffer.trim()) {
-            // Model flag was injected - we need to clear the typed command and replace it
-            console.log(`✅ Injecting model into command: ${selectedClaudeModel || 'default'}`);
+          if (displayCommand.toLowerCase().startsWith('claude')) {
+            console.log('🧠 [Eternal Memory] Detected claude command, injecting context silently...');
+            needsInjection = true;
             
-            // Clear the typed command from terminal (backspace each character)
-            const backspaces = '\b'.repeat(buffer.length);
-            session.write(backspaces);
+            // Inject eternal memory context into execution command (silent - user doesn't see this)
+            executionCommand = await injectEternalMemoryContext(displayCommand, sessionId, socket);
             
-            // Clear the line visually
-            session.write('\r\x1b[K');
-            
-            // Write the modified command and execute it
-            session.write(finalCommand + '\r');
-          } else {
-            // Not a claude command or already has --model flag - execute normally
-            session.write(data);
+            console.log('✅ [Eternal Memory] Context injected into execution command');
+          }
+          
+          // 🎯 MODEL INJECTION: Add model flag to execution command (also silent)
+          if (needsInjection) {
+            executionCommand = interceptClaudeCommand(executionCommand, selectedClaudeModel);
+          }
+          
+          console.log(`🔍 [SILENT INJECTION] Display: "${displayCommand}"`);
+          console.log(`🔍 [SILENT INJECTION] Execution: "${executionCommand}"`);
+          
+          // ✅ EXECUTE COMMAND
+          // Eternal memory message already sent via Socket.IO in injectEternalMemoryContext()
+          // For claude commands: clear PTY input buffer, then execute with flags
+          try {
+            if (needsInjection) {
+              // CRITICAL: Clear PTY input buffer to prevent "claudeclaude" concatenation
+              // User typed "claude" which is still in PTY buffer, must clear it first
+              const backspaces = '\b'.repeat(buffer.length);
+              session.write(backspaces);
+              
+              // Execute the FULL command with eternal memory + model flags
+              // The full command will be visible (transparent to user which model/context is used)
+              session.write(executionCommand + '\r');
+              console.log(`✅ [CLAUDE-CMD] Executed with eternal memory injection`);
+            } else {
+              // Normal command execution
+              session.write(data);
+            }
+          } catch (error) {
+            console.error(`❌ [CLAUDE-CMD] Error executing command:`, error);
+            console.error(`❌ [CLAUDE-CMD] Error stack:`, error.stack);
           }
           
           // Clear buffer after command
           commandBuffers.set(sessionId, '');
-        } else {
-          // For non-Enter keys, build buffer AND send to PTY
-          buffer += data;
-          commandBuffers.set(sessionId, buffer);
+        }
+        
+        // 🔧 FIX (Oct 24, 2025): ANSI filter - MUST be outside if/else for proper scope
+        // Filter ANSI escape codes from both command buffer and context capture
+        // ⚠️ CRITICAL: Do NOT filter bracketed paste mode ([200~...[201~)
+        const isBracketedPaste = data.includes('[200~') || data.includes('[201~');
+        const isAnsiEscapeCode = !isBracketedPaste && (
+                                 data === '\x1b' ||      // ESC character
+                                 data === '\x1bO' ||     // ESC+O (SS3)
+                                 data === '\x1bI' ||     // ESC+I (Focus)
+                                 data.startsWith('\x1b[') || // CSI sequences (FIXED: use startsWith)
+                                 data === '[O' ||        // Bracketed codes (fallback)
+                                 data === '[I');         // Focus codes (fallback)
+        
+        // For non-Enter keys, build buffer AND send to PTY
+        if (!(data.includes('\r') || data.includes('\n'))) {
+          // Debug logging to verify filter is executing
+          if (data.includes('[') || data.includes('\x1b')) {
+            console.log(`🔍 [ANSI-CHECK] data="${data}" (${data.length} bytes) isAnsi=${isAnsiEscapeCode} isBracketedPaste=${isBracketedPaste}`);
+          }
+          
+          if (!isAnsiEscapeCode) {
+            // 🔧 FIX (Oct 24, 2025): Strip bracketed paste markers before buffering
+            let cleanData = data;
+            if (isBracketedPaste) {
+              cleanData = data.replace(/\[200~/g, '').replace(/\[201~/g, '');
+              console.log(`🧹 [BRACKETED-PASTE] Stripped paste markers: "${data}" → "${cleanData}"`);
+            }
+            buffer += cleanData;
+            commandBuffers.set(sessionId, buffer);
+          } else {
+            console.log(`🔧 [FILTER] Blocked ANSI escape code from command buffer: "${data}"`);
+          }
           
           // Send to PTY for normal command processing
           session.write(data);
         }
         
-        // Buffer user input for context capture
-        bufferTerminalData(sessionId, 'terminal_input', data);
+        // 🔒 Buffer user input for context capture (Oct 24, 2025)
+        // CRITICAL: Apply same ANSI filter to prevent focus codes from polluting memory system
+        if (!isAnsiEscapeCode) {
+          // 🔧 FIX (Oct 24, 2025): Strip bracketed paste markers before context capture
+          let cleanData = data;
+          if (isBracketedPaste) {
+            cleanData = data.replace(/\[200~/g, '').replace(/\[201~/g, '');
+          }
+          bufferTerminalData(sessionId, 'terminal_input', cleanData);
+        }
       } else {
         console.warn(`[Terminal] Session not found: ${sessionId}`);
         socket.emit('terminal:error', { 
@@ -1766,11 +2062,24 @@ app.prepare().then(() => {
     
     // Handle terminal destruction
     socket.on('terminal:destroy', ({ id }) => {
-      const session = terminalSessions.get(id || currentSessionId);
+      const sessionId = id || currentSessionId;
+      const session = terminalSessions.get(sessionId);
       if (session) {
         session.destroy();
-        terminalSessions.delete(id || currentSessionId);
-        socket.emit('terminal:destroyed', { id: id || currentSessionId });
+        terminalSessions.delete(sessionId);
+        
+        // 🎯 Clean up terminal history buffer
+        if (terminalHistoryBuffers.has(sessionId)) {
+          terminalHistoryBuffers.delete(sessionId);
+        }
+        
+        // 🚀 PERFORMANCE FIX: Clear any pending memory debounce timers
+        if (memoryDebounceTimers.has(sessionId)) {
+          clearTimeout(memoryDebounceTimers.get(sessionId));
+          memoryDebounceTimers.delete(sessionId);
+        }
+        
+        socket.emit('terminal:destroyed', { id: sessionId });
       }
     });
     
@@ -1953,7 +2262,7 @@ app.prepare().then(() => {
   const cleanupQueue = [];
   const MAX_SESSIONS = 10; // Limit total sessions
   const CLEANUP_BATCH_SIZE = 2; // Process 2 cleanups at a time
-  const SESSION_TIMEOUT = 60 * 60 * 1000; // 1 hour
+  const SESSION_TIMEOUT = 4 * 60 * 60 * 1000; // 4 hours - covers full work sessions including breaks
   const activeCleanups = new Set(); // Track active cleanup operations
   
   // Process cleanup queue gradually to prevent cascades
@@ -1971,6 +2280,18 @@ app.prepare().then(() => {
               session.destroy();
               terminalSessions.delete(sessionId);
               sessionMetadata.delete(sessionId);
+              
+              // 🎯 Clean up terminal history buffer
+              if (terminalHistoryBuffers.has(sessionId)) {
+                terminalHistoryBuffers.delete(sessionId);
+              }
+              
+              // 🚀 PERFORMANCE FIX: Clear any pending memory debounce timers
+              if (memoryDebounceTimers.has(sessionId)) {
+                clearTimeout(memoryDebounceTimers.get(sessionId));
+                memoryDebounceTimers.delete(sessionId);
+              }
+              
               console.log(`♻️ Session cleaned up: ${sessionId}`);
             } catch (error) {
               console.error(`⚠️ Error cleaning session ${sessionId}:`, error.message);

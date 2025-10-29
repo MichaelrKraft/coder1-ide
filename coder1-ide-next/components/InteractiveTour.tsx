@@ -88,7 +88,6 @@ const tourSteps: TourStep[] = [
         target: 'terminal-settings-button', 
         title: 'Terminal Settings',
         content: 'Configure your terminal preferences for Claude code, think mode, task completion alerts, skip permissions and add a helpful status line.',
-        action: 'openTerminalSettings',
         tooltipPosition: 'center-monaco',
         borderColor: 'orange'
       },
@@ -96,8 +95,7 @@ const tourSteps: TourStep[] = [
         target: 'supervision-button', 
         title: 'AI Supervision',
         content: 'Enable AI supervision to watch and manage Claude Code sessions, so you can walk away with peace of mind and stop babysitting Claude Code.',
-        action: 'highlightSupervision',
-        tooltipPosition: 'center-terminal', // Same position as Memory button (step 6)
+        tooltipPosition: 'center-monaco',
         borderColor: 'orange'
       }
     ]
@@ -107,7 +105,7 @@ const tourSteps: TourStep[] = [
     title: 'Memory (Core Feature)',
     content: 'Access your AI memory, the revolutionary core feature that remembers your coding patterns, preferences, and project context across sessions, and gets smarter as time goes on.',
     target: 'memory-button',
-    position: 'center-terminal',
+    position: 'center-monaco',
     highlightColor: 'orange' // Orange glow for Memory button
   },
   {
@@ -123,7 +121,7 @@ const tourSteps: TourStep[] = [
         target: 'checkpoint-timeline', 
         title: 'Checkpoint',
         content: 'Save your work at any point to create a restorable checkpoint.',
-        tooltipPosition: 'center-terminal',
+        tooltipPosition: 'center-monaco',
         borderColor: 'orange'
       },
       { 
@@ -155,8 +153,7 @@ const tourSteps: TourStep[] = [
     content: 'Access powerful slash commands that enhance your workflow. Type slash to see over a hundred available commands like /build, /test, /deploy, and many more.',
     target: 'discover-button',
     position: 'center-terminal', // Center in terminal area
-    highlightColor: 'orange', // Orange glow for Discover button like other buttons
-    openMenu: true // Will trigger menu opening
+    highlightColor: 'orange' // Orange glow for Discover button like other buttons
   }
 ];
 

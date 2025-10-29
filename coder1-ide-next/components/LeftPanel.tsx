@@ -9,15 +9,16 @@ import CodeSearch from './codebase/CodeSearch';
 interface LeftPanelProps {
   onFileSelect: (path: string) => void;
   activeFile: string | null;
+  refreshTrigger?: number;
 }
 
-export default function LeftPanel({ onFileSelect, activeFile }: LeftPanelProps) {
+export default function LeftPanel({ onFileSelect, activeFile, refreshTrigger }: LeftPanelProps) {
   const [activeTab, setActiveTab] = useState<'explorer' | 'sessions' | 'search'>('explorer');
   
   // REMOVED: // REMOVED: console.log('🔄 LeftPanel rendered with activeTab:', activeTab);
   
   return (
-    <div className="h-full flex flex-col bg-bg-secondary relative">
+    <div className="h-full flex flex-col bg-bg-secondary relative" data-tour="file-explorer">
       {/* Animated Background Gradient Orbs */}
       <div className="absolute inset-0 pointer-events-none">
         {/* Gradient Orb 1 - Cyan */}
@@ -122,7 +123,7 @@ export default function LeftPanel({ onFileSelect, activeFile }: LeftPanelProps) 
       {/* Tab Content - Takes remaining space but leaves room for Discover */}
       <div className="flex-1 min-h-0 relative z-10">
         {activeTab === 'explorer' && (
-          <SafeFileExplorer onFileSelect={onFileSelect} activeFile={activeFile} />
+          <SafeFileExplorer onFileSelect={onFileSelect} activeFile={activeFile} refreshTrigger={refreshTrigger} />
         )}
         {activeTab === 'sessions' && (
           <SessionsPanel isVisible={true} />

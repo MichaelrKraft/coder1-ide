@@ -76,3 +76,11 @@ server.log
 
 # Admin temporary files
 admin-temp/
+
+# User workspace files (keep default template, ignore user content)
+user-workspaces/*
+!user-workspaces/default/
+!user-workspaces/default/README.md
+!user-workspaces/default/index.html
+!user-workspaces/default/styles.css
+!user-workspaces/default/app.js
