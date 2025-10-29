@@ -93,6 +93,7 @@ export default function MenuBar({
   const [setupModalOpen, setSetupModalOpen] = useState(false);
   const [glmSetupModalOpen, setGlmSetupModalOpen] = useState(false);
   const [fileUploadOpen, setFileUploadOpen] = useState(false);
+  const [alphaTesterNumber, setAlphaTesterNumber] = useState<number | null>(null);
   const menuBarRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -174,6 +175,28 @@ export default function MenuBar({
 
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Load alpha tester badge on mount
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const loadBadge = () => {
+        const testerNum = localStorage.getItem('coder1-alpha-tester-number');
+        if (testerNum) {
+          setAlphaTesterNumber(parseInt(testerNum, 10));
+        }
+      };
+      
+      // Load immediately
+      loadBadge();
+      
+      // Also reload when tour completes
+      window.addEventListener('tour:completed', loadBadge);
+      
+      return () => {
+        window.removeEventListener('tour:completed', loadBadge);
+      };
+    }
   }, []);
 
   const handleMenuClick = (menuName: string) => {
@@ -314,8 +337,34 @@ export default function MenuBar({
         </div>
       </div>
 
-      {/* Right side - Menu dropdown */}
-      <div className="flex items-center gap-2">
+      {/* Right side - Alpha Tester Badge + Menu dropdown */}
+      <div className="flex items-center gap-3">
+        {/* Alpha Tester Badge */}
+        {alphaTesterNumber && (
+          <div 
+            className="flex items-center gap-2 px-3 py-1.5 bg-coder1-cyan/10 border border-coder1-cyan/30 rounded-md"
+            style={{
+              boxShadow: '0 0 15px rgba(0, 217, 255, 0.4)',
+              animation: 'badgePulse 0.6s ease-in-out 3'
+            }}
+          >
+            <span className="text-coder1-cyan font-bold text-sm">🎯 Alpha Tester #{alphaTesterNumber}</span>
+          </div>
+        )}
+        
+        {/* Add keyframes for pulse animation */}
+        <style jsx>{`
+          @keyframes badgePulse {
+            0%, 100% {
+              transform: scale(1);
+              box-shadow: 0 0 15px rgba(0, 217, 255, 0.4);
+            }
+            50% {
+              transform: scale(1.05);
+              box-shadow: 0 0 25px rgba(0, 217, 255, 0.8), 0 0 40px rgba(0, 217, 255, 0.4);
+            }
+          }
+        `}</style>
         {/* Menu dropdown */}
         <div className="relative" ref={menuRef}>
         <button

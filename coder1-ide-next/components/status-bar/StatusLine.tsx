@@ -121,8 +121,11 @@ export default function StatusLine() {
   };
   
   return (
-    <div className="h-6 bg-bg-tertiary border-t border-border-default flex items-center justify-center px-4 text-xs select-none">
-      {/* Simple Time Display Only */}
+    <div className="h-6 bg-bg-tertiary border-t border-border-default flex items-center justify-between px-4 text-xs select-none">
+      {/* Spacer */}
+      <div />
+      
+      {/* Simple Time Display */}
       <div className="flex items-center gap-1 text-text-muted">
         <Clock className="w-3 h-3" />
         <span>{currentDate ? formatDate(currentDate) : '--'}</span>

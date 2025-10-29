@@ -234,8 +234,8 @@ const StatusBarActions = React.memo(function StatusBarActions({
           }));
           
           const checkpointName = customName 
-            ? `"${customName}" checkpoint saved successfully` 
-            : 'Checkpoint saved successfully';
+            ? `"${customName}" saved! You're crushing it 🚀` 
+            : 'Checkpoint saved! Keep up the great work 🎉';
           
           addToast({
             message: `✅ ${checkpointName}`,

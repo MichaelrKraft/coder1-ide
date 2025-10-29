@@ -31,7 +31,7 @@ const LazyTerminalContainer = dynamic(
     ssr: false,
     loading: () => (
       <div className="flex items-center justify-center h-full bg-bg-primary">
-        <span className="text-text-muted">Loading terminal...</span>
+        <span className="text-text-muted">Spinning up your terminal magic... ✨</span>
       </div>
     ),
   },
@@ -44,7 +44,7 @@ const PreviewPanel = dynamic(
     ssr: false,
     loading: () => (
       <div className="flex items-center justify-center h-full bg-bg-secondary">
-        <span className="text-text-muted">Loading preview...</span>
+        <span className="text-text-muted">Brewing up the preview... ☕</span>
       </div>
     ),
   },
@@ -61,6 +61,18 @@ function IDEPageContent() {
   
   // Tour state
   const [showTour, setShowTour] = useState(false);
+  const [showOnboardingOverlay, setShowOnboardingOverlay] = useState(false);
+  
+  // Show onboarding overlay for first-time users
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
+    const tourStatus = localStorage.getItem('coder1-tour-status');
+    if (!tourStatus) {
+      // First-time user - show modal overlay forcing them to click button
+      setShowOnboardingOverlay(true);
+    }
+  }, []);
   
   // Settings modal state
   const [showSettingsModal, setShowSettingsModal] = useState(false);
@@ -239,7 +251,7 @@ function IDEPageContent() {
           // Create a temporary toast notification
           const toast = document.createElement('div');
           toast.className = 'fixed top-4 right-4 bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg z-50 transition-all duration-300';
-          toast.innerHTML = `✅ Checkpoint restored successfully! (${checkpointId.substring(0, 8)}...)`;
+          toast.innerHTML = `✅ Time travel complete! Welcome back 🚀 (${checkpointId.substring(0, 8)}...)`;
           document.body.appendChild(toast);
           
           // Remove toast after 4 seconds
@@ -476,7 +488,7 @@ function IDEPageContent() {
             return true;
           } catch (err) {
             console.error('Failed to copy:', err);
-            const errorMsg = '\r\n❌ Failed to copy to clipboard. Please try again.\r\n';
+            const errorMsg = '\r\n❌ Clipboard got shy! Mind trying again? 🤔\r\n';
             const manualMsg = '   Try pressing Ctrl+Shift+C or typing: copy-files\r\n\r\n';
             const globalSocket = (window as any).terminalSocket;
             const globalSessionId = (window as any).terminalSessionId;
@@ -525,7 +537,7 @@ function IDEPageContent() {
       console.error('❌ Error processing files:', error);
       
       // Show error in terminal
-      const errorMessage = `\n❌ Error: ${error instanceof Error ? error.message : 'Failed to process files'}\n`;
+      const errorMessage = `\n❌ Oops! ${error instanceof Error ? error.message : 'Something went sideways with those files'}\n`;
       const globalSocket = (window as any).terminalSocket;
       const globalSessionId = (window as any).terminalSessionId;
       if (globalSocket && globalSessionId) {
@@ -676,7 +688,7 @@ function IDEPageContent() {
       const response = await fetch(apiUrl);
 
       if (!response.ok) {
-        let errorMessage = `Failed to read file: ${response.status}`;
+        let errorMessage = `Hmm, trouble reading that file (error ${response.status})`;
         try {
           const errorData = await response.json();
           errorMessage = errorData.error || errorMessage;
@@ -713,7 +725,7 @@ function IDEPageContent() {
       if (globalSocket && globalSessionId) {
         globalSocket.emit('terminal:input', {
           sessionId: globalSessionId,
-          data: `\n❌ Failed to open ${path}: ${errorMessage}\n`
+          data: `\n❌ That file got shy! ${path}: ${errorMessage}\n`
         });
       }
     } finally {
@@ -1360,6 +1372,49 @@ function IDEPageContent() {
               <StatusLine />
             </div>
             
+            {/* Onboarding Overlay - Forces user to click Start Interactive Tour */}
+            {showOnboardingOverlay && (
+              <div 
+                className="fixed inset-0 z-[100] flex items-center justify-center"
+                style={{
+                  backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                  backdropFilter: 'blur(1px)'
+                }}
+              >
+                {/* Spotlight effect around button area */}
+                <div className="relative">
+                  {/* Glow effect */}
+                  <div 
+                    className="absolute inset-0 rounded-lg"
+                    style={{
+                      boxShadow: '0 0 40px 20px rgba(0, 217, 255, 0.3), 0 0 80px 40px rgba(0, 217, 255, 0.15)',
+                      filter: 'blur(15px)'
+                    }}
+                  />
+                  
+                  {/* The actual button with highlight */}
+                  <button
+                    onClick={() => {
+                      setShowOnboardingOverlay(false);
+                      setShowTour(true);
+                    }}
+                    className="relative px-8 py-4 bg-coder1-cyan text-black font-bold text-lg rounded-lg transition-all duration-300 hover:scale-105"
+                    style={{
+                      boxShadow: '0 0 20px rgba(0, 217, 255, 0.6), 0 0 40px rgba(0, 217, 255, 0.3)',
+                      textShadow: '0 1px 2px rgba(0, 0, 0, 0.3)'
+                    }}
+                  >
+                    🚀 Start Interactive Tour
+                  </button>
+                  
+                  {/* Helpful text below button */}
+                  <p className="text-center mt-6 text-coder1-cyan text-sm font-medium">
+                    Click to begin your journey • Takes ~3 minutes
+                  </p>
+                </div>
+              </div>
+            )}
+            
             {/* Interactive Tour Overlay */}
             {showTour && (
               <InteractiveTour
@@ -1368,9 +1423,13 @@ function IDEPageContent() {
                 onTourComplete={() => {
                   console.log('Tour completed');
                   setShowTour(false);
+                  
+                  // Trigger a custom event to tell StatusLine to refresh
+                  window.dispatchEvent(new Event('tour:completed'));
                 }}
               />
             )}
+          
             
             {/* Settings Modal */}
             <SettingsModal

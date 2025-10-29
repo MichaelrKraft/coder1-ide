@@ -35,70 +35,46 @@ interface TourStep {
 const tourSteps: TourStep[] = [
   {
     id: 'welcome-overview',
-    title: 'Welcome to Coder1 IDE',
-    content: 'This is your AI-powered development environment. The entire interface is designed to help you code faster with AI assistance.',
-    target: 'ide-interface', // Target the entire IDE interface
+    title: 'Welcome to Coder1 IDE 🚀',
+    content: 'Your AI-powered development environment designed for Claude Code. Let\'s take a quick tour!',
+    target: 'ide-interface',
     position: 'center',
     highlightColor: 'turquoise',
-    keepHero: true // Hero section stays visible
+    keepHero: true
   },
   {
     id: 'prd-generator',
     title: 'Smart PRD Generator',
-    content: 'Click this button to automate your PRD documentation. It uses AI to create comprehensive product requirement documents.',
+    content: 'AI-powered PRD documentation. Describe your idea, get comprehensive requirements instantly. 📝',
     target: 'prd-generator-button',
-    position: 'right-preview', // Position in preview panel area
-    highlightColor: 'turquoise', // BLUE border, not orange
-    keepHero: true // Hero section stays visible
+    position: 'right-preview',
+    highlightColor: 'turquoise',
+    keepHero: true
   },
   {
     id: 'file-explorer',
     title: 'File Explorer',
-    content: 'Navigate your project files and sessions. Everything is organized in tabs for easy access.',
+    content: 'Your project files and sessions, beautifully organized. Click any file to start editing. 📁',
     target: 'file-explorer',
-    position: 'middle-top', // Move to middle-top
+    position: 'middle-top',
     highlightColor: 'turquoise'
   },
   {
     id: 'code-editor',
     title: 'Monaco Code Editor',
-    content: 'Full-featured code editor with syntax highlighting, IntelliSense, and all VS Code features you love.',
+    content: 'Full VSCode editing power: syntax highlighting, IntelliSense, and all your favorite shortcuts. ✨',
     target: 'monaco-editor',
-    position: 'center-monaco', // Move up to match step 5.1 position
+    position: 'center-monaco',
     highlightColor: 'turquoise',
-    addCode: true // Will trigger code addition
+    addCode: true
   },
   {
     id: 'terminal-features',
     title: 'AI-Powered Terminal',
-    content: 'Your terminal includes voice input and AI supervision. Let me show you the key features.',
+    content: 'Your AI-powered terminal with voice input 🎤, supervision 👁️, and smart settings ⚙️. Try typing "claude" to get started! ✨',
     target: 'terminal',
-    position: 'center-monaco', // Move up to where step 5.1 will be
-    highlightColor: 'turquoise',
-    hasSubSteps: true,
-    subSteps: [
-      { 
-        target: 'voice-input-button', 
-        title: 'Voice Input',
-        content: 'Click the microphone to use text-to-speech. Speak your commands and watch them execute.',
-        tooltipPosition: 'center-monaco',
-        borderColor: 'orange'
-      },
-      { 
-        target: 'terminal-settings-button', 
-        title: 'Terminal Settings',
-        content: 'Configure your terminal preferences for Claude code, think mode, task completion alerts, skip permissions and add a helpful status line.',
-        tooltipPosition: 'center-monaco',
-        borderColor: 'orange'
-      },
-      { 
-        target: 'supervision-button', 
-        title: 'AI Supervision',
-        content: 'Enable AI supervision to watch and manage Claude Code sessions, so you can walk away with peace of mind and stop babysitting Claude Code.',
-        tooltipPosition: 'center-monaco',
-        borderColor: 'orange'
-      }
-    ]
+    position: 'center-monaco',
+    highlightColor: 'turquoise'
   },
   {
     id: 'memory-feature',
@@ -111,49 +87,18 @@ const tourSteps: TourStep[] = [
   {
     id: 'status-bar-features',
     title: 'Status Bar Tools',
-    content: 'Save checkpoints, view timeline, and generate session summaries for perfect handoffs.',
+    content: 'Save checkpoints 💾, view your timeline 📅, and generate session summaries 📝 for perfect handoffs. Your development history, always accessible.',
     target: 'status-bar',
     position: 'center-terminal',
-    highlightColor: 'turquoise',
-    hasSubSteps: true,
-    subSteps: [
-      { 
-        target: 'checkpoint-timeline', 
-        title: 'Checkpoint',
-        content: 'Save your work at any point to create a restorable checkpoint.',
-        tooltipPosition: 'center-monaco',
-        borderColor: 'orange'
-      },
-      { 
-        target: 'timeline-button', 
-        title: 'Timeline',
-        content: 'View the complete history of your development session.',
-        tooltipPosition: 'center-terminal',
-        borderColor: 'orange'
-      },
-      { 
-        target: 'session-summary', 
-        title: 'Session Summary',
-        content: 'Generate AI-powered in-depth summaries with one click so you can easily hand-off to the next agent with full context.',
-        tooltipPosition: 'center-terminal',
-        borderColor: 'orange'
-      },
-      { 
-        target: 'docs-button', 
-        title: 'Documentation',
-        content: 'Access comprehensive documentation, guides, and API references to help with your development.',
-        tooltipPosition: 'center-terminal',
-        borderColor: 'orange'
-      }
-    ]
+    highlightColor: 'turquoise'
   },
   {
     id: 'discover-menu',
     title: 'Discover Commands',
-    content: 'Access powerful slash commands that enhance your workflow. Type slash to see over a hundred available commands like /build, /test, /deploy, and many more.',
+    content: 'Powerful slash commands: /build, /test, /deploy, and 100+ more. Type / to explore! ⚡',
     target: 'discover-button',
-    position: 'center-terminal', // Center in terminal area
-    highlightColor: 'orange' // Orange glow for Discover button like other buttons
+    position: 'center-terminal',
+    highlightColor: 'orange'
   }
 ];
 
@@ -192,20 +137,30 @@ export default function InteractiveTour({ onClose, onStepChange, onTourComplete 
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isDiscoverMenuOpen, setIsDiscoverMenuOpen] = useState(false);
   const [dontShowAgain, setDontShowAgain] = useState(false);
+  
+  // Progress tracking
+  const [startTime] = useState(Date.now());
+  const [stepStartTime, setStepStartTime] = useState(Date.now());
+  const [completedSteps, setCompletedSteps] = useState<number[]>([]);
 
   const currentStepData = tourSteps[currentStep];
   const isOnSubStep = currentStepData.hasSubSteps && currentSubStep > 0;
   const currentSubStepData = isOnSubStep ? currentStepData.subSteps?.[currentSubStep - 1] : null;
   
-  // Check if tour was already completed or dismissed
+  // Allow tour to be re-run manually even if previously completed
+  // (Auto-start prevention is handled in IDE page, not here)
+  
+  // Persist progress to localStorage
   useEffect(() => {
-    const tourStatus = localStorage.getItem('coder1-tour-status');
-    if (tourStatus === 'completed' || tourStatus === 'dismissed') {
-      // Immediately close if tour was already completed or dismissed
-      onClose();
-      return;
+    if (typeof window !== 'undefined') {
+      const progress = {
+        currentStep,
+        completedSteps,
+        lastUpdated: Date.now()
+      };
+      localStorage.setItem('coder1-onboarding-progress', JSON.stringify(progress));
     }
-  }, [onClose]);
+  }, [currentStep, completedSteps]);
   
   // Add ESC key handler for quick dismissal
   useEffect(() => {
@@ -436,9 +391,47 @@ export default function InteractiveTour({ onClose, onStepChange, onTourComplete 
 
   // Handle step changes
   const handleTourComplete = () => {
+    // Calculate total tour time
+    const totalTime = Date.now() - startTime;
+    const totalMinutes = Math.round(totalTime / 60000);
+    const totalSeconds = Math.round((totalTime % 60000) / 1000);
+    
+    console.log(`[InteractiveTour] 🎉 Tour completed in ${totalMinutes}m ${totalSeconds}s`);
+    console.log(`[InteractiveTour] 📊 Completed steps: ${completedSteps.length + 1}/${tourSteps.length}`);
+    
     // Mark tour as completed
     localStorage.setItem('coder1-tour-status', 'completed');
     localStorage.setItem('coder1-tour-timestamp', new Date().toISOString());
+    localStorage.setItem('coder1-tour-completion-time', totalTime.toString());
+    
+    // Assign alpha tester number if not already assigned
+    if (!localStorage.getItem('coder1-alpha-tester-number')) {
+      // Get current counter (starts at 1 for first user)
+      const counterStr = localStorage.getItem('coder1-alpha-tester-counter');
+      const currentCounter = counterStr ? parseInt(counterStr, 10) : 0;
+      const nextNumber = currentCounter + 1;
+      
+      // Assign number to this user
+      localStorage.setItem('coder1-alpha-tester-number', nextNumber.toString());
+      
+      // Increment counter for next user
+      localStorage.setItem('coder1-alpha-tester-counter', nextNumber.toString());
+      
+      console.log(`🎯 Alpha tester #${nextNumber} badge assigned!`);
+      
+      // Show celebration toast
+      if (typeof window !== 'undefined') {
+        const toast = document.createElement('div');
+        toast.className = 'fixed top-4 right-4 bg-coder1-cyan text-black px-6 py-3 rounded-lg shadow-glow-cyan-intense z-50 transition-all duration-300';
+        toast.innerHTML = `🎉 Congrats! You're Alpha Tester #${nextNumber}`;
+        document.body.appendChild(toast);
+        
+        setTimeout(() => {
+          toast.style.opacity = '0';
+          setTimeout(() => document.body.removeChild(toast), 300);
+        }, 4000);
+      }
+    }
     
     // Call the original complete handler
     if (onTourComplete) {
@@ -479,12 +472,24 @@ export default function InteractiveTour({ onClose, onStepChange, onTourComplete 
       setIsDiscoverMenuOpen(false);
     }
 
+    // Track step completion before moving to next
+    const stepTime = Date.now() - stepStartTime;
+    console.log(`[InteractiveTour] ⏱️ Step ${currentStep + 1} completed in ${Math.round(stepTime / 1000)}s`);
+    
+    // Mark current step as completed
+    if (!completedSteps.includes(currentStep)) {
+      setCompletedSteps(prev => [...prev, currentStep]);
+    }
+    
     // Move to next main step
     if (currentStep < tourSteps.length - 1) {
       const nextStep = currentStep + 1;
       const nextStepData = tourSteps[nextStep];
       console.log(`[InteractiveTour] 🚀 Moving from Step ${currentStep + 1} (${currentStepData.id}) to Step ${nextStep + 1} (${nextStepData.id})`);
       console.log(`[InteractiveTour] Next step target: "${nextStepData.target}", keepHero: ${nextStepData.keepHero}`);
+      
+      // Reset step timer for next step
+      setStepStartTime(Date.now());
       
       setCurrentStep(nextStep);
       setCurrentSubStep(0);
@@ -574,9 +579,7 @@ export default function InteractiveTour({ onClose, onStepChange, onTourComplete 
           '[data-tour="prd-generator"]',
           '.prd-generator-button',  
           'button[class*="prd"]',
-          '[class*="generator"]',
-          'button:contains("PRD")',
-          'button:contains("Generator")'
+          '[class*="generator"]'
         ];
         
         for (const fallbackSelector of fallbackSelectors) {
