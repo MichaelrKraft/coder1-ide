@@ -21,7 +21,6 @@ services:
       npm run copy-canonical
       NODE_OPTIONS="--max-old-space-size=1200" npm run build
       rm -rf .next/cache node_modules/.cache
-      npm prune --production
     
     # Start command with optimized memory for 512MB starter plan  
     startCommand: NODE_OPTIONS="--max-old-space-size=400 --expose-gc" node server.js
