@@ -108,8 +108,8 @@ npm install --production --silent
 
 echo -e "${BLUE}🔗 Installing globally...${NC}"
 
-# Install globally (script should be run with sudo for guaranteed success)
-npm install -g . --unsafe-perm
+# Install globally to /usr/local (guaranteed to be in PATH on all systems)
+npm install -g . --prefix=/usr/local --unsafe-perm
 
 # Verify installation
 if command -v coder1-bridge &> /dev/null; then
