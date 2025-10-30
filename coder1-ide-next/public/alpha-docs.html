@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alpha Documentation - Coder1 IDE</title>
+    
+    <!-- Fonts & Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    
+    <style>
+        :root {
+            --primary-cyan: #00D9FF;
+            --secondary-cyan: #00B4D8;
+            --background-dark: #0A0A0A;
+            --background-secondary: #1A1A1A;
+            --text-primary: #FFFFFF;
+            --text-secondary: #A0A0A0;
+            --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--font-family);
+            background: var(--background-dark);
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+
+        /* Navigation */
+        nav {
+            background: rgba(10, 10, 10, 0.95);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(0, 217, 255, 0.1);
+            padding: 1rem 0;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .nav-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            text-decoration: none;
+        }
+
+        .back-link {
+            color: var(--primary-cyan);
+            text-decoration: none;
+            font-weight: 600;
+            transition: opacity 0.3s ease;
+        }
+
+        .back-link:hover {
+            opacity: 0.8;
+        }
+
+        /* Main Content */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 4rem 2rem;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 4rem;
+        }
+
+        .header h1 {
+            font-size: 3rem;
+            font-weight: 800;
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, #00D9FF, #00B4D8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .header p {
+            font-size: 1.2rem;
+            color: var(--text-secondary);
+        }
+
+        /* Doc Cards */
+        .docs-grid {
+            display: grid;
+            gap: 2rem;
+        }
+
+        .doc-card {
+            background: var(--background-secondary);
+            border: 1px solid rgba(0, 217, 255, 0.1);
+            border-radius: 12px;
+            padding: 2rem;
+            transition: all 0.3s ease;
+        }
+
+        .doc-card:hover {
+            border-color: rgba(0, 217, 255, 0.3);
+            box-shadow: 0 10px 30px rgba(0, 217, 255, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .doc-header {
+            display: flex;
+            align-items: start;
+            gap: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .doc-icon {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #00D9FF, #00B4D8);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .doc-icon i {
+            font-size: 1.8rem;
+            color: white;
+        }
+
+        .doc-info {
+            flex: 1;
+        }
+
+        .doc-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            color: var(--text-primary);
+        }
+
+        .doc-meta {
+            display: flex;
+            gap: 1rem;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        .doc-badge {
+            padding: 0.25rem 0.75rem;
+            background: rgba(0, 217, 255, 0.1);
+            border: 1px solid rgba(0, 217, 255, 0.3);
+            border-radius: 4px;
+            font-size: 0.85rem;
+            color: var(--primary-cyan);
+            font-weight: 600;
+        }
+
+        .doc-description {
+            color: var(--text-secondary);
+            margin-bottom: 1.5rem;
+            line-height: 1.7;
+        }
+
+        .doc-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            background: linear-gradient(135deg, #00D9FF, #00B4D8);
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .doc-link:hover {
+            transform: translateX(5px);
+            box-shadow: 0 4px 15px rgba(0, 217, 255, 0.3);
+        }
+
+        /* Essential Badge */
+        .badge-essential {
+            background: rgba(251, 146, 60, 0.1);
+            border-color: rgba(251, 146, 60, 0.3);
+            color: #FB923C;
+        }
+
+        /* Footer */
+        footer {
+            margin-top: 4rem;
+            padding: 2rem 0;
+            border-top: 1px solid rgba(0, 217, 255, 0.1);
+            text-align: center;
+            color: var(--text-secondary);
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav>
+        <div class="nav-container">
+            <a href="/" class="logo">
+                <img src="/Coder1-Logo-Sharp.svg" alt="Coder1 Logo" style="height: 50px; width: auto;">
+            </a>
+            <a href="/coder1-alpha-welcome.html" class="back-link">
+                <i class="fas fa-arrow-left"></i> Back to Alpha Home
+            </a>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container">
+        <div class="header">
+            <h1>📚 Alpha Documentation</h1>
+            <p>Everything you need to get started and troubleshoot Coder1 IDE</p>
+        </div>
+
+        <div class="docs-grid">
+            <!-- Doc 1: Alpha Tester's Bridge Guide -->
+            <div class="doc-card">
+                <div class="doc-header">
+                    <div class="doc-icon">
+                        <i class="fas fa-rocket"></i>
+                    </div>
+                    <div class="doc-info">
+                        <h2 class="doc-title">Alpha Tester's Bridge Guide</h2>
+                        <div class="doc-meta">
+                            <span class="doc-badge badge-essential">Essential</span>
+                            <span>⏱️ 10 min read</span>
+                        </div>
+                    </div>
+                </div>
+                <p class="doc-description">
+                    <strong>Start here!</strong> Everything you need to set up the Bridge connection between Coder1 and your local Claude Code. Includes installation, security overview, connection steps, and troubleshooting.
+                </p>
+                <a href="/docs/viewer.html?doc=alpha-bridge-guide" class="doc-link">
+                    Read Guide <i class="fas fa-arrow-right"></i>
+                </a>
+            </div>
+
+            <!-- Doc 2: Bridge Security FAQ -->
+            <div class="doc-card">
+                <div class="doc-header">
+                    <div class="doc-icon">
+                        <i class="fas fa-shield-alt"></i>
+                    </div>
+                    <div class="doc-info">
+                        <h2 class="doc-title">Bridge Security FAQ</h2>
+                        <div class="doc-meta">
+                            <span class="doc-badge badge-essential">Essential</span>
+                            <span>⏱️ 15 min read</span>
+                        </div>
+                    </div>
+                </div>
+                <p class="doc-description">
+                    <strong>Security-first deep dive.</strong> Technical details on encryption (WSS/TLS 1.3), threat model analysis, privacy & data collection, and comparison to other tools. Perfect for security-conscious users.
+                </p>
+                <a href="/docs/viewer.html?doc=bridge-security-faq" class="doc-link">
+                    Read FAQ <i class="fas fa-arrow-right"></i>
+                </a>
+            </div>
+
+            <!-- Doc 3: Connection Stability Fixes -->
+            <div class="doc-card">
+                <div class="doc-header">
+                    <div class="doc-icon">
+                        <i class="fas fa-bolt"></i>
+                    </div>
+                    <div class="doc-info">
+                        <h2 class="doc-title">Connection Stability Fixes</h2>
+                        <div class="doc-meta">
+                            <span class="doc-badge">Technical</span>
+                            <span>⏱️ 8 min read</span>
+                        </div>
+                    </div>
+                </div>
+                <p class="doc-description">
+                    <strong>What we fixed.</strong> Learn about the 1-hour connection stability improvements. Covers Socket.IO timeout fixes, Chrome extension interference protection, and event loop blocking resolution.
+                </p>
+                <a href="/docs/viewer.html?doc=connection-stability" class="doc-link">
+                    Read Technical Doc <i class="fas fa-arrow-right"></i>
+                </a>
+            </div>
+
+            <!-- Doc 4: Troubleshooting Guide -->
+            <div class="doc-card">
+                <div class="doc-header">
+                    <div class="doc-icon">
+                        <i class="fas fa-wrench"></i>
+                    </div>
+                    <div class="doc-info">
+                        <h2 class="doc-title">Troubleshooting Guide</h2>
+                        <div class="doc-meta">
+                            <span class="doc-badge">Reference</span>
+                            <span>⏱️ Quick lookup</span>
+                        </div>
+                    </div>
+                </div>
+                <p class="doc-description">
+                    <strong>When things go wrong.</strong> Master index of all troubleshooting docs including terminal issues, checkpoint problems, and quick fixes. Organized by issue type for fast resolution.
+                </p>
+                <a href="/docs/viewer.html?doc=troubleshooting" class="doc-link">
+                    Browse Troubleshooting <i class="fas fa-arrow-right"></i>
+                </a>
+            </div>
+
+            <!-- Doc 5: Bridge Connection System -->
+            <div class="doc-card">
+                <div class="doc-header">
+                    <div class="doc-icon">
+                        <i class="fas fa-sitemap"></i>
+                    </div>
+                    <div class="doc-info">
+                        <h2 class="doc-title">Bridge Connection System</h2>
+                        <div class="doc-meta">
+                            <span class="doc-badge">Architecture</span>
+                            <span>⏱️ 12 min read</span>
+                        </div>
+                    </div>
+                </div>
+                <p class="doc-description">
+                    <strong>How it all works.</strong> Technical architecture of the Bridge system. Covers connection flow, WebSocket communication, pairing code system, and session management. For curious technical users.
+                </p>
+                <a href="/docs/viewer.html?doc=bridge-architecture" class="doc-link">
+                    Read Architecture Doc <i class="fas fa-arrow-right"></i>
+                </a>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer>
+            <p>Need help? <a href="https://github.com/MichaelrKraft/coder1-ide/issues" style="color: var(--primary-cyan);">Report an issue</a> or check the troubleshooting guide above.</p>
+            <p style="margin-top: 0.5rem; font-size: 0.9rem;">&copy; 2025 Coder1 - Alpha Documentation</p>
+        </footer>
+    </div>
+</body>
+</html>

@@ -151,6 +151,10 @@ const nextConfig = {
   async rewrites() {
     return [
       {
+        source: '/welcome',
+        destination: '/coder1-alpha-welcome.html'
+      },
+      {
         source: '/components-beta/api/list',
         destination: '/api/components-beta/list'
       },

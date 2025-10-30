@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Documentation - Coder1 IDE</title>
+    
+    <!-- Fonts & Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    
+    <!-- Marked.js for Markdown Rendering -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    
+    <style>
+        :root {
+            --primary-cyan: #00D9FF;
+            --secondary-cyan: #00B4D8;
+            --background-dark: #0A0A0A;
+            --background-secondary: #1A1A1A;
+            --background-tertiary: #252525;
+            --text-primary: #FFFFFF;
+            --text-secondary: #A0A0A0;
+            --text-muted: #6B7280;
+            --code-bg: #1A1A1A;
+            --border-color: rgba(0, 217, 255, 0.1);
+            --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            --font-mono: 'Fira Code', 'Monaco', 'Courier New', monospace;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--font-family);
+            background: var(--background-dark);
+            color: var(--text-primary);
+            line-height: 1.7;
+        }
+
+        /* Navigation */
+        nav {
+            background: rgba(10, 10, 10, 0.95);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border-color);
+            padding: 1rem 0;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .nav-container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 0 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            text-decoration: none;
+        }
+
+        .back-link {
+            color: var(--primary-cyan);
+            text-decoration: none;
+            font-weight: 600;
+            transition: opacity 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .back-link:hover {
+            opacity: 0.8;
+        }
+
+        /* Main Content */
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 3rem 2rem;
+        }
+
+        /* Markdown Styles */
+        .markdown-body h1 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, #00D9FF, #00B4D8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        .markdown-body h2 {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-top: 2.5rem;
+            margin-bottom: 1rem;
+            color: var(--text-primary);
+        }
+
+        .markdown-body h3 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-top: 2rem;
+            margin-bottom: 0.75rem;
+            color: var(--primary-cyan);
+        }
+
+        .markdown-body h4 {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-top: 1.5rem;
+            margin-bottom: 0.5rem;
+            color: var(--text-secondary);
+        }
+
+        .markdown-body p {
+            margin-bottom: 1rem;
+            color: var(--text-secondary);
+        }
+
+        .markdown-body strong {
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+
+        .markdown-body em {
+            color: var(--primary-cyan);
+            font-style: italic;
+        }
+
+        .markdown-body ul, .markdown-body ol {
+            margin: 1rem 0;
+            padding-left: 2rem;
+        }
+
+        .markdown-body li {
+            margin-bottom: 0.5rem;
+            color: var(--text-secondary);
+        }
+
+        .markdown-body a {
+            color: var(--primary-cyan);
+            text-decoration: none;
+            transition: opacity 0.3s ease;
+        }
+
+        .markdown-body a:hover {
+            opacity: 0.8;
+            text-decoration: underline;
+        }
+
+        .markdown-body code {
+            background: var(--code-bg);
+            border: 1px solid var(--border-color);
+            padding: 0.2rem 0.4rem;
+            border-radius: 4px;
+            font-family: var(--font-mono);
+            font-size: 0.9em;
+            color: #10B981;
+        }
+
+        .markdown-body pre {
+            background: var(--code-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1.5rem 0;
+            overflow-x: auto;
+        }
+
+        .markdown-body pre code {
+            background: none;
+            border: none;
+            padding: 0;
+            color: #10B981;
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
+
+        .markdown-body blockquote {
+            border-left: 4px solid var(--primary-cyan);
+            background: var(--background-secondary);
+            padding: 1rem 1.5rem;
+            margin: 1.5rem 0;
+            border-radius: 4px;
+        }
+
+        .markdown-body blockquote p {
+            color: var(--text-primary);
+        }
+
+        .markdown-body hr {
+            border: none;
+            border-top: 2px solid var(--border-color);
+            margin: 2rem 0;
+        }
+
+        .markdown-body table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1.5rem 0;
+        }
+
+        .markdown-body th {
+            background: var(--background-secondary);
+            padding: 0.75rem;
+            text-align: left;
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+
+        .markdown-body td {
+            padding: 0.75rem;
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+        }
+
+        /* Special Callout Boxes */
+        .markdown-body p:has(> strong:first-child) {
+            padding: 1rem;
+            background: var(--background-secondary);
+            border-left: 4px solid var(--primary-cyan);
+            border-radius: 4px;
+            margin: 1rem 0;
+        }
+
+        /* Loading State */
+        .loading {
+            text-align: center;
+            padding: 3rem;
+            color: var(--text-muted);
+        }
+
+        .loading i {
+            font-size: 2rem;
+            color: var(--primary-cyan);
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        /* Error State */
+        .error {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            padding: 1.5rem;
+            border-radius: 8px;
+            color: #EF4444;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav>
+        <div class="nav-container">
+            <a href="/" class="logo">
+                <img src="/Coder1-Logo-Sharp.svg" alt="Coder1 Logo" style="height: 40px; width: auto;">
+            </a>
+            <a href="/alpha-docs.html" class="back-link">
+                <i class="fas fa-arrow-left"></i> Back to Docs
+            </a>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container">
+        <div id="content" class="markdown-body">
+            <div class="loading">
+                <i class="fas fa-circle-notch"></i>
+                <p>Loading documentation...</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Get the doc parameter from URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const docFile = urlParams.get('doc');
+
+        // Map of doc names to their file paths
+        const docPaths = {
+            'alpha-bridge-guide': '/docs/alpha-bridge-guide.txt',
+            'bridge-security-faq': '/docs/bridge-security-faq.txt',
+            'connection-stability': '/docs/connection-stability.txt',
+            'bridge-architecture': '/docs/bridge-architecture.txt',
+            'troubleshooting': '/docs/troubleshooting.txt'
+        };
+
+        // Configure marked options
+        marked.setOptions({
+            breaks: true,
+            gfm: true,
+            headerIds: true,
+            mangle: false
+        });
+
+        // Load and render the markdown
+        async function loadDoc() {
+            const contentDiv = document.getElementById('content');
+            
+            if (!docFile || !docPaths[docFile]) {
+                contentDiv.innerHTML = `
+                    <div class="error">
+                        <h2><i class="fas fa-exclamation-triangle"></i> Document Not Found</h2>
+                        <p>The requested documentation could not be found.</p>
+                        <p><a href="/alpha-docs.html">Return to documentation index</a></p>
+                    </div>
+                `;
+                return;
+            }
+
+            try {
+                const response = await fetch(docPaths[docFile]);
+                if (!response.ok) throw new Error('Failed to load document');
+                
+                const markdown = await response.text();
+                const html = marked.parse(markdown);
+                
+                contentDiv.innerHTML = html;
+                
+                // Update page title
+                const firstH1 = contentDiv.querySelector('h1');
+                if (firstH1) {
+                    document.title = firstH1.textContent + ' - Coder1 IDE';
+                }
+            } catch (error) {
+                console.error('Error loading doc:', error);
+                contentDiv.innerHTML = `
+                    <div class="error">
+                        <h2><i class="fas fa-exclamation-triangle"></i> Error Loading Document</h2>
+                        <p>There was a problem loading this documentation.</p>
+                        <p>Error: ${error.message}</p>
+                        <p><a href="/alpha-docs.html">Return to documentation index</a></p>
+                    </div>
+                `;
+            }
+        }
+
+        // Load doc on page load
+        loadDoc();
+    </script>
+</body>
+</html>

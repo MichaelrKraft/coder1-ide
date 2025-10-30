@@ -654,6 +654,13 @@ app.prepare().then(() => {
       return handleHealthCheck(req, res);
     }
     
+    // Welcome page route
+    if (pathname === '/welcome') {
+      req.url = '/coder1-alpha-welcome.html';
+      const cleanParsedUrl = parse(req.url, true);
+      return handle(req, res, cleanParsedUrl);
+    }
+    
     // Alpha validation for protected routes
     if (isAlphaMode && (pathname === '/' || pathname === '/ide' || pathname?.startsWith('/api/claude'))) {
       if (!validateAlphaAccess(req, res)) {

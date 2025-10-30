@@ -1,0 +1,1723 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Welcome to Coder1 IDE Alpha - You're part of the first IDE built specifically for Claude Code. Join us in shaping the future of AI-powered development.">
+    <meta name="keywords" content="Coder1 Alpha, IDE, Claude Code, AI Development, Alpha Testing">
+    <title>Welcome to Coder1 Alpha 🎉 | The IDE Built for Claude Code</title>
+    
+    <!-- Fonts & Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    
+    <style>
+        :root {
+            /* Coder1 cyan color scheme */
+            --primary-cyan: #00D9FF;
+            --secondary-cyan: #00B4D8;
+            --light-cyan: #90E0EF;
+            --accent-cyan: #0077B6;
+            
+            /* Memory purple accent */
+            --memory-purple: #8B5CF6;
+            --memory-glow: rgba(139, 92, 246, 0.3);
+            
+            /* Alpha cyan accent */
+            --alpha-orange: #00D9FF;
+            --alpha-glow: rgba(0, 217, 255, 0.3);
+            
+            /* Text colors */
+            --dark-text: #030303;
+            --light-text: #666666;
+            --muted-text: #999999;
+            
+            /* Backgrounds */
+            --background-white: #FFFFFF;
+            --background-light: #FAFAFA;
+            --background-dark: #0A0A0A;
+            
+            /* Gradients - MATCHING CODER1 IDE */
+            --gradient-primary: linear-gradient(135deg, #00D9FF, #00B4D8);
+            --gradient-memory: linear-gradient(135deg, #8B5CF6, #00D9FF);
+            --gradient-alpha: linear-gradient(135deg, #00D9FF, #00B4D8);
+            --gradient-dark: linear-gradient(135deg, #0A0A0A, #1A1A1A);
+            
+            /* Effects */
+            --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.07);
+            --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.1);
+            --shadow-xl: 0 20px 40px rgba(0, 0, 0, 0.15);
+            
+            --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: var(--font-family);
+            background: var(--background-white);
+            color: var(--dark-text);
+            overflow-x: hidden;
+            line-height: 1.6;
+        }
+
+        /* Container */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* Navigation */
+        nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: rgba(10, 10, 10, 0.95);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(0, 217, 255, 0.1);
+            z-index: 1000;
+            transition: all 0.3s ease;
+        }
+
+        .nav-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.36rem 0;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            text-decoration: none;
+        }
+
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            background: var(--gradient-primary);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 20px rgba(0, 217, 255, 0.3);
+        }
+
+        .logo-icon i {
+            color: white;
+            font-size: 1.2rem;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+        }
+
+        .nav-link {
+            color: rgba(255, 255, 255, 0.7);
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .nav-link:hover {
+            color: var(--primary-cyan);
+        }
+
+        .nav-cta {
+            padding: 0.75rem 1.5rem;
+            background: var(--gradient-alpha);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px var(--alpha-glow);
+        }
+
+        .nav-cta:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 25px rgba(251, 146, 60, 0.5);
+        }
+
+        /* Hero Section */
+        .hero {
+            padding: 8rem 0 5rem;
+            background: linear-gradient(135deg, rgba(251, 146, 60, 0.05) 0%, rgba(0, 217, 255, 0.05) 100%);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero-content {
+            text-align: center;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1.5rem;
+            background: var(--gradient-alpha);
+            border-radius: 50px;
+            color: white;
+            font-weight: 600;
+            margin-bottom: 2rem;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .hero-title {
+            font-size: 4rem;
+            font-weight: 900;
+            margin-bottom: 1.5rem;
+            line-height: 1.1;
+            background: var(--gradient-alpha);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero-subtitle {
+            font-size: 1.5rem;
+            color: var(--light-text);
+            margin-bottom: 3rem;
+            font-weight: 400;
+        }
+
+        /* Video Container */
+        .video-container {
+            margin: 3rem auto;
+            max-width: 800px;
+            background: white;
+            border-radius: 16px;
+            padding: 2rem;
+            box-shadow: var(--shadow-xl);
+        }
+
+        .video-header {
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .video-header h3 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--dark-text);
+            margin-bottom: 0.5rem;
+        }
+
+        .video-header p {
+            color: var(--light-text);
+        }
+
+        .video-placeholder {
+            aspect-ratio: 16 / 9;
+            background: linear-gradient(135deg, rgba(0, 217, 255, 0.1), rgba(251, 146, 60, 0.1));
+            border: 2px dashed var(--light-cyan);
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+            color: var(--muted-text);
+        }
+
+        .video-placeholder i {
+            font-size: 3rem;
+            color: var(--alpha-orange);
+        }
+
+        /* Audience Hooks */
+        .audience-hooks {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2rem;
+            margin: 3rem 0;
+        }
+
+        .hook-card {
+            padding: 1.5rem;
+            background: white;
+            border-radius: 12px;
+            box-shadow: var(--shadow-md);
+            transition: all 0.3s ease;
+        }
+
+        .hook-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-xl);
+        }
+
+        .hook-audience {
+            font-size: 0.9rem;
+            color: var(--alpha-orange);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 0.5rem;
+        }
+
+        .hook-message {
+            font-size: 1.1rem;
+            color: var(--dark-text);
+            font-weight: 600;
+        }
+
+        /* Section Styles */
+        .section {
+            padding: 5rem 0;
+        }
+
+        .section-alt {
+            background: linear-gradient(135deg, rgba(0, 217, 255, 0.02) 0%, rgba(251, 146, 60, 0.02) 100%);
+        }
+
+        .section-header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .section-title {
+            font-size: 3rem;
+            font-weight: 800;
+            margin-bottom: 1rem;
+            color: var(--dark-text);
+        }
+
+        .section-subtitle {
+            font-size: 1.2rem;
+            color: var(--light-text);
+        }
+
+        /* What is Coder1 Section */
+        .what-is-coder1 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 3rem;
+            align-items: center;
+            margin-top: 3rem;
+        }
+
+        .key-points {
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+
+        .key-point {
+            display: flex;
+            align-items: start;
+            gap: 1rem;
+        }
+
+        .key-point-icon {
+            width: 50px;
+            height: 50px;
+            background: var(--gradient-alpha);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            box-shadow: 0 4px 15px var(--alpha-glow);
+        }
+
+        .key-point-icon i {
+            color: white;
+            font-size: 1.5rem;
+        }
+
+        .key-point-content h4 {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--dark-text);
+            margin-bottom: 0.5rem;
+        }
+
+        .key-point-content p {
+            color: var(--light-text);
+        }
+
+        .screenshot-placeholder {
+            aspect-ratio: 16 / 10;
+            background: var(--background-light);
+            border: 2px dashed var(--light-cyan);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--muted-text);
+            text-align: center;
+            padding: 2rem;
+        }
+
+        /* Features Section */
+        .features-grid {
+            display: grid;
+            gap: 3rem;
+            margin-top: 3rem;
+        }
+
+        .feature-card {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 3rem;
+            align-items: center;
+            padding: 3.5rem 3rem 3rem;
+            background: white;
+            border-radius: 16px;
+            box-shadow: var(--shadow-md);
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .feature-card:hover {
+            transform: translateX(10px);
+            box-shadow: var(--shadow-xl);
+        }
+
+        .feature-card:nth-child(even) {
+            direction: rtl;
+        }
+
+        .feature-card:nth-child(even) .feature-content {
+            direction: ltr;
+        }
+
+        .feature-number {
+            position: absolute;
+            top: -20px;
+            left: 30px;
+            background: var(--gradient-alpha);
+            color: white;
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 1.3rem;
+            z-index: 10;
+            box-shadow: 0 4px 12px var(--alpha-glow);
+            border: 3px solid white;
+        }
+
+        .feature-content h3 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--dark-text);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .feature-icon {
+            color: var(--alpha-orange);
+        }
+
+        .feature-description {
+            color: var(--light-text);
+            line-height: 1.7;
+            font-size: 1.1rem;
+        }
+
+        .feature-demo {
+            padding: 2rem;
+            background: var(--background-light);
+            border: 2px dashed var(--light-cyan);
+            border-radius: 12px;
+            min-height: 200px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--muted-text);
+            text-align: center;
+        }
+
+        /* Accordion Styles */
+        .accordion {
+            margin-top: 2rem;
+        }
+
+        .accordion-item {
+            background: white;
+            border-radius: 12px;
+            margin-bottom: 1rem;
+            box-shadow: var(--shadow-sm);
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .accordion-item:hover {
+            box-shadow: var(--shadow-md);
+        }
+
+        .accordion-header {
+            padding: 1.5rem;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: white;
+            transition: all 0.3s ease;
+            user-select: none;
+        }
+
+        .accordion-header:hover {
+            background: var(--background-light);
+        }
+
+        .accordion-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--dark-text);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .accordion-title i {
+            color: var(--alpha-orange);
+        }
+
+        .accordion-icon {
+            font-size: 1.2rem;
+            color: var(--light-text);
+            transition: transform 0.3s ease;
+        }
+
+        .accordion-item.active .accordion-icon {
+            transform: rotate(180deg);
+        }
+
+        .accordion-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+
+        .accordion-item.active .accordion-content {
+            max-height: 2000px;
+        }
+
+        .accordion-body {
+            padding: 0 1.5rem 1.5rem;
+            color: var(--light-text);
+            line-height: 1.7;
+        }
+
+        .accordion-body h4 {
+            color: var(--dark-text);
+            margin: 1rem 0 0.5rem;
+            font-size: 1.1rem;
+        }
+
+        .accordion-body ul {
+            margin: 1rem 0;
+            padding-left: 1.5rem;
+        }
+
+        .accordion-body li {
+            margin-bottom: 0.5rem;
+        }
+
+        .accordion-body code {
+            background: var(--background-light);
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 0.9rem;
+        }
+
+        .code-block {
+            background: var(--background-dark);
+            color: #10B981;
+            padding: 1rem;
+            border-radius: 8px;
+            margin: 1rem 0;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 0.9rem;
+            overflow-x: auto;
+        }
+
+        .doc-link {
+            display: inline-block;
+            margin-top: 1rem;
+            color: var(--primary-cyan);
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .doc-link:hover {
+            text-decoration: underline;
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 2rem;
+            margin-top: 3rem;
+        }
+
+        .stat-card {
+            text-align: center;
+            padding: 2rem;
+            background: white;
+            border-radius: 12px;
+            box-shadow: var(--shadow-md);
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-xl);
+        }
+
+        .stat-icon {
+            font-size: 3rem;
+            color: var(--alpha-orange);
+            margin-bottom: 1rem;
+        }
+
+        .stat-label {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--dark-text);
+        }
+
+        /* Known Issues */
+        .known-issues {
+            margin-top: 3rem;
+            padding: 2rem;
+            background: rgba(251, 146, 60, 0.05);
+            border: 2px solid rgba(251, 146, 60, 0.2);
+            border-radius: 12px;
+        }
+
+        .known-issues h3 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--dark-text);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .known-issues h3 i {
+            color: var(--alpha-orange);
+        }
+
+        .known-issues ul {
+            margin: 1rem 0;
+            padding-left: 1.5rem;
+        }
+
+        .known-issues li {
+            color: var(--light-text);
+            margin-bottom: 0.5rem;
+        }
+
+        .known-issues .encourage-text {
+            color: var(--primary-cyan);
+            font-weight: 600;
+            margin-top: 1rem;
+        }
+
+        /* CTA Section */
+        .cta-section {
+            padding: 5rem 0;
+            background: var(--gradient-alpha);
+            text-align: center;
+            color: white;
+        }
+
+        .cta-title {
+            font-size: 3rem;
+            font-weight: 800;
+            margin-bottom: 1rem;
+        }
+
+        .cta-subtitle {
+            font-size: 1.3rem;
+            margin-bottom: 2rem;
+            opacity: 0.9;
+        }
+
+        .checklist {
+            display: inline-block;
+            text-align: left;
+            margin: 2rem 0;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 2rem 3rem;
+            border-radius: 12px;
+            backdrop-filter: blur(10px);
+            vertical-align: middle;
+        }
+
+        .checklist-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            font-size: 1.1rem;
+            margin-bottom: 1rem;
+        }
+
+        .checklist-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .checklist-item i {
+            color: #10B981;
+            font-size: 1.5rem;
+        }
+
+        .cta-button {
+            display: inline-block;
+            padding: 1.2rem 3rem;
+            background: white;
+            color: var(--alpha-orange);
+            border-radius: 50px;
+            font-size: 1.15rem;
+            font-weight: 700;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            margin-left: 2rem;
+            vertical-align: middle;
+        }
+
+        .cta-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .secondary-links {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .secondary-link {
+            color: white;
+            text-decoration: none;
+            font-weight: 600;
+            opacity: 0.9;
+            transition: opacity 0.3s ease;
+        }
+
+        .secondary-link:hover {
+            opacity: 1;
+            text-decoration: underline;
+        }
+
+        /* Personal Note */
+        .personal-note {
+            padding: 5rem 0;
+            background: white;
+        }
+
+        .note-content {
+            max-width: 800px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        .avatar-placeholder {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: var(--gradient-alpha);
+            margin: 0 auto 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 10px 30px var(--alpha-glow);
+        }
+
+        .avatar-placeholder i {
+            color: white;
+            font-size: 3rem;
+        }
+
+        .quote-box {
+            padding: 2rem;
+            background: rgba(16, 185, 129, 0.05);
+            border-left: 4px solid #10B981;
+            border-radius: 8px;
+            margin: 2rem 0;
+        }
+
+        .quote-text {
+            font-size: 1.2rem;
+            color: var(--dark-text);
+            line-height: 1.8;
+            font-style: italic;
+            margin-bottom: 1rem;
+        }
+
+        .quote-author {
+            font-size: 1rem;
+            color: var(--light-text);
+            font-weight: 600;
+        }
+
+        /* Footer */
+        footer {
+            padding: 3rem 0;
+            background: var(--background-dark);
+            color: white;
+        }
+
+        .footer-content {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .footer-column h4 {
+            margin-bottom: 1rem;
+            color: var(--primary-cyan);
+        }
+
+        .footer-column a {
+            display: block;
+            color: rgba(255, 255, 255, 0.7);
+            text-decoration: none;
+            padding: 0.25rem 0;
+            transition: color 0.3s ease;
+        }
+
+        .footer-column a:hover {
+            color: white;
+        }
+
+        .footer-bottom {
+            text-align: center;
+            padding-top: 2rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .hero-title {
+                font-size: 2.5rem;
+            }
+
+            .audience-hooks {
+                grid-template-columns: 1fr;
+            }
+
+            .what-is-coder1 {
+                grid-template-columns: 1fr;
+            }
+
+            .feature-card {
+                grid-template-columns: 1fr;
+            }
+
+            .feature-card:nth-child(even) {
+                direction: ltr;
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .footer-content {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav>
+        <div class="container">
+            <div class="nav-container">
+                <a href="/" class="logo">
+                    <img src="/Coder1-Logo-Sharp.svg" alt="Coder1 Logo" style="height: 100px; width: auto;">
+                </a>
+                <div class="nav-links">
+                    <a href="#features" class="nav-link">Features</a>
+                    <a href="#bridge" class="nav-link">Bridge Setup</a>
+                    <a href="#faq" class="nav-link">FAQs</a>
+                    <a href="/alpha-docs.html" class="nav-link">Docs</a>
+                    <a href="/ide" class="nav-cta">Launch IDE</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="container">
+            <div class="hero-content">
+                <div class="hero-badge">
+                    <i class="fas fa-rocket"></i>
+                    <span>Alpha Tester Program</span>
+                </div>
+                
+                <h1 class="hero-title">Welcome to Coder1 Alpha 🎉</h1>
+                <p class="hero-subtitle">You're part of the first IDE built specifically for Claude Code</p>
+                
+                <!-- Video Container -->
+                <div class="video-container">
+                    <div class="video-header">
+                        <h3>A Personal Welcome from Mike</h3>
+                        <p>Watch this short introduction to get started</p>
+                    </div>
+                    <div style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; max-width: 100%; background: #000; border-radius: 12px; box-shadow: 0 10px 30px rgba(0, 217, 255, 0.2);">
+                        <iframe 
+                            src="https://www.youtube-nocookie.com/embed/FdLVBrON0RI" 
+                            style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0;" 
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                            allowfullscreen
+                            title="Welcome to Coder1 Alpha - A Message from Mike">
+                        </iframe>
+                    </div>
+                </div>
+                
+                <!-- Audience Hooks -->
+                <div class="audience-hooks">
+                    <div class="hook-card">
+                        <div class="hook-audience">Alpha Tester</div>
+                        <div class="hook-message">Shape the future of AI coding</div>
+                    </div>
+                    <div class="hook-card">
+                        <div class="hook-audience">Early Adopter</div>
+                        <div class="hook-message">Exclusive features & direct feedback line</div>
+                    </div>
+                    <div class="hook-card">
+                        <div class="hook-audience">Pioneer</div>
+                        <div class="hook-message">Recognition as founding community member</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- What is Coder1 Section -->
+    <section class="section">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">Your AI-First Development Environment</h2>
+                <p class="section-subtitle">Built from the ground up for Claude Code users</p>
+            </div>
+            
+            <div class="what-is-coder1">
+                <div class="key-points">
+                    <div class="key-point">
+                        <div class="key-point-icon">
+                            <i class="fas fa-robot"></i>
+                        </div>
+                        <div class="key-point-content">
+                            <h4>Built for Claude Code Users</h4>
+                            <p>The only IDE designed specifically for Claude Code workflows with native integration and supervision mode</p>
+                        </div>
+                    </div>
+                    
+                    <div class="key-point">
+                        <div class="key-point-icon">
+                            <i class="fas fa-brain"></i>
+                        </div>
+                        <div class="key-point-content">
+                            <h4>Session Memory That Never Forgets</h4>
+                            <p>Your context, decisions, and preferences are remembered forever with our Eternal Memory system</p>
+                        </div>
+                    </div>
+                    
+                    <div class="key-point">
+                        <div class="key-point-icon">
+                            <i class="fas fa-terminal"></i>
+                        </div>
+                        <div class="key-point-content">
+                            <h4>Terminal with AI Supervision</h4>
+                            <p>Full PTY terminal where Claude watches and assists in real-time when you type 'claude'</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="screenshot-placeholder" style="border: none; background: transparent; padding: 0;">
+                    <img src="/screenshots/ide-main.png" alt="Coder1 IDE Interface" style="width: 100%; border-radius: 12px; box-shadow: 0 10px 30px rgba(0, 217, 255, 0.2);">
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="section section-alt" id="features">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">6 Key Features You'll Love</h2>
+                <p class="section-subtitle">Everything you need for AI-powered development</p>
+            </div>
+            
+            <div class="features-grid">
+                <!-- Feature 1: Monaco Editor -->
+                <div class="feature-card">
+                    <div class="feature-number">1</div>
+                    <div class="feature-content">
+                        <h3>
+                            <i class="fas fa-code feature-icon"></i>
+                            Monaco Editor
+                        </h3>
+                        <p class="feature-description">
+                            Professional VSCode editing experience right in your browser. Full syntax highlighting, intelligent autocomplete, and all the keyboard shortcuts you love.
+                        </p>
+                    </div>
+                    <div class="feature-demo" style="border: none; background: transparent; padding: 0; min-height: auto;">
+                        <img src="/screenshots/monaco-editor.png" alt="Monaco Editor" style="width: 100%; border-radius: 8px; box-shadow: 0 4px 15px rgba(0, 217, 255, 0.2);">
+                    </div>
+                </div>
+
+                <!-- Feature 2: Full PTY Terminal -->
+                <div class="feature-card">
+                    <div class="feature-number">2</div>
+                    <div class="feature-content">
+                        <h3>
+                            <i class="fas fa-terminal feature-icon"></i>
+                            Full PTY Terminal
+                        </h3>
+                        <p class="feature-description">
+                            Real terminal with Claude watching and assisting when you type 'claude'. Run any command, execute scripts, and get AI help exactly when you need it.
+                        </p>
+                    </div>
+                    <div class="feature-demo" style="border: none; background: transparent; padding: 0; min-height: auto;">
+                        <img src="/screenshots/ai-terminal.png" alt="AI-Powered Terminal" style="width: 100%; border-radius: 8px; box-shadow: 0 4px 15px rgba(0, 217, 255, 0.2);">
+                    </div>
+                </div>
+
+                <!-- Feature 3: Session Summaries -->
+                <div class="feature-card">
+                    <div class="feature-number">3</div>
+                    <div class="feature-content">
+                        <h3>
+                            <i class="fas fa-file-alt feature-icon"></i>
+                            Session Summaries
+                        </h3>
+                        <p class="feature-description">
+                            Perfect handoff reports for continuing work across sessions. Export as Markdown, JSON, or HTML for seamless collaboration.
+                        </p>
+                    </div>
+                    <div class="feature-demo" style="border: none; background: transparent; padding: 0; min-height: auto;">
+                        <img src="/screenshots/session-summary.png" alt="Session Summary" style="width: 100%; border-radius: 8px; box-shadow: 0 4px 15px rgba(0, 217, 255, 0.2);">
+                    </div>
+                </div>
+
+                <!-- Feature 4: AI Supervision -->
+                <div class="feature-card">
+                    <div class="feature-number">4</div>
+                    <div class="feature-content">
+                        <h3>
+                            <i class="fas fa-eye feature-icon"></i>
+                            AI Supervision
+                        </h3>
+                        <p class="feature-description">
+                            Claude understands your entire context and proactively helps. It sees your files, terminal history, and edits to provide intelligent assistance.
+                        </p>
+                    </div>
+                    <div class="feature-demo" style="border: none; background: transparent; padding: 0; min-height: auto;">
+                        <img src="/screenshots/ai-supervision.png" alt="AI Supervision Bot" style="width: 100%; border-radius: 8px; box-shadow: 0 4px 15px rgba(0, 217, 255, 0.2);">
+                    </div>
+                </div>
+
+                <!-- Feature 5: Bridge Connection -->
+                <div class="feature-card">
+                    <div class="feature-number">5</div>
+                    <div class="feature-content">
+                        <h3>
+                            <i class="fas fa-link feature-icon"></i>
+                            Bridge Connection
+                        </h3>
+                        <p class="feature-description">
+                            Secure connection to your local Claude Code - zero API costs. Your code never leaves your machine, only commands travel over the encrypted bridge.
+                        </p>
+                    </div>
+                    <div class="feature-demo" style="border: none; background: transparent; padding: 0; min-height: auto;">
+                        <img src="/screenshots/bridge-connection.png" alt="Bridge Connection" style="width: 100%; border-radius: 8px; box-shadow: 0 4px 15px rgba(0, 217, 255, 0.2);">
+                    </div>
+                </div>
+
+                <!-- Feature 6: Eternal Memory -->
+                <div class="feature-card">
+                    <div class="feature-number">6</div>
+                    <div class="feature-content">
+                        <h3>
+                            <i class="fas fa-brain feature-icon"></i>
+                            Eternal Memory
+                        </h3>
+                        <p class="feature-description">
+                            Your preferences, decisions, and context remembered forever. Claude knows your project inside-out, even across long breaks.
+                        </p>
+                    </div>
+                    <div class="feature-demo" style="border: none; background: transparent; padding: 0; min-height: auto;">
+                        <img src="/screenshots/eternal-memory.png" alt="Eternal Memory" style="width: 100%; border-radius: 8px; box-shadow: 0 4px 15px rgba(0, 217, 255, 0.2);">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Launch CTA Section -->
+    <section class="section" style="padding: 4rem 0; text-align: center; background: rgba(0, 217, 255, 0.03);">
+        <div class="container">
+            <a href="/ide" style="
+                display: inline-flex;
+                align-items: center;
+                gap: 0.5rem;
+                padding: 0.75rem 1.5rem;
+                background: #0A0A0A;
+                border: 1px solid rgba(0, 217, 255, 0.5);
+                border-radius: 8px;
+                color: #ffffff;
+                font-size: 1rem;
+                font-weight: 600;
+                text-decoration: none;
+                transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                box-shadow: 
+                    0 0 15px rgba(0, 217, 255, 0.4),
+                    0 0 30px rgba(0, 217, 255, 0.2),
+                    0 0 45px rgba(0, 217, 255, 0.1),
+                    0 2px 4px rgba(0, 0, 0, 0.3),
+                    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+                backdrop-filter: blur(4px);
+                -webkit-backdrop-filter: blur(4px);
+                position: relative;
+                overflow: hidden;
+            " onmouseover="this.style.borderColor='rgba(251, 146, 60, 0.7)'; this.style.boxShadow='0 0 25px rgba(251, 146, 60, 0.6), 0 0 50px rgba(251, 146, 60, 0.3), 0 0 75px rgba(251, 146, 60, 0.15), 0 2px 8px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1)'; this.style.transform='translateY(-2px) scale(1.02)';" onmouseout="this.style.borderColor='rgba(0, 217, 255, 0.5)'; this.style.boxShadow='0 0 15px rgba(0, 217, 255, 0.4), 0 0 30px rgba(0, 217, 255, 0.2), 0 0 45px rgba(0, 217, 255, 0.1), 0 2px 4px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.05)'; this.style.transform='translateY(0) scale(1)';">
+                <i class="fas fa-rocket" style="font-size: 1rem;"></i>
+                <span>Launch Coder1</span>
+            </a>
+        </div>
+    </section>
+
+    <!-- Bridge Setup & Security Section -->
+    <section class="section" id="bridge">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">About the Bridge Connection</h2>
+                <p class="section-subtitle">Secure, local, and cost-free Claude Code integration</p>
+            </div>
+            
+            <div class="accordion">
+                <!-- Accordion 1: What is the Bridge? -->
+                <div class="accordion-item">
+                    <div class="accordion-header">
+                        <div class="accordion-title">
+                            <i class="fas fa-question-circle"></i>
+                            What is the Bridge?
+                        </div>
+                        <i class="fas fa-chevron-down accordion-icon"></i>
+                    </div>
+                    <div class="accordion-content">
+                        <div class="accordion-body">
+                            <p>Think of the Bridge like a secure phone line between Coder1's website and YOUR computer:</p>
+                            
+                            <div class="code-block" style="color: white;">
+┌─────────────────┐         ┌──────────────────┐
+│  Coder1 Website │◄──────►│  YOUR Computer   │
+│  (In Browser)   │  Bridge │  (Stays Private) │
+└─────────────────┘         └──────────────────┘
+     You type                   Commands run
+     commands here              here locally
+                            </div>
+                            
+                            <p><strong>The Key Point:</strong> Your code NEVER leaves your computer. Only commands travel back and forth over an encrypted connection.</p>
+                            
+                            <h4>What STAYS on Your Computer ✅</h4>
+                            <ul>
+                                <li>All your code and files</li>
+                                <li>Your Claude Code subscription</li>
+                                <li>Your local environment</li>
+                                <li>Your file system access</li>
+                            </ul>
+                            
+                            <h4>What TRAVELS Over the Bridge 📡</h4>
+                            <ul>
+                                <li>Commands you type (e.g., "claude create a React component")</li>
+                                <li>Results from those commands (e.g., the generated code)</li>
+                                <li><strong>That's it!</strong> No files, no passwords, no secrets</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Accordion 2: Security Highlights -->
+                <div class="accordion-item">
+                    <div class="accordion-header">
+                        <div class="accordion-title">
+                            <i class="fas fa-shield-alt"></i>
+                            Security Highlights
+                        </div>
+                        <i class="fas fa-chevron-down accordion-icon"></i>
+                    </div>
+                    <div class="accordion-content">
+                        <div class="accordion-body">
+                            <h4>What Coder1 CAN'T Do ❌</h4>
+                            <ul>
+                                <li>See your files or code</li>
+                                <li>Run commands without your permission</li>
+                                <li>Access your computer when Bridge is off</li>
+                                <li>Store anything on our servers</li>
+                            </ul>
+                            
+                            <h4>Security Features 🔐</h4>
+                            <ul>
+                                <li><strong>Encrypted Connection:</strong> Everything uses HTTPS/WSS (bank-level encryption)</li>
+                                <li><strong>5-Minute Codes:</strong> Pairing codes expire quickly</li>
+                                <li><strong>You Control It:</strong> Disconnect anytime, Bridge runs only when YOU start it</li>
+                                <li><strong>Local Execution:</strong> All commands run on YOUR machine under YOUR user account</li>
+                                <li><strong>Time-Limited Access:</strong> Sessions expire automatically for security</li>
+                            </ul>
+                            
+                            <p style="margin-top: 1rem;"><strong>Technical Encryption:</strong> WSS (WebSocket Secure) with TLS 1.3 - the same encryption your bank uses.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Accordion 3: Quick Setup -->
+                <div class="accordion-item">
+                    <div class="accordion-header">
+                        <div class="accordion-title">
+                            <i class="fas fa-rocket"></i>
+                            Quick Setup (3 Steps)
+                        </div>
+                        <i class="fas fa-chevron-down accordion-icon"></i>
+                    </div>
+                    <div class="accordion-content">
+                        <div class="accordion-body">
+                            <h4>Step 1: Install the Bridge</h4>
+                            <p>Run this one-line command in your local terminal:</p>
+                            <div class="code-block">
+curl -sL https://coder1-ide.onrender.com/install-bridge.sh | bash
+                            </div>
+                            <p><em>Security-conscious? See "Full Documentation" below for manual installation.</em></p>
+                            
+                            <h4>Step 2: Start the Bridge</h4>
+                            <div class="code-block">
+coder1-bridge start
+                            </div>
+                            <p>You'll be prompted for a 6-digit pairing code.</p>
+                            
+                            <h4>Step 3: Get Your Pairing Code</h4>
+                            <ul>
+                                <li>Click the "Bridge" button in the Coder1 IDE (cyan button, top right)</li>
+                                <li>Copy the 6-digit code shown</li>
+                                <li>Enter it in your local terminal</li>
+                                <li>✅ Connected! You're ready to code.</li>
+                            </ul>
+                            
+                            <p style="margin-top: 1rem;"><strong>That's it!</strong> The whole setup takes about 2 minutes.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Accordion 4: Full Documentation -->
+                <div class="accordion-item">
+                    <div class="accordion-header">
+                        <div class="accordion-title">
+                            <i class="fas fa-book"></i>
+                            Full Documentation
+                        </div>
+                        <i class="fas fa-chevron-down accordion-icon"></i>
+                    </div>
+                    <div class="accordion-content">
+                        <div class="accordion-body">
+                            <p>For complete security details, manual installation, and technical specifications, we've created two comprehensive guides:</p>
+                            
+                            <h4>📖 Alpha Tester Bridge Guide</h4>
+                            <p>Simplified, security-first guide perfect for getting started:</p>
+                            <a href="https://github.com/MichaelrKraft/coder1-ide/blob/master/coder1-ide-next/docs/ALPHA_TESTER_BRIDGE_GUIDE.md" class="doc-link" target="_blank">
+                                → Read Alpha Tester Guide
+                            </a>
+                            
+                            <h4>🔐 Bridge Security FAQ</h4>
+                            <p>Technical deep-dive for security professionals and curious minds:</p>
+                            <a href="https://github.com/MichaelrKraft/coder1-ide/blob/master/coder1-ide-next/docs/BRIDGE_SECURITY_FAQ.md" class="doc-link" target="_blank">
+                                → Read Security FAQ
+                            </a>
+                            
+                            <p style="margin-top: 1.5rem;">Both guides include:</p>
+                            <ul>
+                                <li>Manual installation steps (alternative to curl | bash)</li>
+                                <li>Threat model analysis</li>
+                                <li>Encryption specifications</li>
+                                <li>Privacy & data collection transparency</li>
+                                <li>Comparison to other tools (GitHub Codespaces, VSCode Remote)</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FAQs Section -->
+    <section class="section section-alt" id="faq">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">Frequently Asked Questions</h2>
+                <p class="section-subtitle">Everything you need to know about the Alpha</p>
+            </div>
+            
+            <div class="accordion">
+                <!-- FAQ 1 -->
+                <div class="accordion-item">
+                    <div class="accordion-header">
+                        <div class="accordion-title">
+                            <i class="fas fa-vial"></i>
+                            What are we testing in Alpha?
+                        </div>
+                        <i class="fas fa-chevron-down accordion-icon"></i>
+                    </div>
+                    <div class="accordion-content">
+                        <div class="accordion-body">
+                            <p>The Alpha focuses on four critical areas:</p>
+                            <ul>
+                                <li><strong>Core IDE Functionality:</strong> Monaco editor, file explorer, terminal integration</li>
+                                <li><strong>Bridge Stability:</strong> Connection reliability, reconnection handling, security</li>
+                                <li><strong>Terminal Features:</strong> PTY sessions, AI supervision mode, command history</li>
+                                <li><strong>Memory System:</strong> Session persistence, context loading, Eternal Memory</li>
+                            </ul>
+                            <p>Your feedback will directly shape the Beta and public launch features!</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- FAQ 2 -->
+                <div class="accordion-item">
+                    <div class="accordion-header">
+                        <div class="accordion-title">
+                            <i class="fas fa-desktop"></i>
+                            What are the system requirements?
+                        </div>
+                        <i class="fas fa-chevron-down accordion-icon"></i>
+                    </div>
+                    <div class="accordion-content">
+                        <div class="accordion-body">
+                            <p><strong>Required:</strong></p>
+                            <ul>
+                                <li>Node.js 18+ installed on your local machine</li>
+                                <li>Active Claude Code subscription ($20/month from Anthropic)</li>
+                                <li>Modern web browser (Chrome, Firefox, Safari, Edge - latest versions)</li>
+                                <li>Stable internet connection</li>
+                            </ul>
+                            
+                            <p><strong>Recommended:</strong></p>
+                            <ul>
+                                <li>8GB+ RAM for smooth performance</li>
+                                <li>macOS, Linux, or Windows 10+ (WSL2 for Windows)</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- FAQ 3 -->
+                <div class="accordion-item">
+                    <div class="accordion-header">
+                        <div class="accordion-title">
+                            <i class="fas fa-bug"></i>
+                            How do I report bugs?
+                        </div>
+                        <i class="fas fa-chevron-down accordion-icon"></i>
+                    </div>
+                    <div class="accordion-content">
+                        <div class="accordion-body">
+                            <p>We have multiple channels for bug reports and feedback:</p>
+                            <ul>
+                                <li><strong>GitHub Issues:</strong> <a href="https://github.com/MichaelrKraft/coder1-ide/issues" target="_blank" style="color: var(--primary-cyan);">Report technical issues</a></li>
+                                <li><strong>Discord:</strong> Quick questions and community discussion (link coming soon)</li>
+                                <li><strong>Direct Email:</strong> For security concerns or private feedback</li>
+                            </ul>
+                            <p style="margin-top: 1rem;"><strong>What to include in bug reports:</strong></p>
+                            <ul>
+                                <li>Steps to reproduce the issue</li>
+                                <li>Expected vs actual behavior</li>
+                                <li>Browser and OS version</li>
+                                <li>Screenshots if applicable</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- FAQ 4 -->
+                <div class="accordion-item">
+                    <div class="accordion-header">
+                        <div class="accordion-title">
+                            <i class="fas fa-lock"></i>
+                            Will my data be safe?
+                        </div>
+                        <i class="fas fa-chevron-down accordion-icon"></i>
+                    </div>
+                    <div class="accordion-content">
+                        <div class="accordion-body">
+                            <p><strong>Yes, your code is completely safe.</strong> Here's why:</p>
+                            <ul>
+                                <li><strong>Everything is Local:</strong> Your code files never leave your computer</li>
+                                <li><strong>No Cloud Storage:</strong> We don't store your code on our servers</li>
+                                <li><strong>Encrypted Bridge:</strong> All communication uses bank-level encryption (TLS 1.3)</li>
+                                <li><strong>You Control Access:</strong> Bridge only runs when you start it</li>
+                                <li><strong>Time-Limited Sessions:</strong> Pairing codes expire after 5 minutes</li>
+                            </ul>
+                            
+                            <p style="margin-top: 1rem;">See the "Bridge Setup & Security" section above for complete technical details.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- FAQ 5 -->
+                <div class="accordion-item">
+                    <div class="accordion-header">
+                        <div class="accordion-title">
+                            <i class="fas fa-hammer"></i>
+                            Can I use this for real projects?
+                        </div>
+                        <i class="fas fa-chevron-down accordion-icon"></i>
+                    </div>
+                    <div class="accordion-content">
+                        <div class="accordion-body">
+                            <p><strong>Yes, but with caution!</strong> Coder1 Alpha is functional but still in testing:</p>
+                            
+                            <p><strong>✅ Good for:</strong></p>
+                            <ul>
+                                <li>Side projects and learning</li>
+                                <li>Prototyping and experimentation</li>
+                                <li>Non-critical development work</li>
+                            </ul>
+                            
+                            <p><strong>❌ Not recommended for:</strong></p>
+                            <ul>
+                                <li>Production applications (yet!)</li>
+                                <li>Mission-critical code</li>
+                                <li>Large team collaboration (coming in Beta)</li>
+                            </ul>
+                            
+                            <p style="margin-top: 1rem;"><strong>Always use version control (Git)</strong> and back up your work regularly!</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- FAQ 6 -->
+                <div class="accordion-item">
+                    <div class="accordion-header">
+                        <div class="accordion-title">
+                            <i class="fas fa-calendar-alt"></i>
+                            How long is the Alpha?
+                        </div>
+                        <i class="fas fa-chevron-down accordion-icon"></i>
+                    </div>
+                    <div class="accordion-content">
+                        <div class="accordion-body">
+                            <p><strong>Estimated Timeline:</strong></p>
+                            <ul>
+                                <li><strong>Alpha Phase:</strong> 4-6 weeks (now through February 2025)</li>
+                                <li><strong>Beta Phase:</strong> 2-3 months (early 2025)</li>
+                                <li><strong>Public Launch:</strong> Spring 2025</li>
+                            </ul>
+                            
+                            <p style="margin-top: 1rem;"><strong>What comes after Alpha:</strong></p>
+                            <ul>
+                                <li><strong>Beta:</strong> Wider testing, team features, performance improvements</li>
+                                <li><strong>Public Launch:</strong> Full release with pricing tiers and enterprise features</li>
+                            </ul>
+                            
+                            <p><em>As an alpha tester, you'll get early access to Beta and special launch benefits!</em></p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- FAQ 7 -->
+                <div class="accordion-item">
+                    <div class="accordion-header">
+                        <div class="accordion-title">
+                            <i class="fas fa-link"></i>
+                            Is the Bridge required?
+                        </div>
+                        <i class="fas fa-chevron-down accordion-icon"></i>
+                    </div>
+                    <div class="accordion-content">
+                        <div class="accordion-body">
+                            <p><strong>Yes, for Claude Code features.</strong> Here's why:</p>
+                            
+                            <p>The Bridge connects Coder1 to your local Claude Code CLI. Without it:</p>
+                            <ul>
+                                <li>✅ You can still use the Monaco editor</li>
+                                <li>✅ File explorer works normally</li>
+                                <li>✅ Terminal is functional</li>
+                                <li>❌ No Claude AI assistance</li>
+                                <li>❌ No AI supervision mode</li>
+                                <li>❌ No session summaries</li>
+                            </ul>
+                            
+                            <p style="margin-top: 1rem;"><strong>Why use the Bridge?</strong></p>
+                            <ul>
+                                <li>Uses your existing $20/month Claude Code subscription</li>
+                                <li>Avoids $200-500/month API costs</li>
+                                <li>All processing happens on your local machine</li>
+                                <li>Your code never leaves your computer</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- FAQ 8 -->
+                <div class="accordion-item">
+                    <div class="accordion-header">
+                        <div class="accordion-title">
+                            <i class="fas fa-comments"></i>
+                            What happens to my feedback?
+                        </div>
+                        <i class="fas fa-chevron-down accordion-icon"></i>
+                    </div>
+                    <div class="accordion-content">
+                        <div class="accordion-body">
+                            <p><strong>Your feedback directly shapes Coder1's future!</strong></p>
+                            
+                            <p><strong>How we use your feedback:</strong></p>
+                            <ul>
+                                <li><strong>Feature Prioritization:</strong> Most requested features get built first</li>
+                                <li><strong>Bug Fixes:</strong> Critical issues addressed within 24-48 hours</li>
+                                <li><strong>UX Improvements:</strong> Design changes based on user pain points</li>
+                                <li><strong>Roadmap Planning:</strong> Community input drives our development roadmap</li>
+                            </ul>
+                            
+                            <p style="margin-top: 1rem;"><strong>Alpha Tester Benefits:</strong></p>
+                            <ul>
+                                <li>Direct line to the development team</li>
+                                <li>Your name in the "Founding Community" credits (if you want!)</li>
+                                <li>Early access to all Beta features</li>
+                                <li>Special launch pricing (details coming soon)</li>
+                            </ul>
+                            
+                            <p><em>We read every piece of feedback. Your input matters!</em></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- What We're Testing Section -->
+    <section class="section">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">Alpha Testing Focus Areas</h2>
+                <p class="section-subtitle">Help us perfect these core features</p>
+            </div>
+            
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-terminal"></i>
+                    </div>
+                    <div class="stat-label">Terminal Stability</div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-shield-alt"></i>
+                    </div>
+                    <div class="stat-label">Bridge Security</div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-brain"></i>
+                    </div>
+                    <div class="stat-label">Memory System</div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-exchange-alt"></i>
+                    </div>
+                    <div class="stat-label">Session Handoffs</div>
+                </div>
+            </div>
+            
+            <div class="known-issues">
+                <h3>
+                    <i class="fas fa-wrench"></i>
+                    Known Limitations (We're Working On These!)
+                </h3>
+                <ul>
+                    <li>Terminal history may occasionally show duplicate status lines</li>
+                    <li>File explorer refresh can be slow for very large projects (1000+ files)</li>
+                    <li>Session summaries work best with sessions under 2 hours</li>
+                    <li>Bridge reconnection may take 10-15 seconds after network interruption</li>
+                </ul>
+                <p class="encourage-text">
+                    <i class="fas fa-lightbulb"></i> 
+                    Found something not on this list? Please report it - we want to know!
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Getting Started CTA Section -->
+    <section class="cta-section">
+        <div class="container">
+            <h2 class="cta-title">Ready to Start Building?</h2>
+            <p class="cta-subtitle">Everything you need to get started in 10 minutes</p>
+            
+            <div class="checklist">
+                <div class="checklist-item">
+                    <i class="fas fa-check-circle"></i>
+                    <span>Node.js 18+ installed</span>
+                </div>
+                <div class="checklist-item">
+                    <i class="fas fa-check-circle"></i>
+                    <span>Claude Code subscription active</span>
+                </div>
+                <div class="checklist-item">
+                    <i class="fas fa-check-circle"></i>
+                    <span>10 minutes for setup</span>
+                </div>
+            </div>
+            
+            <a href="/ide" class="cta-button">Launch Coder1 IDE</a>
+            
+            <div class="secondary-links">
+                <a href="https://github.com/MichaelrKraft/coder1-ide/blob/master/coder1-ide-next/docs/ALPHA_TESTER_BRIDGE_GUIDE.md" class="secondary-link" target="_blank">
+                    <i class="fas fa-book"></i> Read Setup Guide
+                </a>
+                <a href="https://github.com/MichaelrKraft/coder1-ide/issues" class="secondary-link" target="_blank">
+                    <i class="fas fa-bug"></i> Report an Issue
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Personal Note from Mike -->
+    <section class="personal-note">
+        <div class="container">
+            <div class="note-content">
+                <div class="avatar-placeholder">
+                    <i class="fas fa-user"></i>
+                </div>
+                
+                <div class="quote-box">
+                    <p class="quote-text">
+                        "Thank you for being an alpha tester. Your feedback will shape Coder1 into the IDE that Claude Code users deserve. I built this because I was frustrated with existing tools not understanding how AI-first development actually works. Together, we're creating something truly special - an environment where humans and AI collaborate seamlessly. I'm excited to learn from your experience and build this with you."
+                    </p>
+                    <p class="quote-author">- Mike, Coder1 Creator</p>
+                </div>
+                
+                <p style="color: var(--light-text); margin-top: 2rem;">
+                    Questions? Feedback? Ideas? I'm personally reading every message.
+                    <br>
+                    <a href="https://github.com/MichaelrKraft/coder1-ide/issues" style="color: var(--primary-cyan); text-decoration: none; font-weight: 600;">
+                        Reach out anytime →
+                    </a>
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-column">
+                    <h4>Product</h4>
+                    <a href="/ide">Launch IDE</a>
+                    <a href="#features">Features</a>
+                    <a href="#bridge">Bridge Setup</a>
+                    <a href="#faq">FAQs</a>
+                </div>
+                
+                <div class="footer-column">
+                    <h4>Resources</h4>
+                    <a href="https://github.com/MichaelrKraft/coder1-ide/blob/master/coder1-ide-next/docs/ALPHA_TESTER_BRIDGE_GUIDE.md" target="_blank">Setup Guide</a>
+                    <a href="https://github.com/MichaelrKraft/coder1-ide/blob/master/coder1-ide-next/docs/BRIDGE_SECURITY_FAQ.md" target="_blank">Security FAQ</a>
+                    <a href="https://github.com/MichaelrKraft/coder1-ide/blob/master/coder1-ide-next/docs" target="_blank">Documentation</a>
+                </div>
+                
+                <div class="footer-column">
+                    <h4>Community</h4>
+                    <a href="https://github.com/MichaelrKraft/coder1-ide" target="_blank">GitHub</a>
+                    <a href="https://github.com/MichaelrKraft/coder1-ide/issues" target="_blank">Bug Reports</a>
+                    <a href="#">Discord (Coming Soon)</a>
+                </div>
+                
+                <div class="footer-column">
+                    <h4>Legal</h4>
+                    <a href="#">Privacy Policy</a>
+                    <a href="#">Terms of Service</a>
+                    <a href="#">Alpha Agreement</a>
+                </div>
+            </div>
+            
+            <div class="footer-bottom">
+                <p>&copy; 2025 Coder1. Built for Claude Code users, by Claude Code users.</p>
+                <p style="margin-top: 0.5rem; font-size: 0.9rem;">Alpha Version - Your feedback shapes our future</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- JavaScript for Accordion -->
+    <script>
+        // Accordion functionality
+        document.querySelectorAll('.accordion-header').forEach(header => {
+            header.addEventListener('click', function() {
+                const item = this.parentElement;
+                const isActive = item.classList.contains('active');
+                
+                // Close all accordion items
+                document.querySelectorAll('.accordion-item').forEach(otherItem => {
+                    otherItem.classList.remove('active');
+                });
+                
+                // If this item wasn't active, open it
+                if (!isActive) {
+                    item.classList.add('active');
+                }
+            });
+        });
+
+        // Smooth scroll for anchor links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    const navHeight = document.querySelector('nav').offsetHeight;
+                    const targetPosition = target.offsetTop - navHeight - 20;
+                    window.scrollTo({
+                        top: targetPosition,
+                        behavior: 'smooth'
+                    });
+                }
+            });
+        });
+    </script>
+</body>
+</html>
