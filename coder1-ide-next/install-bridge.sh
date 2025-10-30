@@ -66,30 +66,27 @@ fi
 TEMP_DIR="/tmp/coder1-bridge-install-$$"
 mkdir -p "$TEMP_DIR"
 
-echo -e "${BLUE}📦 Downloading Coder1 Bridge...${NC}"
+echo -e "${BLUE}📦 Downloading Coder1 Bridge (13KB)...${NC}"
 
-# Clone the repository
-if command -v git &> /dev/null; then
-    git clone https://github.com/MichaelrKraft/coder1-ide.git "$TEMP_DIR" &> /dev/null
-    if [ $? -ne 0 ]; then
-        echo -e "${YELLOW}⚠️ Git clone failed, trying direct download...${NC}"
-        # Fallback to curl if git fails
-        curl -sL "https://github.com/MichaelrKraft/coder1-ide/archive/refs/heads/master.zip" -o "$TEMP_DIR/coder1.zip"
-        cd "$TEMP_DIR" && unzip -q coder1.zip && mv coder1-ide-master coder1-ide
-    fi
-else
-    echo -e "${YELLOW}⚠️ Git not found, using direct download...${NC}"
-    curl -sL "https://github.com/MichaelrKraft/coder1-ide/archive/refs/heads/master.zip" -o "$TEMP_DIR/coder1.zip"
-    cd "$TEMP_DIR" && unzip -q coder1.zip && mv coder1-ide-master coder1-ide
-fi
+# Download bridge-cli package directly from coder1.ai
+BRIDGE_URL="${BRIDGE_URL:-https://coder1.ai/bridge-cli.tar.gz}"
+curl -sL "$BRIDGE_URL" -o "$TEMP_DIR/bridge-cli.tar.gz"
 
-# Navigate to bridge directory
-cd "$TEMP_DIR/coder1-ide/bridge-cli" || cd "$TEMP_DIR/bridge-cli" 2>/dev/null || {
-    echo -e "${RED}❌ Bridge CLI directory not found in repository${NC}"
-    echo -e "${YELLOW}Please check the repository structure or install manually${NC}"
+if [ $? -ne 0 ]; then
+    echo -e "${RED}❌ Download failed${NC}"
+    echo -e "${YELLOW}Please check your internet connection and try again${NC}"
     rm -rf "$TEMP_DIR"
     exit 1
-}
+fi
+
+echo -e "${BLUE}📂 Extracting...${NC}"
+
+# Extract tarball
+cd "$TEMP_DIR"
+tar -xzf bridge-cli.tar.gz
+
+# npm pack creates a "package" directory
+cd package
 
 echo -e "${BLUE}🔧 Installing dependencies...${NC}"
 
