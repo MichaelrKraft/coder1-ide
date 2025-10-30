@@ -14,13 +14,12 @@ services:
     rootDir: coder1-ide-next # Specify the subdirectory as root
     
     # Build configuration for unified server with dynamic routes
-    # Install build tools for native dependencies (node-pty)
+    # Render environment already has Python, make, g++ - no apt-get needed
     buildCommand: |
-      apt-get update && apt-get install -y python3 make g++ build-essential
       NODE_OPTIONS="--max-old-space-size=1200" npm ci
-      npm run copy-canonical
+      npm run copy-canonical || echo "No canonical files to copy"
       NODE_OPTIONS="--max-old-space-size=1200" npm run build
-      rm -rf .next/cache node_modules/.cache
+      rm -rf .next/cache node_modules/.cache 2>/dev/null || true
     
     # Start command with optimized memory for 512MB starter plan  
     startCommand: NODE_OPTIONS="--max-old-space-size=400 --expose-gc" node server.js

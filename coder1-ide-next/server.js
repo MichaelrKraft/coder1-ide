@@ -654,6 +654,43 @@ app.prepare().then(() => {
       return handleHealthCheck(req, res);
     }
     
+    // Explicit static file serving for /public directory
+    // Critical for serving install-bridge.sh and other static assets
+    if (pathname && !pathname.startsWith('/api/') && !pathname.startsWith('/_next/')) {
+      const publicPath = path.join(__dirname, 'public', pathname);
+      
+      // Check if file exists in public directory
+      if (fs.existsSync(publicPath) && fs.statSync(publicPath).isFile()) {
+        try {
+          const content = fs.readFileSync(publicPath);
+          
+          // Set appropriate content type
+          const ext = path.extname(pathname).toLowerCase();
+          const contentTypes = {
+            '.sh': 'text/x-shellscript',
+            '.html': 'text/html',
+            '.js': 'application/javascript',
+            '.css': 'text/css',
+            '.json': 'application/json',
+            '.png': 'image/png',
+            '.jpg': 'image/jpeg',
+            '.svg': 'image/svg+xml',
+            '.txt': 'text/plain'
+          };
+          
+          const contentType = contentTypes[ext] || 'application/octet-stream';
+          res.writeHead(200, { 
+            'Content-Type': contentType,
+            'Cache-Control': 'public, max-age=3600'
+          });
+          res.end(content);
+          return;
+        } catch (error) {
+          console.error(`Error serving static file ${pathname}:`, error.message);
+        }
+      }
+    }
+    
     // Welcome page route
     if (pathname === '/welcome') {
       req.url = '/coder1-alpha-welcome.html';
