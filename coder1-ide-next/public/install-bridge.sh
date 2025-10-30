@@ -29,6 +29,13 @@ echo "║                                                       ║"
 echo "╚═══════════════════════════════════════════════════════╝"
 echo -e "${NC}"
 
+# Check if running with sudo
+if [ "$EUID" -ne 0 ]; then
+    echo -e "${RED}❌ This script must be run with sudo${NC}"
+    echo -e "${YELLOW}Please run: sudo bash install-bridge.sh${NC}"
+    exit 1
+fi
+
 echo -e "${BLUE}🔧 Installing Coder1 Bridge CLI...${NC}"
 
 # Check if Node.js is installed
@@ -101,8 +108,8 @@ npm install --production --silent
 
 echo -e "${BLUE}🔗 Installing globally...${NC}"
 
-# Install globally
-npm link --silent
+# Install globally (script should be run with sudo for guaranteed success)
+npm install -g . --unsafe-perm
 
 # Verify installation
 if command -v coder1-bridge &> /dev/null; then
@@ -129,8 +136,7 @@ if command -v coder1-bridge &> /dev/null; then
     echo
 else
     echo -e "${RED}❌ Installation failed!${NC}"
-    echo -e "${YELLOW}You may need to restart your terminal or add npm global bin to PATH${NC}"
-    echo -e "${YELLOW}Try: export PATH=\"\$(npm config get prefix)/bin:\$PATH\"${NC}"
+    echo -e "${YELLOW}Please contact support: https://github.com/MichaelrKraft/coder1-ide/issues${NC}"
 fi
 
 # Cleanup

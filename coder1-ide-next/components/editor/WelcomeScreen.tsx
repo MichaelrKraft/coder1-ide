@@ -70,20 +70,30 @@ export function WelcomeScreen({ onDismiss, onBridgeClick }: WelcomeScreenProps =
                 </div>
                 
                 <div>
-                  <span className="text-green-400 font-medium">2. Install</span>
-                  <span className="text-gray-300 ml-1">→ Copy-paste code below into terminal</span>
-                  <div className="bg-black rounded p-1 font-mono text-xs">
-                    <span className="text-green-400">$</span> <span className="text-white">
-                      curl -sL {isProduction ? 'https://coder1-ide.onrender.com' : 'http://localhost:3001'}/install-bridge.sh | bash
-                    </span>
+                  <span className="text-green-400 font-medium">2. Install Bridge</span>
+                  <span className="text-gray-300 ml-1">→ Copy-paste both lines (password required)</span>
+                  <div className="bg-black rounded p-1 font-mono text-[10px] space-y-0.5">
+                    <div>
+                      <span className="text-green-400">$</span> <span className="text-white">
+                        curl -sL {isProduction ? 'https://coder1.ai' : 'http://localhost:3001'}/install-bridge.sh -o /tmp/install.sh
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-green-400">$</span> <span className="text-white">
+                        sudo bash /tmp/install.sh
+                      </span>
+                    </div>
                   </div>
+                  <p className="text-[10px] text-yellow-400 mt-0.5">
+                    💡 Enter your Mac password when asked
+                  </p>
                 </div>
                 
                 <div>
-                  <span className="text-green-400 font-medium">3. Start</span>
+                  <span className="text-green-400 font-medium">3. Start Bridge</span>
                   <div className="bg-black rounded p-1 font-mono text-xs">
                     <span className="text-green-400">$</span> <span className="text-white">
-                      coder1-bridge start{isProduction ? ' &' : ' --dev'}
+                      coder1-bridge start{isProduction ? '' : ' --dev'}
                     </span>
                   </div>
                   {!isProduction && (
@@ -94,8 +104,8 @@ export function WelcomeScreen({ onDismiss, onBridgeClick }: WelcomeScreenProps =
                 </div>
                 
                 <div>
-                  <span className="text-green-400 font-medium">4. Bridge</span>
-                  <span className="text-gray-300 ml-1">→ Click the Bridge button below and enter the code into the terminal where it is requested</span>
+                  <span className="text-green-400 font-medium">4. Enter Code</span>
+                  <span className="text-gray-300 ml-1">→ Click Bridge button below, paste 6-digit code in terminal</span>
                 </div>
               </div>
             </div>
