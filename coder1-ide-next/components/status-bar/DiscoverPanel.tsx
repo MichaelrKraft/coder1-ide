@@ -626,6 +626,10 @@ export default function DiscoverPanel() {
                 <span>•</span>
                 <a href="http://localhost:3001/smart-prd-generator-standalone.html" target="_blank" className="text-coder1-cyan hover:text-coder1-cyan-secondary transition-colors">AI PRD</a>
               </div>
+              <div className="flex items-center gap-2">
+                <span>•</span>
+                <a href="/analytics" target="_blank" className="text-coder1-cyan hover:text-coder1-cyan-secondary transition-colors">Analytics</a>
+              </div>
             </div>
           </div>
 

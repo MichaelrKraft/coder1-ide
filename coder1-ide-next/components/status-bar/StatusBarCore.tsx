@@ -23,7 +23,7 @@ interface StatusBarCoreProps {
   activeFile?: string | null;
   isConnected?: boolean;
   openFiles?: IDEFile[];
-  terminalHistory?: string;
+  getTerminalHistory?: () => string; // ⚡ CHANGED: Callback to get terminal history without re-renders
   terminalCommands?: string[];
   terminalSessionId?: string | null; // 🔧 CRITICAL: Actual terminal session ID from IDE page
 }
@@ -32,7 +32,7 @@ export default function StatusBarCore({
   activeFile, 
   isConnected = false, 
   openFiles = [], 
-  terminalHistory = '', 
+  getTerminalHistory, // ⚡ CHANGED: Callback instead of string
   terminalCommands = [],
   terminalSessionId // 🔧 CRITICAL: Pass through to StatusBarActions
 }: StatusBarCoreProps) {
@@ -148,7 +148,7 @@ export default function StatusBarCore({
             activeFile={activeFile}
             isConnected={actuallyConnected}
             openFiles={openFiles}
-            terminalHistory={terminalHistory}
+            getTerminalHistory={getTerminalHistory}
             terminalCommands={terminalCommands}
             terminalSessionId={terminalSessionId}
           />

@@ -12,11 +12,24 @@ export function WelcomeScreen({ onDismiss, onBridgeClick }: WelcomeScreenProps =
   const [pairingCode, setPairingCode] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
   const [isProduction, setIsProduction] = useState(true);
+  const [userOS, setUserOS] = useState<'mac' | 'windows' | 'linux'>('mac');
   
   // Detect if running on localhost or production
   useEffect(() => {
     if (typeof window !== 'undefined') {
       setIsProduction(!window.location.hostname.includes('localhost'));
+      
+      // Detect user's OS
+      const platform = window.navigator.platform.toLowerCase();
+      const userAgent = window.navigator.userAgent.toLowerCase();
+      
+      if (platform.includes('mac') || userAgent.includes('mac')) {
+        setUserOS('mac');
+      } else if (platform.includes('win') || userAgent.includes('win')) {
+        setUserOS('windows');
+      } else {
+        setUserOS('linux');
+      }
     }
   }, []);
   
@@ -46,46 +59,60 @@ export function WelcomeScreen({ onDismiss, onBridgeClick }: WelcomeScreenProps =
   return (
     <div className="flex items-start justify-center h-full bg-bg-primary p-2 pt-4">
       <div className="max-w-xl w-full">
-        <div className="bg-bg-secondary border border-border-default rounded-lg p-3 shadow-xl">
+        <div className="bg-bg-secondary border-2 border-orange-500 rounded-lg p-3 shadow-[0_0_30px_rgba(249,115,22,0.6)]">
           <h1 className="text-lg font-bold mb-2 text-center bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
             Connect Claude Code
           </h1>
           
-          <div className="bg-red-500/10 border border-red-500/50 rounded-lg p-1 mb-2">
-            <p className="text-xs font-bold text-red-400 text-center">
-              ⚠️ DO NOT TYPE IN WEB TERMINAL!
+          {/* What is the Bridge - Compact Version */}
+          <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-2 mb-2">
+            <h3 className="text-xs font-semibold text-blue-300 mb-1">🌉 What is the Bridge?</h3>
+            <p className="text-[10px] text-gray-300 mb-1">
+              Connects this web IDE to <strong className="text-white">your computer</strong>—like remote desktop for coding.
+            </p>
+            <details className="text-[10px]">
+              <summary className="text-blue-300 cursor-pointer hover:text-blue-200">🔒 Is it safe?</summary>
+              <ul className="space-y-0.5 text-gray-400 pl-3 mt-1">
+                <li>✅ Code stays on <strong>your computer</strong></li>
+                <li>✅ Encrypted connection</li>
+                <li>✅ You control it (start/stop anytime)</li>
+              </ul>
+            </details>
+          </div>
+
+          {/* Important Notice */}
+          <div className="bg-purple-500/10 border border-purple-500/30 rounded-lg p-1 mb-2">
+            <p className="text-[10px] font-medium text-purple-300 text-center">
+              💡 Use <strong>Your Mac/PC Terminal</strong> (not web terminal)
             </p>
           </div>
 
           <div className="space-y-1">
             <div className="bg-bg-primary rounded p-1">
               <h2 className="text-xs font-semibold mb-1 text-blue-400">
-                📍 Setup Steps
+                📍 3-Minute Setup
               </h2>
               
               <div className="space-y-0.5 text-xs">
                 <div>
                   <span className="text-green-400 font-medium">1. Open Terminal</span>
-                  <span className="text-gray-300 ml-1">→ Cmd+Space, type "Terminal"</span>
+                  <span className="text-gray-300 ml-1">
+                    → {userOS === 'mac' && 'Cmd+Space, type "Terminal"'}
+                    {userOS === 'windows' && 'Win+R, type "cmd"'}
+                    {userOS === 'linux' && 'Ctrl+Alt+T'}
+                  </span>
                 </div>
                 
                 <div>
                   <span className="text-green-400 font-medium">2. Install Bridge</span>
-                  <span className="text-gray-300 ml-1">→ Copy-paste both lines (password required)</span>
-                  <div className="bg-black rounded p-1 font-mono text-[10px] space-y-0.5">
-                    <div>
-                      <span className="text-green-400">$</span> <span className="text-white">
-                        curl -sL {isProduction ? 'https://coder1.ai' : 'http://localhost:3001'}/install-bridge.sh -o /tmp/install.sh
-                      </span>
-                    </div>
-                    <div>
-                      <span className="text-green-400">$</span> <span className="text-white">
-                        sudo bash /tmp/install.sh
-                      </span>
-                    </div>
+                  <span className="text-gray-300 ml-1">→ One command (takes ~30 sec)</span>
+                  <div className="bg-black rounded p-1 font-mono text-[10px]">
+                    <span className="text-green-400">$</span> <span className="text-white">
+                      curl -sL {isProduction ? 'https://coder1.ai' : 'http://localhost:3001'}/install-bridge.sh | bash
+                    </span>
                   </div>
-                  <p className="text-[10px] text-yellow-400 mt-0.5">
-                    💡 Enter your Mac password when asked
+                  <p className="text-[10px] text-gray-400 mt-0.5">
+                    ⏱️ ~30 seconds • 13KB download
                   </p>
                 </div>
                 

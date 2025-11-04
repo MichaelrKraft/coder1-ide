@@ -16,20 +16,21 @@ import type { IDEFile } from '@/types';
 interface StatusBarModalsProps {
   activeFile?: string | null;
   openFiles?: IDEFile[];
-  terminalHistory?: string;
+  getTerminalHistory?: () => string; // ⚡ CHANGED: Callback instead of string
   terminalCommands?: string[];
 }
 
 export default function StatusBarModals({
   activeFile,
   openFiles = [],
-  terminalHistory = '',
+  getTerminalHistory,
   terminalCommands = []
 }: StatusBarModalsProps) {
+  const terminalHistory = getTerminalHistory ? getTerminalHistory() : '';
   console.log('🔍 [MODAL] StatusBarModals component mounting', {
     activeFile,
     openFilesCount: openFiles.length,
-    terminalHistoryLength: terminalHistory.length,
+    terminalHistoryLength: terminalHistory?.length || 0,
     terminalCommandsCount: terminalCommands.length
   });
   

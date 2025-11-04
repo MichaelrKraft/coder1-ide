@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Clock, Play, Pause, Save, FileText, DollarSign, RefreshCw, Loader2, CheckCircle, XCircle, X, ChevronDown, ChevronUp } from 'lucide-react';
+import { Clock, Play, Pause, Save, FileText, DollarSign, RefreshCw, Loader2, CheckCircle, XCircle, X, ChevronDown, ChevronUp, Mic, GitBranch, Edit3, Settings } from 'lucide-react';
 import { useSession } from '@/contexts/SessionContext';
 import { sessionEnhancementService } from '@/services/session-enhancement-service';
 import { getSessionTypeById } from '@/lib/session-types';
@@ -652,16 +652,16 @@ export default function SessionsPanel({ isVisible = true }: SessionsPanelProps) 
           
           {/* Show checkpoints list if available */}
           {checkpoints.length > 0 && (
-            <div className="mt-2 space-y-1 max-h-32 overflow-y-auto">
+            <div className="mt-2 space-y-1 max-h-16 overflow-y-auto">
               {checkpoints.slice(0, 3).map((checkpoint, index) => {
                 const isRestoring = restoringCheckpointId === checkpoint.id;
                 return (
                   <div 
                     key={checkpoint.id}
-                    className={`text-xs rounded p-2 transition-all border ${
+                    className={`text-xs rounded p-2 transition-all border shadow-glow-cyan ${
                       isRestoring 
                         ? 'bg-coder1-cyan/10 border-coder1-cyan/30' 
-                        : 'bg-bg-primary hover:bg-bg-secondary border-border-default hover:border-coder1-cyan/30'
+                        : 'bg-bg-primary hover:bg-bg-secondary border-coder1-cyan/50 hover:border-coder1-cyan'
                     }`}
                   >
                     <div className="flex items-center justify-between mb-1">
@@ -706,6 +706,50 @@ export default function SessionsPanel({ isVisible = true }: SessionsPanelProps) 
                   </div>
                 );
               })}
+            </div>
+          )}
+          
+          {/* Checkpoint Controls - Match Terminal Header */}
+          {checkpoints.length > 0 && (
+            <div className="mt-2 mb-2 flex items-center gap-2 px-2 py-1.5 bg-bg-secondary border border-border-default rounded">
+              {/* Voice Control */}
+              <button
+                className="terminal-control-btn p-1.5 rounded-md hover:bg-bg-tertiary transition-all"
+                title="Voice checkpoint navigation"
+              >
+                <Mic className="w-4 h-4 text-text-secondary" />
+              </button>
+              
+              {/* Planning Mode Indicator */}
+              <button
+                className="terminal-control-btn p-1.5 rounded-md hover:bg-bg-tertiary transition-all"
+                title="Checkpoint planning mode"
+              >
+                <GitBranch className="w-4 h-4 text-text-secondary" />
+              </button>
+              
+              {/* Edit Checkpoint */}
+              <button
+                className="terminal-control-btn p-1.5 rounded-md hover:bg-bg-tertiary transition-all"
+                title="Edit checkpoint"
+              >
+                <Edit3 className="w-4 h-4 text-text-secondary" />
+              </button>
+              
+              {/* Checkpoint Settings */}
+              <button
+                className="terminal-control-btn p-1.5 rounded-md hover:bg-bg-tertiary transition-all"
+                title="Checkpoint settings"
+              >
+                <Settings className="w-4 h-4 text-text-secondary" />
+              </button>
+              
+              {/* Checkpoint Count Badge */}
+              <div className="ml-auto flex items-center gap-1 text-xs text-text-muted">
+                <span className="px-2 py-0.5 bg-coder1-cyan/10 text-coder1-cyan rounded">
+                  {checkpoints.length}
+                </span>
+              </div>
             </div>
           )}
           

@@ -60,7 +60,7 @@ interface MenuBarProps {
  * 
  * DO NOT MODIFY menu items without checking original
  */
-export default function MenuBar({
+const MenuBar = React.memo(function MenuBar({
   onNewFile,
   onOpenFile,
   onOpenFileFromComputer,
@@ -525,4 +525,6 @@ export default function MenuBar({
       />
     </div>
   );
-}
+});
+
+export default MenuBar;
