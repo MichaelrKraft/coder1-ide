@@ -10,6 +10,14 @@
 import dotenv from 'dotenv';
 dotenv.config();
 
+// Debug: Log environment variables (remove after debugging)
+console.log('🔍 Environment check:');
+console.log('NODE_ENV:', process.env.NODE_ENV);
+console.log('PORT:', process.env.PORT);
+console.log('STRIPE_SECRET_KEY exists:', !!process.env.STRIPE_SECRET_KEY);
+console.log('STRIPE_PRICE_ID:', process.env.STRIPE_PRICE_ID);
+console.log('DATABASE_URL exists:', !!process.env.DATABASE_URL);
+
 import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';

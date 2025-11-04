@@ -477,8 +477,10 @@ class ContextProcessor {
    */
   private async storeConversationWithEmbedding(conversation: ProcessedConversation): Promise<void> {
     try {
-      // Generate embedding using existing transformers
+      // Generate embedding using OpenAI
       const combinedText = `${conversation.userInput} ${conversation.claudeReply}`;
+      const embeddingService = (await import('../lib/embedding-service')).default;
+      const embedding = await embeddingService.generateEmbedding(combinedText);
       
       // Store in database
       await contextDatabase.storeConversation({
@@ -489,7 +491,7 @@ class ContextProcessor {
         error_type: conversation.errorType,
         files_involved: JSON.stringify(conversation.filesInvolved),
         tokens_used: conversation.tokensEstimate,
-        embedding: undefined, // Use undefined for optional field
+        embedding: embedding ? JSON.stringify(embedding) : undefined,
         context_used: undefined // Add missing field
       });
     } catch (error) {

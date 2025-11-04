@@ -30,6 +30,9 @@ export interface ContextSession {
   files_modified?: string; // JSON array
   terminal_commands?: string; // JSON array
   success_rating?: number;
+  api_calls?: number; // Track API calls
+  cli_calls?: number; // Track CLI Puppeteer calls
+  quality_score?: number; // 0-100 score
 }
 
 export interface ClaudeConversation {
@@ -339,6 +342,9 @@ class ContextDatabase {
     totalPatterns: number;
     totalInsights: number;
     successRate: number;
+    totalApiCalls: number;
+    totalCliCalls: number;
+    avgQualityScore: number;
   }> {
     if (!this.db) await this.initialize();
     
@@ -352,7 +358,10 @@ class ContextDatabase {
           COUNT(DISTINCT cs.id) as total_sessions,
           COUNT(DISTINCT dp.id) as total_patterns,
           COUNT(DISTINCT li.id) as total_insights,
-          COALESCE(AVG(CASE WHEN cc.success = 1 THEN 1.0 ELSE 0.0 END), 0) as success_rate
+          COALESCE(AVG(CASE WHEN cc.success = 1 THEN 1.0 ELSE 0.0 END) * 100, 0) as success_rate,
+          COALESCE(SUM(cs.api_calls), 0) as total_api_calls,
+          COALESCE(SUM(cs.cli_calls), 0) as total_cli_calls,
+          COALESCE(AVG(cs.quality_score), 0) as avg_quality_score
         FROM context_sessions cs
         LEFT JOIN claude_conversations cc ON cs.id = cc.session_id
         LEFT JOIN detected_patterns dp ON cs.id = dp.session_id
@@ -365,7 +374,10 @@ class ContextDatabase {
         totalSessions: result.total_sessions || 0,
         totalPatterns: result.total_patterns || 0,
         totalInsights: result.total_insights || 0,
-        successRate: result.success_rate || 0
+        successRate: result.success_rate || 0,
+        totalApiCalls: result.total_api_calls || 0,
+        totalCliCalls: result.total_cli_calls || 0,
+        avgQualityScore: result.avg_quality_score || 0
       };
     } catch (error) {
       logger.error('❌ Failed to get context stats:', error);
@@ -374,7 +386,10 @@ class ContextDatabase {
         totalSessions: 0,
         totalPatterns: 0,
         totalInsights: 0,
-        successRate: 0
+        successRate: 0,
+        totalApiCalls: 0,
+        totalCliCalls: 0,
+        avgQualityScore: 0
       };
     }
   }

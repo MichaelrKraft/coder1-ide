@@ -79,6 +79,13 @@ class ClientMemoryPreferencesService {
    * Load preferences from API
    */
   private async loadPreferencesFromAPI(): Promise<MemoryPreferences> {
+    // 🔧 FIX (Feb 1, 2025): Only make API calls in browser environment
+    // SSR (server-side) cannot use relative URLs, causes "Failed to parse URL" errors
+    if (typeof window === 'undefined') {
+      console.log('📝 Server-side rendering detected, using localStorage defaults');
+      return this.loadPreferencesFromLocalStorage();
+    }
+
     try {
       const response = await fetch('/api/preferences/memory');
       if (!response.ok) {

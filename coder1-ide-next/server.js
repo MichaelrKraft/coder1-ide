@@ -1523,9 +1523,6 @@ app.prepare().then(() => {
     
     // Handle terminal input with Conductor command detection
     socket.on('terminal:input', async ({ id, data, selectedClaudeModel }) => {
-      console.log(`⌨️ TERMINAL INPUT: Session ${id}, Data length: ${data?.length}, Model: ${selectedClaudeModel || 'default'}`);
-      console.log(`⌨️ TERMINAL DEBUG: Data content: "${data}"`);
-      
       const sessionId = id || currentSessionId;
       
       // Conductor slash commands removed - multi-Claude tabs handle this differently
@@ -1562,9 +1559,11 @@ app.prepare().then(() => {
             terminalTokenIntegration.onCommandInput(sessionId, command);
           }
           
-          // 🧠 CONTEXTUAL MEMORY FIX: Send command to frontend for contextual memory processing
-          // 🚀 PERFORMANCE FIX: Debounce to reduce memory API calls (3-second delay)
-          // Only send conversational commands (not shell commands starting with $ or #)
+          // 🔇 DISABLED (Feb 1, 2025): Server-side contextual memory triggering
+          // This was causing typing lag after 3+ questions due to API spam
+          // Frontend already handles contextual memory with proper 2-second debounce
+          // Root cause: Server sending commands every 3s + frontend debounce = overlapping API calls
+          /*
           if (command.length > 0 && !commandLower.startsWith('$') && !commandLower.startsWith('#')) {
             // Clear existing timer for this session
             if (memoryDebounceTimers.has(sessionId)) {
@@ -1590,6 +1589,7 @@ app.prepare().then(() => {
             
             memoryDebounceTimers.set(sessionId, timer);
           }
+          */
           
           // ALWAYS intercept claude commands, even if bridgeManager fails to load
           // This prevents "claude: command not found" errors on the server
@@ -2602,31 +2602,32 @@ const flushContextData = async (sessionId) => {
   }
 };
 
+// 🔇 DISABLED: Contextual memory causing second question freeze (Feb 1, 2025)
 // Periodically flush buffered terminal data with safeguards
-let isFlushingContext = false;
-setInterval(async () => {
-  // Prevent concurrent flushes (safeguard against loops)
-  if (isFlushingContext) {
-    console.log('[Context] Skipping flush - previous flush still in progress');
-    return;
-  }
-  
-  isFlushingContext = true;
-  
-  try {
-    for (const [sessionId] of terminalDataBuffers) {
-      // Only flush if buffer has significant data
-      const buffer = terminalDataBuffers.get(sessionId);
-      if (buffer && buffer.length > 5) { // Only flush if we have more than 5 chunks
-        await flushContextData(sessionId);
-      }
-    }
-  } catch (error) {
-    console.error('[Context] Error during flush:', error);
-  } finally {
-    isFlushingContext = false;
-  }
-}, 30000); // Flush every 30 seconds instead of 5 seconds
+// let isFlushingContext = false;
+// setInterval(async () => {
+//   // Prevent concurrent flushes (safeguard against loops)
+//   if (isFlushingContext) {
+//     console.log('[Context] Skipping flush - previous flush still in progress');
+//     return;
+//   }
+//   
+//   isFlushingContext = true;
+//   
+//   try {
+//     for (const [sessionId] of terminalDataBuffers) {
+//       // Only flush if buffer has significant data
+//       const buffer = terminalDataBuffers.get(sessionId);
+//       if (buffer && buffer.length > 5) { // Only flush if we have more than 5 chunks
+//         await flushContextData(sessionId);
+//       }
+//     }
+//   } catch (error) {
+//     console.error('[Context] Error during flush:', error);
+//   } finally {
+//     isFlushingContext = false;
+//   }
+// }, 30000); // Flush every 30 seconds instead of 5 seconds
   
   // Graceful shutdown
   process.on('SIGTERM', () => {
