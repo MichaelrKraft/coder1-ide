@@ -167,5 +167,5 @@ ide-old*/
 /Documents/
 /Downloads/.coder1/
 .coder1/codebase-index/
-coder1-premium/
+# coder1-premium/ # ENABLED FOR ALPHA LAUNCH - Premium billing service
 docker-mcp-poc/

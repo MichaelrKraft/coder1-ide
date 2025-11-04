@@ -6,7 +6,8 @@ import Image from 'next/image';
 
 export default function AlphaPage() {
   const [selectedOS, setSelectedOS] = useState<'windows' | 'macos' | 'linux'>('macos');
-  const [downloadStats, setDownloadStats] = useState({ bridges: 847, activeUsers: 156 });
+  const [downloadStats, setDownloadStats] = useState({ bridges: 11, activeUsers: 12 });
+  const [isSigningUp, setIsSigningUp] = useState(false);
 
   // Auto-detect OS
   useEffect(() => {
@@ -15,6 +16,42 @@ export default function AlphaPage() {
     else if (userAgent.includes('Linux')) setSelectedOS('linux');
     else setSelectedOS('macos');
   }, []);
+
+  const handleAlphaSignup = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setIsSigningUp(true);
+    
+    const formData = new FormData(e.currentTarget);
+    const email = formData.get('email') as string;
+    
+    const userId = `alpha_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    
+    try {
+      const premiumApiUrl = process.env.NEXT_PUBLIC_PREMIUM_API_URL || 'http://localhost:3003';
+      const response = await fetch(`${premiumApiUrl}/api/premium/billing/checkout`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId,
+          email,
+          successUrl: `${window.location.origin}/alpha/success`,
+          cancelUrl: `${window.location.origin}/alpha`
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error('Checkout session creation failed');
+      }
+      
+      const { checkoutUrl } = await response.json();
+      window.location.href = checkoutUrl;
+      
+    } catch (error) {
+      console.error('Signup error:', error);
+      alert('Something went wrong. Please try again or contact support@coder1.app');
+      setIsSigningUp(false);
+    }
+  };
 
   const downloads = {
     windows: {
@@ -200,6 +237,59 @@ export default function AlphaPage() {
                 <p className="text-center text-gray-400 text-sm mt-3">
                   v1.0.0-alpha.1 • Released today
                 </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Alpha Signup Section */}
+          <div className="mt-12 bg-gradient-to-br from-cyan-500/10 to-blue-500/10 rounded-2xl p-8 border border-cyan-500/30">
+            <h2 className="text-3xl font-bold mb-6 text-center">
+              🎉 Start Your 30-Day Free Trial
+            </h2>
+            
+            <div className="text-center mb-8">
+              <p className="text-gray-300 mb-2">Early Adopter Pricing</p>
+              <p className="text-5xl font-bold text-cyan-400 mb-2">
+                $9.00<span className="text-xl text-gray-400">/month</span>
+              </p>
+              <p className="text-sm text-gray-400">
+                50% off forever • First 100 alpha users only
+              </p>
+            </div>
+            
+            <form className="max-w-md mx-auto" onSubmit={handleAlphaSignup}>
+              <div className="mb-4">
+                <input 
+                  type="email" 
+                  name="email"
+                  placeholder="Enter your email address"
+                  className="w-full px-4 py-3 rounded-lg bg-gray-800 border border-gray-700 text-white focus:border-cyan-500 focus:outline-none"
+                  required
+                  disabled={isSigningUp}
+                />
+              </div>
+              
+              <button 
+                type="submit"
+                disabled={isSigningUp}
+                className="w-full bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 disabled:from-gray-600 disabled:to-gray-700 text-white font-semibold py-4 rounded-lg transition-all shadow-lg hover:shadow-xl text-lg"
+              >
+                {isSigningUp ? 'Starting Trial...' : 'Start Free Trial - No Credit Card Required'}
+              </button>
+            </form>
+            
+            <div className="mt-8 grid grid-cols-3 gap-4 text-center text-sm text-gray-400">
+              <div>
+                <CheckCircle className="w-5 h-5 text-green-400 mx-auto mb-1" />
+                <p>30 days free</p>
+              </div>
+              <div>
+                <CheckCircle className="w-5 h-5 text-green-400 mx-auto mb-1" />
+                <p>No credit card</p>
+              </div>
+              <div>
+                <CheckCircle className="w-5 h-5 text-green-400 mx-auto mb-1" />
+                <p>Cancel anytime</p>
               </div>
             </div>
           </div>
