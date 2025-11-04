@@ -394,4 +394,19 @@ class BillingService {
   }
 }
 
-export const billingService = new BillingService();
+// Lazy initialization to avoid reading env vars during import
+let billingServiceInstance: BillingService | null = null;
+
+const getBillingService = (): BillingService => {
+  if (!billingServiceInstance) {
+    billingServiceInstance = new BillingService();
+  }
+  return billingServiceInstance;
+};
+
+// Proxy to lazy-load on first access
+export const billingService = new Proxy({} as BillingService, {
+  get(target, prop) {
+    return (getBillingService() as any)[prop];
+  }
+});
