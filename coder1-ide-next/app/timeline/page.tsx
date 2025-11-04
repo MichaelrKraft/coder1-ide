@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Clock, FileEdit, Terminal, Save, AlertCircle, RefreshCw, Download, History, X } from 'lucide-react';
+import { ArrowLeft, Clock, FileEdit, Terminal, Save, AlertCircle, RefreshCw, Download, History, X, Mic, GitBranch, Edit3, Settings } from 'lucide-react';
 
 interface TimelineEvent {
   id: string;
@@ -408,7 +408,7 @@ export default function TimelinePage() {
                     </div>
                     
                     {/* Content */}
-                    <div className="flex-1 bg-gray-800 rounded-lg p-4 border border-gray-700 hover:border-gray-600 transition-colors group">
+                    <div className="flex-1 bg-gray-800 rounded-lg p-4 border border-cyan-500/50 hover:border-cyan-500 shadow-glow-cyan transition-colors group">
                       <div className="flex items-start justify-between mb-2">
                         <div className="flex-1">
                           <h3 className="text-sm font-semibold text-white">
@@ -447,6 +447,33 @@ export default function TimelinePage() {
                           </span>
                           {event.type === 'checkpoint' && event.details?.sessionId && (
                             <>
+                              {/* Terminal-style button bar */}
+                              <div className="flex items-center gap-1 px-2 py-1 bg-gray-900/50 border border-gray-700 rounded">
+                                <button
+                                  className="p-1 rounded hover:bg-gray-700 transition-colors"
+                                  title="Voice checkpoint navigation"
+                                >
+                                  <Mic className="w-3 h-3 text-gray-400" />
+                                </button>
+                                <button
+                                  className="p-1 rounded hover:bg-gray-700 transition-colors"
+                                  title="Checkpoint planning mode"
+                                >
+                                  <GitBranch className="w-3 h-3 text-gray-400" />
+                                </button>
+                                <button
+                                  className="p-1 rounded hover:bg-gray-700 transition-colors"
+                                  title="Edit checkpoint"
+                                >
+                                  <Edit3 className="w-3 h-3 text-gray-400" />
+                                </button>
+                                <button
+                                  className="p-1 rounded hover:bg-gray-700 transition-colors"
+                                  title="Checkpoint settings"
+                                >
+                                  <Settings className="w-3 h-3 text-gray-400" />
+                                </button>
+                              </div>
                               <button
                                 onClick={() => handleRestore(event.id, event.details.sessionId)}
                                 className="px-2 py-1 bg-cyan-600 hover:bg-cyan-500 rounded text-xs transition-colors"
