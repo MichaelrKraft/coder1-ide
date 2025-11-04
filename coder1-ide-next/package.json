@@ -12,7 +12,7 @@
     "copy-canonical": "cp ../CANONICAL/*.html public/ 2>/dev/null || true",
     "build": "next build",
     "build:github-pages": "GITHUB_PAGES=true NODE_ENV=production next build",
-    "build:render": "npm rebuild node-pty --update-binary && next build",
+    "build:render": "npm install && npm rebuild node-pty --update-binary && next build",
     "build:unified": "NEXT_CONFIG_FILE=next.config.unified.js next build --experimental-build-mode=experimental-compile",
     "build:alpha": "npm run build",
     "build:standalone": "next build && cp -r public .next/standalone/public && cp -r .next/static .next/standalone/.next/static",
@@ -21,7 +21,8 @@
     "start:legacy": "next start",
     "start:unified": "NODE_ENV=production node server.js",
     "test:memory": "NODE_OPTIONS='--max-old-space-size=400 --expose-gc' node server.js",
-    "lint": "next lint"
+    "lint": "next lint",
+    "backfill:embeddings": "node scripts/backfill-embeddings.js"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.63.0",
