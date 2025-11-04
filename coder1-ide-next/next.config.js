@@ -2,7 +2,7 @@
 const nextConfig = {
   reactStrictMode: false, // Disabled to prevent double-initialization issues
   // GitHub Pages Configuration
-  output: process.env.NODE_ENV === 'production' && process.env.GITHUB_PAGES ? 'export' : undefined,
+  output: process.env.NODE_ENV === 'production' && process.env.GITHUB_PAGES ? 'export' : 'standalone',
   trailingSlash: true, // GitHub Pages compatibility
   assetPrefix: process.env.NODE_ENV === 'production' && process.env.GITHUB_PAGES ? '/coder1-ide' : '',
   basePath: process.env.NODE_ENV === 'production' && process.env.GITHUB_PAGES ? '/coder1-ide' : '',
