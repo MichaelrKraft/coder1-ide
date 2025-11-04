@@ -27,6 +27,7 @@ interface ContextualMemoryPanelProps {
   onCreateExperiment?: (suggestion: string, confidence: ConfidenceAnalysis) => void;
   showExperimentFeatures?: boolean;
   className?: string;
+  claudeActive?: boolean; // 🔧 FIX (Feb 1, 2025): Skip regex processing when Claude is responding
 }
 
 interface MemoryResponse {
@@ -57,7 +58,8 @@ export const ContextualMemoryPanel: React.FC<ContextualMemoryPanelProps> = ({
   onExpandMemory,
   onCreateExperiment,
   showExperimentFeatures = true,
-  className = ''
+  className = '',
+  claudeActive = false // 🔧 FIX (Feb 1, 2025): Default to false
 }) => {
   const [memories, setMemories] = useState<EnhancedMemory[]>([]);
   const [loading, setLoading] = useState(false);
@@ -69,14 +71,15 @@ export const ContextualMemoryPanel: React.FC<ContextualMemoryPanelProps> = ({
   const [similarExperiments, setSimilarExperiments] = useState<SandboxExperiment[]>([]);
   
   // Premium status from store
-  const { isPremium, addLearningEvent } = useMemoryStore();
+  const { isPremium, trialEndsAt, addLearningEvent, checkTrialExpiration } = useMemoryStore();
 
-  // Debounce user input to avoid excessive API calls
-  const debouncedUserInput = useMemo(() => {
-    const timeoutId = setTimeout(() => userInput, 500);
-    return () => clearTimeout(timeoutId);
-  }, [userInput]);
+  // Check trial expiration on mount
+  useEffect(() => {
+    checkTrialExpiration();
+  }, [checkTrialExpiration]);
 
+  // 🔧 FIX (Feb 1, 2025): Proper debounce to prevent API spam while typing
+  // Wait 2 seconds after typing stops before searching contextual memory
   useEffect(() => {
     if (!userInput || userInput.trim().length < 1) {
       setMemories([]);
@@ -84,48 +87,145 @@ export const ContextualMemoryPanel: React.FC<ContextualMemoryPanelProps> = ({
       return;
     }
 
-    const fetchRelevantMemories = async () => {
+    // Skip if Claude is actively responding
+    if (claudeActive) {
+      return;
+    }
+
+    // Debounce: wait 2 seconds after last keystroke
+    const timeoutId = setTimeout(async () => {
       setLoading(true);
       setError(null);
 
       try {
-        // Fetch regular contextual memories
-        const response = await fetch('/api/contextual-memory/relevant', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            userInput: userInput.trim(),
-            currentFiles,
-            recentCommands,
-            errorContext,
-            projectContext: 'Coder1 IDE Development'
-          }),
-        });
+        let enhancedMemories: EnhancedMemory[] = [];
+        let searchStats: { totalFound: number; processingTimeMs: number } | null = null;
 
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        // 🧠 ALWAYS try semantic search first for premium users (Nov 3, 2025)
+        // Auto-fallback to keyword search if semantic returns 0 results
+        if (isPremium) {
+          try {
+            const semanticResponse = await fetch('/api/memory/semantic-search', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                query: userInput.trim(),
+                topK: 5,
+                threshold: 0.3  // 🐛 DEBUG (Nov 3, 2025): Temporarily lowered to 0.3 to check if ANY matches exist
+              }),
+            });
+
+            if (semanticResponse.ok) {
+              const semanticData = await semanticResponse.json();
+              console.log('🧠 Semantic search results:', semanticData.results.length, 'matches');
+              
+              // Convert semantic results to memory format
+              enhancedMemories = semanticData.results
+                .filter((r: any) => r.conversation)
+                .map((result: any) => ({
+                  id: result.id,
+                  relevanceScore: result.similarity,
+                  matchReason: `Semantic match (${Math.round(result.similarity * 100)}% similar)`,
+                  quickPreview: result.conversation.claudeReply?.slice(0, 150) + '...' || 'No preview',
+                  timeAgo: new Date(result.conversation.timestamp).toLocaleDateString(),
+                  conversation: {
+                    user_input: result.conversation.userInput,
+                    claude_reply: result.conversation.claudeReply,
+                    files_involved: JSON.stringify(result.conversation.filesInvolved || []),
+                    timestamp: result.conversation.timestamp
+                  },
+                  sessionSummary: undefined,
+                  memorySource: 'production' as const
+                }));
+              
+              searchStats = {
+                totalFound: semanticData.results.length,
+                processingTimeMs: semanticData.stats.queryTime
+              };
+            } else if (semanticResponse.status === 503) {
+              // Semantic search unavailable, fall back to keyword
+              console.log('⚠️ Semantic search unavailable - falling back to keyword search');
+            }
+          } catch (semanticError) {
+            console.warn('🔴 Semantic search failed, falling back to keyword search:', semanticError);
+          }
         }
 
-        const data: MemoryResponse = await response.json();
-        
-        if (data.success) {
-          // Enhance memories with experiment context
-          const enhancedMemories: EnhancedMemory[] = data.memories.map(memory => ({
-            ...memory,
-            memorySource: 'production' as const
-          }));
+        // Fall back to keyword search if semantic didn't work or is disabled
+        if (enhancedMemories.length === 0) {
+          const response = await fetch('/api/contextual-memory/relevant', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              userInput: userInput.trim(),
+              currentFiles,
+              recentCommands,
+              errorContext,
+              projectContext: 'Coder1 IDE Development'
+            }),
+          });
+
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+          }
+
+          const data: MemoryResponse = await response.json();
           
-          setMemories(enhancedMemories);
-          setStats(data.stats);
-        } else {
-          throw new Error('Failed to retrieve memories');
+          if (data.success) {
+            enhancedMemories = data.memories.map(memory => ({
+              ...memory,
+              memorySource: 'production' as const
+            }));
+            searchStats = data.stats;
+          } else {
+            throw new Error('Failed to retrieve memories');
+          }
         }
+        
+        setMemories(enhancedMemories);
+        setStats(searchStats);
 
         // If experiment features are enabled, fetch additional experiment data
         if (showExperimentFeatures) {
-          await fetchExperimentData();
+          try {
+            // Fetch confidence analysis for current suggestion
+            setLoadingConfidence(true);
+            
+            const confidenceResponse = await fetch('/api/sandbox/evolutionary/confidence', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                suggestionText: userInput.trim(),
+                currentFiles,
+                recentCommands,
+                errorContext
+              })
+            });
+            
+            if (confidenceResponse.ok) {
+              const confidenceData = await confidenceResponse.json();
+              setConfidenceAnalysis(confidenceData.analysis);
+            }
+
+            // Fetch similar experiments
+            const experimentsResponse = await fetch('/api/sandbox/evolutionary/similar', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ suggestionText: userInput.trim() })
+            });
+            
+            if (experimentsResponse.ok) {
+              const experimentsData = await experimentsResponse.json();
+              setSimilarExperiments(experimentsData.experiments || []);
+            }
+          } catch (error) {
+            console.error('Failed to fetch experiment data:', error);
+            // Don't set error state for experiment features - they're optional
+          } finally {
+            setLoadingConfidence(false);
+          }
         }
         
       } catch (err) {
@@ -136,51 +236,10 @@ export const ContextualMemoryPanel: React.FC<ContextualMemoryPanelProps> = ({
       } finally {
         setLoading(false);
       }
-    };
+    }, 1000);  // 🔧 FIX (Nov 3, 2025): Reduced from 2000ms to 1000ms for better responsiveness
 
-    const fetchExperimentData = async () => {
-      try {
-        // Fetch confidence analysis for current suggestion
-        setLoadingConfidence(true);
-        
-        const confidenceResponse = await fetch('/api/sandbox/evolutionary/confidence', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            suggestionText: userInput.trim(),
-            currentFiles,
-            recentCommands,
-            errorContext
-          })
-        });
-        
-        if (confidenceResponse.ok) {
-          const confidenceData = await confidenceResponse.json();
-          setConfidenceAnalysis(confidenceData.analysis);
-        }
-
-        // Fetch similar experiments
-        const experimentsResponse = await fetch('/api/sandbox/evolutionary/similar', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ suggestionText: userInput.trim() })
-        });
-        
-        if (experimentsResponse.ok) {
-          const experimentsData = await experimentsResponse.json();
-          setSimilarExperiments(experimentsData.experiments || []);
-        }
-        
-      } catch (error) {
-        console.error('Failed to fetch experiment data:', error);
-        // Don't set error state for experiment features - they're optional
-      } finally {
-        setLoadingConfidence(false);
-      }
-    };
-
-    fetchRelevantMemories();
-  }, [userInput, currentFiles, recentCommands, errorContext, showExperimentFeatures]);
+    return () => clearTimeout(timeoutId);
+  }, [userInput, currentFiles, recentCommands, errorContext, showExperimentFeatures, claudeActive]);
 
   const handleMemoryExpand = (memory: EnhancedMemory) => {
     setExpandedMemoryId(expandedMemoryId === memory.id ? null : memory.id);
@@ -302,16 +361,16 @@ export const ContextualMemoryPanel: React.FC<ContextualMemoryPanelProps> = ({
       <div className="flex items-center justify-between p-3 border-b border-gray-700">
         <div className="flex items-center space-x-2">
           <h3 className="text-sm font-medium text-gray-200">Contextual Memory</h3>
+          {trialEndsAt && (
+            <span className="px-2 py-1 text-xs font-medium bg-blue-500/10 text-blue-400 border border-blue-500/30 rounded-md">
+              Trial: {Math.ceil((new Date(trialEndsAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24))} days
+            </span>
+          )}
           {loading && (
             <div className="w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full animate-spin"></div>
           )}
+          {/* 🧠 Semantic search is always-on for premium users - no toggle needed */}
         </div>
-        
-        {stats && (
-          <div className="text-xs text-gray-400">
-            Found {stats.totalFound} similar {stats.totalFound === 1 ? 'memory' : 'memories'} • {stats.processingTimeMs}ms
-          </div>
-        )}
       </div>
 
       {/* Evolutionary Features - Confidence Analysis */}

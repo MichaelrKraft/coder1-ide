@@ -27,6 +27,7 @@ interface MemoryStore extends MemoryStats {
   
   // Actions
   setPremiumStatus: (isPremium: boolean, trialEndsAt?: Date | null) => void;
+  checkTrialExpiration: () => boolean;
   updateStats: (stats: Partial<MemoryStats>) => void;
   addLearningEvent: (event: Omit<LearningEvent, 'id' | 'timestamp'>) => void;
   incrementMissedOpportunities: () => void;
@@ -37,9 +38,9 @@ interface MemoryStore extends MemoryStats {
 export const useMemoryStore = create<MemoryStore>()(
   persist(
     (set, get) => ({
-      // Initial state
-      isPremium: false,
-      trialEndsAt: null,
+      // Initial state - 30-day premium trial enabled (Nov 3, 2025)
+      isPremium: true,
+      trialEndsAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
       totalPatterns: 374,
       successRate: 89,
       timeSavedMinutes: 0,
@@ -52,6 +53,21 @@ export const useMemoryStore = create<MemoryStore>()(
       // Actions
       setPremiumStatus: (isPremium, trialEndsAt = null) => {
         set({ isPremium, trialEndsAt });
+      },
+
+      // Check and expire trial if needed
+      checkTrialExpiration: () => {
+        const state = get();
+        if (state.isPremium && state.trialEndsAt) {
+          const now = new Date();
+          const expirationDate = new Date(state.trialEndsAt);
+          if (now > expirationDate) {
+            set({ isPremium: false, trialEndsAt: null });
+            console.log('🔒 Premium trial has expired');
+            return true; // Trial expired
+          }
+        }
+        return false; // Trial still active or no trial
       },
 
       updateStats: (stats) => {

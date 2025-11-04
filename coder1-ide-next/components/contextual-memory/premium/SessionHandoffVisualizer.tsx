@@ -77,30 +77,12 @@ export const SessionHandoffVisualizer: React.FC = () => {
             SESSION CONTINUITY TIMELINE
           </h3>
         </div>
-        <div className="flex gap-2">
-          <button
-            onClick={handleTestHandoff}
-            className="px-3 py-1 text-xs bg-purple-500/20 hover:bg-purple-500/30 text-purple-400 rounded border border-purple-500/30 transition-colors"
-          >
-            Test Handoff
-          </button>
-          <button
-            onClick={handleExportContext}
-            className="px-3 py-1 text-xs bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 rounded border border-blue-500/30 transition-colors flex items-center gap-1"
-          >
-            {exportSuccess ? (
-              <>
-                <Check className="w-3 h-3" />
-                <span>Exported</span>
-              </>
-            ) : (
-              <>
-                <Download className="w-3 h-3" />
-                <span>Export</span>
-              </>
-            )}
-          </button>
-        </div>
+        <button
+          onClick={handleTestHandoff}
+          className="px-3 py-1 text-xs bg-purple-500/20 hover:bg-purple-500/30 text-purple-400 rounded border border-purple-500/30 transition-colors"
+        >
+          Test Handoff
+        </button>
       </div>
 
       {/* Session Timeline */}

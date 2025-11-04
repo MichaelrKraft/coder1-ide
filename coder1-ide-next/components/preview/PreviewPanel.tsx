@@ -17,6 +17,7 @@ interface PreviewPanelProps {
   onOpenFile?: (path: string, line?: number) => void;
   recentTerminalInput?: string;
   terminalCommands?: string[];
+  claudeActive?: boolean; // 🔧 FIX (Feb 1, 2025): Pass through to ContextualMemoryPanel
 }
 
 /**
@@ -33,6 +34,7 @@ const PreviewPanel = React.memo(function PreviewPanel({
   onOpenFile,
   recentTerminalInput = '',
   terminalCommands = [],
+  claudeActive = false, // 🔧 FIX (Feb 1, 2025): Default to false
 }: PreviewPanelProps) {
   const [mode, setMode] = useState<PreviewMode>('contextual-memory');
   const [paraThinkSessionId, setParaThinkSessionId] = useState<string | null>(null);
@@ -253,6 +255,7 @@ const PreviewPanel = React.memo(function PreviewPanel({
                   userInput={recentTerminalInput}
                   currentFiles={activeFile ? [activeFile] : []}
                   recentCommands={terminalCommands.slice(-5)} // Last 5 commands for context
+                  claudeActive={claudeActive} // 🔧 FIX (Feb 1, 2025): Pass through claudeActive to skip regex when Claude is responding
                   onUseMemory={(memory) => {
                     console.log('User wants to use memory:', memory);
                     // TODO: Implement memory usage

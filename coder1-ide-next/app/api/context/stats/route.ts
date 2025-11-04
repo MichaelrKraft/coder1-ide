@@ -52,7 +52,8 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       lastUpdate: new Date().toISOString()
     };
     
-    logger.debug('📊 Context stats requested:', stats);
+    // 🔇 DISABLED: Excessive logging causing performance issues (Feb 1, 2025)
+    // logger.debug('📊 Context stats requested:', stats);
     
     return NextResponse.json(stats);
   } catch (error) {

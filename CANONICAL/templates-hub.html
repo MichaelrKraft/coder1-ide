@@ -3269,7 +3269,7 @@ export const Button: React.FC<ButtonProps> = ({
                 btn.style.background = '#666';
                 
                 // Call the real API
-                const response = await fetch('/api/templates/install-mcp', {
+                const response = await fetch('/api/templates/install-mcp/', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'

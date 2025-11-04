@@ -102,9 +102,10 @@ const ContextManagerPanel: React.FC<ContextManagerPanelProps> = ({ isOpen, onClo
 
     if (isOpen) {
       loadAllData(); // Load immediately when opened
+      // 🔇 DISABLED: Aggressive polling causing second question freeze (Feb 1, 2025)
       // Update both stats AND conversations every 5 seconds for real-time feel
-      const interval = setInterval(loadAllData, 5000);
-      return () => clearInterval(interval);
+      // const interval = setInterval(loadAllData, 5000);
+      // return () => clearInterval(interval);
     }
   }, [isOpen]);
 

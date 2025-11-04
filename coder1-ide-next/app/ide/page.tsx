@@ -67,11 +67,32 @@ function IDEPageContent() {
   useEffect(() => {
     if (typeof window === 'undefined') return;
     
-    const tourStatus = localStorage.getItem('coder1-tour-status');
-    if (!tourStatus) {
-      // First-time user - show modal overlay forcing them to click button
-      setShowOnboardingOverlay(true);
+    // 🔧 FIX (Feb 2, 2025): Use better heuristics for "first-time user"
+    // Don't rely solely on tour completion - check if they've USED the IDE
+    
+    // 1. Check if they came from Timeline (has sessionId in URL) - NOT first-time
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.has('sessionId') || urlParams.has('restored')) {
+      console.log('🚫 Skipping onboarding - user came from Timeline');
+      return;
     }
+    
+    // 2. Check if they have any IDE usage history in localStorage - NOT first-time
+    const hasUsageHistory = 
+      localStorage.getItem('ide-terminalSessionId') ||
+      localStorage.getItem('ide-activeFile') ||
+      localStorage.getItem('ide-openFiles') ||
+      localStorage.getItem('coder1-tour-status') === 'completed' ||
+      localStorage.getItem('coder1-tour-status') === 'dismissed';
+    
+    if (hasUsageHistory) {
+      console.log('🚫 Skipping onboarding - user has IDE usage history');
+      return;
+    }
+    
+    // 3. Only NOW show overlay if truly first-time (no history at all)
+    console.log('👋 First-time user detected - showing onboarding overlay');
+    setShowOnboardingOverlay(true);
   }, []);
   
   // Settings modal state
@@ -99,8 +120,11 @@ function IDEPageContent() {
 
   // Terminal history for checkpoint creation
   const [terminalHistory, setTerminalHistory] = useState<string>("");
+  // ⚡ PERFORMANCE FIX (Feb 2, 2025): Use ref for real-time accumulation (no re-renders)
+  const terminalHistoryRef = useRef<string>('');
   const [terminalCommands, setTerminalCommands] = useState<string[]>([]);
   const [recentTerminalInput, setRecentTerminalInput] = useState<string>("");
+  const [claudeActive, setClaudeActive] = useState<boolean>(false); // 🔧 FIX (Feb 1, 2025): Track when Claude is responding
   
   // Track recentTerminalInput state changes for contextual memory
   useEffect(() => {
@@ -150,6 +174,8 @@ function IDEPageContent() {
         // 🔧 CRITICAL FIX: Filter statuslines when LOADING from localStorage
         // This retroactively cleans up old unfiltered data (Jan 2025)
         const filteredHistory = filterThinkingAnimations(savedTerminalHistory);
+        // ⚡ PERFORMANCE FIX: Initialize ref with saved data
+        terminalHistoryRef.current = filteredHistory;
         setTerminalHistory(filteredHistory);
         setRestoredTerminalHistory(filteredHistory);
         console.log('✅ Restored terminal history (filtered):', filteredHistory.length, 'characters', 
@@ -183,14 +209,25 @@ function IDEPageContent() {
     localStorage.setItem('ide-activeFile', activeFile || '');
   }, [activeFile]);
 
+  // ⚡ PERFORMANCE FIX (Feb 2, 2025): Save terminal history on page unload instead of every keystroke
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    if (terminalHistory) {
-      // Filter out Claude Code statuslines and animations before saving
-      const filteredHistory = filterThinkingAnimations(terminalHistory);
-      localStorage.setItem('terminalHistory', filteredHistory);
-    }
-  }, [terminalHistory]);
+    
+    const saveTerminalHistory = () => {
+      if (terminalHistoryRef.current) {
+        const filteredHistory = filterThinkingAnimations(terminalHistoryRef.current);
+        localStorage.setItem('terminalHistory', filteredHistory);
+        console.log('💾 Saved terminal history to localStorage on page unload');
+      }
+    };
+    
+    // Save on page unload
+    window.addEventListener('beforeunload', saveTerminalHistory);
+    
+    return () => {
+      window.removeEventListener('beforeunload', saveTerminalHistory);
+    };
+  }, []);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -232,13 +269,16 @@ function IDEPageContent() {
           console.log('📜 IDE PAGE: Restored terminal history from localStorage (filtered)');
           console.log('📜 IDE PAGE: Original length:', terminalHistory.length, '→ Filtered length:', filteredHistory.length);
           console.log('📜 IDE PAGE: First 200 chars:', filteredHistory.substring(0, 200));
+          
+          // ⚡ PERFORMANCE FIX: Initialize ref with restored data
+          terminalHistoryRef.current = filteredHistory;
           setRestoredTerminalHistory(filteredHistory);
           
           // 🔧 FIX: Also set terminalHistory state to preserve content for future checkpoints
           // This ensures that if user creates a checkpoint immediately after restore,
           // it will include the restored terminal history instead of being empty
           setTerminalHistory(filteredHistory);
-          console.log('📜 IDE PAGE: Both restoredTerminalHistory and terminalHistory state updated');
+          console.log('📜 IDE PAGE: terminalHistoryRef, restoredTerminalHistory, and terminalHistory state all updated');
           console.log('📜 IDE PAGE: Future checkpoints will include this restored content');
         } else {
           console.warn('⚠️ IDE PAGE: No terminal history found in localStorage');
@@ -622,9 +662,14 @@ function IDEPageContent() {
   };
 
   const handleTerminalData = (data: string) => {
-    console.log("📊 Terminal data:", data.slice(0, 50) + "...");
-    // Accumulate terminal history for checkpoint creation
-    setTerminalHistory((prev) => prev + data);
+    // ⚡ PERFORMANCE FIX (Feb 2, 2025): Use ref instead of state to prevent re-renders
+    // Browser diagnostic revealed setState on every keystroke caused:
+    //   1. Page component re-render (30-100ms cascade)
+    //   2. EnhancedSessionCreationModal re-render (even when closed)
+    //   3. Progressive lag as string grows
+    //
+    // Solution: Accumulate in ref (no re-renders), read via callback when needed
+    terminalHistoryRef.current += data;
   };
 
   const handleTerminalCommand = (command: string) => {
@@ -1321,6 +1366,7 @@ function IDEPageContent() {
                                 onTerminalCommand={handleTerminalCommand}
                                 onTerminalReady={handleTerminalReady}
                                 onComposerVisibilityChange={setComposerVisible}
+                                onClaudeActiveChange={setClaudeActive}
                                 restoredTerminalHistory={restoredTerminalHistory}
                                 restoredSessionId={terminalSessionId}
                               />
@@ -1345,6 +1391,7 @@ function IDEPageContent() {
                         onOpenFile={handleOpenFileFromPath}
                         recentTerminalInput={recentTerminalInput}
                         terminalCommands={terminalCommands}
+                        claudeActive={claudeActive}
                       />
                     ) : null
                   }
@@ -1363,7 +1410,7 @@ function IDEPageContent() {
                   content: files[path],
                   isDirty: false, // TODO: Track dirty state properly
                 }))}
-                terminalHistory={terminalHistory}
+                getTerminalHistory={() => terminalHistoryRef.current}
                 terminalCommands={terminalCommands}
                 terminalSessionId={terminalSessionId}
               />
