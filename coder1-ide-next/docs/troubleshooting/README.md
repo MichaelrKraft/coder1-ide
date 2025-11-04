@@ -6,6 +6,13 @@ This directory contains comprehensive troubleshooting guides for common Coder1 I
 
 ### 🚨 **Terminal Issues**
 
+#### **[Terminal Typing Lag - Complete Guide (Feb 2025)](./TERMINAL_TYPING_LAG_COMPLETE_GUIDE_FEB_2025.md)** 🆕
+**Status**: ✅ RESOLVED  
+**For**: Terminal typing lag after 2-3 questions  
+**Time to Read**: 20-25 minutes  
+
+**CRITICAL**: Complete documentation of progressive terminal lag issue resolved Feb 2, 2025. Shows how `setState` anti-pattern in high-frequency callbacks caused 100ms+ keystroke lag. Includes React performance patterns, callback pattern for checkpoints, and empirical debugging methodology. **94-98% performance improvement achieved.**
+
 #### **[Terminal Scrolling Issue - Complete Guide](./TERMINAL_SCROLLING_ISSUE_COMPLETE_GUIDE.md)**
 **Status**: ✅ RESOLVED  
 **For**: Comprehensive understanding and historical context  
@@ -54,6 +61,12 @@ Structured template for documenting terminal issues when handing off between AI 
 
 ## 🚀 **Quick Start**
 
+### **If Terminal Has Typing Lag After 2-3 Questions** 🆕
+1. Go to → **[Terminal Typing Lag Guide - Quick Fix Section](./TERMINAL_TYPING_LAG_COMPLETE_GUIDE_FEB_2025.md#-quick-fix-emergency-reference)**
+2. Change `handleTerminalData` to use `useRef` (5 minutes)
+3. Update StatusBar components to callback pattern (5 minutes)
+4. Hard refresh browser and test
+
 ### **If Checkpoint Content Appears in Main Terminal**
 1. Go to → **[Checkpoint Content Bleeding Quick Fix](./CHECKPOINT_CONTENT_BLEEDING_QUICK_FIX.md)**
 2. Add `!sandboxMode` check to event handlers (2 minutes)
@@ -70,15 +83,18 @@ Structured template for documenting terminal issues when handing off between AI 
 3. Learn from → **[Session Summary](./CHECKPOINT_CONTENT_BLEEDING_SESSION_SUMMARY.md)**
 
 ### **If You're Investigating Terminal Issues**
-1. Start with → **[Complete Guide](./TERMINAL_SCROLLING_ISSUE_COMPLETE_GUIDE.md)**
-2. Use → **[Diagnostic Procedure](./TERMINAL_SCROLLING_ISSUE_COMPLETE_GUIDE.md#-diagnostic-procedure)**
+1. Check symptom type:
+   - **Typing lag**: → **[Typing Lag Guide](./TERMINAL_TYPING_LAG_COMPLETE_GUIDE_FEB_2025.md)**
+   - **Scrolling issues**: → **[Scrolling Guide](./TERMINAL_SCROLLING_ISSUE_COMPLETE_GUIDE.md)**
+2. Use diagnostic procedures in respective guides
 3. Document with → **[Handoff Template](./TERMINAL_ISSUE_HANDOFF_TEMPLATE.md)**
 
 ### **If You're a New Agent**
-1. Read → **[Checkpoint Session Summary](./CHECKPOINT_CONTENT_BLEEDING_SESSION_SUMMARY.md)** (learn debugging methodology)
-2. Read → **[Terminal Complete Guide - Future Agent Guidelines](./TERMINAL_SCROLLING_ISSUE_COMPLETE_GUIDE.md#-future-agent-guidelines)**
-3. Bookmark → **[Quick Fixes](./CHECKPOINT_CONTENT_BLEEDING_QUICK_FIX.md)** for emergencies
-4. Use → **[Handoff Template](./TERMINAL_ISSUE_HANDOFF_TEMPLATE.md)** for reporting
+1. **MUST READ**: → **[Terminal Typing Lag Guide](./TERMINAL_TYPING_LAG_COMPLETE_GUIDE_FEB_2025.md)** (learn React performance patterns)
+2. Read → **[Checkpoint Session Summary](./CHECKPOINT_CONTENT_BLEEDING_SESSION_SUMMARY.md)** (learn debugging methodology)
+3. Read → **[Terminal Complete Guide - Future Agent Guidelines](./TERMINAL_SCROLLING_ISSUE_COMPLETE_GUIDE.md#-future-agent-guidelines)**
+4. Bookmark → **[Quick Fixes](./CHECKPOINT_CONTENT_BLEEDING_QUICK_FIX.md)** for emergencies
+5. Use → **[Handoff Template](./TERMINAL_ISSUE_HANDOFF_TEMPLATE.md)** for reporting
 
 ---
 
@@ -86,6 +102,7 @@ Structured template for documenting terminal issues when handing off between AI 
 
 | Issue | Status | Last Updated | Success Rate |
 |-------|--------|--------------|-------------|
+| **Terminal Typing Lag** | ✅ RESOLVED | Feb 2, 2025 | 94-98% improvement |
 | Checkpoint Content Bleeding | ✅ RESOLVED | Oct 3, 2025 | 100% with event filtering |
 | Terminal Scrolling | ✅ RESOLVED | Oct 1, 2025 | 90%+ with restart |
 | Terminal Flickering | ✅ RESOLVED | Oct 1, 2025 | Fixed in beta |
@@ -94,6 +111,21 @@ Structured template for documenting terminal issues when handing off between AI 
 ---
 
 ## 🔧 **Common Solutions**
+
+### **Terminal Typing Lag** 🆕
+```typescript
+// File: /app/ide/page.tsx
+const terminalHistoryRef = useRef<string>('');
+
+const handleTerminalData = (data: string) => {
+  terminalHistoryRef.current += data; // No re-render!
+};
+
+// Pass callback instead of value
+<StatusBarCore
+  getTerminalHistory={() => terminalHistoryRef.current}
+/>
+```
 
 ### **Checkpoint Content Bleeding**
 ```typescript
@@ -157,4 +189,7 @@ If troubleshooting guides don't resolve critical issues:
 
 **💡 Remember**: Most issues are simpler than they appear. Try the basic fixes first!
 
-*Last Updated: October 1, 2025 | Documentation Version: 1.0*
+**🆕 Recent Updates**:
+- **Feb 2, 2025**: Added Terminal Typing Lag complete guide with React performance patterns
+
+*Last Updated: February 2, 2025 | Documentation Version: 1.1*
