@@ -23,20 +23,11 @@ interface Subscription {
 }
 
 class BillingService {
-  private stripe: Stripe;
+  private stripe: Stripe | null = null;
   private pool: Pool;
   private readonly PRICE_ID: string;
 
   constructor() {
-    const secretKey = process.env.STRIPE_SECRET_KEY;
-    if (!secretKey) {
-      throw new Error('STRIPE_SECRET_KEY environment variable is required');
-    }
-
-    this.stripe = new Stripe(secretKey, {
-      apiVersion: '2023-10-16',
-    });
-
     this.pool = new Pool({
       connectionString: process.env.DATABASE_URL,
       max: 20,
@@ -49,6 +40,22 @@ class BillingService {
     this.pool.on('error', (err) => {
       logger.error('Unexpected database pool error', err);
     });
+  }
+
+  private getStripe(): Stripe {
+    if (!this.stripe) {
+      const secretKey = process.env.STRIPE_SECRET_KEY;
+      if (!secretKey) {
+        logger.error('STRIPE_SECRET_KEY not found in environment variables');
+        logger.error('Available env vars:', Object.keys(process.env).filter(k => k.includes('STRIPE')));
+        throw new Error('STRIPE_SECRET_KEY environment variable is required');
+      }
+      this.stripe = new Stripe(secretKey, {
+        apiVersion: '2023-10-16',
+      });
+      logger.info('Stripe client initialized successfully');
+    }
+    return this.stripe;
   }
 
   /**
@@ -71,14 +78,14 @@ class BillingService {
       if (customerResult.rows.length > 0 && customerResult.rows[0].stripe_customer_id) {
         customerId = customerResult.rows[0].stripe_customer_id;
       } else {
-        const customer = await this.stripe.customers.create({
+        const customer = await this.getStripe().customers.create({
           email,
           metadata: { userId },
         });
         customerId = customer.id;
       }
 
-      const session = await this.stripe.checkout.sessions.create({
+      const session = await this.getStripe().checkout.sessions.create({
         customer: customerId,
         mode: 'subscription',
         payment_method_types: ['card'],
@@ -118,7 +125,7 @@ class BillingService {
    */
   async createSubscription(userId: string, email: string, paymentMethodId: string): Promise<Subscription> {
     try {
-      const customer = await this.stripe.customers.create({
+      const customer = await this.getStripe().customers.create({
         email,
         payment_method: paymentMethodId,
         invoice_settings: {
@@ -127,7 +134,7 @@ class BillingService {
         metadata: { userId },
       });
 
-      const subscription = await this.stripe.subscriptions.create({
+      const subscription = await this.getStripe().subscriptions.create({
         customer: customer.id,
         items: [{ price: this.PRICE_ID }],
         expand: ['latest_invoice.payment_intent'],
@@ -150,7 +157,7 @@ class BillingService {
    */
   async cancelSubscription(subscriptionId: string): Promise<void> {
     try {
-      await this.stripe.subscriptions.update(subscriptionId, {
+      await this.getStripe().subscriptions.update(subscriptionId, {
         cancel_at_period_end: true,
       });
 
@@ -212,13 +219,13 @@ class BillingService {
    */
   async updatePaymentMethod(subscriptionId: string, paymentMethodId: string): Promise<void> {
     try {
-      const subscription = await this.stripe.subscriptions.retrieve(subscriptionId);
+      const subscription = await this.getStripe().subscriptions.retrieve(subscriptionId);
 
-      await this.stripe.paymentMethods.attach(paymentMethodId, {
+      await this.getStripe().paymentMethods.attach(paymentMethodId, {
         customer: subscription.customer as string,
       });
 
-      await this.stripe.customers.update(subscription.customer as string, {
+      await this.getStripe().customers.update(subscription.customer as string, {
         invoice_settings: {
           default_payment_method: paymentMethodId,
         },
@@ -272,7 +279,7 @@ class BillingService {
       throw new Error('STRIPE_WEBHOOK_SECRET environment variable is required');
     }
 
-    return this.stripe.webhooks.constructEvent(payload, signature, webhookSecret);
+    return this.getStripe().webhooks.constructEvent(payload, signature, webhookSecret);
   }
 
   /**
