@@ -3,13 +3,10 @@
  * Handles $9/month Alpha subscriptions with 30-day free trial
  */
 
-import dotenv from 'dotenv';
 import Stripe from 'stripe';
 import { Pool } from 'pg';
 import { logger } from '../utils/logger';
 import { NotFoundError } from '../utils/error-handler';
-
-dotenv.config();
 
 interface Subscription {
   userId: string;
