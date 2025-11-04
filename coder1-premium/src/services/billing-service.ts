@@ -414,6 +414,12 @@ const getBillingService = (): BillingService => {
 // Proxy to lazy-load on first access
 export const billingService = new Proxy({} as BillingService, {
   get(target, prop) {
-    return (getBillingService() as any)[prop];
+    const instance = getBillingService();
+    const value = (instance as any)[prop];
+    // If it's a function, bind it to the instance to preserve 'this' context
+    if (typeof value === 'function') {
+      return value.bind(instance);
+    }
+    return value;
   }
 });
