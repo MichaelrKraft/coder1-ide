@@ -30,7 +30,7 @@ export async function GET(
   };
   
   const actualFilename = fileMap[filename];
-  const filePath = path.join(process.cwd(), 'coder1-bridge', 'dist', actualFilename);
+  const filePath = path.join(process.cwd(), 'public', 'downloads', actualFilename);
   
   // Check if file exists
   if (!fs.existsSync(filePath)) {
