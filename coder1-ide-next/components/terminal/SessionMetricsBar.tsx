@@ -23,6 +23,11 @@ export default function SessionMetricsBar({
   isProcessing = false,
   claudeActive = false 
 }: SessionMetricsBarProps) {
+  // Debug: Log claudeActive changes
+  React.useEffect(() => {
+    console.log('📊 [SessionMetricsBar] claudeActive changed:', claudeActive);
+  }, [claudeActive]);
+  
   const [metrics, setMetrics] = useState<SessionMetrics>({
     sessionDuration: 0,
     totalTokens: { input: 0, output: 0 },
@@ -84,11 +89,11 @@ export default function SessionMetricsBar({
       }
     };
 
+    // 🔇 DISABLED: Aggressive polling causing second question freeze (Feb 1, 2025)
     // Fetch immediately and then every 5 seconds for real-time updates
-    fetchMetrics();
-    const interval = setInterval(fetchMetrics, 5000);
-
-    return () => clearInterval(interval);
+    // fetchMetrics();
+    // const interval = setInterval(fetchMetrics, 5000);
+    // return () => clearInterval(interval);
   }, [sessionId, lastUpdateTime]);
 
   // Format duration as HH:MM:SS
@@ -175,7 +180,7 @@ export default function SessionMetricsBar({
         {claudeActive && (
           <div className="flex items-center gap-1.5">
             <Activity className="w-3.5 h-3.5 text-orange-500 animate-pulse" />
-            <span className="text-orange-500 animate-pulse">Processing...</span>
+            <span className="text-orange-500 font-medium animate-pulse">🤖 Claude is thinking...</span>
           </div>
         )}
       </div>

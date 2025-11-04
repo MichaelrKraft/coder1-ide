@@ -45,6 +45,7 @@ interface TerminalContainerProps {
   onTerminalCommand?: (command: string) => void;
   onTerminalReady?: (sessionId: any, ready: any) => void;
   onComposerVisibilityChange?: (visible: boolean) => void;
+  onClaudeActiveChange?: (active: boolean) => void; // 🔧 FIX (Feb 1, 2025): Pass through to Terminal
   restoredTerminalHistory?: string | null;
   restoredSessionId?: string | null;
 }
@@ -57,6 +58,7 @@ export default function TerminalContainer({
   onTerminalCommand,
   onTerminalReady,
   onComposerVisibilityChange,
+  onClaudeActiveChange,
   restoredTerminalHistory,
   restoredSessionId
 }: TerminalContainerProps) {
@@ -531,6 +533,7 @@ export default function TerminalContainer({
             onTerminalCommand={onTerminalCommand}
             onTerminalReady={onTerminalReady}
             onComposerVisibilityChange={onComposerVisibilityChange}
+            onClaudeActiveChange={onClaudeActiveChange}
             isVisible={activeSessionId === 'main'}
             restoredHistory={restoredTerminalHistory}
             restoredSessionId={restoredSessionId}
@@ -549,6 +552,7 @@ export default function TerminalContainer({
               onTerminalCommand={onTerminalCommand}
               onTerminalReady={onTerminalReady}
               onComposerVisibilityChange={onComposerVisibilityChange}
+              onClaudeActiveChange={onClaudeActiveChange}
               sandboxMode={true}
               sandboxSession={sandboxSession}
               isVisible={activeSessionId === 'sandbox'}
@@ -571,6 +575,7 @@ export default function TerminalContainer({
               onTerminalCommand={onTerminalCommand}
               onTerminalReady={onTerminalReady}
               onComposerVisibilityChange={onComposerVisibilityChange}
+              onClaudeActiveChange={onClaudeActiveChange}
               sandboxMode={false} // Phase 2: Enable interactive mode for agent terminals
               agentMode={true} // New prop to indicate this is an agent terminal
               agentSession={{

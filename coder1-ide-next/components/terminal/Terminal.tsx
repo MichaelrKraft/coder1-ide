@@ -36,6 +36,7 @@ import { terminalCommandHandler } from '@/lib/terminal-commands';
 import { debounce } from '@/lib/debounce';
 import { RateLimitDetector } from '@/lib/rate-limit-detector';
 import { TerminalModeManager } from '@/lib/terminal-mode-manager';
+import { devLog, devWarn, perfLog } from '@/lib/dev-logger'; // Performance: disable logs in production
 // import EnhancedStatusline from '@/components/statusline/EnhancedStatusline'; // Temporarily disabled for debugging
 import StagedComposer from './StagedComposer';
 import SessionMetricsBar from './SessionMetricsBar';
@@ -78,6 +79,7 @@ interface TerminalProps {
   onTerminalCommand?: (command: string) => void;
   onTerminalReady?: (sessionId: string | null, ready: boolean) => void;
   onComposerVisibilityChange?: (visible: boolean) => void;
+  onClaudeActiveChange?: (active: boolean) => void; // 🔧 FIX (Feb 1, 2025): Notify parent when Claude starts/stops responding
   sandboxMode?: boolean;
   sandboxSession?: {
     id: string;
@@ -114,7 +116,7 @@ interface TerminalProps {
  * 
  * DO NOT MODIFY button positioning without checking original
  */
-export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped, onTerminalData, onTerminalCommand, onTerminalReady, onComposerVisibilityChange, sandboxMode = false, sandboxSession, agentMode = false, agentSession, isVisible = true, restoredHistory = null, restoredSessionId = null }: TerminalProps) {
+export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped, onTerminalData, onTerminalCommand, onTerminalReady, onComposerVisibilityChange, onClaudeActiveChange, sandboxMode = false, sandboxSession, agentMode = false, agentSession, isVisible = true, restoredHistory = null, restoredSessionId = null }: TerminalProps) {
   // REMOVED: // REMOVED: console.log('🖥️ Terminal component rendering...');
   const terminalRef = useRef<HTMLDivElement>(null);
   const xtermRef = useRef<XTerm | null>(null);
@@ -143,8 +145,18 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
   const lineBufferRef = useRef<string>(''); // Sync ref for currentLineBuffer state (avoids React timing issues)
   
   // GLM Integration: Rate limit detection and mode management
-  const rateLimitDetectorRef = useRef<RateLimitDetector>(new RateLimitDetector());
-  const modeManagerRef = useRef<TerminalModeManager>(new TerminalModeManager());
+  // ⚡ CRITICAL PERFORMANCE FIX (Feb 2, 2025): Initialize ONCE, not on every render
+  // Previous: new RateLimitDetector() ran on EVERY render, creating new instances
+  // Result: Progressive lag as Terminal re-renders accumulate overhead
+  const rateLimitDetectorRef = useRef<RateLimitDetector | null>(null);
+  if (!rateLimitDetectorRef.current) {
+    rateLimitDetectorRef.current = new RateLimitDetector();
+  }
+  
+  const modeManagerRef = useRef<TerminalModeManager | null>(null);
+  if (!modeManagerRef.current) {
+    modeManagerRef.current = new TerminalModeManager();
+  }
   
   // 🎯 CRITICAL FIX (Oct 28, 2025): Store Socket.IO handler refs for proper cleanup
   // Without this, socket.off() removes ALL listeners including ones from new component instances
@@ -229,9 +241,28 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
   const [recognition, setRecognition] = useState<any | null>(null);
   const [claudeActive, setClaudeActive] = useState(false);
   const claudeActivityTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const claudeActivityStartedRef = useRef(false); // ⚡ Prevent repeated setState during same response (Feb 2, 2025)
+  const lastDataRef = useRef<{data: string, timestamp: number} | null>(null);
+  
   const [commandHistory, setCommandHistory] = useState<string[]>([]);
   const [currentCommand, setCurrentCommand] = useState('');
   const [conversationMode, setConversationMode] = useState(false);
+
+  // 🔧 FIX (Feb 1, 2025): Notify parent when Claude active state changes
+  // This allows parent to skip expensive regex processing in contextual memory
+  useEffect(() => {
+    onClaudeActiveChange?.(claudeActive);
+  }, [claudeActive, onClaudeActiveChange]);
+
+  // 🎨 UX FIX (Feb 1, 2025): Show "thinking" message when Claude becomes active
+  // This gives users visual feedback that something is happening during response delays
+  useEffect(() => {
+    if (claudeActive && xtermRef.current && conversationMode) {
+      const term = xtermRef.current;
+      // Write thinking message to terminal - only in conversation mode
+      term.write('\r\n\x1b[38;5;39m⏳ Claude is processing your request...\x1b[0m\r\n');
+    }
+  }, [claudeActive, conversationMode]);
   const [sessionTokens, setSessionTokens] = useState(0);
   const [currentFile, setCurrentFile] = useState<string | null>(null);
   const [totalTokens, setTotalTokens] = useState(0);
@@ -459,18 +490,25 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
     }
   }, []);
 
-  // Fetch context stats on mount and set up interval
+  // Fetch context stats on mount ONLY (no interval to prevent re-renders)
+  // ⚡ PERFORMANCE FIX (Feb 2, 2025): Disabled interval polling
+  // Previous: setInterval → setState every 60s → re-render → new TerminalModeManager
+  // Result: Progressive lag as intervals accumulate overhead
   useEffect(() => {
     console.log('🔍 Terminal: Component mounted, calling fetchContextStats...');
-    fetchContextStats();
-    const statsInterval = setInterval(() => {
-      console.log('🔍 Terminal: Interval fetchContextStats...');
-      fetchContextStats();
-    }, 60000); // Update every 60 seconds
+    fetchContextStats(); // Fetch once on mount
     
-    return () => {
-      clearInterval(statsInterval);
-    };
+    // DISABLED: Interval polling causes unnecessary re-renders
+    // If stats need updating, trigger fetch manually or use WebSocket push instead of polling
+    
+    // const statsInterval = setInterval(() => {
+    //   console.log('🔍 Terminal: Interval fetchContextStats...');
+    //   fetchContextStats();
+    // }, 60000);
+    // 
+    // return () => {
+    //   clearInterval(statsInterval);
+    // };
   }, []);
 
   // Initialize console capture service explicitly
@@ -794,6 +832,11 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
   const outputBufferRef = useRef<string[]>([]);
   const outputFlushTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const writeRAFRef = useRef<number | null>(null);
+  const rafBatchBufferRef = useRef<string>(''); // RAF batching buffer for performance (Feb 2, 2025)
+  const lastLocalStorageSaveRef = useRef<number>(0); // Track last localStorage save time for throttling
+  const lastBufferLengthRef = useRef<number>(0); // Track buffer length to optimize scroll logic
+  const lastFlushTimeRef = useRef<number>(Date.now()); // Track last flush time to detect idle periods
+  const lastDataSizeRef = useRef<number>(0); // Track data chunk size to skip scroll on keystroke echoes (Feb 2, 2025)
 
   // Refit terminal when status line is toggled
   useEffect(() => {
@@ -988,8 +1031,9 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
         writeRAFRef.current = null;
       }
       
-      // Clear output buffer
+      // Clear output buffers
       outputBufferRef.current = [];
+      rafBatchBufferRef.current = ''; // Clear RAF batch buffer (Feb 2, 2025)
       
       // Dispose of onData handler
       if (onDataDisposableRef.current) {
@@ -1086,7 +1130,7 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
           cursorStyle: 'block',
           allowProposedApi: true, // Add this to prevent API warnings
           // Performance optimizations and scrolling configuration
-          scrollback: 10000, // Limit scrollback buffer
+          scrollback: 1000, // Optimal balance: ~7-10 questions visible, fast performance (Feb 2, 2025)
           fastScrollModifier: 'ctrl', // Enable fast scrolling with Ctrl key
           smoothScrollDuration: 0, // Disable smooth scrolling animations
           scrollOnUserInput: true,
@@ -1731,8 +1775,11 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
           }
         };
         
-        // Set up scroll interval - reduced frequency for better performance
-        scrollCheckIntervalRef.current = setInterval(checkScrollPosition, 500); // Reduced to 500ms to prevent aggressive scrolling
+        // ⚡ PERFORMANCE FIX (Feb 2, 2025): DISABLED scroll check interval
+        // Root cause of progressive lag: This ran every 500ms, accessing term.buffer
+        // After 5 mins = 600 executions × buffer access = cumulative lag
+        // Scroll detection now handled by scroll events, not polling
+        // scrollCheckIntervalRef.current = setInterval(checkScrollPosition, 500);
 
         // Handle resize
         const resizeObserver = new ResizeObserver(() => {
@@ -1793,8 +1840,9 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
               cancelAnimationFrame(writeRAFRef.current);
               writeRAFRef.current = null;
             }
-            // Clear any pending buffer
+            // Clear any pending buffers
             outputBufferRef.current = [];
+            rafBatchBufferRef.current = ''; // Clear RAF batch buffer (Feb 2, 2025)
             // Dispose of onData handler
             if (onDataDisposableRef.current) {
               onDataDisposableRef.current.dispose();
@@ -1986,6 +2034,26 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
         }
         if (socketHandlersRef.current.terminalExit) {
           socketRef.current.off('terminal:exit', socketHandlersRef.current.terminalExit);
+        }
+        // ⚡ PERFORMANCE FIX (Feb 2, 2025): Cleanup accumulating socket handlers
+        // These handlers were added in connectToBackend() without cleanup, causing progressive lag
+        if (socketHandlersRef.current.terminalCreatedConfirmation) {
+          socketRef.current.off('terminal:created', socketHandlersRef.current.terminalCreatedConfirmation);
+        }
+        if (socketHandlersRef.current.claudeOutput) {
+          socketRef.current.off('claude:output', socketHandlersRef.current.claudeOutput);
+        }
+        if (socketHandlersRef.current.claudeSessionComplete) {
+          socketRef.current.off('claude:sessionComplete', socketHandlersRef.current.claudeSessionComplete);
+        }
+        if (socketHandlersRef.current.claudeError) {
+          socketRef.current.off('claude:error', socketHandlersRef.current.claudeError);
+        }
+        if (socketHandlersRef.current.aiTeamProgress) {
+          socketRef.current.off('ai-team:progress', socketHandlersRef.current.aiTeamProgress);
+        }
+        if (socketHandlersRef.current.aiTeamComplete) {
+          socketRef.current.off('ai-team:complete', socketHandlersRef.current.aiTeamComplete);
         }
         
         // 🔒 CRITICAL FIX (Oct 28, 2025): Disconnect socket on unmount
@@ -2932,7 +3000,7 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
       const sessionMatch = id === clientSessionId;
       
       console.log('═══════════════════════════════════════════════════════');
-      console.log('🔍 [CLIENT] terminal:history EVENT RECEIVED');
+      devLog('🔍 [CLIENT] terminal:history EVENT RECEIVED');
       console.log(`⏰ Timestamp: ${timestamp}`);
       console.log(`📥 Server sent session ID: "${id}"`);
       console.log(`💻 Client expects session ID: "${clientSessionId}"`);
@@ -3053,7 +3121,7 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
     
     // 🚨 DIAGNOSTIC LOGGING - Event Listener Registration
     console.log('═══════════════════════════════════════════════════════');
-    console.log('🎯 [CLIENT] Registering terminal:history event listener');
+    devLog('🎯 [CLIENT] Registering terminal:history event listener');
     console.log(`🆔 For session ID: "${sessionIdForVoiceRef.current}"`);
     console.log(`⏰ Registration time: ${new Date().toISOString()}`);
     console.log('═══════════════════════════════════════════════════════');
@@ -3061,12 +3129,12 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
     // Register new listener
     socket.on('terminal:history', terminalHistoryHandler);
     
-    console.log('✅ [CLIENT] terminal:history listener registered');
+    devLog('✅ [CLIENT] terminal:history listener registered');
 
     // Join the terminal session
     // 🚨 DIAGNOSTIC LOGGING - terminal:create Emission
     console.log('═══════════════════════════════════════════════════════');
-    console.log('📤 [CLIENT] About to emit terminal:create');
+    devLog('📤 [CLIENT] About to emit terminal:create');
     console.log(`🆔 Session ID: "${sessionId}"`);
     console.log(`⏰ Emission time: ${new Date().toISOString()}`);
     console.log('═══════════════════════════════════════════════════════');
@@ -3075,23 +3143,53 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
     // Let the server generate one if we don't have a valid ID
     if (sessionId && sessionId !== 'undefined' && sessionId !== 'null') {
       socket.emit('terminal:create', { id: sessionId });
-      console.log('✅ [CLIENT] terminal:create emitted with session ID');
+      devLog('✅ [CLIENT] terminal:create emitted with session ID');
     } else {
-      console.log('⚠️ No valid session ID, letting server generate one');
+      devLog('⚠️ No valid session ID, letting server generate one');
       socket.emit('terminal:create', {}); // Let server generate ID
-      console.log('✅ [CLIENT] terminal:create emitted (server will generate ID)');
+      devLog('✅ [CLIENT] terminal:create emitted (server will generate ID)');
     }
 
     // Flush buffered output to terminal (performance optimization)
     const flushOutput = () => {
+      // 🔍 PERFORMANCE DIAGNOSTIC (Added for lag investigation)
+      const flushStart = typeof performance !== 'undefined' ? performance.now() : Date.now();
+      
       if (outputBufferRef.current.length > 0 && term) {
         const output = outputBufferRef.current.join('');
         outputBufferRef.current = [];
-        term.write(output);
+        
+        // ⚡ PERFORMANCE FIX (Feb 2, 2025): RAF batching to reduce expensive term.write() calls
+        // On large buffers (800+ lines), term.write() takes 50-100ms per call
+        // Batching at 60fps (16ms) reduces writes from N per keystroke to 1 per frame
+        rafBatchBufferRef.current += output;
+        
+        if (!writeRAFRef.current) {
+          writeRAFRef.current = requestAnimationFrame(() => {
+            if (term && rafBatchBufferRef.current) {
+              const writeStart = performance.now();
+              term.write(rafBatchBufferRef.current);
+              const writeEnd = performance.now();
+              
+              // Diagnostic: warn if write is slow (helps identify performance issues)
+              if (writeEnd - writeStart > 20) {
+                console.warn(`⚠️ Slow term.write: ${(writeEnd - writeStart).toFixed(2)}ms for ${rafBatchBufferRef.current.length} chars on ${term.buffer?.active?.length || 0} line buffer`);
+              }
+              
+              rafBatchBufferRef.current = '';
+            }
+            writeRAFRef.current = null;
+          });
+        }
         
         // 🔒 CRITICAL FIX (Oct 28, 2025): Save terminal content to localStorage incrementally
+        // ⚡ PERFORMANCE FIX (Feb 1, 2025): Only save after 3 seconds idle to prevent lag during typing
+        // 🐛 BUG FIX (Feb 1, 2025): Calculate idle time BEFORE updating lastFlushTimeRef
         // This ensures history persists even if navigation happens mid-conversation
-        if (typeof window !== 'undefined' && term.buffer && term.buffer.active) {
+        const now = Date.now();
+        const timeSinceLastFlush = now - lastFlushTimeRef.current;
+        
+        if (typeof window !== 'undefined' && term.buffer && term.buffer.active && timeSinceLastFlush >= 3000) {
           try {
             const storageKey = sandboxMode && sandboxSession 
               ? `sandboxTerminalHistory_${sandboxSession.id}`
@@ -3108,15 +3206,19 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
             }
             const currentContent = lines.join('\n');
             
-            // Save to localStorage (throttled by flushOutput timing)
+            // Save to localStorage (only during 3s+ idle periods)
             if (currentContent && currentContent.length > 10) {
               localStorage.setItem(storageKey, currentContent);
-              console.log(`💾 [INCREMENTAL SAVE] Saved ${currentContent.length} chars to ${storageKey}`);
+              lastLocalStorageSaveRef.current = now;
+              perfLog(`💾 [INCREMENTAL SAVE] Saved ${currentContent.length} chars to ${storageKey}`);
             }
           } catch (e) {
             console.error('❌ Failed to save terminal history:', e);
           }
         }
+        
+        // Track flush time for idle detection (AFTER checking idle state)
+        lastFlushTimeRef.current = Date.now();
         
         // 🔧 FIX: Skip auto-scroll during initial load to keep header visible
         if (!initialLoadComplete.current) {
@@ -3125,48 +3227,47 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
         }
         
         // ENHANCED Auto-scroll for Claude Code accessibility - AGGRESSIVE scrolling during active sessions
-        if (claudeActive) {
-          // Aggressive scrolling for Claude Code sessions - use multiple methods
-          try {
-            // Immediate scroll attempt
-            term.scrollToBottom();
-            
-            // Container-level scroll (critical for Claude Code prompt access)
-            const terminalContainer = terminalRef.current?.parentElement;
-            if (terminalContainer) {
-              terminalContainer.scrollTop = terminalContainer.scrollHeight;
-            }
-            
-            // Multiple delayed attempts to ensure scrolling during active output
-            [5, 15, 50, 100].forEach(delay => {
-              setTimeout(() => {
-                if (term && claudeActive) {
-                  try {
-                    const buffer = term.buffer.active;
-                    term.scrollToLine(buffer.length);
-                    
-                    // Force viewport scroll
-                    const terminalElement = terminalRef.current;
-                    if (terminalElement) {
-                      const viewport = terminalElement.querySelector('.xterm-viewport');
-                      if (viewport) {
-                        viewport.scrollTop = viewport.scrollHeight;
-                      }
-                      
-                      // Also force parent container scroll
-                      const parent = terminalElement.parentElement;
-                      if (parent) {
-                        parent.scrollTop = parent.scrollHeight;
-                      }
-                    }
-                  } catch (e) {
-                    console.warn(`Aggressive scroll attempt ${delay}ms failed:`, e);
+        // ⚡ PERFORMANCE FIX (Feb 1, 2025): Only run expensive scroll logic when buffer grows
+        // ⚡ PERFORMANCE FIX (Feb 2, 2025): Skip scroll logic entirely for keystroke echoes (data.length <= 10)
+        if (claudeActive && lastDataSizeRef.current > 10) {
+          const currentBufferLength = term.buffer?.active?.length || 0;
+          const bufferGrew = currentBufferLength > lastBufferLengthRef.current;
+          lastBufferLengthRef.current = currentBufferLength;
+          
+          // Only do aggressive scrolling when new content is added
+          if (bufferGrew) {
+            // ⚡ PERFORMANCE FIX (Feb 2, 2025): Use RAF instead of 4 setTimeout calls
+            // Previous: Created 200+ pending timers during long Claude responses
+            // Result: Event loop blocked, causing input lag after 5+ questions
+            // Solution: Single RAF synced with browser paint, no timer accumulation
+            requestAnimationFrame(() => {
+              if (term && claudeActive) {
+                try {
+                  // Scroll terminal to bottom
+                  term.scrollToBottom();
+                  
+                  // Scroll container (critical for Claude Code prompt access)
+                  const terminalContainer = terminalRef.current?.parentElement;
+                  if (terminalContainer) {
+                    terminalContainer.scrollTop = terminalContainer.scrollHeight;
                   }
+                  
+                  // Force viewport scroll for deep content
+                  const terminalElement = terminalRef.current;
+                  if (terminalElement) {
+                    const viewport = terminalElement.querySelector('.xterm-viewport');
+                    if (viewport) {
+                      viewport.scrollTop = viewport.scrollHeight;
+                    }
+                  }
+                } catch (e) {
+                  console.warn('RAF scroll failed:', e);
                 }
-              }, delay);
+              }
             });
-          } catch (error) {
-            console.warn('Enhanced Claude Code scroll failed:', error);
+          } else {
+            // Buffer didn't grow - just do simple scroll
+            term.scrollToBottom();
           }
         } else {
           // Smart auto-scroll logic for non-Claude sessions
@@ -3195,11 +3296,19 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
           }
         }
       }
+      
+      // 🔍 PERFORMANCE DIAGNOSTIC: Log flush timing
+      const flushDuration = (typeof performance !== 'undefined' ? performance.now() : Date.now()) - flushStart;
+      if (flushDuration > 5) {
+        console.warn(`⚠️ Slow flush detected: ${flushDuration.toFixed(2)}ms (buffer size: ${term?.buffer?.active?.length || 0} lines)`);
+      }
+      
       outputFlushTimeoutRef.current = null;
     };
 
     // 🧠 CONTEXTUAL MEMORY FIX: Handle commands from server for contextual memory
-    const terminalCommandHandler = ({ id, command }: { id: string; command: string }) => {
+    // ⚡ FIX (Feb 2, 2025): Renamed to avoid shadowing imported terminalCommandHandler singleton
+    const terminalCommandSocketHandler = ({ id, command }: { id: string; command: string }) => {
       if (id === sessionIdForVoiceRef.current) {
         console.log('🧠 [CLIENT] Received command from server for contextual memory:', command);
         if (onTerminalCommand) {
@@ -3213,8 +3322,8 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
     if (socketHandlersRef.current.terminalCommand) {
       socket.off('terminal:command', socketHandlersRef.current.terminalCommand);
     }
-    socketHandlersRef.current.terminalCommand = terminalCommandHandler;
-    socket.on('terminal:command', terminalCommandHandler);
+    socketHandlersRef.current.terminalCommand = terminalCommandSocketHandler;
+    socket.on('terminal:command', terminalCommandSocketHandler);
 
     // NOTE: terminal:history listener registered earlier (before socket.emit) to avoid race condition
     
@@ -3222,11 +3331,29 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
     const terminalDataHandler = ({ id, data }: { id: string; data: string }) => {
       // Use the ref which gets updated immediately when session is created
       if (id === sessionIdForVoiceRef.current && term) {
+        // 🔧 FIX (Feb 1, 2025): Deduplicate rapid duplicate data packets
+        // Prevents repeating status lines when socket sends same data multiple times
+        // ONLY dedupe large chunks (>50 chars) to avoid breaking backspace/cursor movements
+        const now = Date.now();
+        if (data.length > 50 && lastDataRef.current && 
+            lastDataRef.current.data === data && 
+            (now - lastDataRef.current.timestamp) < 50) {
+          // Same large data chunk within 50ms - likely duplicate, skip it
+          return;
+        }
+        if (data.length > 50) {
+          lastDataRef.current = { data, timestamp: now };
+        }
+        
         // Buffer the output for performance
         outputBufferRef.current.push(data);
+        lastDataSizeRef.current = data.length; // Track chunk size for scroll optimization (Feb 2, 2025)
         
         // GLM Integration: Check for rate limit indicators
-        const rateLimitEvent = rateLimitDetectorRef.current.detectRateLimit(data);
+        // ⚡ PERFORMANCE FIX (Feb 1, 2025): Skip expensive rate limit detection for small data chunks
+        const rateLimitEvent = data.length > 20 
+          ? rateLimitDetectorRef.current.detectRateLimit(data)
+          : { detected: false, reason: '', timestamp: new Date(), suggestGLM: false, severity: 'warning' as const };
         if (rateLimitEvent.detected && rateLimitEvent.suggestGLM) {
           // Show toast with action buttons (using ToastAction interface)
           const cooldownMinutes = rateLimitDetectorRef.current.estimateCooldownMinutes();
@@ -3308,39 +3435,37 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
         
         // Detect Claude activity based on output patterns
         // Claude outputs typically have certain patterns or continuous streams
-        if (data.length > 20 || data.includes('```') || data.includes('I\'ll') || data.includes('Let me')) {
-          setClaudeActive(true);
+        // Skip expensive pattern matching for single characters (keystroke echoes)
+        if (data.length > 3 && (data.includes('```') || data.includes('I\'ll') || data.includes('Let me') || data.includes('I can') || data.includes('Here'))) {
+          // ⚡ PERFORMANCE FIX (Feb 2, 2025): Only call setState ONCE per Claude response
+          // Previous: Called 50-100 times during response → 50-100 React re-renders
+          // Result: Progressive lag as component tree complexity grows
+          // Solution: Track if we already started, only setState on first detection
+          if (!claudeActivityStartedRef.current) {
+            setClaudeActive(true);
+            claudeActivityStartedRef.current = true;
+          }
           
-          // Estimate and track token usage for Claude responses
-          // This is a rough estimate: ~1 token per 4 characters
-          const estimatedTokens = Math.ceil(data.length / 4);
-          
-          // Update token usage in the IDE store
-          const store = useIDEStore.getState();
-          const currentUsage = store.aiState?.tokenUsage || { input: 0, output: 0, total: 0 };
-          
-          // Assume Claude responses are output tokens
-          // Input tokens would be from user commands (tracked separately)
-          store.updateTokenUsage({
-            input: currentUsage.input,
-            output: currentUsage.output + estimatedTokens,
-            total: currentUsage.total + estimatedTokens
-          });
-          
-          // Clear existing activity timeout
+          // 🔧 FIX (Feb 1, 2025): Auto-reset claudeActive after Claude finishes responding
+          // Clear any existing timeout and set a new one
           if (claudeActivityTimeoutRef.current) {
             clearTimeout(claudeActivityTimeoutRef.current);
           }
-          
-          // Set new timeout - consider Claude inactive after 2 seconds of no output
           claudeActivityTimeoutRef.current = setTimeout(() => {
             setClaudeActive(false);
-          }, 2000);
+            claudeActivityStartedRef.current = false; // Reset for next response
+            console.log('🔄 Claude activity timeout - reset claudeActive to false');
+          }, 3000); // Reset after 3 seconds of no Claude output
+          
+          // ⚡ PERFORMANCE FIX (Feb 2, 2025): Removed store.updateTokenUsage() from hot path
+          // This was triggering Zustand subscribers 50-100 times per response
+          // TODO: Move token counting to end of response or debounce updates
         }
         
         // Simplified flush: Always flush quickly for responsiveness
-        // Use a very short timeout to batch rapid updates
-        outputFlushTimeoutRef.current = setTimeout(flushOutput, 10);
+        // ⚡ PERFORMANCE FIX (Feb 1, 2025): Instant flush for single chars, 10ms for batching larger chunks
+        const flushDelay = data.length <= 3 ? 0 : 10;
+        outputFlushTimeoutRef.current = setTimeout(flushOutput, flushDelay);
         
         // Check if we should display statusline after command completion
         if (terminalSettings.statusLine.enabled && data.includes('\n')) {
@@ -3432,8 +3557,11 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
     socketHandlersRef.current.terminalData = terminalDataHandler;
     socket.on('terminal:data', terminalDataHandler);
 
-    // Handle terminal creation confirmation
-    socket.on('terminal:created', ({ id }: { id: string }) => {
+    // Handle terminal creation confirmation (connection-specific logic)
+    // ⚡ PERFORMANCE FIX (Feb 2, 2025): Convert to named handler with socketHandlersRef storage
+    // Previous: Anonymous handler accumulated on every connectToBackend() call
+    // Result: 5 reconnections = 5x duplicate handlers = progressive lag
+    const terminalCreatedConfirmationHandler = ({ id }: { id: string }) => {
       if (id === sessionId) {
         // REMOVED: // REMOVED: console.log('✅ Terminal connected to Express backend');
         setIsConnected(true);
@@ -3539,7 +3667,12 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
           processInputBuffer();
         }
       }
-    });
+    };
+    if (socketHandlersRef.current.terminalCreatedConfirmation) {
+      socket.off('terminal:created', socketHandlersRef.current.terminalCreatedConfirmation);
+    }
+    socketHandlersRef.current.terminalCreatedConfirmation = terminalCreatedConfirmationHandler;
+    socket.on('terminal:created', terminalCreatedConfirmationHandler);
 
     // Handle errors
     const terminalErrorHandler = ({ message }: { message: string }) => {
@@ -3555,13 +3688,20 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
     socket.on('terminal:error', terminalErrorHandler);
 
     // Handle Claude session events
-    socket.on('claude:output', ({ sessionId: claudeSessionId, data }: { sessionId: string; data: string }) => {
+    // ⚡ PERFORMANCE FIX (Feb 2, 2025): Convert to named handler with socketHandlersRef storage
+    const claudeOutputHandler = ({ sessionId: claudeSessionId, data }: { sessionId: string; data: string }) => {
       if (term) {
         term.write(data);
       }
-    });
+    };
+    if (socketHandlersRef.current.claudeOutput) {
+      socket.off('claude:output', socketHandlersRef.current.claudeOutput);
+    }
+    socketHandlersRef.current.claudeOutput = claudeOutputHandler;
+    socket.on('claude:output', claudeOutputHandler);
 
-    socket.on('claude:sessionComplete', ({ sessionId: claudeSessionId, duration }: { sessionId: string; duration: number }) => {
+    // ⚡ PERFORMANCE FIX (Feb 2, 2025): Convert to named handler with socketHandlersRef storage
+    const claudeSessionCompleteHandler = ({ sessionId: claudeSessionId, duration }: { sessionId: string; duration: number }) => {
       if (term) {
         term.writeln(`\r\n✅ Claude session completed in ${(duration / 1000).toFixed(2)}s`);
         
@@ -3594,31 +3734,54 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
       }
       setClaudeActive(false);
       setConversationMode(false);
-    });
+    };
+    if (socketHandlersRef.current.claudeSessionComplete) {
+      socket.off('claude:sessionComplete', socketHandlersRef.current.claudeSessionComplete);
+    }
+    socketHandlersRef.current.claudeSessionComplete = claudeSessionCompleteHandler;
+    socket.on('claude:sessionComplete', claudeSessionCompleteHandler);
 
-    socket.on('claude:error', ({ message }: { message: string }) => {
+    // ⚡ PERFORMANCE FIX (Feb 2, 2025): Convert to named handler with socketHandlersRef storage
+    const claudeErrorHandler = ({ message }: { message: string }) => {
       if (term) {
         term.writeln(`\r\n❌ Claude Error: ${message}`);
       }
-    });
+    };
+    if (socketHandlersRef.current.claudeError) {
+      socket.off('claude:error', socketHandlersRef.current.claudeError);
+    }
+    socketHandlersRef.current.claudeError = claudeErrorHandler;
+    socket.on('claude:error', claudeErrorHandler);
 
     // Handle AI Team progress updates
-    socket.on('ai-team:progress', (data: any) => {
+    // ⚡ PERFORMANCE FIX (Feb 2, 2025): Convert to named handler with socketHandlersRef storage
+    const aiTeamProgressHandler = (data: any) => {
       if (term && data.agent) {
         // Clear current line and write progress update
         term.write('\r\x1b[K'); // Clear current line
         term.writeln(`[${data.agent.name}] ${data.agent.currentTask} (${data.agent.progress}%)`);
         term.write('$ '); // Restore prompt
       }
-    });
+    };
+    if (socketHandlersRef.current.aiTeamProgress) {
+      socket.off('ai-team:progress', socketHandlersRef.current.aiTeamProgress);
+    }
+    socketHandlersRef.current.aiTeamProgress = aiTeamProgressHandler;
+    socket.on('ai-team:progress', aiTeamProgressHandler);
 
     // Handle AI Team completion
-    socket.on('ai-team:complete', (data: any) => {
+    // ⚡ PERFORMANCE FIX (Feb 2, 2025): Convert to named handler with socketHandlersRef storage
+    const aiTeamCompleteHandler = (data: any) => {
       if (term) {
         term.writeln(`\r\n✅ AI Team completed! Generated ${data.filesCount || 0} files`);
         term.write('$ ');
       }
-    });
+    };
+    if (socketHandlersRef.current.aiTeamComplete) {
+      socket.off('ai-team:complete', socketHandlersRef.current.aiTeamComplete);
+    }
+    socketHandlersRef.current.aiTeamComplete = aiTeamCompleteHandler;
+    socket.on('ai-team:complete', aiTeamCompleteHandler);
 
     // Set up terminal input handling - send to backend
     // Skip in sandbox mode - it's read-only (but allow agent terminals)
@@ -3671,7 +3834,7 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
       }
       
       // Send input to backend via Socket.IO with current session ID
-      console.log('📤 Sending terminal input for session:', currentSessionId);
+      // ⚡ PERFORMANCE FIX (Feb 2, 2025): Removed console.log from keystroke path (accumulates console memory)
       
       // Route through mode manager for Gemini/GLM, direct socket for Claude
       const modeManager = modeManagerRef.current;
@@ -3746,16 +3909,25 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
       
       // Track current line buffer for command history
       if (data === '\r') {
-        // 🔍 SIMPLE DEBUG: Only log Enter key events
-        if (currentLineBuffer.trim()) {
-          console.log('🎯 [ENTER-KEY] Command typed:', currentLineBuffer.trim());
-        } else {
-          console.log('🎯 [ENTER-KEY] Enter pressed but no command typed');
+        // 🔧 FIX (Feb 1, 2025): Set claudeActive TRUE when Enter is pressed
+        // This allows contextual memory to skip regex processing BEFORE Claude responds
+        console.log('🎯 [CLAUDE-ACTIVE] Setting claudeActive = true (Enter pressed)');
+        setClaudeActive(true);
+        
+        // 🔧 FIX (Feb 1, 2025): Auto-reset claudeActive after 5 seconds if no response
+        // This prevents claudeActive from staying stuck at true
+        if (claudeActivityTimeoutRef.current) {
+          clearTimeout(claudeActivityTimeoutRef.current);
         }
+        claudeActivityTimeoutRef.current = setTimeout(() => {
+          console.log('🔄 Claude activity timeout (Enter) - reset claudeActive to false');
+          setClaudeActive(false);
+        }, 5000); // Reset after 5 seconds if no Claude output detected
         
         // Enter pressed - command was sent
-        if (currentLineBuffer.trim()) {
-          const command = currentLineBuffer.trim();
+        // ⚡ PERFORMANCE FIX (Feb 2, 2025): Read from ref instead of state (no setState on keystrokes)
+        if (lineBufferRef.current.trim()) {
+          const command = lineBufferRef.current.trim();
           console.log('🔍 [CONTEXTUAL-DEBUG] Processing command:', command);
           setCommandHistory(prev => [...prev, command]);
           
@@ -3827,29 +3999,26 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
         lineBufferRef.current = ''; // Sync ref clear
       } else if (data === '\x7F') {
         // Backspace
-        setCurrentLineBuffer(prev => {
-          const newBuffer = prev.slice(0, -1);
-          lineBufferRef.current = newBuffer; // Sync update
-          return newBuffer;
-        });
+        // ⚡ PERFORMANCE FIX (Feb 2, 2025): Removed setCurrentLineBuffer() to prevent re-render on every keystroke
+        // Only update ref - no React state update needed until Enter is pressed
+        lineBufferRef.current = lineBufferRef.current.slice(0, -1);
       } else if (data >= ' ' || data === '\t') {
         // Regular character
-        setCurrentLineBuffer(prev => {
-          const newBuffer = prev + data;
-          lineBufferRef.current = newBuffer; // Sync update for immediate access
-          // Check if "claude" has been typed
-          if (newBuffer.toLowerCase().includes('claude')) {
-            // Activate supervision when claude is typed
-            if (!isSupervisionActive) {
-              enableSupervision();
-              // REMOVED: // REMOVED: console.log('👁️ Supervision auto-activated: claude detected');
-            }
-            if (onClaudeTyped) {
-              onClaudeTyped();
-            }
+        // ⚡ PERFORMANCE FIX (Feb 2, 2025): Removed setCurrentLineBuffer() to prevent re-render on every keystroke
+        // Only update ref - no React state update needed until Enter is pressed
+        lineBufferRef.current = lineBufferRef.current + data;
+        
+        // Check if "claude" has been typed (use ref instead of state)
+        if (lineBufferRef.current.toLowerCase().includes('claude')) {
+          // Activate supervision when claude is typed
+          if (!isSupervisionActive) {
+            enableSupervision();
+            // REMOVED: // REMOVED: console.log('👁️ Supervision auto-activated: claude detected');
           }
-          return newBuffer;
-        });
+          if (onClaudeTyped) {
+            onClaudeTyped();
+          }
+        }
       }
     });
 
@@ -4544,6 +4713,20 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
         />
       </div>
 
+      {/* Claude Activity Indicator - Positioned directly under prompt box */}
+      {claudeActive && (
+        <div 
+          className="flex items-center justify-center px-4 py-1"
+          style={{
+            height: '32px',
+            position: 'relative',
+            flexShrink: 0
+          }}
+        >
+          <span className="text-orange-300 font-bold animate-pulse text-sm">Claude is thinking...</span>
+        </div>
+      )}
+
       {/* Error Doctor removed to fix terminal overlap issue */}
 
       {/* Supervision Configuration Modal */}
@@ -4653,15 +4836,6 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
       <div className="flex flex-col">
         {/* Token Usage Statistics - At bottom of terminal */}
         <TerminalTokenStats />
-        
-        {/* Session Metrics Bar - Positioned above status line (HIDDEN per user request) */}
-        {/* {ENABLE_STAGED_COMPOSER && (
-          <SessionMetricsBar
-            sessionId={sessionId}
-            isProcessing={isProcessingCommand}
-            claudeActive={claudeActive}
-          />
-        )} */}
         
         {/* Enhanced Status Line - Professional Claude Code statusline (disabled) */}
         {/* <EnhancedStatusline
