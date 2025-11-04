@@ -6,11 +6,14 @@
  * Free tier users access basic features through the public IDE.
  */
 
+// Load environment variables FIRST (before any other imports that use them)
+import dotenv from 'dotenv';
+dotenv.config();
+
 import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
-import dotenv from 'dotenv';
 import { memoryRouter } from './api/memory-endpoints';
 import { supervisionRouter } from './api/supervision-endpoints';
 import { trialRouter } from './api/trial-endpoints';
@@ -19,9 +22,6 @@ import { logger } from './utils/logger';
 import { errorHandler } from './utils/error-handler';
 import { database } from './utils/database';
 import { schedulerService } from './services/scheduler-service';
-
-// Load environment variables
-dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3003;
