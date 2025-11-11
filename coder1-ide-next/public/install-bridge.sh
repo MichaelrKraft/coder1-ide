@@ -29,14 +29,36 @@ echo "║                                                       ║"
 echo "╚═══════════════════════════════════════════════════════╝"
 echo -e "${NC}"
 
-# Check if running with sudo
-if [ "$EUID" -ne 0 ]; then
-    echo -e "${RED}❌ This script must be run with sudo${NC}"
-    echo -e "${YELLOW}Please run: sudo bash install-bridge.sh${NC}"
-    exit 1
-fi
-
 echo -e "${BLUE}🔧 Installing Coder1 Bridge CLI...${NC}"
+
+# Determine installation mode
+if [ "$EUID" -eq 0 ]; then
+    echo -e "${GREEN}✅ Running with sudo - will install globally${NC}"
+    INSTALL_MODE="global"
+    INSTALL_PREFIX="/usr/local"
+else
+    echo -e "${YELLOW}⚠️  Running without sudo - will install to user directory${NC}"
+    INSTALL_MODE="user"
+    INSTALL_PREFIX="$HOME/.coder1"
+    
+    # Create user directory if it doesn't exist
+    mkdir -p "$INSTALL_PREFIX/bin"
+    
+    # Add to PATH if not already there
+    SHELL_RC="$HOME/.bashrc"
+    if [ -n "$ZSH_VERSION" ]; then
+        SHELL_RC="$HOME/.zshrc"
+    elif [ -f "$HOME/.zshrc" ]; then
+        SHELL_RC="$HOME/.zshrc"
+    fi
+    
+    if ! grep -q "export PATH=\"\$HOME/.coder1/bin:\$PATH\"" "$SHELL_RC" 2>/dev/null; then
+        echo "" >> "$SHELL_RC"
+        echo "# Coder1 Bridge CLI" >> "$SHELL_RC"
+        echo "export PATH=\"\$HOME/.coder1/bin:\$PATH\"" >> "$SHELL_RC"
+        echo -e "${CYAN}📝 Added Coder1 to PATH in $SHELL_RC${NC}"
+    fi
+fi
 
 # Check if Node.js is installed
 if ! command -v node &> /dev/null; then
@@ -93,15 +115,27 @@ echo -e "${BLUE}🔧 Installing dependencies...${NC}"
 # Install dependencies
 npm install --production --silent
 
-echo -e "${BLUE}🔗 Installing globally...${NC}"
+echo -e "${BLUE}🔗 Installing to $INSTALL_PREFIX...${NC}"
 
-# Install globally to /usr/local (guaranteed to be in PATH on all systems)
-npm install -g . --prefix=/usr/local --unsafe-perm
+# Install based on mode
+if [ "$INSTALL_MODE" = "global" ]; then
+    npm install -g . --prefix=/usr/local --unsafe-perm
+else
+    npm install -g . --prefix="$INSTALL_PREFIX" --unsafe-perm
+fi
 
 # Verify installation
 if command -v coder1-bridge &> /dev/null; then
     echo -e "${GREEN}✅ Coder1 Bridge installed successfully!${NC}"
     echo
+    
+    # If user-mode, remind to reload shell
+    if [ "$INSTALL_MODE" = "user" ]; then
+        echo -e "${YELLOW}⚠️  IMPORTANT: Restart your terminal or run:${NC}"
+        echo -e "   ${GREEN}source $SHELL_RC${NC}"
+        echo
+    fi
+    
     echo -e "${CYAN}🚀 Quick Start:${NC}"
     echo -e "  1. Visit: ${BLUE}https://coder1.ai/ide${NC}"
     echo -e "  2. Click the ${YELLOW}Bridge${NC} button to get your pairing code"
