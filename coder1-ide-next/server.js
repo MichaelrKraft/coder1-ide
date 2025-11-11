@@ -73,6 +73,16 @@ if (process.env.ENABLE_ETERNAL_MEMORY === 'true') {
   }
 }
 
+// Memory Exporter for Claude Skills integration
+let memoryExporter = null;
+try {
+  const memoryExporterModule = require('./services/memory-exporter.ts');
+  memoryExporter = memoryExporterModule.memoryExporter;
+  console.log('💾 Memory Exporter loaded - will export to Claude Skills directory');
+} catch (error) {
+  console.warn('⚠️ Memory Exporter not available:', error.message);
+}
+
 // Agent Terminal Manager for Phase 2: Interactive Agent Terminals
 let agentTerminalManager;
 try {
@@ -2523,6 +2533,25 @@ app.prepare().then(() => {
       console.log(`IDE Interface: http://localhost:${port}/ide`);
     }
     console.log('');
+    
+    // Initialize Memory Exporter for Claude Skills
+    if (memoryExporter) {
+      memoryExporter.initialize().then(() => {
+        console.log('✅ Memory Exporter initialized');
+        console.log(`   Export directory: ${memoryExporter.getStats().exportDir}`);
+        
+        // Auto-export every 30 seconds
+        setInterval(() => {
+          memoryExporter.exportAll().catch(error => {
+            console.error('❌ [MemoryExporter] Auto-export failed:', error.message);
+          });
+        }, 30000);
+        
+        console.log('   Auto-export: Every 30 seconds');
+      }).catch(error => {
+        console.error('❌ Memory Exporter initialization failed:', error);
+      });
+    }
   });
 
 // Helper functions for context capture integration

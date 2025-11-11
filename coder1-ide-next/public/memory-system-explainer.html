@@ -1,0 +1,921 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Coder1 IDE - Eternal Memory System</title>
+    <style>
+        /* Coder1 IDE Design System Colors */
+        :root {
+            --bg-primary: #0a0a0a;
+            --bg-secondary: #1a1a1a;
+            --bg-tertiary: rgba(255, 255, 255, 0.03);
+            --bg-float: rgba(255, 255, 255, 0.05);
+            
+            --glass-bg: rgba(255, 255, 255, 0.03);
+            --glass-backdrop: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            
+            --primary-cyan: #00D9FF;
+            --secondary-cyan: #06b6d4;
+            --light-cyan: #67e8f9;
+            --accent-cyan: #0891b2;
+            
+            --accent-purple: #8b5cf6;
+            
+            --glow-orange: rgba(251, 146, 60, 0.3);
+            --glow-orange-hover: rgba(251, 146, 60, 0.6);
+            
+            --text-primary: #ffffff;
+            --text-secondary: #a0a0a0;
+            --text-muted: #6b7280;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: var(--text-primary);
+            background: var(--bg-primary);
+            overflow-x: hidden;
+        }
+
+        /* Animated Dot Grid Background - Coder1 Style */
+        .dot-grid-background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            background: #000000;
+        }
+
+        .dot-grid {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                radial-gradient(circle, rgba(125, 211, 252, 0.6) 1px, transparent 1px),
+                radial-gradient(circle, rgba(187, 154, 247, 0.5) 1px, transparent 1px);
+            background-size: 
+                32px 32px,
+                48px 48px;
+            background-position: 
+                0 0,
+                16px 16px;
+            opacity: 1;
+            animation: dotGridMove 20s linear infinite;
+        }
+
+        .dot-grid::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: radial-gradient(circle, rgba(255, 255, 255, 0.2) 0.5px, transparent 0.5px);
+            background-size: 16px 16px;
+            background-position: 8px 8px;
+            opacity: 0.8;
+            animation: dotGridMove 15s linear infinite reverse;
+        }
+
+        .dot-grid-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(ellipse at center, transparent 30%, rgba(0, 0, 0, 0.3) 70%),
+                radial-gradient(ellipse at 20% 80%, rgba(125, 211, 252, 0.08) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 20%, rgba(187, 154, 247, 0.08) 0%, transparent 50%);
+            animation: overlayPulse 8s ease-in-out infinite alternate;
+        }
+
+        @keyframes dotGridMove {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(32px, 32px); }
+        }
+
+        @keyframes overlayPulse {
+            0% { opacity: 0.8; }
+            100% { opacity: 1; }
+        }
+
+        /* Content Container */
+        .container {
+            position: relative;
+            z-index: 1;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        /* Hero Section */
+        .hero {
+            text-align: center;
+            padding: 100px 20px 80px;
+            position: relative;
+        }
+
+        .hero h1 {
+            font-size: 4em;
+            font-weight: 700;
+            margin-bottom: 20px;
+            background: linear-gradient(
+                90deg,
+                rgba(255, 255, 255, 0.9) 0%,
+                rgba(0, 217, 255, 1) 30%,
+                rgba(139, 92, 246, 1) 70%,
+                rgba(255, 255, 255, 0.9) 100%
+            );
+            background-size: 200% auto;
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: shimmer 3s linear infinite;
+        }
+
+        @keyframes shimmer {
+            0% { background-position: -200% center; }
+            100% { background-position: 200% center; }
+        }
+
+        .hero .tagline {
+            font-size: 1.8em;
+            color: var(--primary-cyan);
+            margin-bottom: 15px;
+            font-weight: 300;
+        }
+
+        .hero .subtitle {
+            font-size: 1.2em;
+            color: var(--text-secondary);
+            max-width: 700px;
+            margin: 0 auto;
+        }
+
+        /* Glass Card - Coder1 Style */
+        .glass-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 30px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .glass-card:hover {
+            background: var(--glass-backdrop);
+            border-color: var(--primary-cyan);
+            box-shadow: 0 0 30px rgba(0, 217, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        /* Section Styles */
+        .section {
+            margin-bottom: 80px;
+        }
+
+        .section-title {
+            font-size: 2.5em;
+            color: var(--primary-cyan);
+            margin-bottom: 30px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .section-title .emoji {
+            font-size: 1.2em;
+        }
+
+        .section-description {
+            font-size: 1.15em;
+            color: var(--text-secondary);
+            margin-bottom: 30px;
+            line-height: 1.8;
+        }
+
+        /* Memory Systems Grid */
+        .memory-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 25px;
+            margin-top: 30px;
+        }
+
+        .memory-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 30px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .memory-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary-cyan), var(--accent-purple));
+            transform: scaleX(0);
+            transition: transform 0.3s ease;
+        }
+
+        .memory-card:hover::before {
+            transform: scaleX(1);
+        }
+
+        .memory-card:hover {
+            border-color: var(--primary-cyan);
+            transform: translateY(-5px);
+            box-shadow: 0 10px 40px rgba(0, 217, 255, 0.15);
+        }
+
+        .memory-card h3 {
+            font-size: 1.5em;
+            color: var(--primary-cyan);
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .memory-card .emoji {
+            font-size: 1.8em;
+        }
+
+        .memory-card p {
+            color: var(--text-secondary);
+            margin-bottom: 15px;
+            font-size: 1.05em;
+        }
+
+        .memory-card ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .memory-card ul li {
+            color: var(--text-secondary);
+            margin-bottom: 10px;
+            padding-left: 25px;
+            position: relative;
+        }
+
+        .memory-card ul li::before {
+            content: '→';
+            position: absolute;
+            left: 0;
+            color: var(--primary-cyan);
+            font-weight: bold;
+        }
+
+        .memory-card .use-case {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid var(--glass-border);
+            font-style: italic;
+            color: var(--text-muted);
+            font-size: 0.95em;
+        }
+
+        /* Workflow Steps */
+        .workflow-container {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin: 40px 0;
+        }
+
+        .workflow-step {
+            text-align: center;
+            flex: 1;
+            min-width: 200px;
+            padding: 20px;
+        }
+
+        .step-circle {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, var(--primary-cyan), var(--accent-purple));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2em;
+            font-weight: bold;
+            margin: 0 auto 20px;
+            box-shadow: 0 0 30px rgba(0, 217, 255, 0.4);
+        }
+
+        .workflow-step h4 {
+            color: var(--primary-cyan);
+            font-size: 1.3em;
+            margin-bottom: 10px;
+        }
+
+        .workflow-step p {
+            color: var(--text-secondary);
+            font-size: 1em;
+        }
+
+        .workflow-arrow {
+            font-size: 2em;
+            color: var(--primary-cyan);
+            opacity: 0.5;
+        }
+
+        /* Benefits Grid */
+        .benefits-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+            margin-top: 30px;
+        }
+
+        .benefit-card {
+            display: flex;
+            gap: 20px;
+            align-items: start;
+            padding: 25px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            transition: all 0.3s ease;
+        }
+
+        .benefit-card:hover {
+            border-color: var(--accent-purple);
+            box-shadow: 0 5px 25px rgba(139, 92, 246, 0.2);
+        }
+
+        .benefit-icon {
+            font-size: 2.5em;
+            flex-shrink: 0;
+        }
+
+        .benefit-card h4 {
+            color: var(--primary-cyan);
+            font-size: 1.2em;
+            margin-bottom: 8px;
+        }
+
+        .benefit-card p {
+            color: var(--text-secondary);
+            font-size: 0.95em;
+            line-height: 1.6;
+        }
+
+        /* Comparison Table */
+        .comparison-table {
+            background: var(--bg-secondary);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            overflow: hidden;
+            margin: 40px 0;
+        }
+
+        .comparison-header {
+            display: grid;
+            grid-template-columns: 2fr 1.5fr 1.5fr;
+            background: linear-gradient(135deg, var(--primary-cyan), var(--accent-purple));
+            padding: 20px;
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+
+        .comparison-row {
+            display: grid;
+            grid-template-columns: 2fr 1.5fr 1.5fr;
+            padding: 20px;
+            border-bottom: 1px solid var(--glass-border);
+            transition: background 0.2s ease;
+        }
+
+        .comparison-row:hover {
+            background: var(--bg-tertiary);
+        }
+
+        .comparison-row:last-child {
+            border-bottom: none;
+        }
+
+        .comparison-feature {
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+
+        .comparison-yes {
+            color: #10b981;
+            font-size: 1.8em;
+            text-align: center;
+        }
+
+        .comparison-no {
+            color: #ef4444;
+            font-size: 1.8em;
+            text-align: center;
+        }
+
+        /* Example Conversations */
+        .example-card {
+            background: var(--bg-secondary);
+            border-left: 4px solid var(--primary-cyan);
+            padding: 25px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+        }
+
+        .example-card h3 {
+            color: var(--primary-cyan);
+            margin-bottom: 20px;
+            font-size: 1.4em;
+        }
+
+        .conversation {
+            margin-bottom: 15px;
+        }
+
+        .user-message {
+            color: var(--text-primary);
+            font-weight: 500;
+            margin-bottom: 10px;
+        }
+
+        .claude-message {
+            color: var(--text-secondary);
+            padding-left: 20px;
+            border-left: 2px solid var(--accent-purple);
+            line-height: 1.8;
+        }
+
+        /* Tech Note */
+        .tech-note {
+            background: rgba(251, 146, 60, 0.1);
+            border-left: 4px solid var(--glow-orange);
+            padding: 20px;
+            border-radius: 8px;
+            margin: 30px 0;
+        }
+
+        .tech-note strong {
+            color: #fb923c;
+        }
+
+        /* CTA Button - Coder1 Glow Style */
+        .cta-section {
+            text-align: center;
+            padding: 80px 20px;
+            margin-top: 60px;
+        }
+
+        .cta-button {
+            display: inline-block;
+            padding: 18px 45px;
+            background: transparent;
+            color: var(--text-primary);
+            text-decoration: none;
+            font-size: 1.2em;
+            font-weight: 600;
+            border-radius: 8px;
+            border: 1px solid var(--glow-orange);
+            box-shadow: 
+                0 0 10px rgba(251, 146, 60, 0.2),
+                0 0 20px rgba(251, 146, 60, 0.1),
+                inset 0 0 10px rgba(251, 146, 60, 0.05);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .cta-button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+            transition: left 0.5s;
+        }
+
+        .cta-button:hover::before {
+            left: 100%;
+        }
+
+        .cta-button:hover {
+            border-color: var(--glow-orange-hover);
+            box-shadow: 
+                0 0 20px rgba(251, 146, 60, 0.4),
+                0 0 40px rgba(251, 146, 60, 0.2),
+                inset 0 0 15px rgba(251, 146, 60, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .cta-subtitle {
+            margin-top: 20px;
+            color: var(--text-muted);
+            font-size: 0.95em;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 2.5em;
+            }
+
+            .hero .tagline {
+                font-size: 1.3em;
+            }
+
+            .section-title {
+                font-size: 2em;
+            }
+
+            .memory-grid,
+            .benefits-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .comparison-header,
+            .comparison-row {
+                grid-template-columns: 1fr;
+                text-align: center;
+            }
+
+            .workflow-container {
+                flex-direction: column;
+            }
+
+            .workflow-arrow {
+                transform: rotate(90deg);
+            }
+        }
+
+        /* Scroll Animation */
+        .fade-in {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: opacity 0.6s ease, transform 0.6s ease;
+        }
+
+        .fade-in.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    </style>
+</head>
+<body>
+    <!-- Coder1 IDE Animated Background -->
+    <div class="dot-grid-background">
+        <div class="dot-grid"></div>
+        <div class="dot-grid-overlay"></div>
+    </div>
+
+    <div class="container">
+        <!-- Hero Section -->
+        <div class="hero">
+            <h1>🧠 Eternal Memory System</h1>
+            <div class="tagline">AI That Actually Remembers</div>
+            <div class="subtitle">The missing piece that makes AI coding assistants truly intelligent</div>
+        </div>
+
+        <!-- What Is It? -->
+        <div class="section fade-in">
+            <h2 class="section-title"><span class="emoji">💡</span> What Is Eternal Memory?</h2>
+            <div class="glass-card">
+                <p class="section-description">
+                    <strong>Eternal Memory</strong> is Coder1 IDE's revolutionary AI memory system that gives Claude Code true continuity across sessions. 
+                    Instead of starting fresh every conversation, Claude remembers your previous work, decisions, and context—making it feel like working 
+                    with a team member who never forgets.
+                </p>
+                <p class="section-description">
+                    Think of it as giving your AI assistant a <strong>persistent brain</strong> that learns and grows with your project, just like a human developer would.
+                </p>
+            </div>
+
+            <div class="tech-note">
+                <strong>🎯 The Problem We Solve:</strong> Traditional AI assistants (ChatGPT, Claude, GitHub Copilot) forget everything between sessions. 
+                You constantly repeat context, re-explain architecture, and lose precious development time. Eternal Memory changes that.
+            </div>
+        </div>
+
+        <!-- How It Works -->
+        <div class="section fade-in">
+            <h2 class="section-title"><span class="emoji">⚙️</span> How It Works</h2>
+            <div class="glass-card">
+                <p class="section-description" style="text-align: center; font-size: 1.3em; color: var(--primary-cyan); margin-bottom: 40px;">
+                    <strong>5 Intelligent Memory Systems Working Together</strong>
+                </p>
+
+                <div class="workflow-container">
+                    <div class="workflow-step">
+                        <div class="step-circle">1</div>
+                        <h4>You Code</h4>
+                        <p>Work naturally in Coder1 IDE with Claude Code assistance</p>
+                    </div>
+                    <div class="workflow-arrow">→</div>
+                    <div class="workflow-step">
+                        <div class="step-circle">2</div>
+                        <h4>Memory Captures</h4>
+                        <p>5 systems automatically record context, decisions, and patterns</p>
+                    </div>
+                    <div class="workflow-arrow">→</div>
+                    <div class="workflow-step">
+                        <div class="step-circle">3</div>
+                        <h4>AI Learns</h4>
+                        <p>Claude analyzes and connects information across sessions</p>
+                    </div>
+                    <div class="workflow-arrow">→</div>
+                    <div class="workflow-step">
+                        <div class="step-circle">4</div>
+                        <h4>You Return</h4>
+                        <p>Claude greets you with full context: "Let's continue where we left off..."</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- The 5 Memory Systems -->
+        <div class="section fade-in">
+            <h2 class="section-title"><span class="emoji">🗄️</span> The 5 Memory Systems</h2>
+            <p class="section-description">Each system serves a unique purpose, working together to create comprehensive AI intelligence:</p>
+
+            <div class="memory-grid">
+                <div class="memory-card">
+                    <h3><span class="emoji">📜</span> Eternal Memory</h3>
+                    <p><strong>Session Summaries & Long-Term Context</strong></p>
+                    <ul>
+                        <li>Complete session summaries</li>
+                        <li>Files you worked on</li>
+                        <li>Key decisions made</li>
+                        <li>Next steps planned</li>
+                    </ul>
+                    <div class="use-case">Perfect for: "What did I work on last week?"</div>
+                </div>
+
+                <div class="memory-card">
+                    <h3><span class="emoji">🔍</span> Semantic Search</h3>
+                    <p><strong>Topic-Based Intelligence</strong></p>
+                    <ul>
+                        <li>React patterns you've used</li>
+                        <li>Terminal commands you've run</li>
+                        <li>TypeScript solutions you've found</li>
+                        <li>Errors you've fixed before</li>
+                    </ul>
+                    <div class="use-case">Perfect for: "How did I solve this React problem before?"</div>
+                </div>
+
+                <div class="memory-card">
+                    <h3><span class="emoji">💬</span> Contextual Memory</h3>
+                    <p><strong>Conversation History</strong></p>
+                    <ul>
+                        <li>Recent conversations with Claude</li>
+                        <li>Back-and-forth problem solving</li>
+                        <li>Files involved in discussions</li>
+                        <li>Success/failure tracking</li>
+                    </ul>
+                    <div class="use-case">Perfect for: "Earlier you mentioned..."</div>
+                </div>
+
+                <div class="memory-card">
+                    <h3><span class="emoji">📂</span> Session Memory</h3>
+                    <p><strong>Real-Time State Awareness</strong></p>
+                    <ul>
+                        <li>Currently open files</li>
+                        <li>Recent terminal commands</li>
+                        <li>Active directory location</li>
+                        <li>Terminal status</li>
+                    </ul>
+                    <div class="use-case">Perfect for: "Based on what I have open right now..."</div>
+                </div>
+
+                <div class="memory-card">
+                    <h3><span class="emoji">📊</span> Memory Store</h3>
+                    <p><strong>Learning Statistics</strong></p>
+                    <ul>
+                        <li>Patterns learned over time</li>
+                        <li>Success rate tracking</li>
+                        <li>Time saved by AI</li>
+                        <li>Intelligence level growth</li>
+                    </ul>
+                    <div class="use-case">Perfect for: "How much has Claude learned?"</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Benefits -->
+        <div class="section fade-in">
+            <h2 class="section-title"><span class="emoji">✨</span> What You Get</h2>
+            <div class="benefits-grid">
+                <div class="benefit-card">
+                    <div class="benefit-icon">🚀</div>
+                    <div>
+                        <h4>10x Faster Onboarding</h4>
+                        <p>Claude picks up where you left off instantly. No more re-explaining your project architecture.</p>
+                    </div>
+                </div>
+
+                <div class="benefit-card">
+                    <div class="benefit-icon">🧩</div>
+                    <div>
+                        <h4>True Continuity</h4>
+                        <p>Your AI assistant remembers decisions from months ago, maintaining consistency across your codebase.</p>
+                    </div>
+                </div>
+
+                <div class="benefit-card">
+                    <div class="benefit-icon">🎯</div>
+                    <div>
+                        <h4>Personalized Intelligence</h4>
+                        <p>Claude learns YOUR coding patterns, YOUR preferences, YOUR project-specific solutions.</p>
+                    </div>
+                </div>
+
+                <div class="benefit-card">
+                    <div class="benefit-icon">💡</div>
+                    <div>
+                        <h4>Proactive Assistance</h4>
+                        <p>"Based on how you solved X last time, here's a similar approach for Y..."</p>
+                    </div>
+                </div>
+
+                <div class="benefit-card">
+                    <div class="benefit-icon">⏰</div>
+                    <div>
+                        <h4>Time Savings</h4>
+                        <p>Reduce context-switching overhead by 80%. Spend time coding, not re-explaining.</p>
+                    </div>
+                </div>
+
+                <div class="benefit-card">
+                    <div class="benefit-icon">🔒</div>
+                    <div>
+                        <h4>100% Local & Private</h4>
+                        <p>All memory stored locally on your machine. Your code never leaves your environment.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Comparison Table -->
+        <div class="section fade-in">
+            <h2 class="section-title"><span class="emoji">📊</span> Coder1 vs. Traditional AI Assistants</h2>
+            
+            <div class="comparison-table">
+                <div class="comparison-header">
+                    <div>Feature</div>
+                    <div>Coder1 IDE</div>
+                    <div>Others</div>
+                </div>
+                <div class="comparison-row">
+                    <div class="comparison-feature">Remembers previous sessions</div>
+                    <div class="comparison-yes">✓</div>
+                    <div class="comparison-no">✗</div>
+                </div>
+                <div class="comparison-row">
+                    <div class="comparison-feature">Learns your coding patterns</div>
+                    <div class="comparison-yes">✓</div>
+                    <div class="comparison-no">✗</div>
+                </div>
+                <div class="comparison-row">
+                    <div class="comparison-feature">Understands project history</div>
+                    <div class="comparison-yes">✓</div>
+                    <div class="comparison-no">✗</div>
+                </div>
+                <div class="comparison-row">
+                    <div class="comparison-feature">Recalls past decisions</div>
+                    <div class="comparison-yes">✓</div>
+                    <div class="comparison-no">✗</div>
+                </div>
+                <div class="comparison-row">
+                    <div class="comparison-feature">Tracks conversation context</div>
+                    <div class="comparison-yes">✓</div>
+                    <div class="comparison-no">✗</div>
+                </div>
+                <div class="comparison-row">
+                    <div class="comparison-feature">Semantic code search</div>
+                    <div class="comparison-yes">✓</div>
+                    <div class="comparison-no">✗</div>
+                </div>
+                <div class="comparison-row">
+                    <div class="comparison-feature">Real-time state awareness</div>
+                    <div class="comparison-yes">✓</div>
+                    <div class="comparison-no">✗</div>
+                </div>
+                <div class="comparison-row">
+                    <div class="comparison-feature">Learning progress tracking</div>
+                    <div class="comparison-yes">✓</div>
+                    <div class="comparison-no">✗</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Real Examples -->
+        <div class="section fade-in">
+            <h2 class="section-title"><span class="emoji">🎬</span> See It In Action</h2>
+            
+            <div class="example-card">
+                <h3>Example 1: Returning After a Week Away</h3>
+                <div class="conversation">
+                    <p class="user-message"><strong>You:</strong> "Hey Claude, what should I work on today?"</p>
+                    <div class="claude-message">
+                        <p><strong>Claude:</strong></p>
+                        <p>"Welcome back! Last session (7 days ago), you were fixing the terminal scrolling issue by adding a 200px padding workaround in Terminal.tsx. 
+                        You noted that the real fix would require investigating xterm.js internal scrolling. Should we tackle that today, or would you like to 
+                        continue with the other items on your list: 1) Session summary export, 2) Monaco editor width optimization?"</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="example-card">
+                <h3>Example 2: Debugging a Familiar Issue</h3>
+                <div class="conversation">
+                    <p class="user-message"><strong>You:</strong> "Getting a CORS error on my API endpoint"</p>
+                    <div class="claude-message">
+                        <p><strong>Claude:</strong></p>
+                        <p>"I see you've encountered this before! On October 15th, you solved a similar CORS issue in the memory export API by adding the 
+                        Access-Control-Allow-Origin header in server.js line 2340. The fix involved adding credentials: true and allowing localhost:3000. 
+                        Would you like me to apply the same solution to your current endpoint?"</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="example-card">
+                <h3>Example 3: Architectural Consistency</h3>
+                <div class="conversation">
+                    <p class="user-message"><strong>You:</strong> "How should I structure this new feature?"</p>
+                    <div class="claude-message">
+                        <p><strong>Claude:</strong></p>
+                        <p>"Based on your project patterns, I recommend following the same structure you used for the checkpoint system: 
+                        1) Service in /services/ (business logic), 2) API route in /app/api/ (Next.js endpoint), 3) React component in /components/. 
+                        You consistently use TypeScript interfaces, singleton patterns for services, and NextResponse for API returns. Should I generate 
+                        the boilerplate following these conventions?"</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- CTA -->
+        <div class="cta-section fade-in">
+            <h2 class="section-title" style="justify-content: center; margin-bottom: 30px;">Ready to Experience True AI Continuity?</h2>
+            <p class="section-description" style="text-align: center; max-width: 700px; margin: 0 auto 40px;">
+                Eternal Memory is built into Coder1 IDE. Start using it today and discover what AI-assisted coding should feel like.
+            </p>
+            <a href="https://coder1.io" class="cta-button">Get Started with Coder1 IDE →</a>
+            <p class="cta-subtitle">Free for individuals • No credit card required</p>
+        </div>
+    </div>
+
+    <script>
+        // Intersection Observer for fade-in animations
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -100px 0px'
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                }
+            });
+        }, observerOptions);
+
+        // Observe all fade-in elements
+        document.querySelectorAll('.fade-in').forEach(el => {
+            observer.observe(el);
+        });
+
+        // Smooth scroll for anchor links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            });
+        });
+    </script>
+</body>
+</html>
