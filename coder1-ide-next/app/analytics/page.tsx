@@ -36,7 +36,9 @@ export default function AnalyticsPage() {
 
   const fetchAnalytics = async () => {
     try {
-      const response = await fetch('/api/analytics/stats');
+      const urlParams = new URLSearchParams(window.location.search);
+      const useMock = urlParams.get('mock') === 'true';
+      const response = await fetch(`/api/analytics/stats${useMock ? '?mock=true' : ''}`);
       const result = await response.json();
       
       if (result.success) {

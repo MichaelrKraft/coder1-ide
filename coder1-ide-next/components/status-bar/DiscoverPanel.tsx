@@ -320,22 +320,6 @@ export default function DiscoverPanel() {
   
   
   // Slash commands (just the slash commands for scrolling)
-  const slashCommands = allCommands.filter(cmd => cmd.name.startsWith('/'));
-  
-  // Get current visible slash commands (show only 3 at a time)
-  const visibleCount = 3;
-  const visibleSlashCommands = slashCommands.slice(slashCommandOffset, slashCommandOffset + visibleCount);
-  
-  // Scroll slash commands
-  const scrollSlashCommands = (direction: 'up' | 'down') => {
-    const scrollAmount = 1; // Scroll 1 item at a time for smoother experience with only 3 visible
-    if (direction === 'down' && slashCommandOffset + visibleCount < slashCommands.length) {
-      setSlashCommandOffset(Math.min(slashCommandOffset + scrollAmount, slashCommands.length - visibleCount));
-    } else if (direction === 'up' && slashCommandOffset > 0) {
-      setSlashCommandOffset(Math.max(slashCommandOffset - scrollAmount, 0));
-    }
-  };
-
   // Filter commands based on search
   const filteredCommands = allCommands.filter(cmd => {
     // Search filter
@@ -350,6 +334,22 @@ export default function DiscoverPanel() {
     
     return true;
   });
+  
+  const slashCommands = filteredCommands.filter(cmd => cmd.name.startsWith('/'));
+  
+  // Get current visible slash commands (show only 3 at a time)
+  const visibleCount = 3;
+  const visibleSlashCommands = slashCommands.slice(slashCommandOffset, slashCommandOffset + visibleCount);
+  
+  // Scroll slash commands
+  const scrollSlashCommands = (direction: 'up' | 'down') => {
+    const scrollAmount = 1; // Scroll 1 item at a time for smoother experience with only 3 visible
+    if (direction === 'down' && slashCommandOffset + visibleCount < slashCommands.length) {
+      setSlashCommandOffset(Math.min(slashCommandOffset + scrollAmount, slashCommands.length - visibleCount));
+    } else if (direction === 'up' && slashCommandOffset > 0) {
+      setSlashCommandOffset(Math.max(slashCommandOffset - scrollAmount, 0));
+    }
+  };
 
   // Group commands by category (kept for potential future use but not displayed)
   const commandsByCategory = filteredCommands.reduce((acc, cmd) => {

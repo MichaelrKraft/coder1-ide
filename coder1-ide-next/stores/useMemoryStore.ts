@@ -41,10 +41,10 @@ export const useMemoryStore = create<MemoryStore>()(
       // Initial state - 30-day premium trial enabled (Nov 3, 2025)
       isPremium: true,
       trialEndsAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
-      totalPatterns: 374,
-      successRate: 89,
+      totalPatterns: 0,
+      successRate: 0,
       timeSavedMinutes: 0,
-      sessionsConnected: 5,
+      sessionsConnected: 0,
       aiIntelligenceLevel: 1,
       missedOpportunities: 0,
       learningEvents: [],

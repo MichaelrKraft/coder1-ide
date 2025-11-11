@@ -5,7 +5,24 @@ export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
   try {
-    const stats = await contextDatabase.getStats();
+    const { searchParams } = new URL(request.url);
+    const useMockData = searchParams.get('mock') === 'true';
+    
+    let stats;
+    if (useMockData) {
+      stats = {
+        totalConversations: 47,
+        totalSessions: 12,
+        totalPatterns: 23,
+        totalInsights: 0,
+        successRate: 89,
+        totalApiCalls: 8,
+        totalCliCalls: 39,
+        avgQualityScore: 78
+      };
+    } else {
+      stats = await contextDatabase.getStats();
+    }
     
     const timeSavedMinutes = stats.totalConversations * 5;
     
