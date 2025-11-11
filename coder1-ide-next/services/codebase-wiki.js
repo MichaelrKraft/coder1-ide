@@ -295,7 +295,10 @@ class CodebaseWiki extends EventEmitter {
             
         } catch (error) {
             // If parsing fails, still store basic file info
-            this.logger.warn(`⚠️ [CODEBASE-WIKI] Parse error in ${relativePath}: ${error.message}`);
+            // Only log in development to avoid cluttering production builds
+            if (process.env.NODE_ENV !== 'production') {
+                this.logger.warn(`⚠️ [CODEBASE-WIKI] Parse error in ${relativePath}: ${error.message}`);
+            }
             
             const fileInfo = {
                 path: relativePath,
