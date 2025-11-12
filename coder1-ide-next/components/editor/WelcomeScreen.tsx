@@ -67,7 +67,7 @@ export function WelcomeScreen({ onDismiss, onBridgeClick }: WelcomeScreenProps =
           {/* What is the Bridge - Compact Version */}
           <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-2 mb-2">
             <h3 className="text-xs font-semibold text-blue-300 mb-1">🌉 What is the Bridge?</h3>
-            <p className="text-[10px] text-gray-300 mb-1">
+            <p className="text-xs text-gray-300 mb-1">
               Connects this web IDE to <strong className="text-white">your computer</strong>—like remote desktop for coding.
             </p>
             <details className="text-[10px]">
@@ -80,17 +80,15 @@ export function WelcomeScreen({ onDismiss, onBridgeClick }: WelcomeScreenProps =
             </details>
           </div>
 
-          {/* Important Notice */}
-          <div className="bg-purple-500/10 border border-purple-500/30 rounded-lg p-1 mb-2">
-            <p className="text-[10px] font-medium text-purple-300 text-center">
-              💡 Use <strong>Your Mac/PC Terminal</strong> (not web terminal)
-            </p>
-          </div>
+          {/* Important Notice - No Box */}
+          <p className="text-xs font-medium text-purple-300 text-center mb-2">
+            💡 Use <strong>Your Mac/PC Terminal</strong> (not web terminal)
+          </p>
 
           <div className="space-y-1">
             <div className="bg-bg-primary rounded p-1">
-              <h2 className="text-xs font-semibold mb-1 text-blue-400">
-                📍 3-Minute Setup
+              <h2 className="text-xs font-semibold mb-2 text-blue-400">
+                📍 1-Minute Setup (Recommended)
               </h2>
               
               <div className="space-y-0.5 text-xs">
@@ -104,37 +102,78 @@ export function WelcomeScreen({ onDismiss, onBridgeClick }: WelcomeScreenProps =
                 </div>
                 
                 <div>
-                  <span className="text-green-400 font-medium">2. Install Bridge</span>
-                  <span className="text-gray-300 ml-1">→ One command (takes ~30 sec)</span>
-                  <div className="bg-black rounded p-1 font-mono text-[10px]">
-                    <span className="text-green-400">$</span> <span className="text-white">
-                      curl -sL {isProduction ? 'https://coder1.ai' : 'http://localhost:3001'}/install-bridge.sh | bash
-                    </span>
+                  <span className="text-green-400 font-medium">2. Run One Command</span>
+                  <span className="text-gray-300 ml-1">→ Auto-installs & connects!</span>
+                  <div className="bg-black rounded p-1 font-mono text-[10px] flex items-center justify-between gap-2">
+                    <div className="flex-1">
+                      <span className="text-green-400">$</span> <span className="text-white">
+                        curl -sL {isProduction ? 'https://coder1.ai' : 'http://localhost:3001'}/install-bridge.sh | bash -s -- --auto-start{isProduction ? '' : ' --dev'}
+                      </span>
+                    </div>
+                    <button
+                      onClick={() => {
+                        const command = `curl -sL ${isProduction ? 'https://coder1.ai' : 'http://localhost:3001'}/install-bridge.sh | bash -s -- --auto-start${isProduction ? '' : ' --dev'}`;
+                        navigator.clipboard.writeText(command);
+                      }}
+                      className="px-2 py-1 bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-400 rounded text-[9px] whitespace-nowrap transition-colors"
+                      title="Copy command to clipboard"
+                    >
+                      Copy
+                    </button>
                   </div>
                   <p className="text-[10px] text-gray-400 mt-0.5">
-                    ⏱️ ~30 seconds • 13KB download
+                    ⏱️ ~1 minute • Installs, starts & prompts for code automatically
                   </p>
                 </div>
                 
                 <div>
-                  <span className="text-green-400 font-medium">3. Start Bridge</span>
-                  <div className="bg-black rounded p-1 font-mono text-xs">
-                    <span className="text-green-400">$</span> <span className="text-white">
-                      coder1-bridge start{isProduction ? '' : ' --dev'}
-                    </span>
-                  </div>
-                  {!isProduction && (
-                    <p className="text-xs text-yellow-400 mt-1">
-                      💡 <strong>--dev flag required</strong> for localhost
-                    </p>
-                  )}
+                  <span className="text-green-400 font-medium">3. Click Bridge Button</span>
+                  <span className="text-gray-300 ml-1">→ Get your 6-digit pairing code below</span>
                 </div>
                 
                 <div>
                   <span className="text-green-400 font-medium">4. Enter Code</span>
-                  <span className="text-gray-300 ml-1">→ Click Bridge button below, paste 6-digit code in terminal</span>
+                  <span className="text-gray-300 ml-1">→ Paste the 6-digit code when prompted</span>
                 </div>
               </div>
+            </div>
+            
+            {/* Manual Setup - Collapsible */}
+            <div className="mt-1 border-t border-border-default pt-1">
+              <details className="group">
+                <summary className="text-xs text-gray-400 hover:text-cyan-400 cursor-pointer flex items-center gap-1">
+                  <span className="group-open:rotate-90 transition-transform">▶</span>
+                  Manual Setup (3 separate commands)
+                </summary>
+                <div className="mt-1 p-2 bg-bg-primary rounded text-xs space-y-1">
+                  <div>
+                    <span className="text-green-400 font-medium">Install Bridge</span>
+                    <div className="bg-black rounded p-1 font-mono text-[10px] mt-0.5">
+                      <span className="text-green-400">$</span> <span className="text-white">
+                        curl -sL {isProduction ? 'https://coder1.ai' : 'http://localhost:3001'}/install-bridge.sh | bash
+                      </span>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <span className="text-green-400 font-medium">Reload Shell</span>
+                    <div className="bg-black rounded p-1 font-mono text-[10px] mt-0.5">
+                      <span className="text-green-400">$</span> <span className="text-white">
+                        source ~/.zshrc
+                      </span>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <span className="text-green-400 font-medium">Start Bridge</span>
+                    <div className="bg-black rounded p-1 font-mono text-[10px] mt-0.5">
+                      <span className="text-green-400">$</span> <span className="text-white">
+                        coder1-bridge start{isProduction ? '' : ' --dev'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </details>
             </div>
 
             {/* Optional: Advanced Setup - Collapsible */}

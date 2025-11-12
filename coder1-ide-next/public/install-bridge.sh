@@ -2,8 +2,17 @@
 
 # 🌉 Coder1 Bridge Installation Script
 # Installs the Coder1 Bridge CLI for connecting to the web IDE
+# Version: 1.1.0 (with --auto-start support)
 
 set -e
+
+# Parse command line arguments
+AUTO_START=false
+for arg in "$@"; do
+    if [ "$arg" = "--auto-start" ]; then
+        AUTO_START=true
+    fi
+done
 
 # Colors for output
 RED='\033[0;31m'
@@ -129,6 +138,14 @@ if command -v coder1-bridge &> /dev/null; then
     echo -e "${GREEN}✅ Coder1 Bridge installed successfully!${NC}"
     echo
     
+    # Handle auto-start mode
+    if [ "$AUTO_START" = true ]; then
+        echo -e "${CYAN}🚀 Starting bridge automatically...${NC}"
+        echo
+        exec coder1-bridge start
+    fi
+    
+    # Normal mode - show instructions
     # If user-mode, remind to reload shell
     if [ "$INSTALL_MODE" = "user" ]; then
         echo -e "${YELLOW}⚠️  IMPORTANT: Restart your terminal or run:${NC}"
@@ -156,8 +173,60 @@ if command -v coder1-bridge &> /dev/null; then
     echo -e "   Return to ${BLUE}https://coder1.ai/ide${NC} anytime!"
     echo
 else
-    echo -e "${RED}❌ Installation failed!${NC}"
-    echo -e "${YELLOW}Please contact support: https://github.com/MichaelrKraft/coder1-ide/issues${NC}"
+    # Installation completed but command not available yet
+    if [ "$AUTO_START" = true ]; then
+        # Auto-start mode - try to source and start anyway
+        echo -e "${YELLOW}⚠️  Activating bridge...${NC}"
+        
+        if [ "$INSTALL_MODE" = "user" ]; then
+            # Source the shell config to make bridge available
+            if [ -f "$SHELL_RC" ]; then
+                source "$SHELL_RC"
+            fi
+            
+            # Try to start bridge now
+            if command -v coder1-bridge &> /dev/null; then
+                echo -e "${GREEN}✅ Bridge activated!${NC}"
+                echo
+                exec coder1-bridge start
+            else
+                echo -e "${RED}❌ Could not activate bridge automatically${NC}"
+                echo -e "${YELLOW}Please run: ${GREEN}source $SHELL_RC && coder1-bridge start${NC}"
+            fi
+        else
+            echo -e "${RED}❌ Installation failed${NC}"
+            echo -e "${YELLOW}Try: ${GREEN}sudo npm install -g https://coder1.ai/bridge-cli.tar.gz${NC}"
+        fi
+    else
+        # Normal mode - show helpful instructions
+        echo -e "${YELLOW}⚠️  Installation completed, but command not found in current shell${NC}"
+        echo
+        
+        if [ "$INSTALL_MODE" = "user" ]; then
+            echo -e "${CYAN}🔧 To activate the bridge, choose ONE option:${NC}"
+            echo
+            echo -e "${YELLOW}Option 1 (Reload shell):${NC}"
+            echo -e "  ${GREEN}source $SHELL_RC${NC}"
+            echo -e "  ${GREEN}coder1-bridge start${NC}"
+            echo
+            echo -e "${YELLOW}Option 2 (Restart terminal):${NC}"
+            echo -e "  Close this terminal and open a new one"
+            echo -e "  Then run: ${GREEN}coder1-bridge start${NC}"
+            echo
+            echo -e "${YELLOW}Option 3 (Global install - recommended):${NC}"
+            echo -e "  ${GREEN}sudo npm install -g https://coder1.ai/bridge-cli.tar.gz${NC}"
+            echo -e "  ${GREEN}coder1-bridge start${NC}"
+            echo
+            echo -e "${BLUE}💡 Why this happened:${NC} PATH changes require a shell reload or new terminal."
+            echo -e "${BLUE}   Global install (Option 3) works immediately without reload.${NC}"
+        else
+            echo -e "${RED}❌ Installation failed!${NC}"
+            echo -e "${YELLOW}Try running with sudo:${NC}"
+            echo -e "  ${GREEN}sudo npm install -g https://coder1.ai/bridge-cli.tar.gz${NC}"
+        fi
+        echo
+        echo -e "${CYAN}📞 Need help? https://github.com/MichaelrKraft/coder1-ide/issues${NC}"
+    fi
 fi
 
 # Cleanup
