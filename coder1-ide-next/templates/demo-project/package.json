@@ -1,0 +1,36 @@
+{
+  "name": "coder1-demo-project",
+  "version": "1.0.0",
+  "description": "Example React + TypeScript project for Coder1 IDE",
+  "main": "src/App.tsx",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "type-check": "tsc --noEmit"
+  },
+  "keywords": [
+    "react",
+    "typescript",
+    "coder1",
+    "demo",
+    "example"
+  ],
+  "author": "Coder1 IDE",
+  "license": "MIT",
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
+    "@vitejs/plugin-react": "^4.0.0",
+    "typescript": "^5.0.0",
+    "vite": "^4.3.0"
+  },
+  "engines": {
+    "node": ">=16.0.0",
+    "npm": ">=8.0.0"
+  }
+}

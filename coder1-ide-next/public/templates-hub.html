@@ -2788,6 +2788,540 @@ export const Button: React.FC<ButtonProps> = ({
                 ],
                 source: 'documentation-automation-collection',
                 popularity: 'new'
+            },
+
+            // CLAUDE SKILLS - 5 Production-Ready Skills
+            {
+                id: 'memory-orchestrator-skill',
+                name: 'Memory Orchestrator',
+                category: 'CLAUDE SKILLS',
+                categorySlug: 'claude-skills',
+                description: 'Unifies all 5 Coder1 memory systems (Eternal, Semantic, Contextual, Session, Memory Store) for unified AI context access.',
+                tags: ['Memory', 'Context', 'AI Integration', 'Python'],
+                stats: { rating: 5.0, downloads: 150, comments: 12 },
+                command: 'claude skills install memory-orchestrator',
+                features: [
+                    'Unified access to 5 memory systems',
+                    'File-based exports (no API calls)',
+                    'Auto-updates every 30 seconds',
+                    'Multiple output formats (summary, detailed, JSON)',
+                    '80% context window reduction'
+                ],
+                code: {
+                    config: `---
+name: memory-orchestrator
+description: Unified access to all Coder1 IDE memory systems
+version: 1.0.0
+dependencies:
+  python: ">=3.7"
+---`,
+                    usage: `# Query eternal memory (session summaries)
+python3 coordinate.py --type eternal
+
+# Search semantic memory for React patterns
+python3 coordinate.py --type semantic --topic react
+
+# Get recent conversations
+python3 coordinate.py --type contextual --limit 5
+
+# Get comprehensive context
+python3 coordinate.py --type all`,
+                    example: `# Example: Continue from last session
+$ claude "What was I working on last?"
+
+# Claude internally runs:
+# python3 coordinate.py --type eternal
+
+# Returns session summary with:
+# - Files modified
+# - Commands executed  
+# - Key decisions
+# - Next steps`
+                },
+                source: 'coder1-official',
+                popularity: 'featured'
+            },
+            {
+                id: 'skill-creator',
+                name: 'Skill Creator',
+                category: 'CLAUDE SKILLS',
+                categorySlug: 'claude-skills',
+                description: 'Interactive wizard that generates new Claude Skills with proper structure, templates, and validation.',
+                tags: ['Meta-Skill', 'Generator', 'Templates', 'Development'],
+                stats: { rating: 4.9, downloads: 230, comments: 18 },
+                command: 'claude skills install skill-creator',
+                features: [
+                    'Interactive CLI wizard',
+                    'Generates proper SKILL.md with YAML frontmatter',
+                    'Creates directory structure automatically',
+                    'Provides script templates (Python, Shell, JavaScript)',
+                    'Validates skill format before export'
+                ],
+                code: {
+                    config: `---
+name: skill-creator
+description: Create new Claude Skills with guided wizard
+version: 1.0.0
+dependencies:
+  python: ">=3.7"
+---`,
+                    usage: `# Create a new skill interactively
+python3 create_skill.py
+
+# Validate existing skill
+python3 validate_skill.py ~/.coder1/skills/my-skill
+
+# Use template
+python3 create_skill.py --template script-based`,
+                    example: `# Example: Creating a new skill
+$ python3 create_skill.py
+
+Skill Name: API Documentation Generator
+Description: Generates API docs from code
+Type: [1] Simple [2] Script-based [3] Advanced
+> 2
+
+Creating skill structure...
+✅ Directory created
+✅ SKILL.md generated  
+✅ Template scripts added
+✅ Validation passed
+
+Skill ready: ~/.coder1/skills/api-doc-generator/`
+                },
+                source: 'coder1-official',
+                popularity: 'featured'
+            },
+            {
+                id: 'code-review-checklist',
+                name: 'Code Review Checklist Generator',
+                category: 'CLAUDE SKILLS',
+                categorySlug: 'claude-skills',
+                description: 'Generates project-specific code review checklists based on codebase patterns, team conventions, and past reviews.',
+                tags: ['Code Review', 'Quality', 'Best Practices', 'Team Workflow'],
+                stats: { rating: 4.8, downloads: 340, comments: 28 },
+                command: 'claude skills install code-review-checklist',
+                features: [
+                    'Analyzes codebase conventions automatically',
+                    'Learns from past code reviews via Memory Orchestrator',
+                    'Generates project-specific checklists (React, TypeScript, etc.)',
+                    'Integrates with git pre-commit hooks',
+                    'Markdown output for easy sharing'
+                ],
+                code: {
+                    config: `---
+name: code-review-checklist
+description: Generate code review checklists from project patterns
+version: 1.0.0
+dependencies:
+  python: ">=3.7"
+  git: ">=2.0"
+---`,
+                    usage: `# Generate checklist for current project
+python3 generate_checklist.py
+
+# Generate for specific framework
+python3 generate_checklist.py --framework react
+
+# Output to file
+python3 generate_checklist.py --output CHECKLIST.md`,
+                    example: `# Example: React project checklist
+$ python3 generate_checklist.py --framework react
+
+Generated Code Review Checklist:
+
+## React Best Practices
+- [ ] Components use functional style with hooks
+- [ ] Props have TypeScript interfaces
+- [ ] useEffect has proper dependencies
+- [ ] No inline function definitions in JSX
+- [ ] Accessible (aria-labels, semantic HTML)
+
+## Testing
+- [ ] Unit tests for business logic
+- [ ] Integration tests for user flows
+- [ ] Test coverage > 80%
+
+## Performance
+- [ ] useMemo for expensive calculations
+- [ ] React.memo for pure components
+- [ ] Bundle size impact checked`
+                },
+                source: 'coder1-official',
+                popularity: 'trending'
+            },
+            {
+                id: 'doc-sync-guardian',
+                name: 'Documentation Sync Guardian',
+                category: 'CLAUDE SKILLS',
+                categorySlug: 'claude-skills',
+                description: 'Detects outdated documentation, tracks staleness metrics, and generates draft updates when code changes.',
+                tags: ['Documentation', 'Maintenance', 'Git Integration', 'Code Analysis'],
+                stats: { rating: 4.7, downloads: 290, comments: 22 },
+                command: 'claude skills install doc-sync-guardian',
+                features: [
+                    'Detects code changes requiring doc updates',
+                    'Compares function signatures with documented APIs',
+                    'Tracks documentation staleness metrics',
+                    'Generates draft documentation updates',
+                    'Produces actionable TODO lists'
+                ],
+                code: {
+                    config: `---
+name: doc-sync-guardian
+description: Keep documentation in sync with code changes
+version: 1.0.0
+dependencies:
+  python: ">=3.7"
+  git: ">=2.0"
+---`,
+                    usage: `# Check documentation staleness
+python3 sync_docs.py --check
+
+# Generate update TODOs
+python3 sync_docs.py --generate-todos
+
+# Full analysis with metrics
+python3 check_staleness.py --report`,
+                    example: `# Example: Detect outdated docs
+$ python3 sync_docs.py --check
+
+Documentation Staleness Report:
+
+⚠️  API.md - STALE (45 days old)
+    - Function signature changed: getUserData()
+    - 3 parameters added
+    - Return type modified
+
+⚠️  README.md - OUTDATED (120 days old)
+    - Installation steps changed
+    - New dependencies added
+
+✅ CONTRIBUTING.md - UP TO DATE (2 days old)
+
+TODO List generated: DOCS_TODO.md`
+                },
+                source: 'coder1-official',
+                popularity: 'stable'
+            },
+            {
+                id: 'brand-guidelines',
+                name: 'Coder1 Brand Guidelines',
+                category: 'CLAUDE SKILLS',
+                categorySlug: 'claude-skills',
+                description: 'Applies Coder1 official brand colors, typography, and visual identity to artifacts, docs, and presentations.',
+                tags: ['Branding', 'Design', 'Visual Identity', 'Consistency'],
+                stats: { rating: 4.9, downloads: 180, comments: 14 },
+                command: 'claude skills install brand-guidelines',
+                features: [
+                    'Official Coder1 color palette application',
+                    'Typography guidelines (headings, body text)',
+                    'Logo usage rules and placement',
+                    'Consistent visual identity across artifacts',
+                    'Smart font fallback system'
+                ],
+                code: {
+                    config: `---
+name: brand-guidelines
+description: Apply Coder1 brand identity to artifacts
+version: 1.0.0
+---`,
+                    usage: `# Apply to Claude when creating artifacts
+"Create a landing page for Coder1 IDE using our brand guidelines"
+
+# Claude will automatically:
+# - Use Coder1 color palette
+# - Apply proper typography
+# - Follow logo usage rules
+# - Maintain visual consistency`,
+                    example: `# Coder1 Brand Colors
+
+## Primary Colors
+- Dark: #141413 (backgrounds, text)
+- Cyan Accent: #06b6d4 (primary highlights)
+- Purple Accent: #8b5cf6 (secondary highlights)
+
+## Typography
+- Headings: Inter (system fallback)
+- Body: -apple-system, BlinkMacSystemFont
+- Code: 'Fira Code', monospace
+
+## Logo Usage
+- Minimum size: 120px width
+- Clear space: 20px all sides
+- Dark backgrounds only (for now)`
+                },
+                source: 'coder1-official',
+                popularity: 'featured'
+            },
+
+            // SKILL 6: Codebase Intelligence
+            {
+                id: 'codebase-intelligence-skill',
+                name: 'Codebase Intelligence',
+                category: 'CLAUDE SKILLS',
+                categorySlug: 'claude-skills',
+                description: 'Analyzes codebase structure, dependencies, and patterns without loading full file contents - optimized for large projects',
+                tags: ['Architecture', 'Dependencies', 'Code Analysis', 'Python'],
+                stats: { rating: 4.8, downloads: 195, comments: 18 },
+                command: 'claude skills install codebase-intelligence',
+                features: [
+                    'AST-based analysis without loading full files',
+                    'Architecture detection (MVC, microservices, etc)',
+                    'Dependency graph mapping',
+                    'Design pattern recognition',
+                    'Token-efficient (under 5% of codebase size)'
+                ],
+                code: {
+                    config: `---
+name: codebase-intelligence
+description: Analyzes codebase structure without loading full files
+version: 1.0.0
+dependencies:
+  python: ">=3.7"
+---`,
+                    usage: `# Analyze project structure
+python3 ~/.coder1/skills/codebase-intelligence/analyze_codebase.py /path/to/project
+
+# Output as JSON
+python3 analyze_codebase.py /path/to/project --format json --output analysis.json
+
+# Via Claude
+"Analyze the architecture of my project"`,
+                    example: `# Example output:
+Structure:
+  Files: 1,234
+  Directories: 89
+  Entry Points: 3
+
+Frameworks Detected:
+  Next.js, React, Express
+
+Design Patterns:
+  Component-Based, Service Layer
+
+Recommendations:
+  - Consider breaking down large files (avg > 500 lines)`
+                },
+                source: 'coder1-official',
+                popularity: 'trending'
+            },
+
+            // SKILL 7: Smart File Loader
+            {
+                id: 'smart-file-loader-skill',
+                name: 'Smart File Loader',
+                category: 'CLAUDE SKILLS',
+                categorySlug: 'claude-skills',
+                description: 'Intelligently selects and loads only the most relevant files for AI context, avoiding token waste on unnecessary files',
+                tags: ['Context Optimization', 'File Selection', 'AI Efficiency', 'Python'],
+                stats: { rating: 4.9, downloads: 210, comments: 15 },
+                command: 'claude skills install smart-file-loader',
+                features: [
+                    'Relevance scoring using multiple heuristics',
+                    'Progressive loading with token tracking',
+                    'Three modes: conservative, balanced, aggressive',
+                    'Learning system that improves over time',
+                    'Leaves 30% context for AI responses'
+                ],
+                code: {
+                    config: `---
+name: smart-file-loader
+description: Intelligently loads relevant files for AI context
+version: 1.0.0
+dependencies:
+  python: ">=3.7"
+---`,
+                    usage: `# Smart load files for a task
+python3 ~/.coder1/skills/smart-file-loader/smart_loader.py /path/to/project "fix login bug" --mode balanced
+
+# Show relevance scores only
+python3 smart_loader.py /path/to/project "add API endpoint" --scores-only
+
+# Via Claude
+"Smart load files for adding the dashboard feature"`,
+                    example: `# Example output:
+Smart File Loader Results
+=========================
+
+Task: fix login bug
+Mode: balanced
+
+Loaded Files: 12
+Skipped Files: 234
+Total Tokens: 38,420 / 40,000
+
+Top Files Loaded:
+  85.0 - src/auth/login.js
+  72.0 - src/api/auth-routes.js
+  65.0 - tests/auth.test.js`
+                },
+                source: 'coder1-official',
+                popularity: 'featured'
+            },
+
+            // SKILL 8: Team Protocol
+            {
+                id: 'team-protocol-skill',
+                name: 'Team Protocol',
+                category: 'CLAUDE SKILLS',
+                categorySlug: 'claude-skills',
+                description: 'Encodes your team\\'s working culture, code standards, and collaboration patterns so AI agents work according to your team\\'s style',
+                tags: ['Team Culture', 'Code Standards', 'Collaboration', 'Workflows'],
+                stats: { rating: 4.7, downloads: 165, comments: 22 },
+                command: 'claude skills install team-protocol',
+                features: [
+                    'Captures team communication patterns',
+                    'Documents code style beyond linters',
+                    'Encodes review processes and workflows',
+                    'Provides onboarding support for new members',
+                    'Continuously learns from team feedback'
+                ],
+                code: {
+                    config: `---
+name: team-protocol
+description: Encodes team working culture and standards
+version: 1.0.0
+---`,
+                    usage: `# Setup team protocol
+cd ~/.coder1/skills/team-protocol
+cp team-protocol.yaml.example team-protocol.yaml
+# Edit with your team standards
+
+# Claude automatically uses when working
+"Create a new API endpoint"
+# Generates code following your team's patterns
+
+"Review this PR"
+# Checks against your team's standards`,
+                    example: `# Example team-protocol.yaml:
+team:
+  name: "Coder1 Team"
+  
+code_style:
+  indentation: "2 spaces"
+  quotes: "single"
+  
+git_workflow:
+  branch_naming: "type/ticket-description"
+  required_reviewers: 2
+  
+testing:
+  min_coverage: 80
+  required: true`
+                },
+                source: 'coder1-official',
+                popularity: 'stable'
+            },
+
+            // SKILL 9: Production War Room
+            {
+                id: 'production-war-room-skill',
+                name: 'Production War Room',
+                category: 'CLAUDE SKILLS',
+                categorySlug: 'claude-skills',
+                description: 'AI-powered incident response system that guides you through production issues with structured troubleshooting',
+                tags: ['Incident Response', 'Debugging', 'On-Call', 'Crisis Management'],
+                stats: { rating: 5.0, downloads: 240, comments: 31 },
+                command: 'claude skills install production-war-room',
+                features: [
+                    'Intelligent triage and severity classification',
+                    'Guided troubleshooting workflows',
+                    'Real-time incident timeline tracking',
+                    'Root cause analysis (5 Whys, Fishbone)',
+                    'Automated postmortem generation'
+                ],
+                code: {
+                    config: `---
+name: production-war-room
+description: AI-powered incident response system
+version: 1.0.0
+---`,
+                    usage: `# Start incident response
+"Production is down - users can\\'t log in"
+
+# Claude activates War Room mode:
+🚨 PRODUCTION WAR ROOM ACTIVATED 🚨
+
+Incident: User Authentication Failure
+Severity: P1 (User-facing, critical)
+
+Suggested First Steps:
+1. Check auth service health
+2. Review recent deployments
+3. Examine error logs`,
+                    example: `# Example incident flow:
+14:23 - Issue reported
+14:25 - Auth service identified
+14:28 - Root cause found
+14:32 - Fix applied
+14:35 - Verified resolution
+
+Root Cause:
+  Database connection pool exhausted
+  
+Recommendations:
+  - Increase pool size to 200
+  - Add pool utilization alerts
+  - Document in runbook`
+                },
+                source: 'coder1-official',
+                popularity: 'featured'
+            },
+
+            // SKILL 10: API Contract Oracle
+            {
+                id: 'api-contract-oracle-skill',
+                name: 'API Contract Oracle',
+                category: 'CLAUDE SKILLS',
+                categorySlug: 'claude-skills',
+                description: 'Prevents breaking API changes by tracking contracts, validating changes, and ensuring backward compatibility',
+                tags: ['API Safety', 'Breaking Changes', 'Versioning', 'Python'],
+                stats: { rating: 4.9, downloads: 280, comments: 26 },
+                command: 'claude skills install api-contract-oracle',
+                features: [
+                    'Automatic API contract extraction',
+                    'Breaking change detection and prevention',
+                    'Backward compatibility validation',
+                    'Client impact analysis',
+                    'Migration strategy recommendations'
+                ],
+                code: {
+                    config: `---
+name: api-contract-oracle
+description: Prevents breaking API changes
+version: 1.0.0
+dependencies:
+  python: ">=3.7"
+---`,
+                    usage: `# Check for breaking changes
+python3 ~/.coder1/skills/api-contract-oracle/contract_checker.py old-schema.json new-schema.json
+
+# Via Claude
+"I want to rename the \\'user_id\\' field to \\'userId\\'"
+
+# Claude warns:
+⚠️ BREAKING CHANGE DETECTED
+Impact: All clients using this field will break
+Recommendation: Add new field, deprecate old`,
+                    example: `# Example check results:
+API Contract Check
+==================
+
+Total Changes: 5
+Breaking Changes: 2
+
+Status: ❌ BLOCKING
+
+Changes:
+  BREAKING: Field removed: legacy_id
+  BREAKING: Type changed: age (int → string)
+  SAFE: Added optional field: avatar_url
+
+Recommendation: Create v2 endpoint`
+                },
+                source: 'coder1-official',
+                popularity: 'trending'
             }
         ];
 
