@@ -15,7 +15,7 @@ if (typeof window !== 'undefined') {
   require('@xterm/xterm/css/xterm.css');
 }
 import './Terminal.css'; // Re-enabled - critical for xterm viewport fixes
-import { Zap, StopCircle, Brain, Eye, Code2, Mic, MicOff, Speaker, ChevronDown, Plus } from '@/lib/icons';
+import { Zap, StopCircle, Brain, Eye, Code2, Mic, MicOff, Speaker, ChevronDown, Plus, Users } from '@/lib/icons';
 import { Edit3, GitBranch, X, Stethoscope } from 'lucide-react';
 import { useModelStore } from '@/stores/useModelStore';
 import TerminalSettings, { TerminalSettingsState } from './TerminalSettings';
@@ -4602,31 +4602,22 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
 
         {/* Right section - All terminal control buttons */}
         <div className="flex items-center gap-2">
-          {/* Stop button */}
+          {/* AI Team button - Spawn parallel AI agents */}
           <button
-            onClick={() => {
-              // Stop all running processes
-              setAgentsRunning(false);
-              setVoiceListening(false);
-              // Supervision is managed by context, not local state
-              
-              // Stop speech recognition if active
-              if (recognition && voiceListening) {
-                recognition.stop();
-              }
-              
-              xtermRef.current?.writeln('\r\n🛑 Emergency Stop Activated:');
-              xtermRef.current?.writeln('• All AI agents stopped');
-              // xtermRef.current?.writeln('• Voice input disabled');
-              xtermRef.current?.writeln('• Supervision disabled');
-              xtermRef.current?.writeln('• Terminal processes killed');
-              xtermRef.current?.writeln('\r\nSystem ready for new commands.');
-            }}
-            className="terminal-stop-btn flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md"
-            title="Emergency stop - halt all processes"
+            onClick={handleSpawnAgents}
+            disabled={agentsRunning}
+            className={`terminal-control-btn flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md transition-all ${
+              agentsRunning 
+                ? 'opacity-50 cursor-not-allowed' 
+                : 'hover:bg-gradient-to-r hover:from-purple-600/20 hover:to-coder1-cyan/20'
+            }`}
+            title={agentsRunning ? 'AI Team is already running' : 'Spawn AI Team to build your project'}
           >
-            <StopCircle className="w-4 h-4" />
-            <span>Stop</span>
+            <Users className="w-4 h-4" />
+            <span>{agentsRunning ? 'Team Active' : 'AI Team'}</span>
+            {agentsRunning && (
+              <div className="ml-1 w-2 h-2 bg-coder1-cyan rounded-full animate-pulse" />
+            )}
           </button>
 
 
