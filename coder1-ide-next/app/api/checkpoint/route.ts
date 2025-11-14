@@ -6,6 +6,44 @@ import { processCheckpointDataForSave, filterThinkingAnimations, filterThinkingA
 
 export const dynamic = 'force-dynamic';
 
+// Maximum terminal history size for checkpoints (1MB)
+// Prevents memory issues and page freezes from oversized checkpoints
+const MAX_TERMINAL_HISTORY_SIZE = 1 * 1024 * 1024; // 1MB
+const MAX_TERMINAL_HISTORY_LINES = 10000; // Keep last 10k lines
+
+/**
+ * Truncate terminal history to prevent oversized checkpoints
+ * Keeps the most recent lines within size and line limits
+ */
+function truncateTerminalHistory(history: string): string {
+  if (!history) return history;
+  
+  const sizeInBytes = Buffer.byteLength(history, 'utf8');
+  
+  // If within limits, return as-is
+  if (sizeInBytes <= MAX_TERMINAL_HISTORY_SIZE) {
+    return history;
+  }
+  
+  console.warn(`⚠️ Terminal history exceeds ${MAX_TERMINAL_HISTORY_SIZE / 1024 / 1024}MB (${(sizeInBytes / 1024 / 1024).toFixed(2)}MB), truncating...`);
+  
+  // Split by newlines and keep last N lines
+  const lines = history.split('\n');
+  if (lines.length > MAX_TERMINAL_HISTORY_LINES) {
+    const truncated = lines.slice(-MAX_TERMINAL_HISTORY_LINES).join('\n');
+    const newSize = Buffer.byteLength(truncated, 'utf8');
+    console.log(`📊 Truncated terminal history: ${lines.length} lines → ${MAX_TERMINAL_HISTORY_LINES} lines (${(sizeInBytes / 1024 / 1024).toFixed(2)}MB → ${(newSize / 1024 / 1024).toFixed(2)}MB)`);
+    return truncated;
+  }
+  
+  // If still too large after line truncation, truncate by bytes
+  // Keep the last MAX_TERMINAL_HISTORY_SIZE bytes
+  const truncated = history.slice(-MAX_TERMINAL_HISTORY_SIZE);
+  const newSize = Buffer.byteLength(truncated, 'utf8');
+  console.log(`📊 Truncated terminal history by bytes: ${(sizeInBytes / 1024 / 1024).toFixed(2)}MB → ${(newSize / 1024 / 1024).toFixed(2)}MB)`);
+  return truncated;
+}
+
 // Get database connection using dynamic import to avoid webpack bundling issues
 const getDatabase = async () => {
   const BetterSqlite3 = await import('better-sqlite3');
@@ -118,7 +156,7 @@ export async function POST(request: NextRequest) {
     const filteredSnapshot = processCheckpointDataForSave(data.snapshot);
     
     // Extract terminal history from request data and filter out status lines ASYNCHRONOUSLY
-    const rawTerminalHistory = data.terminalHistory || data.snapshot?.terminal || '';
+    let rawTerminalHistory = data.terminalHistory || data.snapshot?.terminal || '';
     
     // 🔍 DEBUG: Log terminal history source and length
     const historySource = data.terminalHistory ? 'data.terminalHistory' : 
@@ -126,6 +164,14 @@ export async function POST(request: NextRequest) {
                           'empty (no source)';
     console.log(`📊 CHECKPOINT DEBUG: Terminal history source: ${historySource}`);
     console.log(`📊 CHECKPOINT DEBUG: Raw terminal history length: ${rawTerminalHistory.length} characters`);
+    
+    // 🔒 SIZE LIMIT: Truncate terminal history if too large (prevents freeze bug)
+    const originalSize = Buffer.byteLength(rawTerminalHistory, 'utf8');
+    if (originalSize > MAX_TERMINAL_HISTORY_SIZE) {
+      rawTerminalHistory = truncateTerminalHistory(rawTerminalHistory);
+      console.log(`✂️ Truncated oversized terminal history to prevent page freeze`);
+    }
+    
     if (rawTerminalHistory.length === 0) {
       console.warn(`⚠️ CHECKPOINT WARNING: Creating checkpoint with EMPTY terminal history!`);
       console.warn(`⚠️ This checkpoint will have no terminal content when restored`);

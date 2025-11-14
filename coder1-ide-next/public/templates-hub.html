@@ -1716,7 +1716,7 @@
             <div class="category-pills">
                 <div class="category-pill active" data-category="all">
                     All Templates
-                    <span class="category-count">44</span>
+                    <span class="category-count">59</span>
                 </div>
                 <div class="category-pill" data-category="ai-agents">
                     AI Agents
@@ -1724,7 +1724,7 @@
                 </div>
                 <div class="category-pill" data-category="mcp">
                     MCP Integrations
-                    <span class="category-count">15</span>
+                    <span class="category-count">20</span>
                 </div>
                 <div class="category-pill" data-category="hooks">
                     Smart Hooks
@@ -1733,6 +1733,10 @@
                 <div class="category-pill" data-category="commands">
                     Quick Commands
                     <span class="category-count">7</span>
+                </div>
+                <div class="category-pill" data-category="claude-skills">
+                    Claude Skills
+                    <span class="category-count">10</span>
                 </div>
             </div>
         </div>
@@ -3166,7 +3170,7 @@ Top Files Loaded:
                 name: 'Team Protocol',
                 category: 'CLAUDE SKILLS',
                 categorySlug: 'claude-skills',
-                description: 'Encodes your team\\'s working culture, code standards, and collaboration patterns so AI agents work according to your team\\'s style',
+                description: "Encodes your team's working culture, code standards, and collaboration patterns so AI agents work according to your team's style",
                 tags: ['Team Culture', 'Code Standards', 'Collaboration', 'Workflows'],
                 stats: { rating: 4.7, downloads: 165, comments: 22 },
                 command: 'claude skills install team-protocol',
@@ -3238,7 +3242,7 @@ description: AI-powered incident response system
 version: 1.0.0
 ---`,
                     usage: `# Start incident response
-"Production is down - users can\\'t log in"
+"Production is down - users can't log in"
 
 # Claude activates War Room mode:
 🚨 PRODUCTION WAR ROOM ACTIVATED 🚨
@@ -3298,7 +3302,7 @@ dependencies:
 python3 ~/.coder1/skills/api-contract-oracle/contract_checker.py old-schema.json new-schema.json
 
 # Via Claude
-"I want to rename the \\'user_id\\' field to \\'userId\\'"
+"I want to rename the 'user_id' field to 'userId'"
 
 # Claude warns:
 ⚠️ BREAKING CHANGE DETECTED
@@ -3340,15 +3344,22 @@ Recommendation: Create v2 endpoint`
                     if (data.success && Array.isArray(data.templates)) {
                         console.log('API templates loaded:', data.templates.length);
                         
-                        // Filter API templates to only include MCP integrations
-                        const apiMcpTemplates = data.templates.filter(t => t.categorySlug === 'mcp');
-                        console.log('API MCP templates:', apiMcpTemplates.length);
+                        // ✅ CORRECT FIX: Merge API templates with hardcoded-only categories
+                        // API returns: AI Agents, Web Apps, Backend, Dev Tools, Marketing, MCP (dynamic)
+                        // Hardcoded only: Hooks, Commands, Claude Skills
                         
-                        // Remove hardcoded MCP templates and replace with API versions
-                        templates = hardcodedTemplates.filter(t => t.categorySlug !== 'mcp');
-                        templates.push(...apiMcpTemplates);
+                        // Keep hardcoded templates that are NOT in API (hooks, commands, claude-skills)
+                        const hardcodedOnlyCategories = ['hooks', 'commands', 'claude-skills'];
+                        const hardcodedOnly = hardcodedTemplates.filter(t => 
+                            hardcodedOnlyCategories.includes(t.categorySlug)
+                        );
                         
-                        console.log('Total templates after API merge:', templates.length);
+                        // Combine: API templates + hardcoded-only templates
+                        templates = [...data.templates, ...hardcodedOnly];
+                        
+                        console.log('API templates:', data.templates.length);
+                        console.log('Hardcoded-only templates:', hardcodedOnly.length);
+                        console.log('Total templates after merge:', templates.length);
                     } else {
                         console.warn('API response invalid, using hardcoded templates');
                         templates = hardcodedTemplates;

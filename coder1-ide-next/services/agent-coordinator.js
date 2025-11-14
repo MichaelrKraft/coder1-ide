@@ -15,6 +15,7 @@
 
 const { getPuppeteerService } = require('./claude-cli-puppeteer');
 const { CLIOutputParser } = require('./cli-output-parser');
+const { getPromptGenerator } = require('./prompts/prompt-generator');
 const EventEmitter = require('events');
 const path = require('path');
 const { promises: fs } = require('fs');
@@ -44,6 +45,8 @@ class AgentCoordinator extends EventEmitter {
       extractMetadata: true,
       verbose: this.options.enableLogging
     });
+    
+    this.promptGenerator = getPromptGenerator();
     
     // State management
     this.activeWorkflows = new Map(); // workflowId -> WorkflowSession
@@ -442,6 +445,7 @@ class AgentCoordinator extends EventEmitter {
       workflowId,
       template,
       requirement,
+      detailedRequirements: options.detailedRequirements || null, // Store gathered requirements
       status: 'starting',
       currentPhase: null,
       currentPhaseIndex: 0,
@@ -645,10 +649,10 @@ class AgentCoordinator extends EventEmitter {
       
       if (phase.mode === 'parallel') {
         console.log(`⚡ Running tasks in PARALLEL across ${activeAgents.length} agents`);
-        phaseResult.outputs = await this.executeTasksInParallel(activeAgents, phase.tasks, requirement);
+        phaseResult.outputs = await this.executeTasksInParallel(activeAgents, phase.tasks, requirement, workflowSession);
       } else {
         console.log(`🔄 Running tasks SEQUENTIALLY across ${activeAgents.length} agents`);
-        phaseResult.outputs = await this.executeTasksSequentially(activeAgents, phase.tasks, requirement);
+        phaseResult.outputs = await this.executeTasksSequentially(activeAgents, phase.tasks, requirement, workflowSession);
       }
       
       const taskExecutionTime = new Date() - taskExecutionStart;
@@ -697,18 +701,32 @@ class AgentCoordinator extends EventEmitter {
    * @param {string} context - Context for tasks
    * @returns {Promise<Array>} Task results
    */
-  async executeTasksInParallel(agents, tasks, context) {
+  async executeTasksInParallel(agents, tasks, context, workflowSession = null) {
     console.log(`⚡ Executing ${tasks.length} tasks in parallel with ${agents.length} agents`);
     
     const taskPromises = agents.map((agent, index) => {
       const task = tasks[index] || tasks[0]; // Reuse tasks if fewer than agents
       const roleDefinition = this.agentRoleDefinitions.get(agent.role);
       
-      const prompt = `Task: ${task}
-Context: ${context}
-Role: ${roleDefinition.persona}
-
-Please complete this task with your expertise. Provide clear, actionable output including any code, configurations, or recommendations.`;
+      // Generate detailed prompt if requirements object available
+      let prompt;
+      if (workflowSession?.detailedRequirements) {
+        console.log(`📋 Generating detailed ${agent.role} prompt from requirements...`);
+        prompt = this.promptGenerator.generate(
+          agent.role,
+          workflowSession.detailedRequirements,
+          {
+            workTreePath: agent.workTreePath || workflowSession.options.workTreeRoot,
+            branchName: agent.branchName || 'main',
+            currentTask: task
+          }
+        );
+        console.log(`✅ Generated ${prompt.length} character detailed prompt`);
+      } else {
+        // Fallback to simple prompt if no requirements
+        console.log(`⚠️ No detailed requirements, using simple prompt for ${agent.role}`);
+        prompt = `Task: ${task}\nContext: ${context}\nRole: ${roleDefinition.persona}\n\nPlease complete this task with your expertise. Provide clear, actionable output including any code, configurations, or recommendations.`;
+      }
 
       return this.executeAgentTask(agent, prompt, task);
     });
@@ -727,7 +745,7 @@ Please complete this task with your expertise. Provide clear, actionable output 
    * @param {string} context - Context for tasks
    * @returns {Promise<Array>} Task results
    */
-  async executeTasksSequentially(agents, tasks, context) {
+  async executeTasksSequentially(agents, tasks, context, workflowSession = null) {
     console.log(`🔄 Executing ${tasks.length} tasks sequentially`);
     
     const results = [];
@@ -738,16 +756,38 @@ Please complete this task with your expertise. Provide clear, actionable output 
       const agent = agents[i % agents.length]; // Round-robin if more tasks than agents
       const roleDefinition = this.agentRoleDefinitions.get(agent.role);
       
-      let prompt = `Task: ${task}
-Context: ${context}
-Role: ${roleDefinition.persona}`;
+      // Generate detailed prompt if requirements object available
+      let prompt;
+      if (workflowSession?.detailedRequirements) {
+        console.log(`📋 Generating detailed ${agent.role} prompt from requirements (task ${i+1}/${tasks.length})...`);
+        prompt = this.promptGenerator.generate(
+          agent.role,
+          workflowSession.detailedRequirements,
+          {
+            workTreePath: agent.workTreePath || workflowSession.options.workTreeRoot,
+            branchName: agent.branchName || 'main',
+            currentTask: task
+          }
+        );
+        
+        // Add previous result as context for subsequent tasks
+        if (previousResult && previousResult.success) {
+          prompt += `\n\n## Previous Work Completed\n${previousResult.output.substring(0, 1000)}`;
+        }
+        
+        console.log(`✅ Generated ${prompt.length} character detailed prompt with ${previousResult ? 'previous context' : 'no context'}`);
+      } else {
+        // Fallback to simple prompt if no requirements
+        console.log(`⚠️ No detailed requirements, using simple prompt for ${agent.role} (task ${i+1}/${tasks.length})`);
+        prompt = `Task: ${task}\nContext: ${context}\nRole: ${roleDefinition.persona}`;
 
-      // Add previous result as context for subsequent tasks
-      if (previousResult && previousResult.success) {
-        prompt += `\n\nPrevious work completed: ${previousResult.output.substring(0, 1000)}`;
+        // Add previous result as context for subsequent tasks
+        if (previousResult && previousResult.success) {
+          prompt += `\n\nPrevious work completed: ${previousResult.output.substring(0, 1000)}`;
+        }
+
+        prompt += `\n\nPlease complete this task with your expertise. Provide clear, actionable output including any code, configurations, or recommendations.`;
       }
-
-      prompt += `\n\nPlease complete this task with your expertise. Provide clear, actionable output including any code, configurations, or recommendations.`;
 
       const result = await this.executeAgentTask(agent, prompt, task);
       results.push(result);
