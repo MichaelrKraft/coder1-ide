@@ -1,0 +1,369 @@
+import { Callout } from '@/components/Callout';
+
+# AI Team Dashboard
+
+<div className="my-8 text-center">
+  <h2 className="text-4xl font-bold mb-4 bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+    Mission Control for Your AI Agents
+  </h2>
+  <p className="text-xl text-slate-300 max-w-3xl mx-auto">
+    Real-time visibility into what each AI agent is doing, with live progress tracking and performance metrics.
+  </p>
+</div>
+
+## Overview
+
+The AI Team Dashboard is your command center for monitoring multiple AI agents working in parallel. It provides real-time status updates, progress tracking, and detailed insights into each agent's activities.
+
+<Callout type="success" title="Zero Configuration">
+The dashboard automatically appears when you spawn AI agents - no setup required.
+</Callout>
+
+## Visual Layout
+
+<div className="bg-slate-800/50 border border-slate-700 rounded-lg p-6 my-8">
+```
+┌─────────────────────────────────────────────────────────┐
+│           🤖 AI Team Dashboard (3 Agents)               │
+├─────────────────────────────────────────────────────────┤
+│                                                         │
+│  ┌───────────────────────────────────────────────┐     │
+│  │ 🎨 Frontend Agent                     [75%]  │     │
+│  │ Status: Writing          Time: 8m 23s        │     │
+│  │ File: components/LoginForm.tsx               │     │
+│  │ Branch: claude-agent/team-xyz/frontend       │     │
+│  │ ────────────────────────────────────         │     │
+│  └───────────────────────────────────────────────┘     │
+│                                                         │
+│  ┌───────────────────────────────────────────────┐     │
+│  │ ⚙️ Backend Agent                      [60%]  │     │
+│  │ Status: Testing          Time: 8m 23s        │     │
+│  │ File: api/auth/login/route.ts                │     │
+│  │ Branch: claude-agent/team-xyz/backend        │     │
+│  │ ────────────────────────────                 │     │
+│  └───────────────────────────────────────────────┘     │
+│                                                         │
+│  ┌───────────────────────────────────────────────┐     │
+│  │ 🧪 Testing Agent                      [30%]  │     │
+│  │ Status: Idle             Time: 8m 23s        │     │
+│  │ File: -                                      │     │
+│  │ Branch: claude-agent/team-xyz/testing        │     │
+│  │ ──────────────                               │     │
+│  └───────────────────────────────────────────────┘     │
+│                                                         │
+└─────────────────────────────────────────────────────────┘
+```
+</div>
+
+## Agent Status Indicators
+
+Each agent card shows its current status with color-coded indicators:
+
+<div className="grid md:grid-cols-3 gap-4 my-8">
+  {[
+    { status: 'Thinking', color: 'text-blue-400', icon: '🤔', desc: 'Agent is analyzing requirements and planning approach' },
+    { status: 'Writing', color: 'text-green-400', icon: '✍️', desc: 'Agent is actively creating or modifying files' },
+    { status: 'Testing', color: 'text-purple-400', icon: '🧪', desc: 'Agent is running tests or validating code' },
+    { status: 'Installing', color: 'text-yellow-400', icon: '📦', desc: 'Agent is installing dependencies via npm/yarn' },
+    { status: 'Error', color: 'text-red-400', icon: '❌', desc: 'Agent encountered an error and needs attention' },
+    { status: 'Complete', color: 'text-green-400', icon: '✅', desc: 'Agent has successfully completed its task' }
+  ].map((item) => (
+    <div key={item.status} className="bg-slate-800/30 border border-slate-700 rounded-lg p-4">
+      <div className="flex items-center gap-2 mb-2">
+        <span className="text-2xl">{item.icon}</span>
+        <span className={`font-semibold ${item.color}`}>{item.status}</span>
+      </div>
+      <div className="text-xs text-slate-400">{item.desc}</div>
+    </div>
+  ))}
+</div>
+
+## Real-Time Progress Tracking
+
+### Progress Calculation
+
+The dashboard intelligently calculates progress based on terminal output analysis:
+
+```typescript
+// Progress detection patterns
+const progressIndicators = {
+  'Analyzing requirements': 10,
+  'Planning implementation': 20,
+  'Creating file': 40,
+  'I\'ll create': 40,
+  'Writing to': 50,
+  'Installing dependencies': 60,
+  'Running tests': 70,
+  'npm install': 60,
+  'All files created': 90,
+  'Task complete': 100
+};
+
+// Dynamic progress estimation
+function calculateProgress(output: string): number {
+  // Scans terminal output for progress indicators
+  // Returns percentage based on detected milestones
+}
+```
+
+### Progress Bar Visualization
+
+<div className="bg-slate-800/50 border border-slate-700 rounded-lg p-4 my-6">
+  <div className="mb-4">
+    <div className="flex justify-between text-sm mb-2">
+      <span className="text-slate-300">Frontend Agent</span>
+      <span className="text-blue-400 font-semibold">75%</span>
+    </div>
+    <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
+      <div className="h-full bg-gradient-to-r from-blue-500 to-purple-500 rounded-full" style={{width: '75%'}}></div>
+    </div>
+  </div>
+  
+  <div className="mb-4">
+    <div className="flex justify-between text-sm mb-2">
+      <span className="text-slate-300">Backend Agent</span>
+      <span className="text-blue-400 font-semibold">60%</span>
+    </div>
+    <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
+      <div className="h-full bg-gradient-to-r from-blue-500 to-purple-500 rounded-full" style={{width: '60%'}}></div>
+    </div>
+  </div>
+  
+  <div>
+    <div className="flex justify-between text-sm mb-2">
+      <span className="text-slate-300">Testing Agent</span>
+      <span className="text-blue-400 font-semibold">30%</span>
+    </div>
+    <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
+      <div className="h-full bg-gradient-to-r from-blue-500 to-purple-500 rounded-full" style={{width: '30%'}}></div>
+    </div>
+  </div>
+</div>
+
+## Agent Metadata
+
+### Current File Display
+
+Shows which file the agent is currently working on:
+
+```typescript
+// File detection from terminal output
+'Creating src/components/LoginForm.tsx' → File: LoginForm.tsx
+'Editing app/api/auth/route.ts' → File: route.ts
+'Reading package.json' → File: package.json
+
+// Updates in real-time as agent switches files
+```
+
+### Branch Information
+
+Each agent works on its own git branch:
+
+```
+Frontend: claude-agent/team-1234567890/frontend
+Backend:  claude-agent/team-1234567890/backend
+Testing:  claude-agent/team-1234567890/testing
+```
+
+Click branch name to:
+- View branch on GitHub (if remote exists)
+- Copy branch name to clipboard
+- Switch to that branch in terminal
+
+### Time Tracking
+
+Precise elapsed time since agent started:
+
+<div className="bg-slate-800/50 border border-slate-700 rounded-lg p-4 my-6 font-mono text-sm">
+  <div className="space-y-2">
+    <div><span className="text-slate-400">Frontend Agent:</span> <span className="text-green-400">12m 45s</span></div>
+    <div><span className="text-slate-400">Backend Agent:</span> <span className="text-green-400">12m 45s</span></div>
+    <div><span className="text-slate-400">Testing Agent:</span> <span className="text-yellow-400">8m 12s</span> (started later)</div>
+  </div>
+</div>
+
+## Interactive Features
+
+### Agent Controls
+
+Each agent card has action buttons:
+
+<div className="grid md:grid-cols-2 gap-4 my-6">
+  <div className="bg-slate-800/30 border border-slate-700 rounded-lg p-4">
+    <div className="font-semibold text-slate-100 mb-2">🔍 View Terminal</div>
+    <div className="text-xs text-slate-400">Opens agent's terminal tab to see full output and send commands</div>
+  </div>
+  
+  <div className="bg-slate-800/30 border border-slate-700 rounded-lg p-4">
+    <div className="font-semibold text-slate-100 mb-2">⏸️ Pause Agent</div>
+    <div className="text-xs text-slate-400">Suspends agent execution (can resume later)</div>
+  </div>
+  
+  <div className="bg-slate-800/30 border border-slate-700 rounded-lg p-4">
+    <div className="font-semibold text-slate-100 mb-2">🔄 Restart Agent</div>
+    <div className="text-xs text-slate-400">Kills and respawns agent from last checkpoint</div>
+  </div>
+  
+  <div className="bg-slate-800/30 border border-slate-700 rounded-lg p-4">
+    <div className="font-semibold text-slate-100 mb-2">🗑️ Stop Agent</div>
+    <div className="text-xs text-slate-400">Terminates agent and cleans up worktree</div>
+  </div>
+</div>
+
+### Dashboard Modes
+
+<div className="bg-slate-800/50 border border-slate-700 rounded-lg p-6 my-8">
+  <div className="space-y-4">
+    <div>
+      <div className="font-semibold text-blue-400 mb-2">📊 Compact Mode (Default)</div>
+      <div className="text-sm text-slate-300">Shows all agents in a scrollable list with essential info</div>
+    </div>
+    
+    <div>
+      <div className="font-semibold text-blue-400 mb-2">📈 Detailed Mode</div>
+      <div className="text-sm text-slate-300">Expands each agent card to show terminal output preview, recent file changes, and detailed logs</div>
+    </div>
+    
+    <div>
+      <div className="font-semibold text-blue-400 mb-2">🎯 Focus Mode</div>
+      <div className="text-sm text-slate-300">Shows only one agent at a time with full terminal integration</div>
+    </div>
+  </div>
+</div>
+
+## Performance Metrics
+
+The dashboard tracks and displays performance data:
+
+<div className="grid md:grid-cols-4 gap-4 my-8">
+  {[
+    { label: 'Total Agents', value: '3', icon: '🤖' },
+    { label: 'Avg Progress', value: '55%', icon: '📊' },
+    { label: 'Files Modified', value: '12', icon: '📝' },
+    { label: 'Est. Completion', value: '4m', icon: '⏱️' }
+  ].map((metric) => (
+    <div key={metric.label} className="bg-slate-800/50 border border-slate-700 rounded-lg p-4 text-center">
+      <div className="text-3xl mb-2">{metric.icon}</div>
+      <div className="text-2xl font-bold text-blue-400 mb-1">{metric.value}</div>
+      <div className="text-xs text-slate-400">{metric.label}</div>
+    </div>
+  ))}
+</div>
+
+## WebSocket Architecture
+
+The dashboard uses Socket.IO for real-time updates:
+
+```typescript
+// Client-side connection
+const socket = io('http://localhost:3001');
+
+// Subscribe to agent status updates
+socket.on('agent:progress', ({ agentId, progress, status, file }) => {
+  updateDashboard(agentId, { progress, status, file });
+});
+
+// Subscribe to agent completion
+socket.on('agent:complete', ({ agentId, summary }) => {
+  markAgentComplete(agentId);
+  showCompletionNotification(summary);
+});
+
+// Subscribe to agent errors
+socket.on('agent:error', ({ agentId, error }) => {
+  showErrorState(agentId, error);
+});
+```
+
+## Completion Summary
+
+When all agents finish, the dashboard shows a comprehensive summary:
+
+<div className="bg-slate-800/50 border border-slate-700 rounded-lg p-6 my-8">
+```
+╔════════════════════════════════════════════════════════════╗
+║              ✅ AI Team Complete!                         ║
+╚════════════════════════════════════════════════════════════╝
+
+Total Time: 12m 45s
+Agents: 3/3 completed successfully
+
+Frontend Agent:
+  ✅ Created 5 components
+  ✅ Added form validation
+  ✅ Integrated with API
+  Branch: claude-agent/team-xyz/frontend
+
+Backend Agent:
+  ✅ Created 4 API endpoints
+  ✅ Implemented JWT auth
+  ✅ Added middleware
+  Branch: claude-agent/team-xyz/backend
+
+Testing Agent:
+  ✅ 15 tests passing
+  ✅ 85% code coverage
+  ✅ Integration tests complete
+  Branch: claude-agent/team-xyz/testing
+
+Next Steps:
+1. Review each agent's branch with git diff
+2. Merge branches into main
+3. Clean up worktrees
+4. Deploy to production
+```
+</div>
+
+<Callout type="info" title="Automatic Checkpoint">
+Coder1 automatically creates a checkpoint when all agents complete successfully.
+</Callout>
+
+## Keyboard Shortcuts
+
+<div className="bg-slate-800/50 border border-slate-700 rounded-lg p-4 my-6 font-mono text-sm">
+  <div className="space-y-2">
+    <div><kbd className="bg-slate-700 px-2 py-1 rounded">Cmd+Shift+A</kbd> <span className="text-slate-400">Open AI Team Dashboard</span></div>
+    <div><kbd className="bg-slate-700 px-2 py-1 rounded">Cmd+Shift+T</kbd> <span className="text-slate-400">View agent terminal</span></div>
+    <div><kbd className="bg-slate-700 px-2 py-1 rounded">Cmd+Shift+P</kbd> <span className="text-slate-400">Pause/Resume agent</span></div>
+    <div><kbd className="bg-slate-700 px-2 py-1 rounded">Cmd+Shift+S</kbd> <span className="text-slate-400">Stop agent</span></div>
+    <div><kbd className="bg-slate-700 px-2 py-1 rounded">Cmd+Shift+D</kbd> <span className="text-slate-400">Toggle dashboard mode</span></div>
+  </div>
+</div>
+
+## Troubleshooting
+
+### Dashboard not updating
+
+**Symptom**: Agent progress frozen despite terminal activity
+
+**Solutions**:
+1. Check WebSocket connection: Look for green "Connected" indicator
+2. Refresh page to reconnect WebSocket
+3. Check browser console for connection errors
+4. Verify firewall isn't blocking WebSocket connections
+
+### Incorrect progress percentages
+
+**Symptom**: Progress shows 100% but agent still working
+
+**Solutions**:
+1. Progress is estimated based on output parsing
+2. Unusual output patterns may trigger false completion
+3. Check agent terminal for actual status
+4. Report pattern to GitHub for parser improvements
+
+### Agent status shows "Error" but terminal looks fine
+
+**Symptom**: Error state without visible errors in terminal
+
+**Solutions**:
+1. Scroll up in terminal to find error message
+2. Click "View Terminal" to see full output
+3. Agent may have recovered automatically
+4. Restart agent if truly stuck
+
+## What's Next?
+
+- [Integrated Terminal](/ide-features/terminal) - Full PTY terminal with AI supervision
+- [Session Management](/core-concepts/session-management) - Checkpoints and summaries
+- [Multi-Agent System](/core-concepts/multi-agent-system) - How parallel AI agents work

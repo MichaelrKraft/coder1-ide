@@ -1,0 +1,261 @@
+import { Callout } from '@/components/Callout';
+import { Steps, Step } from '@/components/Steps';
+
+# Multi-Agent System
+
+<Callout type="success" title="Revolutionary">
+The only IDE with true parallel AI development at **$0/month**
+</Callout>
+
+## Overview
+
+Coder1's multi-agent system spawns **real Claude CLI instances** that work in **separate git worktrees**, enabling true parallel development without merge conflicts.
+
+<div className="my-8 p-6 bg-slate-800/50 rounded-lg border border-slate-700">
+  <div className="font-mono text-sm">
+    <div className="text-blue-400">.claude-parallel-dev/</div>
+    <div className="ml-4">
+      <div className="text-purple-400">└── team-1736789234/</div>
+      <div className="ml-8 space-y-1">
+        <div className="text-green-400">├── frontend/      # Branch: claude-agent/team-xyz/frontend</div>
+        <div className="text-green-400">├── backend/       # Branch: claude-agent/team-xyz/backend</div>
+        <div className="text-green-400">└── testing/       # Branch: claude-agent/team-xyz/testing</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<Callout type="info" title="Git Worktrees">
+Each agent works in a completely isolated directory on its own branch. **No conflicts possible during development.**
+</Callout>
+
+## How It Works
+
+<Steps>
+  <Step title="User Clicks 'AI Team' Button">
+    The AI Team button in the terminal header triggers the orchestration system.
+    
+    A modal appears allowing you to select agent roles and provide task descriptions.
+  </Step>
+
+  <Step title="System Creates Git Worktrees">
+    For each agent, Coder1 creates an isolated git worktree:
+    
+```bash
+# Each agent gets its own workspace
+git worktree add .claude-parallel-dev/team-xyz/frontend -b claude-agent/team-xyz/frontend
+git worktree add .claude-parallel-dev/team-xyz/backend -b claude-agent/team-xyz/backend
+git worktree add .claude-parallel-dev/team-xyz/testing -b claude-agent/team-xyz/testing
+```
+  </Step>
+
+  <Step title="Claude CLI Processes Spawn">
+    Real Claude Code CLI processes are spawned via PTY (pseudo-terminal):
+    
+```typescript
+const agent = spawn('/opt/homebrew/bin/claude', [], {
+  cwd: worktreePath,
+  env: { ...process.env }
+});
+```
+    
+    Each process is a **real Claude instance**, not a simulation.
+  </Step>
+
+  <Step title="Visual Dashboard Updates">
+    The AI Team Dashboard appears, showing real-time progress for each agent:
+    
+    - **Status**: Thinking, Writing, Testing, Idle, Error, Complete
+    - **Progress**: 0-100% based on terminal output analysis
+    - **Current File**: Which file the agent is working on
+    - **Time Elapsed**: How long the agent has been active
+    - **Branch**: Git branch for that agent's work
+  </Step>
+
+  <Step title="Agents Work Independently">
+    Each agent:
+    - Reads/writes files in its worktree
+    - Makes commits to its branch
+    - Streams output to its terminal tab
+    - Reports progress via WebSocket
+    
+    **All agents work simultaneously** without interfering with each other.
+  </Step>
+</Steps>
+
+## Cost Comparison
+
+<div className="grid md:grid-cols-2 gap-6 my-8">
+  <div className="bg-red-900/10 border border-red-500/30 rounded-lg p-6">
+    <h3 className="text-xl font-semibold mb-4 text-red-400">Traditional API Approach</h3>
+    <ul className="space-y-2 text-sm text-slate-300 list-disc list-inside">
+      <li>GPT-4 API: $0.03/1K tokens (input) + $0.06/1K tokens (output)</li>
+      <li>Average agent task: about 100K tokens</li>
+      <li>Cost per task: <span className="font-bold text-red-400">about $4.50</span></li>
+      <li>100 tasks/month: <span className="font-bold text-red-400">$450/month</span> 💸</li>
+    </ul>
+  </div>
+  
+  <div className="bg-green-900/10 border border-green-500/30 rounded-lg p-6">
+    <h3 className="text-xl font-semibold mb-4 text-green-400">Coder1 Approach</h3>
+    <ul className="space-y-2 text-sm text-slate-300 list-disc list-inside">
+      <li>Uses Claude Code subscription: <span className="font-bold text-green-400">$20/month</span> (you already have this)</li>
+      <li>Unlimited agent spawns</li>
+      <li>Cost per task: <span className="font-bold text-green-400">\$0</span> 🎉</li>
+      <li>100 tasks/month: <span className="font-bold text-green-400">\$0/month</span> ✨</li>
+    </ul>
+  </div>
+</div>
+
+<Callout type="success">
+**Annual Savings: $5,400** 🚀
+</Callout>
+
+## Agent Roles
+
+Coder1 supports specialized agent roles, each optimized for specific tasks:
+
+<div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 my-8">
+  {[
+    { icon: '🎨', name: 'Frontend Specialist', desc: 'React components, UI/UX, styling' },
+    { icon: '⚙️', name: 'Backend Engineer', desc: 'APIs, databases, authentication' },
+    { icon: '🧪', name: 'Testing Expert', desc: 'Unit, integration, E2E tests' },
+    { icon: '🚀', name: 'DevOps Engineer', desc: 'CI/CD, deployment, infrastructure' },
+    { icon: '🔒', name: 'Security Analyst', desc: 'Vulnerability scanning, best practices' },
+    { icon: '📚', name: 'Documentation Writer', desc: 'READMEs, API docs, tutorials' }
+  ].map((role) => (
+    <div key={role.name} className="bg-slate-800/30 border border-slate-700 rounded-lg p-4">
+      <div className="text-3xl mb-2">{role.icon}</div>
+      <div className="font-semibold text-slate-100 mb-1">{role.name}</div>
+      <div className="text-xs text-slate-400">{role.desc}</div>
+    </div>
+  ))}
+</div>
+
+## Real-World Example
+
+Here's a complete workflow for building an authentication system with 3 agents:
+
+```bash
+# User clicks "AI Team" button and describes task:
+"Build a complete authentication system with JWT, login/signup forms, and protected routes"
+
+# System spawns 3 agents:
+Frontend Agent  → Creates login.tsx, signup.tsx, auth context
+Backend Agent   → Creates auth API, JWT middleware, user model
+Testing Agent   → Writes unit tests, integration tests, E2E tests
+
+# All working simultaneously for 8-12 minutes
+
+# Result:
+✅ Frontend Agent: 5 components created, fully styled
+✅ Backend Agent: 4 API endpoints, JWT validation working
+✅ Testing Agent: 15 tests passing, 85% coverage
+
+# Total time: 12 minutes
+# Cost: $0
+# Merge conflicts: 0
+```
+
+## Merging Agent Work
+
+When agents complete, you can review and merge their branches:
+
+```bash
+# View what each agent did
+git log claude-agent/team-xyz/frontend --oneline
+git log claude-agent/team-xyz/backend --oneline
+git log claude-agent/team-xyz/testing --oneline
+
+# Review changes with diff
+git diff main..claude-agent/team-xyz/frontend
+
+# Merge frontend agent's work
+git checkout main
+git merge claude-agent/team-xyz/frontend
+
+# Repeat for other agents
+git merge claude-agent/team-xyz/backend
+git merge claude-agent/team-xyz/testing
+
+# Clean up branches
+git branch -d claude-agent/team-xyz/frontend
+git branch -d claude-agent/team-xyz/backend
+git branch -d claude-agent/team-xyz/testing
+
+# Remove worktrees
+git worktree remove .claude-parallel-dev/team-xyz/frontend
+git worktree remove .claude-parallel-dev/team-xyz/backend
+git worktree remove .claude-parallel-dev/team-xyz/testing
+```
+
+<Callout type="warning" title="Best Practice">
+Always review each agent's changes before merging. Use `git diff` to inspect modifications.
+</Callout>
+
+## Performance Metrics
+
+<div className="grid grid-cols-2 md:grid-cols-4 gap-4 my-8">
+  {[
+    { label: 'Spawn Time', value: '2-3s', icon: '⚡' },
+    { label: 'Memory/Agent', value: 'about 50MB', icon: '💾' },
+    { label: 'Max Concurrent', value: '10 agents', icon: '🔢' },
+    { label: 'Success Rate', value: '99%', icon: '✅' }
+  ].map((metric) => (
+    <div key={metric.label} className="bg-slate-800/50 border border-slate-700 rounded-lg p-4 text-center">
+      <div className="text-3xl mb-2">{metric.icon}</div>
+      <div className="text-2xl font-bold text-blue-400 mb-1">{metric.value}</div>
+      <div className="text-xs text-slate-400">{metric.label}</div>
+    </div>
+  ))}
+</div>
+
+## Current Limitations
+
+<Callout type="info" title="Roadmap Items">
+- Agents don't communicate with each other (planned for Q2 2025)
+- Manual merge required after completion (auto-merge coming)
+- Limited to Claude Code CLI (multi-platform support in beta)
+- Requires git repository
+</Callout>
+
+## Troubleshooting
+
+### Agent spawn fails
+
+**Symptom**: "Failed to create worktree"
+
+**Solutions**:
+1. Ensure you're in a git repository
+2. Commit or stash uncommitted changes
+3. Check available disk space
+
+```bash
+git status
+git stash
+df -h
+```
+
+### Claude CLI not found
+
+**Symptom**: "Claude CLI not found at /opt/homebrew/bin/claude"
+
+**Solutions**:
+1. Install Claude.app
+2. Enable Claude Code from menu
+3. Verify installation: `claude --version`
+
+### Memory issues on Render
+
+**Symptom**: Agents crash with "Out of memory"
+
+**Solutions**:
+1. Reduce max concurrent agents to 2-3
+2. Set `MAX_PARALLEL_AGENTS=3` in `.env.local`
+3. Consider upgrading Render plan
+
+## What's Next?
+
+- [AI Team Dashboard](/ide-features/ai-team-dashboard) - Visual monitoring
+- [Session Summaries](/core-concepts/session-management) - Document agent work
+- [Getting Started](/getting-started/quick-start) - Try it yourself

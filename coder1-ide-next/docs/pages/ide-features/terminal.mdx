@@ -1,0 +1,176 @@
+import { Callout } from '@/components/Callout';
+
+# Integrated Terminal
+
+<Callout type="success" title="Full PTY Support">
+Real terminal powered by **node-pty** with complete shell compatibility.
+</Callout>
+
+The Coder1 integrated terminal provides a full-featured command-line interface directly within the IDE, powered by XTerm.js and node-pty for true PTY (pseudo-terminal) support.
+
+## Key Features
+
+### True Shell Integration
+
+- **Full PTY support** - Not a simulated terminal
+- **Shell compatibility** - bash, zsh, fish, PowerShell
+- **Environment variables** - Complete access to your shell environment
+- **Process management** - Run long-running processes
+
+### Multiple Sessions
+
+Manage multiple terminal sessions:
+- Create unlimited terminal tabs
+- Switch between sessions instantly
+- Independent working directories
+- Session persistence
+
+### AI Supervision
+
+Unique to Coder1:
+- Claude can read terminal output
+- Context-aware assistance
+- Error detection and suggestions
+- Automatic command completion
+
+## Terminal Controls
+
+### Creating Sessions
+
+Three ways to create a new terminal:
+1. Click the "+" button in terminal header
+2. Use keyboard shortcut: Ctrl+\`
+3. AI Team spawns dedicated terminals per agent
+
+### Session Management
+
+Each session includes:
+- Independent shell process
+- Dedicated working directory
+- Session history
+- Scrollback buffer (10,000 lines)
+
+## Features
+
+### Copy & Paste
+
+- **Copy**: Select text + Ctrl+C (or Cmd+C)
+- **Paste**: Ctrl+V (or Cmd+V)
+- Right-click context menu support
+
+### Text Selection
+
+- Click and drag to select
+- Double-click to select word
+- Triple-click to select line
+- Shift+Arrow keys for keyboard selection
+
+### Search
+
+- Press Ctrl+F to open search
+- Case-sensitive and regex support
+- Navigate results with Enter/Shift+Enter
+
+### Scrolling
+
+- Mouse wheel to scroll
+- Shift+PgUp/PgDn for fast scroll
+- Automatic scroll on new output
+- Manual scroll locks position
+
+## AI Integration
+
+### Command Suggestions
+
+Claude monitors terminal activity and can:
+- Suggest commands based on context
+- Detect and explain errors
+- Recommend fixes for failed commands
+- Autocomplete complex commands
+
+### Error Doctor
+
+Automatic error analysis:
+- Detects compilation errors
+- Suggests fixes
+- Links to relevant documentation
+- One-click solutions
+
+<Callout type="info">
+When you type `claude` in the terminal, AI supervision mode activates automatically.
+</Callout>
+
+## Configuration
+
+### Default Shell
+
+Coder1 respects your system shell:
+- **macOS/Linux**: \$SHELL environment variable
+- **Windows**: PowerShell or WSL bash
+
+### Terminal Appearance
+
+Customizable settings:
+- Font size: 12-20px
+- Cursor style: block, underline, bar
+- Scrollback: 1,000-50,000 lines
+- Theme: Matches editor theme
+
+## Performance
+
+Optimized for speed:
+- Fast rendering with GPU acceleration
+- Efficient scrollback management
+- Minimal memory usage
+- Smooth scrolling even with large output
+
+## Keyboard Shortcuts
+
+| Action | Windows/Linux | macOS |
+|--------|--------------|-------|
+| New Terminal | Ctrl+Shift+\` | Cmd+Shift+\` |
+| Toggle Terminal | Ctrl+\` | Cmd+\` |
+| Clear Terminal | Ctrl+L | Cmd+K |
+| Kill Terminal | Ctrl+Shift+K | Cmd+Shift+K |
+
+## Advanced Features
+
+### Session Restoration
+
+Terminal sessions are preserved:
+- Survives IDE restarts
+- Checkpoint system support
+- Command history maintained
+- Working directory remembered
+
+### Multi-Agent Support
+
+When using AI Team:
+- Each agent gets dedicated terminal
+- Color-coded output per agent
+- Parallel command execution
+- Synchronized completion status
+
+## Troubleshooting
+
+### Terminal not responding
+
+1. Check if process is running
+2. Try creating new session
+3. Restart IDE if needed
+
+### Output not displaying
+
+1. Clear terminal (Ctrl+L)
+2. Check scrollback position
+3. Verify shell process is active
+
+<Callout type="warning">
+If terminal sessions accumulate, they can consume memory. Close unused sessions to maintain performance.
+</Callout>
+
+## Next Steps
+
+- [Monaco Editor](/ide-features/editor) - Edit code with powerful editor
+- [AI Team Dashboard](/ide-features/ai-team-dashboard) - Monitor agent terminals
+- [Status Bar](/ide-features/status-bar) - Quick terminal controls

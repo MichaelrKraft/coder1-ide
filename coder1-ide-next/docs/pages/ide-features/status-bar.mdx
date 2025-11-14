@@ -1,0 +1,322 @@
+import { Callout } from '@/components/Callout';
+
+# Status Bar
+
+<Callout type="success" title="Quick Access Hub">
+The Status Bar provides instant access to essential IDE controls, session information, and AI features.
+</Callout>
+
+The Status Bar is your command center for managing sessions, checkpoints, and AI agent teams. It sits at the bottom of the IDE and gives you real-time visibility into your development environment.
+
+## Key Features
+
+### Session Management
+
+View and control your current development session:
+- **Session ID** - Unique identifier for current session
+- **Session Duration** - Active time tracking
+- **Last Activity** - When the session was last updated
+- **Quick Actions** - Session controls at your fingertips
+
+### AI Team Controls
+
+Spawn and manage AI agent teams:
+- **AI Team Button** - Launch multi-agent development teams
+- **Agent Status** - Real-time agent activity indicators
+- **Team Management** - Control active agent workflows
+- **Cost Tracking** - Monitor API usage and costs
+
+### Session Summary
+
+Generate comprehensive session reports:
+- **Summary Button** - Create detailed session documentation
+- **Export Options** - Markdown, JSON, or HTML formats
+- **Automatic Capture** - Logs all activities and changes
+- **AI-Enhanced** - Intelligent summarization of work done
+
+### Checkpoint System
+
+Save and restore development states:
+- **Create Checkpoint** - Save complete IDE state
+- **Restore Checkpoint** - Roll back to previous states
+- **Checkpoint List** - Browse all saved checkpoints
+- **Metadata Display** - View checkpoint details and timing
+
+## Status Indicators
+
+### Connection Status
+
+Visual indicators for service connectivity:
+- **Green**: Connected and operational
+- **Yellow**: Reconnecting or degraded
+- **Red**: Disconnected or error state
+- **Pulsing**: Activity in progress
+
+### Session State
+
+<div className="bg-slate-800/50 border border-slate-700 rounded-lg p-4 my-6">
+```
+┌────────────────────────────────────────────────┐
+│ 🟢 Session: abc123  │  ⏱️ 2h 15m  │  📝 12 files │
+└────────────────────────────────────────────────┘
+```
+</div>
+
+Current session information:
+- Session ID and status
+- Active duration
+- Files modified count
+- Terminal activity
+
+### Agent Activity
+
+When AI agents are active:
+- Agent count and status
+- Current task indicators
+- Progress percentage
+- Estimated completion time
+
+## Quick Actions
+
+### One-Click Operations
+
+<div className="grid md:grid-cols-2 gap-4 my-6">
+  <div className="bg-slate-800/30 border border-slate-700 rounded-lg p-4">
+    <div className="font-semibold text-slate-100 mb-2">🤖 AI Team</div>
+    <div className="text-xs text-slate-400">Launch specialized AI agents to work in parallel on complex tasks</div>
+  </div>
+  
+  <div className="bg-slate-800/30 border border-slate-700 rounded-lg p-4">
+    <div className="font-semibold text-slate-100 mb-2">📝 Session Summary</div>
+    <div className="text-xs text-slate-400">Generate comprehensive documentation of your development session</div>
+  </div>
+  
+  <div className="bg-slate-800/30 border border-slate-700 rounded-lg p-4">
+    <div className="font-semibold text-slate-100 mb-2">💾 Create Checkpoint</div>
+    <div className="text-xs text-slate-400">Save complete IDE state for easy rollback and recovery</div>
+  </div>
+  
+  <div className="bg-slate-800/30 border border-slate-700 rounded-lg p-4">
+    <div className="font-semibold text-slate-100 mb-2">🔄 Restore Checkpoint</div>
+    <div className="text-xs text-slate-400">Browse and restore from previous development states</div>
+  </div>
+</div>
+
+### Contextual Actions
+
+Status Bar adapts to show relevant actions:
+- **During Coding**: File save status, syntax check
+- **With Agents Active**: Agent controls and monitoring
+- **After Changes**: Checkpoint and commit suggestions
+- **On Errors**: Quick access to Error Doctor
+
+## Session Summary Feature
+
+### Generating Summaries
+
+The Session Summary button creates intelligent documentation:
+
+**What Gets Captured**:
+- All file changes and edits
+- Terminal commands and output
+- Time spent on different activities
+- AI interactions and assistance
+- Code patterns and decisions
+
+**Output Formats**:
+
+<div className="bg-slate-800/50 border border-slate-700 rounded-lg p-6 my-6">
+```markdown
+# Session Summary: Feature Implementation
+
+Duration: 2h 15m
+Files Modified: 12
+Terminal Commands: 47
+AI Interactions: 8
+
+## What Was Built
+- User authentication system
+- Protected API endpoints
+- JWT token management
+- Login/logout functionality
+
+## Technical Decisions
+- Chose bcrypt for password hashing
+- Implemented refresh token rotation
+- Added rate limiting middleware
+
+## Next Steps
+1. Add password reset flow
+2. Implement 2FA support
+3. Add session management UI
+```
+</div>
+
+**Export Options**:
+- **Markdown**: Formatted documentation
+- **JSON**: Structured data for automation
+- **HTML**: Styled report for sharing
+
+### AI-Enhanced Summaries
+
+Claude analyzes your session to provide:
+- **Context Understanding**: What you were trying to accomplish
+- **Pattern Recognition**: Common approaches used
+- **Recommendations**: Suggestions for improvement
+- **Learning Insights**: Key concepts and techniques
+
+## Checkpoint Management
+
+### Creating Checkpoints
+
+Save complete IDE state:
+- All open files and editors
+- Terminal sessions and history
+- Current working directory
+- Git repository state
+- UI layout and settings
+
+### Restoring Checkpoints
+
+Roll back to previous states:
+- Browse checkpoint history
+- Preview checkpoint contents
+- Selective restoration options
+- Preserve or replace current state
+
+<Callout type="warning">
+Restoring a checkpoint will replace your current IDE state. Save important changes before restoring.
+</Callout>
+
+### Checkpoint Metadata
+
+Each checkpoint includes:
+- **Timestamp**: When checkpoint was created
+- **Session ID**: Associated development session
+- **File Count**: Number of tracked files
+- **Description**: Optional custom label
+- **Size**: Storage space used
+
+## Keyboard Shortcuts
+
+| Action | Windows/Linux | macOS |
+|--------|--------------|-------|
+| New Session | Ctrl+Shift+N | Cmd+Shift+N |
+| Session Summary | Ctrl+Shift+S | Cmd+Shift+S |
+| Create Checkpoint | Ctrl+Shift+C | Cmd+Shift+C |
+| Restore Checkpoint | Ctrl+Shift+R | Cmd+Shift+R |
+| AI Team | Ctrl+Shift+A | Cmd+Shift+A |
+
+## Discover Panel
+
+Access additional tools and features:
+- **AI Hooks**: Pre-configured automation workflows
+- **Templates**: Project templates and boilerplates
+- **Components**: Reusable component library
+- **Workflows**: Common development workflows
+- **Documentation**: Quick reference guides
+
+### Available Tools
+
+<div className="grid md:grid-cols-3 gap-4 my-8">
+  {[
+    { icon: '🪝', title: 'AI Hooks', desc: 'Automate repetitive tasks with AI-powered hooks' },
+    { icon: '📄', title: 'Templates', desc: 'Start projects from proven templates' },
+    { icon: '🧩', title: 'Components', desc: 'Browse and insert reusable components' },
+    { icon: '📋', title: 'PRD Generator', desc: 'Create detailed product requirements' },
+    { icon: '🔄', title: 'Workflows', desc: 'Execute multi-step development processes' }
+  ].map((tool) => (
+    <div key={tool.title} className="bg-slate-800/30 border border-slate-700 rounded-lg p-4">
+      <div className="text-3xl mb-2">{tool.icon}</div>
+      <div className="font-semibold text-slate-100 mb-1">{tool.title}</div>
+      <div className="text-xs text-slate-400">{tool.desc}</div>
+    </div>
+  ))}
+</div>
+
+## Configuration
+
+### Status Bar Settings
+
+Customize appearance and behavior:
+- **Position**: Bottom (default) or top
+- **Height**: Compact or expanded
+- **Auto-hide**: Show on mouse hover
+- **Notifications**: Enable/disable alerts
+
+### Session Settings
+
+Configure session behavior:
+- **Auto-save**: Save changes automatically
+- **Summary Frequency**: How often to generate summaries
+- **Checkpoint Interval**: Automatic checkpoint creation
+- **Session Timeout**: Inactivity timeout duration
+
+## Performance
+
+The Status Bar is optimized for minimal overhead:
+- **~5ms update latency** for status changes
+- **Lazy loading** of checkpoint data
+- **Efficient polling** for agent status
+- **Minimal memory footprint**
+
+## Troubleshooting
+
+### Session summary button not working
+
+1. Check that you have active session
+2. Verify API keys are configured
+3. Check browser console for errors
+4. Try refreshing the page
+
+### Checkpoint restoration fails
+
+1. Verify checkpoint file exists
+2. Check file permissions
+3. Ensure sufficient disk space
+4. Try restoring to new session
+
+### AI Team button disabled
+
+1. Confirm ANTHROPIC_API_KEY is set
+2. Check API key validity
+3. Verify sufficient API credits
+4. Review API rate limits
+
+<Callout type="info">
+The Status Bar remembers your preferences and restores them across sessions.
+</Callout>
+
+## Advanced Features
+
+### Custom Status Widgets
+
+Add custom information to Status Bar:
+- Repository branch and status
+- Build status and test results
+- Custom metrics and counters
+- Third-party integrations
+
+### API Integration
+
+Status Bar exposes APIs for extensions:
+```typescript
+// Add custom status item
+statusBar.addItem({
+  id: 'custom-widget',
+  text: 'Custom Status',
+  tooltip: 'My custom information',
+  command: 'my.command'
+});
+
+// Update status text
+statusBar.updateItem('custom-widget', {
+  text: 'Updated Status'
+});
+```
+
+## Next Steps
+
+- [AI Team Dashboard](/ide-features/ai-team-dashboard) - Monitor agent activity
+- [Session Management](/core-concepts/session-management) - Session concepts
+- [Integrated Terminal](/ide-features/terminal) - Terminal features

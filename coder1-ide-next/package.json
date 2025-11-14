@@ -22,7 +22,11 @@
     "start:unified": "NODE_ENV=production node server.js",
     "test:memory": "NODE_OPTIONS='--max-old-space-size=400 --expose-gc' node server.js",
     "lint": "next lint",
-    "backfill:embeddings": "node scripts/backfill-embeddings.js"
+    "backfill:embeddings": "node scripts/backfill-embeddings.js",
+    "db:migrate": "npx tsx db/migrations/run-migrations.ts migrate",
+    "db:verify": "npx tsx db/migrations/run-migrations.ts verify",
+    "db:history": "npx tsx db/migrations/run-migrations.ts history",
+    "db:check": "npm run db:verify"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.63.0",

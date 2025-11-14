@@ -1,0 +1,199 @@
+import { Callout } from '@/components/Callout';
+
+# File Explorer
+
+<Callout type="success" title="Project Navigation">
+Browse and manage your entire project structure with an intuitive file tree interface.
+</Callout>
+
+The File Explorer provides a hierarchical view of your project's files and directories, making it easy to navigate complex codebases and manage files efficiently.
+
+## Key Features
+
+### Tree View
+
+- **Hierarchical display** - Clear folder structure
+- **Expandable/collapsible** folders
+- **File icons** - Visual file type indicators
+- **Git status indicators** - See changed files at a glance
+
+### File Operations
+
+Common file management tasks:
+- Create new files and folders
+- Rename files (F2)
+- Delete files (Delete key)
+- Move files (drag and drop)
+- Copy/paste files
+
+### Search & Filter
+
+Find files quickly:
+- Fuzzy file search (Ctrl+P)
+- Filter by file type
+- Search in file names
+- Recent files list
+
+### Context Menu
+
+Right-click for quick actions:
+- Open in editor
+- Reveal in system file manager
+- Copy file path
+- Open containing folder
+
+## Navigation
+
+### Opening Files
+
+Multiple ways to open files:
+1. **Click** - Single click to open
+2. **Double-click** - Open in new tab
+3. **Keyboard** - Arrow keys + Enter
+4. **Quick Open** - Ctrl+P for fuzzy search
+
+### File Tabs
+
+Manage open files:
+- Multiple tabs per editor
+- Drag to reorder
+- Close with middle-click
+- Pin frequently used files
+
+## Git Integration
+
+Visual git status:
+- **Green**: New files
+- **Orange**: Modified files
+- **Red**: Deleted files
+- **Gray**: Ignored files
+
+<Callout type="info">
+The File Explorer automatically updates when files change on disk, keeping your view synchronized.
+</Callout>
+
+## Smart Features
+
+### Auto-Reveal
+
+When you open a file from search or external link, the File Explorer automatically:
+- Expands the containing folder
+- Scrolls to the file
+- Highlights the file
+
+### Working Directory
+
+The File Explorer shows:
+- Project root directory
+- Current working directory indicator
+- Multiple workspace support
+
+### File Watching
+
+Real-time updates when:
+- Files are created
+- Files are modified
+- Files are deleted
+- External changes occur
+
+## AI Integration
+
+Claude can interact with the File Explorer:
+- Read file contents
+- Create new files
+- Modify existing files
+- Organize project structure
+
+### Intelligent Suggestions
+
+Claude provides context-aware suggestions:
+- File naming conventions
+- Directory organization
+- Module placement
+- Import path optimization
+
+## Keyboard Shortcuts
+
+| Action | Windows/Linux | macOS |
+|--------|--------------|-------|
+| Quick Open | Ctrl+P | Cmd+P |
+| New File | Ctrl+N | Cmd+N |
+| Rename | F2 | F2 |
+| Delete | Delete | Delete |
+| Refresh | F5 | F5 |
+| Focus Explorer | Ctrl+Shift+E | Cmd+Shift+E |
+
+## Configuration
+
+### Display Options
+
+Customize the File Explorer:
+- Show/hide hidden files (.*files)
+- Compact folder display
+- Sort order (name, date, type)
+- Icon theme
+
+### Excluded Files
+
+Configure files to hide:
+- node_modules/
+- .git/
+- dist/, build/
+- Custom patterns
+
+## Performance
+
+Optimized for large projects:
+- Virtual scrolling for 10,000+ files
+- Lazy loading of folder contents
+- Efficient file watching
+- Minimal memory usage
+
+## Advanced Features
+
+### Multi-Select
+
+Select multiple files:
+- Ctrl+Click for individual selection
+- Shift+Click for range selection
+- Drag and drop multiple files
+- Bulk operations
+
+### File Search
+
+Deep project search:
+- Search in file contents (Ctrl+Shift+F)
+- Regex support
+- Include/exclude patterns
+- Replace across files
+
+### Workspace Management
+
+Handle multiple projects:
+- Add folders to workspace
+- Switch between workspaces
+- Save workspace configuration
+
+<Callout type="warning">
+Large directories (10,000+ files) may take a moment to load. Use file search for faster navigation.
+</Callout>
+
+## Troubleshooting
+
+### Files not appearing
+
+1. Check if .gitignore is hiding them
+2. Verify file permissions
+3. Refresh the explorer (F5)
+
+### Slow performance
+
+1. Exclude large directories
+2. Close unused workspaces
+3. Disable file watching for node_modules
+
+## Next Steps
+
+- [Monaco Editor](/ide-features/editor) - Edit your files
+- [Integrated Terminal](/ide-features/terminal) - Run file operations
+- [Live Preview](/ide-features/preview-panel) - See your changes instantly

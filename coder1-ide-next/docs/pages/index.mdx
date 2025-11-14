@@ -1,0 +1,133 @@
+import { Callout } from '@/components/Callout';
+import { Cards, Card } from '@/components/Cards';
+import { ComparisonTable } from '@/components/ComparisonTable';
+import { Steps, Step } from '@/components/Steps';
+import { CTASection, PrimaryButton, SecondaryButton } from '@/components/CTASection';
+
+# What is Coder1?
+
+<Callout type="success" title="Free Forever">
+**Multi-agent development at \$0/month** | Built specifically for Claude Code
+</Callout>
+
+Coder1 is a **next-generation IDE** purpose-built for the Claude Code era. Unlike traditional IDEs retrofitted with AI, Coder1 was designed from the ground up to make AI development intuitive, powerful, and affordable.
+
+## Why Coder1?
+
+<Cards>
+  <Card icon="💰" title="Zero Cost Multi-Agent" href="/core-concepts/multi-agent-system">
+    Spawn unlimited AI agents at **\$0/month**. Uses your Claude Code subscription instead of expensive API calls.
+  </Card>
+  
+  <Card icon="🧠" title="Eternal Memory" href="/core-concepts/eternal-memory">
+    Claude remembers **everything** across sessions. Never lose context or repeat yourself.
+  </Card>
+  
+  <Card icon="⚡" title="True Parallel Development" href="/core-concepts/multi-agent-system">
+    Git worktree architecture means **zero merge conflicts** during parallel AI work.
+  </Card>
+  
+  <Card icon="🎯" title="Native Claude Integration" href="/core-concepts/claude-code-integration">
+    Purpose-built for Claude Code. Not an afterthought or plugin.
+  </Card>
+</Cards>
+
+## The Coder1 Difference
+
+<ComparisonTable data={[
+  { feature: 'Monthly Cost', cursor: '\$20', copilot: '\$10', trae: 'about \$220-530', coder1: '\$0-29 ✨' },
+  { feature: 'Multi-Agent', cursor: false, copilot: false, trae: true, coder1: true },
+  { feature: 'Agent Cost', cursor: 'N/A', copilot: 'N/A', trae: '\$\$\$', coder1: 'FREE ✨' },
+  { feature: 'Context Memory', cursor: 'Session', copilot: 'Limited', trae: 'Session', coder1: 'Eternal ✨' },
+  { feature: 'Claude Native', cursor: 'Plugin', copilot: false, trae: 'API', coder1: 'Built-in ✨' },
+  { feature: 'Parallel Dev', cursor: false, copilot: false, trae: '⚠️', coder1: 'Worktrees ✨' }
+]} />
+
+<Callout type="info">
+**Savings**: Coder1 users save \$200-500/month compared to API-based multi-agent solutions.
+</Callout>
+
+## Quick Start
+
+Get started in 60 seconds:
+
+<Steps>
+  <Step title="Clone the Repository">
+```bash
+git clone https://github.com/MichaelrKraft/coder1-ide.git
+cd coder1-ide/coder1-ide-next
+```
+  </Step>
+
+  <Step title="Install Dependencies">
+```bash
+npm install
+```
+  </Step>
+
+  <Step title="Start Coding">
+```bash
+npm run dev
+# Open http://localhost:3001/ide
+```
+  </Step>
+</Steps>
+
+<Callout type="success">
+No API keys required. Start coding immediately!
+</Callout>
+
+## Key Features
+
+### 🎯 AI Team Dashboard
+Visual mission control for your AI agents. See real-time progress, status, and activity for each agent working on your project.
+
+### 💻 Full IDE Experience
+Monaco Editor (VSCode engine), integrated terminal with full PTY support, file explorer, live preview, and more.
+
+### 🔄 Session Management
+Checkpoints, AI-generated summaries, and seamless handoffs between human and AI coding sessions.
+
+### 🎤 Voice Input
+Speak your requirements naturally. Coder1 understands and executes.
+
+### 📊 Context Visibility
+See exactly what context AI has access to. Token counting, memory insights, and optimization suggestions.
+
+## Who Uses Coder1?
+
+> *"I've been using Coder1 for 3 months. Claude still remembers the architecture decisions we made on day 1. It's like having a senior developer who never forgets anything."*
+>
+> **Sarah K.**, Full-Stack Developer
+
+> *"Saved \$400/month switching from API-based multi-agent tools to Coder1. Same power, zero cost."*
+>
+> **Alex M.**, Startup Founder
+
+> *"The git worktree approach is genius. I can have 3 agents working simultaneously without merge hell."*
+>
+> **Jordan L.**, Solo Developer
+
+## Ready to Build?
+
+<CTASection>
+  <div>
+    <h2 className="text-3xl font-bold mb-2 mt-0">Start Building for Free</h2>
+    <p className="text-slate-400 mb-6">No credit card required. Full IDE access immediately.</p>
+  </div>
+  <div className="flex gap-4">
+    <PrimaryButton href="/getting-started/quick-start">
+      Get Started Free
+    </PrimaryButton>
+    <SecondaryButton href="/core-concepts/architecture">
+      Learn Architecture
+    </SecondaryButton>
+  </div>
+</CTASection>
+
+## Community & Support
+
+- 🌟 **[GitHub](https://github.com/MichaelrKraft/coder1-ide)** - Star us and contribute
+- 💬 **[Discord](https://discord.gg/coder1)** - Join 500+ developers
+- 🐦 **[Twitter](https://twitter.com/Coder1IDE)** - Updates and tips
+- 📧 **[Newsletter](https://coder1.ai/newsletter)** - Weekly insights

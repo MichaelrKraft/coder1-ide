@@ -14,6 +14,10 @@ interface MenuItem {
   action?: () => void;
   shortcut?: string;
   separator?: boolean;
+  icon?: React.ComponentType<any>;
+  href?: string;
+  target?: string;
+  onClick?: () => void;
 }
 
 interface MenuConfig {
@@ -215,7 +219,8 @@ const MenuBar = React.memo(function MenuBar({
   const menuItems = [
     { icon: Home, label: 'Home page', href: '/' },
     { icon: Grid, label: 'AI dashboard', href: '/vibe-dashboard' },
-    { icon: FileText, label: 'Documentation', href: '/documentation.html' },
+    { icon: Sparkles, label: 'Features', href: '/documentation.html' },
+    { icon: BookOpen, label: 'Documentation', href: 'http://localhost:3003', target: '_blank' },
     { icon: SettingsIcon, label: 'Settings', href: '#', onClick: () => onShowSettings?.() },
   ];
 
@@ -453,6 +458,51 @@ const MenuBar = React.memo(function MenuBar({
                 }
 
                 // Handle regular navigation menu items
+                // Use <a> tag for external links with target="_blank", otherwise use Next.js Link
+                if (item.target === '_blank') {
+                  return (
+                    <a
+                      key={item.label}
+                      href={item.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="group flex items-center gap-3 px-4 py-2.5 text-sm text-text-secondary hover:text-text-primary hover:bg-bg-tertiary transition-colors"
+                      onClick={() => setIsMenuOpen(false)}
+                      onMouseEnter={(e) => {
+                        const span = e.currentTarget.querySelector('span');
+                        if (span) {
+                          span.style.textShadow = '0 0 8px rgba(251, 146, 60, 0.9), 0 0 16px rgba(251, 146, 60, 0.7), 0 0 24px rgba(251, 146, 60, 0.5)';
+                          span.style.color = '#FB923C';
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        const span = e.currentTarget.querySelector('span');
+                        if (span) {
+                          span.style.textShadow = 'none';
+                          span.style.color = '';
+                        }
+                      }}
+                    >
+                      <Icon 
+                        className="w-4 h-4 transition-all duration-300 group-hover:text-orange-400" 
+                        style={{
+                          filter: 'drop-shadow(0 0 0px transparent)',
+                          transition: 'filter 0.3s ease, color 0.3s ease',
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.filter = 'drop-shadow(0 0 8px rgba(251, 146, 60, 0.9)) drop-shadow(0 0 16px rgba(251, 146, 60, 0.7)) drop-shadow(0 0 24px rgba(251, 146, 60, 0.5))';
+                          e.currentTarget.style.color = '#FB923C';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.filter = 'drop-shadow(0 0 0px transparent)';
+                          e.currentTarget.style.color = '';
+                        }}
+                      />
+                      <span>{item.label}</span>
+                    </a>
+                  );
+                }
+                
                 return (
                   <Link
                     key={item.label}

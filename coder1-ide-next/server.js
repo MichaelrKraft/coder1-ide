@@ -186,6 +186,27 @@ const deploymentMode = process.env.DEPLOYMENT_MODE || 'standard';
 // Track active alpha sessions
 const alphaActiveSessions = new Map();
 
+// Run database migrations before starting server
+console.log('📦 Running database migrations...');
+try {
+  // Use dynamic import for TypeScript file with better-sqlite3 support
+  const { execSync } = require('child_process');
+  const migrationResult = execSync('npx tsx db/migrations/run-migrations.ts migrate', {
+    cwd: __dirname,
+    encoding: 'utf-8',
+    stdio: 'pipe'
+  });
+  console.log(migrationResult);
+} catch (error) {
+  console.error('❌ Migration failed:', error.message);
+  if (!isDevelopment) {
+    // In production, we must have a valid database
+    process.exit(1);
+  } else {
+    console.warn('⚠️  Continuing in development mode despite migration failure');
+  }
+}
+
 // Initialize Next.js app
 const app = next({ dev, hostname, port });
 const handle = app.getRequestHandler();

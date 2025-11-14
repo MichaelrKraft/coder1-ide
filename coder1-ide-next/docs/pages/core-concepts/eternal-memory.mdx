@@ -1,0 +1,287 @@
+import { Callout } from '@/components/Callout';
+import { CTASection, PrimaryButton, SecondaryButton } from '@/components/CTASection';
+
+# Eternal Memory
+
+<div className="my-8 text-center">
+  <h2 className="text-4xl font-bold mb-4 bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+    Never Lose Context Again
+  </h2>
+  <p className="text-xl text-slate-300 max-w-3xl mx-auto">
+    Eternal Memory means Claude remembers every conversation, file, and decision across sessions—weeks or months later.
+  </p>
+</div>
+
+## The Problem with Other IDEs
+
+<div className="bg-red-900/10 border border-red-500/30 rounded-lg p-6 my-8">
+  <h3 className="text-lg font-semibold text-red-400 mb-4">Traditional AI IDEs lose context when you close them</h3>
+  <p className="text-slate-300 mb-4">Every new session starts from scratch:</p>
+  <ul className="space-y-2 text-slate-300">
+    <li>❌ "What were we building again?"</li>
+    <li>❌ "Why did we choose this architecture?"</li>
+    <li>❌ "What was that bug fix approach?"</li>
+    <li>❌ Manual context setup every time</li>
+  </ul>
+  <p className="mt-4 font-semibold text-red-400">Result: Wasted time and inconsistent decisions</p>
+</div>
+
+## How Eternal Memory Works
+
+### Continuous Learning
+
+As you code, Coder1 builds a knowledge graph of your project:
+
+<div className="my-6 p-6 bg-slate-800/50 rounded-lg border border-slate-700 font-mono text-sm">
+  <div className="text-blue-400 mb-2">Project Context Graph</div>
+  <div className="ml-4 space-y-1">
+    <div className="text-green-400">├── Architecture Decisions</div>
+    <div className="ml-8 text-slate-400">└── "Use Next.js for SSR performance"</div>
+    <div className="text-green-400">├── Code Patterns</div>
+    <div className="ml-8 text-slate-400">└── "Always use Zustand for state"</div>
+    <div className="text-green-400">├── Bug Solutions</div>
+    <div className="ml-8 text-slate-400">└── "Terminal scroll fixed with padding-bottom"</div>
+    <div className="text-green-400">└── Preferences</div>
+    <div className="ml-8 text-slate-400">└── "User prefers TypeScript strict mode"</div>
+  </div>
+</div>
+
+### Intelligent Retrieval
+
+When Claude needs context, the system:
+
+1. **Analyzes current task** - Understands what you're trying to accomplish
+2. **Retrieves relevant past decisions** - Finds related conversations and code
+3. **Injects into AI prompt** - Provides seamless context
+4. **Maintains consistency** - Ensures architectural coherence
+
+### Cross-Session Persistence
+
+Even weeks later, Claude remembers:
+
+<div className="grid md:grid-cols-3 gap-4 my-8">
+  <div className="bg-blue-900/20 border border-blue-500/30 rounded-lg p-4">
+    <div className="text-blue-400 font-semibold mb-2">Week 1</div>
+    <div className="text-sm text-slate-300">"Let's build auth with JWT"</div>
+  </div>
+  <div className="bg-blue-900/20 border border-blue-500/30 rounded-lg p-4">
+    <div className="text-blue-400 font-semibold mb-2">Week 5</div>
+    <div className="text-sm text-slate-300">Claude remembers and suggests JWT approach</div>
+  </div>
+  <div className="bg-blue-900/20 border border-blue-500/30 rounded-lg p-4">
+    <div className="text-blue-400 font-semibold mb-2">Week 12</div>
+    <div className="text-sm text-slate-300">Claude recalls specific implementation details</div>
+  </div>
+</div>
+
+## Before & After
+
+<div className="grid md:grid-cols-2 gap-6 my-8">
+  <div className="bg-slate-800/30 border border-slate-700 rounded-lg p-6">
+    <h3 className="text-lg font-semibold text-red-400 mb-4">❌ Without Eternal Memory</h3>
+    <div className="space-y-4 text-sm">
+      <div>
+        <div className="text-slate-400 mb-1">**New Session:**</div>
+        <div className="bg-slate-900 p-3 rounded">
+          <div className="text-blue-300">You: "Continue working on the dashboard"</div>
+          <div className="text-slate-400 mt-2">Claude: "I don't have context about the dashboard. Could you describe it?"</div>
+          <div className="text-slate-500 mt-2 italic">*You spend 10 minutes explaining...*</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <div className="bg-slate-800/30 border border-green-700 rounded-lg p-6">
+    <h3 className="text-lg font-semibold text-green-400 mb-4">✅ With Eternal Memory</h3>
+    <div className="space-y-4 text-sm">
+      <div>
+        <div className="text-slate-400 mb-1">**New Session:**</div>
+        <div className="bg-slate-900 p-3 rounded">
+          <div className="text-blue-300">You: "Continue working on the dashboard"</div>
+          <div className="text-green-400 mt-2">Claude: "Sure! I remember we're building the analytics dashboard with Recharts. Last time we completed the user metrics chart. Should I continue with the revenue chart we discussed?"</div>
+          <div className="text-green-500 mt-2 italic">*Saves 10 minutes every session* ✨</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+## What Gets Remembered?
+
+<div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 my-8">
+  {[
+    { icon: '🏗️', title: 'Architecture', items: ['Framework choices', 'Design patterns', 'Technology stack', 'File organization'] },
+    { icon: '💬', title: 'Conversations', items: ['Feature discussions', 'Bug investigations', 'Code reviews', 'Decision rationale'] },
+    { icon: '📝', title: 'Code Patterns', items: ['Your coding style', 'Naming conventions', 'Component structures', 'Common utilities'] },
+    { icon: '🐛', title: 'Solutions', items: ['Bug fixes', 'Performance optimizations', 'Deployment issues', 'Workarounds'] },
+    { icon: '👤', title: 'Preferences', items: ['Editor settings', 'Code formatting', 'Communication style', 'Workflow preferences'] },
+    { icon: '🔄', title: 'Project Evolution', items: ['Feature timeline', 'Refactoring history', 'Technical debt', 'Migration plans'] }
+  ].map((category) => (
+    <div key={category.title} className="bg-slate-800/30 border border-slate-700 rounded-lg p-4">
+      <div className="text-3xl mb-3">{category.icon}</div>
+      <h4 className="font-semibold text-slate-100 mb-2">{category.title}</h4>
+      <ul className="space-y-1 text-xs text-slate-400">
+        {category.items.map((item) => (
+          <li key={item}>{item}</li>
+        ))}
+      </ul>
+    </div>
+  ))}
+</div>
+
+## Pricing
+
+<div className="grid md:grid-cols-2 gap-6 my-8">
+  <div className="bg-slate-800/30 border border-slate-700 rounded-lg p-6">
+    <h3 className="text-2xl font-bold mb-2">Free Trial</h3>
+    <div className="text-4xl font-bold text-blue-400 mb-4">\$0 <span className="text-sm text-slate-400 font-normal">/ 7 days</span></div>
+    <ul className="space-y-2 text-sm text-slate-300 mb-6">
+      <li>✅ Full Eternal Memory access</li>
+      <li>✅ Unlimited storage</li>
+      <li>✅ All features included</li>
+      <li>✅ No credit card required</li>
+    </ul>
+    <button className="w-full py-2 px-4 bg-slate-700 hover:bg-slate-600 rounded-lg transition-colors text-slate-200 font-semibold">
+      Start Free Trial
+    </button>
+  </div>
+  
+  <div className="bg-gradient-to-br from-blue-900/30 to-purple-900/30 border-2 border-blue-500 rounded-lg p-6 relative">
+    <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-blue-500 px-3 py-1 rounded-full text-xs font-bold">
+      POPULAR
+    </div>
+    <h3 className="text-2xl font-bold mb-2">Eternal Memory</h3>
+    <div className="text-4xl font-bold text-blue-400 mb-4">\$29 <span className="text-sm text-slate-400 font-normal">/ month</span></div>
+    <ul className="space-y-2 text-sm text-slate-300 mb-6">
+      <li>✅ Unlimited session history</li>
+      <li>✅ Perfect context preservation</li>
+      <li>✅ Advanced insights</li>
+      <li>✅ Priority support</li>
+      <li>✅ Cancel anytime</li>
+    </ul>
+    <button className="w-full py-2 px-4 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors text-white font-semibold">
+      Subscribe Now
+    </button>
+  </div>
+</div>
+
+<Callout type="success">
+**Free IDE + Optional Memory**: The core Coder1 IDE is free forever. Eternal Memory is optional for those who want perfect context.
+</Callout>
+
+## ROI Calculator
+
+<div className="bg-slate-800/50 border border-slate-700 rounded-lg p-6 my-8">
+  <h3 className="text-xl font-semibold mb-4">How much time does Eternal Memory save?</h3>
+  
+  <div className="space-y-4">
+    <div>
+      <label className="text-sm text-slate-400 block mb-2">Sessions per week: <strong>5</strong></label>
+      <div className="h-2 bg-slate-700 rounded-full">
+        <div className="h-2 bg-blue-500 rounded-full" style={{width: '50%'}}></div>
+      </div>
+    </div>
+    
+    <div>
+      <label className="text-sm text-slate-400 block mb-2">Minutes spent explaining context: <strong>10</strong></label>
+      <div className="h-2 bg-slate-700 rounded-full">
+        <div className="h-2 bg-blue-500 rounded-full" style={{width: '40%'}}></div>
+      </div>
+    </div>
+    
+    <div className="pt-4 border-t border-slate-700">
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <div className="text-slate-400 text-sm">Time saved per week</div>
+          <div className="text-2xl font-bold text-blue-400">50 minutes</div>
+        </div>
+        <div>
+          <div className="text-slate-400 text-sm">Time saved per month</div>
+          <div className="text-2xl font-bold text-blue-400">about 3.5 hours</div>
+        </div>
+      </div>
+      
+      <div className="mt-4 p-4 bg-green-900/20 border border-green-500/30 rounded">
+        <div className="text-sm text-slate-400 mb-1">Your hourly rate: <strong>\$100</strong></div>
+        <div className="text-2xl font-bold text-green-400">Monthly value: \$350</div>
+        <div className="text-sm text-green-400 mt-2"><strong>ROI: 12x</strong> (Save \$350 of time for \$29/month)</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+## How It Compares
+
+| Feature | Cursor | Copilot | Trae.ai | **Coder1** |
+|---------|--------|---------|---------|------------|
+| **Context Persistence** | Session only | Limited | Session only | **Eternal** ✨ |
+| **Memory Cost** | Included (limited) | Included (limited) | Included (limited) | **\$29/month** |
+| **Cross-Session Recall** | ❌ | ❌ | ❌ | **✅** |
+| **Project History** | ❌ | ❌ | ❌ | **✅** |
+| **Decision Tracking** | ❌ | ❌ | ❌ | **✅** |
+| **Learning Over Time** | ❌ | ❌ | ❌ | **✅** |
+
+## Privacy & Security
+
+<Callout type="info" title="Your Data, Your Control">
+- ✅ All data stored encrypted (AES-256)
+- ✅ You own your memory data
+- ✅ Export anytime (JSON/Markdown)
+- ✅ Delete anytime (instant purge)
+- ✅ No training on your code
+- ✅ GDPR compliant
+- ✅ SOC 2 Type II (coming Q2 2025)
+</Callout>
+
+## Testimonials
+
+<div className="grid md:grid-cols-3 gap-4 my-8">
+  {[
+    { name: 'Maria S.', role: 'Senior Developer', quote: 'Eternal Memory is a game-changer. I work on 5 projects simultaneously. Claude remembers the context for each one perfectly.' },
+    { name: 'David K.', role: 'Freelancer', quote: 'I come back to client projects months later. Coder1 remembers everything. No more digging through old notes.' },
+    { name: 'Team at StartupXYZ', role: 'Startup Team', quote: 'Multiple developers can pick up where others left off. The handoffs are seamless.' }
+  ].map((testimonial) => (
+    <div key={testimonial.name} className="bg-slate-800/30 border border-slate-700 rounded-lg p-4">
+      <div className="text-slate-300 italic text-sm mb-4">"{testimonial.quote}"</div>
+      <div className="text-slate-100 font-semibold">{testimonial.name}</div>
+      <div className="text-slate-400 text-xs">{testimonial.role}</div>
+    </div>
+  ))}
+</div>
+
+## FAQ
+
+<div className="space-y-4 my-8">
+  {[
+    { q: 'What if I cancel?', a: 'Your memory data is preserved for 30 days. Re-subscribe anytime to restore access.' },
+    { q: 'Can I export my memory?', a: 'Yes! Export to JSON or Markdown anytime from Settings → Memory → Export.' },
+    { q: 'How much storage do I get?', a: 'Unlimited. We don\'t limit memory storage for subscribers.' },
+    { q: 'Does it work offline?', a: 'Memory requires internet for AI retrieval, but cached context works offline.' },
+    { q: 'Can I share memory with my team?', a: 'Team plans with shared memory coming Q2 2025.' },
+    { q: 'Is my code used for training?', a: 'Absolutely not. Your code and memory data are never used to train models.' }
+  ].map((faq, i) => (
+    <details key={i} className="bg-slate-800/30 border border-slate-700 rounded-lg p-4 group">
+      <summary className="font-semibold text-slate-100 cursor-pointer group-hover:text-blue-400 transition-colors">
+        {faq.q}
+      </summary>
+      <div className="mt-3 text-slate-300 text-sm">{faq.a}</div>
+    </details>
+  ))}
+</div>
+
+## Start Your Free Trial
+
+<CTASection>
+  <div>
+    <h2 className="text-3xl font-bold mb-2 mt-0">Try Eternal Memory Free for 7 Days</h2>
+    <p className="text-slate-400">No credit card required. Full access immediately.</p>
+  </div>
+  <div className="flex gap-4">
+    <PrimaryButton href="/getting-started/quick-start">
+      Start Free Trial
+    </PrimaryButton>
+    <SecondaryButton href="#faq">
+      Read FAQ
+    </SecondaryButton>
+  </div>
+</CTASection>

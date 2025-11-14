@@ -1,0 +1,449 @@
+import { Callout } from '@/components/Callout';
+import { Steps, Step } from '@/components/Steps';
+
+# Claude Code Integration
+
+<div className="my-8 text-center">
+  <h2 className="text-4xl font-bold mb-4 bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+    Native Claude Code Support
+  </h2>
+  <p className="text-xl text-slate-300 max-w-3xl mx-auto">
+    The only IDE designed specifically for Claude Code CLI workflows.
+  </p>
+</div>
+
+<Callout type="success" title="Cost Revolution">
+**\$0/month for unlimited AI agents** - Uses your existing Claude Code subscription instead of expensive API calls.
+</Callout>
+
+## What is Claude Code?
+
+Claude Code is Anthropic's official CLI tool that brings Claude's capabilities directly into your terminal. It's included with Claude Pro (\$20/month) and provides:
+
+- **Deep Code Understanding**: Claude analyzes entire codebases, not just single files
+- **Autonomous Actions**: Can read, write, and modify files independently
+- **Terminal Access**: Runs commands and tests code directly
+- **Context Persistence**: Maintains conversation history across sessions
+
+## Why Coder1 + Claude Code?
+
+<div className="grid md:grid-cols-2 gap-6 my-8">
+  <div className="bg-slate-800/30 border border-slate-700 rounded-lg p-6">
+    <h3 className="text-lg font-semibold text-slate-100 mb-4">Traditional AI IDEs</h3>
+    <ul className="space-y-2 text-sm text-slate-300">
+      <li>❌ Use expensive API calls (\$0.03-0.06 per 1K tokens)</li>
+      <li>❌ Limited context windows (100K-200K tokens)</li>
+      <li>❌ Must implement tool calling and execution</li>
+      <li>❌ No native terminal integration</li>
+      <li>❌ Complex permission systems</li>
+      <li>❌ **Cost**: \$200-500/month for multi-agent use</li>
+    </ul>
+  </div>
+  
+  <div className="bg-green-900/10 border border-green-500/30 rounded-lg p-6">
+    <h3 className="text-lg font-semibold text-green-400 mb-4">Coder1 with Claude Code</h3>
+    <ul className="space-y-2 text-sm text-slate-300">
+      <li>✅ Uses Claude Pro subscription (already paid for)</li>
+      <li>✅ Full codebase understanding (unlimited context)</li>
+      <li>✅ Built-in tool calling and file operations</li>
+      <li>✅ Native terminal integration</li>
+      <li>✅ Simple, proven permission model</li>
+      <li>✅ **Cost**: \$0/month additional (included in Claude Pro)</li>
+    </ul>
+  </div>
+</div>
+
+## The CLI Puppeteer System
+
+Coder1's revolutionary approach: **spawn real Claude CLI processes** and orchestrate them via PTY (pseudo-terminals).
+
+### How It Works
+
+<Steps>
+  <Step title="User Clicks 'AI Team'">
+    The AI Team button triggers the orchestration system with selected agent roles.
+  </Step>
+  
+  <Step title="Git Worktrees Created">
+    Each agent gets an isolated git worktree on its own branch:
+    
+```bash
+git worktree add .claude-parallel-dev/team-xyz/frontend \
+  -b claude-agent/team-xyz/frontend
+```
+  </Step>
+  
+  <Step title="Claude CLI Spawned">
+    Real Claude processes are spawned via PTY:
+    
+```typescript
+const pty = spawn('/opt/homebrew/bin/claude', [], {
+  cwd: worktreePath,
+  env: {
+    ...process.env,
+    CLAUDE_AGENT_ROLE: 'frontend',
+    CLAUDE_TASK: 'Build login component'
+  }
+});
+```
+  </Step>
+  
+  <Step title="Task Injection">
+    The task is sent to Claude's input stream:
+    
+```typescript
+pty.write(`Build a login component with email/password fields,
+validation, and form submission to /api/auth/login\n`);
+```
+  </Step>
+  
+  <Step title="Output Monitoring">
+    Agent output is parsed in real-time:
+    
+```typescript
+pty.onData((data) => {
+  // Parse for progress indicators
+  if (data.includes('Creating file')) {
+    updateProgress('Writing files', 60);
+  }
+  
+  // Detect completion
+  if (data.includes('Task complete')) {
+    markAgentComplete();
+  }
+});
+```
+  </Step>
+</Steps>
+
+### Output Parsing Intelligence
+
+Coder1 understands Claude CLI's output patterns:
+
+<div className="bg-slate-800/50 border border-slate-700 rounded-lg p-4 my-6 font-mono text-sm">
+  <div className="text-blue-400 mb-2">Parsing Examples:</div>
+  <div className="space-y-2">
+    <div>
+      <div className="text-slate-400">Input: "I'll create the login component..."</div>
+      <div className="text-green-400">→ Status: Thinking, Progress: 20%</div>
+    </div>
+    <div>
+      <div className="text-slate-400">Input: "Creating src/components/LoginForm.tsx"</div>
+      <div className="text-green-400">→ Status: Writing, File: LoginForm.tsx, Progress: 50%</div>
+    </div>
+    <div>
+      <div className="text-slate-400">Input: "Running npm install react-hook-form"</div>
+      <div className="text-green-400">→ Status: Installing, Progress: 70%</div>
+    </div>
+    <div>
+      <div className="text-slate-400">Input: "All files created successfully!"</div>
+      <div className="text-green-400">→ Status: Complete, Progress: 100%</div>
+    </div>
+  </div>
+</div>
+
+## Agent Coordination
+
+Multiple Claude instances work independently without conflicts thanks to git worktrees:
+
+```bash
+# Three agents working simultaneously
+Frontend Agent → .claude-parallel-dev/team-xyz/frontend/
+Backend Agent  → .claude-parallel-dev/team-xyz/backend/
+Testing Agent  → .claude-parallel-dev/team-xyz/testing/
+
+# Each on its own branch
+frontend: claude-agent/team-xyz/frontend
+backend:  claude-agent/team-xyz/backend
+testing:  claude-agent/team-xyz/testing
+
+# Zero merge conflicts during development ✨
+```
+
+<Callout type="info" title="Git Worktrees">
+Git worktrees allow multiple working directories from the same repository. Each agent works in complete isolation until merge time.
+</Callout>
+
+## Installation & Setup
+
+### Prerequisites
+
+<div className="grid md:grid-cols-3 gap-4 my-6">
+  <div className="bg-slate-800/30 border border-slate-700 rounded-lg p-4">
+    <div className="text-2xl mb-2">🤖</div>
+    <div className="font-semibold text-slate-100 mb-1">Claude Pro</div>
+    <div className="text-xs text-slate-400">\$20/month subscription required for Claude Code access</div>
+  </div>
+  
+  <div className="bg-slate-800/30 border border-slate-700 rounded-lg p-4">
+    <div className="text-2xl mb-2">🍎</div>
+    <div className="font-semibold text-slate-100 mb-1">macOS/Linux</div>
+    <div className="text-xs text-slate-400">Claude Code currently supports macOS and Linux</div>
+  </div>
+  
+  <div className="bg-slate-800/30 border border-slate-700 rounded-lg p-4">
+    <div className="text-2xl mb-2">📂</div>
+    <div className="font-semibold text-slate-100 mb-1">Git Repository</div>
+    <div className="text-xs text-slate-400">Project must be in a git repository for worktrees</div>
+  </div>
+</div>
+
+### Installation Steps
+
+<Steps>
+  <Step title="Install Claude.app">
+    Download Claude desktop app from [claude.ai](https://claude.ai)
+    
+    The desktop app includes the Claude Code CLI.
+  </Step>
+  
+  <Step title="Enable Claude Code">
+    In Claude.app menu bar, click:
+    
+    **Claude → Enable Claude Code**
+    
+    This installs the CLI at `/opt/homebrew/bin/claude` (macOS)
+  </Step>
+  
+  <Step title="Verify Installation">
+```bash
+# Check Claude CLI is available
+claude --version
+
+# Should output: claude-code vX.X.X
+```
+  </Step>
+  
+  <Step title="Configure Coder1">
+```bash
+# Enable CLI Puppeteer in Coder1
+echo "ENABLE_CLI_PUPPETEER=true" >> .env.local
+echo "CLAUDE_CLI_PATH=/opt/homebrew/bin/claude" >> .env.local
+
+# Restart Coder1
+npm run dev
+```
+  </Step>
+</Steps>
+
+<Callout type="success">
+After setup, the AI Team button will automatically detect Claude CLI and show: **"🎭 Spawning AI Team with CLI Puppeteer (Cost-Free)"**
+</Callout>
+
+## Features Enabled by Claude Code
+
+### 1. Autonomous File Operations
+
+Claude Code can read, write, and modify files without prompting:
+
+```bash
+# Example: Frontend agent creates a component
+Agent: "I'll create a responsive navigation bar..."
+
+# Claude Code actions (automatic):
+1. Read existing styles to match theme
+2. Create /components/Navigation.tsx
+3. Update /app/layout.tsx to include Navigation
+4. Create /styles/navigation.css
+5. Run tests to verify functionality
+```
+
+### 2. Terminal Command Execution
+
+Agents can run commands directly:
+
+```typescript
+// Backend agent installing dependencies
+Agent: "Installing required packages..."
+
+// Claude Code runs:
+npm install express cors dotenv
+npm install --save-dev @types/express @types/cors
+
+// Then verifies:
+npm list express  // Check installation success
+```
+
+### 3. Intelligent Code Analysis
+
+Claude Code understands entire codebases:
+
+<div className="bg-slate-800/50 border border-slate-700 rounded-lg p-6 my-6">
+```typescript
+// User: "Add authentication to the API"
+
+// Claude Code analyzes:
+1. Existing auth patterns in codebase
+2. Current middleware structure
+3. Database models and schemas
+4. Environment variable patterns
+5. Testing conventions
+
+// Then implements consistently with existing code
+```
+</div>
+
+### 4. Multi-Step Workflows
+
+Agents handle complex, multi-step tasks:
+
+```bash
+# User: "Build a complete authentication system"
+
+Frontend Agent:
+  1. Create login/signup forms
+  2. Implement form validation
+  3. Add loading states and error handling
+  4. Style components to match design system
+
+Backend Agent:
+  1. Create user model with password hashing
+  2. Implement JWT middleware
+  3. Create /api/auth/login and /api/auth/signup endpoints
+  4. Add refresh token rotation
+
+Testing Agent:
+  1. Write unit tests for auth utilities
+  2. Create integration tests for API endpoints
+  3. Add E2E tests for login/signup flows
+  4. Verify security best practices
+
+# All running in parallel, zero conflicts
+```
+
+## Performance Characteristics
+
+<div className="grid grid-cols-2 md:grid-cols-4 gap-4 my-8">
+  {[
+    { label: 'Spawn Time', value: '2-3s', icon: '⚡', desc: 'Per agent startup' },
+    { label: 'Memory/Agent', value: 'about 50MB', icon: '💾', desc: 'Lightweight processes' },
+    { label: 'Concurrent Max', value: '10 agents', icon: '🔢', desc: 'Configurable limit' },
+    { label: 'Cost', value: '\$0.00', icon: '💰', desc: 'Included with Claude Pro' }
+  ].map((metric) => (
+    <div key={metric.label} className="bg-slate-800/50 border border-slate-700 rounded-lg p-4 text-center">
+      <div className="text-3xl mb-2">{metric.icon}</div>
+      <div className="text-2xl font-bold text-blue-400 mb-1">{metric.value}</div>
+      <div className="text-xs font-semibold text-slate-200 mb-1">{metric.label}</div>
+      <div className="text-xs text-slate-400">{metric.desc}</div>
+    </div>
+  ))}
+</div>
+
+## Comparison: CLI vs API
+
+| Feature | Claude API | Claude Code CLI | Coder1 Advantage |
+|---------|-----------|----------------|------------------|
+| **Cost** | \$0.03-0.06/1K tokens | Included with Claude Pro | **\$0 additional** |
+| **Context** | 200K tokens max | Unlimited codebase | **Full understanding** |
+| **File Ops** | Manual implementation | Built-in | **Zero config** |
+| **Terminal** | External integration | Native | **Seamless** |
+| **Permissions** | Custom system | Proven model | **Reliable** |
+| **Multi-Agent** | \$200-500/month | \$0/month | **Massive savings** |
+
+<Callout type="warning" title="API Fallback">
+If Claude CLI is not detected, Coder1 automatically falls back to Claude API (requires `ANTHROPIC_API_KEY`). The experience is similar but incurs API costs.
+</Callout>
+
+## Advanced Configuration
+
+### Custom CLI Path
+
+```bash
+# Non-standard installation location
+CLAUDE_CLI_PATH=/custom/path/to/claude
+```
+
+### Agent Limits
+
+```javascript
+// .env.local
+MAX_CONCURRENT_AGENTS=5  # Default: 10
+AGENT_TIMEOUT_MINUTES=30  # Default: 60
+```
+
+### Git Worktree Settings
+
+```bash
+# Custom worktree location
+CLAUDE_WORKTREE_BASE=.ai-agents
+
+# Cleanup strategy
+CLEANUP_WORKTREES_ON_COMPLETE=true  # Default: false
+AUTO_MERGE_ON_SUCCESS=false         # Default: false (manual review)
+```
+
+### Output Verbosity
+
+```javascript
+// CLI puppeteer debug mode
+DEBUG_CLI_PUPPETEER=true  # Logs all agent I/O
+CLAUDE_VERBOSE=true       # Detailed parsing logs
+```
+
+## Troubleshooting
+
+### Claude CLI Not Found
+
+**Symptom**: "Claude CLI not found at /opt/homebrew/bin/claude"
+
+**Solutions**:
+1. Verify Claude.app is installed
+2. Enable Claude Code in menu: Claude → Enable Claude Code
+3. Check installation:
+```bash
+which claude
+# Should output path to claude binary
+```
+4. Set custom path if non-standard location:
+```bash
+CLAUDE_CLI_PATH=$(which claude)
+```
+
+### Agent Spawn Failures
+
+**Symptom**: "Failed to spawn agent: Error: spawn ENOENT"
+
+**Solutions**:
+1. Ensure git repository initialized:
+```bash
+git status  # Should not error
+```
+2. Commit or stash changes:
+```bash
+git stash
+```
+3. Check disk space:
+```bash
+df -h
+```
+
+### Agents Not Progressing
+
+**Symptom**: Agent stuck at "Thinking..." for >5 minutes
+
+**Solutions**:
+1. Check agent logs in AI Team Dashboard
+2. Verify Claude Pro subscription active
+3. Check for rate limiting (rarely occurs with CLI)
+4. Restart agent:
+```bash
+# From AI Team Dashboard, click "Restart" button
+```
+
+### Output Parsing Issues
+
+**Symptom**: Progress not updating despite agent activity
+
+**Solutions**:
+1. Enable verbose logging:
+```bash
+DEBUG_CLI_PUPPETEER=true npm run dev
+```
+2. Check for unexpected output format in logs
+3. Report pattern to GitHub issues for parser improvements
+
+## What's Next?
+
+- [Multi-Agent System](/core-concepts/multi-agent-system) - Parallel development architecture
+- [Session Management](/core-concepts/session-management) - Checkpoints and summaries
+- [AI Team Dashboard](/ide-features/ai-team-dashboard) - Monitor agent progress

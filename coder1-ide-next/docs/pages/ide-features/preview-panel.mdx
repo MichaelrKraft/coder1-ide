@@ -1,0 +1,351 @@
+import { Callout } from '@/components/Callout';
+
+# Live Preview
+
+<Callout type="success" title="Real-Time Visualization">
+See your changes instantly with hot-reload preview that updates as you code.
+</Callout>
+
+The Live Preview panel provides real-time visualization of your web applications, automatically refreshing as you make changes to HTML, CSS, and JavaScript files.
+
+## Key Features
+
+### Instant Hot Reload
+
+Changes appear immediately:
+- **Sub-second Updates** - See changes in ~200ms
+- **Smart Refresh** - Only reloads what changed
+- **No Manual Refresh** - Automatic detection of file changes
+- **State Preservation** - Maintains scroll position and form data
+
+### Multi-Device Preview
+
+Test responsive designs:
+- **Desktop View** - Standard desktop browser size
+- **Tablet View** - iPad and tablet dimensions
+- **Mobile View** - iPhone and mobile device sizes
+- **Custom Dimensions** - Define your own viewport sizes
+
+### Browser Sync
+
+Synchronized testing:
+- **Multiple Browsers** - Test across Chrome, Firefox, Safari
+- **Scroll Sync** - Synchronized scrolling across devices
+- **Click Sync** - Mirror interactions across previews
+- **Form Sync** - Synchronized form inputs
+
+## Preview Modes
+
+### Development Mode
+
+Full debugging capabilities:
+- **DevTools Access** - Right-click to inspect
+- **Console Output** - JavaScript logs and errors
+- **Network Tab** - Monitor API requests
+- **Performance Profiling** - Identify bottlenecks
+
+### Production Mode
+
+Optimized preview:
+- **Minified Assets** - Test production bundles
+- **CDN Simulation** - Simulate CDN delivery
+- **Caching Behavior** - Test cache strategies
+- **Performance Metrics** - Real-world performance data
+
+### Mobile Emulation
+
+Accurate mobile testing:
+- **Touch Events** - Test touch interactions
+- **Device Orientation** - Portrait and landscape
+- **Mobile Network** - Simulate 3G/4G speeds
+- **Geolocation** - Test location features
+
+## Interface Controls
+
+### Toolbar Actions
+
+<div className="grid md:grid-cols-2 gap-4 my-6">
+  <div className="bg-slate-800/30 border border-slate-700 rounded-lg p-4">
+    <div className="font-semibold text-slate-100 mb-2">🔄 Refresh</div>
+    <div className="text-xs text-slate-400">Force complete page reload (Ctrl+R)</div>
+  </div>
+  
+  <div className="bg-slate-800/30 border border-slate-700 rounded-lg p-4">
+    <div className="font-semibold text-slate-100 mb-2">🔍 Zoom</div>
+    <div className="text-xs text-slate-400">Adjust preview zoom level (50%-200%)</div>
+  </div>
+  
+  <div className="bg-slate-800/30 border border-slate-700 rounded-lg p-4">
+    <div className="font-semibold text-slate-100 mb-2">📱 Device</div>
+    <div className="text-xs text-slate-400">Switch between device previews</div>
+  </div>
+  
+  <div className="bg-slate-800/30 border border-slate-700 rounded-lg p-4">
+    <div className="font-semibold text-slate-100 mb-2">🔗 Open External</div>
+    <div className="text-xs text-slate-400">Open preview in separate browser window</div>
+  </div>
+</div>
+
+### Address Bar
+
+Navigate your application:
+- **URL Navigation** - Browse different pages
+- **History** - Back/forward navigation
+- **Bookmarks** - Save frequently tested URLs
+- **Query Params** - Test URL parameters easily
+
+### Developer Tools
+
+Built-in debugging:
+- **Element Inspector** - Inspect and modify HTML/CSS
+- **Console** - JavaScript console output
+- **Network Monitor** - Track requests and responses
+- **Storage Inspector** - View cookies and localStorage
+
+## Hot Reload Technology
+
+### How It Works
+
+<div className="bg-slate-800/50 border border-slate-700 rounded-lg p-6 my-8">
+```
+File Change Detection
+        ↓
+    Change Analysis
+        ↓
+ Selective Module Update
+        ↓
+    DOM Patch
+        ↓
+  State Preservation
+        ↓
+   Visual Update (~200ms)
+```
+</div>
+
+**Technology Stack**:
+- **File Watcher**: Monitors file system for changes
+- **Module Bundler**: Webpack/Vite hot module replacement
+- **WebSocket**: Real-time change notifications
+- **Virtual DOM**: Efficient DOM updates
+
+### Supported File Types
+
+Instant reload for:
+- **HTML** - Structure changes
+- **CSS/SCSS** - Style updates without reload
+- **JavaScript** - Module hot replacement
+- **Images** - Asset updates
+- **JSON** - Configuration changes
+
+### State Preservation
+
+Maintains application state during reload:
+- Form input values
+- Scroll positions
+- Expanded/collapsed sections
+- Active tabs and modals
+- Component state
+
+## Responsive Testing
+
+### Device Presets
+
+<div className="bg-slate-800/50 border border-slate-700 rounded-lg p-4 my-6">
+  <div className="space-y-2 font-mono text-sm">
+    <div><span className="text-blue-400">iPhone 14 Pro:</span> <span className="text-slate-300">393 × 852px</span></div>
+    <div><span className="text-blue-400">iPad Pro:</span> <span className="text-slate-300">1024 × 1366px</span></div>
+    <div><span className="text-blue-400">Desktop HD:</span> <span className="text-slate-300">1920 × 1080px</span></div>
+    <div><span className="text-blue-400">Desktop 4K:</span> <span className="text-slate-300">3840 × 2160px</span></div>
+  </div>
+</div>
+
+### Custom Dimensions
+
+Create custom viewport sizes:
+- **Width Range**: 320px - 3840px
+- **Height Range**: 480px - 2160px
+- **Saved Presets**: Save frequently used sizes
+- **Quick Toggle**: Switch between presets instantly
+
+### Orientation Testing
+
+Test both orientations:
+- **Portrait Mode** - Vertical layout
+- **Landscape Mode** - Horizontal layout
+- **Quick Flip** - Instant orientation switch
+- **Auto-Rotation** - Follow device orientation
+
+## Console Integration
+
+### JavaScript Console
+
+Full console functionality:
+- **Logs**: `console.log()` output
+- **Warnings**: `console.warn()` messages
+- **Errors**: `console.error()` with stack traces
+- **Custom Logs**: Styled console messages
+
+### Network Requests
+
+Monitor all network activity:
+- **XHR Requests**: AJAX calls
+- **Fetch API**: Modern HTTP requests
+- **WebSocket**: Real-time connections
+- **Resource Loading**: Images, CSS, JS files
+
+### Performance Metrics
+
+<div className="bg-slate-800/50 border border-slate-700 rounded-lg p-6 my-8">
+```
+⚡ Performance Metrics:
+─────────────────────────────────
+First Paint:         450ms
+DOM Content Loaded:  1.2s
+Full Load:           2.1s
+Total Requests:      24
+Transfer Size:       485KB
+```
+</div>
+
+## Debugging Features
+
+### Element Inspector
+
+Inspect and modify elements:
+- **Select Mode** - Click to inspect elements
+- **DOM Tree** - Navigate element hierarchy
+- **Style Panel** - View and edit CSS
+- **Box Model** - Visualize margins and padding
+
+### CSS Editor
+
+Live CSS editing:
+- **Inline Editing** - Modify styles directly
+- **Add Properties** - Insert new CSS rules
+- **Toggle Properties** - Enable/disable rules
+- **Color Picker** - Visual color selection
+
+### JavaScript Debugging
+
+Debug your code:
+- **Breakpoints** - Pause execution at specific lines
+- **Step Through** - Execute code line by line
+- **Watch Expressions** - Monitor variable values
+- **Call Stack** - View function call hierarchy
+
+## Keyboard Shortcuts
+
+| Action | Windows/Linux | macOS |
+|--------|--------------|-------|
+| Refresh Preview | Ctrl+R | Cmd+R |
+| Toggle DevTools | Ctrl+Shift+I | Cmd+Option+I |
+| Zoom In | Ctrl+Plus | Cmd+Plus |
+| Zoom Out | Ctrl+Minus | Cmd+Minus |
+| Reset Zoom | Ctrl+0 | Cmd+0 |
+| Open External | Ctrl+Shift+E | Cmd+Shift+E |
+| Toggle Device | Ctrl+Shift+M | Cmd+Shift+M |
+
+## Configuration
+
+### Preview Settings
+
+Customize preview behavior:
+- **Auto-Refresh**: Enable/disable automatic reload
+- **Refresh Delay**: Debounce time (100ms-2000ms)
+- **Default Device**: Starting device preset
+- **Default Zoom**: Initial zoom level
+
+### Hot Reload Settings
+
+Fine-tune hot reload:
+- **Enable HMR**: Hot module replacement on/off
+- **Preserve State**: Maintain state during reload
+- **Show Notifications**: Reload notifications
+- **Error Overlay**: Display build errors
+
+### Network Simulation
+
+Test different network conditions:
+- **Fast 3G**: 1.6Mbps download, 750Kbps upload
+- **Slow 3G**: 400Kbps download, 400Kbps upload
+- **Offline Mode**: Test offline functionality
+- **Custom Throttling**: Define custom speeds
+
+## Advanced Features
+
+### Multi-Preview Mode
+
+View multiple devices simultaneously:
+- **Split View** - Desktop + Mobile side-by-side
+- **Grid View** - 4+ devices in grid layout
+- **Synchronized** - All previews update together
+- **Independent** - Each preview navigates separately
+
+### Screenshot & Recording
+
+Capture preview content:
+- **Screenshot** - Capture current view
+- **Full Page** - Capture entire page
+- **Video Recording** - Record interactions
+- **GIF Export** - Create animated demos
+
+### Accessibility Testing
+
+Built-in a11y features:
+- **Screen Reader** - Test with screen reader simulation
+- **Color Contrast** - Check WCAG compliance
+- **Keyboard Nav** - Test keyboard accessibility
+- **Focus Indicators** - Visualize focus order
+
+## Performance
+
+Optimized for smooth preview:
+- **Low Latency**: ~200ms update time
+- **Efficient Diffing**: Only updates changed elements
+- **Memory Optimized**: Minimal memory overhead
+- **GPU Accelerated**: Hardware acceleration enabled
+
+## Troubleshooting
+
+### Preview not updating
+
+1. Check if auto-refresh is enabled
+2. Verify file changes are being saved
+3. Clear browser cache (Ctrl+Shift+R)
+4. Restart development server
+
+### Slow preview performance
+
+1. Disable unnecessary browser extensions
+2. Reduce preview zoom level
+3. Close unused device previews
+4. Check for memory leaks in console
+
+### CORS errors in console
+
+1. Ensure development server allows CORS
+2. Check API endpoint configuration
+3. Use proxy configuration if needed
+4. Verify browser security settings
+
+<Callout type="warning">
+Some features (geolocation, notifications) may require HTTPS even in development mode.
+</Callout>
+
+## Integration with Claude
+
+Claude can interact with the preview:
+- **Visual Testing**: Ask Claude to test UI changes
+- **Bug Detection**: Claude identifies visual issues
+- **Responsiveness**: Claude checks responsive behavior
+- **Performance**: Claude analyzes performance metrics
+
+<Callout type="info">
+The Live Preview automatically detects your framework (React, Vue, etc.) and optimizes hot reload accordingly.
+</Callout>
+
+## Next Steps
+
+- [Monaco Editor](/ide-features/editor) - Edit code with powerful editor
+- [Integrated Terminal](/ide-features/terminal) - Run development server
+- [Status Bar](/ide-features/status-bar) - Quick preview controls

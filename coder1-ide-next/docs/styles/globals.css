@@ -1,0 +1,208 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Coder1 IDE matching styles */
+:root {
+  --coder1-blue: #3B82F6;
+  --coder1-purple: #8B5CF6;
+  --coder1-dark: #0F172A;
+  --coder1-surface: #1E293B;
+}
+
+@layer base {
+  html {
+    @apply scroll-smooth;
+  }
+
+  body {
+    @apply bg-slate-900 text-slate-100;
+    font-feature-settings: 'rlig' 1, 'calt' 1;
+  }
+}
+
+@layer components {
+  /* Custom scrollbar matching IDE */
+  ::-webkit-scrollbar {
+    @apply w-2 h-2;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-slate-900;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-slate-700 rounded-full;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-slate-600;
+  }
+
+  /* Code blocks */
+  pre {
+    @apply bg-slate-950 rounded-lg p-4 overflow-x-auto my-4 border border-slate-800;
+  }
+
+  code {
+    @apply font-mono text-sm;
+  }
+
+  /* Inline code */
+  :not(pre) > code {
+    @apply bg-slate-800 px-1.5 py-0.5 rounded text-blue-300 text-sm;
+  }
+
+  /* Links */
+  a {
+    @apply text-blue-400 hover:text-blue-300 transition-colors;
+  }
+
+  /* Headings with gradient */
+  h1 {
+    @apply text-4xl font-bold mb-4 bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent;
+  }
+
+  h2 {
+    @apply text-3xl font-bold mb-3 mt-8 text-slate-100;
+  }
+
+  h3 {
+    @apply text-2xl font-semibold mb-2 mt-6 text-slate-200;
+  }
+
+  /* Tables */
+  table {
+    @apply w-full border-collapse my-6;
+  }
+
+  th {
+    @apply border-b border-slate-700 p-3 text-left font-semibold;
+  }
+
+  td {
+    @apply border-b border-slate-800 p-3;
+  }
+
+  tr:hover {
+    @apply bg-slate-800/50;
+  }
+
+  /* Blockquotes */
+  blockquote {
+    @apply border-l-4 border-blue-500 pl-4 italic text-slate-300 my-4;
+  }
+
+  /* Images */
+  img {
+    @apply rounded-lg shadow-2xl;
+  }
+}
+
+@layer utilities {
+  /* Animations */
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .animate-fadeIn {
+    animation: fadeIn 0.3s ease-out;
+  }
+
+  @keyframes shimmer {
+    0% {
+      transform: translateX(-100%);
+    }
+    100% {
+      transform: translateX(100%);
+    }
+  }
+
+  .animate-shimmer {
+    animation: shimmer 2s infinite;
+  }
+
+  @keyframes pulse-glow {
+    0%, 100% {
+      box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
+    }
+    50% {
+      box-shadow: 0 0 20px rgba(59, 130, 246, 0.8);
+    }
+  }
+
+  .animate-pulse-glow {
+    animation: pulse-glow 2s ease-in-out infinite;
+  }
+
+  /* Gradient text */
+  .gradient-text {
+    @apply bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent;
+  }
+
+  /* Glass morphism */
+  .glass {
+    @apply bg-slate-900/50 backdrop-blur-sm border border-slate-700/50;
+  }
+}
+
+/* Nextra overrides to match Coder1 */
+.nextra-nav-container {
+  @apply bg-slate-900/95 backdrop-blur-sm border-b border-slate-800;
+}
+
+.nextra-sidebar {
+  @apply bg-slate-900;
+}
+
+.nextra-toc {
+  @apply bg-slate-900;
+}
+
+/* Search styling */
+.nextra-search input {
+  @apply bg-slate-800 border-slate-700 text-slate-100 placeholder-slate-400;
+}
+
+.nextra-search input:focus {
+  @apply border-blue-500 ring-2 ring-blue-500/20;
+}
+
+/* Active/hover sidebar item - orange glowing border */
+/* Target all possible sidebar link structures */
+nav a[aria-selected="true"],
+nav a.active,
+nav li.active > a,
+nav ul li a[data-active="true"],
+aside a[aria-selected="true"],
+aside a.active,
+aside li.active > a,
+aside ul li a[data-active="true"],
+.nextra-sidebar-menu a[aria-selected="true"],
+[data-nextra-menu] a[aria-selected="true"] {
+  border: 2px solid #f97316 !important;
+  border-radius: 0.375rem !important;
+  box-shadow: 0 0 12px rgba(249, 115, 22, 0.7), 
+              0 0 24px rgba(249, 115, 22, 0.5), 
+              inset 0 0 12px rgba(249, 115, 22, 0.2) !important;
+  background-color: rgba(249, 115, 22, 0.15) !important;
+}
+
+/* Hover state for all sidebar links */
+nav a:hover:not([aria-selected="true"]),
+aside a:hover:not([aria-selected="true"]),
+.nextra-sidebar-menu a:hover:not([aria-selected="true"]),
+[data-nextra-menu] a:hover:not([aria-selected="true"]) {
+  border: 2px solid #fb923c !important;
+  border-radius: 0.375rem !important;
+  box-shadow: 0 0 10px rgba(251, 146, 60, 0.6), 
+              0 0 20px rgba(251, 146, 60, 0.4) !important;
+  background-color: rgba(251, 146, 60, 0.1) !important;
+}
