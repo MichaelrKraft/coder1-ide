@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Clock, FileEdit, Terminal, Save, AlertCircle, RefreshCw, Download, History, X, Mic, GitBranch, Edit3, Settings } from 'lucide-react';
+import { ArrowLeft, Clock, FileEdit, Terminal, Save, AlertCircle, RefreshCw, Download, History, X, Edit3 } from 'lucide-react';
 
 interface TimelineEvent {
   id: string;
@@ -27,6 +27,11 @@ export default function TimelinePage() {
   const [originalSessionId, setOriginalSessionId] = useState<string>(''); // Original session to return to (never changes)
   const [sessions, setSessions] = useState<Session[]>([]);
   const [selectedSession, setSelectedSession] = useState<string>('all');
+  const [checkpointType, setCheckpointType] = useState<'manual' | 'auto' | 'all'>('manual'); // Checkpoint type filter
+  const [editingCheckpoint, setEditingCheckpoint] = useState<string | null>(null); // ID of checkpoint being edited
+  const [editTitle, setEditTitle] = useState<string>(''); // Temporary title during editing
+  const [selectedCheckpoints, setSelectedCheckpoints] = useState<Set<string>>(new Set()); // Multi-select for bulk delete
+  const [selectAllChecked, setSelectAllChecked] = useState(false); // Select all checkbox state
 
   useEffect(() => {
     // Fetch all available sessions
@@ -68,17 +73,34 @@ export default function TimelinePage() {
     setSelectedSession(newSessionId);
     setLoading(true);
     if (newSessionId === 'all') {
-      fetchTimeline(); // No sessionId = all sessions
+      fetchTimeline(undefined, checkpointType); // No sessionId = all sessions
     } else if (newSessionId === 'current') {
-      fetchTimeline(sessionId);
+      fetchTimeline(sessionId, checkpointType);
     } else {
-      fetchTimeline(newSessionId);
+      fetchTimeline(newSessionId, checkpointType);
     }
   };
 
-  const fetchTimeline = async (sessionId?: string) => {
+  const handleTypeChange = (newType: 'manual' | 'auto' | 'all') => {
+    setCheckpointType(newType);
+    setLoading(true);
+    if (selectedSession === 'all') {
+      fetchTimeline(undefined, newType);
+    } else if (selectedSession === 'current') {
+      fetchTimeline(sessionId, newType);
+    } else {
+      fetchTimeline(selectedSession, newType);
+    }
+  };
+
+  const fetchTimeline = async (sessionId?: string, type?: 'manual' | 'auto' | 'all') => {
     try {
-      const url = sessionId ? `/api/timeline?sessionId=${sessionId}` : '/api/timeline';
+      // 🔧 Dynamic checkpoint type filtering
+      const filterType = type || checkpointType;
+      const typeParam = filterType === 'all' ? '' : `&type=${filterType}`;
+      const url = sessionId 
+        ? `/api/timeline?sessionId=${sessionId}${typeParam}` 
+        : `/api/timeline${typeParam ? '?' + typeParam.slice(1) : ''}`; // Remove leading & if no sessionId
       const response = await fetch(url);
       const data = await response.json();
       if (data.events) {
@@ -130,6 +152,133 @@ export default function TimelinePage() {
   const handleRefresh = () => {
     setLoading(true);
     fetchTimeline(sessionId);
+  };
+
+  // Toggle individual checkpoint selection
+  const toggleCheckpointSelection = (checkpointId: string) => {
+    const newSelected = new Set(selectedCheckpoints);
+    if (newSelected.has(checkpointId)) {
+      newSelected.delete(checkpointId);
+    } else {
+      newSelected.add(checkpointId);
+    }
+    setSelectedCheckpoints(newSelected);
+    setSelectAllChecked(newSelected.size === events.length && events.length > 0);
+  };
+
+  // Toggle select all checkpoints
+  const toggleSelectAll = () => {
+    if (selectAllChecked) {
+      setSelectedCheckpoints(new Set());
+      setSelectAllChecked(false);
+    } else {
+      const allIds = new Set(events.map(e => e.id));
+      setSelectedCheckpoints(allIds);
+      setSelectAllChecked(true);
+    }
+  };
+
+  // Bulk delete selected checkpoints
+  const handleBulkDelete = async () => {
+    const count = selectedCheckpoints.size;
+    if (count === 0) return;
+    
+    if (!confirm(`Delete ${count} checkpoint${count !== 1 ? 's' : ''}? This action cannot be undone.`)) {
+      return;
+    }
+
+    setLoading(true);
+    let deleted = 0;
+    let failed = 0;
+
+    for (const checkpointId of selectedCheckpoints) {
+      const checkpoint = events.find(e => e.id === checkpointId);
+      if (checkpoint?.details?.sessionId) {
+        try {
+          const response = await fetch(`/api/sessions/${checkpoint.details.sessionId}/checkpoints/${checkpointId}`, {
+            method: 'DELETE'
+          });
+          if (response.ok) {
+            deleted++;
+          } else {
+            failed++;
+          }
+        } catch (error) {
+          failed++;
+        }
+      }
+    }
+
+    // Clear selection and refresh
+    setSelectedCheckpoints(new Set());
+    setSelectAllChecked(false);
+    
+    if (selectedSession === 'all') {
+      await fetchTimeline(undefined, checkpointType);
+    } else if (selectedSession === 'current') {
+      await fetchTimeline(sessionId, checkpointType);
+    } else {
+      await fetchTimeline(selectedSession, checkpointType);
+    }
+
+    // Show result toast
+    const toast = document.createElement('div');
+    toast.className = 'fixed top-4 right-4 bg-red-600 text-white px-6 py-3 rounded-lg shadow-lg z-50 transition-all duration-300';
+    toast.innerHTML = `🗑️ Deleted ${deleted} checkpoint${deleted !== 1 ? 's' : ''}${failed > 0 ? ` (${failed} failed)` : ''}`;
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+      toast.style.opacity = '0';
+      setTimeout(() => document.body.removeChild(toast), 300);
+    }, 3000);
+  };
+
+  // Edit checkpoint title
+  const handleEditStart = (checkpointId: string, currentTitle: string) => {
+    setEditingCheckpoint(checkpointId);
+    setEditTitle(currentTitle);
+  };
+
+  const handleEditCancel = () => {
+    setEditingCheckpoint(null);
+    setEditTitle('');
+  };
+
+  const handleEditSave = async (checkpointId: string, sessionId: string) => {
+    if (!editTitle.trim()) {
+      handleEditCancel();
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/sessions/${sessionId}/checkpoints/${checkpointId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: editTitle.trim() })
+      });
+
+      if (response.ok) {
+        // Update local state
+        setEvents(events.map(e => 
+          e.id === checkpointId ? { ...e, description: editTitle.trim() } : e
+        ));
+        
+        // Show success toast
+        const toast = document.createElement('div');
+        toast.className = 'fixed top-4 right-4 bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg z-50 transition-all duration-300';
+        toast.innerHTML = '✅ Checkpoint title updated';
+        document.body.appendChild(toast);
+        
+        setTimeout(() => {
+          toast.style.opacity = '0';
+          setTimeout(() => document.body.removeChild(toast), 300);
+        }, 2000);
+      }
+    } catch (error) {
+      console.error('Failed to update checkpoint title:', error);
+    }
+
+    handleEditCancel();
   };
 
   // Format checkpoint timestamp for display (e.g., "Sep 26, 4:55 pm")
@@ -338,15 +487,15 @@ export default function TimelinePage() {
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-4xl font-bold text-white">Project Timeline</h1>
           
-          {/* Session Selector */}
-          <div className="flex items-center gap-2">
+          {/* Session Selector & Checkpoint Type Filter */}
+          <div className="flex items-center gap-4">
             <History className="w-4 h-4 text-gray-400" />
             <select
               value={selectedSession}
               onChange={(e) => handleSessionChange(e.target.value)}
               className="bg-gray-800 border border-gray-700 text-white rounded px-3 py-2 text-sm focus:outline-none focus:border-cyan-500 transition-colors"
             >
-              <option value="all">📊 All Sessions ({sessions.length})</option>
+              <option value="all">All Sessions ({sessions.length})</option>
               <option value="current">🎯 Current Session</option>
               <optgroup label="─────────────────">
                 {sessions.slice(0, 20).map((session) => (
@@ -355,6 +504,17 @@ export default function TimelinePage() {
                   </option>
                 ))}
               </optgroup>
+            </select>
+            
+            <Save className="w-4 h-4 text-gray-400" />
+            <select
+              value={checkpointType}
+              onChange={(e) => handleTypeChange(e.target.value as 'manual' | 'auto' | 'all')}
+              className="bg-gray-800 border border-gray-700 text-white rounded px-3 py-2 text-sm focus:outline-none focus:border-purple-500 transition-colors"
+            >
+              <option value="manual">📋 Manual Checkpoints</option>
+              <option value="auto">⏰ Auto Checkpoints</option>
+              <option value="all">📊 All Checkpoints</option>
             </select>
           </div>
         </div>
@@ -369,19 +529,53 @@ export default function TimelinePage() {
           </div>
         ) : (
           <>
-            {/* Stats Bar */}
+            {/* Stats Bar with Select All and Bulk Delete */}
             <div className="mb-4 p-3 bg-gray-800 border border-gray-700 rounded-lg flex items-center justify-between text-sm">
-              <span className="text-gray-400">
-                Showing <span className="text-white font-semibold">{events.length}</span> checkpoint{events.length !== 1 ? 's' : ''}
-              </span>
-              <span className="text-gray-500">
-                {selectedSession === 'all' ? `From all ${sessions.length} sessions` : 
-                 selectedSession === 'current' ? 'Current session only' :
-                 'Selected session'}
-              </span>
+              <div className="flex items-center gap-4">
+                {/* Select All Checkbox */}
+                <label className="flex items-center gap-2 cursor-pointer hover:text-cyan-400 transition-colors">
+                  <input
+                    type="checkbox"
+                    checked={selectAllChecked}
+                    onChange={toggleSelectAll}
+                    className="w-4 h-4 rounded border-gray-600 bg-gray-700 text-cyan-500 focus:ring-cyan-500 focus:ring-offset-gray-800 cursor-pointer"
+                  />
+                  <span className="text-gray-400">
+                    Select All ({events.length})
+                  </span>
+                </label>
+                
+                {/* Checkpoint Count */}
+                <span className="text-gray-400">
+                  Showing <span className="text-white font-semibold">{events.length}</span> checkpoint{events.length !== 1 ? 's' : ''}
+                </span>
+              </div>
+              
+              <div className="flex items-center gap-4">
+                {/* Session & Type Info */}
+                <span className="text-gray-500">
+                  {selectedSession === 'all' ? `From all ${sessions.length} sessions` : 
+                   selectedSession === 'current' ? 'Current session only' :
+                   'Selected session'}
+                  {' • '}
+                  {checkpointType === 'manual' ? 'Manual only' :
+                   checkpointType === 'auto' ? 'Auto only' :
+                   'All types'}
+                </span>
+                
+                {/* Bulk Delete Button - Only show when checkpoints selected */}
+                {selectedCheckpoints.size > 0 && (
+                  <button
+                    onClick={handleBulkDelete}
+                    className="px-3 py-1.5 bg-red-600 hover:bg-red-500 rounded text-white font-medium transition-colors flex items-center gap-2"
+                  >
+                    🗑️ Delete Selected ({selectedCheckpoints.size})
+                  </button>
+                )}
+              </div>
             </div>
             
-            <div className="space-y-4">
+            <div className="space-y-4 max-w-3xl">
             {events.map((event, index) => {
               const isFirst = index === 0;
               const isLast = index === events.length - 1;
@@ -397,9 +591,19 @@ export default function TimelinePage() {
                     </div>
                   )}
                   <div className="relative flex items-start gap-4">
+                    {/* Checkbox for multi-select */}
+                    <div className="relative z-10 flex-shrink-0 pt-1">
+                      <input
+                        type="checkbox"
+                        checked={selectedCheckpoints.has(event.id)}
+                        onChange={() => toggleCheckpointSelection(event.id)}
+                        className="w-4 h-4 rounded border-gray-600 bg-gray-700 text-cyan-500 focus:ring-cyan-500 focus:ring-offset-gray-800 cursor-pointer"
+                      />
+                    </div>
+                    
                     {/* Timeline line */}
                     {!isLast && (
-                      <div className="absolute left-2 top-8 bottom-0 w-0.5 bg-gray-700" />
+                      <div className="absolute left-10 top-8 bottom-0 w-0.5 bg-gray-700" />
                     )}
                     
                     {/* Icon */}
@@ -411,9 +615,40 @@ export default function TimelinePage() {
                     <div className="flex-1 bg-gray-800 rounded-lg p-4 border border-cyan-500/50 hover:border-cyan-500 shadow-glow-cyan transition-colors group">
                       <div className="flex items-start justify-between mb-2">
                         <div className="flex-1">
-                          <h3 className="text-sm font-semibold text-white">
-                            {event.description}
-                          </h3>
+                          {editingCheckpoint === event.id ? (
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="text"
+                                value={editTitle}
+                                onChange={(e) => setEditTitle(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') {
+                                    handleEditSave(event.id, event.details.sessionId);
+                                  } else if (e.key === 'Escape') {
+                                    handleEditCancel();
+                                  }
+                                }}
+                                className="flex-1 bg-gray-900 border border-cyan-500 text-white rounded px-2 py-1 text-sm focus:outline-none focus:border-cyan-400"
+                                autoFocus
+                              />
+                              <button
+                                onClick={() => handleEditSave(event.id, event.details.sessionId)}
+                                className="px-2 py-1 bg-green-600 hover:bg-green-500 rounded text-xs text-white transition-colors"
+                              >
+                                Save
+                              </button>
+                              <button
+                                onClick={handleEditCancel}
+                                className="px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs text-white transition-colors"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          ) : (
+                            <h3 className="text-sm font-semibold text-white">
+                              {event.description}
+                            </h3>
+                          )}
                           {event.details?.description && (
                             <p className="text-xs text-gray-400 mt-1">
                               {event.details.description}
@@ -447,33 +682,14 @@ export default function TimelinePage() {
                           </span>
                           {event.type === 'checkpoint' && event.details?.sessionId && (
                             <>
-                              {/* Terminal-style button bar */}
-                              <div className="flex items-center gap-1 px-2 py-1 bg-gray-900/50 border border-gray-700 rounded">
-                                <button
-                                  className="p-1 rounded hover:bg-gray-700 transition-colors"
-                                  title="Voice checkpoint navigation"
-                                >
-                                  <Mic className="w-3 h-3 text-gray-400" />
-                                </button>
-                                <button
-                                  className="p-1 rounded hover:bg-gray-700 transition-colors"
-                                  title="Checkpoint planning mode"
-                                >
-                                  <GitBranch className="w-3 h-3 text-gray-400" />
-                                </button>
-                                <button
-                                  className="p-1 rounded hover:bg-gray-700 transition-colors"
-                                  title="Edit checkpoint"
-                                >
-                                  <Edit3 className="w-3 h-3 text-gray-400" />
-                                </button>
-                                <button
-                                  className="p-1 rounded hover:bg-gray-700 transition-colors"
-                                  title="Checkpoint settings"
-                                >
-                                  <Settings className="w-3 h-3 text-gray-400" />
-                                </button>
-                              </div>
+                              {/* Edit button */}
+                              <button
+                                onClick={() => handleEditStart(event.id, event.description)}
+                                className="p-1 text-gray-400 hover:text-cyan-400 hover:bg-cyan-900/20 rounded transition-colors"
+                                title="Edit checkpoint title"
+                              >
+                                <Edit3 className="w-4 h-4" />
+                              </button>
                               <button
                                 onClick={() => handleRestore(event.id, event.details.sessionId)}
                                 className="px-2 py-1 bg-cyan-600 hover:bg-cyan-500 rounded text-xs transition-colors"
