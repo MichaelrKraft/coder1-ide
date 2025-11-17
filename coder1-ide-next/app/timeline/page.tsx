@@ -32,6 +32,9 @@ export default function TimelinePage() {
   const [editTitle, setEditTitle] = useState<string>(''); // Temporary title during editing
   const [selectedCheckpoints, setSelectedCheckpoints] = useState<Set<string>>(new Set()); // Multi-select for bulk delete
   const [selectAllChecked, setSelectAllChecked] = useState(false); // Select all checkbox state
+  
+  // 🔧 RACE CONDITION FIX: Track fetch requests to cancel stale ones
+  const fetchControllerRef = React.useRef<AbortController | null>(null);
 
   useEffect(() => {
     // Fetch all available sessions
@@ -94,6 +97,13 @@ export default function TimelinePage() {
   };
 
   const fetchTimeline = async (sessionId?: string, type?: 'manual' | 'auto' | 'all') => {
+    // 🔧 RACE CONDITION FIX: Cancel previous request if still in flight
+    if (fetchControllerRef.current) {
+      fetchControllerRef.current.abort();
+    }
+    
+    fetchControllerRef.current = new AbortController();
+    
     try {
       // 🔧 Dynamic checkpoint type filtering
       const filterType = type || checkpointType;
@@ -101,15 +111,24 @@ export default function TimelinePage() {
       const url = sessionId 
         ? `/api/timeline?sessionId=${sessionId}${typeParam}` 
         : `/api/timeline${typeParam ? '?' + typeParam.slice(1) : ''}`; // Remove leading & if no sessionId
-      const response = await fetch(url);
+      
+      const response = await fetch(url, { 
+        signal: fetchControllerRef.current.signal 
+      });
       const data = await response.json();
       if (data.events) {
         setEvents(data.events);
       }
-    } catch (error) {
+    } catch (error: any) {
+      // Ignore abort errors (intentional cancellation)
+      if (error.name === 'AbortError') {
+        console.log('🚫 Timeline fetch cancelled (newer request started)');
+        return;
+      }
       // logger?.error('Failed to fetch timeline:', error);
     } finally {
       setLoading(false);
+      fetchControllerRef.current = null;
     }
   };
 
@@ -126,8 +145,16 @@ export default function TimelinePage() {
 
       if (response.ok) {
         console.log('✅ Checkpoint deleted successfully');
-        // Remove from local state immediately
-        setEvents(events.filter(e => e.id !== checkpointId));
+        
+        // 🔧 RACE CONDITION FIX: Refresh from server instead of optimistic update
+        // This prevents stale closure issues and ensures UI matches server state
+        if (selectedSession === 'all') {
+          await fetchTimeline(undefined, checkpointType);
+        } else if (selectedSession === 'current') {
+          await fetchTimeline(sessionId, checkpointType);
+        } else {
+          await fetchTimeline(selectedSession, checkpointType);
+        }
         
         // Show success notification
         const toast = document.createElement('div');
@@ -188,49 +215,55 @@ export default function TimelinePage() {
     }
 
     setLoading(true);
-    let deleted = 0;
-    let failed = 0;
+    
+    try {
+      let deleted = 0;
+      let failed = 0;
 
-    for (const checkpointId of selectedCheckpoints) {
-      const checkpoint = events.find(e => e.id === checkpointId);
-      if (checkpoint?.details?.sessionId) {
-        try {
-          const response = await fetch(`/api/sessions/${checkpoint.details.sessionId}/checkpoints/${checkpointId}`, {
-            method: 'DELETE'
-          });
-          if (response.ok) {
-            deleted++;
-          } else {
+      for (const checkpointId of selectedCheckpoints) {
+        const checkpoint = events.find(e => e.id === checkpointId);
+        if (checkpoint?.details?.sessionId) {
+          try {
+            const response = await fetch(`/api/sessions/${checkpoint.details.sessionId}/checkpoints/${checkpointId}`, {
+              method: 'DELETE'
+            });
+            if (response.ok) {
+              deleted++;
+            } else {
+              failed++;
+            }
+          } catch (error) {
             failed++;
           }
-        } catch (error) {
-          failed++;
         }
       }
-    }
 
-    // Clear selection and refresh
-    setSelectedCheckpoints(new Set());
-    setSelectAllChecked(false);
-    
-    if (selectedSession === 'all') {
-      await fetchTimeline(undefined, checkpointType);
-    } else if (selectedSession === 'current') {
-      await fetchTimeline(sessionId, checkpointType);
-    } else {
-      await fetchTimeline(selectedSession, checkpointType);
-    }
+      // Clear selection and refresh
+      setSelectedCheckpoints(new Set());
+      setSelectAllChecked(false);
+      
+      if (selectedSession === 'all') {
+        await fetchTimeline(undefined, checkpointType);
+      } else if (selectedSession === 'current') {
+        await fetchTimeline(sessionId, checkpointType);
+      } else {
+        await fetchTimeline(selectedSession, checkpointType);
+      }
 
-    // Show result toast
-    const toast = document.createElement('div');
-    toast.className = 'fixed top-4 right-4 bg-red-600 text-white px-6 py-3 rounded-lg shadow-lg z-50 transition-all duration-300';
-    toast.innerHTML = `🗑️ Deleted ${deleted} checkpoint${deleted !== 1 ? 's' : ''}${failed > 0 ? ` (${failed} failed)` : ''}`;
-    document.body.appendChild(toast);
-    
-    setTimeout(() => {
-      toast.style.opacity = '0';
-      setTimeout(() => document.body.removeChild(toast), 300);
-    }, 3000);
+      // Show result toast
+      const toast = document.createElement('div');
+      toast.className = 'fixed top-4 right-4 bg-red-600 text-white px-6 py-3 rounded-lg shadow-lg z-50 transition-all duration-300';
+      toast.innerHTML = `🗑️ Deleted ${deleted} checkpoint${deleted !== 1 ? 's' : ''}${failed > 0 ? ` (${failed} failed)` : ''}`;
+      document.body.appendChild(toast);
+      
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        setTimeout(() => document.body.removeChild(toast), 300);
+      }, 3000);
+    } finally {
+      // 🔧 RACE CONDITION FIX: Always clear loading state, even if operation fails
+      setLoading(false);
+    }
   };
 
   // Edit checkpoint title
@@ -258,10 +291,15 @@ export default function TimelinePage() {
       });
 
       if (response.ok) {
-        // Update local state
-        setEvents(events.map(e => 
-          e.id === checkpointId ? { ...e, description: editTitle.trim() } : e
-        ));
+        // 🔧 RACE CONDITION FIX: Refresh from server instead of optimistic update
+        // This prevents stale closure issues and ensures UI matches server state
+        if (selectedSession === 'all') {
+          await fetchTimeline(undefined, checkpointType);
+        } else if (selectedSession === 'current') {
+          await fetchTimeline(sessionId, checkpointType);
+        } else {
+          await fetchTimeline(selectedSession, checkpointType);
+        }
         
         // Show success toast
         const toast = document.createElement('div');
