@@ -113,7 +113,7 @@ class BridgeClient extends EventEmitter {
    * Validate pairing code with server
    */
   async validatePairingCode(code) {
-    const fetch = (await import('node-fetch')).default;
+    const fetch = require('node-fetch');
     
     try {
       const response = await fetch(`${this.serverUrl}/api/bridge/pair`, {

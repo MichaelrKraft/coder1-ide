@@ -1,0 +1,19 @@
+# Development files
+*.log
+.DS_Store
+.env
+.env.local
+
+# Test files
+test/
+*.test.js
+
+# Backup files
+*.backup
+*.backup-*
+
+# Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
