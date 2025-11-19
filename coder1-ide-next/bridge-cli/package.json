@@ -27,6 +27,9 @@
     "commander": "^11.1.0",
     "node-fetch": "^2.7.0"
   },
+  "bundledDependencies": [
+    "node-fetch"
+  ],
   "engines": {
     "node": ">=18.0.0"
   },
