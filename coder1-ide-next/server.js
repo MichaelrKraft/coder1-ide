@@ -246,8 +246,13 @@ const terminalDataBuffers = new Map(); // Buffer terminal data for context captu
 const contextSessions = new Map(); // Map terminal sessions to context sessions
 
 // 🔌 Initialize server buffer access for requirement extraction API
-const { initializeServerBuffers } = require(path.join(__dirname, 'lib', 'server-terminal-access'));
-initializeServerBuffers({ terminalDataBuffers });
+try {
+  const { initializeServerBuffers } = require(path.join(__dirname, 'lib', 'server-terminal-access.js'));
+  initializeServerBuffers({ terminalDataBuffers });
+} catch (error) {
+  console.warn('⚠️ Server terminal access module not available (expected in standalone builds)');
+  console.warn('Terminal requirement extraction API will use fallback mode');
+}
 
 // 🎯 CRITICAL FIX (Oct 28, 2025): Separate buffer for terminal history restoration
 // terminalDataBuffers filters out ANSI codes, making it useless for history display
