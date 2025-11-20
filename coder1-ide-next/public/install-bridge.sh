@@ -121,8 +121,24 @@ cd package
 
 echo -e "${BLUE}🔧 Installing dependencies...${NC}"
 
-# Install dependencies
+# Install dependencies (critical for node-fetch and other packages)
 npm install --production --silent
+
+# Verify critical dependencies
+if [ ! -d "node_modules/node-fetch" ]; then
+    echo -e "${RED}❌ Critical dependency 'node-fetch' failed to install!${NC}"
+    echo -e "${YELLOW}Retrying installation...${NC}"
+    npm install --production
+    
+    if [ ! -d "node_modules/node-fetch" ]; then
+        echo -e "${RED}❌ Installation failed. Dependencies are missing.${NC}"
+        echo -e "${YELLOW}Please report this issue: https://github.com/MichaelrKraft/coder1-ide/issues${NC}"
+        rm -rf "$TEMP_DIR"
+        exit 1
+    fi
+fi
+
+echo -e "${GREEN}✅ Dependencies verified (node-fetch, socket.io-client, etc.)${NC}"
 
 echo -e "${BLUE}🔗 Installing to $INSTALL_PREFIX...${NC}"
 

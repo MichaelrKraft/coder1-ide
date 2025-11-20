@@ -149,7 +149,10 @@ export function SetupInstructionsModal({
                       <p>• <span className="text-cyan-400 font-semibold">Mac:</span> Cmd+Space → type "Terminal" → Enter</p>
                     )}
                     {userOS === 'windows' && (
-                      <p>• <span className="text-cyan-400 font-semibold">Windows:</span> Win+R → type "cmd" → Enter</p>
+                      <div>
+                        <p>• <span className="text-cyan-400 font-semibold">Windows:</span> Win+X → PowerShell or Terminal</p>
+                        <p className="text-xs text-yellow-400 ml-4 mt-1">💡 WSL2 recommended — <a href="https://coder1.ai/install-bridge-windows.md" target="_blank" className="underline hover:text-yellow-300">see Windows guide</a></p>
+                      </div>
                     )}
                     {userOS === 'linux' && (
                       <p>• <span className="text-cyan-400 font-semibold">Linux:</span> Ctrl+Alt+T</p>
@@ -178,7 +181,7 @@ export function SetupInstructionsModal({
                       Copy
                     </button>
                   </div>
-                  <p className="text-xs text-gray-400 mt-2">⏱️ Takes ~30 seconds • 13KB download</p>
+                  <p className="text-xs text-gray-400 mt-2">⏱️ Takes ~30 seconds • 164KB download</p>
                 </div>
 
                 {/* Step 3 */}
