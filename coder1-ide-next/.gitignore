@@ -84,3 +84,4 @@ user-workspaces/*
 !user-workspaces/default/index.html
 !user-workspaces/default/styles.css
 !user-workspaces/default/app.js
+.tar.gz
