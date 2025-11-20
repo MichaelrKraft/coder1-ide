@@ -26,7 +26,10 @@
     "db:migrate": "npx tsx db/migrations/run-migrations.ts migrate",
     "db:verify": "npx tsx db/migrations/run-migrations.ts verify",
     "db:history": "npx tsx db/migrations/run-migrations.ts history",
-    "db:check": "npm run db:verify"
+    "db:check": "npm run db:verify",
+    "skills:enable": "node -e \"const fs=require('fs');const path='.env.local';let content=fs.existsSync(path)?fs.readFileSync(path,'utf8'):'';content=content.replace(/ENABLE_SKILLS_SYSTEM=.*/g,'').trim();content+='\\nENABLE_SKILLS_SYSTEM=true\\n';fs.writeFileSync(path,content);console.log('✅ Skills System ENABLED');console.log('   Restart server: npm run dev');\"",
+    "skills:disable": "node -e \"const fs=require('fs');const path='.env.local';let content=fs.existsSync(path)?fs.readFileSync(path,'utf8'):'';content=content.replace(/ENABLE_SKILLS_SYSTEM=.*/g,'').trim();content+='\\nENABLE_SKILLS_SYSTEM=false\\n';fs.writeFileSync(path,content);console.log('⚠️  Skills System DISABLED');console.log('   Restart server: npm run dev');\"",
+    "skills:status": "node -e \"const fs=require('fs');const path='.env.local';if(!fs.existsSync(path)){console.log('❌ .env.local not found - Skills System is DISABLED (default)');process.exit(0);}const content=fs.readFileSync(path,'utf8');const match=content.match(/ENABLE_SKILLS_SYSTEM=(true|false)/);if(!match){console.log('⚠️  ENABLE_SKILLS_SYSTEM not set - Skills System is DISABLED (default)');}else if(match[1]==='true'){console.log('✅ Skills System is ENABLED');console.log('   Expected: 80-90% token reduction');console.log('   Expected: 5-6x faster responses');}else{console.log('❌ Skills System is DISABLED');console.log('   Using legacy implementations');}\""
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.63.0",
@@ -74,7 +77,9 @@
     "pdf-parse": "^1.1.1",
     "pdf2pic": "^3.2.0",
     "pdfjs-dist": "^5.4.149",
+    "playwright": "^1.56.1",
     "postcss": "^8",
+    "puppeteer": "^24.30.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-resizable-panels": "^2.0.19",
