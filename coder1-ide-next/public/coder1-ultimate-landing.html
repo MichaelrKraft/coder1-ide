@@ -25,9 +25,9 @@
             
             /* Electric border effect */
             --electric-border-color: #00D9FF;
-            --electric-light-color: oklch(from var(--electric-border-color) l c h);
-            --gradient-color: oklch(from var(--electric-border-color) 0.3 calc(c / 2) h / 0.4);
-            --color-neutral-900: oklch(0.185 0 0);
+            --electric-light-color: #66E7FF;
+            --gradient-color: rgba(0, 217, 255, 0.2);
+            --color-neutral-900: #1a1a1a;
             
             /* Text colors */
             --dark-text: #030303;
@@ -977,6 +977,18 @@
             margin-left: -4px;
             filter: url(#turbulent-displace);
             pointer-events: none;
+            animation: borderGlow 2s ease-in-out infinite;
+        }
+        
+        @keyframes borderGlow {
+            0%, 100% {
+                opacity: 0.8;
+                box-shadow: 0 0 10px rgba(0, 217, 255, 0.5);
+            }
+            50% {
+                opacity: 1;
+                box-shadow: 0 0 20px rgba(0, 217, 255, 0.8);
+            }
         }
         
         .pricing-card.featured .pricing-card-inner {
@@ -996,6 +1008,7 @@
             inset: 0;
             filter: blur(1px);
             pointer-events: none;
+            animation: electricPulse1 2s ease-in-out infinite;
         }
         
         .pricing-card.featured .electric-glow-2 {
@@ -1007,6 +1020,29 @@
             inset: 0;
             filter: blur(4px);
             pointer-events: none;
+            animation: electricPulse2 3s ease-in-out infinite;
+        }
+        
+        @keyframes electricPulse1 {
+            0%, 100% { 
+                opacity: 0.6;
+                border-color: rgba(0, 217, 255, 0.6);
+            }
+            50% { 
+                opacity: 1;
+                border-color: rgba(0, 217, 255, 1);
+            }
+        }
+        
+        @keyframes electricPulse2 {
+            0%, 100% { 
+                opacity: 0.4;
+                filter: blur(4px) brightness(1);
+            }
+            50% { 
+                opacity: 0.8;
+                filter: blur(6px) brightness(1.5);
+            }
         }
         
         .pricing-card.featured .electric-overlay-1 {
@@ -1027,6 +1063,7 @@
                 white
             );
             pointer-events: none;
+            animation: shimmer1 4s ease-in-out infinite;
         }
         
         .pricing-card.featured .electric-overlay-2 {
@@ -1047,6 +1084,25 @@
                 white
             );
             pointer-events: none;
+            animation: shimmer2 6s ease-in-out infinite reverse;
+        }
+        
+        @keyframes shimmer1 {
+            0%, 100% {
+                background: linear-gradient(-30deg, white, transparent 30%, transparent 70%, white);
+            }
+            50% {
+                background: linear-gradient(30deg, white, transparent 30%, transparent 70%, white);
+            }
+        }
+        
+        @keyframes shimmer2 {
+            0%, 100% {
+                background: linear-gradient(-30deg, rgba(0, 217, 255, 0.8), transparent 30%, transparent 70%, white);
+            }
+            50% {
+                background: linear-gradient(30deg, white, transparent 30%, transparent 70%, rgba(0, 217, 255, 0.8));
+            }
         }
         
         .pricing-card.featured .electric-bg-glow {
@@ -1066,6 +1122,18 @@
                 var(--electric-border-color)
             );
             pointer-events: none;
+            animation: bgGlow 8s ease-in-out infinite;
+        }
+        
+        @keyframes bgGlow {
+            0%, 100% {
+                opacity: 0.3;
+                filter: blur(32px) brightness(1);
+            }
+            50% {
+                opacity: 0.5;
+                filter: blur(40px) brightness(1.3);
+            }
         }
 
         .pricing-badge {
@@ -2330,23 +2398,37 @@
         }
     </script>
     
-    <!-- SVG Filter for Electric Border Effect -->
+    <!-- SVG Filter for Electric Border Effect with Animation -->
     <svg style="position: absolute; width: 0; height: 0;">
         <defs>
             <filter id="turbulent-displace">
                 <feTurbulence
                     type="fractalNoise"
                     baseFrequency="0.01 0.003"
-                    numOctaves="1"
+                    numOctaves="2"
                     result="turbulence"
-                />
+                    seed="1">
+                    <animate
+                        attributeName="baseFrequency"
+                        values="0.01 0.003; 0.02 0.006; 0.01 0.003"
+                        dur="3s"
+                        repeatCount="indefinite"
+                    />
+                    <animate
+                        attributeName="seed"
+                        values="1; 2; 3; 4; 5; 1"
+                        dur="5s"
+                        repeatCount="indefinite"
+                    />
+                </feTurbulence>
                 <feDisplacementMap
                     in="SourceGraphic"
                     in2="turbulence"
-                    scale="8"
+                    scale="10"
                     xChannelSelector="R"
                     yChannelSelector="G"
                 />
+                <feGaussianBlur stdDeviation="0.5"/>
             </filter>
         </defs>
     </svg>
