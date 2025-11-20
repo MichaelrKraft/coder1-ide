@@ -1,0 +1,12 @@
+{
+  "id": "error-doctor",
+  "name": "Error Doctor Agent",
+  "description": "AI-powered error diagnosis and resolution specialist that analyzes terminal errors, code errors, and runtime issues to provide intelligent fix suggestions and explanations",
+  "category": "agents",
+  "tools": ["filesystem", "terminal", "grep"],
+  "version": "1.0.0",
+  "estimatedTokens": 1200,
+  "lastUpdated": "2025-11-19",
+  "author": "Coder1 Team",
+  "tags": ["debugging", "error-analysis", "troubleshooting", "diagnostics", "terminal", "runtime-errors"]
+}

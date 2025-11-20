@@ -84,14 +84,20 @@ try {
 }
 
 // Agent Terminal Manager for Phase 2: Interactive Agent Terminals
+// Uses global singleton registry to prevent multiple instances across module reloads
 let agentTerminalManager;
 try {
-  const { getAgentTerminalManager } = require('./services/agent-terminal-manager');
+  const { getAgentTerminalManager } = require('./services/agent-terminal-manager.ts');
   agentTerminalManager = getAgentTerminalManager();
+  console.log('✅ Agent Terminal Manager loaded successfully');
+  console.log('🌍 Global registry ensures single instance across all modules');
 } catch (error) {
   console.warn('⚠️ Agent Terminal Manager not available:', error.message);
   agentTerminalManager = null;
 }
+
+// Socket.IO instance (initialized later after HTTP server creation)
+let io;
 
 // Conductor system removed - using simple multi-Claude tabs instead
 // Multi-Claude tabs will be handled through the terminal UI directly
@@ -124,6 +130,19 @@ try {
 } catch (error) {
   console.warn('⚠️ Agent Coordinator not available:', error.message);
   agentCoordinator = null;
+}
+
+// Skills Service for Progressive Disclosure Architecture (PDA)
+let skillsService;
+if (process.env.ENABLE_SKILLS_SYSTEM === 'true') {
+  try {
+    const { initializeSkillsService } = require('./lib/skills-service.ts');
+    // Will be initialized async in server startup
+    console.log('📚 Skills System enabled - will initialize on server start');
+  } catch (error) {
+    console.warn('⚠️ Skills System not available:', error.message);
+    skillsService = null;
+  }
 }
 
 // Terminal Token Integration for automatic Claude usage tracking
@@ -225,6 +244,10 @@ const claudeCodeSessions = new Map(); // sessionId -> { inClaudeSession: boolean
 // Context capture integration
 const terminalDataBuffers = new Map(); // Buffer terminal data for context capture
 const contextSessions = new Map(); // Map terminal sessions to context sessions
+
+// 🔌 Initialize server buffer access for requirement extraction API
+const { initializeServerBuffers } = require(path.join(__dirname, 'lib', 'server-terminal-access'));
+initializeServerBuffers({ terminalDataBuffers });
 
 // 🎯 CRITICAL FIX (Oct 28, 2025): Separate buffer for terminal history restoration
 // terminalDataBuffers filters out ANSI codes, making it useless for history display
@@ -685,6 +708,108 @@ app.prepare().then(() => {
       return handleHealthCheck(req, res);
     }
     
+    // Terminal requirement extraction endpoint (server-side for buffer access)
+    if (pathname === '/api/terminal/extract-requirement' && req.method === 'POST') {
+      let body = '';
+      req.on('data', chunk => { body += chunk.toString(); });
+      req.on('end', () => {
+        try {
+          const { sessionId } = JSON.parse(body);
+          
+          if (!sessionId || typeof sessionId !== 'string') {
+            res.writeHead(400, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({
+              success: false,
+              requirement: '',
+              confidence: 'low',
+              fallbackNeeded: true,
+              error: 'Valid session ID is required',
+              userMessages: [],
+              conversationContext: ''
+            }));
+            return;
+          }
+
+          const buffer = terminalDataBuffers.get(sessionId);
+          
+          if (!buffer || buffer.length === 0) {
+            console.warn(`[Extract Requirement] No buffer found for session: ${sessionId}`);
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({
+              success: true,
+              requirement: '',
+              confidence: 'low',
+              fallbackNeeded: true,
+              message: 'No conversation history found. Start a conversation with Claude first.',
+              userMessages: [],
+              conversationContext: ''
+            }));
+            return;
+          }
+
+          console.log(`[Extract Requirement] Processing ${buffer.length} buffer chunks for session ${sessionId}`);
+          
+          // Debug: Log first few chunks to see structure
+          console.log(`[Extract Requirement] Sample chunks:`, buffer.slice(0, 5).map(chunk => ({
+            type: chunk.type,
+            content: chunk.content?.substring(0, 50),
+            timestamp: chunk.timestamp
+          })));
+
+          // Import and use the requirement extractor
+          const { extractRequirementFromDataBuffer, validateExtraction } = require(path.join(__dirname, 'lib', 'requirement-extractor'));
+          const result = extractRequirementFromDataBuffer(buffer);
+          const validation = validateExtraction(result);
+          const fallbackNeeded = result.confidence === 'low' || !validation.valid;
+          
+          // Log extraction and quality results
+          console.log(`[Extract Requirement] Extraction result:`, {
+            requirement: result.requirement.substring(0, 100),
+            confidence: result.confidence,
+            fallbackNeeded,
+            validationReason: validation.reason
+          });
+          
+          // Log quality assessment
+          if (result.quality) {
+            console.log(`[Extract Requirement] Quality assessment:`, {
+              score: result.quality.score,
+              passed: result.quality.passed,
+              aspectsDetected: result.quality.aspectsDetected,
+              threshold: result.quality.threshold,
+              missingAspects: result.quality.missingAspects
+            });
+          }
+
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({
+            success: true,
+            requirement: result.requirement,
+            confidence: result.confidence,
+            fallbackNeeded,
+            userMessages: result.userMessages,
+            conversationContext: result.conversationContext,
+            extractedFrom: result.extractedFrom,
+            validation: validation.valid ? undefined : validation.reason,
+            quality: result.quality // Include quality assessment in response
+          }));
+        } catch (error) {
+          console.error('[Extract Requirement] Error:', error);
+          res.writeHead(500, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({
+            success: false,
+            requirement: '',
+            confidence: 'low',
+            fallbackNeeded: true,
+            error: error.message || 'Unknown error occurred',
+            userMessages: [],
+            conversationContext: ''
+          }));
+        }
+      });
+      return;
+    }
+    
     // Explicit static file serving for /public directory
     // Critical for serving install-bridge.sh and other static assets
     if (pathname && !pathname.startsWith('/api/') && !pathname.startsWith('/_next/')) {
@@ -905,7 +1030,7 @@ app.prepare().then(() => {
   // Initialize Socket.IO with Render-specific configuration
   // UPDATED: Increased timeouts to prevent connection drops during idle periods
   // UPDATED: Added Chrome extension conflict protection
-  const io = new Server(server, {
+  io = new Server(server, {
     cors: {
       origin: dev 
         ? [
@@ -1108,6 +1233,21 @@ app.prepare().then(() => {
 
   // Make Socket.IO server available globally for Express routes compatibility
   global.io = io;
+  
+  // Simple global bridge for emitting events from API routes to Socket.IO
+  // Bypasses the complex WebSocketEventBridge that has import issues
+  global.emitBridgeEvent = (eventName, data) => {
+    try {
+      io.emit(eventName, data);
+      console.log(`🔗 [BRIDGE] Emitted ${eventName} to all Socket.IO clients:`, data.teamId || 'unknown');
+    } catch (error) {
+      console.error(`❌ [BRIDGE] Failed to emit ${eventName}:`, error);
+    }
+  };
+  
+  // Event Bridge Note: Event forwarding handled directly in claude-code-bridge.js
+  // The bridge service emits directly to global.io when available
+  // This avoids TypeScript module import issues in server.js
   
   // Socket.IO connection handling
   io.on('connection', (socket) => {
@@ -1556,10 +1696,56 @@ app.prepare().then(() => {
     socket.on('terminal:input', async ({ id, data, selectedClaudeModel }) => {
       const sessionId = id || currentSessionId;
       
+      // 🔍 DEBUG: Log session lookup
+      console.log('[SESSION-LOOKUP] Received terminal:input');
+      console.log('[SESSION-LOOKUP] sessionId:', sessionId);
+      console.log('[SESSION-LOOKUP] terminalSessions.size:', terminalSessions.size);
+      
       // Conductor slash commands removed - multi-Claude tabs handle this differently
       
       const session = terminalSessions.get(sessionId);
+      console.log('[SESSION-LOOKUP] session found:', !!session);
       if (session) {
+        // 🔧 FIX (Nov 19, 2025): Buffer ALL input immediately for AI Team extraction
+        // CRITICAL: Multi-line pastes (like test prompts) were being lost because
+        // only "completed commands" were buffered (line 1708). This caused AI Team
+        // quality gate to find empty buffer and block spawning with score: 0.
+        // NOW: Buffer every keystroke and paste chunk so terminal history is complete.
+        
+        // 🔍 DEBUG: Log EVERY input event to trace why buffering doesn't execute
+        console.log('[BUFFER-TRACE] terminal:input event received');
+        console.log('[BUFFER-TRACE] sessionId:', sessionId);
+        console.log('[BUFFER-TRACE] data length:', data?.length);
+        console.log('[BUFFER-TRACE] data preview:', JSON.stringify(data?.substring(0, 50)));
+        
+        if (data && data.length > 0) {
+          // Strip ANSI codes and bracketed paste markers for clean storage
+          const cleanData = data
+            .replace(/\x1b\[[0-9;]*[A-Za-z]/g, '') // ANSI escape sequences
+            .replace(/\x1b\[[0-9;]*~/g, '')        // CSI sequences with tilde
+            .replace(/\x1b\[200~/g, '')            // Bracketed paste start (ESC[200~)
+            .replace(/\x1b\[201~/g, '')            // Bracketed paste end (ESC[201~)
+            .replace(/\[200~/g, '')                // Bracketed paste start (bare)
+            .replace(/\[201~/g, '');               // Bracketed paste end (bare)
+          
+          // Filter out pure control characters (but keep Enter, which becomes part of text)
+          const isNotJustControlChars = cleanData.replace(/[\r\n]/g, '').length > 0;
+          const isNotFocusCode = !data.includes('\x1b[I') && !data.includes('\x1b[O');
+          
+          // 🔍 DEBUG: Log what we're filtering
+          if (cleanData.length > 5 && !cleanData.includes('\x1b')) {
+            console.log('[BUFFER-DEBUG] Raw data length:', data.length, 'Clean:', cleanData.substring(0, 80));
+            console.log('[BUFFER-DEBUG] Filters - notJustControl:', isNotJustControlChars, 'notFocus:', isNotFocusCode);
+          }
+          
+          if (isNotJustControlChars && isNotFocusCode) {
+            bufferTerminalData(sessionId, 'terminal_input', cleanData);
+            if (cleanData.length > 10) {
+              console.log('[BUFFER-DEBUG] ✅ Buffered as terminal_input:', cleanData.substring(0, 80));
+            }
+          }
+        }
+        
         // Build up command buffer BEFORE writing to terminal
         if (!commandBuffers.has(sessionId)) {
           commandBuffers.set(sessionId, '');
@@ -1577,6 +1763,11 @@ app.prepare().then(() => {
           }
           const commandLower = command.toLowerCase();
           console.log('[Terminal] Command completed:', commandLower);
+          
+          // 🔧 FIX (Nov 17, 2025): Add completed command to buffer for AI Team extraction
+          // terminalDataBuffers was only capturing individual keystrokes (\r), not assembled commands
+          // This ensures requirement extraction sees the full user input for AI Team spawning
+          bufferTerminalData(sessionId, 'terminal_input', commandLower);
           
           // 🚀 Claude Code session detection and management
           if (detectClaudeCodeSessionStart(command)) {
@@ -2189,11 +2380,15 @@ app.prepare().then(() => {
       
       // Connect to existing agent terminal
       socket.on('agent:terminal:connect', ({ agentId }) => {
+        console.log(`🔌 [DEBUG] Received agent:terminal:connect for agentId: ${agentId}`);
         try {
           const connected = agentTerminalManager.connectSocket(agentId, socket);
+          console.log(`🔌 [DEBUG] connectSocket result: ${connected}`);
           if (connected) {
+            console.log(`✅ [DEBUG] Emitting agent:terminal:connected for ${agentId}`);
             socket.emit('agent:terminal:connected', { agentId });
           } else {
+            console.log(`❌ [DEBUG] Session not found for ${agentId}, emitting error`);
             socket.emit('agent:terminal:error', { 
               agentId,
               message: 'Agent terminal session not found' 
@@ -2521,6 +2716,32 @@ app.prepare().then(() => {
     // Don't crash on unhandled promise rejections, just log them
   });
   
+  // Initialize Skills System (async)
+  (async () => {
+    if (process.env.ENABLE_SKILLS_SYSTEM === 'true') {
+      try {
+        const { initializeSkillsService } = require('./lib/skills-service.ts');
+        await initializeSkillsService();
+        skillsService = true; // Mark as initialized
+        console.log('✅ Skills System initialized successfully');
+        
+        // Setup performance monitoring (log every 1 hour)
+        setInterval(() => {
+          try {
+            const { logSkillsPerformance } = require('./lib/skills-integration-utils');
+            logSkillsPerformance();
+          } catch (error) {
+            console.error('⚠️  Skills performance logging failed:', error.message);
+          }
+        }, 3600000); // 1 hour
+        
+      } catch (error) {
+        console.error('⚠️  Skills System initialization failed:', error.message);
+        console.log('   Continuing with legacy implementations');
+      }
+    }
+  })();
+  
   // Start server
   server.listen(port, (err) => {
     if (err) throw err;
@@ -2612,9 +2833,35 @@ const bufferTerminalData = (sessionId, type, content) => {
     sessionId
   });
   
-  // Keep buffer size manageable (last 100 chunks)
-  if (buffer.length > 100) {
-    buffer.splice(0, buffer.length - 100);
+  // 🔧 FIX (Nov 19, 2025): Increased buffer size and smart rotation
+  // Keep buffer size manageable (last 500 chunks, but prioritize terminal_input)
+  if (buffer.length > 500) {
+    // Count terminal_input chunks
+    const inputChunks = buffer.filter(chunk => chunk.type === 'terminal_input').length;
+    
+    // If we have lots of input, rotate normally
+    if (inputChunks > 100) {
+      buffer.splice(0, buffer.length - 500);
+    } else {
+      // Otherwise, remove terminal_output chunks first to preserve input
+      const outputIndices = [];
+      for (let i = 0; i < buffer.length; i++) {
+        if (buffer[i].type === 'terminal_output') {
+          outputIndices.push(i);
+        }
+      }
+      
+      // Remove oldest output chunks until we're under limit
+      const toRemove = buffer.length - 500;
+      if (outputIndices.length >= toRemove) {
+        for (let i = toRemove - 1; i >= 0; i--) {
+          buffer.splice(outputIndices[i], 1);
+        }
+      } else {
+        // If not enough output chunks, fall back to normal rotation
+        buffer.splice(0, buffer.length - 500);
+      }
+    }
   }
 };
 

@@ -1,0 +1,12 @@
+{
+  "id": "session-summary",
+  "name": "Session Summary Generator",
+  "description": "Generates comprehensive development session summaries for handoffs between human and AI coding sessions",
+  "category": "productivity",
+  "tools": ["filesystem", "analysis"],
+  "version": "1.0.0",
+  "estimatedTokens": 1500,
+  "lastUpdated": "2025-11-19",
+  "author": "Coder1 Team",
+  "tags": ["session", "summary", "handoff", "documentation", "analysis"]
+}

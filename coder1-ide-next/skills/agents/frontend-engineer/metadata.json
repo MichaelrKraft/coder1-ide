@@ -1,0 +1,12 @@
+{
+  "id": "frontend-engineer",
+  "name": "Frontend Engineer Agent",
+  "description": "Specialized AI agent for React, TypeScript, and modern frontend development with focus on component architecture and UI/UX best practices",
+  "category": "agents",
+  "tools": ["filesystem", "git", "grep", "web_search"],
+  "version": "1.0.0",
+  "estimatedTokens": 2000,
+  "lastUpdated": "2025-11-19",
+  "author": "Coder1 Team",
+  "tags": ["react", "typescript", "frontend", "components", "ui", "ux", "tailwind", "nextjs"]
+}
