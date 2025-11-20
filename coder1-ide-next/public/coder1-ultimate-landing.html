@@ -192,18 +192,25 @@
             font-weight: 900;
             margin-bottom: 1.5rem;
             line-height: 1.1;
+            background: var(--gradient-memory);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero-subtitle {
+            font-size: 1.5rem;
+            color: var(--light-text);
+            margin-bottom: 2rem;
+            font-weight: 400;
             font-family: "Lucida Console", "Monaco", monospace;
             letter-spacing: 0.01em;
             position: relative;
             display: inline-block;
             cursor: pointer;
             user-select: none;
-            background: var(--gradient-memory);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
         }
 
-        .hero-title::after {
+        .hero-subtitle::after {
             content: "";
             position: absolute;
             bottom: -0.4rem;
@@ -221,16 +228,9 @@
             opacity: 0.75;
         }
 
-        .hero-title:hover::after {
+        .hero-subtitle:hover::after {
             background: var(--primary-cyan);
             height: 0.55px;
-        }
-
-        .hero-subtitle {
-            font-size: 1.5rem;
-            color: var(--light-text);
-            margin-bottom: 2rem;
-            font-weight: 400;
         }
 
         .audience-hooks {
@@ -1180,8 +1180,8 @@
                     <span>Revolutionary Memory Technology</span>
                 </div>
                 
-                <h1 class="hero-title" id="hero-title">The Only IDE That Never Forgets</h1>
-                <p class="hero-subtitle">Your context, decisions, and preferences - remembered forever</p>
+                <h1 class="hero-title">The Only IDE That Never Forgets</h1>
+                <p class="hero-subtitle" id="hero-subtitle">Your context, decisions, and preferences - remembered forever</p>
                 
                 <div class="audience-hooks">
                     <div class="hook-card">
@@ -1896,12 +1896,12 @@
     </footer>
 
     <script>
-        // ASCII Glitch Effect for Hero Title
+        // ASCII Glitch Effect for Hero Subtitle
         (function() {
-            const heroTitle = document.getElementById('hero-title');
-            if (!heroTitle) return;
+            const heroSubtitle = document.getElementById('hero-subtitle');
+            if (!heroSubtitle) return;
             
-            const originalText = heroTitle.textContent;
+            const originalText = heroSubtitle.textContent;
             const chars = '!@#$%^&*()_+-=[]{}|;:,.<>?~`';
             let animating = false;
             
@@ -1918,7 +1918,7 @@
                 const maxIterations = 20;
                 
                 const interval = setInterval(() => {
-                    heroTitle.textContent = textArray.map((char, index) => {
+                    heroSubtitle.textContent = textArray.map((char, index) => {
                         if (char === ' ') return ' ';
                         if (iterations < index) {
                             return getRandomChar();
@@ -1930,13 +1930,13 @@
                     
                     if (iterations > originalText.length + maxIterations) {
                         clearInterval(interval);
-                        heroTitle.textContent = originalText;
+                        heroSubtitle.textContent = originalText;
                         animating = false;
                     }
                 }, 30);
             }
             
-            heroTitle.addEventListener('mouseenter', glitchText);
+            heroSubtitle.addEventListener('mouseenter', glitchText);
         })();
 
         // Add scroll effect to navigation
