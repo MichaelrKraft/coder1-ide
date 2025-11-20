@@ -95,29 +95,13 @@
         .logo {
             display: flex;
             align-items: center;
-            gap: 0.75rem;
-            font-size: 1.5rem;
-            font-weight: 800;
-            background: var(--gradient-primary);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
             text-decoration: none;
         }
 
-        .logo-icon {
-            width: 40px;
-            height: 40px;
-            background: var(--gradient-primary);
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 0 20px rgba(0, 217, 255, 0.3);
-        }
-
-        .logo-icon i {
-            color: white;
-            font-size: 1.2rem;
+        .logo img {
+            height: 50px;
+            width: auto;
+            object-fit: contain;
         }
 
         .nav-links {
@@ -1155,10 +1139,7 @@
         <div class="container">
             <div class="nav-container">
                 <a href="/" class="logo">
-                    <div class="logo-icon">
-                        <i class="fas fa-code"></i>
-                    </div>
-                    Coder1
+                    <img src="/Coder1-Logo-Sharp.svg" alt="Coder1" />
                 </a>
                 <div class="nav-links">
                     <a href="#features" class="nav-link">Features</a>
