@@ -23,6 +23,12 @@
             --memory-purple: #8B5CF6;
             --memory-glow: rgba(139, 92, 246, 0.3);
             
+            /* Electric border effect */
+            --electric-border-color: #00D9FF;
+            --electric-light-color: oklch(from var(--electric-border-color) l c h);
+            --gradient-color: oklch(from var(--electric-border-color) 0.3 calc(c / 2) h / 0.4);
+            --color-neutral-900: oklch(0.185 0 0);
+            
             /* Text colors */
             --dark-text: #030303;
             --light-text: #666666;
@@ -934,8 +940,132 @@
         }
 
         .pricing-card.featured {
-            border: 2px solid var(--primary-cyan);
             transform: scale(1.05);
+            padding: 2px;
+            background: linear-gradient(
+                -30deg,
+                var(--gradient-color),
+                transparent,
+                var(--gradient-color)
+            ),
+            linear-gradient(
+                to bottom,
+                var(--color-neutral-900),
+                var(--color-neutral-900)
+            );
+            position: relative;
+        }
+        
+        .pricing-card.featured::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border: 2px solid rgba(0, 217, 255, 0.5);
+            border-radius: 16px;
+            padding-right: 4px;
+            padding-bottom: 4px;
+            pointer-events: none;
+        }
+        
+        .pricing-card.featured::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border: 2px solid var(--electric-border-color);
+            border-radius: 16px;
+            margin-top: -4px;
+            margin-left: -4px;
+            filter: url(#turbulent-displace);
+            pointer-events: none;
+        }
+        
+        .pricing-card.featured .pricing-card-inner {
+            background: white;
+            border-radius: 16px;
+            padding: 2.5rem;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .pricing-card.featured .electric-glow-1 {
+            border: 2px solid rgba(0, 217, 255, 0.6);
+            border-radius: 16px;
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            inset: 0;
+            filter: blur(1px);
+            pointer-events: none;
+        }
+        
+        .pricing-card.featured .electric-glow-2 {
+            border: 2px solid var(--electric-light-color);
+            border-radius: 16px;
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            inset: 0;
+            filter: blur(4px);
+            pointer-events: none;
+        }
+        
+        .pricing-card.featured .electric-overlay-1 {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            inset: 0;
+            border-radius: 16px;
+            opacity: 1;
+            mix-blend-mode: overlay;
+            transform: scale(1.1);
+            filter: blur(16px);
+            background: linear-gradient(
+                -30deg,
+                white,
+                transparent 30%,
+                transparent 70%,
+                white
+            );
+            pointer-events: none;
+        }
+        
+        .pricing-card.featured .electric-overlay-2 {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            inset: 0;
+            border-radius: 16px;
+            opacity: 0.5;
+            mix-blend-mode: overlay;
+            transform: scale(1.1);
+            filter: blur(16px);
+            background: linear-gradient(
+                -30deg,
+                white,
+                transparent 30%,
+                transparent 70%,
+                white
+            );
+            pointer-events: none;
+        }
+        
+        .pricing-card.featured .electric-bg-glow {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            inset: 0;
+            border-radius: 16px;
+            filter: blur(32px);
+            transform: scale(1.1);
+            opacity: 0.3;
+            z-index: -1;
+            background: linear-gradient(
+                -30deg,
+                var(--electric-light-color),
+                transparent,
+                var(--electric-border-color)
+            );
+            pointer-events: none;
         }
 
         .pricing-badge {
@@ -1851,19 +1981,26 @@
                 </div>
                 
                 <div class="pricing-card featured">
-                    <div class="pricing-badge">MOST POPULAR</div>
-                    <h3 class="pricing-tier">PRO</h3>
-                    <div class="pricing-price">$29<sup>/mo</sup></div>
-                    <div class="pricing-period">For serious developers</div>
-                    <ul class="pricing-features">
-                        <li><i class="fas fa-check"></i> Everything in Free</li>
-                        <li><i class="fas fa-check"></i> Unlimited Memory</li>
-                        <li><i class="fas fa-check"></i> All 14 AI Agents</li>
-                        <li><i class="fas fa-check"></i> Advanced Supervision</li>
-                        <li><i class="fas fa-check"></i> Unlimited Checkpoints</li>
-                        <li><i class="fas fa-check"></i> Priority Support</li>
-                    </ul>
-                    <a href="/ide" class="pricing-cta">Start Pro Trial</a>
+                    <div class="electric-glow-1"></div>
+                    <div class="electric-glow-2"></div>
+                    <div class="electric-overlay-1"></div>
+                    <div class="electric-overlay-2"></div>
+                    <div class="electric-bg-glow"></div>
+                    <div class="pricing-card-inner">
+                        <div class="pricing-badge">MOST POPULAR</div>
+                        <h3 class="pricing-tier">PRO</h3>
+                        <div class="pricing-price">$29<sup>/mo</sup></div>
+                        <div class="pricing-period">For serious developers</div>
+                        <ul class="pricing-features">
+                            <li><i class="fas fa-check"></i> Everything in Free</li>
+                            <li><i class="fas fa-check"></i> Unlimited Memory</li>
+                            <li><i class="fas fa-check"></i> All 14 AI Agents</li>
+                            <li><i class="fas fa-check"></i> Advanced Supervision</li>
+                            <li><i class="fas fa-check"></i> Unlimited Checkpoints</li>
+                            <li><i class="fas fa-check"></i> Priority Support</li>
+                        </ul>
+                        <a href="/ide" class="pricing-cta">Start Pro Trial</a>
+                    </div>
                 </div>
                 
                 <div class="pricing-card">
@@ -2192,5 +2329,26 @@
             demoObserver.observe(memoryDemo);
         }
     </script>
+    
+    <!-- SVG Filter for Electric Border Effect -->
+    <svg style="position: absolute; width: 0; height: 0;">
+        <defs>
+            <filter id="turbulent-displace">
+                <feTurbulence
+                    type="fractalNoise"
+                    baseFrequency="0.01 0.003"
+                    numOctaves="1"
+                    result="turbulence"
+                />
+                <feDisplacementMap
+                    in="SourceGraphic"
+                    in2="turbulence"
+                    scale="8"
+                    xChannelSelector="R"
+                    yChannelSelector="G"
+                />
+            </filter>
+        </defs>
+    </svg>
 </body>
 </html>
