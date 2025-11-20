@@ -9,9 +9,14 @@ The Progressive Disclosure Architecture (PDA) Skills System reduces AI token usa
 
 ## How to Enable/Disable
 
+**⚠️ IMPORTANT**: All commands must be run from the `coder1-ide-next/` directory.
+
 ### Method 1: Command Line (Easiest)
 
 ```bash
+# First, navigate to the correct directory
+cd coder1-ide-next
+
 # Enable Skills System
 npm run skills:enable
 
@@ -20,6 +25,14 @@ npm run skills:disable
 
 # Check status
 npm run skills:status
+```
+
+**Alternative**: Run from project root with `--prefix`:
+```bash
+# From /Users/michaelkraft/autonomous_vibe_interface/
+npm run skills:enable --prefix coder1-ide-next
+npm run skills:disable --prefix coder1-ide-next
+npm run skills:status --prefix coder1-ide-next
 ```
 
 ### Method 2: Environment File (Manual)
@@ -48,6 +61,9 @@ npm run skills:status
 ### Method 3: Quick Commands
 
 ```bash
+# Navigate to correct directory first
+cd coder1-ide-next
+
 # Enable (one-liner)
 echo "ENABLE_SKILLS_SYSTEM=true" >> .env.local && npm run dev
 
@@ -88,21 +104,27 @@ When enabled, these features use the Skills System:
 
 ### Skills System Not Loading
 
-**Check 1**: Verify `.env.local` exists and contains `ENABLE_SKILLS_SYSTEM=true`
+**Check 1**: Verify you're in the correct directory
+```bash
+cd coder1-ide-next
+pwd  # Should show: /Users/michaelkraft/autonomous_vibe_interface/coder1-ide-next
+```
+
+**Check 2**: Verify `.env.local` exists and contains `ENABLE_SKILLS_SYSTEM=true`
 ```bash
 cat .env.local | grep ENABLE_SKILLS_SYSTEM
 ```
 
-**Check 2**: Restart the server
+**Check 3**: Restart the server
 ```bash
 # Kill existing server
 lsof -ti :3001 | xargs kill -9
 
-# Start fresh
+# Start fresh (from coder1-ide-next directory)
 npm run dev
 ```
 
-**Check 3**: Check server logs
+**Check 4**: Check server logs
 ```bash
 # Look for initialization messages
 npm run dev 2>&1 | grep -i "skill"
@@ -119,6 +141,9 @@ If you see errors, the system automatically falls back to legacy implementations
 
 If you experience any issues:
 ```bash
+# Navigate to correct directory
+cd coder1-ide-next
+
 # Quick disable
 npm run skills:disable
 
@@ -175,8 +200,9 @@ The system uses intelligent LRU caching:
 
 If you encounter issues:
 1. Check this guide's Troubleshooting section
-2. Disable Skills System as a quick fix: `npm run skills:disable`
-3. Report issues with server logs
+2. Ensure you're running commands from `coder1-ide-next/` directory
+3. Disable Skills System as a quick fix: `cd coder1-ide-next && npm run skills:disable`
+4. Report issues with server logs
 
 ## What's Next?
 
