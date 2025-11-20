@@ -3,6 +3,9 @@ import { logger } from '@/lib/logger';
 
 const EXPRESS_BACKEND_URL = process.env.EXPRESS_BACKEND_URL || 'http://localhost:3001';
 
+// Mark as dynamic - this route fetches from external backend
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   try {
     // Fetch metrics from Express backend

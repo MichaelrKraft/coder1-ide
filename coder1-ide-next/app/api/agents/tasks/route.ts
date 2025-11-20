@@ -3,6 +3,9 @@ import { logger } from '@/lib/logger';
 
 const EXPRESS_BACKEND_URL = process.env.EXPRESS_BACKEND_URL || 'http://localhost:3001';
 
+// Mark as dynamic - fetches from external backend
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   try {
     const response = await fetch(`${EXPRESS_BACKEND_URL}/api/agents/tasks`, {
