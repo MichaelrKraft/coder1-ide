@@ -187,38 +187,43 @@
             50% { transform: translateY(-10px); }
         }
 
-        @keyframes gradient-shift {
-            0% {
-                background-position: 0% 50%;
-            }
-            50% {
-                background-position: 100% 50%;
-            }
-            100% {
-                background-position: 0% 50%;
-            }
-        }
-
         .hero-title {
             font-size: 4rem;
             font-weight: 900;
             margin-bottom: 1.5rem;
             line-height: 1.1;
-            background: linear-gradient(
-                90deg,
-                #ff0080,
-                #ff8c00,
-                #40e0d0,
-                #9370db,
-                #00d9ff,
-                #8b5cf6,
-                #ff0080
-            );
-            background-size: 200% auto;
+            font-family: "Lucida Console", "Monaco", monospace;
+            letter-spacing: 0.01em;
+            position: relative;
+            display: inline-block;
+            cursor: pointer;
+            user-select: none;
+            background: var(--gradient-memory);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            background-clip: text;
-            animation: gradient-shift 4s linear infinite;
+        }
+
+        .hero-title::after {
+            content: "";
+            position: absolute;
+            bottom: -0.4rem;
+            left: 0;
+            right: 0;
+            height: 1.1px;
+            background: repeating-linear-gradient(
+                to right,
+                var(--primary-cyan) 0,
+                var(--primary-cyan) 2px,
+                transparent 2px,
+                transparent 0.4rem
+            );
+            transition: background 0.3s ease-out;
+            opacity: 0.75;
+        }
+
+        .hero-title:hover::after {
+            background: var(--primary-cyan);
+            height: 0.55px;
         }
 
         .hero-subtitle {
@@ -1175,7 +1180,7 @@
                     <span>Revolutionary Memory Technology</span>
                 </div>
                 
-                <h1 class="hero-title">The Only IDE That Never Forgets</h1>
+                <h1 class="hero-title" id="hero-title">The Only IDE That Never Forgets</h1>
                 <p class="hero-subtitle">Your context, decisions, and preferences - remembered forever</p>
                 
                 <div class="audience-hooks">
@@ -1891,6 +1896,49 @@
     </footer>
 
     <script>
+        // ASCII Glitch Effect for Hero Title
+        (function() {
+            const heroTitle = document.getElementById('hero-title');
+            if (!heroTitle) return;
+            
+            const originalText = heroTitle.textContent;
+            const chars = '!@#$%^&*()_+-=[]{}|;:,.<>?~`';
+            let animating = false;
+            
+            function getRandomChar() {
+                return chars[Math.floor(Math.random() * chars.length)];
+            }
+            
+            function glitchText() {
+                if (animating) return;
+                animating = true;
+                
+                const textArray = originalText.split('');
+                let iterations = 0;
+                const maxIterations = 20;
+                
+                const interval = setInterval(() => {
+                    heroTitle.textContent = textArray.map((char, index) => {
+                        if (char === ' ') return ' ';
+                        if (iterations < index) {
+                            return getRandomChar();
+                        }
+                        return originalText[index];
+                    }).join('');
+                    
+                    iterations++;
+                    
+                    if (iterations > originalText.length + maxIterations) {
+                        clearInterval(interval);
+                        heroTitle.textContent = originalText;
+                        animating = false;
+                    }
+                }, 30);
+            }
+            
+            heroTitle.addEventListener('mouseenter', glitchText);
+        })();
+
         // Add scroll effect to navigation
         window.addEventListener('scroll', function() {
             const nav = document.querySelector('nav');
