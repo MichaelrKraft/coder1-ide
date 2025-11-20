@@ -17,6 +17,9 @@ const nextConfig = {
     // Skip TypeScript errors during build for deployment
     ignoreBuildErrors: true,
   },
+  // Increase timeout for Render builds (codebase indexing can take time)
+  staticPageGenerationTimeout: 300,
+  
   // Speed up development CSS loading and fix CSS serving issues
   experimental: {
     optimizeCss: false,
