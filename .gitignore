@@ -129,6 +129,7 @@ ide-old*/
 **/exports/
 **/*.zip
 **/*.tar.gz
+!coder1-ide-next/public/bridge-cli.tar.gz
 
 # Session summaries (too many)
 **/summaries/summary-*.md
