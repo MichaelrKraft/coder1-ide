@@ -7896,13 +7896,9 @@ Execute as a single Task with multiple sub-agents working in parallel.`;
                         </div>
                     `).join('');
                     
-                    // Update overall status indicator
+                    // Note: Removed status class addition to card - it was causing orange background
+                    // Individual service items already show status with colored indicators
                     const overallStatus = data.overall || 'unknown';
-                    const statusCard = document.querySelector('.service-status-card');
-                    if (statusCard) {
-                        statusCard.classList.remove('status-healthy', 'status-degraded', 'status-critical');
-                        statusCard.classList.add(`status-${overallStatus}`);
-                    }
                     
                     // Show toast notification
                     const activeCount = data.services.filter(s => s.status === 'active').length;
