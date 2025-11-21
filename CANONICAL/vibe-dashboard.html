@@ -4288,6 +4288,137 @@
         </div>
     </div>
 
+    <!-- Analytics Section -->
+    <div style="margin-top: 40px; margin-bottom: 40px;">
+        <h2 style="font-size: 24px; margin-bottom: 24px; background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+            📊 Development Analytics
+        </h2>
+        
+        <!-- Analytics Stats Grid -->
+        <div class="dashboard-grid">
+            <!-- Total Conversations Card -->
+            <div class="card">
+                <div class="card-title">💬 Total Conversations</div>
+                <div class="time-display" id="analyticsConversations" style="font-size: 40px;">0</div>
+                <div style="color: var(--text-secondary); font-size: 14px;">Claude Code interactions captured</div>
+            </div>
+            
+            <!-- Success Rate Card -->
+            <div class="card">
+                <div class="card-title">✅ Success Rate</div>
+                <div class="time-display" id="analyticsSuccessRate" style="font-size: 40px;">0%</div>
+                <div style="color: var(--text-secondary); font-size: 14px;">Successful AI interactions</div>
+            </div>
+            
+            <!-- Session Quality Card -->
+            <div class="card">
+                <div class="card-title">🏆 Session Quality</div>
+                <div class="time-display" id="analyticsQuality" style="font-size: 40px;">0/100</div>
+                <div style="color: var(--text-secondary); font-size: 14px;">Average quality score</div>
+            </div>
+        </div>
+        
+        <div class="dashboard-grid">
+            <!-- Time Saved Card -->
+            <div class="card">
+                <div class="card-title">⏱️ Time Saved</div>
+                <div class="time-display" id="analyticsTimeSaved" style="font-size: 40px;">0h</div>
+                <div style="color: var(--text-secondary); font-size: 14px;" id="analyticsTimeSavedMinutes">0 minutes total</div>
+            </div>
+            
+            <!-- Cost Savings Card -->
+            <div class="card">
+                <div class="card-title">💰 Cost Savings</div>
+                <div class="time-display" id="analyticsSavings" style="font-size: 40px; color: var(--success);">$0</div>
+                <div style="color: var(--text-secondary); font-size: 14px;" id="analyticsSavingsPercent">0% saved via CLI</div>
+            </div>
+            
+            <!-- CLI Puppeteer Card -->
+            <div class="card">
+                <div class="card-title">⚡ CLI Puppeteer</div>
+                <div class="time-display" id="analyticsCliCalls" style="font-size: 40px;">0</div>
+                <div style="color: var(--text-secondary); font-size: 14px;" id="analyticsApiCalls">0 API calls</div>
+            </div>
+        </div>
+        
+        <!-- Cost Breakdown & Session Metrics -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-top: 30px;">
+            <!-- Cost Breakdown -->
+            <div class="card">
+                <div class="card-title" style="font-size: 18px; margin-bottom: 20px; display: flex; align-items: center; gap: 8px;">
+                    💵 Cost Breakdown
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 16px;">
+                    <div style="display: flex; justify-between; align-items: center; padding-bottom: 12px; border-bottom: 1px solid var(--glass-border);">
+                        <span style="color: var(--text-secondary);">API Calls:</span>
+                        <span style="color: var(--text-primary); font-family: monospace;" id="analyticsCostApi">0 × $0.015 = $0</span>
+                    </div>
+                    <div style="display: flex; justify-between; align-items: center; padding-bottom: 12px; border-bottom: 1px solid var(--glass-border);">
+                        <span style="color: var(--text-secondary);">CLI Calls:</span>
+                        <span style="color: var(--text-primary); font-family: monospace;" id="analyticsCostCli">0 × $0.00 = $0</span>
+                    </div>
+                    <div style="display: flex; justify-between; align-items: center; padding-top: 8px;">
+                        <span style="color: var(--text-primary); font-weight: 600;">Total Cost:</span>
+                        <span style="color: var(--text-primary); font-family: monospace; font-weight: bold;" id="analyticsCostTotal">$0</span>
+                    </div>
+                    <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 8px; padding: 12px; margin-top: 8px;">
+                        <div style="display: flex; justify-between; align-items: center;">
+                            <span style="color: var(--success); font-weight: 600;">💰 Savings:</span>
+                            <span style="color: var(--success); font-family: monospace; font-weight: bold;" id="analyticsCostSavings">$0</span>
+                        </div>
+                        <p style="font-size: 12px; color: rgba(16, 185, 129, 0.7); margin-top: 6px;" id="analyticsCostHypothetical">
+                            If all calls used API: $0
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Session Metrics -->
+            <div class="card">
+                <div class="card-title" style="font-size: 18px; margin-bottom: 20px; display: flex; align-items: center; gap: 8px;">
+                    📈 Session Metrics
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 16px;">
+                    <div style="display: flex; justify-between; align-items: center;">
+                        <span style="color: var(--text-secondary);">Active Sessions:</span>
+                        <span style="color: var(--text-primary); font-family: monospace;" id="analyticsActiveSessions">0</span>
+                    </div>
+                    <div style="display: flex; justify-between; align-items: center;">
+                        <span style="color: var(--text-secondary);">Patterns Detected:</span>
+                        <span style="color: var(--text-primary); font-family: monospace;" id="analyticsPatternsDetected">0</span>
+                    </div>
+                    <div style="display: flex; justify-between; align-items: center;">
+                        <span style="color: var(--text-secondary);">Avg Quality Score:</span>
+                        <span style="color: var(--text-primary); font-family: monospace;" id="analyticsAvgQuality">0/100</span>
+                    </div>
+                    <div style="display: flex; justify-between; align-items: center;">
+                        <span style="color: var(--text-secondary);">Last Updated:</span>
+                        <span style="color: var(--text-primary); font-family: monospace; font-size: 12px;" id="analyticsLastUpdated">--</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- About Analytics -->
+        <div class="card" style="margin-top: 30px;">
+            <div class="card-title" style="font-size: 18px; margin-bottom: 16px;">About Analytics</div>
+            <div style="display: flex; flex-direction: column; gap: 12px; color: var(--text-secondary); font-size: 14px; line-height: 1.6;">
+                <p>
+                    📊 This dashboard displays metrics from your Coder1 IDE sessions, including AI conversations,
+                    patterns detected, and estimated time saved.
+                </p>
+                <p>
+                    🤖 Data is automatically captured from your terminal interactions with Claude Code and stored
+                    locally in your session database.
+                </p>
+                <p>
+                    ⏱️ Time saved is estimated at 5 minutes per successful AI conversation based on average
+                    manual coding time for similar tasks.
+                </p>
+            </div>
+        </div>
+    </div>
+
     <!-- Hook Creation Modal -->
     <div id="hookModal" class="modal-overlay" style="display: none;">
         <div class="modal-content">
@@ -5433,7 +5564,7 @@ Execute as a single Task with multiple sub-agents working in parallel.`;
             setupWebSocket() {
                 // Connect to real-time updates (when backend is ready)
                 try {
-                    const ws = new WebSocket(`ws://localhost:3000/api/vibe-analytics/live`);
+                    const ws = new WebSocket(`ws://localhost:3001/api/vibe-analytics/live`);
                     
                     ws.onmessage = (event) => {
                         const data = JSON.parse(event.data);
@@ -6954,7 +7085,8 @@ Execute as a single Task with multiple sub-agents working in parallel.`;
                     // Show AI recommendations if available
                     if (aiData.success && aiData.recommendations && aiData.recommendations.length > 0) {
                         this.renderAIRecommendations(aiData.recommendations, aiData.healthScore);
-                        document.getElementById('aiRecommendationsSection').style.display = 'block';
+                        const aiSection = document.getElementById('aiRecommendationsSection');
+                        if (aiSection) aiSection.style.display = 'block';
                     }
 
                     if (hooksLoader) hooksLoader.style.display = 'none';
@@ -7767,11 +7899,15 @@ Execute as a single Task with multiple sub-agents working in parallel.`;
                 memoryStatus.textContent = stats.isLearning ? '🟢 Learning Active' : '⚫ Idle';
             }
 
-            // Update stats values
-            document.getElementById('totalSessions').textContent = stats.totalSessions || 0;
-            document.getElementById('totalConversations').textContent = stats.totalConversations || 0;
-            document.getElementById('successRate').textContent = Math.round(stats.successRate || 0) + '%';
-            document.getElementById('totalPatterns').textContent = stats.totalPatterns || 0;
+            // Update stats values (with null checks)
+            const totalSessionsEl = document.getElementById('totalSessions');
+            const totalConversationsEl = document.getElementById('totalConversations');
+            const successRateEl = document.getElementById('successRate');
+            const totalPatternsEl = document.getElementById('totalPatterns');
+            if (totalSessionsEl) totalSessionsEl.textContent = stats.totalSessions || 0;
+            if (totalConversationsEl) totalConversationsEl.textContent = stats.totalConversations || 0;
+            if (successRateEl) successRateEl.textContent = Math.round(stats.successRate || 0) + '%';
+            if (totalPatternsEl) totalPatternsEl.textContent = stats.totalPatterns || 0;
 
             // Update session controls
             const sessionIndicator = document.getElementById('sessionIndicator');
@@ -8113,6 +8249,51 @@ Execute as a single Task with multiple sub-agents working in parallel.`;
             return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
         };
 
+        VibeDashboard.prototype.loadAnalytics = async function() {
+            try {
+                const response = await fetch('/api/analytics/stats');
+                const result = await response.json();
+                
+                if (result.success && result.data) {
+                    const data = result.data;
+                    
+                    // Update stat cards
+                    document.getElementById('analyticsConversations').textContent = data.totalConversations || 0;
+                    document.getElementById('analyticsSuccessRate').textContent = `${Math.round(data.successRate || 0)}%`;
+                    document.getElementById('analyticsQuality').textContent = `${Math.round(data.avgQualityScore || 0)}/100`;
+                    document.getElementById('analyticsTimeSaved').textContent = `${data.timeSavedHours || 0}h`;
+                    document.getElementById('analyticsTimeSavedMinutes').textContent = `${data.timeSavedMinutes || 0} minutes total`;
+                    document.getElementById('analyticsSavings').textContent = `$${data.costTracking.savings || 0}`;
+                    document.getElementById('analyticsSavingsPercent').textContent = `${data.costTracking.savingsPercent || 0}% saved via CLI`;
+                    document.getElementById('analyticsCliCalls').textContent = data.costTracking.cliCalls || 0;
+                    document.getElementById('analyticsApiCalls').textContent = `${data.costTracking.apiCalls || 0} API calls`;
+                    
+                    // Update cost breakdown
+                    document.getElementById('analyticsCostApi').textContent = 
+                        `${data.costTracking.apiCalls || 0} × $0.015 = $${data.costTracking.apiCost || 0}`;
+                    document.getElementById('analyticsCostCli').textContent = 
+                        `${data.costTracking.cliCalls || 0} × $0.00 = $${data.costTracking.cliCost || 0}`;
+                    document.getElementById('analyticsCostTotal').textContent = `$${data.costTracking.totalCost || 0}`;
+                    document.getElementById('analyticsCostSavings').textContent = `$${data.costTracking.savings || 0}`;
+                    
+                    const hypotheticalCost = ((data.costTracking.cliCalls || 0) + (data.costTracking.apiCalls || 0)) * 0.015;
+                    document.getElementById('analyticsCostHypothetical').textContent = 
+                        `If all ${(data.costTracking.cliCalls || 0) + (data.costTracking.apiCalls || 0)} calls used API: $${hypotheticalCost.toFixed(2)}`;
+                    
+                    // Update session metrics
+                    document.getElementById('analyticsActiveSessions').textContent = data.totalSessions || 0;
+                    document.getElementById('analyticsPatternsDetected').textContent = data.totalPatterns || 0;
+                    document.getElementById('analyticsAvgQuality').textContent = `${Math.round(data.avgQualityScore || 0)}/100`;
+                    document.getElementById('analyticsLastUpdated').textContent = 
+                        new Date(data.lastUpdated).toLocaleTimeString();
+                    
+                    console.log('📊 [DASHBOARD] Analytics data loaded successfully');
+                }
+            } catch (error) {
+                console.error('📊 [DASHBOARD] Failed to load analytics:', error);
+            }
+        };
+
 
         window.showAITeam = function(requirements = "Build a modern web application with React and Node.js") {
             if (window.vibeDashboard) {
@@ -8160,10 +8341,18 @@ Execute as a single Task with multiple sub-agents working in parallel.`;
             // Initialize service health monitoring
             window.vibeDashboard.checkServiceHealth();
             
+            // Load analytics data
+            window.vibeDashboard.loadAnalytics();
+            
             // Set up automatic health checks every 30 seconds
             setInterval(() => {
                 window.vibeDashboard.checkServiceHealth();
             }, 30000);
+            
+            // Refresh analytics every 60 seconds
+            setInterval(() => {
+                window.vibeDashboard.loadAnalytics();
+            }, 60000);
             
 
             

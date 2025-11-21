@@ -5391,7 +5391,7 @@ Execute as a single Task with multiple sub-agents working in parallel.`;
             setupWebSocket() {
                 // Connect to real-time updates (when backend is ready)
                 try {
-                    const ws = new WebSocket(`ws://localhost:3000/api/vibe-analytics/live`);
+                    const ws = new WebSocket(`ws://localhost:3001/api/vibe-analytics/live`);
                     
                     ws.onmessage = (event) => {
                         const data = JSON.parse(event.data);
@@ -6912,7 +6912,8 @@ Execute as a single Task with multiple sub-agents working in parallel.`;
                     // Show AI recommendations if available
                     if (aiData.success && aiData.recommendations && aiData.recommendations.length > 0) {
                         this.renderAIRecommendations(aiData.recommendations, aiData.healthScore);
-                        document.getElementById('aiRecommendationsSection').style.display = 'block';
+                        const aiSection = document.getElementById('aiRecommendationsSection');
+                        if (aiSection) aiSection.style.display = 'block';
                     }
 
                     if (hooksLoader) hooksLoader.style.display = 'none';
@@ -7725,11 +7726,15 @@ Execute as a single Task with multiple sub-agents working in parallel.`;
                 memoryStatus.textContent = stats.isLearning ? '🟢 Learning Active' : '⚫ Idle';
             }
 
-            // Update stats values
-            document.getElementById('totalSessions').textContent = stats.totalSessions || 0;
-            document.getElementById('totalConversations').textContent = stats.totalConversations || 0;
-            document.getElementById('successRate').textContent = Math.round(stats.successRate || 0) + '%';
-            document.getElementById('totalPatterns').textContent = stats.totalPatterns || 0;
+            // Update stats values (with null checks)
+            const totalSessionsEl = document.getElementById('totalSessions');
+            const totalConversationsEl = document.getElementById('totalConversations');
+            const successRateEl = document.getElementById('successRate');
+            const totalPatternsEl = document.getElementById('totalPatterns');
+            if (totalSessionsEl) totalSessionsEl.textContent = stats.totalSessions || 0;
+            if (totalConversationsEl) totalConversationsEl.textContent = stats.totalConversations || 0;
+            if (successRateEl) successRateEl.textContent = Math.round(stats.successRate || 0) + '%';
+            if (totalPatternsEl) totalPatternsEl.textContent = stats.totalPatterns || 0;
 
             // Update session controls
             const sessionIndicator = document.getElementById('sessionIndicator');
@@ -7833,8 +7838,8 @@ Execute as a single Task with multiple sub-agents working in parallel.`;
         };
 
         VibeDashboard.prototype.checkServiceHealth = async function() {
-            const container = document.getElementById('serviceStatusItems');
-            const loadingState = document.getElementById('statusLoadingState');
+            const container = document.getElementById('serviceStatusContainer');
+            const loadingState = document.querySelector('.service-status-loading');
             const lastCheckElement = document.getElementById('lastCheckTime');
             const refreshBtn = document.querySelector('.refresh-btn span');
             
