@@ -8022,12 +8022,8 @@ Execute as a single Task with multiple sub-agents working in parallel.`;
         };
 
         VibeDashboard.prototype.showMemoryError = function(message) {
-            const memoryStatus = document.getElementById('memoryStatus');
-            if (memoryStatus) {
-                memoryStatus.textContent = '❌ Error';
-                memoryStatus.style.color = 'var(--error)';
-            }
-            this.showToast(message, 'error');
+            // Silently fail - memory card is temporarily removed
+            console.log('Memory system:', message);
         };
 
         VibeDashboard.prototype.showToast = function(message, type = 'info') {
