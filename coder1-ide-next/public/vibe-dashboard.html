@@ -7933,7 +7933,8 @@ Execute as a single Task with multiple sub-agents working in parallel.`;
                     `;
                 }
                 
-                this.showToast('❌ Failed to check service health', 'error');
+                // Silently fail - don't show error toast for service health checks
+                console.log('Service health check failed:', error.message);
             }
         };
 
