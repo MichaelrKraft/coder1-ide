@@ -44,7 +44,7 @@ const memoryOptimizer = getMemoryOptimizer({
 // Enhanced tmux service
 let EnhancedTmuxService;
 try {
-  EnhancedTmuxService = require('./services/enhanced-tmux-service').EnhancedTmuxService;
+  EnhancedTmuxService = require('./services/enhanced-tmux-service.ts').EnhancedTmuxService;
 } catch (error) {
   console.warn('⚠️ Enhanced tmux service not available:', error.message);
   EnhancedTmuxService = null;
@@ -53,7 +53,7 @@ try {
 // WebSocket Event Bridge for Claude Code Bridge Service (JavaScript version)
 let WebSocketEventBridge;
 try {
-  const bridgeModule = require('./services/websocket-event-bridge.js');
+  const bridgeModule = require('./services/websocket-event-bridge.ts');
   WebSocketEventBridge = bridgeModule.getWebSocketEventBridge();
 } catch (error) {
   console.warn('⚠️ WebSocket Event Bridge not available:', error.message);
@@ -148,7 +148,7 @@ if (process.env.ENABLE_SKILLS_SYSTEM === 'true') {
 // Terminal Token Integration for automatic Claude usage tracking
 let terminalTokenIntegration;
 try {
-  const { terminalTokenIntegration: integration } = require('./services/terminal-token-integration.js');
+  const { terminalTokenIntegration: integration } = require('./services/terminal-token-integration.ts');
   terminalTokenIntegration = integration;
 } catch (error) {
   console.warn('⚠️ Terminal Token Integration not available:', error.message);
@@ -688,6 +688,21 @@ function validateAlphaAccess(req, res) {
 app.prepare().then(() => {
   global.serverStartTime = Date.now();
   
+  // Debug: Verify API routes are loaded (especially bridge routes)
+  console.log('🔍 Verifying API route build outputs...');
+  const apiRoutesPath = path.join(__dirname, '.next/server/app/api/bridge');
+  try {
+    if (fs.existsSync(apiRoutesPath)) {
+      const bridgeRoutes = fs.readdirSync(apiRoutesPath, { recursive: true });
+      console.log('✅ Bridge API routes found:', bridgeRoutes);
+    } else {
+      console.error('❌ Bridge API routes NOT FOUND at:', apiRoutesPath);
+      console.error('⚠️  This will cause 404 errors for /api/bridge/* endpoints');
+    }
+  } catch (error) {
+    console.error('❌ Error checking API routes:', error.message);
+  }
+  
   // Create HTTP server with enhanced error handling
   const server = createServer((req, res) => {
     const parsedUrl = parse(req.url, true);
@@ -1110,7 +1125,7 @@ app.prepare().then(() => {
   // Initialize Coder1 Bridge Manager for local Claude CLI connections
   let bridgeManager;
   try {
-    const { bridgeManager: manager } = require('./services/bridge-manager');
+    const { bridgeManager: manager } = require('./services/bridge-manager.ts');
     bridgeManager = manager;
     
     // Set up bridge namespace

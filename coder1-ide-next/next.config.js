@@ -2,8 +2,9 @@
 const nextConfig = {
   reactStrictMode: false, // Disabled to prevent double-initialization issues
   // GitHub Pages Configuration
-  output: process.env.NODE_ENV === 'production' && process.env.GITHUB_PAGES ? 'export' : 'standalone',
-  trailingSlash: true, // GitHub Pages compatibility
+  // CRITICAL: Do NOT use 'standalone' with custom server - it breaks API routes
+  output: process.env.NODE_ENV === 'production' && process.env.GITHUB_PAGES ? 'export' : undefined,
+  trailingSlash: process.env.GITHUB_PAGES ? true : false, // Only for GitHub Pages
   assetPrefix: process.env.NODE_ENV === 'production' && process.env.GITHUB_PAGES ? '/coder1-ide' : '',
   basePath: process.env.NODE_ENV === 'production' && process.env.GITHUB_PAGES ? '/coder1-ide' : '',
   images: {
