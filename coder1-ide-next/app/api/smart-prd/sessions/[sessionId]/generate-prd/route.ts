@@ -764,6 +764,7 @@ export async function POST(
       console.log('🔧 Using API-based PRD generation (PAID)...');
       
       try {
+        process.stderr.write('[PRD-DEBUG] Starting API-based PRD generation\n');
         const orchestrator = new PRDOrchestrator(apiKey!);
         
         // Convert session answers to the format expected by orchestrator
@@ -776,6 +777,8 @@ export async function POST(
         const patternId = session.userContext?.selectedPattern || 'stripe-saas';
         const normalizedPattern = patternId.replace(/-platform$/, '').replace(/saas/, 'saas');
         
+        process.stderr.write(`[PRD-DEBUG] Pattern: ${normalizedPattern}, Mode: ${mode}\n`);
+        
         // Generate PRD with orchestrator
         const options: PRDGenerationOptions = {
           mode: mode as 'quick' | 'professional',
@@ -785,21 +788,26 @@ export async function POST(
           maxEnhancementLoops: mode === 'professional' ? 2 : 1
         };
         
+        process.stderr.write('[PRD-DEBUG] Calling orchestrator.generatePRD...\n');
         const result = await orchestrator.generatePRD(answerMap, options);
+        process.stderr.write(`[PRD-DEBUG] Orchestrator returned: success=${result.success}, prd length=${result.prd?.length || 0}\n`);
         
         if (result.success && result.prd) {
           prd = result.prd;
           metadata = result.metadata;
           
+          process.stderr.write(`[PRD-DEBUG] SUCCESS - Quality: ${metadata?.quality?.overall_score || 'N/A'}, Tokens: ${metadata?.tokensUsed?.total || 0}, Cost: $${metadata?.cost || 0}\n`);
           console.log('✅ Tool-based PRD generation successful');
           console.log(`   Quality: ${metadata.quality?.overall_score?.toFixed(1) || 'N/A'}/10`);
           console.log(`   Tokens: ${metadata.tokensUsed?.total || 0}`);
           console.log(`   Cost: $${metadata.cost?.toFixed(4) || '0.00'}`);
         } else {
+          process.stderr.write(`[PRD-DEBUG] FAILED - Error: ${result.error || 'Unknown'}\n`);
           console.warn('⚠️ Tool-based generation failed, falling back to template');
           prd = generateQuickModePRD(session, pattern);
         }
       } catch (error) {
+        process.stderr.write(`[PRD-DEBUG] EXCEPTION: ${error instanceof Error ? error.message : String(error)}\n`);
         console.error('❌ Tool-based generation error:', error);
         console.log('   Falling back to template generation...');
         prd = generateQuickModePRD(session, pattern);

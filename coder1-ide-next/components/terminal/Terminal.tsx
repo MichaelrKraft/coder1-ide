@@ -30,6 +30,7 @@ import SupervisionConfigModal from '@/components/supervision/SupervisionConfigMo
 import { features } from '@/lib/feature-flags';
 import { useUIStore } from '@/stores/useUIStore';
 import { useIDEStore } from '@/stores/useIDEStore';
+import { parseClaudeTokenUsage } from '@/lib/claude-token-parser';
 import { filterThinkingAnimations, extractClaudeCommands } from '@/lib/checkpoint-utils';
 import { getCompanionClient } from '@/lib/companion-client';
 import { terminalCommandHandler } from '@/lib/terminal-commands';
@@ -3160,6 +3161,11 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
         console.log('📝 Updating session ID from server:', serverSessionId);
         setSessionId(serverSessionId);
         sessionIdForVoiceRef.current = serverSessionId;
+        
+        // Reset token counter for new terminal sessions
+        const store = useIDEStore.getState();
+        store.resetTokenUsage();
+        console.log('🔄 Token counter reset for new terminal session');
       }
       
       // 🎯 CRITICAL FIX (Oct 28, 2025): Only scroll to top for NEW terminals
@@ -3771,7 +3777,14 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
           
           // ⚡ PERFORMANCE FIX (Feb 2, 2025): Removed store.updateTokenUsage() from hot path
           // This was triggering Zustand subscribers 50-100 times per response
-          // TODO: Move token counting to end of response or debounce updates
+          // ✅ IMPLEMENTED (Nov 22, 2025): Token counting moved here with parsing
+          
+          // Parse token usage from Claude Code output
+          const tokenUpdate = parseClaudeTokenUsage(data);
+          if (tokenUpdate) {
+            const store = useIDEStore.getState();
+            store.updateTokenUsage(tokenUpdate);
+          }
         }
         
         // Simplified flush: Always flush quickly for responsiveness
