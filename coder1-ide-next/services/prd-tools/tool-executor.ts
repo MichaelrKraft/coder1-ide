@@ -131,6 +131,16 @@ export class ToolExecutor {
       
     } catch (error) {
       const duration = Date.now() - startTime;
+      
+      // Log comprehensive error details
+      console.error(`❌ Tool execution error for '${toolName}':`, error);
+      console.error(`   Error type: ${error instanceof Error ? error.constructor.name : typeof error}`);
+      console.error(`   Error message:`, error instanceof Error ? error.message : String(error));
+      console.error(`   Parameters sent:`, JSON.stringify(parameters, null, 2));
+      if (error instanceof Error && error.stack) {
+        console.error(`   Stack trace:`, error.stack);
+      }
+      
       return this.errorResult(
         toolName,
         error instanceof Error ? error.message : 'Unknown error',
@@ -150,25 +160,34 @@ export class ToolExecutor {
     const systemPrompt = this.buildSystemPrompt(tool, options.thinkingMode, parameters);
     const userPrompt = this.buildUserPrompt(tool, parameters);
     
-    const response = await this.client.messages.create({
-      model: options.model || this.model,
-      max_tokens: options.maxTokens || 4096,
-      temperature: options.temperature ?? 0, // Use 0 for consistency
-      system: systemPrompt,
-      messages: [
-        {
-          role: 'user',
-          content: userPrompt
+    try {
+      const response = await this.client.messages.create({
+        model: options.model || this.model,
+        max_tokens: options.maxTokens || 4096,
+        temperature: options.temperature ?? 0, // Use 0 for consistency
+        system: systemPrompt,
+        messages: [
+          {
+            role: 'user',
+            content: userPrompt
+          }
+        ],
+        tools: [tool],
+        tool_choice: {
+          type: 'tool',
+          name: tool.name
         }
-      ],
-      tools: [tool],
-      tool_choice: {
-        type: 'tool',
-        name: tool.name
-      }
-    });
-    
-    return response;
+      });
+      
+      return response;
+    } catch (error) {
+      console.error(`❌ Anthropic API call failed for tool '${tool.name}':`, error);
+      console.error(`   Model: ${options.model || this.model}`);
+      console.error(`   Max tokens: ${options.maxTokens || 4096}`);
+      console.error(`   Tool name: ${tool.name}`);
+      console.error(`   Parameters:`, JSON.stringify(parameters, null, 2));
+      throw error;
+    }
   }
   
   /**
@@ -286,10 +305,21 @@ Execute the tool now.`;
     );
     
     if (!toolUseBlock) {
+      console.error(`❌ Tool '${toolName}' was not invoked in Claude response`);
+      console.error(`   Expected tool: ${toolName}`);
+      console.error(`   Message content blocks:`, JSON.stringify(message.content.map((b: any) => ({ type: b.type, name: b.name || 'N/A' })), null, 2));
+      console.error(`   Full message:`, JSON.stringify(message, null, 2));
       throw new Error(`Tool '${toolName}' was not invoked in response`);
     }
     
     const rawResult = toolUseBlock.input;
+    
+    // Log what we received from the tool
+    console.log(`✅ Tool '${toolName}' invoked successfully`);
+    console.log(`   Raw result keys:`, Object.keys(rawResult || {}).join(', '));
+    if (rawResult && typeof rawResult === 'object') {
+      console.log(`   Result preview:`, JSON.stringify(rawResult).substring(0, 200) + '...');
+    }
     
     // Apply tool-specific post-processing
     switch (toolName) {
