@@ -9,6 +9,11 @@ Status: PRODUCTION - Created: January 20, 2025
 */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { PRDOrchestrator } from '@/services/prd-tools/tool-orchestrator';
+import type { PRDGenerationOptions } from '@/services/prd-tools/tool-orchestrator';
+// CLI orchestrator imported dynamically below to catch module resolution errors
+// import { CLIPRDOrchestrator } from '@/services/prd-tools/cli-tool-orchestrator';
+// import type { CLIPRDGenerationOptions } from '@/services/prd-tools/cli-tool-orchestrator';
 
 // Import the sessions map
 const sessions = (global as any).prdSessions || new Map();
@@ -619,7 +624,7 @@ export async function POST(
   try {
     const { sessionId } = params;
     const body = await request.json();
-    const { format = 'markdown' } = body;
+    const { format = 'markdown', useToolBased = true } = body;
     
     // Get session
     const session = sessions.get(sessionId);
@@ -649,27 +654,204 @@ export async function POST(
     // Generate PRD based on mode
     const mode = session.userContext?.mode || 'quick';
     let prd = '';
+    let metadata: any = {};
     
-    if (mode === 'quick') {
-      prd = generateQuickModePRD(session, pattern);
+    // Determine which generation method to use
+    const apiKey = process.env.ANTHROPIC_API_KEY;
+    const oauthToken = process.env.CLAUDE_CODE_OAUTH_TOKEN;
+    const claudeCliPath = process.env.CLAUDE_CLI_PATH || '/opt/homebrew/bin/claude';
+    
+    // Prefer CLI (free) over API (paid)
+    const useCLI = useToolBased && oauthToken && !apiKey;
+    const useAPI = useToolBased && apiKey;
+    
+    if (useCLI) {
+      // CLI-based generation (FREE with OAuth token)
+      console.log('🎉 Using CLI-based PRD generation (FREE!)...');
+      console.log('🔍 DEBUG: Starting CLI generation process');
+      
+      try {
+        // Step 0: Dynamic import to catch module resolution errors
+        console.log('🔍 STEP 0: Dynamically importing CLIPRDOrchestrator...');
+        let CLIPRDOrchestrator: any;
+        try {
+          const module = await import('@/services/prd-tools/cli-tool-orchestrator');
+          CLIPRDOrchestrator = module.CLIPRDOrchestrator;
+          console.log('✅ STEP 0: CLI orchestrator module imported successfully');
+        } catch (importError: any) {
+          console.error('❌ STEP 0 FAILED: Cannot import CLI orchestrator');
+          console.error('   Import error:', importError.message);
+          console.error('   Import stack:', importError.stack);
+          throw new Error(`Module import failed: ${importError.message}`);
+        }
+        
+        console.log('🔍 STEP 1: Creating CLIPRDOrchestrator with path:', claudeCliPath);
+        const orchestrator = new CLIPRDOrchestrator(claudeCliPath);
+        console.log('✅ STEP 1: Orchestrator created successfully');
+        
+        // Convert answers to the format expected by orchestrator
+        // Use answers from request body if provided, otherwise from session
+        console.log('🔍 STEP 2: Converting answers');
+        const requestAnswers = body.answers || {};
+        const answerMap: any = Object.keys(requestAnswers).length > 0
+          ? requestAnswers
+          : {};
+        
+        // Also check session.answers if request body is empty
+        if (Object.keys(answerMap).length === 0 && session.answers) {
+          (session.answers || []).forEach((answer: any) => {
+            answerMap[answer.questionId] = answer.answer;
+          });
+        }
+        console.log('✅ STEP 2: Converted answers:', Object.keys(answerMap));
+        
+        // Determine pattern
+        console.log('🔍 STEP 3: Determining pattern');
+        const patternId = session.userContext?.selectedPattern || 'stripe-saas';
+        const normalizedPattern = patternId.replace(/-platform$/, '').replace(/saas/, 'saas');
+        console.log('✅ STEP 3: Pattern normalized:', patternId, '→', normalizedPattern);
+        
+        // Generate PRD with CLI orchestrator
+        console.log('🔍 STEP 4: Configuring options');
+        const options: any = {
+          mode: mode as 'quick' | 'professional',
+          pattern: normalizedPattern,
+          includeEvidence: mode === 'professional',
+          targetQuality: mode === 'professional' ? 8.5 : 7.0,
+          sectionsToGenerate: [
+            'executive_summary',
+            'problem_statement',
+            'solution_overview',
+            'target_audience',
+            'core_features',
+            'technical_architecture'
+          ],
+          claudeCliPath
+        };
+        console.log('✅ STEP 4: Options configured:', { mode: options.mode, pattern: options.pattern, sections: options.sectionsToGenerate.length });
+        
+        console.log('🔍 STEP 5: Calling orchestrator.generatePRD()...');
+        const startTime = Date.now();
+        const result = await orchestrator.generatePRD(answerMap, options);
+        const duration = Date.now() - startTime;
+        console.log(`✅ STEP 5: generatePRD() returned in ${duration}ms`);
+        console.log('🔍 Result:', { success: result.success, hasPRD: !!result.prd, error: result.error });
+        
+        if (result.success && result.prd) {
+          prd = result.prd;
+          metadata = result.metadata;
+          
+          console.log('✅ CLI-based PRD generation successful');
+          console.log(`   Quality: ${metadata.quality?.overall_score?.toFixed(1) || 'N/A'}/10`);
+          console.log(`   Tokens: ${metadata.tokensUsed?.total || 0}`);
+          console.log(`   Duration: ${duration}ms`);
+          console.log(`   Cost: $0.00 (FREE!) 🎉`);
+        } else {
+          console.warn('⚠️ CLI-based generation failed, falling back to template');
+          console.warn('   Reason:', result.error || 'Unknown');
+          prd = generateQuickModePRD(session, pattern);
+        }
+      } catch (error) {
+        console.error('❌ CLI-based generation error:', error);
+        console.error('   Error name:', (error as Error).name);
+        console.error('   Error message:', (error as Error).message);
+        console.error('   Stack trace:', (error as Error).stack);
+        console.log('   Falling back to template generation...');
+        prd = generateQuickModePRD(session, pattern);
+      }
+    } else if (useAPI) {
+      // API-based generation (PAID with API key)
+      console.log('🔧 Using API-based PRD generation (PAID)...');
+      
+      try {
+        const orchestrator = new PRDOrchestrator(apiKey!);
+        
+        // Convert session answers to the format expected by orchestrator
+        const answerMap: any = {};
+        (session.answers || []).forEach((answer: any) => {
+          answerMap[answer.questionId] = answer.answer;
+        });
+        
+        // Determine pattern
+        const patternId = session.userContext?.selectedPattern || 'stripe-saas';
+        const normalizedPattern = patternId.replace(/-platform$/, '').replace(/saas/, 'saas');
+        
+        // Generate PRD with orchestrator
+        const options: PRDGenerationOptions = {
+          mode: mode as 'quick' | 'professional',
+          pattern: normalizedPattern,
+          includeEvidence: mode === 'professional',
+          targetQuality: mode === 'professional' ? 8.5 : 7.0,
+          sectionsToGenerate: [
+            'executive_summary',
+            'problem_statement',
+            'solution_overview',
+            'target_audience',
+            'core_features',
+            'technical_architecture'
+          ]
+        };
+        
+        const result = await orchestrator.generatePRD(answerMap, options);
+        
+        if (result.success && result.prd) {
+          prd = result.prd;
+          metadata = result.metadata;
+          
+          console.log('✅ Tool-based PRD generation successful');
+          console.log(`   Quality: ${metadata.quality?.overall_score?.toFixed(1) || 'N/A'}/10`);
+          console.log(`   Tokens: ${metadata.tokensUsed?.total || 0}`);
+          console.log(`   Cost: $${metadata.cost?.toFixed(4) || '0.00'}`);
+        } else {
+          console.warn('⚠️ Tool-based generation failed, falling back to template');
+          prd = generateQuickModePRD(session, pattern);
+        }
+      } catch (error) {
+        console.error('❌ Tool-based generation error:', error);
+        console.log('   Falling back to template generation...');
+        prd = generateQuickModePRD(session, pattern);
+      }
     } else {
-      // Professional mode would be more comprehensive (15-20 pages)
-      prd = generateQuickModePRD(session, pattern); // Using quick mode for now
+      // Template-based generation (fallback)
+      if (!apiKey) {
+        console.log('⚠️ ANTHROPIC_API_KEY not set, using template generation');
+      } else {
+        console.log('📄 Using template-based PRD generation (useToolBased=false)');
+      }
+      
+      if (mode === 'quick') {
+        prd = generateQuickModePRD(session, pattern);
+      } else {
+        // Professional mode would be more comprehensive (15-20 pages)
+        prd = generateQuickModePRD(session, pattern); // Using quick mode for now
+      }
     }
     
     // Store the generated PRD in the session
     session.generatedPRD = prd;
     session.prdGeneratedAt = Date.now();
+    session.prdMetadata = metadata;
+    
+    // Calculate stats
+    const wordCount = prd.split(/\s+/).filter(w => w.length > 0).length;
+    const pageEstimate = Math.ceil(wordCount / 250);
     
     return NextResponse.json({
       success: true,
       prd,
       format,
       sessionId,
-      wordCount: prd.split(' ').length,
-      pageEstimate: Math.ceil(prd.split(' ').length / 250), // ~250 words per page
+      wordCount,
+      pageEstimate,
       mode,
-      pattern: pattern.name
+      pattern: pattern.name,
+      generationMethod: useCLI ? 'cli-based (FREE)' : useAPI ? 'api-based (PAID)' : 'template',
+      ...((useCLI || useAPI) && metadata ? {
+        quality: metadata.quality,
+        tokensUsed: metadata.tokensUsed,
+        cost: metadata.cost,
+        duration: metadata.duration
+      } : {})
     });
     
   } catch (error) {
