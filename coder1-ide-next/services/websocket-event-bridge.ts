@@ -6,8 +6,8 @@
  */
 
 import { Server as SocketIOServer } from 'socket.io';
-import { getClaudeCodeBridgeService } from './claude-code-bridge';
-import { logger } from '../lib/logger';
+import { getClaudeCodeBridgeService } from './claude-code-bridge.ts';
+import { logger } from '../lib/logger.ts';
 
 export class WebSocketEventBridge {
   private bridgeService = getClaudeCodeBridgeService();
@@ -31,7 +31,24 @@ export class WebSocketEventBridge {
    * Setup event listeners for bridge service events
    */
   private setupEventListeners(): void {
-    // Team spawned and ready for execution
+    console.log('🔗 [EVENT BRIDGE] Setting up listeners on bridge service:', this.bridgeService ? 'INSTANCE EXISTS' : 'NULL');
+    
+    // Team spawned (CLI Puppeteer mode) - Forward to agent:spawn for Terminal.tsx
+    this.bridgeService.on('team:spawned', (data) => {
+      console.log('🔗 [EVENT BRIDGE] *** RECEIVED team:spawned event for team', data.teamId, '***');
+      logger.info(`🔗 [EVENT BRIDGE] Received team:spawned for team ${data.teamId}, forwarding to Socket.IO`);
+      this.forwardEvent('agent:spawn', {
+        teamId: data.teamId,
+        status: data.status || 'spawning',
+        requirement: data.requirement,
+        agents: data.agents || [],
+        automatedExecution: true,
+        costSavings: true,
+        executionType: 'cli-puppeteer'
+      });
+    });
+    
+    // Team spawned and ready for execution (git worktree mode)
     this.bridgeService.on('team:ready', (data) => {
       this.forwardEvent('ai-team:spawned', {
         teamId: data.teamId,

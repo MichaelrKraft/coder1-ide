@@ -6,7 +6,7 @@
 import { spawn, ChildProcess } from 'child_process';
 import * as net from 'net';
 import { EventEmitter } from 'events';
-import { logger } from '@/lib/logger';
+import { logger } from '../lib/logger.ts';
 
 interface PreviewServer {
   sandboxId: string;

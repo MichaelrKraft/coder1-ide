@@ -118,14 +118,17 @@ export async function POST(request: NextRequest) {
         workflow: team.workflow,
         status: team.status,
         agents: team.agents.map((agent, index) => ({
-          id: `agent_${index + 1}`,
+          id: agent.id,  // Use the real agentId from coordinator (e.g., "puppet-123-frontend")
+          agentId: agent.id,  // Also include as agentId for compatibility
           name: agent.name,
           role: agent.role,
           status: agent.status,
           progress: agent.progress,
           currentTask: agent.currentTask,
           completedTasks: agent.completedTasks,
-          expertise: [] // Legacy field for compatibility
+          expertise: [], // Legacy field for compatibility
+          workTreePath: agent.workTreePath, // Include work tree path for debugging
+          processId: agent.processId // Include process ID if available
         })),
         createdAt: team.createdAt.getTime(),
         startedAt: team.startedAt?.getTime() || null,
@@ -138,6 +141,24 @@ export async function POST(request: NextRequest) {
       
       logger.info(`✅ [BRIDGE] Team spawned: ${team.teamId}`);
       logger.info(`🤖 [BRIDGE] Automated execution: ${team.agents.length} agents`);
+      logger.info(`🔍 [DEBUG] Agent IDs: ${compatibleTeam.agents.map(a => a.id).join(', ')}`);
+      
+      // Emit agent:spawn event to Socket.IO clients via global bridge
+      if (typeof global !== 'undefined' && (global as any).emitBridgeEvent) {
+        (global as any).emitBridgeEvent('agent:spawn', {
+          teamId: team.teamId,
+          sessionId: team.sessionId,
+          status: team.status,
+          requirement: requirement,
+          agents: compatibleTeam.agents,
+          automatedExecution: true,
+          costSavings: true,
+          executionType: 'automated-claude-code'
+        });
+        logger.info(`🔗 [BRIDGE] Emitted agent:spawn event for team ${team.teamId}`);
+      } else {
+        logger.warn('⚠️ [BRIDGE] global.emitBridgeEvent not available - agents won\'t appear in UI');
+      }
       
       return NextResponse.json({
         success: true,

@@ -6,7 +6,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { ChevronDown, Bot, Clock, Hash } from 'lucide-react';
+import { ChevronDown, Bot, Clock, Hash, Brain } from 'lucide-react';
 import { useIDEStore } from '@/stores/useIDEStore';
 
 type AIModel = 
@@ -125,10 +125,19 @@ export default function StatusLine() {
       {/* Spacer */}
       <div />
       
-      {/* Simple Time Display */}
-      <div className="flex items-center gap-1 text-text-muted">
-        <Clock className="w-3 h-3" />
-        <span>{currentDate ? formatDate(currentDate) : '--'}</span>
+      {/* Alpha Status Indicator and Time Display */}
+      <div className="flex items-center gap-3 text-text-muted">
+        {/* Alpha Status */}
+        <div className="flex items-center gap-1 text-orange-400/60" title="Enhanced StatusLine features temporarily disabled during alpha">
+          <Brain className="w-3 h-3" />
+          <span>Alpha</span>
+        </div>
+        
+        {/* Time Display */}
+        <div className="flex items-center gap-1">
+          <Clock className="w-3 h-3" />
+          <span>{currentDate ? formatDate(currentDate) : '--'}</span>
+        </div>
       </div>
     </div>
   );

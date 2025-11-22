@@ -157,12 +157,6 @@ export default function StatusBarCore({
         {/* Right section - Status info */}
         <div className="flex items-center gap-4 text-sm text-text-muted flex-1 justify-end">
           
-          {/* Alpha Status Indicator */}
-          <div className="flex items-center gap-1 text-orange-400/60 text-xs" title="Enhanced StatusLine features temporarily disabled during alpha">
-            <Brain className="w-3 h-3" />
-            <span>Alpha</span>
-          </div>
-          
           {/* Connection Status */}
           {actuallyConnected && (
             <div className="flex items-center gap-1">

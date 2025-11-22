@@ -1,0 +1,182 @@
+🧪 Capturing console logs from AI Team button click...
+📍 Navigating to IDE...
+📝 %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold
+📝 🔄 [MODEL STORE] onRehydrateStorage CALLED
+📝 🔄 [MODEL STORE] Rehydrated state: {selectedModel: claude-sonnet-4-5-20250929, setSelectedModel: , getModelDisplayName: }
+📝 🔄 [MODEL STORE] Version 6 migration: Forcing reset to claude-sonnet-4-5-20250929
+📝 ✅ [MODEL STORE] Reset complete - model set to claude-sonnet-4-5-20250929
+📝 🔄 Starting atomic session initialization...
+📝 🆕 No valid session found, creating new session...
+📝 🔍 [INIT-URL] window.location.search: 
+📝 🔍 [INIT-URL] urlSessionId: null
+📝 🔄 Hard refresh detected (no sessionId in URL) - clearing ALL terminal data from localStorage
+📝 🔍 [INIT-FINAL] Hard refresh - returning null for fresh session
+📝 🔍 EnhancedSessionCreationModal render: {isOpen: false, selectedType: null, sessionName: }
+📝 🔍 Modal not rendering - isOpen is false
+📝 🔍 Debug: showEnhancedSessionModal changed to: false
+📝 🔌 CREATING SOCKET CONNECTION (attempt 1)
+📝 🎯 CONNECTING TO UNIFIED SERVER: http://localhost:3001
+📝 ✅ Using bundled Socket.IO client
+📝 ⚠️ [STATUSBAR] No terminalSessionId prop! Falling back to localStorage/generated: session_1763142417850_tr5xk6xkw
+📝 🔄 Reconnecting existing disconnected socket...
+📝 🔄 Starting atomic session initialization...
+📝 🆕 No valid session found, creating new session...
+📝 🚫 Skipping onboarding - user has IDE usage history
+📝 🔄 IDE: Restoring session state from localStorage...
+📝 🔄 Hard refresh detected (no sessionId in URL) - clearing terminal session AND history from localStorage
+📝 🔄 [URL-EFFECT] searchParams.sessionId: null
+📝 🔄 [URL-EFFECT] current terminalSessionId: null
+📝 🔌 Terminal integration ready - socket and session available via Terminal component
+📝 🔍 EnhancedSessionCreationModal render: {isOpen: false, selectedType: null, sessionName: }
+📝 🔍 Modal not rendering - isOpen is false
+📝 Image with src "http://localhost:3001/Coder1-Logo-Sharp.svg" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+📝 Failed to load resource: net::ERR_CONNECTION_REFUSED
+📝 Failed to load resource: the server responded with a status of 404 (Not Found)
+📝 Failed to load resource: net::ERR_CONNECTION_REFUSED
+📝 🔍 EnhancedSessionCreationModal render: {isOpen: false, selectedType: null, sessionName: }
+📝 🔍 Modal not rendering - isOpen is false
+📝 Failed to load resource: net::ERR_CONNECTION_REFUSED
+📝 🔍 EnhancedSessionCreationModal render: {isOpen: false, selectedType: null, sessionName: }
+📝 🔍 Modal not rendering - isOpen is false
+📝 Failed to load resource: net::ERR_CONNECTION_REFUSED
+📝 ✅ SOCKET.IO CONNECTED: {id: 5MXTfgrz3GqulwPcAAAj, url: http://localhost:3001, timestamp: 2025-11-14T17:46:58.620Z}
+📝 🧠 [MEMORY] Analyzing session... {openFilesCount: 0, activeFile: null, terminalHistoryLength: 0, terminalCommandsCount: 0, isAnalyzing: false}
+📝 🧠 [MEMORY] Calling detection service...
+📝 🔍 [MEMORY-DETECT] Starting analysis with preferences: {enabled: true, threshold: 70, enabledEventTypes: Array(4)}
+📝 🔍 [MEMORY-DETECT] Session data collected: {sessionType: general, sessionDuration: 1, errors: 0, breakthroughs: 0}
+📝 🔍 [MEMORY-DETECT] Detection results after filtering: {totalEvents: 0, eventTypes: Array(0)}
+📝 🔍 [MEMORY-DETECT] Final result with preferences applied: {isMemoryWorthy: false, confidence: 0, events: Array(0), suggestedMemoryTitle: general Session, suggestedMemoryDescription: Session working on 1 files over 1 minutes}
+📝 🧠 [MEMORY] Detection result: {isMemoryWorthy: false, confidence: 0, eventsCount: 0, events: Array(0), autoGenRecommended: false}
+📝 🧠 [MEMORY] Analysis complete
+📝 🔍 EnhancedSessionCreationModal render: {isOpen: false, selectedType: null, sessionName: }
+📝 🔍 Modal not rendering - isOpen is false
+📝 ✅ Session initialization completed successfully
+📝 ✅ Session initialization completed successfully
+📝 🔍 EnhancedSessionCreationModal render: {isOpen: false, selectedType: null, sessionName: }
+📝 🔍 Modal not rendering - isOpen is false
+📝 🔊 SoundAlertService: Initializing...
+📝 🔊 SoundAlertService: Audio context initialized successfully {state: suspended, sampleRate: 44100}
+📝 🔊 SoundAlertService: Loading preferences from localStorage {savedEnabled: null, savedPreset: null}
+📝 🔊 SoundAlertService: Initialization complete {enabled: true, preset: gentle, hasAudioContext: true}
+📝 [StatuslineService] Configuration loaded {flags: Object, config: Object}
+📝 [StatuslineConfig] Configuration loaded
+📝 [ModelInfo] [ModelInfo] Component initialized
+📝 [TimeDisplay] [TimeDisplay] Component initialized with options: {format: 24h, showSeconds: false, showTimezone: false, showDate: false, updateInterval: 1000}
+📝 [CostDaily] [DailyCost] Component initialized for date: 2025-11-14
+📝 [CostLive] [LiveCost] Component initialized
+📝 [RepoInfo] [RepoInfo] Component initialized
+📝 [Commits] [Commits] Component initialized
+📝 [MCPStatus] [MCPStatus] Component initialized
+📝 ✅ GLM API client initialized successfully
+📝 ✅ Gemini API client initialized successfully
+📝 [Terminal] Status line check: {enabled: false, settings: Object, shouldShow: false}
+📝 🔄 MultilineMode changed to: false
+📝 📏 Textarea should be: 80px
+📝 📐 Composer height: 264px
+📝 🔍 COMMAND CHANGE EFFECT TRIGGERED
+📝 📊 Current command: 
+📝 📊 Last saved command: 
+📝 📊 Commands different? false
+📝 ⚪ Skipping recordChange (same command)
+📝 🎯 @PREFIX HANDLER TRIGGERED
+📝 📊 Current command: 
+📝 📊 Starts with @? false
+📝 ⚪ Not @ command, hiding snippets
+📝 🔵🔵🔵 dragActive state changed to: false
+📝 🔴 Overlay should be HIDDEN
+📝 🎤 SPEECH RECOGNITION INIT
+📝 📊 Window defined? true
+📝 📊 webkitSpeechRecognition available? true
+📝 📊 SpeechRecognition available? true
+📝 ✅ Speech recognition supported, initializing...
+📝 ✅ Speech recognition instance created
+📝 ✅ Speech recognition fully configured
+📝 🚀 StagedComposer mounted - drag handlers ready
+📝 📍 Drag state: {dragActive: false, dragCounter: 0}
+📝 🔄 [TERMINAL-RESTORE] Effect triggered
+📝    restoredSessionId: null
+📝    current sessionId: null
+📝 [Terminal] Loading terminal settings from localStorage on mount
+📝 [Terminal] No saved settings found in localStorage, saving defaults
+📝 [Terminal] Loading sound alert settings from localStorage
+📝 🔊 Terminal: Loading sound settings from localStorage {savedEnabled: null, savedPreset: null}
+📝 [Terminal] No saved audio alert setting, defaulting to enabled
+📝 🔍 Terminal: Component mounted, calling fetchContextStats...
+📝 🔍 Terminal: Fetching context stats...
+📝 [Terminal] Saved audio alerts enabled setting: false
+📝 [Terminal] Saved sound preset setting: gentle
+📝 ═══════════════════════════════════════════════════════════
+📝 🔍 [CONNECTION CHECK] useEffect running
+📝 📊 Values: {terminalReady: false, hasXtermRef: true, isConnected: false, connectionInProgress: false, sessionId: null}
+📝 ═══════════════════════════════════════════════════════════
+📝 ❌ Connection condition failed - not connecting
+📝 📜 TERMINAL CONTAINER: No restoredTerminalHistory prop
+📝 Failed to load resource: net::ERR_CONNECTION_REFUSED
+📝 [Terminal] Status line check: {enabled: false, settings: Object, shouldShow: false}
+📝 [Terminal] Saved audio alerts enabled setting: true
+📝 Failed to load resource: net::ERR_CONNECTION_REFUSED
+📝 Failed to load resource: net::ERR_CONNECTION_REFUSED
+📝 Failed to load resource: net::ERR_CONNECTION_REFUSED
+📝 [Terminal] Status line check: {enabled: false, settings: Object, shouldShow: false}
+📝 📋 Image paste handler initialized
+📝 ✅ Auto-scroll during selection enabled (v3 - xterm.js API)
+📝 👁️ Terminal null focused on visibility change
+📝 ✅ Terminal null auto-focused (visible)
+
+🔍 Looking for AI Team button...
+✅ Found button, clicking...
+
+⏳ Waiting 15 seconds for logs...
+
+📝 ✅ Session created via REST API: session_1763142428536_ptfmntw5n6
+📝 💾 Stored terminal session ID for reconnection
+📝 🔌 Terminal session ID made globally available for drag-drop
+📝 ✅ Terminal ready: {sessionId: session_1763142428536_ptfmntw5n6, ready: true}
+📝 [Terminal] Status line check: {enabled: false, settings: Object, shouldShow: false}
+📝 🔍 EnhancedSessionCreationModal render: {isOpen: false, selectedType: null, sessionName: }
+📝 🔍 Modal not rendering - isOpen is false
+📝 🔄 [TERMINAL-RESTORE] Effect triggered
+📝    restoredSessionId: session_1763142428536_ptfmntw5n6
+📝    current sessionId: session_1763142428536_ptfmntw5n6
+📝 🔄 Restoring terminal session ID from navigation: session_1763142428536_ptfmntw5n6
+📝 🔄 Navigation detected - resetting session creation flag
+📝    restoredSessionId: session_1763142428536_ptfmntw5n6 sessionId: session_1763142428536_ptfmntw5n6 flagWasSet: true
+📝 🔄 Using existing session ID from prop: session_1763142428536_ptfmntw5n6
+📝 ✅ Terminal ready: {sessionId: session_1763142428536_ptfmntw5n6, ready: true}
+📝 ═══════════════════════════════════════════════════════════
+📝 🔍 [CONNECTION CHECK] useEffect running
+📝 📊 Values: {terminalReady: true, hasXtermRef: true, isConnected: false, connectionInProgress: false, sessionId: session_1763142428536_ptfmntw5n6}
+📝 ═══════════════════════════════════════════════════════════
+📝 🚀 Terminal ready, connecting to backend... {sessionId: session_1763142428536_ptfmntw5n6, agentMode: false, agentSession: undefined}
+📝 📊 [STATUSBAR] Using ACTUAL terminal session ID from prop: session_1763142428536_ptfmntw5n6
+📝 💾 Saved terminal session ID: session_1763142428536_ptfmntw5n6
+📝 [Terminal] Status line check: {enabled: false, settings: Object, shouldShow: false}
+📝 🔌 Terminal socket made globally available for drag-drop
+📝 ✅ Using real Socket.IO connection
+📝 ═══════════════════════════════════════════════════════
+📝 🎯 [CLIENT] Registering terminal:history event listener
+📝 🆔 For session ID: "session_1763142428536_ptfmntw5n6"
+📝 ⏰ Registration time: 2025-11-14T17:47:08.568Z
+📝 ═══════════════════════════════════════════════════════
+📝 ✅ [CLIENT] terminal:history listener registered
+📝 ═══════════════════════════════════════════════════════
+📝 📤 [CLIENT] About to emit terminal:create
+📝 🆔 Session ID: "session_1763142428536_ptfmntw5n6"
+📝 ⏰ Emission time: 2025-11-14T17:47:08.568Z
+📝 ═══════════════════════════════════════════════════════
+📝 ✅ [CLIENT] terminal:create emitted with session ID
+📝 ✅ Terminal created on server: {sessionId: session_1763142428536_ptfmntw5n6, pid: 86133}
+📝 🔄 Reconnection detected - skipping aggressive scroll-to-top (history restoration will handle scrolling)
+📝 🔍 Terminal: Context stats received: {isLearning: false, totalConversations: 0, totalSessions: 0, totalPatterns: 0, totalInsights: 0}
+📝 🔍 Terminal: Setting context stats: {totalSessions: 0, totalMemories: 0, isActive: false, isLoading: false}
+📝 [Terminal] Status line check: {enabled: false, settings: Object, shouldShow: false}
+📝 👁️ Terminal session_1763142428536_ptfmntw5n6 focused on visibility change
+📝 ✅ Terminal session_1763142428536_ptfmntw5n6 auto-focused (visible)
+📝 🧠 [MEMORY] Analyzing session... {openFilesCount: 0, activeFile: null, terminalHistoryLength: 10, terminalCommandsCount: 0, isAnalyzing: false}
+📝 🧠 [MEMORY] Calling detection service...
+📝 🔍 [MEMORY-DETECT] Starting analysis with preferences: {enabled: true, threshold: 85, enabledEventTypes: Array(6)}
+📝 🔍 [MEMORY-DETECT] Session data collected: {sessionType: general, sessionDuration: 1, errors: 0, breakthroughs: 0}
+📝 🔍 [MEMORY-DETECT] Detection results after filtering: {totalEvents: 0, eventTypes: Array(0)}
+📝 🔍 [MEMORY-DETECT] Final result with preferences applied: {isMemoryWorthy: false, confidence: 0, events: Array(0), suggestedMemoryTitle: general Session, suggestedMemoryDescription: Session working on 1 files over 1 minutes}
+📝 🧠 [MEMORY] Detection result: {isMemoryWorthy: false, confidence: 0, eventsCount: 0, events: Array(0), autoGenRecommended: false}
+📝 🧠 [MEMORY] Analysis complete

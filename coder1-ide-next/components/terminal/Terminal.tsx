@@ -125,6 +125,7 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
   const sessionCreatedRef = useRef(false); // Track if session was already created
   const onDataDisposableRef = useRef<any>(null); // Store onData disposable
   const connectionInProgressRef = useRef(false); // Prevent concurrent connections
+  const connectionTimeoutRef = useRef<NodeJS.Timeout | null>(null); // Watchdog timer for connection
   const pasteHandlerRef = useRef<((e: ClipboardEvent) => Promise<void>) | null>(null); // Store paste handler for cleanup
   const isSelectingRef = useRef(false); // Track text selection state
   const scrollIntervalRef = useRef<number | null>(null); // Track auto-scroll animation frame
@@ -321,28 +322,21 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
     onComposerVisibilityChange?.(composerVisible);
   }, [composerVisible, onComposerVisibilityChange]);
   
-  // Restore terminal session ID from previous navigation
-  // 🐛 CRITICAL FIX (Oct 24, 2025): Removed !sessionId condition
-  // When navigating Timeline → IDE, Terminal component stays mounted with old sessionId
-  // The !sessionId check prevented restoration when returning to same session
-  useEffect(() => {
-    console.log('🔄 [TERMINAL-RESTORE] Effect triggered');
-    console.log('   restoredSessionId:', restoredSessionId);
-    console.log('   current sessionId:', sessionId);
-    
-    if (restoredSessionId && restoredSessionId !== 'null') {
-      console.log('\ud83d\udd04 Restoring terminal session ID from navigation:', restoredSessionId);
-      setSessionId(restoredSessionId);
-      sessionIdForVoiceRef.current = restoredSessionId;
-    }
-  }, [restoredSessionId]);
+  // 🔧 DELETED (Nov 18, 2025): Removed terminal restoration useEffect - caused infinite ping-pong loop
+  // PROBLEM: Terminal writes sessionId → localStorage → Parent reads → passes as restoredSessionId prop
+  //          → This effect writes sessionId → localStorage → Parent reads → infinite loop
+  // SOLUTION: Parent (IDE page) handles session restoration entirely via prop. No restoration needed here.
   
   // 🔧 FIX (Oct 24, 2025): Reset session creation flag on navigation
   // When navigating IDE → Timeline → IDE, Terminal component stays mounted (React optimization)
   // This causes sessionCreatedRef to stay true, blocking session restoration
   // Solution: Reset the flag when we receive a restoredSessionId from navigation
   // CRITICAL: Must work even when returning to SAME session (restoredSessionId === sessionId)
+  // 🔧 FIX (Nov 15, 2025): Skip for agent terminals
   useEffect(() => {
+    // Agent terminals don't participate in navigation restoration
+    if (agentMode) return;
+    
     if (restoredSessionId && restoredSessionId !== 'null') {
       // Reset flag if:
       // 1. Session changed (different ID) OR
@@ -353,7 +347,7 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
         sessionCreatedRef.current = false;
       }
     }
-  }, [restoredSessionId, sessionId]);
+  }, [restoredSessionId, sessionId, agentMode]);
   
   // Default terminal settings - guaranteed structure
   const defaultTerminalSettings: TerminalSettingsState = {
@@ -1086,14 +1080,40 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
   // This useEffect has been removed to prevent duplicate socket connections
   // All socket connection logic is now handled in connectToBackend function
 
+  // Use a ref to track if initialization has started (prevents race conditions)
+  const initializingRef = useRef(false);
+
   useEffect(() => {
-    // REMOVED: // REMOVED: console.log('🖥️ INITIALIZING XTERM...');
-    if (!terminalRef.current) {
-      // REMOVED: // REMOVED: console.log('❌ Terminal ref not ready');
+    // 🔧 FIX (Nov 19, 2025): Prevent double initialization with both instance check and flag
+    if (xtermRef.current || initializingRef.current) {
+      if (xtermRef.current) {
+        console.log('✅ [XTERM-INIT] Xterm already initialized, skipping');
+      } else {
+        console.log('⏳ [XTERM-INIT] Initialization in progress, skipping duplicate call');
+      }
       return;
     }
+    
+    initializingRef.current = true; // Mark as initializing
 
     const initializeTerminal = async () => {
+      // 🔧 FIX (Nov 19, 2025): Wait for terminal ref to be ready (poll with timeout)
+      // This is critical for agent/sandbox terminals which may mount before DOM is ready
+      let terminalRefReady = terminalRef.current;
+      let attempts = 0;
+      while (!terminalRefReady && attempts < 50) { // Wait up to 5 seconds
+        await new Promise(resolve => setTimeout(resolve, 100));
+        terminalRefReady = terminalRef.current;
+        attempts++;
+      }
+      
+      if (!terminalRefReady) {
+        console.error('❌ [XTERM-INIT] Terminal ref never became ready after 5 seconds');
+        return;
+      }
+      
+      console.log('🖥️ [XTERM-INIT] Terminal ref ready after', attempts * 100, 'ms');
+      console.log('🖥️ [XTERM-INIT] Initializing xterm for:', { agentMode, agentSessionId: agentSession?.id, sandboxMode, sandboxSessionId: sandboxSession?.id });
       try {
         // REMOVED: // REMOVED: console.log('🔧 Creating XTerm instance...');
         // Wait for xterm.js to load if not already available
@@ -1148,8 +1168,16 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
       term.loadAddon(fitAddon);
       
       // Ensure the container is ready before opening
-      if (terminalRef.current && terminalRef.current.offsetParent !== null) {
-        term.open(terminalRef.current);
+      // 🔧 FIX (Nov 19, 2025): For agent/sandbox terminals, open even if hidden (offsetParent === null)
+      // Hidden terminals need xterm initialized so they can receive data via WebSocket
+      const shouldOpen = terminalRef.current && (
+        terminalRef.current.offsetParent !== null || // Visible terminal
+        agentMode ||  // Agent terminal (may be in hidden tab)
+        sandboxMode   // Sandbox terminal (may be in hidden tab)
+      );
+      
+      if (shouldOpen) {
+        term.open(terminalRef.current!);
         
         // Global paste handler for image interception
         const handleImagePaste = async (e: ClipboardEvent) => {
@@ -1688,18 +1716,40 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
             if (filteredHistory && filteredHistory.trim()) {
               console.log(`✅ Writing ${filteredHistory.length} chars to terminal`);
               
-              // Split into lines and write each line separately
-              // This ensures proper rendering instead of using term.write() which might have cursor positioning issues
+              // Split into lines and write in chunks to avoid blocking UI thread
               const lines = filteredHistory.split(/\r?\n/);
               console.log(`📊 Restored history contains ${lines.length} lines`);
               
-              // Write each line
-              for (let i = 0; i < lines.length; i++) {
-                if (i === 0) console.log(`📝 First line:`, lines[i].substring(0, 100));
-                if (i === lines.length - 1) console.log(`📝 Last line:`, lines[i].substring(0, 100));
-                term.writeln(lines[i]);
-              }
-              console.log(`✅ Wrote ${lines.length} lines to terminal`);
+              // 🚀 PERFORMANCE FIX (Nov 19, 2025): Write in chunks to keep UI responsive
+              // Writing 10,000+ lines synchronously blocks UI for 40+ seconds
+              const CHUNK_SIZE = 100;
+              let currentIndex = 0;
+              
+              const writeChunk = () => {
+                const endIndex = Math.min(currentIndex + CHUNK_SIZE, lines.length);
+                
+                // Write this chunk
+                for (let i = currentIndex; i < endIndex; i++) {
+                  if (i === 0) console.log(`📝 First line:`, lines[i].substring(0, 100));
+                  if (i === lines.length - 1) console.log(`📝 Last line:`, lines[i].substring(0, 100));
+                  term.writeln(lines[i]);
+                }
+                
+                currentIndex = endIndex;
+                
+                // Schedule next chunk if more lines remain
+                if (currentIndex < lines.length) {
+                  const percentComplete = Math.round((currentIndex / lines.length) * 100);
+                  if (percentComplete % 20 === 0) {
+                    console.log(`📊 Terminal restoration: ${percentComplete}% complete (${currentIndex}/${lines.length} lines)`);
+                  }
+                  setTimeout(writeChunk, 0); // Yield to browser event loop
+                } else {
+                  console.log(`✅ Wrote ${lines.length} lines to terminal (100% complete)`);
+                }
+              };
+              
+              writeChunk(); // Start chunked writing
             } else {
               console.warn(`⚠️ No content to write after filtering!`);
             }
@@ -1890,7 +1940,7 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
 
     // Call the async initialization function
     initializeTerminal();
-  }, []);
+  }, []); // 🔧 FIX (Nov 19, 2025): Run once on mount, polling logic inside handles async ref readiness
 
   // Close dropdowns when clicking outside
   useEffect(() => {
@@ -1991,7 +2041,9 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
     console.log('═══════════════════════════════════════════════════════════');
     
     // Connect when terminal is ready (session ID can be created by server if needed)
-    if (terminalReady && xtermRef.current && !isConnected && !connectionInProgressRef.current) {
+    // 🔧 FIX (Nov 21, 2025): Skip connectToBackend for agent terminals - they use agent:terminal:connect instead
+    // Agent terminals get their output from the CLI puppeteer PTY, not a new bash PTY
+    if (terminalReady && xtermRef.current && !isConnected && !connectionInProgressRef.current && !agentMode) {
       console.log('🚀 Terminal ready, connecting to backend...', { sessionId, agentMode, agentSession });
       connectToBackend(xtermRef.current);
     } else {
@@ -2003,6 +2055,18 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
     // Previous bug: socket.off('event') removed ALL listeners including ones from new component instances
     // This caused race condition where cleanup removed listeners registered by remounted component
     return () => {
+      console.log('🧹 Cleanup: Resetting connection state');
+      
+      // ⏰ WATCHDOG: Clear timeout on component unmount
+      if (connectionTimeoutRef.current) {
+        clearTimeout(connectionTimeoutRef.current);
+        connectionTimeoutRef.current = null;
+        console.log('⏰ Connection watchdog cleared (cleanup)');
+      }
+      
+      // Reset connection flag
+      connectionInProgressRef.current = false;
+      
       // Synchronous cleanup using stored socket ref
       if (socketRef.current) {
         console.log('🧹 Cleaning up Socket.IO event listeners for session:', sessionIdForVoiceRef.current);
@@ -2055,22 +2119,36 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
         if (socketHandlersRef.current.aiTeamComplete) {
           socketRef.current.off('ai-team:complete', socketHandlersRef.current.aiTeamComplete);
         }
+        if (socketHandlersRef.current.agentSpawn) {
+          socketRef.current.off('agent:spawn', socketHandlersRef.current.agentSpawn);
+        }
+        if (socketHandlersRef.current.agentTerminalCreated) {
+          socketRef.current.off('agent:terminal:created', socketHandlersRef.current.agentTerminalCreated);
+        }
+        // 🔧 FIX #1 (Nov 19, 2025): Removed cleanup for duplicate listener
+        // The agentTerminalData listener is now only managed in the useEffect hook
         
-        // 🔒 CRITICAL FIX (Oct 28, 2025): Disconnect socket on unmount
-        // This triggers server cleanup timer, which makes next connection a "reconnection"
-        // Server will then send terminal:history to restore the conversation
-        console.log('🔌 Disconnecting socket to trigger server cleanup timer');
-        socketRef.current.disconnect();
+        // 🔒 CRITICAL FIX (Nov 18, 2025): Don't disconnect shared socket in component cleanup
+        // PROBLEM: Multiple Terminal components (main + agents) share ONE socket via getSocket()
+        // When any Terminal unmounts, calling disconnect() kills the socket for ALL terminals
+        // This caused immediate disconnection when agent tabs spawned (React remounting components)
+        // 
+        // SOLUTION: Only remove THIS component's event listeners, keep socket alive
+        // Socket lifecycle is managed at app level, not component level
+        // Each Terminal safely shares the socket - only their listeners are isolated
+        //
+        // Previous code (REMOVED):
+        // console.log('🔌 Disconnecting socket to trigger server cleanup timer');
+        // socketRef.current.disconnect(); // ← This killed shared socket for all terminals!
         
-        // 🔧 CRITICAL FIX (Oct 29, 2025): Reset isConnected state on cleanup
-        // Without this, remounted component thinks it's still connected and won't call connectToBackend
-        // This fixes Timeline → Back to IDE reconnection failure
-        setIsConnected(false);
-        
-        console.log('✅ Cleanup complete - removed listeners, disconnected socket, reset connection state');
+        console.log('✅ Cleanup complete - removed listeners only (socket stays alive for other terminals)');
       }
     };
-  }, [sessionId, terminalReady, isConnected, sandboxMode, agentMode]);
+  }, [sessionId, terminalReady, sandboxMode]); // 🔧 FIX (Nov 17, 2025): Removed agentMode and isConnected from deps
+  // agentMode: Changing agent mode shouldn't disconnect socket - agent terminals just connect to existing socket
+  // isConnected: When isConnected changes from false → true, useEffect was re-running and cleanup would disconnect!
+  // 🔧 FIX (Nov 18, 2025): Removed socket.disconnect() call entirely - see comment at line 2079
+  // Multiple Terminal instances share one socket - disconnecting in cleanup killed it for everyone
 
   // Handle terminal dimension recalculation when sandbox mode changes
   useEffect(() => {
@@ -2091,6 +2169,216 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
       return () => clearTimeout(timer);
     }
   }, [sandboxMode]);
+
+  // 🔧 FIX (Nov 18, 2025): agent:spawn listener is managed in connectToBackend()
+  // Previously had duplicate listener here causing race conditions - REMOVED
+  // The handler in connectToBackend (line ~4027) properly registers and cleans up
+
+  // 🔧 FIX (Nov 17, 2025): Setup agent terminal connection when agentMode/agentSession changes
+  // This connects to the agent's output stream when you click on an agent tab
+  const connectedAgentIdRef = useRef<string | null>(null);
+  
+  useEffect(() => {
+    console.log('═══════════════════════════════════════════════════════');
+    console.log('🔍 [AGENT-DIAGNOSTIC] useEffect triggered');
+    console.log('  agentMode:', agentMode);
+    console.log('  agentSession:', agentSession);
+    console.log('  agentSession.id:', agentSession?.id);
+    console.log('  agentSession.role:', agentSession?.role);
+    console.log('  agentSession.teamId:', agentSession?.teamId);
+    console.log('  terminalReady:', terminalReady);
+    console.log('  hasXterm:', !!xtermRef.current);
+    console.log('═══════════════════════════════════════════════════════');
+    
+    if (!agentMode || !agentSession) {
+      console.log('❌ [AGENT-DIAGNOSTIC] BLOCKED: Missing agentMode or agentSession');
+      console.log('   agentMode:', agentMode, '(needs to be true)');
+      console.log('   agentSession:', agentSession, '(needs to be defined)');
+      return;
+    }
+    
+    // 🔧 FIX: Don't check xtermRef.current here - it might not be ready yet
+    // Instead, we'll wait for it inside setupAgentTerminalConnection
+
+    // Prevent reconnecting to the same agent session
+    if (connectedAgentIdRef.current === agentSession.id) {
+      console.log('⏭️  Already connected to agent:', agentSession.id);
+      return;
+    }
+
+    let handleAgentTerminalData: ((data: { agentId: string; data: string }) => void) | null = null;
+    let agentSocketRef: any = null; // Store socket for cleanup
+    let retryTimeoutRef: NodeJS.Timeout | null = null; // 🔧 FIX (Nov 21): Store retry timeout for cleanup
+
+    // 🔧 FIX #4 (Nov 19, 2025): Diagnostic function for debugging agent terminal issues
+    const logFullDiagnostic = async () => {
+      const socket = await getSocket();
+      console.log('🔍 ===== AGENT TERMINAL DIAGNOSTIC =====');
+      console.log('Agent Mode:', agentMode);
+      console.log('Agent Session:', agentSession);
+      console.log('Socket Connected:', socket?.connected);
+      console.log('Socket ID:', socket?.id);
+      console.log('Xterm Initialized:', xtermRef.current !== null);
+      console.log('Connected Agent ID Ref:', connectedAgentIdRef.current);
+      console.log('Timestamp:', new Date().toISOString());
+      console.log('====================================');
+    };
+
+    const setupAgentTerminalConnection = async () => {
+      console.log('🚀 [AGENT-SETUP] setupAgentTerminalConnection STARTED');
+      const socket = await getSocket();
+      console.log('🔌 [AGENT-SETUP] Got socket, connected:', socket?.connected);
+      agentSocketRef = socket; // 🔧 Store for synchronous cleanup
+      
+      // 🔧 FIX: Wait for xterm to be ready (poll with timeout)
+      let term = xtermRef.current;
+      let attempts = 0;
+      console.log('⏳ [AGENT-SETUP] Waiting for xterm, initial value:', !!term);
+      while (!term && attempts < 50) { // Wait up to 5 seconds (50 * 100ms)
+        await new Promise(resolve => setTimeout(resolve, 100));
+        term = xtermRef.current;
+        attempts++;
+        if (attempts % 10 === 0) {
+          console.log(`⏳ [AGENT-SETUP] Still waiting for xterm... attempt ${attempts}/50`);
+        }
+      }
+      
+      if (!term) {
+        console.error('❌ [AGENT-SETUP] Xterm never became ready after 5 seconds!');
+        console.error('❌ [AGENT-SETUP] This is likely because the terminal div is hidden (display:none)');
+        return;
+      }
+      
+      console.log('✅ [AGENT-SETUP] Xterm is ready after', attempts * 100, 'ms');
+      
+      // 🔧 UX (Nov 21, 2025): Show immediate feedback while agent initializes
+      term.writeln('\x1b[36m⏳ Agent initializing... Please wait.\x1b[0m');
+      term.writeln('\x1b[90m   Claude CLI is starting up. Output will appear shortly.\x1b[0m');
+      term.writeln('');
+
+      console.log('🤖 Setting up agent terminal connection for:', agentSession.id);
+      
+      // Run diagnostic after 2 seconds to check final state
+      setTimeout(logFullDiagnostic, 2000);
+
+      // Listen for agent terminal data
+      handleAgentTerminalData = ({ agentId, data }: { agentId: string; data: string }) => {
+        // 🔧 DIAGNOSTIC LOGGING (Nov 19, 2025)
+        console.log('📡 [AGENT-DATA] Received broadcast:');
+        console.log('   agentId from broadcast:', agentId);
+        console.log('   agentSession.id expected:', agentSession.id);
+        console.log('   Match?:', agentId === agentSession.id);
+        console.log('   Data length:', data?.length || 0);
+        
+        if (agentId === agentSession.id && term) {
+          console.log('✅ [AGENT-DATA] Filter passed! Writing', data.length, 'chars to terminal');
+          term.write(data);
+        } else {
+          console.warn('❌ [AGENT-DATA] Filter BLOCKED - ID mismatch or no term');
+        }
+      };
+
+      // Remove any existing listener for this agent
+      socket.off('agent:terminal:data', handleAgentTerminalData);
+      // Register new listener
+      socket.on('agent:terminal:data', handleAgentTerminalData);
+      
+      // 🔧 DEBUG (Nov 21, 2025): Log ALL agent:terminal:data events to verify listener registration
+      const globalDebugHandler = (data: any) => {
+        console.log('🌐 [GLOBAL-DEBUG] agent:terminal:data event received:', {
+          agentIdReceived: data?.agentId,
+          dataLength: data?.data?.length || 0,
+          ourAgentId: agentSession.id,
+          match: data?.agentId === agentSession.id
+        });
+      };
+      socket.on('agent:terminal:data', globalDebugHandler);
+      console.log('✅ [AGENT-SETUP] Listener registered for agent:terminal:data, agentSession.id:', agentSession.id);
+
+      // 🔧 FIX (Nov 21, 2025): Add retry logic for agent terminal connection
+      // The backend pending queue may not flush properly if sockets disconnect/reconnect
+      // This retry ensures we connect once the session actually exists
+      let retryCount = 0;
+      const maxRetries = 15;
+      const retryDelay = 1000;
+      let isConnectedToAgent = false;
+
+      const attemptConnect = () => {
+        if (isConnectedToAgent) return; // Already connected
+        
+        if (!socket.connected) {
+          console.log('⏳ Socket not connected, waiting...');
+          socket.once('connect', attemptConnect);
+          return;
+        }
+
+        console.log('═══════════════════════════════════════════════════════');
+        console.log(`📤 [AGENT-CONNECT] Emitting agent:terminal:connect`);
+        console.log('   Agent ID:', agentSession.id);
+        console.log('   Attempt:', `${retryCount + 1}/${maxRetries}`);
+        console.log('   Socket connected:', socket.connected);
+        console.log('   Socket ID:', socket.id);
+        console.log('═══════════════════════════════════════════════════════');
+        socket.emit('agent:terminal:connect', { agentId: agentSession.id });
+      };
+
+      // Handle successful connection
+      const onConnected = ({ agentId }: { agentId: string }) => {
+        if (agentId === agentSession.id) {
+          isConnectedToAgent = true;
+          if (retryTimeoutRef) clearTimeout(retryTimeoutRef);
+          console.log('✅ Successfully connected to agent terminal:', agentId);
+        }
+      };
+
+      // Handle connection error/pending - retry until session exists
+      const onError = ({ agentId, message }: { agentId: string; message: string }) => {
+        if (agentId === agentSession.id && !isConnectedToAgent) {
+          retryCount++;
+          if (retryCount < maxRetries) {
+            console.log(`⏳ Agent terminal session not ready, retrying in ${retryDelay}ms... (${retryCount}/${maxRetries}) - ${message}`);
+            retryTimeoutRef = setTimeout(attemptConnect, retryDelay);
+          } else {
+            console.error('❌ Failed to connect to agent terminal after max retries:', agentId);
+          }
+        }
+      };
+
+      // Register response handlers
+      socket.on('agent:terminal:connected', onConnected);
+      socket.on('agent:terminal:error', onError);
+      socket.on('agent:terminal:pending', onError); // Treat pending like error for retry
+
+      attemptConnect();
+      connectedAgentIdRef.current = agentSession.id;
+      console.log('🔄 Agent terminal connection initiated for:', agentSession.id);
+    };
+
+    setupAgentTerminalConnection();
+
+    // 🔧 FIX (Nov 19, 2025): Synchronous cleanup to prevent listener leaks
+    // CRITICAL: Async cleanup with .then() doesn't complete before re-mount in React Strict Mode
+    // Using agentSocketRef instead of getSocket().then() ensures cleanup runs synchronously
+    return () => {
+      // 🔧 FIX (Nov 21, 2025): Clear retry timeout to prevent orphaned retries
+      if (retryTimeoutRef) {
+        clearTimeout(retryTimeoutRef);
+        retryTimeoutRef = null;
+      }
+      if (agentSocketRef) {
+        if (handleAgentTerminalData) {
+          agentSocketRef.off('agent:terminal:data', handleAgentTerminalData);
+        }
+        // 🔧 FIX (Nov 21, 2025): Clean up retry handlers to prevent memory leaks
+        agentSocketRef.off('agent:terminal:connected');
+        agentSocketRef.off('agent:terminal:error');
+        agentSocketRef.off('agent:terminal:pending');
+        console.log('🧹 [SYNC-CLEANUP] Removed agent terminal listeners for:', agentSession.id);
+        connectedAgentIdRef.current = null;
+        agentSocketRef = null;
+      }
+    };
+  }, [agentMode, agentSession?.id, terminalReady]); // 🔧 FIX: Use terminalReady state instead of xtermRef.current (refs don't trigger re-renders)
 
   // Store isConnected in a ref for use in callbacks
   const isConnectedRef = useRef(false);
@@ -2774,6 +3062,18 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
     // Mark connection as in progress
     connectionInProgressRef.current = true;
 
+    // ⏰ WATCHDOG: Auto-reset connection flag after 10 seconds if connection doesn't complete
+    // This prevents permanent blocking when connection fails silently
+    connectionTimeoutRef.current = setTimeout(() => {
+      if (connectionInProgressRef.current) {
+        console.error('🚨 Connection timeout after 10s - resetting flag');
+        console.error('   This usually means connection failed silently or got stuck');
+        connectionInProgressRef.current = false;
+        setIsConnected(false);
+      }
+    }, 10000);
+    console.log('⏰ Connection watchdog started (10s timeout)');
+
     // Get Socket.IO instance to connect to Express backend
     // REMOVED: // REMOVED: console.log('🔧 Getting Socket.IO instance...');
     const socket = await getSocket();
@@ -3070,13 +3370,25 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
         if (shouldRestoreHistory) {
           // 🔒 CRITICAL FIX (Oct 28, 2025): Save to localStorage so it persists on navigation!
           // This was the missing piece - we receive history from server but never save it to localStorage
+          // 
+          // 🛟 RECOVERY FIX (Nov 19, 2025): Don't overwrite checkpoint recovery data!
+          // If recovery data exists in localStorage (454KB+), preserve it instead of overwriting with 10-char prompt
           if (typeof window !== 'undefined') {
             const storageKey = sandboxMode && sandboxSession 
               ? `sandboxTerminalHistory_${sandboxSession.id}`
               : 'mainTerminalHistory';
             
-            console.log(`💾 Saving terminal history to localStorage (${storageKey}): ${cleanedHistory.length} chars`);
-            localStorage.setItem(storageKey, cleanedHistory);
+            const existingHistory = localStorage.getItem(storageKey);
+            const existingLength = existingHistory?.length || 0;
+            
+            // Only save if we have MORE data than what's already stored
+            // This prevents overwriting large checkpoint data (454KB) with small prompts (10 chars)
+            if (cleanedHistory.length > existingLength) {
+              console.log(`💾 Saving terminal history to localStorage (${storageKey}): ${cleanedHistory.length} chars`);
+              localStorage.setItem(storageKey, cleanedHistory);
+            } else {
+              console.log(`🛟 Preserving existing localStorage data (${existingLength} chars) - not overwriting with smaller data (${cleanedHistory.length} chars)`);
+            }
           }
           
           // Clear terminal before writing history
@@ -3653,6 +3965,13 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
         }
         connectionInProgressRef.current = false; // Connection complete
         
+        // ⏰ WATCHDOG: Clear timeout on successful connection
+        if (connectionTimeoutRef.current) {
+          clearTimeout(connectionTimeoutRef.current);
+          connectionTimeoutRef.current = null;
+          console.log('⏰ Connection watchdog cleared (success)');
+        }
+        
         // Focus terminal after successful connection
         focusOnConnect();
         
@@ -3674,12 +3993,30 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
     socketHandlersRef.current.terminalCreatedConfirmation = terminalCreatedConfirmationHandler;
     socket.on('terminal:created', terminalCreatedConfirmationHandler);
 
+    // 🔧 FIX #2B (Nov 19, 2025): REMOVED DUPLICATE LISTENER (SOURCE #2)
+    // This was creating ANOTHER agent:terminal:data listener in connectToBackend
+    // The agent:terminal:data listener is properly handled in the useEffect hook at lines 2145-2220
+    // Having TWO listeners causes MaxListenersExceededWarning and socket churn
+    // Handle agent terminal data (for live agent mode, not sandbox) - REMOVED
+    if (agentMode && agentSession && term) {
+      // 🔧 Agent terminal connection is now handled by dedicated useEffect (lines 2145-2220)
+      // This prevents duplicate event listeners and socket instability
+      // The useEffect handles both the listener setup AND the agent:terminal:connect emission
+    }
+
     // Handle errors
     const terminalErrorHandler = ({ message }: { message: string }) => {
       // logger?.error('Terminal error:', message);
       term.writeln(`\r\n❌ Terminal error: ${message}`);
       setIsConnected(false);
       connectionInProgressRef.current = false; // Connection failed
+      
+      // ⏰ WATCHDOG: Clear timeout on connection error
+      if (connectionTimeoutRef.current) {
+        clearTimeout(connectionTimeoutRef.current);
+        connectionTimeoutRef.current = null;
+        console.log('⏰ Connection watchdog cleared (error)');
+      }
     };
     if (socketHandlersRef.current.terminalExit) {
       socket.off('terminal:error', socketHandlersRef.current.terminalExit);
@@ -3782,6 +4119,151 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
     }
     socketHandlersRef.current.aiTeamComplete = aiTeamCompleteHandler;
     socket.on('ai-team:complete', aiTeamCompleteHandler);
+
+    // Handle team:summary event - display formatted summary in main terminal
+    const teamSummaryHandler = (data: any) => {
+      if (term && data) {
+        const { teamId, agents, totalDurationSec, totalTokensFormatted, totalFiles, workTreeRoot } = data;
+        
+        term.writeln('');
+        term.writeln('\x1b[36m╔═══════════════════════════════════════════════════════════════╗\x1b[0m');
+        term.writeln('\x1b[36m║\x1b[0m  \x1b[32m🎉 AI TEAM COMPLETED\x1b[0m                                        \x1b[36m║\x1b[0m');
+        term.writeln('\x1b[36m╠═══════════════════════════════════════════════════════════════╣\x1b[0m');
+        
+        // Display each agent's summary
+        for (const agent of agents || []) {
+          const statusIcon = agent.isError ? '❌' : '📦';
+          term.writeln('\x1b[36m║\x1b[0m                                                               \x1b[36m║\x1b[0m');
+          term.writeln(`\x1b[36m║\x1b[0m  ${statusIcon} \x1b[33m${agent.name}\x1b[0m (${agent.durationSec}s, ${agent.tokensFormatted} tokens)`.padEnd(66) + '\x1b[36m║\x1b[0m');
+          
+          // Display bullet points
+          for (const bullet of agent.bullets || []) {
+            term.writeln(`\x1b[36m║\x1b[0m     ✓ ${bullet.substring(0, 55)}`.padEnd(66) + '\x1b[36m║\x1b[0m');
+          }
+          
+          // Display file tree
+          if (agent.files && agent.files.length > 0) {
+            const firstFile = agent.files[0];
+            const projectDir = firstFile.split('/')[0] || 'project';
+            term.writeln(`\x1b[36m║\x1b[0m     \x1b[90m${projectDir}/\x1b[0m`.padEnd(66) + '\x1b[36m║\x1b[0m');
+            for (const file of agent.files.slice(0, 5)) {
+              term.writeln(`\x1b[36m║\x1b[0m     \x1b[90m├── ${file.substring(0, 50)}\x1b[0m`.padEnd(66) + '\x1b[36m║\x1b[0m');
+            }
+            if (agent.moreFiles > 0) {
+              term.writeln(`\x1b[36m║\x1b[0m     \x1b[90m└── ...and ${agent.moreFiles} more files\x1b[0m`.padEnd(66) + '\x1b[36m║\x1b[0m');
+            }
+          }
+        }
+        
+        term.writeln('\x1b[36m║\x1b[0m                                                               \x1b[36m║\x1b[0m');
+        term.writeln('\x1b[36m╠═══════════════════════════════════════════════════════════════╣\x1b[0m');
+        term.writeln(`\x1b[36m║\x1b[0m  ⏱️  Total: ${totalDurationSec}s | 🔤 ${totalTokensFormatted} tokens | 📁 ${totalFiles} files`.padEnd(66) + '\x1b[36m║\x1b[0m');
+        term.writeln('\x1b[36m║\x1b[0m                                                               \x1b[36m║\x1b[0m');
+        term.writeln(`\x1b[36m║\x1b[0m  📁 Files at: \x1b[33m.claude-parallel-dev/${teamId?.split('-').slice(0,2).join('-')}-.../\x1b[0m`.padEnd(75) + '\x1b[36m║\x1b[0m');
+        term.writeln('\x1b[36m╚═══════════════════════════════════════════════════════════════╝\x1b[0m');
+        term.writeln('');
+        term.write('$ ');
+      }
+    };
+    if ((socketHandlersRef.current as any).teamSummary) {
+      socket.off('team:summary', (socketHandlersRef.current as any).teamSummary);
+    }
+    (socketHandlersRef.current as any).teamSummary = teamSummaryHandler;
+    socket.on('team:summary', teamSummaryHandler);
+
+    // Handle agent:spawn event from WebSocket (real-time team spawning)
+    const agentSpawnHandler = async (data: any) => {
+      console.log('🚀 [WEBSOCKET] Received agent:spawn event:', {
+        teamId: data.teamId,
+        agentCount: data.agents?.length,
+        agents: data.agents?.map((a: any) => ({ id: a.id, role: a.role, name: a.name }))
+      });
+      
+      if (term) {
+        term.writeln(`\r\n✅ AI Team spawned with ${data.agents?.length || 0} agents`);
+        term.writeln(`📊 Team ID: ${data.teamId}`);
+      }
+      
+      // Create agent terminal tabs if agents are provided
+      if (data.agents && data.agents.length > 0) {
+        if (term) {
+          term.writeln(`📋 Creating ${data.agents.length} agent terminal tabs...`);
+        }
+        console.log(`📋 [WEBSOCKET] Processing ${data.agents.length} agents for tab creation`);
+        
+        // Get socket for agent terminal communication
+        const socket = await getSocket();
+        
+        data.agents.forEach((agent: any, index: number) => {
+          // Add delay to ensure events are processed in order
+          setTimeout(() => {
+            const agentSessionData = {
+              id: agent.id || `agent_${data.teamId}_${index}_${Date.now()}`,
+              name: agent.name || `${agent.role} Agent`,
+              role: agent.role?.toLowerCase() || 'fullstack',
+              teamId: data.teamId,
+              workTreePath: agent.workTreePath,
+              terminalHistory: `Agent initialized: ${agent.name}\nRole: ${agent.role}\nTeam: ${data.teamId}\n`,
+              status: agent.status || 'initializing',
+              progress: 0,
+              currentTask: agent.currentTask || 'Setting up workspace...',
+              processId: agent.processId
+            };
+            
+            console.log(`📋 [WEBSOCKET] Creating agent tab for: ${agentSessionData.name} (${agentSessionData.id})`);
+            
+            // Dispatch event to create agent tab
+            console.log(`🎯 [WEBSOCKET] Dispatching terminal:createAgentSession event`);
+            window.dispatchEvent(new CustomEvent('terminal:createAgentSession', {
+              detail: agentSessionData
+            }));
+            console.log(`✅ [WEBSOCKET] Event dispatched for ${agentSessionData.name}`);
+            
+            // Create agent terminal session via WebSocket
+            if (socket?.connected) {
+              socket.emit('agent:terminal:create', {
+                agentId: agentSessionData.id,
+                teamId: agentSessionData.teamId,
+                role: agentSessionData.role
+              });
+              console.log(`🤖 [WEBSOCKET] Created terminal session for ${agentSessionData.name}`);
+            } else {
+              console.warn(`⚠️ [WEBSOCKET] Socket not connected, cannot create terminal session`);
+            }
+          }, 0); // 🔧 FIX #2 (Nov 19, 2025): Removed staggered delays - spawn all agents simultaneously
+        });
+        
+        if (term) {
+          term.writeln(`✅ Created ${data.agents.length} agent terminal tabs`);
+          term.write('$ ');
+        }
+      }
+    };
+    if (socketHandlersRef.current.agentSpawn) {
+      socket.off('agent:spawn', socketHandlersRef.current.agentSpawn);
+    }
+    socketHandlersRef.current.agentSpawn = agentSpawnHandler;
+    socket.on('agent:spawn', agentSpawnHandler);
+    console.log('✅ agent:spawn listener registered in connectToBackend');
+
+    // Listen for agent terminal creation confirmation and connect socket
+    const agentTerminalCreatedHandler = ({ agentId, teamId, role }: { agentId: string; teamId: string; role: string }) => {
+      console.log(`🔌 Agent terminal created: ${agentId}, connecting socket...`);
+      socket.emit('agent:terminal:connect', { agentId });
+      console.log(`✅ Sent agent:terminal:connect for ${agentId}`);
+    };
+    if (socketHandlersRef.current.agentTerminalCreated) {
+      socket.off('agent:terminal:created', socketHandlersRef.current.agentTerminalCreated);
+    }
+    socketHandlersRef.current.agentTerminalCreated = agentTerminalCreatedHandler;
+    socket.on('agent:terminal:created', agentTerminalCreatedHandler);
+    console.log('✅ agent:terminal:created listener registered in connectToBackend');
+
+    // 🔧 FIX #1 (Nov 19, 2025): REMOVED DUPLICATE LISTENER
+    // This was creating MaxListenersExceededWarning and causing socket churn
+    // The agent:terminal:data listener is properly handled in the useEffect hook
+    // at lines 2145-2191, which is the correct place for agent terminal data listeners
+    // Removing this duplicate fixes the re-render cascade that was disconnecting sockets
 
     // Set up terminal input handling - send to backend
     // Skip in sandbox mode - it's read-only (but allow agent terminals)
@@ -4050,21 +4532,125 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
   const handleSpawnAgents = async () => {
     if (!xtermRef.current) return;
     
-    xtermRef.current.writeln('\r\n⚡ Spawning AI Team...');
-    xtermRef.current.writeln('🤖 Connecting to AI Team Management System...');
+    // Validate session ID exists
+    if (!sessionId) {
+      xtermRef.current.writeln('\r\n❌ Error: No active terminal session. Please create a terminal session first.');
+      return;
+    }
+    
+    // DON'T show "Spawning" message yet - quality gate needs to check first
+    xtermRef.current.writeln('\r\n🔍 Analyzing conversation history...');
     
     try {
-      // Call the new Claude Bridge API endpoint on the unified server
-      // Use the current origin to handle dynamic ports
+      // Step 1: Extract requirement from terminal conversation history
       const unifiedServerUrl = typeof window !== 'undefined' 
         ? window.location.origin 
         : (process.env.NEXT_PUBLIC_UNIFIED_SERVER_URL || 'http://localhost:3001');
+      
+      const extractionResponse = await fetch(`${unifiedServerUrl}/api/terminal/extract-requirement`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId })
+      });
+      
+      const extractionData = await extractionResponse.json();
+      
+      // DEBUG: Log extraction response
+      console.log('[AI Team] Extraction response:', {
+        success: extractionData.success,
+        hasRequirement: !!extractionData.requirement,
+        fallbackNeeded: extractionData.fallbackNeeded,
+        hasQuality: !!extractionData.quality,
+        qualityScore: extractionData.quality?.score,
+        qualityPassed: extractionData.quality?.passed
+      });
+      
+      let requirement: string;
+      
+      if (extractionData.success && extractionData.requirement && !extractionData.fallbackNeeded) {
+        // Successfully extracted requirement from conversation history
+        requirement = extractionData.requirement;
+        const confidenceEmoji = extractionData.confidence === 'high' ? '✅' : '⚠️';
+        xtermRef.current.writeln(`${confidenceEmoji} Extracted requirement (${extractionData.confidence} confidence):`);
+        xtermRef.current.writeln(`   "${requirement.substring(0, 100)}${requirement.length > 100 ? '...' : ''}"`);
+        
+        // MANDATORY quality check - no quality data = automatic block
+        if (!extractionData.quality) {
+          console.log('[AI Team] BLOCKING: No quality data present');
+          xtermRef.current.writeln('\r\n⚠️ Unable to assess context quality.');
+          xtermRef.current.writeln('💡 This is unusual - quality assessment should always be present.');
+          xtermRef.current.writeln('💡 Please have a conversation with Claude about your project first,');
+          xtermRef.current.writeln('   then try the AI Team button again.');
+          xtermRef.current.write('\r\n$ ');
+          return;
+        }
+        
+        console.log('[AI Team] Quality data exists, checking threshold...');
+        
+        // Quality data exists - check if it passes threshold
+        const quality = extractionData.quality;
+        xtermRef.current.writeln(`\r\n📊 Context Quality: ${quality.score}% (${quality.aspectsDetected}/${quality.totalAspects} aspects detected)`);
+        
+        if (!quality.passed) {
+          // Quality gate blocks spawning
+          console.log('[AI Team] BLOCKING: Quality score too low', {
+            score: quality.score,
+            threshold: quality.threshold,
+            suggestions: quality.suggestions,
+            hasXtermRef: !!xtermRef.current
+          });
+          
+          // Check if xterm is available
+          if (!xtermRef.current) {
+            console.error('[AI Team] ERROR: xtermRef.current is null - cannot write to terminal!');
+            return;
+          }
+          
+          try {
+            xtermRef.current.writeln('\r\n⚠️ Not enough context for quality AI Team work.');
+            xtermRef.current.writeln(`💡 Need ${quality.threshold}% minimum (currently ${quality.score}%)`);
+            xtermRef.current.writeln('\r\n💡 Please discuss these details with Claude first:');
+            
+            quality.suggestions.forEach((suggestion: string, i: number) => {
+              xtermRef.current?.writeln(`   ${i + 1}. ${suggestion}`);
+            });
+            
+            xtermRef.current.writeln('\r\n💬 Example: Type "claude" then have a conversation about your project');
+            xtermRef.current.writeln('   Then click AI Team when you have more details.');
+            xtermRef.current.write('\r\n$ ');
+            
+            console.log('[AI Team] Successfully wrote blocking message to terminal');
+          } catch (err) {
+            console.error('[AI Team] ERROR writing to terminal:', err);
+          }
+          return;
+        }
+        
+        // Quality passed - show green light and NOW show spawning message
+        console.log('[AI Team] Quality check PASSED - proceeding to spawn');
+        xtermRef.current.writeln('✅ Context quality is sufficient for AI Team spawning.');
+        xtermRef.current.writeln('\r\n⚡ Spawning AI Team...');
+      } else {
+        // 🔧 FIX: No conversation history - use default requirement instead of blocking
+        console.log('[AI Team] No conversation history - using default requirement');
+        requirement = 'Build a web application with modern best practices';
+        xtermRef.current.writeln('📝 No prior conversation detected - using default requirement:');
+        xtermRef.current.writeln(`   "${requirement}"`);
+        xtermRef.current.writeln('\r\n💡 TIP: For better results, describe your project in the terminal first');
+        xtermRef.current.writeln('   Example: Type "claude I want to build a fitness app landing page"');
+        xtermRef.current.writeln('\r\n⚡ Spawning AI Team with default requirement...');
+      }
+      
+      // Step 2: Spawn agents with extracted requirement
+      console.log('[AI Team] Quality gate passed - starting agent spawn');
+      xtermRef.current.writeln('🤖 Connecting to AI Team Management System...');
+      
       const response = await fetch(`${unifiedServerUrl}/api/claude-bridge/spawn`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          requirement: 'Build a complete project based on user requirements',
-          sessionId: sessionId || `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+          requirement,
+          sessionId
         })
       });
       
@@ -4088,10 +4674,17 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
         xtermRef.current.writeln('\r\nAgents are now working in parallel. Updates will appear here.');
         xtermRef.current.write('\r\n$ ');
         
-        // Create agent terminal tabs (Phase 1) if feature flag enabled
-        const agentTabsEnabled = process.env.NEXT_PUBLIC_ENABLE_AGENT_TABS === 'true';
-        if (agentTabsEnabled && data.agents && data.agents.length > 0) {
+        // Create agent terminal tabs (Phase 1) - Always enabled now
+        // FIX: Removed env var check to avoid race condition
+        console.log('🚀 Agent spawn event received:', {
+          teamId: data.teamId,
+          agentCount: data.agents?.length,
+          agents: data.agents?.map((a: any) => ({ id: a.id, role: a.role, name: a.name }))
+        });
+        
+        if (data.agents && data.agents.length > 0) {
           xtermRef.current.writeln('\r\n📋 Creating agent terminal tabs...');
+          console.log(`📋 Processing ${data.agents.length} agents for tab creation`);
           
           // Get socket for WebSocket communication
           const socket = await getSocket();
@@ -4114,11 +4707,14 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
               };
               
               console.log(`📋 Creating agent tab for: ${agentSessionData.name} (${agentSessionData.id})`);
+              console.log(`📋 Agent data:`, agentSessionData);
               
               // Dispatch event to create agent tab
+              console.log(`🎯 Dispatching terminal:createAgentSession event for ${agentSessionData.id}`);
               window.dispatchEvent(new CustomEvent('terminal:createAgentSession', {
                 detail: agentSessionData
               }));
+              console.log(`✅ Event dispatched successfully`);
               
               // Phase 2: Also create agent terminal session via WebSocket
               if (socket?.connected) {
@@ -4128,6 +4724,8 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
                   role: agentSessionData.role
                 });
                 console.log(`🤖 Created agent terminal session for ${agentSessionData.name}`);
+              } else {
+                console.warn(`⚠️ Socket not connected, cannot create terminal session for ${agentSessionData.name}`);
               }
             }, index * 100); // 100ms delay between each agent
           });

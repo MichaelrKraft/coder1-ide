@@ -1,0 +1,8 @@
+#!/usr/bin/env node
+
+/**
+ * Coder1 Bridge CLI Executable
+ * Entry point for the global coder1-bridge command
+ */
+
+require('../src/index.js');

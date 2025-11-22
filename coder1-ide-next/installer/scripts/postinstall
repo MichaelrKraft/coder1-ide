@@ -1,0 +1,42 @@
+#!/bin/bash
+
+# Coder1 Bridge - Post-Installation Script
+# Runs after .pkg installation completes
+
+set -e
+
+# Colors
+GREEN='\033[0;32m'
+BLUE='\033[0;34m'
+CYAN='\033[0;36m'
+NC='\033[0m'
+
+echo ""
+echo -e "${CYAN}╔══════════════════════════════════════════════════════╗${NC}"
+echo -e "${CYAN}║                                                      ║${NC}"
+echo -e "${CYAN}║           🎉 Coder1 Bridge Installed!                ║${NC}"
+echo -e "${CYAN}║                                                      ║${NC}"
+echo -e "${CYAN}╚══════════════════════════════════════════════════════╝${NC}"
+echo ""
+
+# Make sure binary is executable
+chmod +x /usr/local/bin/coder1-bridge
+
+# Verify installation
+if command -v coder1-bridge &> /dev/null; then
+    VERSION=$(coder1-bridge --version 2>/dev/null || echo "unknown")
+    echo -e "${GREEN}✅ Bridge installed successfully (v$VERSION)${NC}"
+else
+    echo "⚠️ Installation may need manual verification"
+fi
+
+echo ""
+echo -e "${BLUE}🚀 Next Steps:${NC}"
+echo -e "  1. Open Terminal (if not already open)"
+echo -e "  2. Run: ${GREEN}coder1-bridge start${NC}"
+echo -e "  3. Visit: ${CYAN}https://coder1.ai/ide${NC} to get your pairing code"
+echo ""
+echo -e "${BLUE}💡 Tip:${NC} The bridge is now in your PATH and ready to use!"
+echo ""
+
+exit 0

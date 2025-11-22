@@ -782,14 +782,7 @@ export async function POST(
           pattern: normalizedPattern,
           includeEvidence: mode === 'professional',
           targetQuality: mode === 'professional' ? 8.5 : 7.0,
-          sectionsToGenerate: [
-            'executive_summary',
-            'problem_statement',
-            'solution_overview',
-            'target_audience',
-            'core_features',
-            'technical_architecture'
-          ]
+          maxEnhancementLoops: mode === 'professional' ? 2 : 1
         };
         
         const result = await orchestrator.generatePRD(answerMap, options);

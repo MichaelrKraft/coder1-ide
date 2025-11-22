@@ -1,0 +1,6 @@
+This is a test file for the Coder1 IDE file upload feature.
+
+It contains multiple lines to verify proper file content handling.
+
+Created: October 28, 2025
+Purpose: Testing browser-based file upload for vibe coders

@@ -3649,7 +3649,7 @@ Recommendation: Create v2 endpoint`
 
             document.getElementById('modalCategory').textContent = template.category;
             document.getElementById('modalName').textContent = template.name;
-            document.getElementById('installCommand').textContent = template.command;
+            document.getElementById('installCommand').textContent = template.command || template.installCommand || '';
 
             // Load features
             if (template.features) {

@@ -610,13 +610,15 @@ export default function DiscoverPanel() {
           <div className="mb-4 p-3 border-2 border-coder1-purple rounded-lg bg-coder1-purple/5">
             <h4 className="text-xs font-semibold text-coder1-purple uppercase tracking-wider mb-3">✨ AI TOOLS</h4>
             <div className="grid grid-cols-2 gap-2 text-sm text-text-secondary">
+              {/* AI Hooks - Deferred for future implementation (Nov 2025)
               <div className="flex items-center gap-2">
                 <span>•</span>
                 <a href="http://localhost:3001/hooks-v3.html" target="_blank" className="text-coder1-cyan hover:text-coder1-cyan-secondary transition-colors">AI Hooks</a>
               </div>
+              */}
               <div className="flex items-center gap-2">
                 <span>•</span>
-                <a href="http://localhost:3001/templates-hub.html" target="_blank" className="text-coder1-cyan hover:text-coder1-cyan-secondary transition-colors">AI Templates</a>
+                <a href="http://localhost:3001/templates-hub.html" target="_blank" className="text-coder1-cyan hover:text-coder1-cyan-secondary transition-colors">AI Plugins</a>
               </div>
               <div className="flex items-center gap-2">
                 <span>•</span>
@@ -626,10 +628,9 @@ export default function DiscoverPanel() {
                 <span>•</span>
                 <a href="http://localhost:3001/smart-prd-generator-standalone.html" target="_blank" className="text-coder1-cyan hover:text-coder1-cyan-secondary transition-colors">AI PRD</a>
               </div>
-              <div className="flex items-center gap-2">
-                <span>•</span>
-                <a href="/analytics" target="_blank" className="text-coder1-cyan hover:text-coder1-cyan-secondary transition-colors">Analytics</a>
-              </div>
+            </div>
+            <div className="mt-3 pt-3 border-t border-coder1-purple/30 text-xs text-text-muted">
+              💡 Tip: Analytics moved to AI Dashboard (Menu → AI dashboard)
             </div>
           </div>
 

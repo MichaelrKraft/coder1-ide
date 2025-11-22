@@ -68,25 +68,38 @@ export async function POST(
     // Fallback to JSON file if database didn't have it
     if (!checkpointData) {
       const dataDir = path.join(process.cwd(), 'data');
-      const checkpointsDir = path.join(dataDir, 'sessions', sessionId, 'checkpoints');
-      const checkpointFile = path.join(checkpointsDir, `${checkpointId}.json`);
+      const checkpointsBaseDir = path.join(dataDir, 'sessions', sessionId, 'checkpoints');
       
-      console.log('📂 Looking for checkpoint at:', checkpointFile);
+      // 🔧 FIX: Check type-specific subdirectories (manual/ and auto/)
+      const possibleLocations = [
+        path.join(checkpointsBaseDir, 'manual', `${checkpointId}.json`),
+        path.join(checkpointsBaseDir, 'auto', `${checkpointId}.json`),
+        path.join(checkpointsBaseDir, `${checkpointId}.json`) // Legacy root location
+      ];
       
-      try {
-        checkpointData = JSON.parse(await fs.readFile(checkpointFile, 'utf8'));
-        source = 'json_file';
-        console.log('✅ Checkpoint loaded from JSON file (fallback)');
-      } catch (error) {
-        console.error('❌ Checkpoint not found in database or JSON file:', checkpointFile, error);
+      let checkpointFile = '';
+      for (const location of possibleLocations) {
+        try {
+          console.log('📂 Checking location:', location);
+          checkpointData = JSON.parse(await fs.readFile(location, 'utf8'));
+          checkpointFile = location;
+          source = 'json_file';
+          console.log('✅ Checkpoint found at:', location);
+          break;
+        } catch (error) {
+          // Try next location
+        }
+      }
+      
+      if (!checkpointData) {
+        console.error('❌ Checkpoint not found in any location:', possibleLocations);
         return NextResponse.json(
           { 
             error: 'Checkpoint not found',
             details: {
-              checkpointFile,
+              searchedLocations: possibleLocations,
               sessionId,
-              checkpointId,
-              message: error instanceof Error ? error.message : 'Unknown error'
+              checkpointId
             }
           },
           { status: 404 }

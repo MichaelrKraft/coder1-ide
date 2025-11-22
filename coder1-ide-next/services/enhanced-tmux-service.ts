@@ -15,8 +15,8 @@ import * as fs from 'fs/promises';
 import * as path from 'path';
 import * as os from 'os';
 import { v4 as uuidv4 } from 'uuid';
-import { getSandboxMetricsService } from './sandbox-metrics-service';
-import { getSandboxPreviewService } from './sandbox-preview-service';
+import { getSandboxMetricsService } from './sandbox-metrics-service.ts';
+import { getSandboxPreviewService } from './sandbox-preview-service.ts';
 // Simple logger fallback for production
 const logger = {
   warn: console.warn,

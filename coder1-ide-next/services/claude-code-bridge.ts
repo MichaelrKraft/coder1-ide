@@ -14,10 +14,17 @@ import { exec, spawn, ChildProcess } from 'child_process';
 import { promises as fs } from 'fs';
 import * as path from 'path';
 import * as crypto from 'crypto';
-import { logger } from '../lib/logger';
-import { getEnhancedTmuxService } from './enhanced-tmux-service';
+import { logger } from '../lib/logger.ts';
+import { getEnhancedTmuxService } from './enhanced-tmux-service.ts';
 
 // Types for Claude Code Bridge System
+export interface AgentFinalResult {
+  result: string;
+  durationMs: number;
+  totalTokens: number;
+  isError: boolean;
+}
+
 export interface ClaudeCodeAgent {
   id: string;
   name: string;
@@ -32,6 +39,7 @@ export interface ClaudeCodeAgent {
   setupCommand: string; // Claude Code command for user to run
   completedTasks: string[];
   files: number;
+  finalResult?: AgentFinalResult; // Store completed result for team summary
 }
 
 export interface ParallelTeam {
@@ -179,11 +187,12 @@ export class ClaudeCodeBridgeService extends EventEmitter {
     }
     
     try {
-      // Set OAuth token in environment if available
+      // Verify OAuth token is available (no need to set it - already in process.env)
       const oauthToken = process.env.CLAUDE_CODE_OAUTH_TOKEN;
       if (oauthToken && !oauthToken.startsWith('#')) {
-        process.env.ANTHROPIC_API_KEY = oauthToken;
-        logger.debug('📝 OAuth token set for Claude CLI');
+        logger.debug('📝 OAuth token available for Claude CLI');
+      } else {
+        logger.warn('⚠️ CLAUDE_CODE_OAUTH_TOKEN not found - AI Team will not work');
       }
       
       // Check if Claude CLI is available with timeout
@@ -236,12 +245,32 @@ export class ClaudeCodeBridgeService extends EventEmitter {
         const { getCoordinatorService } = await import('./agent-coordinator');
         const coordinator = getCoordinatorService();
         
-        // Connect terminal manager to coordinator for output routing
-        const { getAgentTerminalManager } = await import('./agent-terminal-manager');
-        const terminalManager = getAgentTerminalManager();
-        if (terminalManager && coordinator.setAgentTerminalManager) {
-          coordinator.setAgentTerminalManager(terminalManager);
-          logger.info('🔌 Connected terminal manager to coordinator');
+        // Terminal manager is already set by server.js - no need to create a new instance
+        // If we call getAgentTerminalManager() here, it creates a NEW instance with a different Map
+        // which causes sockets to connect to one instance but broadcasts to happen from another
+        logger.info('✅ Using AgentTerminalManager already connected to coordinator by server.js');
+        
+        // Check if requirement is vague - if so, gather detailed requirements
+        let detailedRequirements;
+        const isVague = requirement.length < 100 || 
+                       !requirement.includes('API') && 
+                       !requirement.includes('database') && 
+                       !requirement.includes('frontend') &&
+                       !requirement.includes('backend');
+        
+        if (isVague) {
+          logger.info('📋 Requirement appears vague - gathering detailed requirements...');
+          try {
+            const { getRequirementsGatherer } = await import('./requirements-gatherer');
+            const gatherer = getRequirementsGatherer();
+            
+            // Use simplified mode for now (no conversation)
+            detailedRequirements = await gatherer.getSimplifiedRequirements(requirement);
+            logger.info(`✅ Requirements gathered: ${detailedRequirements.features.length} features identified`);
+          } catch (reqError) {
+            logger.warn(`⚠️ Requirements gathering failed, using basic requirement: ${reqError}`);
+            detailedRequirements = null;
+          }
         }
         
         // Use coordinator workflow system instead of manual work trees
@@ -249,49 +278,72 @@ export class ClaudeCodeBridgeService extends EventEmitter {
         
         logger.info(`🎭 Selected workflow: ${analysis.workflowId} (confidence: ${analysis.confidence})`);
         
-        // Add timeout wrapper to prevent API hanging during initialization
-        const workflowResult = await Promise.race([
-          coordinator.executeWorkflow(
-            analysis.workflowId,
-            requirement,
-            {
-              sessionId: sessionId || `puppet-${Date.now()}`,
-              timeout: 600000 // 10 minutes
-            }
-          ),
-          new Promise((_, reject) => {
-            setTimeout(() => {
-              reject(new Error('CLI Puppeteer initialization timeout (15s) - falling back to manual mode'));
-            }, 15000); // 15 second timeout for initialization
-          })
-        ]) as any;
+        // Create session ID for this workflow
+        const workflowSessionId = sessionId || `puppet-${Date.now()}`;
         
-        // Transform workflow result to ParallelTeam format for API compatibility
-        const compatibleTeam: ParallelTeam = {
-          teamId: workflowResult.sessionId,
-          sessionId: workflowResult.sessionId,
+        // Get initial agent configuration from workflow template
+        // CRITICAL FIX: Agent IDs must match what coordinator creates: ${sessionId}-${roleId}
+        // Coordinator will use workflowSessionId as sessionId, so agent IDs will be: workflowSessionId-role
+        const initialAgents = analysis.template.agents.map((role: string, index: number) => ({
+          id: `${workflowSessionId}-${role.toLowerCase().replace(/\s+/g, '-')}`,
+          name: role,
+          role: role,
+          workTreePath: '',
+          branchName: `puppet-${role}`,
+          sandboxId: `workflow-${Date.now()}-${index}`,
+          status: 'spawning',
+          currentTask: 'Initializing workspace...',
+          progress: 0,
+          lastActivity: new Date(),
+          setupCommand: `# Automated via CLI Puppeteer - no manual setup needed`,
+          completedTasks: [],
+          files: 0
+        }));
+        
+        // Emit team:spawned event IMMEDIATELY so UI can create tabs
+        logger.info(`🚀 [BRIDGE] Emitting team:spawned event IMMEDIATELY with ${initialAgents.length} agents`);
+        
+        const eventData = {
+          teamId: workflowSessionId,
+          requirement,
+          status: 'spawning',
+          agents: initialAgents
+        };
+        
+        this.emit('team:spawned', eventData);
+        logger.info(`✅ [BRIDGE] team:spawned event emitted for ${workflowSessionId}`);
+        logger.info(`📊 [BRIDGE] team:spawned has ${this.listenerCount('team:spawned')} listeners`);
+        
+        // NOTE: Direct Socket.IO emission removed - handled by event bridge in server.js
+        // The server.js Direct Event Bridge listens to 'team:spawned' and forwards to Socket.IO
+        
+        // Create initial team object to return immediately (non-blocking)
+        // The workflow will execute in background and stream progress via WebSocket
+        const initialTeam: ParallelTeam = {
+          teamId: workflowSessionId,
+          sessionId: workflowSessionId,
           projectRequirement: requirement,
-          agents: workflowResult.agents.map((agent: any, index: number) => ({
-            id: agent.agentId,
-            name: agent.role,
+          agents: initialAgents.map((agent: any) => ({
+            id: agent.id,
+            name: agent.name,
             role: agent.role,
-            workTreePath: agent.workTreePath || '',
-            branchName: `puppet-${agent.role}`,
-            sandboxId: agent.agentId,
-            status: agent.status || 'working',
-            currentTask: agent.currentTask || `Working as ${agent.role}`,
-            progress: agent.progress || 0,
+            workTreePath: agent.workTreePath,
+            branchName: agent.branchName,
+            sandboxId: agent.sandboxId,
+            status: 'spawning',
+            currentTask: 'Initializing workspace...',
+            progress: 0,
             lastActivity: new Date(),
-            setupCommand: `# Automated via CLI Puppeteer - no manual setup needed`,
-            completedTasks: agent.completedTasks || [],
+            setupCommand: agent.setupCommand,
+            completedTasks: [],
             files: 0
           })),
           baseBranch: 'main',
-          workTreeRoot: '/tmp/puppet-work-trees', // Not used in puppet mode
-          status: 'completed',
+          workTreeRoot: '/tmp/puppet-work-trees',
+          status: 'spawning',
           createdAt: new Date(),
           startedAt: new Date(),
-          completedAt: new Date(),
+          completedAt: null,
           workflow: analysis.workflowId,
           context: {
             puppeteerMode: true,
@@ -301,21 +353,67 @@ export class ClaudeCodeBridgeService extends EventEmitter {
           },
           files: 0,
           progress: {
-            overall: 100,
-            planning: 100,
-            development: 100,
-            testing: 100,
-            deployment: 100
+            overall: 0,
+            planning: 0,
+            development: 0,
+            testing: 0,
+            deployment: 0
           }
         };
         
-        logger.info(`🎭 Puppeteer team spawned successfully: ${compatibleTeam.teamId}`);
+        // Execute workflow in background (non-blocking)
+        // This prevents HTTP timeout while allowing long-running workflows
+        logger.info(`🔍 [BRIDGE] Starting workflow execution in BACKGROUND`);
+        logger.info(`   workflowId: ${analysis.workflowId}`);
+        logger.info(`   sessionId: ${workflowSessionId}`);
+        logger.info(`   requirement: ${requirement.substring(0, 50)}...`);
+        logger.info(`   timeout: 600000ms (10 minutes)`);
         
-        return compatibleTeam;
+        // Execute asynchronously - don't await, don't block API response
+        coordinator.executeWorkflow(
+          analysis.workflowId,
+          requirement,
+          {
+            sessionId: workflowSessionId,
+            timeout: 600000, // 10 minutes
+            detailedRequirements // Pass gathered requirements to workflow
+          }
+        ).then((workflowResult) => {
+          // Workflow completed successfully
+          logger.info(`✅ [BRIDGE] Workflow completed successfully in background`);
+          logger.info(`   sessionId: ${workflowResult.sessionId}`);
+          logger.info(`   status: ${workflowResult.status}`);
+          logger.info(`   agents: ${workflowResult.agents.length}`);
+          
+          // Emit completion event for UI
+          this.emit('team:completed', {
+            teamId: workflowResult.sessionId,
+            status: 'completed',
+            agents: workflowResult.agents,
+            timestamp: new Date()
+          });
+        }).catch((workflowError: any) => {
+          // Workflow failed
+          logger.error(`❌ [BRIDGE] Background workflow FAILED:`, workflowError);
+          logger.error(`   Error message: ${workflowError.message}`);
+          logger.error(`   Error stack: ${workflowError.stack}`);
+          
+          // Emit error event for UI
+          this.emit('team:error', {
+            teamId: workflowSessionId,
+            error: workflowError.message,
+            timestamp: new Date()
+          });
+        });
+        
+        // Return immediately with initial team data
+        // UI will receive progress updates via WebSocket as workflow executes
+        logger.info(`🚀 [BRIDGE] Returning initial team immediately (non-blocking)`);
+        return initialTeam;
         
       } catch (puppeteerError) {
         logger.error('🎭 Puppeteer delegation failed, falling back to original bridge mode:', puppeteerError);
-        // Fall through to original implementation
+        // Fall through to original implementation below
       }
     }
 
@@ -490,8 +588,10 @@ export class ClaudeCodeBridgeService extends EventEmitter {
       const readableId = `${teamId}-${agent.role}`;
       logger.info(`🔑 Agent session mapping: ${readableId} -> ${agentSessionId}`);
 
-      // If using tmux sandbox, run Claude in the sandbox
-      if (this.tmuxService && agent.sandboxId && !agent.sandboxId.startsWith('fallback') && !agent.sandboxId.startsWith('direct')) {
+      // DISABLED: Sandbox execution has wrong cwd (uses empty temp dir instead of workTreePath)
+      // TODO: Fix executeInSandbox to accept custom cwd parameter
+      // Using direct execution fallback which correctly uses agent.workTreePath
+      if (false && this.tmuxService && agent.sandboxId && !agent.sandboxId.startsWith('fallback') && !agent.sandboxId.startsWith('direct')) {
         try {
           // Build the Claude command with OAuth token
           const claudeCommand = `CLAUDE_CODE_OAUTH_TOKEN="${process.env.CLAUDE_CODE_OAUTH_TOKEN}" claude --print --output-format json --session-id "${agentSessionId}" --dangerously-skip-permissions "${prompt}"`;
@@ -580,14 +680,14 @@ export class ClaudeCodeBridgeService extends EventEmitter {
       agent.currentTask = `Starting ${agent.role} work...`;
       agent.progress = 5;
 
-      // Add timeout protection (90 seconds for initial response - Claude needs time)
+      // Add timeout protection (180 seconds for initial response - Claude needs time to auth and process)
       const processTimeout = setTimeout(() => {
-        logger.error(`⏱️ Agent ${agent.id} timed out after 90 seconds`);
+        logger.error(`⏱️ Agent ${agent.id} timed out after 180 seconds`);
         claudeProcess.kill('SIGTERM');
         agent.status = 'error';
         agent.currentTask = 'Timed out - authentication may have failed';
         this.claudeProcesses.delete(agent.id);
-      }, 90000); // 90 second timeout for Claude to authenticate and start
+      }, 180000); // 180 second timeout for Claude to authenticate and start
 
       // Handle process output
       claudeProcess.stdout?.on('data', (data) => {
@@ -626,22 +726,48 @@ export class ClaudeCodeBridgeService extends EventEmitter {
    * Handle output from Claude Code process
    */
   private handleAgentOutput(agent: ClaudeCodeAgent, output: string): void {
-    // Phase 2: Send raw output to agent terminal manager
-    try {
-      const { getAgentTerminalManager } = require('./agent-terminal-manager');
-      const terminalManager = getAgentTerminalManager();
-      
-      // Send raw terminal output
-      terminalManager.appendToAgentTerminal(agent.id, output);
-    } catch (error) {
-      // Terminal manager not available - continue without it
-      logger.debug('Agent terminal manager not available:', error);
-    }
+    console.log(`🔵 [BRIDGE] handleAgentOutput called for ${agent.id}, output length: ${output.length}`);
+    let formattedOutput = output;
     
+    // Try to parse Claude CLI JSON result and format it nicely
     try {
-      // Try to parse as JSON first (structured output)
       const parsed = JSON.parse(output);
-      if (parsed.type === 'progress') {
+      if (parsed.type === 'result' && parsed.result) {
+        // Calculate total tokens from usage
+        const usage = parsed.usage || {};
+        const totalTokens = (usage.cache_read_input_tokens || 0) + 
+                          (usage.cache_creation_input_tokens || 0) + 
+                          (usage.output_tokens || 0);
+        
+        // Store final result for team summary
+        agent.finalResult = {
+          result: parsed.result,
+          durationMs: parsed.duration_ms || 0,
+          totalTokens,
+          isError: parsed.is_error || false
+        };
+        
+        // This is a Claude CLI completion result - format it nicely
+        const statusEmoji = parsed.is_error ? '❌' : '✅';
+        const durationSec = Math.round((parsed.duration_ms || 0) / 1000);
+        const tokenStr = totalTokens > 1000 ? `${Math.round(totalTokens / 1000)}K` : totalTokens.toString();
+        
+        formattedOutput = `\r\n` +
+          `${statusEmoji} Task Completed\r\n` +
+          `────────────────────────────────────────────────────────────\r\n` +
+          `${parsed.result}\r\n` +
+          `────────────────────────────────────────────────────────────\r\n` +
+          `⏱️  Duration: ${durationSec}s | 🔤 Tokens: ${tokenStr}\r\n` +
+          `📁 Files at: ${agent.workTreePath}\r\n`;
+        
+        // Update agent state
+        agent.currentTask = parsed.is_error ? 'Completed with errors' : 'Work completed';
+        agent.progress = 100;
+        agent.status = parsed.is_error ? 'error' : 'completed';
+        
+        // Check if team is complete and generate summary
+        this.checkTeamCompletionAndSummarize(agent);
+      } else if (parsed.type === 'progress') {
         agent.currentTask = parsed.message || agent.currentTask;
         agent.progress = Math.min(agent.progress + 10, 85);
       }
@@ -649,9 +775,28 @@ export class ClaudeCodeBridgeService extends EventEmitter {
       // Not JSON - treat as text output
       const lines = output.split('\n').filter(line => line.trim());
       if (lines.length > 0) {
-        agent.currentTask = lines[lines.length - 1].substring(0, 100); // Last meaningful line
+        agent.currentTask = lines[lines.length - 1].substring(0, 100);
         agent.progress = Math.min(agent.progress + 2, 85);
       }
+    }
+
+    // Send formatted output to agent terminal manager
+    try {
+      const { getCoordinatorService } = require('./agent-coordinator');
+      const coordinator = getCoordinatorService();
+      const terminalManager = coordinator.agentTerminalManager;
+      
+      console.log(`🔵 [BRIDGE] Got terminalManager: ${!!terminalManager}, coordinator exists: ${!!coordinator}`);
+      
+      if (terminalManager) {
+        console.log(`🔵 [BRIDGE] Calling appendToAgentTerminal for ${agent.id}`);
+        terminalManager.appendToAgentTerminal(agent.id, formattedOutput);
+      } else {
+        console.log(`❌ [BRIDGE] No terminalManager available!`);
+      }
+    } catch (error) {
+      console.error(`❌ [BRIDGE] Error sending to terminal manager:`, error);
+      logger.debug('Agent terminal manager not available:', error);
     }
 
     agent.lastActivity = new Date();
@@ -689,6 +834,151 @@ export class ClaudeCodeBridgeService extends EventEmitter {
       logger.warn(`⚠️ Agent ${agent.id} process exited with code: ${exitCode}`);
       agent.currentTask = `Process completed with exit code: ${exitCode}`;
     }
+  }
+
+  /**
+   * Check if all agents in a team are complete and generate summary
+   */
+  private async checkTeamCompletionAndSummarize(completedAgent: ClaudeCodeAgent): Promise<void> {
+    // Find the team this agent belongs to
+    const teamId = completedAgent.id.split('-').slice(0, -1).join('-');
+    const team = this.teams.get(teamId);
+    
+    if (!team) {
+      logger.debug(`No team found for agent ${completedAgent.id}`);
+      return;
+    }
+    
+    // Check if all agents have completed (have finalResult)
+    const allComplete = team.agents.every(agent => 
+      agent.finalResult || agent.status === 'error' || agent.status === 'completed'
+    );
+    
+    if (!allComplete) {
+      const completed = team.agents.filter(a => a.finalResult).length;
+      logger.debug(`Team ${teamId}: ${completed}/${team.agents.length} agents complete`);
+      return;
+    }
+    
+    logger.info(`🎉 All agents complete for team ${teamId} - generating summary`);
+    
+    // Generate and emit team summary
+    const summary = await this.generateTeamSummary(team);
+    
+    // Emit to WebSocket via global bridge
+    if ((global as any).emitBridgeEvent) {
+      (global as any).emitBridgeEvent('team:summary', summary);
+    }
+    
+    this.emit('team:summary', summary);
+  }
+
+  /**
+   * Generate team completion summary with file listings
+   */
+  private async generateTeamSummary(team: ParallelTeam): Promise<any> {
+    const agentSummaries = [];
+    let totalDuration = 0;
+    let totalTokens = 0;
+    let totalFiles = 0;
+    
+    for (const agent of team.agents) {
+      if (!agent.finalResult) continue;
+      
+      totalDuration += agent.finalResult.durationMs;
+      totalTokens += agent.finalResult.totalTokens;
+      
+      // Get file listing from work tree
+      const files = await this.listWorkTreeFiles(agent.workTreePath);
+      totalFiles += files.length;
+      
+      // Parse result text into bullet points
+      const bullets = this.parseResultIntoBullets(agent.finalResult.result);
+      
+      agentSummaries.push({
+        name: agent.name,
+        role: agent.role,
+        durationSec: Math.round(agent.finalResult.durationMs / 1000),
+        tokens: agent.finalResult.totalTokens,
+        tokensFormatted: agent.finalResult.totalTokens > 1000 
+          ? `${Math.round(agent.finalResult.totalTokens / 1000)}K` 
+          : agent.finalResult.totalTokens.toString(),
+        isError: agent.finalResult.isError,
+        bullets,
+        files: files.slice(0, 6), // Max 6 files
+        moreFiles: Math.max(0, files.length - 6),
+        workTreePath: agent.workTreePath
+      });
+    }
+    
+    return {
+      teamId: team.teamId,
+      workTreeRoot: team.workTreeRoot,
+      totalDurationSec: Math.round(totalDuration / 1000),
+      totalTokens,
+      totalTokensFormatted: totalTokens > 1000 
+        ? `${Math.round(totalTokens / 1000)}K` 
+        : totalTokens.toString(),
+      totalFiles,
+      agents: agentSummaries,
+      timestamp: new Date().toISOString()
+    };
+  }
+
+  /**
+   * List files created in a work tree (excluding .git and node_modules)
+   */
+  private async listWorkTreeFiles(workTreePath: string): Promise<string[]> {
+    const files: string[] = [];
+    
+    try {
+      const walkDir = async (dir: string, prefix: string = ''): Promise<void> => {
+        const entries = await fs.readdir(dir, { withFileTypes: true });
+        
+        for (const entry of entries) {
+          // Skip common directories
+          if (['.git', 'node_modules', '.next', 'dist', 'build', '.cache'].includes(entry.name)) {
+            continue;
+          }
+          
+          const relativePath = prefix ? `${prefix}/${entry.name}` : entry.name;
+          
+          if (entry.isDirectory()) {
+            await walkDir(path.join(dir, entry.name), relativePath);
+          } else {
+            files.push(relativePath);
+          }
+        }
+      };
+      
+      await walkDir(workTreePath);
+    } catch (error) {
+      logger.debug(`Could not list files in ${workTreePath}:`, error);
+    }
+    
+    return files;
+  }
+
+  /**
+   * Parse Claude's result text into concise bullet points
+   */
+  private parseResultIntoBullets(resultText: string): string[] {
+    const bullets: string[] = [];
+    
+    // Split by common delimiters and extract key phrases
+    const lines = resultText.split(/[\n\-•]/).filter(line => line.trim().length > 5);
+    
+    for (const line of lines.slice(0, 4)) { // Max 4 bullets
+      const cleaned = line.trim()
+        .replace(/^[*\-•]\s*/, '')
+        .replace(/^\d+\.\s*/, '');
+      
+      if (cleaned.length > 10 && cleaned.length < 80) {
+        bullets.push(cleaned);
+      }
+    }
+    
+    return bullets;
   }
 
   /**
@@ -813,10 +1103,15 @@ Focus on:
 
       // Phase 2: Create agent terminal session
       try {
-        const { getAgentTerminalManager } = require('./agent-terminal-manager');
-        const terminalManager = getAgentTerminalManager();
-        terminalManager.createAgentTerminalSession(agentId, teamId, role);
-        logger.info(`🤖 Created agent terminal session for ${agent.name}`);
+        // Get the coordinator which has the correct terminal manager reference
+        const { getCoordinatorService } = require('./agent-coordinator');
+        const coordinator = getCoordinatorService();
+        const terminalManager = coordinator.agentTerminalManager;
+        
+        if (terminalManager) {
+          terminalManager.createAgentTerminalSession(agentId, teamId, role);
+          logger.info(`🤖 Created agent terminal session for ${agent.name}`);
+        }
       } catch (error) {
         logger.warn(`⚠️ Could not create agent terminal session: ${error}`);
       }

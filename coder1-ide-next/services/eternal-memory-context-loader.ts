@@ -15,6 +15,7 @@
 
 import fs from 'fs/promises';
 import path from 'path';
+import { getDatabase, closeDatabaseSafely } from '../lib/database';
 
 interface SessionSummaryMetadata {
   file: string;
@@ -55,7 +56,7 @@ export class EternalMemoryContextLoader {
   }
 
   /**
-   * Load context from the most recent session summary
+   * Load context from the most recent session (checkpoints or summaries)
    */
   public async loadLastSessionContext(): Promise<EternalMemoryContext> {
     try {
@@ -68,6 +69,47 @@ export class EternalMemoryContextLoader {
         };
       }
 
+      // Get strategy from env (default: checkpoint)
+      const strategy = process.env.ETERNAL_MEMORY_SOURCE || 'checkpoint';
+      console.log(`[Eternal Memory] Using strategy: ${strategy}`);
+
+      switch (strategy) {
+        case 'checkpoint':
+          return await this.loadFromCheckpoints();
+          
+        case 'summary':
+          return await this.loadFromSessionSummaries();
+          
+        case 'hybrid':
+          // Try checkpoints first
+          const checkpointContext = await this.loadFromCheckpoints();
+          if (checkpointContext.hasContext) {
+            return checkpointContext;
+          }
+          // Fallback to summaries
+          console.log('[Eternal Memory] No recent checkpoint, trying session summaries...');
+          return await this.loadFromSessionSummaries();
+          
+        default:
+          console.warn(`[Eternal Memory] Unknown ETERNAL_MEMORY_SOURCE: ${strategy}, using checkpoint`);
+          return await this.loadFromCheckpoints();
+      }
+
+    } catch (error) {
+      console.error('[Eternal Memory] Failed to load context:', error);
+      return {
+        hasContext: false,
+        contextPrompt: '',
+        error: error instanceof Error ? error.message : 'Unknown error'
+      };
+    }
+  }
+
+  /**
+   * Load context from session summaries (original behavior)
+   */
+  private async loadFromSessionSummaries(): Promise<EternalMemoryContext> {
+    try {
       // Get most recent summary file
       const lastSummary = await this.getMostRecentSummary();
       
@@ -105,13 +147,260 @@ export class EternalMemoryContextLoader {
       };
 
     } catch (error) {
-      console.error('[Eternal Memory] Failed to load context:', error);
+      console.error('[Eternal Memory] Failed to load from session summaries:', error);
       return {
         hasContext: false,
         contextPrompt: '',
         error: error instanceof Error ? error.message : 'Unknown error'
       };
     }
+  }
+
+  /**
+   * Load context from checkpoints (NEW: automatic, always current)
+   */
+  private async loadFromCheckpoints(): Promise<EternalMemoryContext> {
+    try {
+      // Step 1: Try database first (FAST - uses index)
+      let checkpoint = await this.getMostRecentCheckpointFromDB();
+      
+      if (!checkpoint) {
+        // Step 2: Fallback to file system scan
+        console.log('[Eternal Memory] Database query returned no checkpoint, trying file system...');
+        checkpoint = await this.getMostRecentCheckpointFromFiles();
+        
+        if (!checkpoint) {
+          console.log('[Eternal Memory] No checkpoints found in database or file system');
+          return {
+            hasContext: false,
+            contextPrompt: '',
+            error: 'No checkpoints found'
+          };
+        }
+      }
+      
+      // Format checkpoint data as context
+      return this.formatCheckpointContext(checkpoint);
+      
+    } catch (error) {
+      console.error('[Eternal Memory] Checkpoint load failed:', error);
+      return {
+        hasContext: false,
+        contextPrompt: '',
+        error: error instanceof Error ? error.message : 'Checkpoint load error'
+      };
+    }
+  }
+
+  /**
+   * Query database for most recent checkpoint (FAST)
+   */
+  private async getMostRecentCheckpointFromDB(): Promise<any | null> {
+    try {
+      const db = await getDatabase();
+      
+      // Query most recent checkpoint across ALL sessions
+      const checkpoint = db.prepare(`
+        SELECT id, session_id, name, timestamp, 
+               terminal_history, files_snapshot, metadata
+        FROM checkpoints
+        ORDER BY timestamp DESC
+        LIMIT 1
+      `).get();
+      
+      closeDatabaseSafely(db);
+      
+      if (!checkpoint) {
+        return null;
+      }
+      
+      // Parse JSON fields
+      return {
+        ...checkpoint,
+        files_snapshot: JSON.parse(checkpoint.files_snapshot || '{}'),
+        metadata: JSON.parse(checkpoint.metadata || '{}')
+      };
+      
+    } catch (error) {
+      console.warn('[Eternal Memory] Database query failed:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Scan file system for most recent checkpoint (FALLBACK)
+   */
+  private async getMostRecentCheckpointFromFiles(): Promise<any | null> {
+    try {
+      const dataDir = path.join(process.cwd(), 'data', 'sessions');
+      
+      // Check if data directory exists
+      try {
+        await fs.access(dataDir);
+      } catch {
+        console.log('[Eternal Memory] No data/sessions directory found');
+        return null;
+      }
+      
+      // Get all session directories
+      const sessions = await fs.readdir(dataDir);
+      let mostRecentCheckpoint: any = null;
+      let mostRecentTimestamp = 0;
+      
+      // Search through all sessions for most recent checkpoint
+      for (const sessionDir of sessions) {
+        const checkpointsBaseDir = path.join(dataDir, sessionDir, 'checkpoints');
+        
+        try {
+          // Check manual/, auto/, and legacy root directories
+          const locationsToCheck = [
+            path.join(checkpointsBaseDir, 'manual'),
+            path.join(checkpointsBaseDir, 'auto'),
+            checkpointsBaseDir // Legacy root location
+          ];
+          
+          for (const location of locationsToCheck) {
+            try {
+              const checkpointFiles = await fs.readdir(location);
+              
+              for (const file of checkpointFiles.filter(f => f.endsWith('.json') && f.startsWith('checkpoint_'))) {
+                const checkpointPath = path.join(location, file);
+                const content = await fs.readFile(checkpointPath, 'utf-8');
+                const checkpoint = JSON.parse(content);
+                
+                const timestamp = new Date(checkpoint.timestamp).getTime();
+                if (timestamp > mostRecentTimestamp) {
+                  mostRecentTimestamp = timestamp;
+                  mostRecentCheckpoint = checkpoint;
+                }
+              }
+            } catch {
+              // Location doesn't exist, continue to next
+              continue;
+            }
+          }
+        } catch {
+          // Skip sessions without checkpoints directory
+          continue;
+        }
+      }
+      
+      return mostRecentCheckpoint;
+      
+    } catch (error) {
+      console.error('[Eternal Memory] File system scan failed:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Format checkpoint data as eternal memory context
+   */
+  private formatCheckpointContext(checkpoint: any): EternalMemoryContext {
+    const age = this.calculateCheckpointAge(checkpoint.timestamp);
+    
+    // Extract smart context (stay under 1500 chars)
+    // Support both DB format (snake_case) and file format (camelCase)
+    const filesSnapshot = checkpoint.data?.snapshot || checkpoint.files_snapshot || {};
+    const files = this.extractOpenFiles(filesSnapshot);
+    const terminalHistory = checkpoint.terminalHistory || checkpoint.data?.terminalHistory || checkpoint.terminal_history || '';
+    const commands = this.extractRecentCommands(terminalHistory);
+    const conversationHistory = checkpoint.data?.conversationHistory || checkpoint.metadata?.conversationHistory || [];
+    const conversations = this.extractConversations(conversationHistory);
+    
+    const contextPrompt = `Context from your last session (${age}): ${files.substring(0, 100)}. Recent commands: ${commands.substring(0, 100)}. ${conversations ? 'Recent conversations available.' : ''}`;
+    
+    console.log(`[Eternal Memory] Loaded checkpoint context (${age})`);
+    
+    return {
+      hasContext: true,
+      contextPrompt,
+      sessionInfo: {
+        lastSessionDate: checkpoint.timestamp,
+        filesWorked: files.split('\n').filter(f => f.trim()),
+        keyDecisions: [],
+        currentState: `Working in IDE - ${files.split('\n').length} files open`,
+        nextSteps: []
+      }
+    };
+  }
+
+  /**
+   * Extract open files from checkpoint snapshot
+   */
+  private extractOpenFiles(filesSnapshot: any): string {
+    if (!filesSnapshot) {
+      return '(No files open)';
+    }
+    
+    // Files can be at filesSnapshot.files (nested) or directly as filesSnapshot (object with file paths as keys)
+    const filesObj = filesSnapshot.files || filesSnapshot;
+    if (!filesObj || typeof filesObj !== 'object') {
+      return '(No files open)';
+    }
+    
+    const files = Object.keys(filesObj).slice(0, 5);
+    return files.map(f => `- ${f}`).join('\n') || '(No files)';
+  }
+
+  /**
+   * Extract recent terminal commands (smart parsing)
+   */
+  private extractRecentCommands(terminalHistory: string): string {
+    if (!terminalHistory) {
+      return '(No terminal commands)';
+    }
+    
+    // Regex to find shell prompts and commands
+    const commandRegex = /^[\$#>]\s+(.+)$/gm;
+    const commands: string[] = [];
+    let match;
+    
+    while ((match = commandRegex.exec(terminalHistory)) !== null) {
+      const cmd = match[1].trim();
+      // Skip duplicates, clear commands, and system noise
+      if (cmd && !commands.includes(cmd) && !cmd.startsWith('clear')) {
+        commands.push(cmd);
+      }
+    }
+    
+    // Take last 10 commands
+    const recentCommands = commands.slice(-10);
+    return recentCommands.map(cmd => `$ ${cmd}`).join('\n') || '(No commands found)';
+  }
+
+  /**
+   * Extract recent conversations from checkpoint
+   */
+  private extractConversations(conversationHistory: any[]): string {
+    if (!conversationHistory || conversationHistory.length === 0) {
+      return '';
+    }
+    
+    // Take last 3 conversations
+    const recent = conversationHistory.slice(-3);
+    return recent.map(conv => {
+      const input = conv.user_input || '';
+      const reply = (conv.claude_reply || '').substring(0, 100);
+      return `User: "${input}" → Claude: "${reply}..."`;
+    }).join('\n');
+  }
+
+  /**
+   * Calculate human-readable age from timestamp
+   */
+  private calculateCheckpointAge(timestamp: string): string {
+    const now = new Date();
+    const then = new Date(timestamp);
+    const diffMs = now.getTime() - then.getTime();
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    
+    if (diffHours < 1) return 'less than 1 hour ago';
+    if (diffHours < 24) return `${diffHours} hours ago`;
+    const diffDays = Math.floor(diffHours / 24);
+    if (diffDays === 1) return '1 day ago';
+    if (diffDays < 7) return `${diffDays} days ago`;
+    return `${Math.floor(diffDays / 7)} weeks ago`;
   }
 
   /**
