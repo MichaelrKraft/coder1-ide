@@ -247,7 +247,8 @@ export class PRDOrchestrator {
       if (result.success && result.data) {
         sections[sectionName] = result.data;
       } else {
-        console.warn(`⚠️ Section '${sectionName}' failed: ${result.error}`);
+        console.error(`❌ Section '${sectionName}' generation failed:`, result.error);
+        console.error(`   Full result:`, JSON.stringify(result, null, 2));
         sections[sectionName] = {
           content: `# ${this.formatSectionName(sectionName)}\n\n*Section generation failed*`,
           quality_score: 0,
