@@ -16,11 +16,14 @@ import {
   ToolExecutor,
   analyzeAnswers,
   gatherEvidence,
-  generateSection,
   scorePRDQuality,
   estimateToolCost,
   type ToolExecutionResult
 } from './tool-executor';
+import {
+  SimpleAPIExecutor,
+  convertToSectionContent
+} from './simple-api-executor';
 import type {
   AnalysisInsights,
   MarketEvidence,
@@ -58,9 +61,13 @@ export interface PRDGenerationResult {
 
 export class PRDOrchestrator {
   private executor: ToolExecutor;
+  private simpleExecutor: SimpleAPIExecutor;
+  private apiKey: string;
   
   constructor(apiKey: string) {
+    this.apiKey = apiKey;
     this.executor = new ToolExecutor(apiKey);
+    this.simpleExecutor = new SimpleAPIExecutor(apiKey);
   }
   
   /**
@@ -208,7 +215,7 @@ export class PRDOrchestrator {
   }
   
   /**
-   * Generate all PRD sections in parallel
+   * Generate all PRD sections in parallel using simple API calls
    */
   private async generateAllSections(
     insights: AnalysisInsights,
@@ -224,17 +231,15 @@ export class PRDOrchestrator {
       'implementation_roadmap'
     ];
     
-    const results = await this.executor.executeParallel(
+    // Use simple API executor instead of tool use
+    console.log(`📝 Generating ${sectionNames.length} sections using direct API calls...`);
+    
+    const results = await this.simpleExecutor.generateSectionsParallel(
       sectionNames.map(section => ({
-        tool: 'generate_prd_section',
-        params: {
-          section,
-          insights,
-          evidence,
-          pattern,
-          length: 'standard'
-        },
-        options: { thinkingMode: 'think hard' }
+        section,
+        insights,
+        pattern,
+        evidence
       }))
     );
     
@@ -244,19 +249,19 @@ export class PRDOrchestrator {
       const sectionName = sectionNames[i];
       const result = results[i];
       
-      if (result.success && result.data) {
-        sections[sectionName] = result.data;
+      // Convert simple API result to SectionContent format
+      sections[sectionName] = convertToSectionContent(result, sectionName);
+      
+      if (result.success) {
+        console.log(`✅ Section '${sectionName}': ${sections[sectionName].word_count} words`);
       } else {
-        console.error(`❌ Section '${sectionName}' generation failed:`, result.error);
-        console.error(`   Full result:`, JSON.stringify(result, null, 2));
-        sections[sectionName] = {
-          content: `# ${this.formatSectionName(sectionName)}\n\n*Section generation failed*`,
-          quality_score: 0,
-          suggestions: [],
-          word_count: 0
-        };
+        console.error(`❌ Section '${sectionName}' failed:`, result.error);
       }
     }
+    
+    // Update total token usage from simple executor
+    const simpleTokens = this.simpleExecutor.getTokenUsage();
+    console.log(`📊 Section generation tokens: ${simpleTokens.total} (${simpleTokens.input} in, ${simpleTokens.output} out)`);
     
     return sections;
   }
@@ -312,21 +317,18 @@ export class PRDOrchestrator {
     evidence: MarketEvidence | undefined,
     pattern: string
   ): Promise<string> {
-    // Re-generate weak sections with higher quality target
+    // Re-generate weak sections using simple API
     for (const weakSection of weakSections) {
       console.log(`  🔧 Enhancing section: ${weakSection}`);
       
-      const result = await generateSection(
-        this.executor,
+      const result = await this.simpleExecutor.generateSection(
         weakSection,
         insights,
         pattern,
         evidence
       );
       
-      if (result.success && result.data) {
-        sections[weakSection] = result.data;
-      }
+      sections[weakSection] = convertToSectionContent(result, weakSection);
     }
     
     // Recompile PRD with enhanced sections
