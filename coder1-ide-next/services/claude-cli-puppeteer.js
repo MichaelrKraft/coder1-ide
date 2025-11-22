@@ -583,6 +583,11 @@ Role: ${agentSession.role}
       
       console.log(`✅ Task sent to ${agentId} PTY character-by-character (avoids paste mode)`);
       
+      // 🔍 [DEBUG] Check if we reach the delayed Enter code block
+      console.log(`🔍 [DEBUG] About to check delayed Enter condition:`);
+      console.log(`   - enhancedPrompt.length = ${enhancedPrompt.length}`);
+      console.log(`   - Should trigger (>500)? ${enhancedPrompt.length > 500}`);
+      
       // 🔧 FIX (Nov 22, 2025): Claude CLI fancy rendering mode issue
       // Long prompts (>500 chars) trigger fancy box rendering which requires additional Enter
       // Wait 2 seconds for rendering to complete, then send another Enter to submit
