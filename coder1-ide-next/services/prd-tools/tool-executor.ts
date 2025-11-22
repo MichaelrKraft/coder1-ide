@@ -314,11 +314,11 @@ Execute the tool now.`;
     
     const rawResult = toolUseBlock.input;
     
-    // Log what we received from the tool
-    console.log(`✅ Tool '${toolName}' invoked successfully`);
-    console.log(`   Raw result keys:`, Object.keys(rawResult || {}).join(', '));
+    // Log what we received from the tool (using console.error so it shows in Render logs)
+    console.error(`✅ Tool '${toolName}' invoked successfully`);
+    console.error(`   Raw result keys:`, Object.keys(rawResult || {}).join(', '));
     if (rawResult && typeof rawResult === 'object') {
-      console.log(`   Result preview:`, JSON.stringify(rawResult).substring(0, 200) + '...');
+      console.error(`   Result preview:`, JSON.stringify(rawResult).substring(0, 200) + '...');
     }
     
     // Apply tool-specific post-processing
