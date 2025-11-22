@@ -258,28 +258,31 @@ const StatusBarActions = React.memo(function StatusBarActions({
   };
 
   const handleTimeline = async () => {
+    // 🔧 FIX (Nov 17, 2025): Use window.location.href as fallback
+    // After checkpoint restore, Next.js router may not work properly
+    // Use native navigation which always works
+    console.log('📊 [TIMELINE] Navigating to timeline with sessionId:', sessionId);
+    
     try {
-      const response = await fetch(`/api/timeline?sessionId=${sessionId}`);
-      const data = await response.json();
+      // Try router first (client-side navigation, faster)
+      router.push(`/timeline?sessionId=${sessionId}`);
       
-      if (response.ok) {
-        // 🔧 FIX (Oct 24, 2025): Use Next.js router for client-side navigation
-        // Preserves terminal session by using router.push instead of window.location.href
-        console.log('📊 [TIMELINE] Navigating to timeline with sessionId:', sessionId);
-        router.push(`/timeline?sessionId=${sessionId}`);
-        addToast({
-          message: '📊 Opening timeline view',
-          type: 'info'
-        });
-      } else {
-        throw new Error('Failed to fetch timeline');
-      }
-    } catch (error) {
-      // logger?.error('Failed to fetch timeline:', error);
+      // Fallback to native navigation if router doesn't work after 500ms
+      setTimeout(() => {
+        if (window.location.pathname === '/ide' || window.location.pathname === '/ide/') {
+          console.log('⚠️ [TIMELINE] Router failed, using window.location fallback');
+          window.location.href = `/timeline?sessionId=${sessionId}`;
+        }
+      }, 500);
+      
       addToast({
-        message: '⚠️ Failed to load timeline',
-        type: 'error'
+        message: '📊 Opening timeline view',
+        type: 'info'
       });
+    } catch (error) {
+      console.error('❌ [TIMELINE] Navigation error:', error);
+      // Direct fallback if router.push throws
+      window.location.href = `/timeline?sessionId=${sessionId}`;
     }
   };
 

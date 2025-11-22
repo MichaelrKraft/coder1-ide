@@ -26,6 +26,7 @@ export default function RootLayout({
         <ErrorBoundary>
           <SessionProvider>
             {children}
+            {/* 🛟 SESSION RESCUE: RecoveryModal moved to /app/ide/layout.tsx (IDE-only) */}
           </SessionProvider>
         </ErrorBoundary>
       </body>

@@ -48,9 +48,8 @@ export const MemoryIntelligenceDashboard: React.FC = () => {
     <div className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-500/20 rounded-lg p-4 mb-4">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
-          <Brain className="w-5 h-5 text-blue-400" />
           <h3 className="text-sm font-semibold text-blue-400">
-            CONTEXTUAL MEMORY INTELLIGENCE
+            CONTEXTUAL MEMORY
           </h3>
           <span className="px-2 py-0.5 bg-purple-500/20 rounded-full text-xs text-purple-400">
             PREMIUM ACTIVE

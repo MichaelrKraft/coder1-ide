@@ -1,11 +1,12 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Clock, Play, Pause, Save, FileText, DollarSign, RefreshCw, Loader2, CheckCircle, XCircle, X, ChevronDown, ChevronUp, Mic, GitBranch, Edit3, Settings } from 'lucide-react';
+import { Clock, Play, Pause, Save, FileText, DollarSign, RefreshCw, Loader2, CheckCircle, XCircle, X, ChevronDown, ChevronUp, Mic, GitBranch, Edit3, Settings, ArrowLeftRight } from 'lucide-react';
 import { useSession } from '@/contexts/SessionContext';
 import { sessionEnhancementService } from '@/services/session-enhancement-service';
 import { getSessionTypeById } from '@/lib/session-types';
 import { filterThinkingAnimations } from '@/lib/checkpoint-utils';
+import HandoffMode from './SessionsPanel/HandoffMode';
 
 interface Session {
   id: string;
@@ -40,6 +41,7 @@ export default function SessionsPanel({ isVisible = true }: SessionsPanelProps) 
   const [restorationStage, setRestorationStage] = useState<string | null>(null);
   const [lastAction, setLastAction] = useState<{type: 'success' | 'error' | 'info', message: string, details?: string} | null>(null);
   const [showAllSessions, setShowAllSessions] = useState(false);
+  const [viewMode, setViewMode] = useState<'standard' | 'handoff'>('standard');
   
   // Guard against concurrent checkpoint restorations
   const restorationInProgressRef = useRef<boolean>(false);
@@ -128,16 +130,24 @@ export default function SessionsPanel({ isVisible = true }: SessionsPanelProps) 
     loadOnce();
   }, []); // Empty dependency array - only run once on mount
   
+  // Handle handoff mode activation from warning banner
+  const handleOpenHandoffMode = useCallback(() => {
+    console.log('📋 Handoff mode activated via event');
+    setViewMode('handoff');
+  }, []);
+  
   // Update event listeners when callbacks change to avoid stale closures
   useEffect(() => {
     window.addEventListener('checkpointCreated', handleCheckpointCreated as EventListener);
     window.addEventListener('sessionChanged', handleSessionChanged as EventListener);
+    window.addEventListener('openHandoffMode', handleOpenHandoffMode as EventListener);
     
     return () => {
       window.removeEventListener('checkpointCreated', handleCheckpointCreated as EventListener);
       window.removeEventListener('sessionChanged', handleSessionChanged as EventListener);
+      window.removeEventListener('openHandoffMode', handleOpenHandoffMode as EventListener);
     };
-  }, [handleCheckpointCreated, handleSessionChanged]); // Re-register when callbacks change
+  }, [handleCheckpointCreated, handleSessionChanged, handleOpenHandoffMode]); // Re-register when callbacks change
   
   // Load checkpoints when current session changes
   useEffect(() => {
@@ -614,8 +624,41 @@ export default function SessionsPanel({ isVisible = true }: SessionsPanelProps) 
     );
   }
 
+  // Render handoff mode if selected
+  if (viewMode === 'handoff') {
+    return (
+      <div className="h-full flex flex-col">
+        {/* View Toggle Header */}
+        <div className="p-2 bg-bg-tertiary border-b border-border-default">
+          <button
+            onClick={() => setViewMode('standard')}
+            className="w-full flex items-center justify-center gap-2 px-3 py-1.5 bg-bg-secondary hover:bg-bg-primary text-text-secondary hover:text-text-primary rounded transition-colors text-xs"
+          >
+            <ArrowLeftRight className="w-3 h-3" />
+            Switch to Standard View
+          </button>
+        </div>
+        
+        {/* Handoff Mode Component */}
+        <HandoffMode onClose={() => setViewMode('standard')} />
+      </div>
+    );
+  }
+  
   return (
     <div className="h-full flex flex-col">
+      {/* View Toggle Button (Standard View) */}
+      <div className="p-2 bg-bg-tertiary border-b border-border-default">
+        <button
+          onClick={() => setViewMode('handoff')}
+          className="w-full flex items-center justify-center gap-2 px-3 py-1.5 bg-yellow-500/10 hover:bg-yellow-500/20 text-yellow-400 rounded transition-colors text-xs font-medium"
+          title="Create a handoff document to preserve session context"
+        >
+          <FileText className="w-3 h-3" />
+          Create Handoff Document
+        </button>
+      </div>
+      
       {/* Current Session */}
       {currentSession && (() => {
         const enhanced = getEnhancedSession(currentSession);

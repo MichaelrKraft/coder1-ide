@@ -23,32 +23,39 @@ export default function AlphaPage() {
     
     const formData = new FormData(e.currentTarget);
     const email = formData.get('email') as string;
-    
-    const userId = `alpha_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const name = formData.get('name') as string;
+    const redditUsername = formData.get('redditUsername') as string;
     
     try {
-      const premiumApiUrl = process.env.NEXT_PUBLIC_PREMIUM_API_URL || 'http://localhost:3003';
-      const response = await fetch(`${premiumApiUrl}/api/premium/billing/checkout`, {
+      const response = await fetch('/api/alpha/waitlist', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          userId,
           email,
-          successUrl: `${window.location.origin}/alpha/success`,
-          cancelUrl: `${window.location.origin}/alpha`
+          name: name || null,
+          redditUsername: redditUsername || null,
+          source: 'alpha_page'
         })
       });
       
+      const data = await response.json();
+      
       if (!response.ok) {
-        throw new Error('Checkout session creation failed');
+        if (response.status === 409) {
+          alert('This email is already on our waitlist! Check your inbox for your invite link.');
+        } else {
+          throw new Error(data.error || 'Signup failed');
+        }
+        setIsSigningUp(false);
+        return;
       }
       
-      const { checkoutUrl } = await response.json();
-      window.location.href = checkoutUrl;
+      // Success - redirect to success page
+      window.location.href = '/alpha/success';
       
-    } catch (error) {
+    } catch (error: any) {
       console.error('Signup error:', error);
-      alert('Something went wrong. Please try again or contact support@coder1.app');
+      alert('Something went wrong. Please try again or contact alpha@coder1.app');
       setIsSigningUp(false);
     }
   };
@@ -269,12 +276,32 @@ export default function AlphaPage() {
                 />
               </div>
               
+              <div className="mb-4">
+                <input 
+                  type="text" 
+                  name="name"
+                  placeholder="Your name (optional)"
+                  className="w-full px-4 py-3 rounded-lg bg-gray-800 border border-gray-700 text-white focus:border-cyan-500 focus:outline-none"
+                  disabled={isSigningUp}
+                />
+              </div>
+              
+              <div className="mb-4">
+                <input 
+                  type="text" 
+                  name="redditUsername"
+                  placeholder="Reddit username (optional - for priority access)"
+                  className="w-full px-4 py-3 rounded-lg bg-gray-800 border border-gray-700 text-white focus:border-cyan-500 focus:outline-none"
+                  disabled={isSigningUp}
+                />
+              </div>
+              
               <button 
                 type="submit"
                 disabled={isSigningUp}
                 className="w-full bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 disabled:from-gray-600 disabled:to-gray-700 text-white font-semibold py-4 rounded-lg transition-all shadow-lg hover:shadow-xl text-lg"
               >
-                {isSigningUp ? 'Starting Trial...' : 'Start Free Trial - No Credit Card Required'}
+                {isSigningUp ? 'Joining Waitlist...' : 'Join Alpha Waitlist - Free'}
               </button>
             </form>
             

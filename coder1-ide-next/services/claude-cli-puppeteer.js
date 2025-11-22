@@ -27,13 +27,16 @@ class ClaudeCLIPuppeteer extends EventEmitter {
     this.claudeCliPath = options.claudeCliPath || '/opt/homebrew/bin/claude';
     this.maxConcurrentAgents = options.maxConcurrentAgents || 3;
     this.outputBufferSize = options.outputBufferSize || 10000; // chars
-    this.responseTimeout = options.responseTimeout || 120000; // 2 minutes
+    this.responseTimeout = options.responseTimeout || 600000; // 10 minutes - allows for complex architectural analysis with multiple file generation
     this.retryAttempts = options.retryAttempts || 3;
     
     // State management
     this.agents = new Map(); // agentId -> AgentSession
     this.activeTeams = new Map(); // teamId -> TeamSession
     this.isInitialized = false;
+    
+    // Agent Terminal Manager for cleanup coordination
+    this.agentTerminalManager = null; // Set via setAgentTerminalManager()
     
     // Performance tracking
     this.stats = {
@@ -46,6 +49,15 @@ class ClaudeCLIPuppeteer extends EventEmitter {
     
     console.log('🤖 Claude CLI Puppeteer initialized');
   }
+  
+  /**
+   * Set AgentTerminalManager for cleanup coordination
+   * @param {AgentTerminalManager} manager - The terminal manager instance
+   */
+  setAgentTerminalManager(manager) {
+    this.agentTerminalManager = manager;
+    console.log('🔗 AgentTerminalManager linked to Claude CLI Puppeteer');
+  }
 
   /**
    * Initialize the puppeteer service
@@ -57,8 +69,8 @@ class ClaudeCLIPuppeteer extends EventEmitter {
       await fs.access(this.claudeCliPath);
       
       // Test spawn a single Claude session to verify it works
-      console.log('🔧 Testing Claude CLI with --version command...');
-      const testPty = spawn(this.claudeCliPath, ['--version'], {
+      console.log('🔧 Testing Claude CLI with --print --version command...');
+      const testPty = spawn(this.claudeCliPath, ['--print', '--version'], {
         name: 'xterm-color',
         cols: 80,
         rows: 30,
@@ -212,7 +224,8 @@ class ClaudeCLIPuppeteer extends EventEmitter {
    */
   async spawnAgent(agentId, role, context, workTreeRoot) {
     if (this.agents.has(agentId)) {
-      throw new Error(`Agent ${agentId} already exists`);
+      console.log(`♻️ Agent ${agentId} already exists - reusing existing agent`);
+      return this.agents.get(agentId);
     }
 
     console.log(`🤖 Spawning agent: ${agentId} (${role})`);
@@ -245,46 +258,110 @@ class ClaudeCLIPuppeteer extends EventEmitter {
       responseResolvers: [],
       isWaitingForResponse: false,
       lastOutputTime: Date.now(),
-      silenceCount: 0
+      silenceCount: 0,
+      trustPromptAnswered: false  // Track if we already answered trust prompt
     };
 
     try {
-      // Note: For actual task execution, we spawn separate child_process instances
-      // This PTY is mainly for agent initialization and tracking
-      const cliArgs = ['--print', '--dangerously-skip-permissions'];
+      // 🎭 INTERACTIVE MODE: Create real PTY for live Claude Code session
+      // Each agent gets its own interactive Claude Code terminal that users can watch
+      // This matches the main terminal architecture for seamless multi-agent collaboration
       
-      console.log(`🚀 Spawning Claude CLI with --print flag for agent ${agentId}`);
-      console.log(`📝 CLI Args: ${cliArgs.join(' ')}`);
+      console.log(`🎭 Spawning agent ${agentId} with INTERACTIVE Claude Code PTY`);
+      console.log(`📁 Working directory: ${agentWorkTree}`);
       
-      const pty = spawn(this.claudeCliPath, cliArgs, {
+      // 🔧 FIX (Nov 21, 2025): Use interactive mode with proper Enter key submission
+      // --print mode requires prompt at spawn time, incompatible with multi-task workflow
+      // Interactive mode works when prompts include \r (Enter key)
+      const pty = spawn(this.claudeCliPath, [
+        '--model', 'claude-sonnet-4-5-20250929'
+      ], {
         name: 'xterm-color',
         cols: 100,
         rows: 30,
-        cwd: agentWorkTree,
+        cwd: agentWorkTree,  // Agent works in isolated directory
         env: {
           ...process.env,
-          TERM: 'xterm-color'
+          CLAUDE_CODE_OAUTH_TOKEN: process.env.CLAUDE_CODE_OAUTH_TOKEN
         }
       });
-
+      
       agentSession.pty = pty;
+      
+      // Set up PTY event handlers for output streaming
+      pty.onData((data) => {
+        agentSession.outputBuffer += data;
+        agentSession.lastOutputTime = Date.now();
+        
+        // 🔧 AUTO-HANDLE TRUST PROMPTS: Claude asks "Do you trust the files in this folder?"
+        // This can appear at ANY time, not just during initialization
+        // Auto-respond with "1" (Yes, proceed) to keep automation flowing
+        // IMPORTANT: Only respond ONCE to avoid sending multiple "1" inputs
+        const output = data.toString();
+        if (!agentSession.trustPromptAnswered && (output.includes('Do you trust') || output.includes('Yes, proceed'))) {
+          agentSession.trustPromptAnswered = true;  // Mark as handled immediately
+          console.log(`🔐 Agent ${agentId} - Trust prompt detected, auto-approving...`);
+          setTimeout(() => {
+            pty.write('1\n');
+            console.log(`✅ Agent ${agentId} - Trust prompt answered with "1"`);
+          }, 200); // Increased delay to ensure full prompt render
+        }
+        
+        // Emit output to connected terminals
+        this.emit('agentOutput', {
+          agentId,
+          output: data,
+          timestamp: new Date()
+        });
+      });
+      
+      pty.onExit(({ exitCode, signal }) => {
+        console.log(`🔚 Agent ${agentId} PTY exited (code: ${exitCode}, signal: ${signal})`);
+        agentSession.status = 'stopped';
+        
+        // Cleanup
+        this.agents.delete(agentId);
+      });
       
       // IMPORTANT: Add agent to map BEFORE any async operations
       this.agents.set(agentId, agentSession);
       this.stats.totalAgentsSpawned++;
       
-      console.log(`✅ Agent ${agentId} added to agents Map`);
-
-      // Set up PTY event handlers
-      this.setupAgentPTY(agentSession);
-
-      // --print mode: PTY exits immediately, we'll spawn new child_process instances for each task
-      agentSession.status = 'ready';
-      agentSession.currentTask = `Ready to work as ${role} agent`;
+      console.log(`✅ Agent ${agentId} added to agents Map with LIVE PTY`);
       
-      console.log(`🎭 Agent ${agentId} registered in --print mode with stdin support`);
-      console.log(`📁 Working directory: ${agentWorkTree}`);
-      console.log(`🎯 Ready for reliable file creation via stdin`);
+      // 🔧 FIX (Nov 21, 2025): Wait for welcome message before marking ready
+      // Trust prompts are handled automatically in the main onData handler above
+      let welcomeReceived = false;
+      
+      const welcomePromise = new Promise((resolve) => {
+        const dataHandler = (data) => {
+          const output = data.toString();
+          
+          // Wait for welcome message (trust prompt auto-handled elsewhere)
+          if (output.includes('Welcome to Claude Code') || output.includes('cwd:')) {
+            welcomeReceived = true;
+            console.log(`✅ Agent ${agentId} received welcome message - ready for input`);
+            resolve();
+          }
+        };
+        pty.onData(dataHandler);
+        
+        // Timeout after 15 seconds
+        setTimeout(() => {
+          if (!welcomeReceived) {
+            console.warn(`⚠️ Agent ${agentId} welcome timeout - proceeding anyway`);
+            resolve();
+          }
+        }, 15000);
+      });
+      
+      await welcomePromise;
+      
+      // Set agent status to ready
+      agentSession.status = 'ready';
+      agentSession.currentTask = `Ready - Interactive Claude Code session`;
+      
+      console.log(`🎯 Agent ${agentId} ready for interactive task execution`);
       
       this.emit('agentSpawned', agentSession);
       
@@ -293,7 +370,7 @@ class ClaudeCLIPuppeteer extends EventEmitter {
     } catch (error) {
       console.error(`❌ Failed to spawn agent ${agentId}:`, error);
       
-      // Cleanup on failure
+      // Cleanup on failure (PTY may be null in --print mode)
       if (agentSession.pty) {
         agentSession.pty.kill();
       }
@@ -310,6 +387,12 @@ class ClaudeCLIPuppeteer extends EventEmitter {
    */
   setupAgentPTY(agentSession) {
     const { agentId, pty } = agentSession;
+
+    // Skip if no PTY (--print mode uses separate child_process instances)
+    if (!pty) {
+      console.log(`⏭️ Skipping PTY event handlers for ${agentId} (PTY-less mode)`);
+      return;
+    }
 
     pty.on('data', (data) => {
       const output = data.toString();
@@ -342,6 +425,18 @@ class ClaudeCLIPuppeteer extends EventEmitter {
 
     pty.on('exit', (code, signal) => {
       console.log(`🔌 Agent ${agentId} PTY exited with code ${code}, signal ${signal}`);
+      
+      // Enhanced error logging - capture final output buffer
+      if (code !== 0) {
+        console.error(`❌ Agent ${agentId} exited with error code ${code}`);
+        console.error(`📝 Final output buffer (last ${this.outputBufferSize} chars):`);
+        console.error(agentSession.outputBuffer || '(empty)');
+        console.error(`📝 Response buffer:`);
+        console.error(agentSession.responseBuffer || '(empty)');
+        console.error(`⏰ Last activity: ${agentSession.lastActivity}`);
+        console.error(`📊 Current task: ${agentSession.currentTask}`);
+      }
+      
       agentSession.status = code === 0 ? 'completed' : 'error';
       
       // Resolve any pending response promises with error
@@ -433,12 +528,15 @@ class ClaudeCLIPuppeteer extends EventEmitter {
       throw new Error(`Agent ${agentId} not found`);
     }
 
-    console.log(`📤 Sending to ${agentId}: ${message.substring(0, 100)}...`);
+    if (!agentSession.pty) {
+      throw new Error(`Agent ${agentId} has no PTY - cannot send message`);
+    }
+
+    console.log(`📤 Sending to ${agentId} via INTERACTIVE PTY: ${message.substring(0, 100)}...`);
     console.log(`📁 Agent working directory: ${agentSession.workTreePath}`);
     
-    // Always use --print mode with stdin (proven working approach)
-    return new Promise((resolve, reject) => {
-      // Create task-specific work directory
+    // Use interactive PTY - write message and monitor for file completion
+    return new Promise(async (resolve, reject) => {
       const taskWorkDir = agentSession.workTreePath;
       
       if (!taskWorkDir) {
@@ -454,103 +552,193 @@ IMPORTANT: You must create actual files in the current directory. Use the Write 
 
 Working directory: ${taskWorkDir}
 Role: ${agentSession.role}
-Context: ${agentSession.context}`;
+
+`;
       
-      console.log(`🎯 Spawning new Claude CLI for task in ${taskWorkDir}`);
-      console.log(`📝 Task prompt: ${enhancedPrompt.substring(0, 100)}...`);
+      console.log(`💬 Writing task to ${agentId} interactive PTY`);
+      console.log(`📝 Prompt length: ${enhancedPrompt.length} characters`);
       
-      // Spawn new Claude CLI with --print flag using child_process for proper stdin
-      const taskProcess = spawnChild(this.claudeCliPath, [
-        '--print', 
-        '--dangerously-skip-permissions'
-        // NO PROMPT as argument - will be sent via stdin
-      ], {
-        cwd: taskWorkDir,
-        env: { 
-          ...process.env,
-          CLAUDE_CODE_OAUTH_TOKEN: process.env.CLAUDE_CODE_OAUTH_TOKEN
-        },
-        stdio: ['pipe', 'pipe', 'pipe'] // Enable stdin, stdout, stderr pipes
-      });
+      // 🔧 FIX (Nov 22, 2025): Send prompt character-by-character to avoid paste mode
+      // Bracketed paste mode triggers when too much text is sent at once
+      // Send slowly to make it look like typing, not pasting
+      console.log(`💬 Sending task to ${agentId} character-by-character (${enhancedPrompt.length} chars)`);
       
-      // Send prompt via stdin (this is the correct way for file creation)
-      taskProcess.stdin.write(enhancedPrompt + '\n');
-      taskProcess.stdin.end(); // Signal end of input
+      const singleLinePrompt = enhancedPrompt.replace(/\n/g, ' ');
       
-      let responseBuffer = '';
-      let hasResponded = false;
-      
-      // Set timeout
-      const timeout = setTimeout(() => {
-        if (!hasResponded) {
-          taskProcess.kill();
-          reject(new Error(`Response timeout for agent ${agentId}`));
-        }
-      }, timeoutMs);
-      
-      // Handle stdout output
-      taskProcess.stdout.on('data', (data) => {
-        const output = data.toString();
-        responseBuffer += output;
-        
-        // Emit real-time output
-        this.emit('agentOutput', {
-          agentId,
-          output,
-          timestamp: new Date()
-        });
-      });
-      
-      // Handle stderr output
-      taskProcess.stderr.on('data', (data) => {
-        const error = data.toString();
-        console.error(`❌ Claude CLI error: ${error}`);
-        responseBuffer += error;
-      });
-      
-      // Handle exit
-      taskProcess.on('exit', (code, signal) => {
-        clearTimeout(timeout);
-        
-        if (!hasResponded) {
-          hasResponded = true;
-          
-          // Check if we got any meaningful response
-          if (responseBuffer.trim().length > 10) {
-            console.log(`✅ Agent ${agentId} task completed (code: ${code})`);
-            console.log(`📥 Response length: ${responseBuffer.length} chars`);
-            
-            // Add to conversation history
-            agentSession.conversationHistory.push({
-              type: 'user',
-              content: message,
-              timestamp: new Date()
-            });
-            
-            agentSession.conversationHistory.push({
-              type: 'assistant',
-              content: responseBuffer.trim(),
-              timestamp: new Date()
-            });
-            
-            agentSession.lastActivity = new Date();
-            agentSession.status = 'ready';
-            agentSession.completedTasks.push({
-              task: message.substring(0, 100),
-              timestamp: new Date()
-            });
-            
-            this.stats.totalResponsesReceived++;
-            
-            // Check for files created
-            this.checkWorkTreeForFiles(agentSession);
-            
-            resolve(responseBuffer.trim());
-          } else {
-            reject(new Error(`Agent ${agentId} exited without meaningful response (code: ${code})`));
+      // Send prompt one character at a time with small delays (async function)
+      const sendCharByChar = async () => {
+        for (let i = 0; i < singleLinePrompt.length; i++) {
+          agentSession.pty.write(singleLinePrompt[i]);
+          // Add tiny delay every 10 characters to avoid overwhelming PTY
+          if (i % 10 === 0) {
+            await new Promise(resolve => setTimeout(resolve, 5)); // 5ms delay
           }
         }
-      });
+        
+        // Submit the command
+        agentSession.pty.write('\n');
+      };
+      
+      await sendCharByChar();
+      
+      console.log(`✅ Task sent to ${agentId} PTY character-by-character (avoids paste mode)`);
+      
+      // 🔧 FIX (Nov 22, 2025): Claude CLI fancy rendering mode issue
+      // Long prompts (>500 chars) trigger fancy box rendering which requires additional Enter
+      // Wait 2 seconds for rendering to complete, then send another Enter to submit
+      if (enhancedPrompt.length > 500) {
+        console.log(`⏳ Long prompt detected (${enhancedPrompt.length} chars) - waiting 2s for fancy rendering...`);
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        agentSession.pty.write('\n');
+        console.log(`✅ Sent additional Enter key to submit fancy-rendered task`);
+      }
+      
+      let hasResponded = false;
+      let lastFileModTime = Date.now();
+      let filesDetected = false;
+      
+      // File-based completion detection (primary method)
+      // Check every 5 seconds if files were created and are stable
+      const fileCheckInterval = setInterval(() => {
+        if (hasResponded) {
+          clearInterval(fileCheckInterval);
+          return;
+        }
+        
+        try {
+          const files = fss.readdirSync(taskWorkDir);
+          const actualFiles = files.filter(f => !f.startsWith('.') && f !== 'node_modules');
+          
+          if (actualFiles.length > 0) {
+            if (!filesDetected) {
+              console.log(`📁 [File Detection] ${actualFiles.length} files detected in ${agentId} work tree`);
+              filesDetected = true;
+            }
+            
+            // Check last modification time
+            let latestMod = 0;
+            actualFiles.forEach(file => {
+              const filePath = path.join(taskWorkDir, file);
+              try {
+                const stats = fss.statSync(filePath);
+                if (stats.mtimeMs > latestMod) {
+                  latestMod = stats.mtimeMs;
+                }
+              } catch (e) {
+                // File might have been deleted, ignore
+              }
+            });
+            
+            if (latestMod > lastFileModTime) {
+              lastFileModTime = latestMod;
+              console.log(`📝 [File Detection] File activity detected, resetting stability timer`);
+            }
+            
+            // If no file modifications for 30 seconds, consider task complete
+            const timeSinceLastMod = Date.now() - lastFileModTime;
+            if (timeSinceLastMod > 30000) {
+              console.log(`✅ [File Detection] Files stable for 30s, considering task complete`);
+              clearInterval(fileCheckInterval);
+              clearTimeout(timeout);
+              hasResponded = true;
+              
+              // PTY stays alive for potential future tasks
+              
+              // Build response from file list
+              const fileList = actualFiles.map(f => {
+                const filePath = path.join(taskWorkDir, f);
+                const stats = fss.statSync(filePath);
+                return `- ${f} (${stats.size} bytes)`;
+              }).join('\n');
+              
+              const successMessage = `✅ Task completed successfully!\n\nFiles created:\n${fileList}`;
+              
+              // Add to conversation history
+              agentSession.conversationHistory.push({
+                type: 'user',
+                content: message,
+                timestamp: new Date()
+              });
+              
+              agentSession.conversationHistory.push({
+                type: 'assistant',
+                content: successMessage,
+                timestamp: new Date()
+              });
+              
+              agentSession.lastActivity = new Date();
+              agentSession.status = 'ready';
+              agentSession.completedTasks.push({
+                task: message.substring(0, 100),
+                timestamp: new Date(),
+                filesCreated: actualFiles.length
+              });
+              
+              this.stats.totalResponsesReceived++;
+              
+              // Emit to terminals
+              this.emit('agentOutput', {
+                agentId,
+                output: successMessage,
+                timestamp: new Date()
+              });
+              
+              resolve(successMessage);
+            }
+          }
+        } catch (error) {
+          console.error(`❌ [File Detection] Error checking files: ${error.message}`);
+        }
+      }, 5000); // Check every 5 seconds
+      
+      // Track last PTY output to detect agent activity even without file changes
+      let lastPTYOutput = Date.now();
+      
+      // Monitor PTY output as sign of agent working
+      const ptyOutputHandler = (data) => {
+        lastPTYOutput = Date.now();
+        // Don't log every output event, too noisy
+      };
+      
+      if (agentSession.pty) {
+        agentSession.pty.on('data', ptyOutputHandler);
+      }
+      
+      // Activity check every 30 seconds
+      const activityCheckInterval = setInterval(() => {
+        const timeSinceOutput = Date.now() - lastPTYOutput;
+        const fiveMinutes = 5 * 60 * 1000;
+        
+        if (timeSinceOutput > fiveMinutes && !hasResponded) {
+          // Agent has been silent for 5 minutes - likely stalled
+          clearInterval(fileCheckInterval);
+          clearInterval(activityCheckInterval);
+          if (agentSession.pty) {
+            agentSession.pty.removeListener('data', ptyOutputHandler);
+          }
+          console.warn(`⏰ Agent ${agentId} appears stalled - no output in 5 minutes`);
+          reject(new Error(`Agent ${agentId} idle timeout - no output for 5 minutes`));
+        } else if (timeSinceOutput < 60000) {
+          // Agent is active (output within last minute)
+          console.log(`💓 Agent ${agentId} is active - last output ${Math.floor(timeSinceOutput / 1000)}s ago`);
+        }
+      }, 30000); // Check every 30 seconds
+      
+      // Fallback timeout (30 minutes) - increased from 10 minutes for complex tasks
+      const timeout = setTimeout(() => {
+        if (!hasResponded) {
+          clearInterval(fileCheckInterval);
+          clearInterval(activityCheckInterval);
+          if (agentSession.pty) {
+            agentSession.pty.removeListener('data', ptyOutputHandler);
+          }
+          console.warn(`⏰ Maximum timeout reached for agent ${agentId} task - 30 minutes elapsed`);
+          reject(new Error(`Response timeout for agent ${agentId} - maximum time limit (30 min) reached`));
+        }
+      }, Math.max(timeoutMs, 30 * 60 * 1000)); // At least 30 minutes
+      
+      // Note: PTY output is already handled by onData() event set up in spawnAgent()
+      // User watches live output in the terminal tab
       
       agentSession.lastActivity = new Date();
       this.stats.totalCommandsSent++;
@@ -894,6 +1082,16 @@ Respond with "Ready to work as ${role} agent" to confirm.`;
     agent.status = 'stopped';
     
     this.agents.delete(agentId);
+    
+    // 🧹 Cleanup agent terminal session if manager is available
+    if (this.agentTerminalManager && typeof this.agentTerminalManager.cleanupSession === 'function') {
+      try {
+        this.agentTerminalManager.cleanupSession(agentId);
+        console.log(`🧹 Agent terminal session cleaned: ${agentId}`);
+      } catch (error) {
+        console.warn(`⚠️ Failed to cleanup agent terminal session ${agentId}:`, error.message);
+      }
+    }
     
     this.emit('agentStopped', { agentId });
   }

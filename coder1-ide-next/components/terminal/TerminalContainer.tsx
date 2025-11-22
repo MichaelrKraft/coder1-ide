@@ -3,6 +3,7 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { X, FolderOpen, Code2, Server, Database, CheckCircle, Cloud, Monitor } from 'lucide-react';
 import Terminal from './Terminal';
+import { getSocket } from '../../lib/socket';
 
 export interface SandboxSession {
   id: string;
@@ -92,8 +93,8 @@ export default function TerminalContainer({
   const createdSandboxesRef = useRef<Set<string>>(new Set());
   
   // Agent Tabs Feature (Phase 1) - Only active when feature flag enabled
-  // Initialize to false, will be set in useEffect to avoid SSR issues
-  const [agentTabsEnabled, setAgentTabsEnabled] = useState(false);
+  // Initialize to true to avoid race condition with agent tab creation
+  const [agentTabsEnabled, setAgentTabsEnabled] = useState(true);
   const [agentSessions, setAgentSessions] = useState<Map<string, AgentSession>>(new Map());
   // Initialize activeSessionId to 'main' to ensure terminal always renders
   const [activeSessionId, setActiveSessionId] = useState<string>('main');
@@ -259,7 +260,8 @@ export default function TerminalContainer({
 
   // Agent Session Management (Phase 1) - Feature flagged
   const createAgentSession = useCallback((agentData: any) => {
-    if (!agentTabsEnabled) return;
+    // FIX: Removed early return to prevent race condition
+    console.log('🎯 Creating agent session from event:', agentData);
     
     const agentSession: AgentSession = {
       id: agentData.id || `agent_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
@@ -275,9 +277,46 @@ export default function TerminalContainer({
       processId: agentData.processId
     };
     
-    setAgentSessions(prev => new Map(prev).set(agentSession.id, agentSession));
+    setAgentSessions(prev => {
+      const newSessions = new Map(prev);
+      newSessions.set(agentSession.id, agentSession);
+      console.log(`✅ Agent session added to map: ${agentSession.name} (${agentSession.id})`);
+      console.log(`📊 Total agent sessions: ${newSessions.size}`);
+      
+      // FIX: Auto-open first agent tab
+      if (newSessions.size === 1) {
+        console.log(`🎯 Auto-opening first agent tab: ${agentSession.name}`);
+        setActiveSessionId(agentSession.id);
+      }
+      
+      return newSessions;
+    });
+    
+    // FIX: Pre-connect agent terminal to start receiving output immediately
+    // Must use getSocket() to ensure we get the correct singleton instance
+    if (typeof window !== 'undefined') {
+      getSocket().then(socket => {
+        if (socket.connected) {
+          socket.emit('agent:terminal:connect', {
+            agentId: agentSession.id
+          });
+          console.log(`🔌 Pre-connected terminal for ${agentSession.name} (${agentSession.id})`);
+        } else {
+          console.log('⏳ Socket connecting, will connect agent terminal after socket ready');
+          socket.once('connect', () => {
+            socket.emit('agent:terminal:connect', {
+              agentId: agentSession.id
+            });
+            console.log(`🔌 Pre-connected terminal (after socket ready) for ${agentSession.name} (${agentSession.id})`);
+          });
+        }
+      }).catch(error => {
+        console.error('❌ Failed to get socket for pre-connecting agent terminal:', error);
+      });
+    }
+    
     console.log('🤖 Agent session created:', agentSession.id, agentSession.role);
-  }, [agentTabsEnabled]);
+  }, [setActiveSessionId]);
 
   const closeAgentSession = useCallback((agentId: string) => {
     if (!agentTabsEnabled) return;

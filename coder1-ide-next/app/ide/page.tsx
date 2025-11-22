@@ -19,6 +19,7 @@ import MonacoEditor from "@/components/editor/MonacoEditor";
 import StatusBarCore from "@/components/status-bar/StatusBarCore";
 import StatusLine from "@/components/status-bar/StatusLine";
 import MenuBar from "@/components/MenuBar";
+import HandoffWarningBanner from "@/components/HandoffWarningBanner";
 // import DragDropOverlay from "@/components/terminal/DragDropOverlay"; // Disabled - conflicts with StagedComposer
 import DocumentationPanel from "@/components/documentation/DocumentationPanel";
 
@@ -54,6 +55,9 @@ const PreviewPanel = dynamic(
 import { EnhancedSupervisionProvider } from "@/contexts/EnhancedSupervisionContext";
 import { SessionProvider } from "@/contexts/SessionContext";
 import { TerminalCommandProvider } from "@/contexts/TerminalCommandContext";
+
+// Import auto-checkpoint hook
+import { useAutoCheckpoint } from "@/lib/hooks/useAutoCheckpoint";
 
 function IDEPageContent() {
   // Feature flags
@@ -93,6 +97,35 @@ function IDEPageContent() {
     // 3. Only NOW show overlay if truly first-time (no history at all)
     console.log('👋 First-time user detected - showing onboarding overlay');
     setShowOnboardingOverlay(true);
+  }, []);
+  
+  // 🛟 SESSION RESCUE: Detect unexpected shutdowns on mount
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
+    const lastExitInfo = localStorage.getItem('ide-lastExit');
+    if (!lastExitInfo) {
+      console.log('🛟 No previous session exit info found');
+      return;
+    }
+    
+    try {
+      const exitData = JSON.parse(lastExitInfo);
+      const timeSinceExit = Date.now() - exitData.timestamp;
+      const hoursAgo = (timeSinceExit / (1000 * 60 * 60)).toFixed(1);
+      
+      // If last exit was NOT clean, or was very recent (< 5 min), might be crash
+      if (exitData.type !== 'clean' && timeSinceExit < 5 * 60 * 1000) {
+        console.warn(`🛟 Unexpected shutdown detected (${hoursAgo}h ago) - recovery may be available`);
+        // Store this for RecoveryModal to detect
+        sessionStorage.setItem('recovery-available', 'true');
+        sessionStorage.setItem('recovery-timestamp', String(exitData.timestamp));
+      } else {
+        console.log(`✅ Last exit was clean (${hoursAgo}h ago)`);
+      }
+    } catch (e) {
+      console.warn('Failed to parse last exit info:', e);
+    }
   }, []);
   
   // Settings modal state
@@ -210,6 +243,7 @@ function IDEPageContent() {
   }, [activeFile]);
 
   // ⚡ PERFORMANCE FIX (Feb 2, 2025): Save terminal history on page unload instead of every keystroke
+  // 🛟 SESSION RESCUE: Track clean exits for crash detection
   useEffect(() => {
     if (typeof window === 'undefined') return;
     
@@ -219,6 +253,15 @@ function IDEPageContent() {
         localStorage.setItem('terminalHistory', filteredHistory);
         console.log('💾 Saved terminal history to localStorage on page unload');
       }
+      
+      // 🛟 Mark clean exit for Session Rescue
+      const exitInfo = {
+        type: 'clean',
+        timestamp: Date.now(),
+        sessionId: localStorage.getItem('ide-terminalSessionId'),
+      };
+      localStorage.setItem('ide-lastExit', JSON.stringify(exitInfo));
+      console.log('🛟 Marked clean exit for Session Rescue');
     };
     
     // Save on page unload
@@ -321,11 +364,22 @@ function IDEPageContent() {
     
     // 🔧 ONE-TIME MIGRATION (Oct 24, 2025): Migrate old 'terminalHistory' key to 'mainTerminalHistory'
     // This fixes the localStorage key mismatch that caused terminal corruption
+    // 🛟 RECOVERY FIX (Nov 19, 2025): Don't overwrite checkpoint recovery data during migration!
     const oldHistory = localStorage.getItem('terminalHistory');
     if (oldHistory) {
-      console.log('🔄 [MIGRATION] Migrating old terminalHistory key to mainTerminalHistory');
-      localStorage.setItem('mainTerminalHistory', oldHistory);
-      localStorage.removeItem('terminalHistory');
+      const existingMain = localStorage.getItem('mainTerminalHistory');
+      const existingMainLength = existingMain?.length || 0;
+      
+      // Only migrate if mainTerminalHistory doesn't exist OR has less data than terminalHistory
+      // This prevents overwriting large checkpoint data (454KB) with small prompts (10 chars)
+      if (!existingMain || oldHistory.length > existingMainLength) {
+        console.log('🔄 [MIGRATION] Migrating old terminalHistory key to mainTerminalHistory');
+        localStorage.setItem('mainTerminalHistory', oldHistory);
+        localStorage.removeItem('terminalHistory');
+      } else {
+        console.log(`🛟 [MIGRATION] Skipping migration - mainTerminalHistory (${existingMainLength} chars) already has more data than terminalHistory (${oldHistory.length} chars)`);
+        localStorage.removeItem('terminalHistory'); // Still remove the old key
+      }
     }
     
     // 1. Check URL params first (for Timeline → IDE navigation)
@@ -384,6 +438,18 @@ function IDEPageContent() {
       localStorage.setItem('ide-terminalSessionId', urlSessionId);
     }
   }, [searchParams]); // ✅ FIX: Removed terminalSessionId from deps
+
+  // ⏰ AUTO-CHECKPOINT: Create automatic checkpoints every 10 minutes
+  useAutoCheckpoint({
+    enabled: true,
+    sessionId: terminalSessionId || undefined, // Pass terminal session ID explicitly
+    onSuccess: (checkpointId) => {
+      console.log(`✅ Auto-checkpoint created: ${checkpointId}`);
+    },
+    onError: (error) => {
+      console.error('❌ Auto-checkpoint failed:', error);
+    }
+  });
 
   // File drop handling
   const [isProcessingFiles, setIsProcessingFiles] = useState(false);
@@ -1252,6 +1318,14 @@ function IDEPageContent() {
                 if (paths.length > 0) {
                   handleFileSelect(paths[0]);
                 }
+              }}
+            />
+            
+            {/* Handoff Warning Banner - Auto-shows at 100k tokens */}
+            <HandoffWarningBanner
+              onCreateHandoff={() => {
+                // Emit event to open SessionsPanel in handoff mode
+                window.dispatchEvent(new CustomEvent('openHandoffMode'));
               }}
             />
 

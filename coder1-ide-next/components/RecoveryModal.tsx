@@ -8,6 +8,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { getConfidenceLabel } from '@/lib/recovery-utils';
 
 interface RecoveryModalProps {
@@ -46,6 +47,7 @@ interface RecoveryData {
 }
 
 export default function RecoveryModal({ onClose }: RecoveryModalProps) {
+  const router = useRouter();
   const [recovery, setRecovery] = useState<RecoveryData | null>(null);
   const [loading, setLoading] = useState(true);
   const [restoring, setRestoring] = useState(false);
@@ -57,7 +59,24 @@ export default function RecoveryModal({ onClose }: RecoveryModalProps) {
 
   const checkForRecovery = async () => {
     try {
-      const response = await fetch('/api/recovery/check');
+      // Check if recovery was recently consumed (within last 5 minutes)
+      const consumedTimestamp = localStorage.getItem('recovery-consumed-timestamp');
+      if (consumedTimestamp) {
+        const ageMs = Date.now() - parseInt(consumedTimestamp);
+        const fiveMinutes = 5 * 60 * 1000;
+        if (ageMs < fiveMinutes) {
+          console.log('ℹ️ Recovery already consumed recently (', Math.floor(ageMs / 1000), 's ago)');
+          setIsVisible(false);
+          setLoading(false);
+          if (onClose) onClose();
+          return;
+        } else {
+          // Clear old consumed flag
+          localStorage.removeItem('recovery-consumed-timestamp');
+        }
+      }
+      
+      const response = await fetch('/api/recovery/check/');
       const data: RecoveryData = await response.json();
       
       if (data.hasRecovery && data.recovery) {
@@ -93,7 +112,7 @@ export default function RecoveryModal({ onClose }: RecoveryModalProps) {
     
     try {
       console.log('📡 Calling /api/recovery/restore...');
-      const response = await fetch('/api/recovery/restore', {
+      const response = await fetch('/api/recovery/restore/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -107,12 +126,58 @@ export default function RecoveryModal({ onClose }: RecoveryModalProps) {
       console.log('📡 Response data:', data);
       
       if (data.success && data.restoreUrl) {
-        console.log('✅ Success! Redirecting to:', data.restoreUrl);
+        console.log('✅ Success! Checkpoint data loaded');
         
-        // Add a small delay to ensure user sees the loading state
-        setTimeout(() => {
-          window.location.href = data.restoreUrl;
-        }, 500);
+        // Store checkpoint data in localStorage for the IDE page to restore
+        if (data.checkpoint?.data?.snapshot) {
+          const snapshot = data.checkpoint.data.snapshot;
+          console.log('💾 Storing checkpoint data in localStorage...');
+          
+          // Store files, terminal history, and editor content
+          if (snapshot.files) {
+            localStorage.setItem('openFiles', snapshot.files);
+            console.log('  ✓ Stored openFiles:', snapshot.files.length, 'chars');
+          }
+          
+          if (snapshot.terminal) {
+            // Use mainTerminalHistory (not terminalHistory) - IDE migrates old key on startup
+            console.log('  📊 About to store terminal history:', snapshot.terminal.length, 'chars');
+            localStorage.setItem('mainTerminalHistory', snapshot.terminal);
+            const stored = localStorage.getItem('mainTerminalHistory');
+            console.log('  ✓ Stored mainTerminalHistory:', stored?.length, 'chars');
+            console.log('  ✓ Verification - matches?', stored === snapshot.terminal);
+          }
+          
+          if (snapshot.editor) {
+            localStorage.setItem('editorContent', snapshot.editor);
+            console.log('  ✓ Stored editorContent');
+          }
+          
+          // Store session ID for terminal restoration
+          localStorage.setItem('currentSessionId', data.sessionId);
+          localStorage.setItem('ide-terminalSessionId', data.sessionId);
+          console.log('  ✓ Stored session IDs');
+        }
+        
+        // Mark recovery as consumed in localStorage (survives page reload)
+        localStorage.setItem('recovery-consumed-timestamp', Date.now().toString());
+        sessionStorage.removeItem('recovery-available');
+        sessionStorage.removeItem('recovery-timestamp');
+        console.log('✓ Recovery marked as consumed');
+        
+        // CRITICAL: Force localStorage to flush to disk before navigation
+        // Without this delay, localStorage.setItem() calls may not complete before page unload
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        // Verify data was stored successfully
+        const storedHistory = localStorage.getItem('mainTerminalHistory');
+        console.log('✅ Verification before navigation - mainTerminalHistory length:', storedHistory?.length || 0);
+        
+        // Navigate to IDE with sessionId to prevent hard refresh detection
+        // The IDE clears localStorage if no sessionId is in URL (treats it as hard refresh)
+        console.log('🔄 Navigating to IDE to complete restoration...');
+        const sessionId = data.sessionId || localStorage.getItem('currentSessionId');
+        window.location.href = `/ide?sessionId=${sessionId}`;
       } else {
         const errorMsg = data.error || 'Unknown error occurred';
         console.error('❌ Recovery failed:', errorMsg);

@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Built with Coder1 Badge</title>
+    <meta name="description" content="Add the 'Built with Coder1' badge to your project and join the community of developers using the Claude Code native IDE.">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 800px;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+        
+        h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+        
+        .subtitle {
+            text-align: center;
+            font-size: 1.2em;
+            opacity: 0.9;
+            margin-bottom: 40px;
+        }
+        
+        .badge-preview {
+            text-align: center;
+            margin: 40px 0;
+        }
+        
+        .badge-preview img {
+            max-width: 100%;
+            height: auto;
+            filter: drop-shadow(0 10px 20px rgba(0, 0, 0, 0.3));
+        }
+        
+        .code-section {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            padding: 20px;
+            margin: 30px 0;
+        }
+        
+        .code-section h2 {
+            font-size: 1.5em;
+            margin-bottom: 15px;
+        }
+        
+        .code-block {
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 8px;
+            padding: 15px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            overflow-x: auto;
+            position: relative;
+            margin-top: 10px;
+        }
+        
+        .copy-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #667eea;
+            border: none;
+            color: white;
+            padding: 5px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.85em;
+            transition: all 0.3s;
+        }
+        
+        .copy-btn:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+        }
+        
+        .copy-btn.copied {
+            background: #10b981;
+        }
+        
+        .benefits {
+            margin: 30px 0;
+        }
+        
+        .benefits h2 {
+            font-size: 1.5em;
+            margin-bottom: 20px;
+        }
+        
+        .benefit-list {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .benefit-list li {
+            padding: 12px 0;
+            padding-left: 30px;
+            position: relative;
+            font-size: 1.1em;
+        }
+        
+        .benefit-list li:before {
+            content: "✨";
+            position: absolute;
+            left: 0;
+        }
+        
+        .cta {
+            text-align: center;
+            margin-top: 40px;
+        }
+        
+        .cta a {
+            display: inline-block;
+            background: white;
+            color: #667eea;
+            padding: 15px 40px;
+            border-radius: 10px;
+            text-decoration: none;
+            font-weight: bold;
+            font-size: 1.2em;
+            transition: all 0.3s;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+        
+        .cta a:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
+        }
+        
+        @media (max-width: 600px) {
+            .container {
+                padding: 20px;
+            }
+            
+            h1 {
+                font-size: 1.8em;
+            }
+            
+            .subtitle {
+                font-size: 1em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎯 Built with Coder1</h1>
+        <p class="subtitle">Show the world you're building with the Claude Code native IDE</p>
+        
+        <div class="badge-preview">
+            <a href="https://coder1.ai" target="_blank">
+                <img src="/badge.svg" alt="Built with Coder1">
+            </a>
+        </div>
+        
+        <div class="code-section">
+            <h2>📋 Markdown</h2>
+            <div class="code-block">
+                <button class="copy-btn" onclick="copyCode(this, 'markdown')">Copy</button>
+                <pre id="markdown">[![Built with Coder1](https://coder1.ai/badge.svg)](https://coder1.ai)</pre>
+            </div>
+        </div>
+        
+        <div class="code-section">
+            <h2>🔧 HTML</h2>
+            <div class="code-block">
+                <button class="copy-btn" onclick="copyCode(this, 'html')">Copy</button>
+                <pre id="html">&lt;a href="https://coder1.ai"&gt;
+  &lt;img src="https://coder1.ai/badge.svg" alt="Built with Coder1" /&gt;
+&lt;/a&gt;</pre>
+            </div>
+        </div>
+        
+        <div class="benefits">
+            <h2>✨ Why Add the Badge?</h2>
+            <ul class="benefit-list">
+                <li>Join a community of innovative developers</li>
+                <li>Show support for AI-native development tools</li>
+                <li>Get featured in the Coder1 showcase</li>
+                <li>Help spread the word about cost-free AI coding</li>
+                <li>Connect with other Claude Code users</li>
+            </ul>
+        </div>
+        
+        <div class="cta">
+            <a href="https://coder1.ai" target="_blank">Try Coder1 IDE →</a>
+        </div>
+    </div>
+    
+    <script>
+        function copyCode(button, elementId) {
+            const codeElement = document.getElementById(elementId);
+            const text = codeElement.textContent;
+            
+            navigator.clipboard.writeText(text).then(() => {
+                const originalText = button.textContent;
+                button.textContent = 'Copied!';
+                button.classList.add('copied');
+                
+                setTimeout(() => {
+                    button.textContent = originalText;
+                    button.classList.remove('copied');
+                }, 2000);
+            });
+        }
+    </script>
+</body>
+</html>

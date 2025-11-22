@@ -19,6 +19,17 @@ if (process.env.NODE_ENV !== 'production') {
   }
 }
 
+// Environment validation diagnostic logging
+console.log('═══════════════════════════════════════════════════════════');
+console.log('🔍 [ENV-DIAGNOSTIC] Environment Validation at Startup');
+console.log('   NODE_ENV:', process.env.NODE_ENV);
+console.log('   CLAUDE_CODE_OAUTH_TOKEN exists:', !!process.env.CLAUDE_CODE_OAUTH_TOKEN);
+console.log('   Token prefix:', process.env.CLAUDE_CODE_OAUTH_TOKEN?.substring(0, 20) + '...');
+console.log('   ANTHROPIC_API_KEY exists:', !!process.env.ANTHROPIC_API_KEY);
+console.log('   API key prefix:', process.env.ANTHROPIC_API_KEY?.substring(0, 15) + '...');
+console.log('   .env.local path:', path.join(__dirname, '.env.local'));
+console.log('═══════════════════════════════════════════════════════════');
+
 const { createServer } = require('http');
 const { parse } = require('url');
 const next = require('next');
@@ -94,6 +105,17 @@ try {
 } catch (error) {
   console.warn('⚠️ Agent Terminal Manager not available:', error.message);
   agentTerminalManager = null;
+}
+
+// Claude CLI Puppeteer Service for AI Team spawning
+let claudePuppeteer;
+try {
+  const { getClaudePuppeteer } = require('./services/claude-code-bridge.ts');
+  claudePuppeteer = getClaudePuppeteer();
+  console.log('✅ Claude CLI Puppeteer service loaded');
+} catch (error) {
+  console.warn('⚠️ Claude CLI Puppeteer not available:', error.message);
+  claudePuppeteer = null;
 }
 
 // Socket.IO instance (initialized later after HTTP server creation)
@@ -1119,6 +1141,16 @@ app.prepare().then(() => {
       console.log('🔌 Agent Coordinator connected to Agent Terminal Manager');
     } catch (error) {
       console.warn('⚠️ Failed to connect Agent Coordinator to Terminal Manager:', error.message);
+    }
+  }
+  
+  // 🔗 Connect Claude CLI Puppeteer to Agent Terminal Manager for cleanup coordination
+  if (claudePuppeteer && agentTerminalManager) {
+    try {
+      claudePuppeteer.setAgentTerminalManager(agentTerminalManager);
+      console.log('🧹 Claude CLI Puppeteer connected to Agent Terminal Manager for cleanup');
+    } catch (error) {
+      console.warn('⚠️ Failed to connect Claude CLI Puppeteer to Terminal Manager:', error.message);
     }
   }
 
@@ -2683,46 +2715,7 @@ app.prepare().then(() => {
     }
   });
   
-  // Graceful shutdown handling
-  const gracefulShutdown = (signal) => {
-    console.log(`\n🛑 Received ${signal}. Starting graceful shutdown...`);
-    
-    // Close Socket.IO server
-    io.close(() => {
-      console.log('🔌 Socket.IO server closed');
-    });
-    
-    // Close all terminal sessions
-    for (const [id, session] of terminalSessions.entries()) {
-      try {
-        session.destroy();
-        console.log(`💻 Closed terminal session: ${id}`);
-      } catch (error) {
-        console.error(`❌ Error closing session ${id}:`, error.message);
-      }
-    }
-    
-    // Close HTTP server
-    server.close((err) => {
-      if (err) {
-        console.error('❌ Error closing server:', err);
-        process.exit(1);
-      }
-      console.log('🎯 Server closed successfully');
-      process.exit(0);
-    });
-    
-    // Force exit after 10 seconds if graceful shutdown fails
-    setTimeout(() => {
-      console.error('⏰ Graceful shutdown timeout. Force exiting.');
-      process.exit(1);
-    }, 10000);
-  };
-  
-  // Register shutdown handlers
-  process.on('SIGINT', () => gracefulShutdown('SIGINT'));
-  process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
-  process.on('SIGUSR2', () => gracefulShutdown('SIGUSR2')); // nodemon restart
+  // Graceful shutdown handling - DUPLICATE REMOVED (using async version below line 2982)
   
   // Unhandled error handling
   process.on('uncaughtException', (error) => {
@@ -2947,26 +2940,43 @@ const flushContextData = async (sessionId) => {
 // }, 30000); // Flush every 30 seconds instead of 5 seconds
   
   // Graceful shutdown
-  process.on('SIGTERM', () => {
-    // REMOVED: // REMOVED: // REMOVED: console.log('[Server] SIGTERM received, shutting down gracefully...');
+  const gracefulShutdown = async (signal) => {
+    console.log(`[Server] ${signal} received, shutting down gracefully...`);
     
-    // Clean up all terminal sessions
-    for (const [id, session] of terminalSessions.entries()) {
-      session.destroy();
+    try {
+      // 1. Stop all AI Team agents first (kills Claude CLI processes)
+      if (claudePuppeteer && typeof claudePuppeteer.emergencyStopAll === 'function') {
+        console.log('[Shutdown] Stopping all AI agents...');
+        await claudePuppeteer.emergencyStopAll();
+        console.log('[Shutdown] ✅ All AI agents stopped');
+      }
+      
+      // 2. Clean up all terminal sessions
+      console.log('[Shutdown] Cleaning up terminal sessions...');
+      for (const [id, session] of terminalSessions.entries()) {
+        session.destroy();
+      }
+      terminalSessions.clear();
+      console.log('[Shutdown] ✅ Terminal sessions cleaned');
+      
+      // 3. Close Socket.IO
+      io.close(() => {
+        console.log('[Shutdown] ✅ Socket.IO closed');
+      });
+      
+      // 4. Close HTTP server
+      server.close(() => {
+        console.log('[Shutdown] ✅ HTTP server closed');
+        process.exit(0);
+      });
+    } catch (error) {
+      console.error('[Shutdown] Error during cleanup:', error);
+      process.exit(1);
     }
-    terminalSessions.clear();
-    
-    // Close Socket.IO
-    io.close(() => {
-      // REMOVED: console.log('[Server] Socket.IO closed');
-    });
-    
-    // Close HTTP server
-    server.close(() => {
-      // REMOVED: console.log('[Server] HTTP server closed');
-      process.exit(0);
-    });
-  });
+  };
+  
+  process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+  process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 });
 
 // Export for potential testing

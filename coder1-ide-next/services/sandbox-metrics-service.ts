@@ -7,7 +7,7 @@ import { EventEmitter } from 'events';
 import { exec, spawn } from 'child_process';
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import { logger } from '@/lib/logger';
+import { logger } from '../lib/logger.ts';
 
 interface SandboxMetrics {
   sandboxId: string;

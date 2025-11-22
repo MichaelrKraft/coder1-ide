@@ -1,0 +1,237 @@
+{
+  "mockIdeationResponses": [
+    {
+      "agent_id": "master_of_innovation",
+      "persona_name": "🚀 Master of Innovation",
+      "content": "# Real-Time Collaboration Concept\n\nI propose a revolutionary WebSocket-based collaboration system powered by CRDTs (Conflict-free Replicated Data Types) with AI-assisted conflict resolution.\n\n## Core Features:\n\n1. **Instant Sync**: Changes propagate in <100ms to all connected users\n2. **CRDT Backbone**: Automatic merge algorithm eliminates conflicts mathematically\n3. **AI Conflict Resolution**: When CRDTs can't resolve, Claude suggests the best merge\n4. **Real-time Cursors**: See exactly where collaborators are typing\n5. **Collaborative Terminal**: Multiple users can share a terminal session with synchronized output\n6. **Presence Awareness**: Rich user status (typing, viewing, idle, away)\n\n## Why This is Transformative:\n\nThis isn't just Google Docs for code - it's a collaborative development environment where AI understands the changes and helps resolve conflicts intelligently. We're not just syncing text, we're syncing intent.\n\n## Vision:\n\nIn 6 months, developers should be able to pair program with remote teams as seamlessly as if they were sitting side-by-side, with AI as the third team member ensuring smooth collaboration.",
+      "success": true,
+      "error": null,
+      "metadata": {
+        "generation_time_ms": 4532,
+        "model": "claude-opus-4"
+      }
+    },
+    {
+      "agent_id": "master_of_execution",
+      "persona_name": "⚙️ Master of Execution",
+      "content": "# Pragmatic File-Locking Collaboration\n\nI propose a simple, battle-tested approach using file-level locking with periodic sync.\n\n## Implementation Plan:\n\n1. **File Locking**: User editing a file gets exclusive write lock\n2. **Visual Indicators**: Locked files show who has them open\n3. **Periodic Sync**: Changes sync every 5 seconds to central server\n4. **Conflict Prevention**: Locks prevent conflicts entirely\n5. **Offline Mode**: Works without connection, syncs when back online\n\n## Implementation Timeline:\n\n- **Week 1**: File locking backend (Node.js + SQLite)\n- **Week 2**: WebSocket server for lock notifications\n- **Week 3**: Frontend lock UI indicators\n- **Week 4**: Sync service and offline support\n- **Week 5**: Testing and bug fixes\n- **Week 6**: Production deployment\n\n## Resource Requirements:\n\n- 1 backend developer (full-time)\n- 1 frontend developer (full-time)\n- 1 QA engineer (half-time)\n- Total: ~$30k for 6-week project\n\n## Why This Works:\n\nFile locking is proven technology (Perforce, Subversion use it). We can ship this in 6 weeks with our current team. No AI complexity, no CRDT learning curve. Just reliable, predictable collaboration.",
+      "success": true,
+      "error": null,
+      "metadata": {
+        "generation_time_ms": 3821,
+        "model": "claude-sonnet-4"
+      }
+    },
+    {
+      "agent_id": "master_of_risk",
+      "persona_name": "⚠️ Master of Risk",
+      "content": "# Secure Peer-to-Peer Collaboration\n\nI propose a security-first approach using end-to-end encrypted peer-to-peer connections.\n\n## Security Architecture:\n\n1. **E2E Encryption**: All collaboration data encrypted with user-generated keys\n2. **Peer-to-Peer**: No central server can see or log code changes\n3. **Zero-Knowledge**: Even we (Coder1) can't decrypt user sessions\n4. **Audit Logs**: Encrypted audit trail of all collaboration actions\n5. **Access Control**: Fine-grained permissions (read, write, execute)\n\n## Threat Mitigation:\n\n- **Man-in-the-Middle**: TLS + key pinning\n- **Replay Attacks**: Nonce-based message authentication\n- **Data Exfiltration**: E2E encryption prevents server-side snooping\n- **Unauthorized Access**: Multi-factor authentication required\n- **Code Injection**: Input sanitization + Content Security Policy\n\n## Compliance:\n\n- **GDPR**: Right to deletion, data portability\n- **SOC 2**: Encryption at rest and in transit\n- **HIPAA**: (if needed for healthcare clients)\n\n## Risk Assessment:\n\nWithout proper security, collaborative coding opens attack vectors for:\n- Intellectual property theft\n- Supply chain attacks (malicious code injection)\n- Data breaches (sensitive credentials in code)\n- Insider threats\n\n## Recommendation:\n\nSecurity must be foundational, not added later. Peer-to-peer with E2E encryption is non-negotiable for enterprise adoption.",
+      "success": true,
+      "error": null,
+      "metadata": {
+        "generation_time_ms": 4102,
+        "model": "claude-sonnet-4"
+      }
+    },
+    {
+      "agent_id": "master_of_empathy",
+      "persona_name": "💙 Master of Empathy",
+      "content": "# Google Docs-Style Collaboration for Developers\n\nI propose a user-friendly, familiar collaboration experience modeled after Google Docs.\n\n## User Experience First:\n\n1. **Familiar Patterns**: If you've used Google Docs, you already know how this works\n2. **Colored Cursors**: Each user gets a color, see who's typing where\n3. **Presence Indicators**: User avatars show who's in the session\n4. **Commenting**: Highlight code, leave comments, @mention teammates\n5. **Version History**: Visual timeline of changes with easy rollback\n6. **Non-Invasive**: Collaborators don't interrupt your flow\n\n## Addressing Developer Pain Points:\n\n**Pain**: \"I don't know what my teammate is doing\"  \n**Solution**: Real-time presence with activity feed\n\n**Pain**: \"Merge conflicts are stressful\"  \n**Solution**: See changes as they happen, discuss before conflicts arise\n\n**Pain**: \"Context switching kills productivity\"  \n**Solution**: Inline comments replace Slack messages, context stays in code\n\n**Pain**: \"Remote pair programming feels awkward\"  \n**Solution**: Natural cursor tracking and shared editing makes it seamless\n\n## Accessibility:\n\n- **Keyboard Navigation**: Full feature access without mouse\n- **Screen Reader Support**: Announces collaborator actions\n- **Color Blind Mode**: Cursor colors optimized for all vision types\n- **Focus Indicators**: Clear visual feedback for all interactions\n\n## Team Dynamics:\n\nCollaboration tools should reduce friction, not create it. Junior developers should feel comfortable working alongside seniors. Remote teams should feel connected. This isn't about technology - it's about enabling great teamwork.",
+      "success": true,
+      "error": null,
+      "metadata": {
+        "generation_time_ms": 3942,
+        "model": "claude-sonnet-4"
+      }
+    }
+  ],
+  "mockVotingResponses": [
+    {
+      "agent_id": "master_of_innovation",
+      "persona_name": "🚀 Master of Innovation",
+      "content": "Concept ID: concept_master_of_empathy\n\nJustification: While I'm passionate about my CRDT + AI solution, I have to acknowledge that the Empathy's Google Docs approach will drive immediate user adoption. Developers already understand this UX pattern, which means faster onboarding and lower resistance to change. We can always enhance it with CRDTs and AI later, but if users don't adopt it in the first place, the technology doesn't matter. User experience drives technical decisions, not vice versa.",
+      "success": true,
+      "error": null
+    },
+    {
+      "agent_id": "master_of_execution",
+      "persona_name": "⚙️ Master of Execution",
+      "content": "Concept ID: concept_master_of_empathy\n\nJustification: This is the only proposal with a clear, achievable implementation path that our team can deliver. The Google Docs pattern has proven libraries (Yjs, Automerge) that handle the hard parts. My file-locking approach is simpler but too restrictive for real-time collaboration. Innovation's CRDT + AI is brilliant but over-engineered for v1. Empathy's proposal hits the sweet spot: familiar UX + proven technology + deliverable timeline.",
+      "success": true,
+      "error": null
+    },
+    {
+      "agent_id": "master_of_risk",
+      "persona_name": "⚠️ Master of Risk",
+      "content": "Concept ID: concept_master_of_risk\n\nJustification: I have to vote for my own concept because security cannot be compromised. The other proposals don't adequately address encryption, access control, or compliance requirements. Without E2E encryption, enterprise clients won't adopt this feature regardless of UX. We need to build security in from day one, not bolt it on later. I acknowledge this adds complexity, but it's non-negotiable for production readiness.",
+      "success": true,
+      "error": null
+    },
+    {
+      "agent_id": "master_of_empathy",
+      "persona_name": "💙 Master of Empathy",
+      "content": "Concept ID: concept_master_of_empathy\n\nJustification: My proposal prioritizes what users actually need: a familiar, stress-free collaboration experience. The technical implementation (CRDTs, P2P, file locking) should serve the UX, not dictate it. I believe we can incorporate security (from Risk's proposal) and proven sync technology (from Execution's approach) while maintaining the Google Docs UX that developers will instantly understand and trust.",
+      "success": true,
+      "error": null
+    }
+  ],
+  "mockUserVote": {
+    "voter_id": "user",
+    "voter_name": "User",
+    "concept_id": "concept_master_of_empathy",
+    "justification": "I agree with Innovation and Execution - the Google Docs UX will be crucial for adoption. We can enhance it with security and advanced features incrementally, but we need a solid foundation that developers will actually use. Let's start with familiar patterns and build from there."
+  },
+  "mockDeliberationTurns": [
+    {
+      "turn_number": 1,
+      "speaker_id": "master_of_innovation",
+      "speaker_name": "🚀 Master of Innovation",
+      "action": "BUILD",
+      "content": "Let's enhance the Google Docs UX with some transformative features:\n\n1. **Real-time Cursor Tracking**: Not just text cursors, but show what files users are viewing, what terminal commands they're running, and what git operations they're performing.\n\n2. **AI Pair Programming Assistant**: As multiple developers collaborate, an AI observes the session and proactively suggests:\n   - Code improvements\n   - Potential bugs\n   - Design pattern recommendations\n   - Documentation that needs updating\n\n3. **Collaborative Terminal Sessions**: Multiple users can share a terminal, see each other's commands, and the AI can explain what commands do in real-time.\n\n4. **Session Recording & Replay**: Record entire collaboration sessions (with permission) for later review, onboarding, or debugging.\n\nThis takes the familiar Google Docs pattern and adds developer-specific superpowers.",
+      "timestamp": "2025-01-15T10:23:14.332Z"
+    },
+    {
+      "turn_number": 2,
+      "speaker_id": "master_of_execution",
+      "speaker_name": "⚙️ Master of Execution",
+      "content": "Action: CRITIQUE\n\nInnovation, I love the vision, but we need to scope this realistically for v1:\n\n**Keep for v1**:\n- Real-time cursor tracking in editor (proven with Yjs)\n- Presence indicators (avatars, status)\n- Basic file collaboration\n\n**Defer to v2**:\n- Collaborative terminals (complex, security risks)\n- AI pair programming (requires significant AI integration work)\n- Session recording (storage and privacy concerns)\n\n**Why**: \n\nCollaborative terminals are risky - what if someone runs `rm -rf /`? We need sandboxing, permission systems, and audit logs before we expose terminals to multiple users.\n\nAI pair programming sounds amazing but we need the basic collaboration working first. Let's prove the core UX, then enhance it.\n\nSession recording has GDPR implications - we need consent flows, data retention policies, and secure storage.\n\nLet's ship a solid v1 in 8 weeks, then add these features in v2 based on user feedback.",
+      "timestamp": "2025-01-15T10:24:42.891Z"
+    },
+    {
+      "turn_number": 3,
+      "speaker_id": "master_of_risk",
+      "speaker_name": "⚠️ Master of Risk",
+      "content": "Action: QUESTION\n\nHow will we handle conflicts when two users edit the same line of code simultaneously?\n\n**Specific scenarios to address**:\n\n1. **Simultaneous Edits**: User A types `const x = 1` while User B types `const y = 2` on the same line. What wins?\n\n2. **Delete vs. Edit**: User A deletes a line while User B edits it. How do we resolve?\n\n3. **Format Conflicts**: User A runs Prettier, User B has auto-save disabled. Changes collide.\n\n4. **Network Partition**: User A and B both offline, make conflicting changes, reconnect. How do we merge?\n\n5. **Rollback Strategy**: If sync fails or produces bad merge, how do users recover their work?\n\nI need to understand the conflict resolution strategy before I can assess the risk profile. CRDTs handle some of this, but not all of it. What's the UX when conflicts occur?",
+      "timestamp": "2025-01-15T10:26:18.442Z"
+    },
+    {
+      "turn_number": 4,
+      "speaker_id": "master_of_empathy",
+      "speaker_name": "💙 Master of Empathy",
+      "content": "Action: BUILD\n\nGreat questions, Risk. Let me address the UX for conflicts:\n\n**Prevention Through Awareness**:\n- Visual indicators show which lines are being edited by whom\n- Temporary \"soft locks\" when someone starts typing on a line (expires in 30s)\n- Users naturally avoid conflicts because they see where others are working\n\n**When Conflicts Happen**:\n- Highlight conflicted regions in yellow\n- Show both versions side-by-side\n- Let users choose: Accept Mine | Accept Theirs | Merge Manually\n- AI suggests the best merge with explanation\n\n**Network Partition Recovery**:\n- Queue changes locally with timestamps\n- On reconnect, show notification: \"You have 5 changes to review\"\n- User reviews and approves sync before it applies\n- Option to \"Split into separate branch\" if changes are substantial\n\n**Rollback**:\n- Every sync creates an auto-save point\n- Users can roll back to any previous state\n- Collaborative undo: \"Ctrl+Z\" undoes the last action (yours or collaborator's)\n\nThe key is making conflicts visible and giving users control. We trust developers to resolve their own conflicts - we just need to give them the tools and information to do so gracefully.",
+      "timestamp": "2025-01-15T10:28:03.223Z"
+    },
+    {
+      "turn_number": 5,
+      "speaker_id": "user",
+      "speaker_name": "User",
+      "content": "Can we add a chat sidebar so collaborators can discuss changes in context? Sometimes you need to quickly ask \"Why did you change this?\" without leaving the editor or switching to Slack.",
+      "timestamp": "2025-01-15T10:29:34.912Z"
+    },
+    {
+      "turn_number": 6,
+      "speaker_id": "master_of_innovation",
+      "speaker_name": "🚀 Master of Innovation",
+      "content": "Action: BUILD\n\nExcellent idea! Let's make it even better:\n\n**Context-Aware Chat**:\n- Chat messages can be anchored to specific lines of code\n- Click a message to jump to the code it references\n- Hover over code to see related chat messages\n\n**AI Integration**:\n- Type `@ai` in chat to ask questions like \"@ai explain this function\"\n- AI can reference the code you're both looking at\n- Suggestions appear inline: \"@ai should I use async/await here?\"\n\n**Rich Chat Features**:\n- Code snippets in messages (syntax highlighted)\n- Link to documentation\n- React with emoji for quick feedback\n- Typing indicators\n\n**Persistence**:\n- Chat history saved with the collaboration session\n- Can export chat as Markdown for project documentation\n- Search through chat to find \"that thing we discussed last week\"\n\nThis turns the chat from a basic messaging tool into a knowledge capture system that integrates deeply with the development workflow.",
+      "timestamp": "2025-01-15T10:31:12.553Z"
+    },
+    {
+      "turn_number": 7,
+      "speaker_id": "master_of_execution",
+      "speaker_name": "⚙️ Master of Execution",
+      "content": "Action: CRITIQUE\n\nInnovation, again you're adding scope creep. Let's break this down:\n\n**v1 Chat (achievable)**:\n- Simple text chat sidebar\n- Typing indicators\n- Basic markdown support\n- Message persistence\n- Estimated effort: 1 week\n\n**v2 Chat (deferred)**:\n- Code snippets with syntax highlighting\n- @ai integration (requires AI service architecture)\n- Code-anchored messages\n- Rich message reactions\n- Estimated effort: 2-3 weeks\n\nThe reason: AI integration is not trivial. We need:\n1. AI service endpoint\n2. Context passing (what code are they looking at?)\n3. Response streaming\n4. Error handling for AI failures\n5. Cost management (AI calls aren't free)\n\nLet's ship basic chat in v1. If users love it and ask for AI integration, we add it in v2 with proper architecture. Don't build features before validating the need.",
+      "timestamp": "2025-01-15T10:33:47.883Z"
+    },
+    {
+      "turn_number": 8,
+      "speaker_id": "master_of_risk",
+      "speaker_name": "⚠️ Master of Risk",
+      "content": "Action: BUILD\n\nI want to add audit logging for all collaboration actions:\n\n**Audit Log Requirements**:\n\n1. **What to Log**:\n   - User joined/left session\n   - File opened/closed\n   - Code changes (diffs, not full content)\n   - Chat messages sent\n   - Conflicts and how they were resolved\n   - Permissions changes\n\n2. **Log Storage**:\n   - Encrypted at rest\n   - Tamper-proof (append-only)\n   - Retained for 90 days (configurable)\n   - User can export their logs\n\n3. **Log Access**:\n   - User can view their own actions\n   - Admins can view team logs (with notification to users)\n   - Searchable and filterable\n\n4. **Compliance**:\n   - Meets SOC 2 requirements\n   - GDPR right to access\n   - GDPR right to deletion (after 90 days)\n\n**Why This Matters**:\n\n- **Accountability**: When bugs appear, trace back to the change\n- **Security**: Detect unauthorized access or suspicious activity\n- **Debugging**: Understand what happened during a collaboration session\n- **Trust**: Users trust systems that provide transparency\n\nAudit logs are non-negotiable for enterprise adoption. They're also useful for individual developers to review their own workflow and learn from it.",
+      "timestamp": "2025-01-15T10:36:22.174Z"
+    },
+    {
+      "turn_number": 9,
+      "speaker_id": "master_of_empathy",
+      "speaker_name": "💙 Master of Empathy",
+      "content": "Action: QUESTION\n\nWhat happens to the user experience if network latency is high (500ms+)?\n\n**Scenarios to consider**:\n\n1. **Remote Team**: Developer in US collaborating with developer in India (200-300ms latency)\n\n2. **Slow Connection**: Developer on cafe WiFi with 1-2 second lag\n\n3. **Mobile Hotspot**: Developer tethering from phone with variable latency\n\n**User Experience Concerns**:\n\n- Does the cursor lag behind typing?\n- Do collaborator cursors appear delayed?\n- Does chat feel sluggish?\n- How do we communicate sync delays gracefully?\n\n**What I Need to Know**:\n\n- What's the minimum acceptable latency for good UX?\n- How do we handle latency gracefully?\n- Should we show network quality indicators?\n- Do we need an \"offline mode\" for high-latency scenarios?\n\nCollaboration should feel smooth even with geographic distance. How do we achieve that?",
+      "timestamp": "2025-01-15T10:38:45.665Z"
+    },
+    {
+      "turn_number": 10,
+      "speaker_id": "master_of_innovation",
+      "speaker_name": "🚀 Master of Innovation",
+      "content": "Action: BUILD\n\nExcellent question, Empathy. Let's design for high-latency scenarios:\n\n**Optimistic UI Updates**:\n- User's own typing appears immediately (0ms perceived latency)\n- Collaborator changes apply when received (async)\n- UI never blocks waiting for network\n\n**Latency Communication**:\n- Network quality indicator (green/yellow/red)\n- Show approximate delay: \"Syncing... 500ms\"\n- When lag is high, notify: \"Network slow - changes may appear delayed\"\n\n**Offline Mode**:\n- Continue working without connection\n- Queue changes locally with IndexedDB\n- Show \"Offline - 12 changes queued\"\n- On reconnect: sync automatically with conflict resolution\n- Can work for hours offline, sync when connection restored\n\n**Smart Sync Strategy**:\n- Debounce rapid changes (don't sync every keystroke)\n- Batch changes every 200-300ms\n- Compress sync payloads\n- Use WebSocket for efficiency (not HTTP polling)\n\n**Graceful Degradation**:\n- High latency (>500ms): Disable real-time cursors, keep file sync\n- Very high latency (>2s): Suggest offline mode\n- No connection: Full offline mode with local save\n\nThe goal: collaboration should never feel broken, even on slow networks. We adapt the experience to network conditions rather than failing.",
+      "timestamp": "2025-01-15T10:41:33.224Z"
+    }
+  ],
+  "mockReport": {
+    "title": "Real-Time Collaboration Implementation",
+    "sessionId": "mastermind_20250115_102312_abcd",
+    "problemStatement": "How should we implement real-time collaboration in Coder1 IDE?",
+    "winningConcept": {
+      "id": "concept_master_of_empathy",
+      "agent_name": "💙 Master of Empathy",
+      "title": "Google Docs-Style Collaboration for Developers"
+    },
+    "totalTurns": 10,
+    "participants": ["🚀 Master of Innovation", "⚙️ Master of Execution", "⚠️ Master of Risk", "💙 Master of Empathy", "User"],
+    "duration_minutes": 18,
+    "actionBreakdown": {
+      "BUILD": 5,
+      "CRITIQUE": 2,
+      "QUESTION": 3
+    },
+    "executiveSummary": "After collaborative deliberation, we've designed a real-time collaboration system that prioritizes user experience with a Google Docs-style interface while incorporating security, offline capabilities, and conflict resolution mechanisms. The approach balances ambitious features with pragmatic implementation timelines.",
+    "detailedProjectPlan": {
+      "v1Features": [
+        "Real-time cursor tracking in editor",
+        "Presence indicators with user avatars",
+        "Basic file collaboration with CRDTs",
+        "Simple text chat sidebar",
+        "Conflict resolution UI with side-by-side comparison",
+        "Audit logging for security and compliance",
+        "Network quality indicators",
+        "Basic offline mode with sync queue"
+      ],
+      "v2Features": [
+        "AI-powered pair programming assistant",
+        "Code-anchored chat messages",
+        "Collaborative terminal sessions (with sandboxing)",
+        "Session recording and replay",
+        "Advanced AI conflict resolution"
+      ],
+      "technicalRequirements": [
+        "WebSocket server for real-time communication",
+        "CRDT library (Yjs or Automerge) for conflict-free sync",
+        "IndexedDB for offline storage",
+        "Encrypted audit log database",
+        "Network quality monitoring service"
+      ],
+      "timeline": "8-10 weeks for v1, additional 6-8 weeks for v2"
+    },
+    "unresolvedRisks": [
+      {
+        "risk": "Collaborative terminals pose security risks without proper sandboxing",
+        "mitigation": "Defer to v2, implement permission system and audit logs first",
+        "status": "Deferred to v2"
+      },
+      {
+        "risk": "Session recording has GDPR and privacy implications",
+        "mitigation": "Defer to v2, design consent and data retention policies",
+        "status": "Deferred to v2"
+      },
+      {
+        "risk": "High latency may degrade user experience",
+        "mitigation": "Implement offline mode, optimistic UI, network quality indicators",
+        "status": "Addressed in design"
+      },
+      {
+        "risk": "Simultaneous line edits could cause user confusion",
+        "mitigation": "Visual indicators, soft locks, conflict resolution UI",
+        "status": "Addressed in design"
+      }
+    ],
+    "openQuestions": [
+      "What is the minimum acceptable network latency for good UX?",
+      "How do we handle conflicts when network partitions occur?",
+      "Should we implement feature flags for gradual rollout?"
+    ],
+    "futureEnhancements": [
+      "AI pair programming assistant that observes and suggests improvements",
+      "Collaborative terminal with command explanation",
+      "Session recording for onboarding and debugging",
+      "Code-anchored chat for better context",
+      "Integration with VS Code Live Share protocol for interoperability"
+    ]
+  }
+}

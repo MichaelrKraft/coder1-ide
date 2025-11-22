@@ -61,7 +61,7 @@ export function WelcomeScreen({ onDismiss, onBridgeClick }: WelcomeScreenProps =
       <div className="max-w-xl w-full">
         <div className="bg-bg-secondary border-2 border-orange-500 rounded-lg p-3 shadow-[0_0_30px_rgba(249,115,22,0.6)]">
           <h1 className="text-lg font-bold mb-2 text-center bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
-            Connect Claude Code
+            Connect Claude Code to Coder1
           </h1>
           
           {/* What is the Bridge - Compact Version */}
@@ -136,64 +136,6 @@ export function WelcomeScreen({ onDismiss, onBridgeClick }: WelcomeScreenProps =
                   <span className="text-gray-300 ml-1">→ Paste the 6-digit code when prompted</span>
                 </div>
               </div>
-            </div>
-            
-            {/* Manual Setup - Collapsible */}
-            <div className="mt-1 border-t border-border-default pt-1">
-              <details className="group">
-                <summary className="text-xs text-gray-400 hover:text-cyan-400 cursor-pointer flex items-center gap-1">
-                  <span className="group-open:rotate-90 transition-transform">▶</span>
-                  Manual Setup (3 separate commands)
-                </summary>
-                <div className="mt-1 p-2 bg-bg-primary rounded text-xs space-y-1">
-                  <div>
-                    <span className="text-green-400 font-medium">Install Bridge</span>
-                    <div className="bg-black rounded p-1 font-mono text-[10px] mt-0.5">
-                      <span className="text-green-400">$</span> <span className="text-white">
-                        curl -sL {isProduction ? 'https://coder1.ai' : 'http://localhost:3001'}/install-bridge.sh | bash
-                      </span>
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <span className="text-green-400 font-medium">Reload Shell</span>
-                    <div className="bg-black rounded p-1 font-mono text-[10px] mt-0.5">
-                      <span className="text-green-400">$</span> <span className="text-white">
-                        source ~/.zshrc
-                      </span>
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <span className="text-green-400 font-medium">Start Bridge</span>
-                    <div className="bg-black rounded p-1 font-mono text-[10px] mt-0.5">
-                      <span className="text-green-400">$</span> <span className="text-white">
-                        coder1-bridge start{isProduction ? '' : ' --dev'}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </details>
-            </div>
-
-            {/* Optional: Advanced Setup - Collapsible */}
-            <div className="mt-2 border-t border-border-default pt-2">
-              <details className="group">
-                <summary className="text-xs text-gray-400 hover:text-cyan-400 cursor-pointer flex items-center gap-1">
-                  <span className="group-open:rotate-90 transition-transform">▶</span>
-                  Advanced: Overflow Backend Setup (Optional)
-                </summary>
-                <div className="mt-2 p-2 bg-bg-primary rounded text-xs space-y-1">
-                  <p className="text-gray-300">
-                    <strong className="text-cyan-400">💡 For Power Users:</strong> If you frequently hit Claude rate limits, 
-                    you can configure GLM 4.6 as an overflow backend ($0.10/M tokens).
-                  </p>
-                  <div className="text-gray-400 space-y-0.5">
-                    <p>📖 <strong>See:</strong> Help → GLM 4.6 Setup Guide for full instructions</p>
-                    <p>🔗 Sign up at <a href="https://z.ai" target="_blank" rel="noopener noreferrer" className="text-cyan-400 hover:underline">z.ai</a> to get started</p>
-                  </div>
-                </div>
-              </details>
             </div>
 
             {/* Action buttons - more compact */}
