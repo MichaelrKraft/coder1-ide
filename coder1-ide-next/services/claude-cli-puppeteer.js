@@ -562,27 +562,40 @@ Role: ${agentSession.role}
       console.log(`   - Has markdown: ${enhancedPrompt.includes('##') ? 'YES' : 'NO'}`);
       console.log(`   - Has code blocks: ${enhancedPrompt.includes('```') ? 'YES' : 'NO'}`);
       
-      // 🔧 CRITICAL FIX (Nov 24, 2025): Send prompt with structure preserved
-      // PTY handles multi-line input via bracketed paste mode
-      console.log(`💬 Sending ${enhancedPrompt.length} char prompt to ${agentId} (structure preserved)`);
+      // 🔧 REVERT TO WORKING CODE (Nov 24, 2025): Character-by-character sending
+      // Multi-line prompts ALWAYS trigger paste preview mode - there's no way around it
+      // Sending char-by-char with newlines removed is the ONLY method that works
+      console.log(`💬 Sending ${enhancedPrompt.length} char prompt to ${agentId} character-by-character`);
       
-      // Send entire prompt with newlines preserved
-      agentSession.pty.write(enhancedPrompt);
+      const singleLinePrompt = enhancedPrompt.replace(/\n/g, ' ');
       
-      // First Enter: Exit paste preview
+      // Send prompt one character at a time with small delays (async function)
+      const sendCharByChar = async () => {
+        for (let i = 0; i < singleLinePrompt.length; i++) {
+          agentSession.pty.write(singleLinePrompt[i]);
+          // Add tiny delay every 10 characters to avoid overwhelming PTY
+          if (i % 10 === 0) {
+            await new Promise(resolve => setTimeout(resolve, 5)); // 5ms delay
+          }
+        }
+        
+        // Submit the command
+        agentSession.pty.write('\n');
+      };
+      
+      await sendCharByChar();
+      
+      console.log(`✅ Task sent to ${agentId} PTY character-by-character (avoids paste mode)`);
+      console.log(`🔍 [DEBUG] Checking if second Enter needed: prompt length = ${enhancedPrompt.length}`);
+      
+      // 🔧 FIX (Nov 22, 2025): Claude CLI fancy rendering mode issue
+      // ALL prompts need the second Enter to submit - the >500 check was wrong
+      // Always wait and send second Enter
+      console.log(`⏳ Waiting 2s then sending second Enter to submit...`);
+      await new Promise(resolve => setTimeout(resolve, 2000));
       agentSession.pty.write('\n');
+      console.log(`✅ Sent second Enter key to submit task`);
       
-      // Small delay to let paste mode exit
-      await new Promise(resolve => setTimeout(resolve, 100));
-      
-      // Second Enter: Actually submit the pasted content
-      agentSession.pty.write('\n');
-      
-      console.log(`✅ Prompt sent to ${agentId} PTY:`);
-      console.log(`   - Newlines: PRESERVED (${enhancedPrompt.split('\n').length} lines)`);
-      console.log(`   - Structure: INTACT`);
-      console.log(`   - Submission: Double Enter (paste mode)`);
-      console.log(`   - Preview: "${enhancedPrompt.substring(0, 100)}..."`);
       
       // 🔧 FIX TIER 2 (Nov 24, 2025): Verify Claude accepted the prompt before waiting for files
       // This detects if Claude understood and started processing the task

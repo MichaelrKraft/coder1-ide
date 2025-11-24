@@ -37,6 +37,8 @@ export class SimpleAPIExecutor {
   constructor(apiKey: string, model = 'claude-sonnet-4-20250514') {
     this.client = new Anthropic({ apiKey });
     this.model = model;
+    console.error('[RENDER-DEBUG] SimpleAPIExecutor initialized with model:', model);
+    console.error('[RENDER-DEBUG] API Key present:', !!apiKey);
   }
   
   /**
@@ -139,6 +141,7 @@ IMPORTANT: Respond with ONLY the markdown content for this section. Do not inclu
     mode: 'quick' | 'professional'
   ): Promise<SimpleExecutionResult> {
     const startTime = Date.now();
+    console.error(`[RENDER-DEBUG] Starting analysis - pattern: ${pattern}, mode: ${mode}`);
     
     try {
       // Build prompts using existing builders
@@ -179,6 +182,11 @@ IMPORTANT: Respond with ONLY a valid JSON object matching the AnalysisInsights s
         total: response.usage.input_tokens + response.usage.output_tokens
       };
       
+      console.error(`[RENDER-DEBUG] Analysis completed:`);
+      console.error(`  - Duration: ${duration}ms (${(duration/1000).toFixed(1)}s)`);
+      console.error(`  - Tokens: ${tokensUsed.total} (in: ${tokensUsed.input}, out: ${tokensUsed.output})`);
+      console.error(`  - Content length: ${content.length} chars`);
+      
       this.updateTokenUsage(tokensUsed);
       
       return {
@@ -191,6 +199,7 @@ IMPORTANT: Respond with ONLY a valid JSON object matching the AnalysisInsights s
     } catch (error) {
       const duration = Date.now() - startTime;
       
+      console.error(`[RENDER-DEBUG] Analysis failed after ${duration}ms:`, error);
       console.error(`❌ Answer analysis failed:`, error);
       
       return {
