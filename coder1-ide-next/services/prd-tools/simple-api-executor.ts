@@ -191,8 +191,8 @@ Expected JSON structure:
       // Direct API call with extended thinking for Professional mode
       const response = await this.client.messages.create({
         model: this.model,
-        max_tokens: 8192, // More tokens for comprehensive analysis
-        temperature: 0.3, // Lower temperature for more consistent JSON
+        max_tokens: 3072, // Sufficient for JSON insights (reduced from 8192 for speed)
+        temperature: 0.5, // Balanced for speed and JSON quality (increased from 0.3)
         system: systemPrompt,
         messages: [
           {
