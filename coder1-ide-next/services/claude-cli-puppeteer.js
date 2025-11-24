@@ -273,8 +273,11 @@ class ClaudeCLIPuppeteer extends EventEmitter {
       // 🔧 FIX (Nov 21, 2025): Use interactive mode with proper Enter key submission
       // --print mode requires prompt at spawn time, incompatible with multi-task workflow
       // Interactive mode works when prompts include \r (Enter key)
+      // 🔧 FIX (Nov 24, 2025): Add --dangerously-skip-permissions for autonomous agents
+      // Agents need to create files without approval prompts to work fully autonomously
       const pty = spawn(this.claudeCliPath, [
-        '--model', 'claude-sonnet-4-5-20250929'
+        '--model', 'claude-sonnet-4-5-20250929',
+        '--dangerously-skip-permissions'
       ], {
         name: 'xterm-color',
         cols: 100,
