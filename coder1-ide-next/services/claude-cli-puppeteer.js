@@ -581,6 +581,15 @@ Role: ${agentSession.role}
       console.log(`   - Original lines: ${enhancedPrompt.split('\n').length}`);
       console.log(`   - After conversion: Single line with ${singleLinePrompt.length} chars`);
       
+      // 🔧 FIX (Nov 24, 2025): Force exit any existing composer mode before sending prompt
+      // This prevents agents from getting stuck in "Composing..." or "Calculating..." states
+      console.log(`🧹 [${agentId}] Clearing any existing composer state...`);
+      agentSession.pty.write('\x03'); // Send Ctrl+C to exit composer
+      await new Promise(resolve => setTimeout(resolve, 500)); // Wait 500ms for composer to exit
+      agentSession.pty.write('\r'); // Clear line
+      await new Promise(resolve => setTimeout(resolve, 500)); // Wait 500ms for prompt to clear
+      console.log(`✅ [${agentId}] Composer cleared, ready to send prompt`);
+      
       // Send prompt one character at a time with small delays (async function)
       const sendCharByChar = async () => {
         for (let i = 0; i < singleLinePrompt.length; i++) {
