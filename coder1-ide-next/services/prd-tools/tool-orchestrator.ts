@@ -103,11 +103,18 @@ export class PRDOrchestrator {
       );
       
       console.log(`✅ Analysis complete (${analysisResult.tokensUsed.total} tokens)`);
+      console.error(`[RENDER-DEBUG] Analysis completed with ${analysisResult.tokensUsed.total} tokens`);
       console.log('📊 DEBUG - Insights extracted:', JSON.stringify({
         problemSurface: insights.problemAnalysis.surface.substring(0, 100),
         marketCategory: insights.marketPosition.category,
         differentiators: insights.differentiators.length,
         risks: insights.risks.length,
+        confidence: insights.confidence
+      }));
+      console.error('[RENDER-DEBUG] Insights:', JSON.stringify({
+        hasInsights: !!insights,
+        problemLength: insights.problemAnalysis.surface.length,
+        category: insights.marketPosition.category,
         confidence: insights.confidence
       }));
       
