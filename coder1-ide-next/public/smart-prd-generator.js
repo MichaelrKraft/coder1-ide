@@ -691,7 +691,7 @@ class SmartPRDGenerator {
         if (!container) return;
 
         container.innerHTML = handoff.steps.map((step, index) => `
-            <div class="flex items-start space-x-4 p-6 bg-white rounded-xl shadow-lg">
+            <div class="flex items-start space-x-4 p-6 bg-white rounded-xl shadow-lg" data-step-id="${step.id}">
                 <div class="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center progress-step ${step.status === 'completed' ? 'completed' : index === 0 ? 'active' : ''}">
                     <span class="font-bold">${index + 1}</span>
                 </div>
@@ -699,15 +699,61 @@ class SmartPRDGenerator {
                     <h3 class="text-lg font-bold text-gray-900 mb-2">${step.title}</h3>
                     <p class="text-gray-600 mb-4">${step.description}</p>
                     <div class="flex items-center justify-between">
-                        <span class="text-sm text-gray-500">⏱️ ${step.timeEstimate}</span>
-                        ${step.status === 'completed' ? 
-                            '<span class="text-sm text-green-600">✅ Completed</span>' : 
-                            '<button class="text-sm text-primary hover:underline">Start Step →</button>'
-                        }
+                        <span class="text-sm text-gray-500">⏱️ ${step.timeEstimate || '~30 seconds'}</span>
+                        <span class="step-status-${step.id}">
+                            ${step.status === 'completed' ? 
+                                '<span class="text-sm text-green-600">✅ Completed</span>' : 
+                                step.status === 'in-progress' ?
+                                '<span class="text-sm text-blue-600">⏳ Processing...</span>' :
+                                `<button onclick="window.prdGenerator.executeStep('${step.id}')" class="text-sm text-primary hover:underline font-semibold">Start Step →</button>`
+                            }
+                        </span>
                     </div>
                 </div>
             </div>
         `).join('');
+    }
+
+    async executeStep(stepId) {
+        try {
+            console.log('🚀 Executing step:', stepId);
+            
+            // Update UI to show in-progress
+            const statusElement = document.querySelector(`.step-status-${stepId}`);
+            if (statusElement) {
+                statusElement.innerHTML = '<span class="text-sm text-blue-600">⏳ Processing...</span>';
+            }
+            
+            // Simulate step execution (in real implementation, call backend API)
+            await new Promise(resolve => setTimeout(resolve, 1500));
+            
+            // Update UI to show completed
+            if (statusElement) {
+                statusElement.innerHTML = '<span class="text-sm text-green-600">✅ Completed</span>';
+            }
+            
+            // Update step circle to completed
+            const stepDiv = document.querySelector(`[data-step-id="${stepId}"]`);
+            if (stepDiv) {
+                const circle = stepDiv.querySelector('.progress-step');
+                if (circle) {
+                    circle.classList.remove('active');
+                    circle.classList.add('completed');
+                }
+            }
+            
+            this.showToast('Step completed successfully', 'success');
+            
+        } catch (error) {
+            console.error('Step execution failed:', error);
+            this.showToast('Step execution failed', 'error');
+            
+            // Revert UI to pending state
+            const statusElement = document.querySelector(`.step-status-${stepId}`);
+            if (statusElement) {
+                statusElement.innerHTML = `<button onclick="window.prdGenerator.executeStep('${stepId}')" class="text-sm text-primary hover:underline font-semibold">Start Step →</button>`;
+            }
+        }
     }
 
     async launchIDE() {

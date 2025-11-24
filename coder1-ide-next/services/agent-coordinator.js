@@ -858,7 +858,19 @@ class AgentCoordinator extends EventEmitter {
         prompt = `Task: ${task}\nContext: ${context}\nRole: ${roleDefinition.persona}\n\nPlease complete this task with your expertise. Provide clear, actionable output including any code, configurations, or recommendations.`;
       }
 
-      return this.executeAgentTask(agent, prompt, task);
+      // 🔧 FIX (Nov 24, 2025): Add staggered delay to prevent PTY conflicts
+      // When multiple agents start simultaneously, their PTYs can interfere
+      // Frontend starts immediately (0s), Backend starts 3s later
+      return new Promise(resolve => {
+        const delayMs = index * 3000; // 3 second stagger between each agent
+        console.log(`⏳ Agent ${agent.role} will start in ${delayMs}ms (${index === 0 ? 'immediate' : `${delayMs/1000}s delay`})`);
+        
+        setTimeout(async () => {
+          console.log(`🚀 Starting ${agent.role} agent now...`);
+          const result = await this.executeAgentTask(agent, prompt, task);
+          resolve(result);
+        }, delayMs);
+      });
     });
 
     const results = await Promise.all(taskPromises);
