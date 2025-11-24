@@ -141,7 +141,9 @@ IMPORTANT: Respond with ONLY the markdown content for this section. Do not inclu
     mode: 'quick' | 'professional'
   ): Promise<SimpleExecutionResult> {
     const startTime = Date.now();
-    console.error(`[RENDER-DEBUG] Starting analysis - pattern: ${pattern}, mode: ${mode}`);
+    console.error('[RENDER-DEBUG] Starting analysis - START TIME:', startTime);
+    console.error('[RENDER-DEBUG] Starting analysis - pattern:', pattern);
+    console.error('[RENDER-DEBUG] Starting analysis - mode:', mode);
     
     try {
       // Build prompts using existing builders
@@ -175,14 +177,17 @@ IMPORTANT: Respond with ONLY a valid JSON object matching the AnalysisInsights s
       }
       
       const content = textBlock.text;
-      const duration = Date.now() - startTime;
+      const endTime = Date.now();
+      const duration = endTime - startTime;
       const tokensUsed = {
         input: response.usage.input_tokens,
         output: response.usage.output_tokens,
         total: response.usage.input_tokens + response.usage.output_tokens
       };
       
-      console.error('[RENDER-DEBUG] Analysis completed - Duration:', duration + 'ms');
+      console.error('[RENDER-DEBUG] Analysis API call finished - END TIME:', endTime);
+      console.error('[RENDER-DEBUG] Analysis API call finished - DURATION MS:', duration);
+      console.error('[RENDER-DEBUG] Analysis API call finished - DURATION SECONDS:', Math.round(duration / 1000));
       console.error('[RENDER-DEBUG] Analysis completed - Tokens total:', tokensUsed.total);
       console.error('[RENDER-DEBUG] Analysis completed - Tokens in:', tokensUsed.input);
       console.error('[RENDER-DEBUG] Analysis completed - Tokens out:', tokensUsed.output);
