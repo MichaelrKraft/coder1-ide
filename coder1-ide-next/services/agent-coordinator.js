@@ -665,8 +665,12 @@ class AgentCoordinator extends EventEmitter {
           console.log(`🤖 Spawning NEW agent: ${roleDefinition?.name || roleId} (ID: ${agentId})`);
           console.log(`📝 Agent role definition found: ${!!roleDefinition}`);
           
+          if (!roleDefinition) {
+            throw new Error(`Role definition not found for '${roleId}' - cannot spawn agent`);
+          }
+          
           const agentContext = `${requirement}\n\nPhase: ${phase.name}`;
-          console.log(`📋 Agent context: "${agentContext}"`);
+          console.log(`📋 Agent context: "${agentContext.substring(0, 100)}..."`);
           
           // 🔧 FIX (Nov 22, 2025): Create terminal session BEFORE spawning agent
           // This ensures the session exists when PTY onData fires with Claude CLI welcome message
@@ -680,19 +684,43 @@ class AgentCoordinator extends EventEmitter {
             console.log(`📺 Pre-created terminal session for agent ${agentId} (before PTY spawn)`);
           }
           
+          // 🔧 FIX (Nov 23, 2025): Validate agent spawn with error handling
+          // CRITICAL: Agent spawning must succeed or phase should fail
+          // Prevents silent failures that allow phases to complete without agents
           const agentSpawnStart = new Date();
-          agent = await this.puppeteer.spawnAgent(
-            agentId,
-            roleId,
-            agentContext,
-            options.workTreeRoot
-          );
-          const agentSpawnTime = new Date() - agentSpawnStart;
           
-          console.log(`✅ Agent ${agentId} spawned successfully in ${agentSpawnTime}ms`);
-          console.log(`🏠 Agent work tree: ${agent.workTreePath}`);
-          console.log(`📊 Agent status: ${agent.status}`);
-          console.log(`📺 Terminal session ready - PTY output will be captured from first byte`);
+          try {
+            agent = await this.puppeteer.spawnAgent(
+              agentId,
+              roleId,
+              agentContext,
+              options.workTreeRoot
+            );
+            
+            const agentSpawnTime = new Date() - agentSpawnStart;
+            
+            // Validate agent object
+            if (!agent || !agent.agentId) {
+              throw new Error(`spawnAgent returned invalid agent object: ${JSON.stringify(agent)}`);
+            }
+            
+            if (!agent.workTreePath) {
+              throw new Error(`Agent spawned without workTreePath`);
+            }
+            
+            console.log(`✅ Agent ${agentId} spawned successfully in ${agentSpawnTime}ms`);
+            console.log(`🏠 Agent work tree: ${agent.workTreePath}`);
+            console.log(`📊 Agent status: ${agent.status}`);
+            console.log(`📺 Terminal session ready - PTY output will be captured from first byte`);
+            
+          } catch (spawnError) {
+            console.error(`❌ [CRITICAL] Failed to spawn ${roleId} agent (${agentId}):`, spawnError);
+            console.error(`   Error type: ${spawnError.constructor.name}`);
+            console.error(`   Error message: ${spawnError.message}`);
+            console.error(`   Stack trace: ${spawnError.stack?.substring(0, 500) || 'N/A'}`);
+            console.error(`   🚨 This will cause phase to FAIL (as intended)`);
+            throw new Error(`Agent spawn failed for ${roleId}: ${spawnError.message}`);
+          }
           
           workflowSession.agents.set(roleId, agent);
         } else {
@@ -705,9 +733,30 @@ class AgentCoordinator extends EventEmitter {
       
       console.log(`✅ All phase agents ready: ${activeAgents.length} active agents`);
 
-      // Execute tasks based on mode
-      console.log(`🔄 Executing ${phase.tasks?.length || 0} tasks in ${phase.mode} mode...`);
-      console.log(`📝 Tasks: ${phase.tasks?.join(', ') || 'No tasks defined'}`);
+      // 🔧 FIX (Nov 23, 2025): Enhanced diagnostic logging for phase execution
+      // Helps identify which agents are being used and their status before task execution
+      console.log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
+      console.log(`🔄 [PHASE] Executing phase: ${phase.name}`);
+      console.log(`   📋 Mode: ${phase.mode}`);
+      console.log(`   📝 Tasks: ${phase.tasks?.length || 0} total`);
+      console.log(`   👥 Agents: ${activeAgents.length} active`);
+      console.log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
+      
+      // Log each active agent's details
+      activeAgents.forEach((agent, index) => {
+        console.log(`👤 Agent ${index + 1}/${activeAgents.length}:`);
+        console.log(`   Role: ${agent.role}`);
+        console.log(`   ID: ${agent.agentId}`);
+        console.log(`   Status: ${agent.status}`);
+        console.log(`   Work Tree: ${agent.workTreePath}`);
+      });
+      
+      console.log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
+      console.log(`📝 Task List:`);
+      (phase.tasks || []).forEach((task, index) => {
+        console.log(`   ${index + 1}. ${task}`);
+      });
+      console.log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
       
       const taskExecutionStart = new Date();
       
@@ -737,6 +786,23 @@ class AgentCoordinator extends EventEmitter {
         });
       } else {
         console.log(`⚠️ WARNING: No task outputs received!`);
+      }
+
+      // 🔧 FIX (Nov 23, 2025): Fail phase if no successful task outputs
+      // CRITICAL: Phase should NOT succeed if all agents failed or produced no outputs
+      // This prevents downstream phases from executing when prerequisite work is incomplete
+      if (!phaseResult.outputs || phaseResult.outputs.length === 0) {
+        console.error(`❌ [WORKFLOW] Phase ${phase.name} FAILED: No successful task outputs`);
+        console.error(`   👥 Agents in phase: ${phase.agents.join(', ')}`);
+        console.error(`   📝 Tasks assigned: ${phase.tasks?.join(', ') || 'none'}`);
+        console.error(`   🔄 Execution mode: ${phase.mode}`);
+        console.error(`   💡 This usually means agents failed to spawn or execute tasks`);
+        
+        phaseResult.status = 'failed';
+        phaseResult.endTime = new Date();
+        phaseResult.error = `No successful task outputs - all ${phase.agents.length} agent(s) failed or did not execute`;
+        
+        throw new Error(`Phase "${phase.name}" failed: No successful outputs from ${phase.agents.length} agent(s)`);
       }
 
       phaseResult.status = 'completed';

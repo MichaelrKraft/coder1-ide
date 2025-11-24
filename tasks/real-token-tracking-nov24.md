@@ -166,7 +166,30 @@ Send me screenshots/logs if issues.
 
 ---
 
-**Status**: Implementation Complete  
-**Ready**: Yes, ready to test  
+**Status**: ✅ FIXED - Path mismatch bug resolved  
+**Ready**: Yes, ready to test in live IDE  
 **Breaking Changes**: None  
 **Risk**: Low (reads files, doesn't modify anything)
+
+## 🐛 Bug Fix (November 24, 2025)
+
+**Issue**: API returned "No active Claude Code session found" even though session files exist
+
+**Root Cause**: Directory path mismatch
+- Code was using: `autonomous_vibe_interface` (underscores)
+- Actual directory: `autonomous-vibe-interface` (dashes)
+
+**Fix**: Updated Terminal.tsx line 5068
+```typescript
+// BEFORE (broken):
+const cwd = process.cwd ? process.cwd() : '/Users/michaelkraft/autonomous_vibe_interface';
+
+// AFTER (fixed):
+const cwd = '/Users/michaelkraft/autonomous-vibe-interface';
+```
+
+**Verification**: API now returns valid response:
+```bash
+curl "http://localhost:3001/api/claude/session-usage?cwd=/Users/michaelkraft/autonomous-vibe-interface"
+# Returns: {"success":true,"usage":{"input":0,"output":0,"total":0,...}}
+```
