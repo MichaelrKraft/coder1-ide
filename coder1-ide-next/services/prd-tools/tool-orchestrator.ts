@@ -22,7 +22,8 @@ import {
 } from './tool-executor';
 import {
   SimpleAPIExecutor,
-  convertToSectionContent
+  convertToSectionContent,
+  convertToAnalysisInsights
 } from './simple-api-executor';
 import type {
   AnalysisInsights,
@@ -79,12 +80,12 @@ export class PRDOrchestrator {
   ): Promise<PRDGenerationResult> {
     const startTime = Date.now();
     this.executor.resetTokenUsage();
+    this.simpleExecutor.resetTokenUsage();
     
     try {
-      // Step 1: Deep answer analysis
-      console.log('🧠 Step 1: Analyzing answers with extended thinking...');
-      const analysisResult = await analyzeAnswers(
-        this.executor,
+      // Step 1: Deep answer analysis using direct API
+      console.log('🧠 Step 1: Analyzing answers with direct API call...');
+      const analysisResult = await this.simpleExecutor.analyzeAnswers(
         answers,
         options.pattern,
         options.mode
@@ -94,8 +95,14 @@ export class PRDOrchestrator {
         return { success: false, error: analysisResult.error };
       }
       
-      const insights = analysisResult.data!;
-      console.log(`✅ Analysis complete (${analysisResult.metadata.tokensUsed.total} tokens)`);
+      // Convert result to AnalysisInsights format
+      const insights = convertToAnalysisInsights(
+        analysisResult,
+        answers,
+        options.pattern
+      );
+      
+      console.log(`✅ Analysis complete (${analysisResult.tokensUsed.total} tokens)`);
       
       // Step 2: Evidence gathering (Professional mode or if explicitly requested)
       let evidence: MarketEvidence | undefined;
@@ -167,7 +174,16 @@ export class PRDOrchestrator {
       
       // Calculate final metrics
       const duration = Date.now() - startTime;
-      const tokensUsed = this.executor.getTokenUsage();
+      
+      // Combine token usage from both executors
+      const toolTokens = this.executor.getTokenUsage(); // Evidence + Quality scoring
+      const simpleTokens = this.simpleExecutor.getTokenUsage(); // Analysis + Sections
+      const tokensUsed = {
+        input: toolTokens.input + simpleTokens.input,
+        output: toolTokens.output + simpleTokens.output,
+        total: toolTokens.total + simpleTokens.total
+      };
+      
       const cost = estimateToolCost(tokensUsed);
       
       console.log(`\n📊 Generation Summary:

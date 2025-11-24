@@ -64,13 +64,26 @@ export class CompanionClient extends EventEmitter {
 
   constructor() {
     super();
-    this.checkInstallation();
+    // 🔧 FIX (Nov 22, 2025): Don't auto-check on construction
+    // The __DISABLE_COMPANION flag is set in <head> but modules load before HTML executes
+    // Let Terminal.tsx manually trigger checkInstallation() after page load
+    // this.checkInstallation();
   }
 
   /**
    * Check if companion service is installed and running
    */
   async checkInstallation(): Promise<CompanionStatus> {
+    // 🔧 FIX (Nov 22, 2025): Skip companion health checks if disabled
+    // This prevents 100+ ERR_CONNECTION_REFUSED console spam that blocks UI rendering
+    if (typeof window !== 'undefined' && 
+        (window as any).__DISABLE_COMPANION === true) {
+      this.status.installed = false;
+      this.status.connected = false;
+      this.status.lastCheck = Date.now();
+      return this.status;
+    }
+
     this.status.lastCheck = Date.now();
 
     // Possible ports the companion might be running on

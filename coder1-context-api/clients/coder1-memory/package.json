@@ -1,0 +1,119 @@
+{
+  "name": "coder1-memory",
+  "displayName": "Coder1 Memory",
+  "description": "Eternal Memory for VS Code - Never forget a decision, insight, or breakthrough",
+  "version": "0.0.1",
+  "publisher": "coder1",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other",
+    "Snippets",
+    "Machine Learning"
+  ],
+  "keywords": [
+    "memory",
+    "ai",
+    "context",
+    "coder1",
+    "development"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "coder1.saveMemory",
+        "title": "Coder1: Save Memory",
+        "icon": "$(save)"
+      },
+      {
+        "command": "coder1.saveSession",
+        "title": "Coder1: Save Session (Full Context)",
+        "icon": "$(archive)"
+      },
+      {
+        "command": "coder1.searchMemory",
+        "title": "Coder1: Search Memories",
+        "icon": "$(search)"
+      },
+      {
+        "command": "coder1.viewAll",
+        "title": "Coder1: View All Memories",
+        "icon": "$(list-unordered)"
+      },
+      {
+        "command": "coder1.checkStatus",
+        "title": "Coder1: Check API Status",
+        "icon": "$(pulse)"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "coder1.saveMemory",
+        "key": "ctrl+shift+m",
+        "mac": "cmd+shift+m",
+        "when": "editorTextFocus"
+      },
+      {
+        "command": "coder1.saveSession",
+        "key": "ctrl+shift+s",
+        "mac": "cmd+shift+s"
+      },
+      {
+        "command": "coder1.searchMemory",
+        "key": "ctrl+shift+f",
+        "mac": "cmd+shift+f"
+      }
+    ],
+    "menus": {
+      "editor/context": [
+        {
+          "command": "coder1.saveMemory",
+          "group": "coder1",
+          "when": "editorTextFocus"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "coder1.saveMemory"
+        },
+        {
+          "command": "coder1.saveSession"
+        },
+        {
+          "command": "coder1.searchMemory"
+        },
+        {
+          "command": "coder1.viewAll"
+        },
+        {
+          "command": "coder1.checkStatus"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile",
+    "package": "vsce package",
+    "install-extension": "code --install-extension coder1-memory-0.0.1.vsix"
+  },
+  "devDependencies": {
+    "@types/node": "^24.8.1",
+    "@types/vscode": "^1.105.0",
+    "@vscode/test-electron": "^2.5.2",
+    "esbuild": "^0.25.11",
+    "typescript": "^5.9.3"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-username/coder1-memory"
+  },
+  "license": "MIT"
+}

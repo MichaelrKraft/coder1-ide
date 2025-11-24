@@ -292,27 +292,107 @@ export default function TerminalContainer({
       return newSessions;
     });
     
-    // FIX: Pre-connect agent terminal to start receiving output immediately
-    // Must use getSocket() to ensure we get the correct singleton instance
+    // 🔧 FIX (Nov 23, 2025): Robust pre-connect with retry logic
+    // CRITICAL: Agent terminals MUST connect via WebSocket BEFORE they can receive output
+    // Previous implementation had no retries, no confirmation wait, no error handling
     if (typeof window !== 'undefined') {
-      getSocket().then(socket => {
-        if (socket.connected) {
-          socket.emit('agent:terminal:connect', {
-            agentId: agentSession.id
+      const connectAgentTerminal = async () => {
+        try {
+          const socket = await getSocket();
+          
+          // Wait for socket to be connected (with timeout)
+          const waitForConnection = () => new Promise<typeof socket>((resolve) => {
+            if (socket.connected) {
+              resolve(socket);
+            } else {
+              const connectHandler = () => {
+                clearTimeout(timeout);
+                resolve(socket);
+              };
+              socket.once('connect', connectHandler);
+              
+              const timeout = setTimeout(() => {
+                socket.off('connect', connectHandler);
+                resolve(socket); // Resolve anyway, we'll check connected state
+              }, 5000);
+            }
           });
-          console.log(`🔌 Pre-connected terminal for ${agentSession.name} (${agentSession.id})`);
-        } else {
-          console.log('⏳ Socket connecting, will connect agent terminal after socket ready');
-          socket.once('connect', () => {
-            socket.emit('agent:terminal:connect', {
-              agentId: agentSession.id
+          
+          const connectedSocket = await waitForConnection();
+          
+          if (!connectedSocket.connected) {
+            console.error(`❌ Socket not connected after wait for ${agentSession.name}`);
+            return;
+          }
+          
+          console.log(`🔌 Pre-connecting terminal for ${agentSession.name} (${agentSession.id})`);
+          connectedSocket.emit('agent:terminal:connect', { agentId: agentSession.id });
+          
+          // Wait for confirmation with retry logic
+          let retries = 0;
+          const maxRetries = 5;
+          
+          const waitForConfirmation = (): Promise<boolean> => {
+            return new Promise((resolve, reject) => {
+              let timeoutId: NodeJS.Timeout;
+              let connectedHandler: (data: { agentId: string }) => void;
+              let errorHandler: (data: { agentId: string; message: string }) => void;
+              
+              const cleanup = () => {
+                clearTimeout(timeoutId);
+                connectedSocket.off('agent:terminal:connected', connectedHandler);
+                connectedSocket.off('agent:terminal:error', errorHandler);
+                connectedSocket.off('agent:terminal:pending', errorHandler);
+              };
+              
+              connectedHandler = ({ agentId: confirmedId }) => {
+                if (confirmedId === agentSession.id) {
+                  cleanup();
+                  resolve(true);
+                }
+              };
+              
+              errorHandler = ({ agentId: errorId, message }) => {
+                if (errorId === agentSession.id) {
+                  cleanup();
+                  if (retries < maxRetries) {
+                    retries++;
+                    console.log(`⏳ Retry ${retries}/${maxRetries} for ${agentSession.name}: ${message}`);
+                    connectedSocket.emit('agent:terminal:connect', { agentId: agentSession.id });
+                    waitForConfirmation().then(resolve).catch(reject);
+                  } else {
+                    reject(new Error(`Max retries (${maxRetries}) exceeded: ${message}`));
+                  }
+                }
+              };
+              
+              timeoutId = setTimeout(() => {
+                cleanup();
+                if (retries < maxRetries) {
+                  retries++;
+                  console.log(`⏰ Timeout retry ${retries}/${maxRetries} for ${agentSession.name}`);
+                  connectedSocket.emit('agent:terminal:connect', { agentId: agentSession.id });
+                  waitForConfirmation().then(resolve).catch(reject);
+                } else {
+                  reject(new Error('Max retries exceeded: timeout'));
+                }
+              }, 2000); // 2 second timeout per attempt
+              
+              connectedSocket.on('agent:terminal:connected', connectedHandler);
+              connectedSocket.on('agent:terminal:error', errorHandler);
+              connectedSocket.on('agent:terminal:pending', errorHandler);
             });
-            console.log(`🔌 Pre-connected terminal (after socket ready) for ${agentSession.name} (${agentSession.id})`);
-          });
+          };
+          
+          await waitForConfirmation();
+          console.log(`✅ Pre-connected successfully for ${agentSession.name} (${agentSession.id})`);
+          
+        } catch (error) {
+          console.error(`❌ Pre-connect failed for ${agentSession.name}:`, error);
         }
-      }).catch(error => {
-        console.error('❌ Failed to get socket for pre-connecting agent terminal:', error);
-      });
+      };
+      
+      connectAgentTerminal();
     }
     
     console.log('🤖 Agent session created:', agentSession.id, agentSession.role);
