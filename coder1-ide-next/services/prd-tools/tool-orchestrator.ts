@@ -146,7 +146,16 @@ export class PRDOrchestrator {
       
       // Step 3: Generate all sections in parallel
       console.log('📝 Step 3: Generating PRD sections in parallel...');
+      const sectionsStartTime = Date.now();
+      console.error('[RENDER-DEBUG] Section generation START TIME:', sectionsStartTime);
+      
       const sections = await this.generateAllSections(insights, options.pattern, evidence);
+      
+      const sectionsEndTime = Date.now();
+      const sectionsDuration = sectionsEndTime - sectionsStartTime;
+      console.error('[RENDER-DEBUG] Section generation END TIME:', sectionsEndTime);
+      console.error('[RENDER-DEBUG] Section generation DURATION MS:', sectionsDuration);
+      console.error('[RENDER-DEBUG] Section generation DURATION SECONDS:', Math.round(sectionsDuration / 1000));
       console.log(`✅ Sections generated (${Object.keys(sections).length} sections)`);
       
       // Step 4: Compile PRD
@@ -155,7 +164,16 @@ export class PRDOrchestrator {
       
       // Step 5: Quality scoring
       console.log('⭐ Step 5: Scoring PRD quality...');
+      const qualityStartTime = Date.now();
+      console.error('[RENDER-DEBUG] Quality scoring START TIME:', qualityStartTime);
+      
       const qualityResult = await scorePRDQuality(this.executor, prd);
+      
+      const qualityEndTime = Date.now();
+      const qualityDuration = qualityEndTime - qualityStartTime;
+      console.error('[RENDER-DEBUG] Quality scoring END TIME:', qualityEndTime);
+      console.error('[RENDER-DEBUG] Quality scoring DURATION MS:', qualityDuration);
+      console.error('[RENDER-DEBUG] Quality scoring DURATION SECONDS:', Math.round(qualityDuration / 1000));
       
       if (!qualityResult.success) {
         console.log('⚠️ Quality scoring failed, skipping validation');
