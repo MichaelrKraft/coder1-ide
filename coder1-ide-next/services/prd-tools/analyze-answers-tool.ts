@@ -248,9 +248,7 @@ Be concise but insightful.
 
 # Output Format
 
-You MUST use the analyze_answers_deeply tool to return your analysis.
-
-Return a structured JSON object with:
+Return your analysis as a structured JSON object with:
 
 \`\`\`json
 {
@@ -326,7 +324,7 @@ They've selected the **${pattern}** pattern. Use this context to guide your anal
 
 # Your Task
 
-Analyze these answers deeply. Use the analyze_answers_deeply tool to return your structured analysis.
+Analyze these answers deeply and return your structured analysis as a JSON object.
 
 Consider:
 - What are they really trying to solve?
