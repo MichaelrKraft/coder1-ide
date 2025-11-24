@@ -589,8 +589,8 @@ Role: ${agentSession.role}
         }
         
         // Submit the command
-        console.log(`📊 [DEBUG] Sending first Enter key (\\n = line feed)`);
-        agentSession.pty.write('\n');
+        console.log(`📊 [DEBUG] Sending first Enter key (\\r = carriage return)`);
+        agentSession.pty.write('\r');
         console.log(`📊 [DEBUG] First Enter sent to PTY`);
       };
       
@@ -604,8 +604,8 @@ Role: ${agentSession.role}
       // Always wait and send second Enter
       console.log(`⏳ Waiting 2s then sending second Enter to submit...`);
       await new Promise(resolve => setTimeout(resolve, 2000));
-      console.log(`📊 [DEBUG] Sending second Enter key (\\n = line feed)`);
-      agentSession.pty.write('\n');
+      console.log(`📊 [DEBUG] Sending second Enter key (\\r = carriage return)`);
+      agentSession.pty.write('\r');
       console.log(`✅ Sent second Enter key to submit task`);
       console.log(`📊 [DEBUG] Both Enter keys sent. Now monitoring for Claude's response...`);
       
