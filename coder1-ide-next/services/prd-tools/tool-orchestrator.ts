@@ -162,47 +162,27 @@ export class PRDOrchestrator {
       const prd = this.compilePRD(sections, insights, evidence, options);
       console.log('📄 Step 4: PRD compiled');
       
-      // Step 5: Quality scoring
-      console.log('⭐ Step 5: Scoring PRD quality...');
-      const qualityStartTime = Date.now();
-      console.error('[RENDER-DEBUG] Quality scoring START TIME:', qualityStartTime);
+      // Step 5: Quality scoring - DISABLED for performance (saves 108 seconds)
+      console.log('⏭️  Step 5: Skipping quality scoring (disabled for performance)');
+      console.error('[RENDER-DEBUG] Quality scoring SKIPPED - saves ~108 seconds');
       
-      const qualityResult = await scorePRDQuality(this.executor, prd);
-      
-      const qualityEndTime = Date.now();
-      const qualityDuration = qualityEndTime - qualityStartTime;
-      console.error('[RENDER-DEBUG] Quality scoring END TIME:', qualityEndTime);
-      console.error('[RENDER-DEBUG] Quality scoring DURATION MS:', qualityDuration);
-      console.error('[RENDER-DEBUG] Quality scoring DURATION SECONDS:', Math.round(qualityDuration / 1000));
-      
-      if (!qualityResult.success) {
-        console.log('⚠️ Quality scoring failed, skipping validation');
-      }
-      
-      const quality = qualityResult.data!;
-      console.log(`✅ Quality score: ${quality.overall_score}/10`);
-      
-      // Step 6: Enhancement loop if quality below target
-      let enhancementLoops = 0;
+      // Skip quality scoring and enhancement loop
       let enhancedPRD = prd;
-      const targetQuality = options.targetQuality || 8.0;
-      const maxLoops = options.maxEnhancementLoops || 2;
+      let enhancementLoops = 0;
       
-      if (quality.overall_score < targetQuality && enhancementLoops < maxLoops) {
-        console.log(`🔧 Step 6: Quality below target (${quality.overall_score} < ${targetQuality}), enhancing weak sections...`);
-        enhancedPRD = await this.enhanceWeakSections(
-          enhancedPRD,
-          quality.weak_sections,
-          sections,
-          insights,
-          evidence,
-          options.pattern
-        );
-        enhancementLoops++;
-        console.log(`✅ Enhancement complete (loop ${enhancementLoops})`);
-      } else {
-        console.log(`✅ Step 6: Quality meets target (${quality.overall_score} >= ${targetQuality})`);
-      }
+      // Mock quality object for summary (quality scoring disabled)
+      const quality = {
+        overall_score: 0, // Not calculated
+        weak_sections: []
+      };
+      
+      // Quality scoring disabled for performance:
+      // const qualityResult = await scorePRDQuality(this.executor, prd);
+      // const quality = qualityResult.data!;
+      
+      // Enhancement loop disabled (was Step 6):
+      // Saves additional time by skipping enhancement iterations
+      console.log('⏭️  Step 6: Skipping enhancement loop (quality scoring disabled)');
       
       // Calculate final metrics
       const duration = Date.now() - startTime;
