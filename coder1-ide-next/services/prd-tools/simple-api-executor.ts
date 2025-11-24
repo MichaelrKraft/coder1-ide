@@ -182,10 +182,11 @@ IMPORTANT: Respond with ONLY a valid JSON object matching the AnalysisInsights s
         total: response.usage.input_tokens + response.usage.output_tokens
       };
       
-      console.error(`[RENDER-DEBUG] Analysis completed:`);
-      console.error(`  - Duration: ${duration}ms (${(duration/1000).toFixed(1)}s)`);
-      console.error(`  - Tokens: ${tokensUsed.total} (in: ${tokensUsed.input}, out: ${tokensUsed.output})`);
-      console.error(`  - Content length: ${content.length} chars`);
+      console.error('[RENDER-DEBUG] Analysis completed - Duration:', duration + 'ms');
+      console.error('[RENDER-DEBUG] Analysis completed - Tokens total:', tokensUsed.total);
+      console.error('[RENDER-DEBUG] Analysis completed - Tokens in:', tokensUsed.input);
+      console.error('[RENDER-DEBUG] Analysis completed - Tokens out:', tokensUsed.output);
+      console.error('[RENDER-DEBUG] Analysis completed - Content length:', content.length);
       
       this.updateTokenUsage(tokensUsed);
       
