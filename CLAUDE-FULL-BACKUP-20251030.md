@@ -722,8 +722,6 @@ We welcome contributions, especially from:
 
 ## 🚀 Hybrid Hook System (Revolutionary Performance)
 
-**⚠️ STATUS (November 2025)**: Feature deferred for 2-3 weeks. UI prototype complete, backend implementation pending. See `/coder1-ide-next/public/DEFERRED_FEATURES/hooks/` for details and implementation plan.
-
 ### Overview
 The Hybrid Hook System combines lightweight bash triggers with intelligent AI delegation, inspired by Paul Duvall's Claude Code architecture. This revolutionary approach provides the best of both worlds: instant response times with bash scripts and powerful AI analysis when complexity demands it.
 

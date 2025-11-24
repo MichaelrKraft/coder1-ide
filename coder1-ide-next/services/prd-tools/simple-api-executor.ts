@@ -11,6 +11,11 @@ import {
   buildSectionSystemPrompt,
   buildSectionUserPrompt
 } from './generate-section-tool';
+import {
+  buildAnalysisSystemPrompt,
+  buildAnalysisUserPrompt,
+  postProcessAnalysis
+} from './analyze-answers-tool';
 
 export interface SimpleExecutionResult {
   success: boolean;
@@ -126,6 +131,116 @@ IMPORTANT: Respond with ONLY the markdown content for this section. Do not inclu
   }
   
   /**
+   * Analyze answers using direct API call (replaces Tool Use API)
+   */
+  async analyzeAnswers(
+    answers: any,
+    pattern: string,
+    mode: 'quick' | 'professional'
+  ): Promise<SimpleExecutionResult> {
+    const startTime = Date.now();
+    
+    try {
+      // Build prompts using existing builders
+      const systemPrompt = buildAnalysisSystemPrompt(pattern, mode);
+      const userPrompt = buildAnalysisUserPrompt(answers, pattern);
+      
+      // Add instruction to output clean JSON
+      const enhancedUserPrompt = `${userPrompt}
+
+IMPORTANT: Respond with ONLY a valid JSON object matching the AnalysisInsights structure. Do not include any preamble, explanation, markdown formatting, or code blocks. Just output the raw JSON object.
+
+Expected JSON structure:
+{
+  "problemAnalysis": {
+    "surface": "string",
+    "deep": "string",
+    "whyItMatters": "string"
+  },
+  "marketPosition": {
+    "category": "string",
+    "positioning": "string",
+    "differentiation": "string"
+  },
+  "differentiators": [
+    {
+      "feature": "string",
+      "impact": "string",
+      "evidence": "string"
+    }
+  ],
+  "risks": [
+    {
+      "risk": "string",
+      "likelihood": "low|medium|high",
+      "impact": "low|medium|high",
+      "mitigation": "string"
+    }
+  ],
+  "recommendations": [
+    {
+      "area": "string",
+      "recommendation": "string",
+      "priority": "must-have|should-have|nice-to-have"
+    }
+  ],
+  "confidence": 0.85,
+  "gaps": ["string"]
+}`;
+      
+      // Direct API call with extended thinking for Professional mode
+      const response = await this.client.messages.create({
+        model: this.model,
+        max_tokens: 8192, // More tokens for comprehensive analysis
+        temperature: 0.3, // Lower temperature for more consistent JSON
+        system: systemPrompt,
+        messages: [
+          {
+            role: 'user',
+            content: enhancedUserPrompt
+          }
+        ]
+      });
+      
+      // Extract text content from response
+      const textBlock = response.content.find(block => block.type === 'text');
+      
+      if (!textBlock || textBlock.type !== 'text') {
+        throw new Error('No text content in response');
+      }
+      
+      const content = textBlock.text;
+      const duration = Date.now() - startTime;
+      const tokensUsed = {
+        input: response.usage.input_tokens,
+        output: response.usage.output_tokens,
+        total: response.usage.input_tokens + response.usage.output_tokens
+      };
+      
+      this.updateTokenUsage(tokensUsed);
+      
+      return {
+        success: true,
+        content,
+        tokensUsed,
+        duration
+      };
+      
+    } catch (error) {
+      const duration = Date.now() - startTime;
+      
+      console.error(`❌ Answer analysis failed:`, error);
+      
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+        tokensUsed: { input: 0, output: 0, total: 0 },
+        duration
+      };
+    }
+  }
+  
+  /**
    * Update total token usage
    */
   private updateTokenUsage(tokens: { input: number; output: number; total: number }) {
@@ -192,4 +307,72 @@ export function convertToSectionContent(
     suggestions,
     word_count: wordCount
   };
+}
+
+/**
+ * Convert simple API analysis result to AnalysisInsights format
+ */
+export function convertToAnalysisInsights(
+  result: SimpleExecutionResult,
+  answers: any,
+  pattern: string
+): AnalysisInsights {
+  if (!result.success || !result.content) {
+    // Return minimal insights on failure
+    return {
+      problemAnalysis: {
+        surface: 'Analysis failed',
+        deep: result.error || 'Could not analyze answers',
+        whyItMatters: 'Unable to determine impact'
+      },
+      marketPosition: {
+        category: 'Unknown',
+        positioning: 'Unable to analyze',
+        differentiation: 'Analysis incomplete'
+      },
+      differentiators: [],
+      risks: [],
+      recommendations: [],
+      confidence: 0.1,
+      gaps: ['Analysis failed - manual review required']
+    };
+  }
+  
+  try {
+    // Parse JSON response
+    let jsonContent = result.content.trim();
+    
+    // Remove markdown code blocks if present
+    if (jsonContent.startsWith('```')) {
+      jsonContent = jsonContent.replace(/^```(?:json)?\n/, '').replace(/\n```$/, '');
+    }
+    
+    const rawAnalysis = JSON.parse(jsonContent);
+    
+    // Use existing post-processor for validation and normalization
+    return postProcessAnalysis(rawAnalysis, answers, pattern);
+    
+  } catch (error) {
+    console.error('❌ Failed to parse analysis JSON:', error);
+    console.error('   Raw content:', result.content.substring(0, 500));
+    
+    // Return minimal insights on parse failure
+    return {
+      problemAnalysis: {
+        surface: 'JSON parse failed',
+        deep: error instanceof Error ? error.message : 'Could not parse response',
+        whyItMatters: 'Unable to extract insights'
+      },
+      marketPosition: {
+        category: 'Unknown',
+        positioning: 'Parse error',
+        differentiation: 'Unable to analyze'
+      },
+      differentiators: [],
+      risks: [],
+      recommendations: [],
+      confidence: 0.1,
+      gaps: ['JSON parsing failed - check response format']
+    };
+  }
 }

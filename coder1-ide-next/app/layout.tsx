@@ -21,6 +21,8 @@ export default function RootLayout({
     <html lang="en">
       <head>
         {/* Temporarily disabled Socket.IO CDN to fix hydration issues */}
+        {/* 🔧 FIX (Nov 22, 2025): Disable companion health checks BEFORE React hydration */}
+        <script dangerouslySetInnerHTML={{__html: `window.__DISABLE_COMPANION = true;`}} />
       </head>
       <body className={inter.className}>
         <ErrorBoundary>

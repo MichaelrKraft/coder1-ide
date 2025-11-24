@@ -160,6 +160,9 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
     modeManagerRef.current = new TerminalModeManager();
   }
   
+  // Claude Code Session Token Monitoring (Nov 24, 2025)
+  const sessionUsagePollerRef = useRef<NodeJS.Timeout | null>(null);
+  
   // 🎯 CRITICAL FIX (Oct 28, 2025): Store Socket.IO handler refs for proper cleanup
   // Without this, socket.off() removes ALL listeners including ones from new component instances
   const socketHandlersRef = useRef<{
@@ -302,6 +305,12 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
   const [lastError, setLastError] = useState<string | null>(null);
   const [errorDoctorActive, setErrorDoctorActive] = useState(true);
   const socketRef = useRef<any>(null); // Will be Socket instance after async init
+  
+  // 🔧 FIX PART 3 (Nov 23, 2025): Buffer agent terminal data until xterm is ready
+  // CRITICAL: Agent terminals start hidden (display:none), xterm can't initialize
+  // BUT data starts flowing immediately from backend Claude CLI
+  // Buffer stores data until terminal becomes visible and xterm initializes
+  const agentDataBufferRef = useRef<string>('');
   
   // Error Doctor modal states - MUST be declared before useEffects that use them
   const [showErrorDoctorModal, setShowErrorDoctorModal] = useState(false);
@@ -577,6 +586,11 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
   useEffect(() => {
     if (typeof window === 'undefined') return;
     
+    // 🔧 FIX (Nov 22, 2025): Disable companion health checks to prevent console spam
+    // The companion service causes 100+ ERR_CONNECTION_REFUSED errors that block UI rendering
+    // This is especially problematic for AI Team agent terminals
+    (window as any).__DISABLE_COMPANION = true;
+    
     const initCompanion = async () => {
       try {
         const companion = getCompanionClient();
@@ -602,15 +616,17 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
     
     initCompanion();
     
-    // Check companion status periodically
-    const checkInterval = setInterval(() => {
-      if (companionClientRef.current) {
-        companionClientRef.current.checkInstallation();
-      }
-    }, 30000); // Check every 30 seconds
+    // 🔧 FIX (Nov 22, 2025): Don't run periodic companion checks - causes console spam
+    // The companion is disabled globally via __DISABLE_COMPANION flag
+    // Periodic checks would bypass this and flood console with errors
+    // const checkInterval = setInterval(() => {
+    //   if (companionClientRef.current) {
+    //     companionClientRef.current.checkInstallation();
+    //   }
+    // }, 30000); // Check every 30 seconds
     
     return () => {
-      clearInterval(checkInterval);
+      // clearInterval(checkInterval);
       if (companionClientRef.current) {
         companionClientRef.current.disconnect();
       }
@@ -2231,31 +2247,53 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
       console.log('🔌 [AGENT-SETUP] Got socket, connected:', socket?.connected);
       agentSocketRef = socket; // 🔧 Store for synchronous cleanup
       
-      // 🔧 FIX: Wait for xterm to be ready (poll with timeout)
+      // 🔧 FIX PART 2 (Nov 23, 2025): Agent terminals don't need xterm to connect
+      // CRITICAL: Hidden terminals (display:none) can't initialize xterm until visible
+      // BUT they can still receive data and buffer it for later display
+      // Skip xterm polling for agent terminals - they'll connect and buffer immediately
+      
       let term = xtermRef.current;
-      let attempts = 0;
-      console.log('⏳ [AGENT-SETUP] Waiting for xterm, initial value:', !!term);
-      while (!term && attempts < 50) { // Wait up to 5 seconds (50 * 100ms)
-        await new Promise(resolve => setTimeout(resolve, 100));
-        term = xtermRef.current;
-        attempts++;
-        if (attempts % 10 === 0) {
-          console.log(`⏳ [AGENT-SETUP] Still waiting for xterm... attempt ${attempts}/50`);
+      
+      // Only wait for xterm for non-agent terminals (regular user terminals)
+      if (!agentMode) {
+        let attempts = 0;
+        console.log('⏳ [AGENT-SETUP] Regular terminal - waiting for xterm, initial value:', !!term);
+        while (!term && attempts < 50) { // Wait up to 5 seconds (50 * 100ms)
+          await new Promise(resolve => setTimeout(resolve, 100));
+          term = xtermRef.current;
+          attempts++;
+          if (attempts % 10 === 0) {
+            console.log(`⏳ [AGENT-SETUP] Still waiting for xterm... attempt ${attempts}/50`);
+          }
+        }
+        
+        if (!term) {
+          console.error('❌ [AGENT-SETUP] Xterm never became ready after 5 seconds!');
+          return;
+        }
+        
+        console.log('✅ [AGENT-SETUP] Xterm is ready after', attempts * 100, 'ms');
+        
+        // 🔧 UX (Nov 21, 2025): Show immediate feedback while agent initializes
+        term.writeln('\x1b[36m⏳ Agent initializing... Please wait.\x1b[0m');
+        term.writeln('\x1b[90m   Claude CLI is starting up. Output will appear shortly.\x1b[0m');
+        term.writeln('');
+      } else {
+        // 🔧 Agent terminal: Connect immediately even if hidden
+        // Data will be buffered until terminal becomes visible (Part 3)
+        console.log('✅ [AGENT-SETUP] Agent terminal - skipping xterm wait (likely hidden)');
+        console.log('✅ [AGENT-SETUP] Will connect immediately and buffer data until visible');
+        
+        // If xterm IS available (terminal is visible), show welcome message
+        if (term) {
+          console.log('✅ [AGENT-SETUP] Xterm already ready - terminal is visible');
+          term.writeln('\x1b[36m⏳ Agent initializing... Please wait.\x1b[0m');
+          term.writeln('\x1b[90m   Claude CLI is starting up. Output will appear shortly.\x1b[0m');
+          term.writeln('');
+        } else {
+          console.log('⏳ [AGENT-SETUP] Xterm not ready yet - will show welcome when visible');
         }
       }
-      
-      if (!term) {
-        console.error('❌ [AGENT-SETUP] Xterm never became ready after 5 seconds!');
-        console.error('❌ [AGENT-SETUP] This is likely because the terminal div is hidden (display:none)');
-        return;
-      }
-      
-      console.log('✅ [AGENT-SETUP] Xterm is ready after', attempts * 100, 'ms');
-      
-      // 🔧 UX (Nov 21, 2025): Show immediate feedback while agent initializes
-      term.writeln('\x1b[36m⏳ Agent initializing... Please wait.\x1b[0m');
-      term.writeln('\x1b[90m   Claude CLI is starting up. Output will appear shortly.\x1b[0m');
-      term.writeln('');
 
       console.log('🤖 Setting up agent terminal connection for:', agentSession.id);
       
@@ -2271,11 +2309,24 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
         console.log('   Match?:', agentId === agentSession.id);
         console.log('   Data length:', data?.length || 0);
         
-        if (agentId === agentSession.id && term) {
-          console.log('✅ [AGENT-DATA] Filter passed! Writing', data.length, 'chars to terminal');
-          term.write(data);
+        // 🔧 FIX PART 3 (Nov 23, 2025): Buffer data if xterm not ready yet
+        // Agent terminals start hidden - xterm can't initialize until visible
+        // Buffer incoming data and flush it when terminal becomes visible
+        if (agentId === agentSession.id) {
+          const currentTerm = xtermRef.current;
+          
+          if (currentTerm) {
+            // Xterm is ready - write directly
+            console.log('✅ [AGENT-DATA] Xterm ready! Writing', data.length, 'chars to terminal');
+            currentTerm.write(data);
+          } else {
+            // Xterm not ready - buffer the data
+            console.log('⏳ [AGENT-DATA] Xterm not ready, buffering', data.length, 'chars');
+            agentDataBufferRef.current += data;
+            console.log('   Total buffered:', agentDataBufferRef.current.length, 'chars');
+          }
         } else {
-          console.warn('❌ [AGENT-DATA] Filter BLOCKED - ID mismatch or no term');
+          console.warn('❌ [AGENT-DATA] Filter BLOCKED - ID mismatch');
         }
       };
 
@@ -2380,6 +2431,40 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
       }
     };
   }, [agentMode, agentSession?.id, terminalReady]); // 🔧 FIX: Use terminalReady state instead of xtermRef.current (refs don't trigger re-renders)
+
+  // 🔧 FIX PART 3 (Nov 23, 2025): Flush buffered agent data when terminal becomes visible
+  // CRITICAL: Agent terminals start hidden - xterm can't initialize until visible
+  // This useEffect watches for xterm becoming ready and flushes any buffered data
+  useEffect(() => {
+    // Only relevant for agent terminals
+    if (!agentMode || !agentSession) {
+      return;
+    }
+    
+    const term = xtermRef.current;
+    const bufferedData = agentDataBufferRef.current;
+    
+    // If xterm is now ready AND we have buffered data, flush it
+    if (term && bufferedData.length > 0) {
+      console.log('🚀 [BUFFER-FLUSH] Xterm now ready! Flushing', bufferedData.length, 'chars of buffered data');
+      
+      // Show welcome message first (if not already shown)
+      term.writeln('\x1b[36m⏳ Agent initializing... Please wait.\x1b[0m');
+      term.writeln('\x1b[90m   Claude CLI is starting up. Output will appear shortly.\x1b[0m');
+      term.writeln('');
+      
+      // Write all buffered data
+      term.write(bufferedData);
+      
+      // Clear the buffer
+      agentDataBufferRef.current = '';
+      console.log('✅ [BUFFER-FLUSH] Buffer flushed and cleared');
+    } else if (term && bufferedData.length === 0) {
+      console.log('✅ [BUFFER-FLUSH] Xterm ready, but no buffered data (all live data written)');
+    } else if (!term && bufferedData.length > 0) {
+      console.log('⏳ [BUFFER-FLUSH] Data buffered, waiting for xterm... (', bufferedData.length, 'chars buffered)');
+    }
+  }, [agentMode, agentSession, terminalReady]); // terminalReady changes when xterm initializes
 
   // Store isConnected in a ref for use in callbacks
   const isConnectedRef = useRef(false);
@@ -3777,11 +3862,15 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
           
           // ⚡ PERFORMANCE FIX (Feb 2, 2025): Removed store.updateTokenUsage() from hot path
           // This was triggering Zustand subscribers 50-100 times per response
-          // ✅ IMPLEMENTED (Nov 22, 2025): Token counting moved here with parsing
-          
-          // Parse token usage from Claude Code output
+          // Moved to outside this conditional block (Nov 22, 2025)
+        }
+        
+        // ✅ TOKEN PARSING (Nov 22, 2025): Parse token usage from ALL terminal output
+        // Must be OUTSIDE the Claude activity detection block to catch all token displays
+        if (data.length > 10) { // Skip tiny fragments
           const tokenUpdate = parseClaudeTokenUsage(data);
           if (tokenUpdate) {
+            console.log('📊 Token usage detected:', tokenUpdate);
             const store = useIDEStore.getState();
             store.updateTokenUsage(tokenUpdate);
           }
@@ -4963,6 +5052,54 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
     }
     return '';
   }, []);
+
+  // Claude Code Session Token Monitoring (Nov 24, 2025)
+  // Poll for token usage updates from Claude Code session files
+  useEffect(() => {
+    // Only monitor if we have a session ID and not in sandbox mode
+    if (!sessionId || sandboxMode) return;
+
+    console.log('📊 Starting Claude Code session token monitoring');
+
+    // Poll every 5 seconds for token usage updates
+    const pollSessionUsage = async () => {
+      try {
+        // Get current working directory from terminal (if available)
+        const cwd = process.cwd ? process.cwd() : '/Users/michaelkraft/autonomous_vibe_interface';
+        
+        const response = await fetch(`/api/claude/session-usage?cwd=${encodeURIComponent(cwd)}`);
+        
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && data.usage) {
+            // Update token counter with real Claude Code session data
+            const store = useIDEStore.getState();
+            store.updateTokenUsage({
+              input: data.usage.input,
+              output: data.usage.output,
+              total: data.usage.total
+            });
+            console.log('📊 Updated token usage from Claude Code session:', data.usage);
+          }
+        }
+      } catch (error) {
+        // Silent fail - session file might not exist yet
+      }
+    };
+
+    // Initial poll
+    pollSessionUsage();
+
+    // Set up polling interval
+    sessionUsagePollerRef.current = setInterval(pollSessionUsage, 5000);
+
+    return () => {
+      if (sessionUsagePollerRef.current) {
+        clearInterval(sessionUsagePollerRef.current);
+        sessionUsagePollerRef.current = null;
+      }
+    };
+  }, [sessionId, sandboxMode]);
 
   // Keyboard shortcuts for staged composer
   useEffect(() => {
