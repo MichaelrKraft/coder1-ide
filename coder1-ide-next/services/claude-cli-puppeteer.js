@@ -556,46 +556,101 @@ Role: ${agentSession.role}
 `;
       
       console.log(`💬 Writing task to ${agentId} interactive PTY`);
-      console.log(`📝 Prompt length: ${enhancedPrompt.length} characters`);
+      console.log(`📝 Prompt structure:`);
+      console.log(`   - Total length: ${enhancedPrompt.length} chars`);
+      console.log(`   - Line count: ${enhancedPrompt.split('\n').length} lines`);
+      console.log(`   - Has markdown: ${enhancedPrompt.includes('##') ? 'YES' : 'NO'}`);
+      console.log(`   - Has code blocks: ${enhancedPrompt.includes('```') ? 'YES' : 'NO'}`);
       
-      // 🔧 FIX (Nov 22, 2025): Send prompt character-by-character to avoid paste mode
-      // Bracketed paste mode triggers when too much text is sent at once
-      // Send slowly to make it look like typing, not pasting
-      console.log(`💬 Sending task to ${agentId} character-by-character (${enhancedPrompt.length} chars)`);
+      // 🔧 CRITICAL FIX (Nov 24, 2025): Send prompt with structure preserved
+      // PTY handles multi-line input via bracketed paste mode
+      console.log(`💬 Sending ${enhancedPrompt.length} char prompt to ${agentId} (structure preserved)`);
       
-      const singleLinePrompt = enhancedPrompt.replace(/\n/g, ' ');
+      // Send entire prompt with newlines preserved
+      agentSession.pty.write(enhancedPrompt);
       
-      // Send prompt one character at a time with small delays (async function)
-      const sendCharByChar = async () => {
-        for (let i = 0; i < singleLinePrompt.length; i++) {
-          agentSession.pty.write(singleLinePrompt[i]);
-          // Add tiny delay every 10 characters to avoid overwhelming PTY
-          if (i % 10 === 0) {
-            await new Promise(resolve => setTimeout(resolve, 5)); // 5ms delay
+      // First Enter: Exit paste preview
+      agentSession.pty.write('\n');
+      
+      // Small delay to let paste mode exit
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      // Second Enter: Actually submit the pasted content
+      agentSession.pty.write('\n');
+      
+      console.log(`✅ Prompt sent to ${agentId} PTY:`);
+      console.log(`   - Newlines: PRESERVED (${enhancedPrompt.split('\n').length} lines)`);
+      console.log(`   - Structure: INTACT`);
+      console.log(`   - Submission: Double Enter (paste mode)`);
+      console.log(`   - Preview: "${enhancedPrompt.substring(0, 100)}..."`);
+      
+      // 🔧 FIX TIER 2 (Nov 24, 2025): Verify Claude accepted the prompt before waiting for files
+      // This detects if Claude understood and started processing the task
+      // Prevents 30-minute waits when prompt was rejected
+      console.log(`⏳ Waiting for ${agentId} to accept prompt and start working...`);
+      
+      let promptAccepted = false;
+      const acceptancePromise = new Promise((resolve, reject) => {
+        const acceptanceTimeout = setTimeout(() => {
+          agentSession.pty.removeListener('data', acceptanceListener);
+          if (!promptAccepted) {
+            console.warn(`⚠️ No clear acceptance signal from ${agentId} within 15s - proceeding to file detection`);
+            // Don't reject - proceed anyway as fallback
+            resolve();
           }
-        }
+        }, 15000); // 15 second timeout
         
-        // Submit the command
-        agentSession.pty.write('\n');
-      };
+        const acceptanceListener = (data) => {
+          const output = data.toString();
+          
+          // Detect Claude starting to process (positive signals)
+          const positiveSignals = [
+            'Thinking', 'I\'ll help', 'Let me', 'I understand',
+            'Creating', 'Writing', 'Analyzing', 'I\'ve created',
+            'I\'ve written', 'I can help', 'Sure', 'I\'ll create'
+          ];
+          
+          for (const signal of positiveSignals) {
+            if (output.includes(signal)) {
+              promptAccepted = true;
+              clearTimeout(acceptanceTimeout);
+              agentSession.pty.removeListener('data', acceptanceListener);
+              console.log(`✅ ${agentId} accepted prompt - detected signal: "${signal}"`);
+              console.log(`📝 Response preview: "${output.substring(0, 150).replace(/\\n/g, ' ')}..."`);
+              resolve();
+              return;
+            }
+          }
+          
+          // Detect errors or rejections (negative signals)
+          const negativeSignals = [
+            'Error:', 'I don\'t understand', 'Could you clarify',
+            'I\'m not sure', 'Can you provide more', 'I need more information'
+          ];
+          
+          for (const signal of negativeSignals) {
+            if (output.includes(signal)) {
+              clearTimeout(acceptanceTimeout);
+              agentSession.pty.removeListener('data', acceptanceListener);
+              console.error(`❌ ${agentId} rejected/confused by prompt - detected: "${signal}"`);
+              console.error(`📝 Error response: "${output.substring(0, 300).replace(/\\n/g, ' ')}..."`);
+              reject(new Error(`Prompt rejected: ${output.substring(0, 200)}`));
+              return;
+            }
+          }
+        };
+        
+        // Listen for PTY output
+        agentSession.pty.on('data', acceptanceListener);
+      });
       
-      await sendCharByChar();
-      
-      console.log(`✅ Task sent to ${agentId} PTY character-by-character (avoids paste mode)`);
-      
-      // 🔍 [DEBUG] Check if we reach the delayed Enter code block
-      console.log(`🔍 [DEBUG] About to check delayed Enter condition:`);
-      console.log(`   - enhancedPrompt.length = ${enhancedPrompt.length}`);
-      console.log(`   - Should trigger (>500)? ${enhancedPrompt.length > 500}`);
-      
-      // 🔧 FIX (Nov 22, 2025): Claude CLI fancy rendering mode issue
-      // Long prompts (>500 chars) trigger fancy box rendering which requires additional Enter
-      // Wait 2 seconds for rendering to complete, then send another Enter to submit
-      if (enhancedPrompt.length > 500) {
-        console.log(`⏳ Long prompt detected (${enhancedPrompt.length} chars) - waiting 2s for fancy rendering...`);
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        agentSession.pty.write('\n');
-        console.log(`✅ Sent additional Enter key to submit fancy-rendered task`);
+      try {
+        await acceptancePromise;
+        console.log(`🎯 ${agentId} is now actively working on task`);
+      } catch (acceptanceError) {
+        console.error(`❌ Prompt acceptance failed for ${agentId}:`, acceptanceError.message);
+        // Re-throw to fail early rather than wait 30 minutes
+        throw acceptanceError;
       }
       
       let hasResponded = false;

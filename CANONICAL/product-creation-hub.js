@@ -18,6 +18,7 @@ class ProductCreationHub {
         this.projectIntelligence = null;
         this.eventListenersInitialized = false;
         this.isProcessing = false;
+        this.selectedTemplate = null;
         
         console.log('🔧 Initial state:', {
             sessionId: this.sessionId,
@@ -615,14 +616,21 @@ class ProductCreationHub {
         }
     }
 
-    completeQuestioning() {
+    async completeQuestioning() {
         this.updateProgress(50, 'Interview completed');
         this.updateQuestionProgress(this.questions.length, this.questions.length);
         
         this.addMessageToChat(
-            'Excellent! I have all the information I need. ✅ **Next Step**: Click the "Generate PRD" button in Step 3 on the right to create your Product Requirements Document.',
+            'Excellent! I have all the information I need. Let me analyze your requirements and find matching templates...',
             'assistant'
         );
+
+        try {
+            await this.fetchAndDisplayTemplateRecommendations();
+        } catch (error) {
+            console.error('Error fetching template recommendations:', error);
+            this.proceedWithoutTemplate();
+        }
 
         this.setStep(3);
         document.getElementById('generatePRD').disabled = false;
@@ -2710,6 +2718,198 @@ Please analyze this PRD and help me build this project step by step.`;
         } catch (error) {
             console.error('Failed to create initial version:', error);
         }
+    }
+
+    async fetchAndDisplayTemplateRecommendations() {
+        try {
+            const requirements = this.extractRequirements();
+            
+            const response = await fetch('/api/templates/recommend', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    requirements,
+                    limit: 5,
+                    minScore: 50
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error(`API error: ${response.status}`);
+            }
+
+            const result = await response.json();
+
+            if (result.success && result.templates && result.templates.length > 0) {
+                this.displayTemplateCards(result.templates);
+            } else {
+                this.proceedWithoutTemplate();
+            }
+        } catch (error) {
+            console.error('Error fetching templates:', error);
+            this.proceedWithoutTemplate();
+        }
+    }
+
+    extractRequirements() {
+        const requirements = {
+            initialRequest: this.currentProject?.originalRequest || '',
+            features: [],
+            techStack: {},
+            scope: 'mvp'
+        };
+
+        this.answers.forEach((answer, index) => {
+            const question = this.questions[index];
+            const answerText = answer.answer.toLowerCase();
+
+            if (question.toLowerCase().includes('feature')) {
+                const features = answerText.split(/[,;]/).map(f => f.trim()).filter(f => f);
+                requirements.features.push(...features);
+            }
+
+            if (question.toLowerCase().includes('tech') || question.toLowerCase().includes('stack')) {
+                if (answerText.includes('react')) requirements.techStack.frontend = 'React';
+                if (answerText.includes('next')) requirements.techStack.frontend = 'Next.js';
+                if (answerText.includes('vue')) requirements.techStack.frontend = 'Vue.js';
+                if (answerText.includes('node')) requirements.techStack.backend = 'Node.js';
+                if (answerText.includes('python')) requirements.techStack.backend = 'Python';
+                if (answerText.includes('django')) requirements.techStack.backend = 'Django';
+                if (answerText.includes('postgres')) requirements.techStack.database = 'PostgreSQL';
+                if (answerText.includes('mongodb')) requirements.techStack.database = 'MongoDB';
+                if (answerText.includes('mysql')) requirements.techStack.database = 'MySQL';
+            }
+
+            if (question.toLowerCase().includes('scope') || question.toLowerCase().includes('timeline')) {
+                if (answerText.includes('quick') || answerText.includes('fast') || answerText.includes('mvp')) {
+                    requirements.scope = 'mvp';
+                } else if (answerText.includes('full') || answerText.includes('complete')) {
+                    requirements.scope = 'full-featured';
+                }
+            }
+        });
+
+        return requirements;
+    }
+
+    displayTemplateCards(templates) {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = 'message assistant-message template-recommendation-section';
+        
+        let cardsHTML = '<div class="template-cards-container">';
+        
+        templates.forEach(recommendation => {
+            cardsHTML += this.createTemplateCard(recommendation);
+        });
+        
+        cardsHTML += '</div>';
+        
+        cardsHTML += `
+            <div class="template-actions">
+                <button class="btn btn-secondary" onclick="window.productCreationHub.proceedWithoutTemplate()">
+                    ⚡ Start from Scratch Instead
+                </button>
+            </div>
+        `;
+        
+        messageDiv.innerHTML = `
+            <div class="message-avatar">
+                <i class="fas fa-robot"></i>
+            </div>
+            <div class="message-content">
+                <h3 style="margin-top: 0;">🎯 Recommended Templates</h3>
+                <p>Based on your requirements, here are some templates that could accelerate your development:</p>
+                ${cardsHTML}
+            </div>
+        `;
+        
+        const chatMessages = document.getElementById('chatMessages');
+        chatMessages.appendChild(messageDiv);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    createTemplateCard(recommendation) {
+        const { template, compatibilityScore, matchReasons } = recommendation;
+        
+        const scoreClass = compatibilityScore >= 80 ? 'high' : compatibilityScore >= 60 ? 'medium' : 'low';
+        
+        const featuresHTML = template.features.slice(0, 4).map(f => 
+            `<li>${f}</li>`
+        ).join('');
+        
+        const reasonsHTML = matchReasons.slice(0, 3).map(r => 
+            `<li>${r}</li>`
+        ).join('');
+        
+        return `
+            <div class="template-card coder1-card-3d" data-template-id="${template.id}">
+                <div class="template-card-header">
+                    <h4>${template.name}</h4>
+                    <div class="compatibility-badge ${scoreClass}">${compatibilityScore}%</div>
+                </div>
+                <p class="template-description">${template.description}</p>
+                
+                <div class="template-tech-stack">
+                    <span class="tech-badge">${template.techStack.frontend || 'N/A'}</span>
+                    <span class="tech-badge">${template.techStack.backend || 'N/A'}</span>
+                    ${template.techStack.database ? `<span class="tech-badge">${template.techStack.database}</span>` : ''}
+                </div>
+                
+                <div class="template-features">
+                    <strong>Key Features:</strong>
+                    <ul>${featuresHTML}</ul>
+                </div>
+                
+                <div class="match-reasons">
+                    <strong>Why this matches:</strong>
+                    <ul>${reasonsHTML}</ul>
+                </div>
+                
+                <div class="template-meta">
+                    <span>⏱️ ${template.estimatedSetupTime}</span>
+                    <span>📊 ${template.difficultyLevel}</span>
+                </div>
+                
+                <button class="btn btn-primary template-select-btn" onclick="window.productCreationHub.selectTemplate('${template.id}', '${template.name}', ${compatibilityScore})">
+                    Use This Template
+                </button>
+            </div>
+        `;
+    }
+
+    selectTemplate(templateId, templateName, compatibilityScore) {
+        this.selectedTemplate = {
+            id: templateId,
+            name: templateName,
+            compatibilityScore: compatibilityScore,
+            selectedAt: new Date().toISOString()
+        };
+        
+        console.log('Template selected:', this.selectedTemplate);
+        
+        this.addMessageToChat(
+            `✅ Great choice! I've selected **${templateName}** (${compatibilityScore}% match). This will be included in your PRD. Click "Generate PRD" to continue.`,
+            'assistant'
+        );
+        
+        const allCards = document.querySelectorAll('.template-card');
+        allCards.forEach(card => {
+            if (card.dataset.templateId === templateId) {
+                card.style.border = '2px solid #8b5cf6';
+                card.style.boxShadow = '0 0 20px rgba(139, 92, 246, 0.5)';
+            } else {
+                card.style.opacity = '0.5';
+            }
+        });
+    }
+
+    proceedWithoutTemplate() {
+        this.selectedTemplate = null;
+        
+        this.addMessageToChat(
+            '✅ No problem! We\'ll build from scratch. Click "Generate PRD" to create your custom Product Requirements Document.',
+            'assistant'
+        );
     }
 }
 

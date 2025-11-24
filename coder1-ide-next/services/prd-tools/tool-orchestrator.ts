@@ -103,6 +103,13 @@ export class PRDOrchestrator {
       );
       
       console.log(`✅ Analysis complete (${analysisResult.tokensUsed.total} tokens)`);
+      console.log('📊 DEBUG - Insights extracted:', JSON.stringify({
+        problemSurface: insights.problemAnalysis.surface.substring(0, 100),
+        marketCategory: insights.marketPosition.category,
+        differentiators: insights.differentiators.length,
+        risks: insights.risks.length,
+        confidence: insights.confidence
+      }));
       
       // Step 2: Evidence gathering (Professional mode or if explicitly requested)
       let evidence: MarketEvidence | undefined;

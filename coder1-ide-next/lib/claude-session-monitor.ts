@@ -47,12 +47,20 @@ export function getClaudeProjectDir(cwd: string): string {
  */
 export function findRecentSessionFile(projectDir: string): string | null {
   try {
+    console.log('📊 [findRecentSessionFile] Checking dir:', projectDir);
+    
     if (!fs.existsSync(projectDir)) {
+      console.log('📊 [findRecentSessionFile] Directory does not exist');
       return null;
     }
 
-    const files = fs.readdirSync(projectDir)
-      .filter(f => f.endsWith('.jsonl'))
+    const allFiles = fs.readdirSync(projectDir);
+    console.log('📊 [findRecentSessionFile] Found', allFiles.length, 'total files');
+    
+    const jsonlFiles = allFiles.filter(f => f.endsWith('.jsonl'));
+    console.log('📊 [findRecentSessionFile] Found', jsonlFiles.length, 'jsonl files');
+    
+    const files = jsonlFiles
       .map(f => ({
         name: f,
         path: path.join(projectDir, f),
@@ -60,7 +68,9 @@ export function findRecentSessionFile(projectDir: string): string | null {
       }))
       .sort((a, b) => b.mtime.getTime() - a.mtime.getTime());
 
-    return files.length > 0 ? files[0].path : null;
+    const result = files.length > 0 ? files[0].path : null;
+    console.log('📊 [findRecentSessionFile] Returning:', result);
+    return result;
   } catch (error) {
     console.error('Error finding session file:', error);
     return null;
@@ -140,13 +150,18 @@ export function getSessionTokenUsage(sessionFilePath: string): ClaudeTokenUsage 
 export function getCurrentSessionUsage(cwd: string): ClaudeTokenUsage | null {
   try {
     const projectDir = getClaudeProjectDir(cwd);
+    console.log('📊 [Monitor] Looking for project dir:', projectDir);
+    
     const sessionFile = findRecentSessionFile(projectDir);
+    console.log('📊 [Monitor] Found session file:', sessionFile);
     
     if (!sessionFile) {
       return null;
     }
 
-    return getSessionTokenUsage(sessionFile);
+    const usage = getSessionTokenUsage(sessionFile);
+    console.log('📊 [Monitor] Calculated usage:', usage);
+    return usage;
   } catch (error) {
     console.error('Error getting current session usage:', error);
     return null;

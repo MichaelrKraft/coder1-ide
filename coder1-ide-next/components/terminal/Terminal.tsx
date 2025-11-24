@@ -5064,8 +5064,8 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
     // Poll every 5 seconds for token usage updates
     const pollSessionUsage = async () => {
       try {
-        // Get current working directory from terminal (if available)
-        const cwd = process.cwd ? process.cwd() : '/Users/michaelkraft/autonomous_vibe_interface';
+        // Use correct directory path (with dashes, not underscores)
+        const cwd = '/Users/michaelkraft/autonomous-vibe-interface';
         
         const response = await fetch(`/api/claude/session-usage?cwd=${encodeURIComponent(cwd)}`);
         

@@ -78,7 +78,13 @@ export async function POST(request: NextRequest) {
       ? recommendations.reduce((sum, rec) => sum + rec.compatibilityScore, 0) / recommendations.length
       : 0;
 
+    // Calculate performance metrics
+    const totalTemplates = recommender.getAllTemplates().length;
+    const perTemplateAvg = totalTemplates > 0 ? processingTime / totalTemplates : 0;
+    const topScore = recommendations.length > 0 ? recommendations[0].compatibilityScore : 0;
+
     logger.info(`✅ Returned ${recommendations.length} recommendations in ${processingTime}ms`);
+    logger.info(`📊 Performance: ${perTemplateAvg.toFixed(1)}ms per template, top score: ${topScore}%`);
 
     return NextResponse.json({
       success: true,
@@ -86,7 +92,15 @@ export async function POST(request: NextRequest) {
       totalCount: recommendations.length,
       averageScore: Math.round(averageScore),
       processingTime,
-      catalogVersion: recommender.getCatalogVersion()
+      catalogVersion: recommender.getCatalogVersion(),
+      performanceMetrics: {
+        totalProcessingTime: processingTime,
+        perTemplateAverage: Math.round(perTemplateAvg * 100) / 100,
+        templatesEvaluated: totalTemplates,
+        recommendationsReturned: recommendations.length,
+        topScore,
+        cacheHitRate: 'N/A' // Placeholder for future cache analytics
+      }
     });
 
   } catch (error) {

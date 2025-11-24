@@ -4,7 +4,10 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getCurrentSessionUsage } from '@/lib/claude-session-monitor';
+import { getCurrentSessionUsage, getClaudeProjectDir, findRecentSessionFile } from '@/lib/claude-session-monitor';
+import fs from 'fs';
+import path from 'path';
+import os from 'os';
 
 export async function GET(request: NextRequest) {
   try {
@@ -18,11 +21,24 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    console.log('📊 [API] Getting session usage for cwd:', cwd);
+    
+    // Debug: Check what directory we're looking for
+    const projectDir = getClaudeProjectDir(cwd);
+    console.log('📊 [API] Project dir would be:', projectDir);
+    console.log('📊 [API] Directory exists?:', fs.existsSync(projectDir));
+    
+    if (fs.existsSync(projectDir)) {
+      const files = fs.readdirSync(projectDir).filter(f => f.endsWith('.jsonl'));
+      console.log('📊 [API] Found', files.length, 'session files');
+    }
+    
     const usage = getCurrentSessionUsage(cwd);
+    console.log('📊 [API] Usage result:', usage);
 
     if (!usage) {
       return NextResponse.json(
-        { error: 'No active Claude Code session found' },
+        { error: 'No active Claude Code session found', debug: { cwd, projectDir } },
         { status: 404 }
       );
     }
