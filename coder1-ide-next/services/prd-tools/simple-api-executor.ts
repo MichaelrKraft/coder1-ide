@@ -148,45 +148,7 @@ IMPORTANT: Respond with ONLY the markdown content for this section. Do not inclu
       // Add instruction to output clean JSON
       const enhancedUserPrompt = `${userPrompt}
 
-IMPORTANT: Respond with ONLY a valid JSON object matching the AnalysisInsights structure. Do not include any preamble, explanation, markdown formatting, or code blocks. Just output the raw JSON object.
-
-Expected JSON structure:
-{
-  "problemAnalysis": {
-    "surface": "string",
-    "deep": "string",
-    "whyItMatters": "string"
-  },
-  "marketPosition": {
-    "category": "string",
-    "positioning": "string",
-    "differentiation": "string"
-  },
-  "differentiators": [
-    {
-      "feature": "string",
-      "impact": "string",
-      "evidence": "string"
-    }
-  ],
-  "risks": [
-    {
-      "risk": "string",
-      "likelihood": "low|medium|high",
-      "impact": "low|medium|high",
-      "mitigation": "string"
-    }
-  ],
-  "recommendations": [
-    {
-      "area": "string",
-      "recommendation": "string",
-      "priority": "must-have|should-have|nice-to-have"
-    }
-  ],
-  "confidence": 0.85,
-  "gaps": ["string"]
-}`;
+IMPORTANT: Respond with ONLY a valid JSON object matching the AnalysisInsights structure described in the system prompt. Do not include any preamble, explanation, markdown formatting, or code blocks. Just output the raw JSON object with your actual analysis.`;
       
       // Direct API call with extended thinking for Professional mode
       const response = await this.client.messages.create({
