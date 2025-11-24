@@ -569,6 +569,15 @@ Role: ${agentSession.role}
       
       const singleLinePrompt = enhancedPrompt.replace(/\n/g, ' ');
       
+      // 🔍 DIAGNOSTIC LOGGING (Nov 24, 2025)
+      console.log(`📊 [DEBUG] Original prompt preview (first 500 chars):`);
+      console.log(enhancedPrompt.substring(0, 500));
+      console.log(`📊 [DEBUG] Single-line prompt preview (first 500 chars):`);
+      console.log(singleLinePrompt.substring(0, 500));
+      console.log(`📊 [DEBUG] Structure comparison:`);
+      console.log(`   - Original lines: ${enhancedPrompt.split('\n').length}`);
+      console.log(`   - After conversion: Single line with ${singleLinePrompt.length} chars`);
+      
       // Send prompt one character at a time with small delays (async function)
       const sendCharByChar = async () => {
         for (let i = 0; i < singleLinePrompt.length; i++) {
@@ -580,7 +589,9 @@ Role: ${agentSession.role}
         }
         
         // Submit the command
+        console.log(`📊 [DEBUG] Sending first Enter key (\\n = line feed)`);
         agentSession.pty.write('\n');
+        console.log(`📊 [DEBUG] First Enter sent to PTY`);
       };
       
       await sendCharByChar();
@@ -593,8 +604,10 @@ Role: ${agentSession.role}
       // Always wait and send second Enter
       console.log(`⏳ Waiting 2s then sending second Enter to submit...`);
       await new Promise(resolve => setTimeout(resolve, 2000));
+      console.log(`📊 [DEBUG] Sending second Enter key (\\n = line feed)`);
       agentSession.pty.write('\n');
       console.log(`✅ Sent second Enter key to submit task`);
+      console.log(`📊 [DEBUG] Both Enter keys sent. Now monitoring for Claude's response...`);
       
       
       // 🔧 FIX TIER 2 (Nov 24, 2025): Verify Claude accepted the prompt before waiting for files
@@ -615,6 +628,9 @@ Role: ${agentSession.role}
         
         const acceptanceListener = (data) => {
           const output = data.toString();
+          
+          // 🔍 DIAGNOSTIC: Log ALL PTY output during acceptance phase
+          console.log(`📊 [PTY OUTPUT] ${output.substring(0, 300).replace(/\n/g, '\\n')}`);
           
           // Detect Claude starting to process (positive signals)
           const positiveSignals = [
