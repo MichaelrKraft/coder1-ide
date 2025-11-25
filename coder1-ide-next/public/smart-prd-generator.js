@@ -11,12 +11,9 @@ class SmartPRDGenerator {
         this.currentQuestion = null;
         this.currentQuestionIndex = 0;
         this.answers = {};
-        this.selectedPattern = null; // For backward compatibility
-        this.selectedPatterns = []; // Array for multiple pattern selection
         this.selectedMode = null; // 'quick' or 'professional'
         this.generatedPRD = null;
         this.handoffId = null;
-        this.patterns = [];
         this.totalQuestions = 5; // Will be updated based on mode
         this.recommendedTemplates = []; // AI-recommended templates
         this.selectedTemplate = null; // User-selected template
@@ -29,9 +26,6 @@ class SmartPRDGenerator {
         
         // Initialize dark mode from localStorage
         this.initDarkMode();
-        
-        // Load available patterns
-        await this.loadPatterns();
         
         // Set up event listeners
         this.setupEventListeners();
@@ -96,159 +90,6 @@ class SmartPRDGenerator {
         });
     }
 
-    async loadPatterns() {
-        try {
-            const response = await fetch('/api/smart-prd/patterns/');
-            const data = await response.json();
-            
-            if (data.success) {
-                this.patterns = data.patterns;
-                this.renderPatterns();
-                console.log(`📋 Loaded ${this.patterns.length} patterns`);
-            }
-        } catch (error) {
-            console.error('Failed to load patterns:', error);
-            this.showToast('Failed to load patterns', 'error');
-        }
-    }
-
-    renderPatterns() {
-        const grid = document.getElementById('patterns-grid');
-        if (!grid) return;
-
-        grid.innerHTML = this.patterns.map(pattern => `
-            <div class="pattern-card bg-white rounded-xl shadow-lg p-6 cursor-pointer border-2 border-transparent hover:border-primary transition-all"
-                 data-pattern-id="${pattern.id}"
-                 onclick="prdGenerator.selectPattern('${pattern.id}')">
-                <div class="flex items-center justify-between mb-4">
-                    <h3 class="text-xl font-bold text-gray-900">${pattern.name}</h3>
-                    <div class="px-3 py-1 bg-${this.getCategoryColor(pattern.category)}-100 text-${this.getCategoryColor(pattern.category)}-800 rounded-full text-sm font-medium">
-                        ${pattern.category}
-                    </div>
-                </div>
-                
-                <p class="text-gray-600 mb-4 text-sm">${pattern.description}</p>
-                
-                <div class="flex justify-between items-center text-sm text-gray-500 mb-4">
-                    <span class="flex items-center">
-                        <svg class="w-4 h-4 mr-1 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
-                        </svg>
-                        ${pattern.successRate}% success
-                    </span>
-                    <span>${pattern.timeToMarket}</span>
-                </div>
-                
-                <div class="flex flex-wrap gap-2">
-                    ${(pattern.technical?.primaryTech || []).slice(0, 3).map(tag => 
-                        `<span class="px-2 py-1 bg-gray-100 text-gray-600 rounded text-xs">${tag}</span>`
-                    ).join('')}
-                </div>
-                
-                <div class="mt-4 pt-4 border-t border-gray-100">
-                    <button class="w-full bg-gradient-to-r from-primary to-secondary text-white py-2 rounded-lg hover:shadow-lg transition-all">
-                        <span class="pattern-select-text">Select This Pattern</span>
-                    </button>
-                </div>
-            </div>
-        `).join('');
-    }
-
-    getCategoryColor(category) {
-        const colors = {
-            'saas': 'blue',
-            'ecommerce': 'green',
-            'collaboration': 'purple',
-            'devtools': 'indigo',
-            'social': 'pink',
-            'analytics': 'yellow',
-            'marketplace': 'red',
-            'design': 'teal'
-        };
-        return colors[category] || 'gray';
-    }
-
-    selectPattern(patternId) {
-        const pattern = this.patterns.find(p => p.id === patternId);
-        if (!pattern) return;
-        
-        // Toggle pattern selection
-        const index = this.selectedPatterns.findIndex(p => p.id === patternId);
-        if (index > -1) {
-            // Deselect pattern
-            this.selectedPatterns.splice(index, 1);
-            console.log('❌ Deselected pattern:', pattern.name);
-        } else {
-            // Select pattern
-            this.selectedPatterns.push(pattern);
-            console.log('✅ Selected pattern:', pattern.name);
-        }
-        
-        // Update UI
-        this.updatePatternSelection();
-        
-        // For backward compatibility
-        this.selectedPattern = this.selectedPatterns[0] || null;
-    }
-    
-    updatePatternSelection() {
-        // Update pattern cards visual state
-        const cards = document.querySelectorAll('.pattern-card');
-        cards.forEach(card => {
-            const patternId = card.getAttribute('data-pattern-id');
-            const isSelected = this.selectedPatterns.some(p => p.id === patternId);
-            const button = card.querySelector('.pattern-select-text');
-            
-            if (isSelected) {
-                // Selected state: prominent border and background
-                card.classList.add('border-primary', 'border-4', 'bg-blue-50', 'dark:bg-blue-900');
-                card.classList.remove('border-transparent', 'border-2', 'bg-white', 'dark:bg-gray-800');
-                if (button) {
-                    button.textContent = '✓ Selected';
-                    button.parentElement.classList.add('bg-green-500', 'hover:bg-green-600');
-                    button.parentElement.classList.remove('bg-gradient-to-r', 'from-primary', 'to-secondary');
-                }
-            } else {
-                // Unselected state: default styling
-                card.classList.remove('border-primary', 'border-4', 'bg-blue-50', 'dark:bg-blue-900');
-                card.classList.add('border-transparent', 'border-2', 'bg-white', 'dark:bg-gray-800');
-                if (button) {
-                    button.textContent = 'Select This Pattern';
-                    button.parentElement.classList.remove('bg-green-500', 'hover:bg-green-600');
-                    button.parentElement.classList.add('bg-gradient-to-r', 'from-primary', 'to-secondary');
-                }
-            }
-        });
-        
-        // Update selected patterns display
-        const selectedDisplay = document.getElementById('selected-patterns');
-        const selectedList = document.getElementById('selected-patterns-list');
-        
-        if (this.selectedPatterns.length > 0) {
-            selectedDisplay?.classList.remove('hidden');
-            if (selectedList) {
-                selectedList.textContent = this.selectedPatterns.map(p => p.name).join(', ');
-            }
-        } else {
-            selectedDisplay?.classList.add('hidden');
-        }
-    }
-    
-    proceedWithPatterns() {
-        if (this.selectedPatterns.length === 0) {
-            this.showToast('Please select at least one pattern', 'warning');
-            return;
-        }
-        
-        console.log(`🎯 Proceeding with ${this.selectedPatterns.length} pattern(s)`);
-        this.showToast(`Selected ${this.selectedPatterns.length} pattern(s)`, 'success');
-        
-        // Start questionnaire
-        setTimeout(() => {
-            this.startQuestionnaire();
-        }, 500);
-    }
-    
     goBack(targetSection) {
         // Navigate back to the specified section
         this.showSection(targetSection);
@@ -266,8 +107,8 @@ class SmartPRDGenerator {
         const timeEstimate = mode === 'quick' ? '3-5 minutes' : '10-15 minutes';
         this.showToast(`${modeTitle} selected (${timeEstimate})`, 'success');
         
-        // Move to pattern selection
-        this.showSection('pattern-selection');
+        // Skip pattern selection - go directly to questionnaire
+        this.startQuestionnaire();
     }
 
     async startQuestionnaire() {
@@ -280,10 +121,6 @@ class SmartPRDGenerator {
                 },
                 body: JSON.stringify({
                     userContext: {
-                        selectedPattern: this.selectedPattern?.id,
-                        selectedPatterns: this.selectedPatterns.map(p => p.id),
-                        category: this.selectedPattern?.category,
-                        categories: this.selectedPatterns.map(p => p.category),
                         mode: this.selectedMode,
                         questionCount: this.totalQuestions
                     }
@@ -478,12 +315,12 @@ class SmartPRDGenerator {
         const progressText = document.getElementById('progress-text');
         
         if (progressBar) {
-            progressBar.style.width = `${progress.progressPercentage}%`;
+            progressBar.style.width = `${progress.percentage}%`;
         }
         
         if (progressText) {
             const modeLabel = this.selectedMode === 'quick' ? '⚡ Quick' : '🏆 Professional';
-            progressText.textContent = `${modeLabel} - Question ${progress.questionsAnswered + 1} of ${progress.estimatedTotal}`;
+            progressText.textContent = `${modeLabel} - Question ${progress.current} of ${progress.total}`;
         }
     }
     
@@ -522,8 +359,11 @@ class SmartPRDGenerator {
     async nextQuestion() {
         const answer = this.getQuestionAnswer();
         
-        if (answer === null) {
-            this.showToast('Please select an answer', 'warning');
+        // Validate answer is not null, undefined, empty string, or empty array
+        if (answer === null || answer === undefined || 
+            (typeof answer === 'string' && answer.trim() === '') ||
+            (Array.isArray(answer) && answer.length === 0)) {
+            this.showToast('Please provide an answer before continuing', 'warning');
             return;
         }
 
@@ -584,11 +424,13 @@ class SmartPRDGenerator {
                 
             case 'multiple':
                 const checkboxes = document.querySelectorAll(`input[name="question-${questionId}"]:checked`);
-                return Array.from(checkboxes).map(cb => cb.value);
+                const values = Array.from(checkboxes).map(cb => cb.value);
+                return values.length > 0 ? values : null;
                 
             case 'text':
                 const textarea = document.querySelector(`textarea[name="question-${questionId}"]`);
-                return textarea ? textarea.value.trim() : null;
+                const textValue = textarea ? textarea.value.trim() : '';
+                return textValue.length > 0 ? textValue : null;
                 
             default:
                 return null;
@@ -637,8 +479,8 @@ class SmartPRDGenerator {
                 
                 // Track conversion event
                 this.trackEvent('prd_generated', {
-                    pattern: this.selectedPattern?.id,
-                    sessionId: this.sessionId
+                    sessionId: this.sessionId,
+                    hasTemplate: !!this.selectedTemplate
                 });
                 
             } else {
@@ -903,7 +745,6 @@ class SmartPRDGenerator {
                     prdContent: this.generatedPRD,
                     sessionId: this.sessionId,
                     productName: productName,
-                    patterns: this.selectedPatterns.map(p => p.name),
                     selectedTemplate: this.selectedTemplate ? {
                         id: this.selectedTemplate.template.id,
                         name: this.selectedTemplate.template.name,
@@ -1077,7 +918,7 @@ class SmartPRDGenerator {
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `PRD_${this.selectedPattern?.id || 'custom'}_${new Date().toISOString().split('T')[0]}.md`;
+        a.download = `PRD_${this.selectedTemplate?.template?.id || 'custom'}_${new Date().toISOString().split('T')[0]}.md`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
@@ -1093,7 +934,7 @@ class SmartPRDGenerator {
 
     showSection(sectionId) {
         // Hide all sections
-        const sections = ['hero-section', 'mode-selection', 'pattern-selection', 'questionnaire-section', 'template-recommendations', 'prd-generation', 'handoff-section'];
+        const sections = ['hero-section', 'mode-selection', 'questionnaire-section', 'template-recommendations', 'prd-generation', 'handoff-section'];
         sections.forEach(id => {
             const section = document.getElementById(id);
             if (section) {
@@ -1270,7 +1111,7 @@ function exportJSONWrapper() {
         window.PRDExportUtils.exportAsJSON(
             window.prdGenerator.generatedPRD,
             window.prdGenerator.answers || {},
-            window.prdGenerator.selectedPatterns || [],
+            window.prdGenerator.selectedTemplate || null,
             window.prdGenerator.selectedMode || 'unknown'
         );
     } else {

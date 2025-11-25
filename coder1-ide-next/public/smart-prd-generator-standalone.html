@@ -393,8 +393,10 @@ Claude Agents: This is the OFFICIAL version - do not modify copies elsewhere
             </div>
         </section>
 
-        <!-- Pattern Selection -->
-        <section id="pattern-selection" class="hidden max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+        <!-- Pattern Selection REMOVED - Template recommendations now serve this purpose -->
+
+        <!-- Questionnaire Interface -->
+        <section id="questionnaire-section" class="hidden max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
             <!-- Back Button -->
             <div class="mb-8">
                 <button onclick="prdGenerator.goBack('mode-selection')" class="flex items-center text-gray-600 hover:text-primary transition-colors">
@@ -402,54 +404,6 @@ Claude Agents: This is the OFFICIAL version - do not modify copies elsewhere
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
                     </svg>
                     Back to Mode Selection
-                </button>
-            </div>
-            
-            <div class="text-center mb-8">
-                <h2 class="text-3xl font-bold text-gray-900 mb-4">Choose Your Success Patterns</h2>
-                <p class="text-lg text-gray-600 mb-2">Select one or more patterns that match your vision</p>
-                <p class="text-sm text-gray-500 mb-4">Combining patterns creates unique hybrid approaches</p>
-                
-                <!-- Example PRDs Link -->
-                <div class="mt-4">
-                    <button onclick="showExamplePRDs()" class="inline-flex items-center text-primary hover:text-secondary transition-colors font-medium">
-                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                        </svg>
-                        View Example PRDs
-                    </button>
-                </div>
-            </div>
-            
-            <!-- Selected Patterns Display -->
-            <div id="selected-patterns" class="mb-6 hidden">
-                <div class="bg-gray-800 rounded-lg p-4 border border-gray-600">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <span class="text-sm font-semibold text-gray-200">Selected Patterns: </span>
-                            <span id="selected-patterns-list" class="text-primary"></span>
-                        </div>
-                        <button onclick="prdGenerator.proceedWithPatterns()" class="bg-gradient-to-r from-primary to-secondary text-white px-6 py-2 rounded-lg font-semibold hover:shadow-lg transition-all">
-                            Continue →
-                        </button>
-                    </div>
-                </div>
-            </div>
-            
-            <div id="patterns-grid" class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <!-- Patterns will be loaded here -->
-            </div>
-        </section>
-
-        <!-- Questionnaire Interface -->
-        <section id="questionnaire-section" class="hidden max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-            <!-- Back Button -->
-            <div class="mb-8">
-                <button onclick="prdGenerator.goBack('pattern-selection')" class="flex items-center text-gray-600 hover:text-primary transition-colors">
-                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
-                    </svg>
-                    Back to Pattern Selection
                 </button>
             </div>
             
