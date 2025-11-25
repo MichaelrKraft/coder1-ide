@@ -1,8 +1,11 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { X, Monitor, Terminal, Bot, Save, User, Palette, Code, Brain } from 'lucide-react';
+import { X, Monitor, Terminal, Bot, Save, User, Palette, Code, Brain, Key, AlertCircle, CheckCircle, ExternalLink } from 'lucide-react';
 import { clientMemoryPreferences } from '@/lib/memory-preferences-client';
+import { useAPIKeyStatus } from '@/hooks/useAPIKeyStatus';
+import { APIKeyStorage, APIProvider } from '@/lib/api-key-storage';
+import { APIKeySetupModal } from '@/components/settings/APIKeySetupModal';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -90,6 +93,9 @@ export default function SettingsModal({ isOpen, onClose, fontSize, onFontSizeCha
   const [activeTab, setActiveTab] = useState<SettingsTab>('general');
   const [settings, setSettings] = useState<Settings>(defaultSettings);
   const [hasChanges, setHasChanges] = useState(false);
+  const [showAPIKeySetup, setShowAPIKeySetup] = useState(false);
+  
+  const apiKeyStatus = useAPIKeyStatus();
 
   // Load settings on mount
   useEffect(() => {
@@ -427,10 +433,142 @@ export default function SettingsModal({ isOpen, onClose, fontSize, onFontSizeCha
 
             {activeTab === 'ai' && (
               <div className="space-y-6">
-                <h3 className="text-lg font-semibold text-text-primary mb-4">AI Settings</h3>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-text-primary">AI Settings</h3>
+                  <button
+                    onClick={() => setShowAPIKeySetup(true)}
+                    className="flex items-center gap-2 px-3 py-1.5 bg-coder1-cyan hover:bg-coder1-cyan-secondary text-white text-sm font-medium rounded transition-colors"
+                  >
+                    <Key className="w-4 h-4" />
+                    Configure API Keys
+                  </button>
+                </div>
                 
-                <div className="space-y-4">
-                  <div className="space-y-2">
+                <div className="space-y-6">
+                  {/* API Provider Status */}
+                  <div className="space-y-3">
+                    <h4 className="text-sm font-semibold text-text-primary flex items-center gap-2">
+                      <Key className="w-4 h-4" />
+                      API Key Status
+                    </h4>
+                    
+                    <div className="grid grid-cols-2 gap-3">
+                      {/* GLM Status Card */}
+                      <div className={`p-4 rounded-lg border ${
+                        apiKeyStatus.hasGLMKey 
+                          ? 'bg-green-500/10 border-green-500/30' 
+                          : 'bg-gray-800 border-border-default'
+                      }`}>
+                        <div className="flex items-start justify-between mb-2">
+                          <div>
+                            <div className="text-sm font-medium text-text-primary">智谱 GLM 4.6</div>
+                            <div className="text-xs text-text-muted">$0.10/M tokens</div>
+                          </div>
+                          {apiKeyStatus.hasGLMKey ? (
+                            <CheckCircle className="w-5 h-5 text-green-400" />
+                          ) : (
+                            <AlertCircle className="w-5 h-5 text-gray-500" />
+                          )}
+                        </div>
+                        <div className={`text-xs ${
+                          apiKeyStatus.hasGLMKey ? 'text-green-300' : 'text-text-muted'
+                        }`}>
+                          {apiKeyStatus.hasGLMKey ? '✓ Configured' : 'Not configured'}
+                        </div>
+                        {apiKeyStatus.hasGLMKey && apiKeyStatus.activeProvider === 'glm' && (
+                          <div className="mt-2 px-2 py-1 bg-green-500 text-white text-xs font-bold rounded text-center">
+                            ACTIVE
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Anthropic Status Card */}
+                      <div className={`p-4 rounded-lg border ${
+                        apiKeyStatus.hasAnthropicKey 
+                          ? 'bg-blue-500/10 border-blue-500/30' 
+                          : 'bg-gray-800 border-border-default'
+                      }`}>
+                        <div className="flex items-start justify-between mb-2">
+                          <div>
+                            <div className="text-sm font-medium text-text-primary">Anthropic Claude</div>
+                            <div className="text-xs text-text-muted">$3.00/M tokens</div>
+                          </div>
+                          {apiKeyStatus.hasAnthropicKey ? (
+                            <CheckCircle className="w-5 h-5 text-blue-400" />
+                          ) : (
+                            <AlertCircle className="w-5 h-5 text-gray-500" />
+                          )}
+                        </div>
+                        <div className={`text-xs ${
+                          apiKeyStatus.hasAnthropicKey ? 'text-blue-300' : 'text-text-muted'
+                        }`}>
+                          {apiKeyStatus.hasAnthropicKey ? '✓ Configured' : 'Not configured'}
+                        </div>
+                        {apiKeyStatus.hasAnthropicKey && apiKeyStatus.activeProvider === 'anthropic' && (
+                          <div className="mt-2 px-2 py-1 bg-blue-500 text-white text-xs font-bold rounded text-center">
+                            ACTIVE
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Preference Display */}
+                    <div className="p-3 bg-bg-tertiary rounded border border-border-default">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-text-primary">Provider Preference:</span>
+                        <span className="text-sm font-semibold text-coder1-cyan">
+                          {apiKeyStatus.preferredProvider === 'auto' 
+                            ? 'Auto (Prefers GLM for cost)' 
+                            : apiKeyStatus.preferredProvider === 'glm' 
+                            ? 'Always GLM' 
+                            : 'Always Anthropic'}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Warning if no keys configured */}
+                    {!apiKeyStatus.hasAnyKey && (
+                      <div className="p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-lg flex items-start gap-3">
+                        <AlertCircle className="w-5 h-5 text-yellow-500 flex-shrink-0 mt-0.5" />
+                        <div>
+                          <p className="text-sm text-yellow-300 font-semibold mb-1">
+                            API Keys Required for AI Team
+                          </p>
+                          <p className="text-xs text-yellow-200/80 mb-3">
+                            Configure at least one API key to use the Parallel Exploration (AI Team) feature.
+                          </p>
+                          <button
+                            onClick={() => setShowAPIKeySetup(true)}
+                            className="px-3 py-1.5 bg-yellow-500 hover:bg-yellow-600 text-black text-xs font-medium rounded transition-colors"
+                          >
+                            Set Up API Keys
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Setup Guide Link */}
+                    <a
+                      href="https://docs.coder1.dev/ai-team/api-keys"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2 text-sm text-coder1-cyan hover:text-coder1-cyan-secondary transition-colors"
+                    >
+                      <ExternalLink className="w-4 h-4" />
+                      View API Key Setup Guide
+                    </a>
+                  </div>
+
+                  {/* Divider */}
+                  <div className="border-t border-border-default" />
+
+                  {/* AI Feature Toggles */}
+                  <div className="space-y-3">
+                    <h4 className="text-sm font-semibold text-text-primary flex items-center gap-2">
+                      <Brain className="w-4 h-4" />
+                      AI Features
+                    </h4>
+                    
                     <label className="flex items-center gap-2">
                       <input
                         type="checkbox"
@@ -452,38 +590,55 @@ export default function SettingsModal({ isOpen, onClose, fontSize, onFontSizeCha
                     </label>
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-text-primary mb-2">
-                      Claude API Key
-                    </label>
-                    <input
-                      type="password"
-                      value={settings.claudeApiKey}
-                      onChange={(e) => updateSetting('claudeApiKey', e.target.value)}
-                      placeholder="sk-ant-api..."
-                      className="w-full px-3 py-2 bg-bg-primary border border-border-default rounded text-text-primary"
-                    />
-                    <p className="text-xs text-text-muted mt-1">
-                      Used for AI supervision and session summaries
+                  {/* Legacy API Keys (for other features) */}
+                  <div className="space-y-3">
+                    <h4 className="text-sm font-semibold text-text-primary">Legacy API Keys</h4>
+                    <p className="text-xs text-text-muted">
+                      These keys are used for AI supervision and session summaries (not AI Team)
                     </p>
-                  </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-text-primary mb-2">
+                        Claude API Key
+                      </label>
+                      <input
+                        type="password"
+                        value={settings.claudeApiKey}
+                        onChange={(e) => updateSetting('claudeApiKey', e.target.value)}
+                        placeholder="sk-ant-api..."
+                        className="w-full px-3 py-2 bg-bg-primary border border-border-default rounded text-text-primary"
+                      />
+                      <p className="text-xs text-text-muted mt-1">
+                        Used for AI supervision and session summaries
+                      </p>
+                    </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-text-primary mb-2">
-                      OpenAI API Key (Optional)
-                    </label>
-                    <input
-                      type="password"
-                      value={settings.openaiApiKey}
-                      onChange={(e) => updateSetting('openaiApiKey', e.target.value)}
-                      placeholder="sk-..."
-                      className="w-full px-3 py-2 bg-bg-primary border border-border-default rounded text-text-primary"
-                    />
-                    <p className="text-xs text-text-muted mt-1">
-                      Used as fallback when Claude is unavailable
-                    </p>
+                    <div>
+                      <label className="block text-sm font-medium text-text-primary mb-2">
+                        OpenAI API Key (Optional)
+                      </label>
+                      <input
+                        type="password"
+                        value={settings.openaiApiKey}
+                        onChange={(e) => updateSetting('openaiApiKey', e.target.value)}
+                        placeholder="sk-..."
+                        className="w-full px-3 py-2 bg-bg-primary border border-border-default rounded text-text-primary"
+                      />
+                      <p className="text-xs text-text-muted mt-1">
+                        Used as fallback when Claude is unavailable
+                      </p>
+                    </div>
                   </div>
                 </div>
+
+                {/* API Key Setup Modal */}
+                {showAPIKeySetup && (
+                  <APIKeySetupModal
+                    isOpen={showAPIKeySetup}
+                    onClose={() => setShowAPIKeySetup(false)}
+                    onComplete={() => setShowAPIKeySetup(false)}
+                  />
+                )}
               </div>
             )}
 
