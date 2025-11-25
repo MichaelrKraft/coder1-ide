@@ -9,10 +9,11 @@
 
 import React from 'react';
 import { useRouter } from 'next/navigation';
-import { Save, Clock, FileText, BookOpen, Loader2, Brain, Link, Sparkles, Download } from '@/lib/icons';
+import { Save, Clock, FileText, BookOpen, Loader2, Brain, Link, Sparkles, Download, Eye } from '@/lib/icons';
 import StatusBarModals from './StatusBarModals';
 import CheckpointNameModal from '@/components/modals/CheckpointNameModal';
 import DownloadProjectModal from '@/components/modals/DownloadProjectModal';
+import PreviewModal from '@/components/modals/PreviewModal';
 import { useIDEStore } from '@/stores/useIDEStore';
 import { useSessionStore } from '@/stores/useSessionStore';
 import { useUIStore } from '@/stores/useUIStore';
@@ -20,6 +21,7 @@ import { useContextActivation } from '@/lib/hooks/useContextActivation';
 import { glows } from '@/lib/design-tokens';
 import type { IDEFile } from '@/types';
 import { memoryDetectionService, type MemoryDetectionResult } from '@/lib/memory-detection-client';
+import { getSocket } from '@/lib/socket';
 
 interface StatusBarActionsProps {
   activeFile?: string | null;
@@ -57,6 +59,11 @@ const StatusBarActions = React.memo(function StatusBarActions({
   
   // Download modal state
   const [isDownloadModalOpen, setIsDownloadModalOpen] = React.useState(false);
+  const [shouldPulseDownload, setShouldPulseDownload] = React.useState(false);
+  
+  // Preview modal state
+  const [isPreviewModalOpen, setIsPreviewModalOpen] = React.useState(false);
+  const [currentTeamId, setCurrentTeamId] = React.useState<string | null>(null);
   
   // Memory detection state
   const [memoryDetection, setMemoryDetection] = React.useState<MemoryDetectionResult | null>(null);
@@ -145,6 +152,56 @@ const StatusBarActions = React.memo(function StatusBarActions({
     const timeoutId = setTimeout(analyzeSession, 2000);
     return () => clearTimeout(timeoutId);
   }, [openFiles, activeFile, terminalCommands, isAnalyzingMemory]); // ⚡ Removed terminalHistory - now using callback
+
+  // Listen for AI Team completion to trigger download button pulse
+  React.useEffect(() => {
+    let cleanup: (() => void) | null = null;
+    
+    const setupSocketListeners = async () => {
+      try {
+        const socket = await getSocket();
+        if (!socket) {
+          console.warn('⚠️ Socket not available - AI Team events will not be received');
+          return;
+        }
+        
+        // Verify socket has required methods
+        if (typeof socket.on !== 'function') {
+          console.error('❌ Socket object is invalid - missing .on() method');
+          return;
+        }
+        
+        const handleAITeamCompleted = () => {
+          console.log('🎉 AI Team completed - pulsing download button');
+          setShouldPulseDownload(true);
+        };
+        
+        const handleTeamSummary = (data: any) => {
+          console.log('📊 Team summary received - storing teamId:', data.teamId);
+          setCurrentTeamId(data.teamId);
+        };
+        
+        socket.on('ai-team:completed', handleAITeamCompleted);
+        socket.on('team:summary', handleTeamSummary);
+        
+        cleanup = () => {
+          if (typeof socket.off === 'function') {
+            socket.off('ai-team:completed', handleAITeamCompleted);
+            socket.off('team:summary', handleTeamSummary);
+          }
+        };
+      } catch (error) {
+        console.error('❌ Failed to setup socket listeners:', error);
+        // Don't throw - this is non-critical functionality
+      }
+    };
+    
+    setupSocketListeners();
+    
+    return () => {
+      if (cleanup) cleanup();
+    };
+  }, []);
 
   // Button hover effects
   const applyHoverEffect = (e: React.MouseEvent<HTMLButtonElement>, isLoading: boolean) => {
@@ -563,10 +620,46 @@ const StatusBarActions = React.memo(function StatusBarActions({
           </button>
         </div>
 
-        {/* Download Button */}
-        <div className="p-[1px] rounded-md" style={{background: 'linear-gradient(135deg, #10b981, #14b8a6)', boxShadow: glows.green?.intense || '0 0 12px rgba(16, 185, 129, 0.5)'}}>
+        {/* Preview Button */}
+        <div 
+          className="p-[1px] rounded-md"
+          style={{
+            background: 'linear-gradient(135deg, #3b82f6, #2563eb)', 
+            boxShadow: glows.blue?.intense || '0 0 12px rgba(59, 130, 246, 0.5)'
+          }}
+        >
           <button
-            onClick={() => setIsDownloadModalOpen(true)}
+            onClick={() => {
+              if (currentTeamId) {
+                setIsPreviewModalOpen(true);
+              }
+            }}
+            disabled={!currentTeamId}
+            className="flex items-center gap-1.5 px-4 py-1.5 text-sm font-medium text-text-secondary hover:text-text-primary disabled:opacity-50 disabled:cursor-not-allowed rounded transition-all duration-200 bg-bg-secondary w-full"
+            onMouseEnter={(e) => applyHoverEffect(e, false)}
+            onMouseLeave={removeHoverEffect}
+            title={currentTeamId ? "Preview AI Team Output - Browse files and preview code" : "No AI Team output to preview"}
+          >
+            <Eye className="w-4 h-4" />
+            <span>Preview</span>
+          </button>
+        </div>
+
+        {/* Download Button */}
+        <div 
+          className={`p-[1px] rounded-md ${shouldPulseDownload ? 'animate-pulse' : ''}`}
+          style={{
+            background: 'linear-gradient(135deg, #10b981, #14b8a6)', 
+            boxShadow: shouldPulseDownload 
+              ? '0 0 20px rgba(16, 185, 129, 0.8), 0 0 40px rgba(16, 185, 129, 0.4)' 
+              : glows.green?.intense || '0 0 12px rgba(16, 185, 129, 0.5)'
+          }}
+        >
+          <button
+            onClick={() => {
+              setShouldPulseDownload(false);
+              setIsDownloadModalOpen(true);
+            }}
             className="flex items-center gap-1.5 px-4 py-1.5 text-sm font-medium text-text-secondary hover:text-text-primary rounded transition-all duration-200 bg-bg-secondary w-full"
             onMouseEnter={(e) => applyHoverEffect(e, false)}
             onMouseLeave={removeHoverEffect}
@@ -632,6 +725,15 @@ const StatusBarActions = React.memo(function StatusBarActions({
         isOpen={isDownloadModalOpen}
         onClose={() => setIsDownloadModalOpen(false)}
       />
+      
+      {/* Preview AI Team Output Modal */}
+      {currentTeamId && (
+        <PreviewModal
+          isOpen={isPreviewModalOpen}
+          onClose={() => setIsPreviewModalOpen(false)}
+          teamId={currentTeamId}
+        />
+      )}
     </>
   );
 });
