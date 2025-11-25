@@ -11,7 +11,6 @@ import React, { useState, useEffect } from 'react';
 import { Eye, GitBranch, FileText, Brain } from 'lucide-react';
 import StatusBarActions from './StatusBarActions';
 import DiscoverPanel from './DiscoverPanel';
-import { TeamStatusIndicator } from './TeamStatusIndicator';
 import CostDisplay from '../terminal/CostDisplay';
 import { useIDEStore } from '@/stores/useIDEStore';
 import { useSessionStore } from '@/stores/useSessionStore';
@@ -137,9 +136,6 @@ export default function StatusBarCore({
               <span className="font-medium">Supervision Active</span>
             </div>
           )}
-          
-          {/* Team Status Indicator */}
-          <TeamStatusIndicator />
         </div>
 
         {/* Center section - Action buttons */}
