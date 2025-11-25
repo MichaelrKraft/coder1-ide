@@ -480,6 +480,37 @@ Claude Agents: This is the OFFICIAL version - do not modify copies elsewhere
             </div>
         </section>
 
+        <!-- Template Recommendations Section -->
+        <section id="template-recommendations" class="hidden max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl font-bold text-gray-900 mb-4">🎯 Recommended Starter Templates</h2>
+                <p class="text-lg text-gray-600">Based on your requirements, these battle-tested templates can accelerate your development by weeks.</p>
+            </div>
+
+            <!-- Loading State -->
+            <div id="templates-loading" class="text-center">
+                <div class="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                <p class="text-gray-600">Analyzing requirements and finding perfect matches...</p>
+            </div>
+
+            <!-- Template Cards -->
+            <div id="template-cards-container" class="hidden">
+                <div id="template-cards" class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                    <!-- Template cards will be inserted here -->
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex flex-col sm:flex-row gap-4 justify-center mt-12">
+                    <button onclick="prdGenerator.skipTemplates()" class="bg-gray-600 hover:bg-gray-700 text-white px-8 py-4 rounded-lg text-lg font-semibold transition-all">
+                        Start From Scratch (No Template)
+                    </button>
+                    <button id="proceed-to-prd-btn" disabled onclick="prdGenerator.proceedToPRD()" class="bg-gradient-to-r from-primary to-secondary text-white px-8 py-4 rounded-lg text-lg font-semibold hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+                        Continue to PRD Generation →
+                    </button>
+                </div>
+            </div>
+        </section>
+
         <!-- PRD Generation -->
         <section id="prd-generation" class="hidden max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
             <div class="text-center">

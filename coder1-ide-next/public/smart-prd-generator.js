@@ -18,6 +18,8 @@ class SmartPRDGenerator {
         this.handoffId = null;
         this.patterns = [];
         this.totalQuestions = 5; // Will be updated based on mode
+        this.recommendedTemplates = []; // AI-recommended templates
+        this.selectedTemplate = null; // User-selected template
         
         this.init();
     }
@@ -313,9 +315,9 @@ class SmartPRDGenerator {
             
             if (data.success) {
                 if (data.completed) {
-                    // Questionnaire complete, generate PRD
+                    // Questionnaire complete, show template recommendations
                     console.log('✅ Questionnaire completed');
-                    await this.generatePRD();
+                    await this.showTemplateRecommendations();
                 } else {
                     this.currentQuestion = data.question;
                     this.renderQuestion(data.question);
@@ -544,9 +546,9 @@ class SmartPRDGenerator {
                 this.answers[this.currentQuestion.id] = answer;
                 
                 if (data.complete) {
-                    // Questionnaire complete, generate PRD
+                    // Questionnaire complete, show template recommendations
                     console.log('✅ Questionnaire completed');
-                    await this.generatePRD();
+                    await this.showTemplateRecommendations();
                 } else if (data.nextQuestion) {
                     // Update to next question
                     this.currentQuestionIndex = data.currentIndex - 1;
@@ -603,7 +605,20 @@ class SmartPRDGenerator {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    format: 'markdown'
+                    format: 'markdown',
+                    selectedTemplate: this.selectedTemplate ? {
+                        id: this.selectedTemplate.template.id,
+                        name: this.selectedTemplate.template.name,
+                        description: this.selectedTemplate.template.description,
+                        githubUrl: this.selectedTemplate.template.githubUrl,
+                        docsUrl: this.selectedTemplate.template.docsUrl,
+                        techStack: this.selectedTemplate.template.techStack,
+                        features: this.selectedTemplate.template.features,
+                        estimatedSetupTime: this.selectedTemplate.template.estimatedSetupTime,
+                        difficultyLevel: this.selectedTemplate.template.difficultyLevel,
+                        compatibilityScore: this.selectedTemplate.compatibilityScore,
+                        matchReasons: this.selectedTemplate.matchReasons
+                    } : null
                 })
             });
 
@@ -635,6 +650,237 @@ class SmartPRDGenerator {
         }
     }
 
+    async showTemplateRecommendations() {
+        this.showSection('template-recommendations');
+        
+        try {
+            // Show loading state
+            document.getElementById('templates-loading').classList.remove('hidden');
+            document.getElementById('template-cards-container').classList.add('hidden');
+            
+            // Fetch template recommendations based on requirements
+            const recommendations = await this.fetchTemplateRecommendations();
+            
+            if (recommendations && recommendations.length > 0) {
+                this.recommendedTemplates = recommendations;
+                this.renderTemplateCards(recommendations);
+                
+                // Hide loading, show cards
+                document.getElementById('templates-loading').classList.add('hidden');
+                document.getElementById('template-cards-container').classList.remove('hidden');
+                
+                console.log(`🎯 Showing ${recommendations.length} template recommendations`);
+            } else {
+                // No recommendations, skip directly to PRD
+                console.log('⚠️ No template recommendations found, proceeding to PRD');
+                await this.generatePRD();
+            }
+        } catch (error) {
+            console.error('Failed to fetch templates:', error);
+            // On error, skip templates and proceed to PRD
+            this.showToast('Continuing without template recommendations', 'info');
+            await this.generatePRD();
+        }
+    }
+
+    async fetchTemplateRecommendations() {
+        try {
+            const response = await fetch('/api/templates/recommend', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    requirements: {
+                        initialRequest: this.answers['initial-idea'] || this.answers['product-description'] || '',
+                        features: this.extractFeaturesFromAnswers(),
+                        techStack: this.extractTechStackFromAnswers(),
+                        scope: 'mvp',
+                        projectType: 'web-application'
+                    },
+                    limit: 5,
+                    minScore: 50
+                })
+            });
+
+            const data = await response.json();
+            
+            if (data.success) {
+                return data.templates || [];
+            } else {
+                console.error('Template API error:', data.error);
+                return [];
+            }
+        } catch (error) {
+            console.error('Failed to fetch template recommendations:', error);
+            return [];
+        }
+    }
+
+    extractFeaturesFromAnswers() {
+        // Extract features from user answers
+        const features = [];
+        const answers = Object.values(this.answers);
+        
+        // Common keywords to look for
+        const featureKeywords = {
+            'authentication': ['login', 'signup', 'auth', 'user'],
+            'teams': ['team', 'workspace', 'organization', 'collaborate'],
+            'billing': ['payment', 'subscription', 'billing', 'stripe'],
+            'admin': ['admin', 'dashboard', 'management'],
+            'api': ['api', 'rest', 'graphql', 'endpoint']
+        };
+        
+        answers.forEach(answer => {
+            if (typeof answer === 'string') {
+                const lowerAnswer = answer.toLowerCase();
+                Object.entries(featureKeywords).forEach(([feature, keywords]) => {
+                    if (keywords.some(kw => lowerAnswer.includes(kw)) && !features.includes(feature)) {
+                        features.push(feature);
+                    }
+                });
+            }
+        });
+        
+        return features;
+    }
+
+    extractTechStackFromAnswers() {
+        // Extract tech stack preferences from answers
+        const techStack = {};
+        const answers = Object.values(this.answers);
+        const answersStr = answers.join(' ').toLowerCase();
+        
+        // Frontend frameworks
+        if (answersStr.includes('react')) techStack.frontend = 'React';
+        else if (answersStr.includes('vue')) techStack.frontend = 'Vue';
+        else if (answersStr.includes('next')) techStack.frontend = 'Next.js';
+        
+        // Backend
+        if (answersStr.includes('node') || answersStr.includes('express')) techStack.backend = 'Node.js';
+        else if (answersStr.includes('django')) techStack.backend = 'Django';
+        else if (answersStr.includes('go') || answersStr.includes('golang')) techStack.backend = 'Go';
+        
+        // Database
+        if (answersStr.includes('postgres')) techStack.database = 'PostgreSQL';
+        else if (answersStr.includes('mongo')) techStack.database = 'MongoDB';
+        else if (answersStr.includes('supabase')) techStack.database = 'Supabase';
+        
+        return techStack;
+    }
+
+    renderTemplateCards(recommendations) {
+        const container = document.getElementById('template-cards');
+        if (!container) return;
+        
+        container.innerHTML = recommendations.map(rec => this.renderTemplateCard(rec)).join('');
+    }
+
+    renderTemplateCard({ template, compatibilityScore, matchReasons, missingFeatures }) {
+        const badgeClass = compatibilityScore >= 80 ? 'bg-green-100 text-green-800 border-green-300' : 
+                          compatibilityScore >= 60 ? 'bg-yellow-100 text-yellow-800 border-yellow-300' : 
+                          'bg-gray-100 text-gray-800 border-gray-300';
+        
+        return `
+            <div class="template-card bg-white rounded-lg shadow-lg p-6 border-2 border-transparent hover:border-primary transition-all cursor-pointer" 
+                 data-template-id="${template.id}"
+                 onclick="prdGenerator.selectTemplate('${template.id}')">
+                <div class="flex justify-between items-start mb-4">
+                    <h3 class="text-xl font-bold text-gray-900">${template.name}</h3>
+                    <span class="px-3 py-1 rounded-full text-sm font-semibold border ${badgeClass}">
+                        ${compatibilityScore}% Match
+                    </span>
+                </div>
+                
+                <p class="text-gray-600 mb-4">${template.description}</p>
+                
+                <div class="flex flex-wrap gap-2 mb-4">
+                    ${this.renderTechBadges(template.techStack)}
+                </div>
+                
+                <div class="space-y-2 mb-4 text-sm">
+                    ${matchReasons.slice(0, 3).map(reason => `
+                        <div class="text-gray-700">${reason}</div>
+                    `).join('')}
+                </div>
+                
+                ${missingFeatures && missingFeatures.length > 0 ? `
+                    <div class="bg-yellow-50 border-l-4 border-yellow-400 p-3 mb-4 text-sm">
+                        <strong class="text-yellow-800">⚠️ You'll need to add:</strong>
+                        <div class="text-yellow-700 mt-1">${missingFeatures.slice(0, 3).join(', ')}</div>
+                    </div>
+                ` : ''}
+                
+                <div class="flex gap-3">
+                    <a href="${template.githubUrl}" target="_blank" onclick="event.stopPropagation()" 
+                       class="flex-1 text-center px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-all text-sm font-medium">
+                        <i class="fab fa-github"></i> GitHub ${template.metadata?.stars ? `(${template.metadata.stars}⭐)` : ''}
+                    </a>
+                    ${template.docsUrl ? `
+                        <a href="${template.docsUrl}" target="_blank" onclick="event.stopPropagation()" 
+                           class="flex-1 text-center px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-all text-sm font-medium">
+                            📚 Docs
+                        </a>
+                    ` : ''}
+                </div>
+                
+                <div class="mt-3 text-xs text-gray-500 text-center">
+                    Setup time: ${template.estimatedSetupTime} • ${template.difficultyLevel}
+                </div>
+            </div>
+        `;
+    }
+
+    renderTechBadges(techStack) {
+        const badges = [];
+        if (techStack.frontend) badges.push(`<span class="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-medium">${techStack.frontend}</span>`);
+        if (techStack.backend) badges.push(`<span class="px-2 py-1 bg-green-100 text-green-700 rounded text-xs font-medium">${techStack.backend}</span>`);
+        if (techStack.database) badges.push(`<span class="px-2 py-1 bg-purple-100 text-purple-700 rounded text-xs font-medium">${techStack.database}</span>`);
+        if (techStack.auth) badges.push(`<span class="px-2 py-1 bg-yellow-100 text-yellow-700 rounded text-xs font-medium">${techStack.auth}</span>`);
+        return badges.join('');
+    }
+
+    selectTemplate(templateId) {
+        // Remove selection from all cards
+        document.querySelectorAll('.template-card').forEach(card => {
+            card.classList.remove('border-primary', 'ring-2', 'ring-primary', 'ring-opacity-50');
+        });
+        
+        // Add selection to clicked card
+        const selectedCard = document.querySelector(`[data-template-id="${templateId}"]`);
+        if (selectedCard) {
+            selectedCard.classList.add('border-primary', 'ring-2', 'ring-primary', 'ring-opacity-50');
+        }
+        
+        // Store selected template
+        this.selectedTemplate = this.recommendedTemplates.find(rec => rec.template.id === templateId);
+        
+        // Enable proceed button
+        const proceedBtn = document.getElementById('proceed-to-prd-btn');
+        if (proceedBtn) {
+            proceedBtn.disabled = false;
+        }
+        
+        console.log(`✅ Selected template: ${this.selectedTemplate.template.name}`);
+        this.showToast(`Selected template: ${this.selectedTemplate.template.name}`, 'success');
+    }
+
+    skipTemplates() {
+        this.selectedTemplate = null;
+        console.log('⏭️ Skipping template recommendations');
+        this.showToast('Starting from scratch - no template selected', 'info');
+        this.generatePRD();
+    }
+
+    proceedToPRD() {
+        if (!this.selectedTemplate) {
+            this.showToast('Please select a template or skip to continue', 'warning');
+            return;
+        }
+        console.log(`➡️ Proceeding to PRD with template: ${this.selectedTemplate.template.name}`);
+        this.generatePRD();
+    }
+
     async startHandoff() {
         try {
             // Ensure we have a PRD generated
@@ -657,7 +903,13 @@ class SmartPRDGenerator {
                     prdContent: this.generatedPRD,
                     sessionId: this.sessionId,
                     productName: productName,
-                    patterns: this.selectedPatterns.map(p => p.name)
+                    patterns: this.selectedPatterns.map(p => p.name),
+                    selectedTemplate: this.selectedTemplate ? {
+                        id: this.selectedTemplate.template.id,
+                        name: this.selectedTemplate.template.name,
+                        githubUrl: this.selectedTemplate.template.githubUrl,
+                        compatibilityScore: this.selectedTemplate.compatibilityScore
+                    } : null
                 })
             });
 
@@ -841,7 +1093,7 @@ class SmartPRDGenerator {
 
     showSection(sectionId) {
         // Hide all sections
-        const sections = ['hero-section', 'mode-selection', 'pattern-selection', 'questionnaire-section', 'prd-generation', 'handoff-section'];
+        const sections = ['hero-section', 'mode-selection', 'pattern-selection', 'questionnaire-section', 'template-recommendations', 'prd-generation', 'handoff-section'];
         sections.forEach(id => {
             const section = document.getElementById(id);
             if (section) {

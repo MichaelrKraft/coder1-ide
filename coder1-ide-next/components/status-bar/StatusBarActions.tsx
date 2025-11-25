@@ -9,9 +9,10 @@
 
 import React from 'react';
 import { useRouter } from 'next/navigation';
-import { Save, Clock, FileText, BookOpen, Loader2, Brain, Link, Sparkles } from '@/lib/icons';
+import { Save, Clock, FileText, BookOpen, Loader2, Brain, Link, Sparkles, Download } from '@/lib/icons';
 import StatusBarModals from './StatusBarModals';
 import CheckpointNameModal from '@/components/modals/CheckpointNameModal';
+import DownloadProjectModal from '@/components/modals/DownloadProjectModal';
 import { useIDEStore } from '@/stores/useIDEStore';
 import { useSessionStore } from '@/stores/useSessionStore';
 import { useUIStore } from '@/stores/useUIStore';
@@ -53,6 +54,9 @@ const StatusBarActions = React.memo(function StatusBarActions({
   
   // Checkpoint naming modal state
   const [isCheckpointModalOpen, setIsCheckpointModalOpen] = React.useState(false);
+  
+  // Download modal state
+  const [isDownloadModalOpen, setIsDownloadModalOpen] = React.useState(false);
   
   // Memory detection state
   const [memoryDetection, setMemoryDetection] = React.useState<MemoryDetectionResult | null>(null);
@@ -559,6 +563,20 @@ const StatusBarActions = React.memo(function StatusBarActions({
           </button>
         </div>
 
+        {/* Download Button */}
+        <div className="p-[1px] rounded-md" style={{background: 'linear-gradient(135deg, #10b981, #14b8a6)', boxShadow: glows.green?.intense || '0 0 12px rgba(16, 185, 129, 0.5)'}}>
+          <button
+            onClick={() => setIsDownloadModalOpen(true)}
+            className="flex items-center gap-1.5 px-4 py-1.5 text-sm font-medium text-text-secondary hover:text-text-primary rounded transition-all duration-200 bg-bg-secondary w-full"
+            onMouseEnter={(e) => applyHoverEffect(e, false)}
+            onMouseLeave={removeHoverEffect}
+            title="Download Project - Export project as ZIP or JSON with configurable options"
+          >
+            <Download className="w-4 h-4" />
+            <span>Download</span>
+          </button>
+        </div>
+
         {/* ParaThinker Button - Beta Only */}
         {isBetaEnvironment && (
           <div className="p-[1px] rounded-md" style={{background: 'linear-gradient(135deg, #9333ea, #ec4899)'}}>
@@ -607,6 +625,12 @@ const StatusBarActions = React.memo(function StatusBarActions({
         onSave={handleCheckpointSave}
         isLoading={isLoadingState('checkpoint')}
         memoryDetection={memoryDetection}
+      />
+
+      {/* Download Project Modal */}
+      <DownloadProjectModal
+        isOpen={isDownloadModalOpen}
+        onClose={() => setIsDownloadModalOpen(false)}
       />
     </>
   );
