@@ -1608,7 +1608,8 @@ app.prepare().then(() => {
         }
         
         socket.emit('terminal:created', { 
-          sessionId, 
+          id: sessionId,  // Client expects 'id', not 'sessionId'
+          sessionId,      // Keep for backwards compatibility
           pid: session.pty.pid 
         });
         
