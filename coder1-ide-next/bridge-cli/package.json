@@ -22,7 +22,7 @@
   "license": "MIT",
   "dependencies": {
     "socket.io-client": "^4.8.1",
-    "p-queue": "^6.6.2",
+    "p-queue": "5.0.0",
     "winston": "^3.11.0",
     "commander": "^11.1.0",
     "node-fetch": "^2.7.0"
