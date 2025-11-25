@@ -133,26 +133,38 @@ IDE already has full PRD handoff support:
 4. **Context Injection**: Stores formatted prompt in `window.prdPromptToInject`
 5. **User Notification**: Shows success toast when PRD loads
 
-### WebSocket Connection Issue
+### WebSocket Connection Issue - FIXED ✅
 
-**Status**: SEPARATE ISSUE - Not related to button functionality
+**Status**: CRITICAL BUG IDENTIFIED AND FIXED
 
-The "Connection lost: Transport close" error is a **general WebSocket stability issue**, not specific to PRD handoff. This requires investigating:
+**Root Cause**: Property name mismatch between server and client
+- **Server** emits: `socket.emit('terminal:created', { sessionId, pid })`
+- **Client** expects: `terminalCreatedHandler({ id })` where `id === sessionId`
+- **Mismatch**: Server sends `sessionId` but client checks for `id`
+- **Result**: Handler never fires → 10-second watchdog timeout → "Connection lost"
 
-1. Socket.IO connection configuration
-2. Server-side WebSocket initialization
-3. Client-side connection handling
-4. See `/coder1-ide-next/docs/CONNECTION_STABILITY_FIXES.md` for existing fixes
+**Solution Applied** (Commit: `028d0404f`):
+```javascript
+// server.js line 1610-1614
+socket.emit('terminal:created', { 
+  id: sessionId,  // Client expects 'id', not 'sessionId'
+  sessionId,      // Keep for backwards compatibility
+  pid: session.pty.pid 
+});
+```
 
-**Recommended Next Steps**:
-1. Test button fixes by generating a PRD and clicking "Start Step" buttons
-2. Verify IDE opens with PRD context pre-loaded
-3. Investigate WebSocket connection as **separate issue** (see CONNECTION_STABILITY_FIXES.md)
+**Testing Results**:
+- Direct IDE launch: ✅ Connects in <1 second (no timeout)
+- PRD handoff flow: ✅ Terminal establishes successfully
+- Connection watchdog: ✅ Clears on success
+- Console logs: ✅ "Connection watchdog cleared (success)"
 
-### Success Metrics
+**Impact**: This was NOT handoff-specific - it was affecting ALL terminal connections since the property mismatch was introduced.
+
+### Success Metrics - ALL COMPLETE ✅
 
 ✅ **"Start Step" buttons are now functional** - Click handlers work  
 ✅ **Time estimates show correctly** - No more "undefined"  
 ✅ **Visual feedback on click** - Loading → Completed states  
 ✅ **PRD handoff integration exists** - Already implemented in IDE  
-⚠️ **WebSocket connection** - Requires separate investigation
+✅ **WebSocket connection** - FIXED with property name correction
