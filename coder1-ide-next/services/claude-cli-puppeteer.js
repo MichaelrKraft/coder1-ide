@@ -628,9 +628,10 @@ Role: ${agentSession.role}
       console.log(`⏳ Waiting for ${agentId} to accept prompt and start working...`);
       
       let promptAccepted = false;
+      let dataHandler; // Declare outside Promise to fix scoping
       const acceptancePromise = new Promise((resolve, reject) => {
         const acceptanceTimeout = setTimeout(() => {
-          agentSession.pty.removeListener('data', acceptanceListener);
+          if (dataHandler) dataHandler.dispose(); // Dispose onData listener
           if (!promptAccepted) {
             console.warn(`⚠️ No clear acceptance signal from ${agentId} within 15s - proceeding to file detection`);
             // Don't reject - proceed anyway as fallback
@@ -655,7 +656,7 @@ Role: ${agentSession.role}
             if (output.includes(signal)) {
               promptAccepted = true;
               clearTimeout(acceptanceTimeout);
-              agentSession.pty.removeListener('data', acceptanceListener);
+              if (dataHandler) dataHandler.dispose(); // Dispose onData listener
               console.log(`✅ ${agentId} accepted prompt - detected signal: "${signal}"`);
               console.log(`📝 Response preview: "${output.substring(0, 150).replace(/\\n/g, ' ')}..."`);
               resolve();
@@ -672,7 +673,7 @@ Role: ${agentSession.role}
           for (const signal of negativeSignals) {
             if (output.includes(signal)) {
               clearTimeout(acceptanceTimeout);
-              agentSession.pty.removeListener('data', acceptanceListener);
+              if (dataHandler) dataHandler.dispose(); // Dispose onData listener
               console.error(`❌ ${agentId} rejected/confused by prompt - detected: "${signal}"`);
               console.error(`📝 Error response: "${output.substring(0, 300).replace(/\\n/g, ' ')}..."`);
               reject(new Error(`Prompt rejected: ${output.substring(0, 200)}`));
@@ -681,8 +682,8 @@ Role: ${agentSession.role}
           }
         };
         
-        // Listen for PTY output
-        agentSession.pty.on('data', acceptanceListener);
+        // Listen for PTY output using node-pty's onData API (not EventEmitter)
+        dataHandler = agentSession.pty.onData(acceptanceListener);
       });
       
       try {
@@ -801,8 +802,9 @@ Role: ${agentSession.role}
         // Don't log every output event, too noisy
       };
       
+      let ptyOutputDisposable;
       if (agentSession.pty) {
-        agentSession.pty.on('data', ptyOutputHandler);
+        ptyOutputDisposable = agentSession.pty.onData(ptyOutputHandler);
       }
       
       // Activity check every 30 seconds
@@ -814,8 +816,8 @@ Role: ${agentSession.role}
           // Agent has been silent for 5 minutes - likely stalled
           clearInterval(fileCheckInterval);
           clearInterval(activityCheckInterval);
-          if (agentSession.pty) {
-            agentSession.pty.removeListener('data', ptyOutputHandler);
+          if (ptyOutputDisposable) {
+            ptyOutputDisposable.dispose();
           }
           console.warn(`⏰ Agent ${agentId} appears stalled - no output in 5 minutes`);
           reject(new Error(`Agent ${agentId} idle timeout - no output for 5 minutes`));
@@ -830,8 +832,8 @@ Role: ${agentSession.role}
         if (!hasResponded) {
           clearInterval(fileCheckInterval);
           clearInterval(activityCheckInterval);
-          if (agentSession.pty) {
-            agentSession.pty.removeListener('data', ptyOutputHandler);
+          if (ptyOutputDisposable) {
+            ptyOutputDisposable.dispose();
           }
           console.warn(`⏰ Maximum timeout reached for agent ${agentId} task - 30 minutes elapsed`);
           reject(new Error(`Response timeout for agent ${agentId} - maximum time limit (30 min) reached`));

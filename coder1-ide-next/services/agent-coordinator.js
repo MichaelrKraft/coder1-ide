@@ -24,6 +24,10 @@ class AgentCoordinator extends EventEmitter {
   constructor(options = {}) {
     super();
     
+    // 🔧 CIRCUIT BREAKER: Maximum retries to prevent infinite loops (Nov 25, 2025)
+    this.MAX_PHASE_RETRIES = 3;
+    this.MAX_WORKFLOW_RETRIES = 2;
+    
     // Configuration
     this.options = {
       maxConcurrentWorkflows: options.maxConcurrentWorkflows || 2,
@@ -62,11 +66,23 @@ class AgentCoordinator extends EventEmitter {
       successRate: 0
     };
     
+    // 🔍 DIAGNOSTIC: Recursion detection (Nov 25, 2025)
+    this.callCounters = {
+      executeWorkflow: 0,
+      executePhase: 0,
+      executeTasksSequentially: 0,
+      executeTasksInParallel: 0,
+      executeAgentTask: 0
+    };
+    
     this.initializeAgentRoles();
     this.initializeWorkflowTemplates();
     
     // Terminal manager reference (will be set externally)
     this.agentTerminalManager = null;
+    
+    // Socket.IO instance for real-time events (will be set externally)
+    this.io = options.io || null;
     
     // Setup puppeteer output listener to route to terminal manager
     this.setupPuppeteerListeners();
@@ -463,11 +479,35 @@ class AgentCoordinator extends EventEmitter {
    * @returns {Promise<Object>} Workflow execution result
    */
   async executeWorkflow(workflowId, requirement, options = {}) {
+    // 🔍 DIAGNOSTIC: Recursion detection
+    this.callCounters.executeWorkflow++;
+    const currentCallCount = this.callCounters.executeWorkflow;
+    console.log(`🚨 [RECURSION-DETECT] executeWorkflow call #${currentCallCount}`);
+    if (currentCallCount > 5) {
+      console.error(`🚨🚨🚨 INFINITE LOOP DETECTED! executeWorkflow called ${currentCallCount} times!`);
+      console.error(`   This indicates an infinite recursion bug.`);
+      console.error(`   Aborting to prevent server crash...`);
+      throw new Error(`Infinite loop detected: executeWorkflow called ${currentCallCount} times`);
+    }
+    
     // 🔍 DIAGNOSTIC: Function entry
     console.log('🚀 [COORDINATOR] executeWorkflow CALLED');
     console.log('   workflowId:', workflowId);
     console.log('   requirement:', requirement.substring(0, 100) + '...');
     console.log('   options:', JSON.stringify(options, null, 2).substring(0, 200));
+    
+    // 🧹 CRITICAL FIX (Nov 25, 2025): Clean up ALL existing agents before spawning new ones
+    // This prevents PTY leaks and ID mismatches from previous workflow runs
+    console.log('🧹 [CLEANUP] Stopping all existing agents before new workflow...');
+    try {
+      if (this.puppeteer && typeof this.puppeteer.emergencyStopAll === 'function') {
+        await this.puppeteer.emergencyStopAll();
+        console.log('✅ [CLEANUP] All previous agents stopped successfully');
+      }
+    } catch (cleanupError) {
+      console.warn('⚠️ [CLEANUP] Error stopping previous agents:', cleanupError.message);
+      // Continue anyway - new workflow should still work
+    }
     
     const template = this.workflowTemplates.get(workflowId);
     if (!template) {
@@ -492,6 +532,8 @@ class AgentCoordinator extends EventEmitter {
       status: 'starting',
       currentPhase: null,
       currentPhaseIndex: 0,
+      retryCount: 0, // 🔧 CIRCUIT BREAKER: Track workflow retries (Nov 25, 2025)
+      phaseRetries: new Map(), // 🔧 Track retries per phase (Nov 25, 2025)
       progress: {
         overall: 0,
         phases: []
@@ -561,32 +603,77 @@ class AgentCoordinator extends EventEmitter {
         workflowSession.currentPhase = phase;
         workflowSession.currentPhaseIndex = i;
         
+        // 🔧 CIRCUIT BREAKER: Check phase retry limit (Nov 25, 2025)
+        const phaseKey = `${i}-${phase.name}`;
+        const phaseRetryCount = workflowSession.phaseRetries.get(phaseKey) || 0;
+        
+        if (phaseRetryCount >= this.MAX_PHASE_RETRIES) {
+          console.error(`🚨 [CIRCUIT-BREAKER] Phase "${phase.name}" exceeded ${this.MAX_PHASE_RETRIES} retry attempts!`);
+          console.error(`   Phase has failed repeatedly - aborting workflow to prevent infinite loop.`);
+          throw new Error(`Phase "${phase.name}" exceeded retry limit (${this.MAX_PHASE_RETRIES} attempts)`);
+        }
+        
         console.log(`📍 Phase ${i + 1}/${template.phases.length}: ${phase.name}`);
         console.log(`👥 Phase agents: ${phase.agents.join(', ')}`);
         console.log(`🔄 Phase mode: ${phase.mode}`);
         console.log(`📝 Phase tasks: ${phase.tasks?.length || 0} tasks`);
+        console.log(`🔄 Phase retry count: ${phaseRetryCount}/${this.MAX_PHASE_RETRIES}`);
         
         const phaseStartTime = new Date();
-        const phaseResult = await this.executePhase(workflowSession, phase);
-        const phaseEndTime = new Date();
-        const phaseDuration = phaseEndTime - phaseStartTime;
         
-        console.log(`✅ Phase ${phase.name} completed in ${phaseDuration}ms`);
-        console.log(`📊 Phase outputs: ${phaseResult.outputs?.length || 0} results`);
-        console.log(`🤖 Phase agents used: ${phaseResult.agents?.length || 0} agents`);
-        
-        workflowSession.progress.phases.push(phaseResult);
-        
-        // Update overall progress
-        workflowSession.progress.overall = ((i + 1) / template.phases.length) * 100;
-        console.log(`📈 Overall progress: ${workflowSession.progress.overall.toFixed(1)}%`);
-        
-        this.emit('phaseCompleted', {
-          sessionId,
-          phaseIndex: i,
-          phase,
-          result: phaseResult
-        });
+        try {
+          const phaseResult = await this.executePhase(workflowSession, phase);
+          const phaseEndTime = new Date();
+          const phaseDuration = phaseEndTime - phaseStartTime;
+          
+          console.log(`✅ Phase ${phase.name} completed in ${phaseDuration}ms`);
+          console.log(`📊 Phase outputs: ${phaseResult.outputs?.length || 0} results`);
+          console.log(`🤖 Phase agents used: ${phaseResult.agents?.length || 0} agents`);
+          
+          // 🔧 CIRCUIT BREAKER: Reset phase retry counter on success
+          workflowSession.phaseRetries.set(phaseKey, 0);
+          
+          workflowSession.progress.phases.push(phaseResult);
+          
+          // Update overall progress
+          workflowSession.progress.overall = ((i + 1) / template.phases.length) * 100;
+          console.log(`📈 Overall progress: ${workflowSession.progress.overall.toFixed(1)}%`);
+          
+          this.emit('phaseCompleted', {
+            sessionId,
+            phaseIndex: i,
+            phase,
+            result: phaseResult
+          });
+          
+        } catch (phaseError) {
+          // 🔧 CIRCUIT BREAKER: Check if error is fatal (should not retry)
+          if (phaseError.isFatalError) {
+            console.error(`🚨 [FATAL-ERROR] Phase "${phase.name}" failed with fatal error - no retry!`);
+            console.error(`   Error: ${phaseError.message}`);
+            if (phaseError.phaseData) {
+              console.error(`   Phase data:`, JSON.stringify(phaseError.phaseData, null, 2));
+            }
+            console.error(`   Failing workflow immediately...`);
+            throw phaseError; // Propagate immediately, no retry
+          }
+          
+          // Non-fatal error: Use circuit breaker retry logic
+          const newRetryCount = phaseRetryCount + 1;
+          workflowSession.phaseRetries.set(phaseKey, newRetryCount);
+          
+          console.error(`❌ Phase "${phase.name}" failed (attempt ${newRetryCount}/${this.MAX_PHASE_RETRIES}):`, phaseError.message);
+          
+          if (newRetryCount >= this.MAX_PHASE_RETRIES) {
+            console.error(`🚨 Phase "${phase.name}" exhausted all ${this.MAX_PHASE_RETRIES} retry attempts!`);
+            console.error(`   Failing workflow to prevent infinite loop...`);
+            throw phaseError; // Propagate to workflow-level catch
+          } else {
+            console.warn(`🔄 Retrying phase "${phase.name}" (attempt ${newRetryCount + 1}/${this.MAX_PHASE_RETRIES})...`);
+            i--; // Retry the same phase by decrementing loop counter
+            continue;
+          }
+        }
       }
 
       // Synthesize final results
@@ -636,6 +723,17 @@ class AgentCoordinator extends EventEmitter {
    * @returns {Promise<Object>} Phase execution result
    */
   async executePhase(workflowSession, phase) {
+    // 🔍 DIAGNOSTIC: Recursion detection
+    this.callCounters.executePhase++;
+    const currentCallCount = this.callCounters.executePhase;
+    console.log(`🚨 [RECURSION-DETECT] executePhase call #${currentCallCount}`);
+    if (currentCallCount > 10) {
+      console.error(`🚨🚨🚨 INFINITE LOOP DETECTED! executePhase called ${currentCallCount} times!`);
+      console.error(`   This indicates an infinite recursion bug.`);
+      console.error(`   Aborting to prevent server crash...`);
+      throw new Error(`Infinite loop detected: executePhase called ${currentCallCount} times`);
+    }
+    
     const { sessionId, requirement, options } = workflowSession;
     const phaseResult = {
       name: phase.name,
@@ -713,6 +811,25 @@ class AgentCoordinator extends EventEmitter {
             console.log(`📊 Agent status: ${agent.status}`);
             console.log(`📺 Terminal session ready - PTY output will be captured from first byte`);
             
+            // 🔧 FIX (Nov 25, 2025): Emit Socket.IO event when agent spawns
+            // This notifies frontend to create terminal connections for real-time output
+            if (this.io) {
+              const agentSpawnEvent = {
+                teamId: workflowSession.sessionId,
+                agents: [{
+                  id: agentId,
+                  name: roleDefinition.name,
+                  role: roleId,
+                  status: 'spawned',
+                  workTreePath: agent.workTreePath
+                }]
+              };
+              console.log(`📡 Emitting agent:spawn event for ${agentId}`);
+              this.io.emit('agent:spawn', agentSpawnEvent);
+            } else {
+              console.warn(`⚠️ Socket.IO not available, cannot emit agent:spawn for ${agentId}`);
+            }
+            
           } catch (spawnError) {
             console.error(`❌ [CRITICAL] Failed to spawn ${roleId} agent (${agentId}):`, spawnError);
             console.error(`   Error type: ${spawnError.constructor.name}`);
@@ -732,15 +849,24 @@ class AgentCoordinator extends EventEmitter {
       }
       
       console.log(`✅ All phase agents ready: ${activeAgents.length} active agents`);
+      
+      // 🔍 VALIDATION: Ensure activeAgents array has agents (Nov 25, 2025)
+      if (!activeAgents || activeAgents.length === 0) {
+        console.error(`🚨 [VALIDATION] CRITICAL ERROR: No active agents available for phase "${phase.name}"!`);
+        console.error(`   Phase requires: ${phase.agents.join(', ')}`);
+        console.error(`   Active agents: ${activeAgents.length}`);
+        console.error(`   This indicates agent spawning failed silently.`);
+        throw new Error(`Phase "${phase.name}" has no active agents - cannot execute tasks`);
+      }
 
       // 🔧 FIX (Nov 23, 2025): Enhanced diagnostic logging for phase execution
       // Helps identify which agents are being used and their status before task execution
-      console.log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
+      console.log(`====================================================`);
       console.log(`🔄 [PHASE] Executing phase: ${phase.name}`);
       console.log(`   📋 Mode: ${phase.mode}`);
       console.log(`   📝 Tasks: ${phase.tasks?.length || 0} total`);
       console.log(`   👥 Agents: ${activeAgents.length} active`);
-      console.log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
+      console.log(`====================================================`);
       
       // Log each active agent's details
       activeAgents.forEach((agent, index) => {
@@ -751,12 +877,40 @@ class AgentCoordinator extends EventEmitter {
         console.log(`   Work Tree: ${agent.workTreePath}`);
       });
       
-      console.log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
+      // 🔍 DIAGNOSTIC: Enhanced phase.tasks logging (Nov 25, 2025)
+      console.log(`+====================================================+`);
+      console.log(`|  🔍 [PHASE-DEBUG] TASK ANALYSIS                  |`);
+      console.log(`+====================================================+`);
+      console.log(`   📊 phase.tasks exists: ${!!phase.tasks}`);
+      console.log(`   📊 phase.tasks type: ${typeof phase.tasks}`);
+      console.log(`   📊 phase.tasks length: ${phase.tasks?.length || 0}`);
+      console.log(`   📊 phase.tasks array: ${JSON.stringify(phase.tasks)}`);
+      console.log(`   📊 phase.mode: ${phase.mode}`);
+      console.log(`   📊 activeAgents.length: ${activeAgents.length}`);
+      console.log(``);
       console.log(`📝 Task List:`);
-      (phase.tasks || []).forEach((task, index) => {
-        console.log(`   ${index + 1}. ${task}`);
-      });
-      console.log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
+      if (!phase.tasks || phase.tasks.length === 0) {
+        console.log(`   ⚠️ WARNING: NO TASKS DEFINED - This will cause phase failure!`);
+      } else {
+        phase.tasks.forEach((task, index) => {
+          console.log(`   ${index + 1}. "${task}"`);
+        });
+      }
+      console.log(`====================================================`);
+      
+      // 🔍 VALIDATION: Ensure phase.tasks exists and has items (Nov 25, 2025)
+      if (!phase.tasks || !Array.isArray(phase.tasks) || phase.tasks.length === 0) {
+        console.error(`🚨 [VALIDATION] CRITICAL ERROR: Phase "${phase.name}" has no tasks defined!`);
+        console.error(`   phase.tasks: ${JSON.stringify(phase.tasks)}`);
+        console.error(`   phase.mode: ${phase.mode}`);
+        console.error(`   This indicates a malformed workflow template.`);
+        
+        // 🔧 FALLBACK: Generate default task based on phase name and agents
+        console.warn(`🔧 [FALLBACK] Generating default task for phase "${phase.name}"...`);
+        const defaultTask = `Complete the ${phase.name.toLowerCase()} work for this project. Use your expertise as a ${phase.agents.join(' and ')} to deliver high-quality results.`;
+        phase.tasks = [defaultTask];
+        console.warn(`🔧 [FALLBACK] Generated task: "${defaultTask}"`);
+      }
       
       const taskExecutionStart = new Date();
       
@@ -802,7 +956,17 @@ class AgentCoordinator extends EventEmitter {
         phaseResult.endTime = new Date();
         phaseResult.error = `No successful task outputs - all ${phase.agents.length} agent(s) failed or did not execute`;
         
-        throw new Error(`Phase "${phase.name}" failed: No successful outputs from ${phase.agents.length} agent(s)`);
+        // 🔧 CIRCUIT BREAKER: Mark as fatal error - do not retry (Nov 25, 2025)
+        const error = new Error(`Phase "${phase.name}" failed: No successful outputs from ${phase.agents.length} agent(s)`);
+        error.isFatalError = true; // Prevent automatic retries
+        error.phaseData = {
+          phaseName: phase.name,
+          agents: phase.agents,
+          tasks: phase.tasks,
+          mode: phase.mode,
+          outputsReceived: phaseResult.outputs?.length || 0
+        };
+        throw error;
       }
 
       phaseResult.status = 'completed';
@@ -832,7 +996,17 @@ class AgentCoordinator extends EventEmitter {
    * @returns {Promise<Array>} Task results
    */
   async executeTasksInParallel(agents, tasks, context, workflowSession = null) {
-    console.log(`⚡ Executing ${tasks.length} tasks in parallel with ${agents.length} agents`);
+    // 🔍 DIAGNOSTIC: Enhanced logging for debugging (Nov 25, 2025)
+    console.log(`=======================================================`);
+    console.log(`⚡ [PARALLEL-EXEC] ENTRY - executeTasksInParallel called`);
+    console.log(`   📊 Tasks count: ${tasks?.length || 0}`);
+    console.log(`   📊 Agents count: ${agents?.length || 0}`);
+    console.log(`   📊 Tasks array: ${JSON.stringify(tasks)}`);
+    console.log(`   📊 Context: "${context?.substring(0, 100)}..."`);
+    console.log(`   📊 Has workflowSession: ${!!workflowSession}`);
+    console.log(`   📊 Call stack trace:`);
+    console.trace('executeTasksInParallel called from:');
+    console.log(`=======================================================`);
     
     const taskPromises = agents.map((agent, index) => {
       const task = tasks[index] || tasks[0]; // Reuse tasks if fewer than agents
@@ -875,6 +1049,14 @@ class AgentCoordinator extends EventEmitter {
 
     const results = await Promise.all(taskPromises);
     
+    // 🔍 DIAGNOSTIC: Exit logging
+    console.log(`=======================================================`);
+    console.log(`✅ [PARALLEL-EXEC] EXIT - executeTasksInParallel completed`);
+    console.log(`   📊 Total results: ${results.length}`);
+    console.log(`   📊 Successful results: ${results.filter(r => r.success).length}`);
+    console.log(`   📊 Failed results: ${results.filter(r => !r.success).length}`);
+    console.log(`=======================================================`);
+    
     // Filter successful results
     return results.filter(result => result.success);
   }
@@ -888,7 +1070,17 @@ class AgentCoordinator extends EventEmitter {
    * @returns {Promise<Array>} Task results
    */
   async executeTasksSequentially(agents, tasks, context, workflowSession = null) {
-    console.log(`🔄 Executing ${tasks.length} tasks sequentially`);
+    // 🔍 DIAGNOSTIC: Enhanced logging for debugging (Nov 25, 2025)
+    console.log(`====================================================`);
+    console.log(`🔄 [SEQUENTIAL-EXEC] ENTRY - executeTasksSequentially called`);
+    console.log(`   📊 Tasks count: ${tasks?.length || 0}`);
+    console.log(`   📊 Agents count: ${agents?.length || 0}`);
+    console.log(`   📊 Tasks array: ${JSON.stringify(tasks)}`);
+    console.log(`   📊 Context: "${context?.substring(0, 100)}..."`);
+    console.log(`   📊 Has workflowSession: ${!!workflowSession}`);
+    console.log(`   📊 Call stack trace:`);
+    console.trace('executeTasksSequentially called from:');
+    console.log(`====================================================`);
     
     const results = [];
     let previousResult = null;
@@ -941,6 +1133,14 @@ class AgentCoordinator extends EventEmitter {
       }
     }
     
+    // 🔍 DIAGNOSTIC: Exit logging
+    console.log(`====================================================`);
+    console.log(`✅ [SEQUENTIAL-EXEC] EXIT - executeTasksSequentially completed`);
+    console.log(`   📊 Results count: ${results.length}`);
+    console.log(`   📊 Successful results: ${results.filter(r => r.success).length}`);
+    console.log(`   📊 Failed results: ${results.filter(r => !r.success).length}`);
+    console.log(`====================================================`);
+    
     return results;
   }
 
@@ -956,13 +1156,36 @@ class AgentCoordinator extends EventEmitter {
     const startTime = Date.now();
     
     try {
+      // 🔍 DIAGNOSTIC: Enhanced sendToAgent logging (Nov 25, 2025)
+      console.log(`+=========================================================+`);
+      console.log(`| 🔍 [SEND-TO-AGENT] DIAGNOSTIC CHECKPOINT         |`);
+      console.log(`+=========================================================+`);
       console.log(`📤 Sending task to ${agent.role} agent (${agent.agentId}): "${taskName}"`);
       console.log(`🏠 Agent work directory: ${agent.workTreePath}`);
       console.log(`📋 Agent status: ${agent.status}`);
-      console.log(`💬 Prompt length: ${prompt.length} chars`);
-      console.log(`📝 Prompt preview: "${prompt.substring(0, 200)}..."`);
+      console.log(`👥 Agent role: ${agent.role}`);
+      console.log(`🆔 Agent ID: ${agent.agentId}`);
+      console.log(``);
+      console.log(`💡 [VALIDATION CHECKS]`);
+      console.log(`   ✅ Agent object exists: ${!!agent}`);
+      console.log(`   ✅ Agent ID valid: ${!!agent.agentId} ("${agent.agentId}")`);
+      console.log(`   ✅ Puppeteer service exists: ${!!this.puppeteer}`);
+      console.log(`   ✅ sendToAgent function exists: ${typeof this.puppeteer.sendToAgent === 'function'}`);
+      console.log(``);
+      console.log(`💬 [PROMPT DETAILS]`);
+      console.log(`   Length: ${prompt.length} chars`);
+      console.log(`   Empty: ${prompt.length === 0}`);
+      console.log(`   Type: ${typeof prompt}`);
+      console.log(`   Preview (first 300 chars):`);
+      console.log(`   "${prompt.substring(0, 300)}${prompt.length > 300 ? '...' : ''}"`);
+
+      console.log(`============================================================`);
       
-      console.log(`🔄 Sending message to agent via puppeteer.sendToAgent()...`);
+      console.log(`🚀 [EXECUTING] Calling puppeteer.sendToAgent()...`);
+      console.log(`   Agent ID: ${agent.agentId}`);
+      console.log(`   Prompt length: ${prompt.length}`);
+      console.log(`   Timestamp: ${new Date().toISOString()}`);
+      
       const response = await this.puppeteer.sendToAgent(agent.agentId, prompt);
       
       console.log(`📥 Received response from ${agent.role} agent`);
