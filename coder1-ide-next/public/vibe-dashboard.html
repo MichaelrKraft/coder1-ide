@@ -3694,6 +3694,7 @@
                     AI Dashboard
                 </h1>
             </div>
+        </div>
 
         <!-- Hero Section -->
         <div class="hero-section">
@@ -7191,7 +7192,7 @@ Execute as a single Task with multiple sub-agents working in parallel.`;
                 if (timelineLoader) timelineLoader.style.display = 'flex';
                 
                 // Fetch checkpoints from API
-                const response = await fetch('/api/checkpoints/list');
+                const response = await fetch('/api/checkpoint/');
                 const data = await response.json();
                 
                 let checkpoints;
@@ -7553,7 +7554,7 @@ Execute as a single Task with multiple sub-agents working in parallel.`;
             };
             
             try {
-                const response = await fetch('/api/checkpoints/create', {
+                const response = await fetch('/api/checkpoint/', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(checkpointData)
@@ -7575,7 +7576,7 @@ Execute as a single Task with multiple sub-agents working in parallel.`;
         window.exportTimeline = async function() {
             // Export timeline data as JSON or markdown
             try {
-                const response = await fetch('/api/checkpoints/export');
+                const response = await fetch('/api/checkpoint/export');
                 const data = await response.json();
                 
                 if (data.success) {
