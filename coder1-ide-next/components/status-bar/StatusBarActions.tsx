@@ -624,8 +624,8 @@ const StatusBarActions = React.memo(function StatusBarActions({
         <div 
           className="p-[1px] rounded-md"
           style={{
-            background: 'linear-gradient(135deg, #3b82f6, #2563eb)', 
-            boxShadow: glows.blue?.intense || '0 0 12px rgba(59, 130, 246, 0.5)'
+            background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', 
+            boxShadow: glows.purple?.intense || '0 0 12px rgba(139, 92, 246, 0.5)'
           }}
         >
           <button
@@ -635,9 +635,20 @@ const StatusBarActions = React.memo(function StatusBarActions({
               }
             }}
             disabled={!currentTeamId}
-            className="flex items-center gap-1.5 px-4 py-1.5 text-sm font-medium text-text-secondary hover:text-text-primary disabled:opacity-50 disabled:cursor-not-allowed rounded transition-all duration-200 bg-bg-secondary w-full"
-            onMouseEnter={(e) => applyHoverEffect(e, false)}
-            onMouseLeave={removeHoverEffect}
+            className="flex items-center gap-1.5 px-4 py-1.5 text-sm font-medium rounded transition-all duration-200 w-full bg-[#1a1a1a]"
+            style={{
+              color: !currentTeamId ? '#a0a0a0' : undefined,
+              cursor: !currentTeamId ? 'not-allowed' : 'pointer'
+            }}
+            onMouseEnter={(e) => {
+              if (!currentTeamId) return;
+              e.currentTarget.style.color = '#ffffff';
+              applyHoverEffect(e, false);
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.color = !currentTeamId ? '#a0a0a0' : '#a0a0a0';
+              removeHoverEffect(e);
+            }}
             title={currentTeamId ? "Preview AI Team Output - Browse files and preview code" : "No AI Team output to preview"}
           >
             <Eye className="w-4 h-4" />
