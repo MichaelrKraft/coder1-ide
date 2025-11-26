@@ -6,7 +6,7 @@
 
 const io = require('socket.io-client');
 const EventEmitter = require('events');
-const PQueue = require('p-queue').default;
+const PQueue = require('p-queue');
 const logger = require('./logger');
 const ClaudeExecutor = require('./claude-executor');
 const FileHandler = require('./file-handler');
