@@ -40,6 +40,11 @@ interface Settings {
   claudeApiKey: string;
   openaiApiKey: string;
   
+  // Claudish (Alternative Models)
+  useClaudish: boolean;
+  claudishModel: string;
+  openrouterApiKey: string;
+  
   // Memory
   memoryDetectionEnabled: boolean;
   memoryDetectionThreshold: number;
@@ -73,6 +78,9 @@ const defaultSettings: Settings = {
   aiSuggestions: true,
   claudeApiKey: '',
   openaiApiKey: '',
+  useClaudish: false,
+  claudishModel: 'x-ai/grok-code-fast-1',
+  openrouterApiKey: '',
   memoryDetectionEnabled: true,
   memoryDetectionThreshold: 70,
   memoryAutoGeneration: true,
@@ -195,7 +203,7 @@ export default function SettingsModal({ isOpen, onClose, fontSize, onFontSizeCha
     { id: 'general' as SettingsTab, label: 'General', icon: Monitor },
     { id: 'editor' as SettingsTab, label: 'Editor', icon: Code },
     { id: 'terminal' as SettingsTab, label: 'Terminal', icon: Terminal },
-    { id: 'ai' as SettingsTab, label: 'AI', icon: Bot },
+    { id: 'ai' as SettingsTab, label: 'AI/LLMs', icon: Bot },
     { id: 'memory' as SettingsTab, label: 'Memory', icon: Brain },
   ];
 
@@ -589,6 +597,107 @@ export default function SettingsModal({ isOpen, onClose, fontSize, onFontSizeCha
                       <span className="text-sm text-text-primary">Enable AI Suggestions</span>
                     </label>
                   </div>
+
+                  {/* Divider */}
+                  <div className="border-t border-border-default" />
+
+                  {/* Alternative Models (Claudish) */}
+                  <div className="space-y-3">
+                    <h4 className="text-sm font-semibold text-text-primary flex items-center gap-2">
+                      <Code className="w-4 h-4" />
+                      Alternative Models (Advanced)
+                    </h4>
+                    
+                    <div className="p-4 bg-bg-tertiary rounded-lg border border-border-default space-y-3">
+                      <label className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          checked={settings.useClaudish}
+                          onChange={(e) => {
+                            updateSetting('useClaudish', e.target.checked);
+                            // Sync to localStorage for CLI service
+                            localStorage.setItem('use_claudish', e.target.checked.toString());
+                          }}
+                          className="rounded border-border-default"
+                        />
+                        <span className="text-sm font-medium text-text-primary">Enable Alternative Models (Claudish)</span>
+                      </label>
+                      
+                      {/* OpenRouter API Key Input */}
+                      {settings.useClaudish && (
+                        <div className="space-y-2">
+                          <label className="block text-sm font-medium text-text-primary">
+                            <Key className="w-4 h-4 inline mr-1" />
+                            OpenRouter API Key
+                          </label>
+                          <div className="flex gap-2">
+                            <input
+                              type="password"
+                              value={settings.openrouterApiKey}
+                              onChange={(e) => {
+                                updateSetting('openrouterApiKey', e.target.value);
+                                // Sync to localStorage for CLI service
+                                localStorage.setItem('openrouter_api_key', e.target.value);
+                              }}
+                              placeholder="sk-or-v1-..."
+                              className="flex-1 px-3 py-2 bg-bg-primary border border-border-default rounded text-text-primary text-sm"
+                            />
+                            {settings.openrouterApiKey && (
+                              <CheckCircle className="w-5 h-5 text-green-500 self-center" />
+                            )}
+                          </div>
+                          <p className="text-xs text-text-muted">
+                            Get your API key from <a href="https://openrouter.ai" target="_blank" rel="noopener noreferrer" className="text-coder1-cyan hover:underline">openrouter.ai</a>
+                          </p>
+                        </div>
+                      )}
+                      
+                      <div className="text-xs text-text-muted space-y-2">
+                        <p>
+                          Access Grok, GPT-5, MiniMax, and other models via OpenRouter with 50-70% cost savings.
+                        </p>
+                        <div className="flex items-start gap-2">
+                          <AlertCircle className="w-4 h-4 text-yellow-500 flex-shrink-0 mt-0.5" />
+                          <div>
+                            <p className="text-yellow-300 font-semibold mb-1">Requirements:</p>
+                            <ul className="list-disc list-inside space-y-1 text-text-muted">
+                              <li>Install: <code className="px-1 py-0.5 bg-bg-primary rounded">npm install -g claudish</code></li>
+                              <li>OpenRouter API key (enter above when enabled)</li>
+                            </ul>
+                          </div>
+                        </div>
+                      </div>
+
+                      {settings.useClaudish && (
+                        <div className="pt-3 border-t border-border-default">
+                          <label className="block text-sm font-medium text-text-primary mb-2">
+                            Model Selection
+                          </label>
+                          <select
+                            value={settings.claudishModel}
+                            onChange={(e) => {
+                              updateSetting('claudishModel', e.target.value);
+                              // Sync to localStorage for CLI service
+                              localStorage.setItem('claudish_model', e.target.value);
+                            }}
+                            className="w-full px-3 py-2 bg-bg-primary border border-border-default rounded text-text-primary text-sm"
+                          >
+                            <option value="x-ai/grok-code-fast-1">Grok Fast (Cheapest - ~$0.50/M)</option>
+                            <option value="openai/gpt-5-codex">GPT-5 Codex (Balanced - ~$1.00/M)</option>
+                            <option value="minimax/minimax-m2">MiniMax M2 (Alternative - ~$0.80/M)</option>
+                            <option value="qwen/qwen3-vl-235b-a22b-instruct">Qwen 3 VL (Multimodal - ~$0.90/M)</option>
+                            <option value="zhipu-ai/glm-4.6">GLM 4.6 (Chinese Market - ~$0.10/M)</option>
+                          </select>
+                          <p className="text-xs text-text-muted mt-2">
+                            Selected model will be used for all AI features when Claudish is enabled.
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Divider */}
+                  <div className="border-t border-border-default" />
 
                   {/* Legacy API Keys (for other features) */}
                   <div className="space-y-3">
