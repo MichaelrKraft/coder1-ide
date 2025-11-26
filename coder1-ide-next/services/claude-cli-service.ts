@@ -40,7 +40,8 @@ class ClaudeCliService {
     'claude',
     'claude-cli', 
     'claude-code',
-    'anthropic'
+    'anthropic',
+    'claudish' // OpenRouter proxy for alternative models
   ];
 
   constructor() {
@@ -146,6 +147,34 @@ class ClaudeCliService {
   }
 
   /**
+   * Get the effective command to use (claude or claudish based on settings)
+   */
+  private getEffectiveCommand(): string {
+    // Check if Claudish mode is enabled via environment or localStorage
+    const useClaudish = process.env.USE_CLAUDISH === 'true' || 
+                       (typeof window !== 'undefined' && localStorage.getItem('use_claudish') === 'true');
+    
+    if (useClaudish && this.detectedCommand === 'claudish') {
+      const selectedModel = process.env.CLAUDISH_MODEL || 
+                           (typeof window !== 'undefined' && localStorage.getItem('claudish_model')) || 
+                           'x-ai/grok-code-fast-1'; // Default to Grok Fast
+      
+      // Get OpenRouter API key from localStorage or environment
+      const apiKey = (typeof window !== 'undefined' && localStorage.getItem('openrouter_api_key')) || 
+                     process.env.OPENROUTER_API_KEY;
+      
+      // Set environment variable for Claudish to use
+      if (apiKey && typeof process !== 'undefined') {
+        process.env.OPENROUTER_API_KEY = apiKey;
+      }
+      
+      return `claudish --model ${selectedModel}`;
+    }
+    
+    return this.detectedCommand || 'claude';
+  }
+
+  /**
    * Send message to Claude CLI in interactive session
    */
   async sendMessage(
@@ -169,8 +198,9 @@ class ClaudeCliService {
     }
 
     try {
-      // Execute Claude CLI command
-      const claudeCommand = `${this.detectedCommand} chat "${fullMessage}"`;
+      // Execute Claude CLI command (with Claudish support)
+      const effectiveCommand = this.getEffectiveCommand();
+      const claudeCommand = `${effectiveCommand} chat "${fullMessage}"`;
       const workingDir = session.projectPath || process.cwd();
       
       const { stdout, stderr } = await execAsync(claudeCommand, {
@@ -230,8 +260,9 @@ class ClaudeCliService {
     }
 
     try {
-      // Claude CLI command - just pass the message, Claude will read files using its tools
-      const claudeCommand = `${this.detectedCommand} -p "${fullMessage}"`;
+      // Claude CLI command - just pass the message, Claude will read files using its tools (with Claudish support)
+      const effectiveCommand = this.getEffectiveCommand();
+      const claudeCommand = `${effectiveCommand} -p "${fullMessage}"`;
       const workingDir = session.projectPath || process.cwd();
       
       console.log(`🎯 Executing Claude CLI with file references:`, {
