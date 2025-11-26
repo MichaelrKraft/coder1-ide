@@ -22,6 +22,7 @@ import MenuBar from "@/components/MenuBar";
 import HandoffWarningBanner from "@/components/HandoffWarningBanner";
 // import DragDropOverlay from "@/components/terminal/DragDropOverlay"; // Disabled - conflicts with StagedComposer
 import DocumentationPanel from "@/components/documentation/DocumentationPanel";
+import QuickDocsLookup from "@/components/documentation/QuickDocsLookup";
 
 // Conductor components removed - using simple multi-Claude tabs instead
 
@@ -131,6 +132,7 @@ function IDEPageContent() {
   // Settings modal state
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [showKeyboardShortcuts, setShowKeyboardShortcuts] = useState(false);
+  const [showQuickDocs, setShowQuickDocs] = useState(false);
   const [fontSize, setFontSize] = useState(14);
   
   // Editor state
@@ -1109,6 +1111,12 @@ function IDEPageContent() {
         handleResetZoom();
       }
       
+      // Quick Docs Lookup (Cmd+D / Ctrl+D)
+      else if (ctrlKey && e.key === 'd' && !e.shiftKey) {
+        e.preventDefault();
+        setShowQuickDocs(true);
+      }
+      
       // Run shortcuts
       else if (e.key === 'F5') {
         e.preventDefault();
@@ -1222,6 +1230,42 @@ function IDEPageContent() {
           }));
         }
       })();
+    }
+  }, [searchParams]);
+
+  // 🔧 FIX (Nov 26, 2025): Handle sandbox URL parameter for direct sandbox access
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
+    const sandboxId = searchParams.get('sandbox');
+    if (sandboxId) {
+      console.log('🏖️ IDE: Sandbox ID detected in URL:', sandboxId);
+      
+      // Wait for terminal to be ready before connecting to sandbox
+      const connectToSandbox = () => {
+        // Dispatch event to terminal to switch to this sandbox
+        window.dispatchEvent(new CustomEvent('terminal:switchToSandbox', {
+          detail: { sandboxId }
+        }));
+        console.log('✅ IDE: Sandbox connection event dispatched for:', sandboxId);
+      };
+      
+      // Check if terminal is already ready
+      if ((window as any).terminalSessionId) {
+        connectToSandbox();
+      } else {
+        // Wait for terminal ready event
+        const handleTerminalReady = () => {
+          connectToSandbox();
+          window.removeEventListener('terminalReady', handleTerminalReady);
+        };
+        window.addEventListener('terminalReady', handleTerminalReady);
+        
+        // Fallback timeout
+        setTimeout(() => {
+          connectToSandbox();
+        }, 2000);
+      }
     }
   }, [searchParams]);
 
@@ -1568,6 +1612,12 @@ function IDEPageContent() {
             
             {/* Documentation Panel */}
             <DocumentationPanel />
+            
+            {/* Quick Docs Lookup (Cmd+D) */}
+            <QuickDocsLookup
+              isOpen={showQuickDocs}
+              onClose={() => setShowQuickDocs(false)}
+            />
           </div>
         </TerminalCommandProvider>
       </EnhancedSupervisionProvider>
