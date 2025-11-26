@@ -1,8 +1,10 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, Plus, Trash2, ExternalLink, Clock, FileText, Brain, Loader2, Upload, FileImage, File } from 'lucide-react';
+import { Search, Plus, Trash2, ExternalLink, Clock, FileText, Brain, Loader2, Upload, FileImage, File, ClipboardCopy, Check } from 'lucide-react';
+import { copyDocForClaude } from '@/lib/doc-utils';
 import { getCompanionClient } from '@/lib/companion-client';
+import RecommendedDocs from './RecommendedDocs';
 
 interface DocumentationResult {
   docId: string;
@@ -44,6 +46,7 @@ const DocumentationPanel: React.FC = () => {
   const [isDragActive, setIsDragActive] = useState(false);
   const [uploadingFiles, setUploadingFiles] = useState<string[]>([]);
   const [showFileUpload, setShowFileUpload] = useState(false);
+  const [copiedDocId, setCopiedDocId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const companionClient = React.useMemo(() => getCompanionClient(), []);
@@ -116,54 +119,40 @@ const DocumentationPanel: React.FC = () => {
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!searchQuery.trim()) return;
+    if (docs.length === 0) {
+      setError('No documents to search. Add some documentation first.');
+      return;
+    }
 
     setIsSearching(true);
     setError(null);
     
     try {
-      if (companionClient.isConnected()) {
-        // Use companion service for advanced search
-        const response = await fetch('http://localhost:57132/docs/search', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            query: searchQuery,
-            options: {
-              maxResults: 10,
-              includeContent: true,
-              useClaudeAnalysis: true,
-              projectContext: 'Coder1 IDE development'
-            }
-          })
-        });
+      // Always use AI search API (works without companion service)
+      const response = await fetch('/api/docs/ai-search', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          query: searchQuery,
+          documents: docs.map(doc => ({
+            docId: doc.docId,
+            title: doc.title,
+            url: doc.url,
+            categories: doc.categories,
+            wordCount: doc.wordCount
+          }))
+        })
+      });
 
-        if (response.ok) {
-          const data = await response.json();
-          setSearchResults(data.results || []);
-        } else {
-          throw new Error('Search failed');
+      if (response.ok) {
+        const data = await response.json();
+        setSearchResults(data.results || []);
+        
+        if (data.results?.length === 0) {
+          setError('No matching documents found. Try different keywords.');
         }
       } else {
-        // Use local search for basic filtering
-        const filteredDocs = docs.filter(doc => 
-          doc.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          doc.categories.some(cat => cat.toLowerCase().includes(searchQuery.toLowerCase()))
-        );
-        
-        // Convert to search results format
-        const results = filteredDocs.map(doc => ({
-          docId: doc.docId,
-          title: doc.title,
-          url: doc.url,
-          categories: doc.categories,
-          relevanceScore: 1.0,
-          excerpts: [{
-            text: `Document: ${doc.title} (${doc.wordCount} words)`,
-            hasCode: false
-          }]
-        }));
-        
-        setSearchResults(results);
+        throw new Error('Search failed');
       }
     } catch (error) {
       console.error('Search error:', error);
@@ -381,6 +370,24 @@ const DocumentationPanel: React.FC = () => {
     }
   };
 
+  const handleCopyForClaude = async (doc: DocumentationDoc | DocumentationResult) => {
+    const content = 'excerpts' in doc && doc.excerpts?.length 
+      ? doc.excerpts.map(e => e.text).join('\n\n')
+      : `${doc.title} - ${(doc as DocumentationDoc).wordCount || 0} words`;
+    
+    const success = await copyDocForClaude({
+      title: doc.title,
+      url: doc.url,
+      content: content,
+      categories: doc.categories
+    });
+    
+    if (success) {
+      setCopiedDocId(doc.docId);
+      setTimeout(() => setCopiedDocId(null), 2000);
+    }
+  };
+
   const getFileIcon = (fileName: string) => {
     const ext = fileName.split('.').pop()?.toLowerCase();
     if (['png', 'jpg', 'jpeg', 'svg'].includes(ext || '')) {
@@ -393,6 +400,39 @@ const DocumentationPanel: React.FC = () => {
       return <FileText className="w-4 h-4 text-green-400" />;
     }
     return <File className="w-4 h-4 text-text-muted" />;
+  };
+
+  const handleAddRecommendedDoc = async (url: string, title: string) => {
+    if (companionClient.isConnected()) {
+      setIsAdding(true);
+      try {
+        const response = await fetch('http://localhost:57132/docs/add', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url, options: { timeout: 30000, retries: 3 } })
+        });
+        if (response.ok) {
+          await loadDocsList();
+          await loadStats();
+        } else {
+          throw new Error('Failed to add documentation');
+        }
+      } finally {
+        setIsAdding(false);
+      }
+    } else {
+      const newDoc: DocumentationDoc = {
+        docId: `rec-${Date.now()}`,
+        title,
+        url,
+        categories: ['recommended'],
+        wordCount: 0,
+        chunkCount: 0,
+        processedAt: new Date().toISOString(),
+        age: 0
+      };
+      setDocs(prev => [...prev, newDoc]);
+    }
   };
 
   if (!isOpen) {
@@ -465,14 +505,13 @@ const DocumentationPanel: React.FC = () => {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search documentation..."
+                placeholder="Search documentation... (⌘D for quick lookup)"
                 className="w-full pl-10 pr-4 py-2 bg-bg-primary border border-border-default rounded-md text-text-primary placeholder-text-muted focus:outline-none focus:ring-2 focus:ring-blue-500"
-                disabled={!companionClient.isConnected()}
               />
             </div>
             <button
               type="submit"
-              disabled={!searchQuery.trim() || isSearching || !companionClient.isConnected()}
+              disabled={!searchQuery.trim() || isSearching || docs.length === 0}
               className="w-full py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-bg-tertiary text-white rounded-md transition-colors flex items-center justify-center gap-2"
             >
               {isSearching ? (
@@ -483,7 +522,7 @@ const DocumentationPanel: React.FC = () => {
               ) : (
                 <>
                   <Search className="w-4 h-4" />
-                  Search
+                  AI Search
                 </>
               )}
             </button>
@@ -587,6 +626,9 @@ const DocumentationPanel: React.FC = () => {
           </div>
         </div>
 
+        {/* Recommended Docs (Stack Detection) */}
+        <RecommendedDocs onAddDoc={handleAddRecommendedDoc} />
+
         {/* Results Area */}
         <div className="flex-1 overflow-y-auto">
           {searchResults.length > 0 ? (
@@ -620,13 +662,26 @@ const DocumentationPanel: React.FC = () => {
                         )}
                       </div>
                     </div>
-                    <button
-                      onClick={() => handleDeleteDoc(result.docId)}
-                      className="p-1 hover:bg-bg-tertiary rounded transition-colors"
-                      title="Delete Documentation"
-                    >
-                      <Trash2 className="w-4 h-4 text-text-muted hover:text-red-400" />
-                    </button>
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => handleCopyForClaude(result)}
+                        className="p-1.5 hover:bg-blue-500/20 rounded transition-colors group"
+                        title="Copy for Claude - paste in your conversation"
+                      >
+                        {copiedDocId === result.docId ? (
+                          <Check className="w-4 h-4 text-green-400" />
+                        ) : (
+                          <ClipboardCopy className="w-4 h-4 text-blue-400 group-hover:text-blue-300" />
+                        )}
+                      </button>
+                      <button
+                        onClick={() => handleDeleteDoc(result.docId)}
+                        className="p-1 hover:bg-bg-tertiary rounded transition-colors"
+                        title="Delete Documentation"
+                      >
+                        <Trash2 className="w-4 h-4 text-text-muted hover:text-red-400" />
+                      </button>
+                    </div>
                   </div>
                   
                   {result.categories.length > 0 && (
@@ -708,13 +763,26 @@ const DocumentationPanel: React.FC = () => {
                             </span>
                           </div>
                         </div>
-                        <button
-                          onClick={() => handleDeleteDoc(doc.docId)}
-                          className="p-1 hover:bg-bg-tertiary rounded transition-colors"
-                          title="Delete Documentation"
-                        >
-                          <Trash2 className="w-4 h-4 text-text-muted hover:text-red-400" />
-                        </button>
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => handleCopyForClaude(doc)}
+                            className="p-1.5 hover:bg-blue-500/20 rounded transition-colors group"
+                            title="Copy for Claude - paste in your conversation"
+                          >
+                            {copiedDocId === doc.docId ? (
+                              <Check className="w-4 h-4 text-green-400" />
+                            ) : (
+                              <ClipboardCopy className="w-4 h-4 text-blue-400 group-hover:text-blue-300" />
+                            )}
+                          </button>
+                          <button
+                            onClick={() => handleDeleteDoc(doc.docId)}
+                            className="p-1 hover:bg-bg-tertiary rounded transition-colors"
+                            title="Delete Documentation"
+                          >
+                            <Trash2 className="w-4 h-4 text-text-muted hover:text-red-400" />
+                          </button>
+                        </div>
                       </div>
                       
                       {doc.categories && doc.categories.length > 0 && (
