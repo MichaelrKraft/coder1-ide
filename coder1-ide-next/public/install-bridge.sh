@@ -195,19 +195,17 @@ else
         echo -e "${YELLOW}⚠️  Activating bridge...${NC}"
         
         if [ "$INSTALL_MODE" = "user" ]; then
-            # Source the shell config to make bridge available
-            if [ -f "$SHELL_RC" ]; then
-                source "$SHELL_RC"
-            fi
+            # Use direct path to bridge binary instead of sourcing RC file
+            # This avoids shell-specific compatibility issues (e.g., zmodload errors)
+            BRIDGE_BIN="$INSTALL_PREFIX/bin/coder1-bridge"
             
-            # Try to start bridge now
-            if command -v coder1-bridge &> /dev/null; then
+            if [ -x "$BRIDGE_BIN" ]; then
                 echo -e "${GREEN}✅ Bridge activated!${NC}"
                 echo
-                exec coder1-bridge start
+                exec "$BRIDGE_BIN" start
             else
-                echo -e "${RED}❌ Could not activate bridge automatically${NC}"
-                echo -e "${YELLOW}Please run: ${GREEN}source $SHELL_RC && coder1-bridge start${NC}"
+                echo -e "${RED}❌ Could not find bridge binary at $BRIDGE_BIN${NC}"
+                echo -e "${YELLOW}Please restart terminal and run: ${GREEN}coder1-bridge start${NC}"
             fi
         else
             echo -e "${RED}❌ Installation failed${NC}"
