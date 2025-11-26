@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSocket } from '@/lib/socket';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 
@@ -16,9 +15,19 @@ interface ServiceStatus {
 }
 
 async function checkClaudeCLI(): Promise<ServiceStatus> {
+  // Claude CLI is a client-side tool, not applicable in production
+  if (process.env.NODE_ENV === 'production') {
+    return {
+      name: 'Claude CLI',
+      status: 'offline',
+      error: 'Not applicable in production (client-side tool)',
+      lastChecked: new Date().toISOString()
+    };
+  }
+  
   const startTime = Date.now();
   try {
-    // Check if Claude CLI is available
+    // Check if Claude CLI is available (development only)
     const { stdout } = await execAsync('which claude');
     
     if (stdout.trim()) {
@@ -73,14 +82,24 @@ async function checkNodeVersion(): Promise<ServiceStatus> {
 
 async function checkWebSocketServer(): Promise<ServiceStatus> {
   try {
-    // Check if WebSocket server is initialized
-    const socket = getSocket();
-    const isConnected = socket && socket.connected;
+    // Determine the base URL based on environment
+    const baseUrl = process.env.NODE_ENV === 'production'
+      ? (process.env.NEXT_PUBLIC_UNIFIED_SERVER_URL || 'https://coder1.ai')
+      : `http://localhost:${process.env.PORT || 3001}`;
+    
+    // Check Socket.IO server health by hitting its polling endpoint
+    // The WebSocket server runs as part of the unified Next.js server
+    const response = await fetch(`${baseUrl}/socket.io/?EIO=4&transport=polling`, {
+      method: 'GET',
+      signal: AbortSignal.timeout(5000) // 5 second timeout
+    });
+    
+    const isActive = response.ok;
     
     return {
       name: 'WebSocket Server',
-      status: isConnected ? 'active' : 'offline',
-      error: isConnected ? undefined : 'WebSocket not connected',
+      status: isActive ? 'active' : 'offline',
+      error: isActive ? undefined : `HTTP ${response.status}: ${response.statusText}`,
       lastChecked: new Date().toISOString()
     };
   } catch (error) {
@@ -123,8 +142,13 @@ async function checkFileSystemAccess(): Promise<ServiceStatus> {
 
 async function checkTerminalService(): Promise<ServiceStatus> {
   try {
+    // Determine the base URL based on environment
+    const baseUrl = process.env.NODE_ENV === 'production'
+      ? (process.env.NEXT_PUBLIC_UNIFIED_SERVER_URL || 'https://coder1.ai')
+      : `http://localhost:${process.env.PORT || 3001}`;
+    
     // Check if any terminal sessions exist
-    const response = await fetch('http://localhost:3001/api/terminal-rest/sessions', {
+    const response = await fetch(`${baseUrl}/api/terminal-rest/sessions`, {
       method: 'GET',
       headers: { 'Content-Type': 'application/json' }
     }).catch(() => null);
