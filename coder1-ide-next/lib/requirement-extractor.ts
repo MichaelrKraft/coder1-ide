@@ -10,6 +10,9 @@
 
 import { stripAnsiCodes } from './terminal-cleaner';
 
+// Import quality assessor (use require for JS module compatibility)
+const { assessContextQuality } = require('./context-quality-assessor');
+
 /**
  * Terminal data buffer chunk structure
  */
@@ -22,12 +25,24 @@ export interface BufferChunk {
 /**
  * Extraction result with confidence scoring
  */
+export interface QualityAssessment {
+  score: number;
+  passed: boolean;
+  missingAspects: string[];
+  breakdown: Record<string, boolean>;
+  suggestions: string[];
+  aspectsDetected?: number;
+  totalAspects?: number;
+  threshold?: number;
+}
+
 export interface ExtractionResult {
   requirement: string;
   confidence: 'high' | 'medium' | 'low';
   userMessages: string[];
   conversationContext: string;
-  extractedFrom?: string; // The actual line that matched
+  extractedFrom?: string;
+  quality?: QualityAssessment;
 }
 
 /**
@@ -84,6 +99,13 @@ export function extractRequirementFromDataBuffer(
       confidence: 'low',
       userMessages: [],
       conversationContext: 'No substantial user input found in conversation',
+      quality: {
+        score: 0,
+        passed: false,
+        missingAspects: [],
+        breakdown: {},
+        suggestions: []
+      }
     };
   }
 
@@ -110,12 +132,20 @@ export function extractRequirementFromDataBuffer(
         const extracted = match[1].trim();
         // Ensure it's not just a fragment
         if (extracted.length >= 15) {
+          const conversationContext = messages.join('\n');
+          const quality = assessContextQuality(conversationContext);
+          console.log(`[Extractor] Quality assessment:`, {
+            score: quality.score,
+            passed: quality.passed,
+            aspectsDetected: quality.aspectsDetected
+          });
           return {
             requirement: extracted,
             confidence: 'high',
             userMessages: messages,
-            conversationContext: messages.join('\n'),
-            extractedFrom: input.content
+            conversationContext,
+            extractedFrom: input.content,
+            quality
           };
         }
       }
@@ -130,12 +160,15 @@ export function extractRequirementFromDataBuffer(
     const hasRequestWords = /(?:build|create|make|need|want|help|website|app|system|tool|feature)/i.test(lastMessage.content);
     
     if (isQuestion || hasRequestWords) {
+      const conversationContext = messages.join('\n');
+      const quality = assessContextQuality(conversationContext);
       return {
         requirement: lastMessage.content,
         confidence: 'medium',
         userMessages: messages,
-        conversationContext: messages.join('\n'),
-        extractedFrom: lastMessage.content
+        conversationContext,
+        extractedFrom: lastMessage.content,
+        quality
       };
     }
   }
@@ -145,22 +178,27 @@ export function extractRequirementFromDataBuffer(
   if (recentMessages.length > 0) {
     const combined = recentMessages.join('. ');
     if (combined.length >= 30) {
+      const conversationContext = messages.join('\n');
+      const quality = assessContextQuality(conversationContext);
       return {
         requirement: combined,
         confidence: 'medium',
         userMessages: messages,
-        conversationContext: messages.join('\n'),
+        conversationContext,
+        quality
       };
     }
   }
 
   // Step 5: LOW CONFIDENCE - Fallback to all messages
   const allCombined = messages.join('. ');
+  const quality = assessContextQuality(allCombined);
   return {
     requirement: allCombined,
     confidence: allCombined.length >= 20 ? 'low' : 'low',
     userMessages: messages,
     conversationContext: allCombined,
+    quality
   };
 }
 
