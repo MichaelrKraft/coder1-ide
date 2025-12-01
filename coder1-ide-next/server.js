@@ -30,6 +30,17 @@ console.log('   API key prefix:', process.env.ANTHROPIC_API_KEY?.substring(0, 15
 console.log('   .env.local path:', path.join(__dirname, '.env.local'));
 console.log('═══════════════════════════════════════════════════════════');
 
+// 🔧 CRITICAL FIX (Nov 26, 2025): Enable TypeScript runtime loader
+// Required for loading .ts files like bridge-manager.ts
+// Without this, Node.js cannot import TypeScript files and bridge namespace fails to initialize
+try {
+  require('tsx/cjs');
+  console.log('✅ TypeScript runtime (tsx) loaded successfully');
+} catch (error) {
+  console.error('❌ Failed to load TypeScript runtime:', error.message);
+  console.error('   Bridge functionality may be limited without TypeScript support');
+}
+
 const { createServer } = require('http');
 const { parse } = require('url');
 const next = require('next');
@@ -144,15 +155,8 @@ setInterval(() => {
 }, 3000); // Update every 3 seconds
 
 // Agent Coordinator for multi-agent workflows with terminal integration
-let agentCoordinator;
-try {
-  const { getCoordinatorService } = require('./services/agent-coordinator');
-  agentCoordinator = getCoordinatorService();
-  console.log('🎭 Agent Coordinator initialized');
-} catch (error) {
-  console.warn('⚠️ Agent Coordinator not available:', error.message);
-  agentCoordinator = null;
-}
+// IMPORTANT: Will be initialized AFTER Socket.IO is created (need io instance)
+let agentCoordinator = null;
 
 // Skills Service for Progressive Disclosure Architecture (PDA)
 let skillsService;
@@ -710,20 +714,11 @@ function validateAlphaAccess(req, res) {
 app.prepare().then(() => {
   global.serverStartTime = Date.now();
   
-  // Debug: Verify API routes are loaded (especially bridge routes)
-  console.log('🔍 Verifying API route build outputs...');
-  const apiRoutesPath = path.join(__dirname, '.next/server/app/api/bridge');
-  try {
-    if (fs.existsSync(apiRoutesPath)) {
-      const bridgeRoutes = fs.readdirSync(apiRoutesPath, { recursive: true });
-      console.log('✅ Bridge API routes found:', bridgeRoutes);
-    } else {
-      console.error('❌ Bridge API routes NOT FOUND at:', apiRoutesPath);
-      console.error('⚠️  This will cause 404 errors for /api/bridge/* endpoints');
-    }
-  } catch (error) {
-    console.error('❌ Error checking API routes:', error.message);
-  }
+  // 🗑️ REMOVED (Nov 26, 2025): Misleading API route verification
+  // Previous code checked .next/server/app/api/bridge for pre-compiled routes
+  // This created false alarms in development mode where Next.js compiles routes on-demand
+  // All bridge API routes work correctly - they compile when first accessed
+  // See: tasks/bridge-api-routes-analysis-nov-26-2025.md for full explanation
   
   // Create HTTP server with enhanced error handling
   const server = createServer((req, res) => {
@@ -799,7 +794,7 @@ app.prepare().then(() => {
           })));
 
           // Import and use the requirement extractor
-          const { extractRequirementFromDataBuffer, validateExtraction } = require(path.join(__dirname, 'lib', 'requirement-extractor'));
+          const { extractRequirementFromDataBuffer, validateExtraction } = require(path.join(__dirname, 'lib', 'requirement-extractor.js'));
           const result = extractRequirementFromDataBuffer(buffer);
           const validation = validateExtraction(result);
           const fallbackNeeded = result.confidence === 'low' || !validation.valid;
@@ -1134,6 +1129,19 @@ app.prepare().then(() => {
     }
   }
   
+  // Initialize Agent Coordinator with Socket.IO instance (CRITICAL for agent:spawn events)
+  // This must happen AFTER Socket.IO is created
+  if (!agentCoordinator) {
+    try {
+      const { getCoordinatorService } = require('./services/agent-coordinator');
+      agentCoordinator = getCoordinatorService({ io });
+      console.log('🎭 Agent Coordinator initialized with Socket.IO');
+    } catch (error) {
+      console.warn('⚠️ Agent Coordinator not available:', error.message);
+      agentCoordinator = null;
+    }
+  }
+  
   // Connect Agent Coordinator to Agent Terminal Manager for output routing
   if (agentCoordinator && agentTerminalManager) {
     try {
@@ -1157,7 +1165,7 @@ app.prepare().then(() => {
   // Initialize Coder1 Bridge Manager for local Claude CLI connections
   let bridgeManager;
   try {
-    const { bridgeManager: manager } = require('./services/bridge-manager.ts');
+    const { bridgeManager: manager } = require('./services/bridge-manager.js');
     bridgeManager = manager;
     
     // Set up bridge namespace
@@ -1279,7 +1287,12 @@ app.prepare().then(() => {
     console.log('🌉 Coder1 Bridge Manager initialized');
     
   } catch (error) {
-    console.warn('⚠️ Bridge Manager not available:', error.message);
+    console.error('❌ CRITICAL: Bridge Manager failed to initialize');
+    console.error('   Error:', error.message);
+    console.error('   Stack:', error.stack);
+    console.error('   This means the /bridge namespace was NOT created!');
+    console.error('   Bridge clients will receive "Invalid namespace" error');
+    console.error('   Check that TypeScript runtime (tsx) is loaded correctly');
     bridgeManager = null;
   }
 
