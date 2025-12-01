@@ -58,6 +58,7 @@
     "clsx": "^2.1.1",
     "csv-parse": "^6.1.0",
     "d3": "^7.9.0",
+    "date-fns": "^4.1.0",
     "dotenv": "^17.2.3",
     "events": "^3.3.0",
     "express": "^5.1.0",
@@ -97,7 +98,8 @@
     "ws": "^8.18.3",
     "xlsx": "^0.18.5",
     "zod": "^4.1.9",
-    "zustand": "^5.0.8"
+    "zustand": "^5.0.8",
+    "tsx": "^4.20.6"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
