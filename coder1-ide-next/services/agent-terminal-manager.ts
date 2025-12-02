@@ -1,6 +1,6 @@
 /**
  * Agent Terminal Manager Service
- * 
+ *
  * Manages terminal sessions for AI agents with WebSocket routing.
  * Connects agent terminals to Claude CLI process output streams.
  * Part of Phase 2: Interactive Agent Terminals implementation.
@@ -8,6 +8,13 @@
 
 import { EventEmitter } from 'events';
 import { ChildProcess } from 'child_process';
+import {
+  TraceContext,
+  startTrace,
+  createSpan,
+  endTrace,
+  generateTraceId
+} from '@/lib/trace';
 
 // Optional: Claude Code Bridge Service for progress events
 let getClaudeCodeBridgeService: any;
@@ -22,6 +29,7 @@ export interface AgentTerminalSession {
   agentId: string;
   teamId: string;
   role: string;
+  traceId?: string;  // Distributed tracing ID for this terminal session
   terminalBuffer: string[];
   lastActivity: Date;
   processId?: number;
@@ -57,30 +65,44 @@ export class AgentTerminalManager extends EventEmitter {
   
   /**
    * Create an agent terminal session
+   * @param agentId - Unique identifier for the agent
+   * @param teamId - Team this agent belongs to
+   * @param role - Agent's role (e.g., frontend, backend)
+   * @param traceId - Optional trace ID for distributed tracing
    */
-  public createAgentTerminalSession(agentId: string, teamId: string, role: string): AgentTerminalSession {
-    console.log(`🔍 [${this.instanceId}] createAgentTerminalSession called for ${agentId}`);
-    
+  public createAgentTerminalSession(agentId: string, teamId: string, role: string, traceId?: string): AgentTerminalSession {
+    const effectiveTraceId = traceId || generateTraceId();
+    console.log(`🔍 [${this.instanceId}] [${effectiveTraceId}] createAgentTerminalSession called for ${agentId}`);
+
+    // Start trace for session creation
+    const trace = startTrace('terminal:session:create', {
+      agentId,
+      teamId,
+      role
+    });
+
     // Check if session already exists - don't overwrite connectedSockets!
     // This prevents losing socket connections when coordinator re-creates sessions during workflow execution
     const existingSession = this.sessions.get(agentId);
     if (existingSession) {
-      console.log(`♻️ [${this.instanceId}] Agent session ${agentId} already exists - preserving ${existingSession.connectedSockets.size} socket connection(s)`);
+      console.log(`♻️ [${this.instanceId}] [${effectiveTraceId}] Agent session ${agentId} already exists - preserving ${existingSession.connectedSockets.size} socket connection(s)`);
+      endTrace(trace, 'completed', teamId, agentId);
       return existingSession;
     }
-    
+
     const session: AgentTerminalSession = {
       agentId,
       teamId,
       role,
+      traceId: effectiveTraceId,
       terminalBuffer: [],
       lastActivity: new Date(),
       isInteractive: false, // Phase 1: Read-only
       connectedSockets: new Set()
     };
-    
+
     this.sessions.set(agentId, session);
-    console.log(`🤖 [${this.instanceId}] Created NEW agent terminal session: ${agentId} (${role})`);
+    console.log(`🤖 [${this.instanceId}] [${effectiveTraceId}] Created NEW agent terminal session: ${agentId} (${role})`);
     
     // Flush pending connections that were queued before session existed
     const pending = this.pendingConnections.get(agentId);
@@ -103,7 +125,10 @@ export class AgentTerminalManager extends EventEmitter {
         this.pendingTimeouts.delete(agentId);
       }
     }
-    
+
+    // End trace for successful session creation
+    endTrace(trace, 'completed', teamId, agentId);
+
     return session;
   }
   
@@ -321,25 +346,37 @@ export class AgentTerminalManager extends EventEmitter {
    */
   public cleanupSession(agentId: string): void {
     const session = this.sessions.get(agentId);
+    const traceId = session?.traceId || 'unknown';
+
+    // Start trace for session cleanup
+    const trace = startTrace('terminal:session:cleanup', {
+      agentId,
+      teamId: session?.teamId,
+      hadSession: !!session,
+      socketCount: session?.connectedSockets.size || 0
+    });
+
     if (session) {
       // Disconnect all sockets
       session.connectedSockets.forEach(socket => {
         socket.emit('agent:terminal:closed', { agentId });
       });
       session.connectedSockets.clear();
-      
+
       this.sessions.delete(agentId);
-      console.log(`🧹 Cleaned up agent terminal session: ${agentId}`);
+      console.log(`🧹 [${traceId}] Cleaned up agent terminal session: ${agentId}`);
     }
-    
+
     // Also clear any pending connections and timeouts
     this.pendingConnections.delete(agentId);
     const timeout = this.pendingTimeouts.get(agentId);
     if (timeout) {
       clearTimeout(timeout);
       this.pendingTimeouts.delete(agentId);
-      console.log(`🧹 Cleared pending connections timeout for ${agentId}`);
+      console.log(`🧹 [${traceId}] Cleared pending connections timeout for ${agentId}`);
     }
+
+    endTrace(trace, 'completed', session?.teamId, agentId);
   }
   
   /**

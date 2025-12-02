@@ -1,0 +1,181 @@
+# Agent Spawn Load Test
+# Tests the multi-agent system's ability to handle concurrent team spawning
+#
+# Run with: npx artillery run load-tests/agent-spawn.yml
+
+config:
+  target: "http://localhost:3001"
+  phases:
+    # Light load - test basic functionality
+    - duration: 20
+      arrivalRate: 1
+      name: "Light Load"
+
+    # Moderate load - typical usage
+    - duration: 40
+      arrivalRate: 3
+      name: "Moderate Load"
+
+    # Stress test - above normal capacity
+    - duration: 20
+      arrivalRate: 5
+      name: "Stress Test"
+
+  engines:
+    socketio-v3:
+      path: "/socket.io/"
+      transports: ["websocket"]
+      timeout: 60000  # Longer timeout for agent operations
+
+  ensure:
+    p99: 5000       # Agent operations take longer
+    median: 2000
+    maxErrorRate: 15
+
+  processor: "./agent-processor.js"
+
+scenarios:
+  - name: "Spawn AI Team"
+    engine: "socketio-v3"
+    flow:
+      # Generate trace ID for this workflow
+      - function: "generateTraceId"
+
+      # Create agent terminal sessions for the team
+      - emit:
+          channel: "agent:terminal:create"
+          data:
+            agentId: "frontend-{{ $uuid }}"
+            teamId: "team-{{ $uuid }}"
+            role: "frontend"
+            _trace:
+              traceId: "{{ traceId }}"
+              operation: "load:agent:create"
+
+      - think: 0.5
+
+      - emit:
+          channel: "agent:terminal:create"
+          data:
+            agentId: "backend-{{ $uuid }}"
+            teamId: "team-{{ $uuid }}"
+            role: "backend"
+            _trace:
+              traceId: "{{ traceId }}"
+              operation: "load:agent:create"
+
+      - think: 0.5
+
+      - emit:
+          channel: "agent:terminal:create"
+          data:
+            agentId: "architect-{{ $uuid }}"
+            teamId: "team-{{ $uuid }}"
+            role: "architect"
+            _trace:
+              traceId: "{{ traceId }}"
+              operation: "load:agent:create"
+
+      # Wait for agents to be ready
+      - think: 2
+
+      # Connect to agent terminals
+      - emit:
+          channel: "agent:terminal:connect"
+          data:
+            agentId: "frontend-{{ $uuid }}"
+
+      - emit:
+          channel: "agent:terminal:connect"
+          data:
+            agentId: "backend-{{ $uuid }}"
+
+      - emit:
+          channel: "agent:terminal:connect"
+          data:
+            agentId: "architect-{{ $uuid }}"
+
+      # Simulate team working
+      - think: 5
+
+      # Request team status
+      - emit:
+          channel: "team:status:request"
+          data:
+            teamId: "team-{{ $uuid }}"
+            _trace:
+              traceId: "{{ traceId }}"
+
+      - think: 2
+
+      # Cleanup agents
+      - emit:
+          channel: "agent:terminal:destroy"
+          data:
+            agentId: "frontend-{{ $uuid }}"
+
+      - emit:
+          channel: "agent:terminal:destroy"
+          data:
+            agentId: "backend-{{ $uuid }}"
+
+      - emit:
+          channel: "agent:terminal:destroy"
+          data:
+            agentId: "architect-{{ $uuid }}"
+
+  - name: "Single Agent Lifecycle"
+    weight: 3  # Run this more often for basic agent testing
+    engine: "socketio-v3"
+    flow:
+      - emit:
+          channel: "agent:terminal:create"
+          data:
+            agentId: "single-{{ $uuid }}"
+            teamId: "solo-{{ $uuid }}"
+            role: "developer"
+
+      - think: 1
+
+      - emit:
+          channel: "agent:terminal:connect"
+          data:
+            agentId: "single-{{ $uuid }}"
+
+      - think: 2
+
+      - emit:
+          channel: "agent:terminal:destroy"
+          data:
+            agentId: "single-{{ $uuid }}"
+
+  - name: "Large Team Spawn"
+    weight: 1  # Less frequent but tests scale
+    engine: "socketio-v3"
+    flow:
+      - function: "generateTraceId"
+
+      # Spawn 6 agents (full team)
+      - loop:
+        - emit:
+            channel: "agent:terminal:create"
+            data:
+              agentId: "agent-{{ $loopIndex }}-{{ $uuid }}"
+              teamId: "large-team-{{ $uuid }}"
+              role: "{{ $randomRole }}"
+              _trace:
+                traceId: "{{ traceId }}"
+        - think: 0.2
+        count: 6
+
+      # Let them work
+      - think: 5
+
+      # Cleanup all agents
+      - loop:
+        - emit:
+            channel: "agent:terminal:destroy"
+            data:
+              agentId: "agent-{{ $loopIndex }}-{{ $uuid }}"
+        - think: 0.1
+        count: 6

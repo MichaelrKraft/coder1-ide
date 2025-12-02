@@ -1,0 +1,178 @@
+# Load Testing CI Workflow
+# Runs load tests to validate system performance under stress
+#
+# Triggers:
+# - Manual dispatch (workflow_dispatch)
+# - Weekly scheduled run
+# - On push to main when load-tests/ files change
+
+name: Load Tests
+
+on:
+  workflow_dispatch:
+    inputs:
+      test_type:
+        description: 'Type of load test to run'
+        required: true
+        default: 'session'
+        type: choice
+        options:
+          - session
+          - agent
+          - soak
+          - all
+
+  schedule:
+    # Run weekly on Sunday at 3am UTC
+    - cron: '0 3 * * 0'
+
+  push:
+    branches: [main, master]
+    paths:
+      - 'load-tests/**'
+      - '.github/workflows/load-test.yml'
+
+jobs:
+  load-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    strategy:
+      matrix:
+        node-version: [20.x]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Install Artillery
+        run: npm install -g artillery artillery-engine-socketio-v3
+
+      - name: Start server in background
+        run: |
+          npm run dev &
+          echo "Waiting for server to start..."
+          sleep 15
+          # Verify server is running
+          curl --retry 5 --retry-delay 3 --retry-connrefused http://localhost:3001/api/health || exit 1
+          echo "Server is ready!"
+        env:
+          NODE_ENV: production
+          PORT: 3001
+
+      - name: Run Session Stress Test
+        if: github.event.inputs.test_type == 'session' || github.event.inputs.test_type == 'all' || github.event_name == 'schedule' || github.event_name == 'push'
+        run: |
+          npx artillery run \
+            --output load-tests/session-report.json \
+            load-tests/session-stress.yml
+        continue-on-error: true
+
+      - name: Run Agent Spawn Test
+        if: github.event.inputs.test_type == 'agent' || github.event.inputs.test_type == 'all' || github.event_name == 'schedule'
+        run: |
+          npx artillery run \
+            --output load-tests/agent-report.json \
+            load-tests/agent-spawn.yml
+        continue-on-error: true
+
+      - name: Run Memory Soak Test
+        if: github.event.inputs.test_type == 'soak'
+        run: |
+          npx artillery run \
+            --output load-tests/soak-report.json \
+            load-tests/memory-soak.yml
+        continue-on-error: true
+
+      - name: Generate HTML Reports
+        run: |
+          if [ -f load-tests/session-report.json ]; then
+            npx artillery report load-tests/session-report.json -o load-tests/session-report.html || true
+          fi
+          if [ -f load-tests/agent-report.json ]; then
+            npx artillery report load-tests/agent-report.json -o load-tests/agent-report.html || true
+          fi
+          if [ -f load-tests/soak-report.json ]; then
+            npx artillery report load-tests/soak-report.json -o load-tests/soak-report.html || true
+          fi
+
+      - name: Upload Test Reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: load-test-reports
+          path: |
+            load-tests/*-report.json
+            load-tests/*-report.html
+          retention-days: 30
+
+      - name: Check Test Results
+        run: |
+          echo "=== Load Test Summary ==="
+
+          # Parse and display key metrics from JSON reports
+          for report in load-tests/*-report.json; do
+            if [ -f "$report" ]; then
+              echo ""
+              echo "--- $(basename $report) ---"
+
+              # Extract key metrics using node
+              node -e "
+                const data = require('./$report');
+                const agg = data.aggregate || {};
+                const counters = agg.counters || {};
+                const summaries = agg.summaries || {};
+
+                console.log('Requests: ' + (counters['vusers.created'] || 0));
+                console.log('Completed: ' + (counters['vusers.completed'] || 0));
+                console.log('Failed: ' + (counters['vusers.failed'] || 0));
+
+                if (summaries['vusers.session_length']) {
+                  const sessionLength = summaries['vusers.session_length'];
+                  console.log('Session Length (median): ' + (sessionLength.median || 0) + 'ms');
+                  console.log('Session Length (p99): ' + (sessionLength.p99 || 0) + 'ms');
+                }
+              " || echo "Could not parse report"
+            fi
+          done
+
+          echo ""
+          echo "=== End Summary ==="
+
+      - name: Comment on PR (if applicable)
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            let summary = '## Load Test Results\n\n';
+
+            const reports = ['session', 'agent'];
+            for (const type of reports) {
+              const path = `load-tests/${type}-report.json`;
+              if (fs.existsSync(path)) {
+                const data = JSON.parse(fs.readFileSync(path, 'utf8'));
+                const agg = data.aggregate || {};
+                const counters = agg.counters || {};
+
+                summary += `### ${type.charAt(0).toUpperCase() + type.slice(1)} Test\n`;
+                summary += `- Requests: ${counters['vusers.created'] || 0}\n`;
+                summary += `- Completed: ${counters['vusers.completed'] || 0}\n`;
+                summary += `- Failed: ${counters['vusers.failed'] || 0}\n\n`;
+              }
+            }
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: summary
+            });

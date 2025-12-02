@@ -30,7 +30,14 @@
     "test:prd-tools": "npx tsx scripts/test-prd-tools.ts",
     "skills:enable": "node -e \"const fs=require('fs');const path='.env.local';let content=fs.existsSync(path)?fs.readFileSync(path,'utf8'):'';content=content.replace(/ENABLE_SKILLS_SYSTEM=.*/g,'').trim();content+='\\nENABLE_SKILLS_SYSTEM=true\\n';fs.writeFileSync(path,content);console.log('✅ Skills System ENABLED');console.log('   Restart server: npm run dev');\"",
     "skills:disable": "node -e \"const fs=require('fs');const path='.env.local';let content=fs.existsSync(path)?fs.readFileSync(path,'utf8'):'';content=content.replace(/ENABLE_SKILLS_SYSTEM=.*/g,'').trim();content+='\\nENABLE_SKILLS_SYSTEM=false\\n';fs.writeFileSync(path,content);console.log('⚠️  Skills System DISABLED');console.log('   Restart server: npm run dev');\"",
-    "skills:status": "node -e \"const fs=require('fs');const path='.env.local';if(!fs.existsSync(path)){console.log('❌ .env.local not found - Skills System is DISABLED (default)');process.exit(0);}const content=fs.readFileSync(path,'utf8');const match=content.match(/ENABLE_SKILLS_SYSTEM=(true|false)/);if(!match){console.log('⚠️  ENABLE_SKILLS_SYSTEM not set - Skills System is DISABLED (default)');}else if(match[1]==='true'){console.log('✅ Skills System is ENABLED');console.log('   Expected: 80-90% token reduction');console.log('   Expected: 5-6x faster responses');}else{console.log('❌ Skills System is DISABLED');console.log('   Using legacy implementations');}\""
+    "skills:status": "node -e \"const fs=require('fs');const path='.env.local';if(!fs.existsSync(path)){console.log('❌ .env.local not found - Skills System is DISABLED (default)');process.exit(0);}const content=fs.readFileSync(path,'utf8');const match=content.match(/ENABLE_SKILLS_SYSTEM=(true|false)/);if(!match){console.log('⚠️  ENABLE_SKILLS_SYSTEM not set - Skills System is DISABLED (default)');}else if(match[1]==='true'){console.log('✅ Skills System is ENABLED');console.log('   Expected: 80-90% token reduction');console.log('   Expected: 5-6x faster responses');}else{console.log('❌ Skills System is DISABLED');console.log('   Using legacy implementations');}\"",
+    "load:install": "npm install --save-dev artillery artillery-engine-socketio-v3",
+    "load:session": "npx artillery run load-tests/session-stress.yml",
+    "load:agent": "npx artillery run load-tests/agent-spawn.yml",
+    "load:soak": "npx artillery run load-tests/memory-soak.yml",
+    "load:all": "npm run load:session && npm run load:agent",
+    "load:report": "npx artillery run --output load-tests/report.json load-tests/session-stress.yml && npx artillery report load-tests/report.json",
+    "load:quick": "npx artillery quick --count 10 -n 5 http://localhost:3001/api/health"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.63.0",
@@ -93,13 +100,13 @@
     "tailwindcss-animate": "^1.0.7",
     "tesseract.js": "^6.0.1",
     "three": "^0.180.0",
+    "tsx": "^4.20.6",
     "typescript": "^5",
     "uuid": "^11.1.0",
     "ws": "^8.18.3",
     "xlsx": "^0.18.5",
     "zod": "^4.1.9",
-    "zustand": "^5.0.8",
-    "tsx": "^4.20.6"
+    "zustand": "^5.0.8"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
@@ -110,6 +117,8 @@
     "@types/react": "^18",
     "@types/react-dom": "^18",
     "@types/three": "^0.180.0",
+    "artillery": "^2.0.27",
+    "artillery-engine-socketio-v3": "^1.2.0",
     "eslint": "^8",
     "eslint-config-next": "14.2.5",
     "node-fetch": "^3.3.2"

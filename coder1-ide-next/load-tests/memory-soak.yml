@@ -1,0 +1,232 @@
+# Memory Soak Test
+# Long-running test to identify memory leaks under sustained load
+#
+# Run with: npx artillery run load-tests/memory-soak.yml
+#
+# Before running:
+# 1. Start the server with memory monitoring: NODE_OPTIONS='--expose-gc' npm run dev
+# 2. Monitor memory: watch -n 5 'curl -s localhost:3001/api/health | jq .memory'
+
+config:
+  target: "http://localhost:3001"
+  phases:
+    # Extended steady load to detect memory leaks
+    - duration: 300   # 5 minutes of sustained load
+      arrivalRate: 3
+      name: "Sustained Load Phase 1"
+
+    - duration: 300   # Another 5 minutes
+      arrivalRate: 5
+      name: "Sustained Load Phase 2"
+
+    - duration: 300   # Final 5 minutes at higher load
+      arrivalRate: 8
+      name: "Sustained Load Phase 3"
+
+  engines:
+    socketio-v3:
+      path: "/socket.io/"
+      transports: ["websocket"]
+      timeout: 30000
+
+  # Memory soak tests should be more lenient on latency
+  ensure:
+    p99: 10000      # 10 seconds max
+    maxErrorRate: 5  # But strict on errors
+
+  processor: "./soak-processor.js"
+
+scenarios:
+  # Scenario 1: Standard session lifecycle (most common)
+  - name: "Standard Session Lifecycle"
+    weight: 5
+    engine: "socketio-v3"
+    flow:
+      - emit:
+          channel: "terminal:create"
+          data:
+            id: "soak-standard-{{ $uuid }}"
+            cols: 80
+            rows: 30
+
+      - think: 3
+
+      # Send various terminal commands
+      - emit:
+          channel: "terminal:input"
+          data:
+            id: "soak-standard-{{ $uuid }}"
+            data: "echo 'Memory soak test'\r"
+
+      - think: 2
+
+      - emit:
+          channel: "terminal:input"
+          data:
+            id: "soak-standard-{{ $uuid }}"
+            data: "date\r"
+
+      - think: 2
+
+      - emit:
+          channel: "terminal:destroy"
+          data:
+            id: "soak-standard-{{ $uuid }}"
+
+  # Scenario 2: Agent creation/destruction cycle
+  - name: "Agent Lifecycle Cycle"
+    weight: 2
+    engine: "socketio-v3"
+    flow:
+      - emit:
+          channel: "agent:terminal:create"
+          data:
+            agentId: "soak-agent-{{ $uuid }}"
+            teamId: "soak-team-{{ $uuid }}"
+            role: "developer"
+
+      - think: 2
+
+      - emit:
+          channel: "agent:terminal:connect"
+          data:
+            agentId: "soak-agent-{{ $uuid }}"
+
+      - think: 3
+
+      - emit:
+          channel: "agent:terminal:destroy"
+          data:
+            agentId: "soak-agent-{{ $uuid }}"
+
+  # Scenario 3: Rapid reconnection pattern (tests socket cleanup)
+  - name: "Rapid Reconnection"
+    weight: 1
+    engine: "socketio-v3"
+    flow:
+      - loop:
+        - emit:
+            channel: "terminal:create"
+            data:
+              id: "rapid-recon-{{ $uuid }}-{{ $loopIndex }}"
+              cols: 80
+              rows: 24
+        - think: 0.5
+        - emit:
+            channel: "terminal:destroy"
+            data:
+              id: "rapid-recon-{{ $uuid }}-{{ $loopIndex }}"
+        - think: 0.3
+        count: 5
+
+  # Scenario 4: Long-lived session (tests memory over time)
+  - name: "Long Session with Activity"
+    weight: 1
+    engine: "socketio-v3"
+    flow:
+      - emit:
+          channel: "terminal:create"
+          data:
+            id: "long-soak-{{ $uuid }}"
+            cols: 120
+            rows: 40
+
+      # Extended activity period
+      - loop:
+        - emit:
+            channel: "terminal:input"
+            data:
+              id: "long-soak-{{ $uuid }}"
+              data: "echo 'Activity {{ $loopIndex }}'\r"
+        - think: 2
+        count: 10
+
+      # Resize operations (known to cause issues if not handled properly)
+      - emit:
+          channel: "terminal:resize"
+          data:
+            id: "long-soak-{{ $uuid }}"
+            cols: 160
+            rows: 50
+
+      - think: 5
+
+      - emit:
+          channel: "terminal:resize"
+          data:
+            id: "long-soak-{{ $uuid }}"
+            cols: 80
+            rows: 24
+
+      - think: 5
+
+      - emit:
+          channel: "terminal:destroy"
+          data:
+            id: "long-soak-{{ $uuid }}"
+
+  # Scenario 5: Multiple simultaneous sessions
+  - name: "Concurrent Sessions"
+    weight: 1
+    engine: "socketio-v3"
+    flow:
+      # Create 3 sessions simultaneously
+      - emit:
+          channel: "terminal:create"
+          data:
+            id: "concurrent-a-{{ $uuid }}"
+            cols: 80
+            rows: 30
+
+      - emit:
+          channel: "terminal:create"
+          data:
+            id: "concurrent-b-{{ $uuid }}"
+            cols: 80
+            rows: 30
+
+      - emit:
+          channel: "terminal:create"
+          data:
+            id: "concurrent-c-{{ $uuid }}"
+            cols: 80
+            rows: 30
+
+      - think: 3
+
+      # Activity on all sessions
+      - emit:
+          channel: "terminal:input"
+          data:
+            id: "concurrent-a-{{ $uuid }}"
+            data: "echo 'Session A'\r"
+
+      - emit:
+          channel: "terminal:input"
+          data:
+            id: "concurrent-b-{{ $uuid }}"
+            data: "echo 'Session B'\r"
+
+      - emit:
+          channel: "terminal:input"
+          data:
+            id: "concurrent-c-{{ $uuid }}"
+            data: "echo 'Session C'\r"
+
+      - think: 5
+
+      # Cleanup all sessions
+      - emit:
+          channel: "terminal:destroy"
+          data:
+            id: "concurrent-a-{{ $uuid }}"
+
+      - emit:
+          channel: "terminal:destroy"
+          data:
+            id: "concurrent-b-{{ $uuid }}"
+
+      - emit:
+          channel: "terminal:destroy"
+          data:
+            id: "concurrent-c-{{ $uuid }}"

@@ -9,6 +9,13 @@ import path from 'path';
 import { claudeAPI, ClaudeMessage, ClaudeResponse } from './claude-api';
 import { logger } from '@/lib/logger';
 import type { AIProjectContext } from '@/types/session';
+import {
+  TraceContext,
+  startTrace,
+  createSpan,
+  endTrace,
+  generateTraceId
+} from '@/lib/trace';
 
 export interface AgentDefinition {
   name: string;
@@ -72,6 +79,7 @@ export interface GeneratedFile {
 export interface TeamSession {
   teamId: string;
   sessionId: string;
+  traceId?: string;  // Distributed tracing ID for this team's workflow
   projectRequirement: string;
   workflow: string;
   agents: AgentSession[];
@@ -230,10 +238,16 @@ class AIAgentOrchestrator {
 
   /**
    * Spawn AI team for project requirement
+   * @param requirement - The project requirement description
+   * @param traceId - Optional trace ID for distributed tracing (auto-generated if not provided)
    */
-  async spawnTeam(requirement: string): Promise<TeamSession> {
+  async spawnTeam(requirement: string, traceId?: string): Promise<TeamSession> {
     const teamId = `team-${Date.now()}`;
     const sessionId = `session-${Date.now()}`;
+    const effectiveTraceId = traceId || generateTraceId();
+
+    // Start trace for team spawn
+    const trace = startTrace('team:spawn', { requirement, teamId, workflow: 'pending' });
 
     // Parse requirement and select workflow
     const context = this.parseProjectRequirement(requirement);
@@ -241,19 +255,20 @@ class AIAgentOrchestrator {
     const workflow = this.workflowTemplates.get(workflowId);
 
     if (!workflow) {
+      endTrace(trace, 'error', sessionId, undefined, `Workflow '${workflowId}' not found`);
       throw new Error(`❌ Workflow '${workflowId}' not found`);
     }
 
-    // REMOVED: // REMOVED: // REMOVED: console.log(`🚀 Spawning AI team for: ${requirement}`);
-    // REMOVED: // REMOVED: // REMOVED: console.log(`📋 Using workflow: ${workflow.name}`);
-    // REMOVED: // REMOVED: // REMOVED: console.log(`👥 Agents needed: ${workflow.agents.join(', ')}`);
+    logger.info(`[${effectiveTraceId}] Spawning AI team for: ${requirement}`);
+    logger.info(`[${effectiveTraceId}] Using workflow: ${workflow.name}`);
+    logger.info(`[${effectiveTraceId}] Agents needed: ${workflow.agents.join(', ')}`);
 
     // Create agent sessions based on workflow
     const agents: AgentSession[] = [];
     for (const agentId of workflow.agents) {
       const agentDef = this.agentDefinitions.get(agentId);
       if (!agentDef) {
-        logger.warn(`⚠️ Agent definition not found: ${agentId}`);
+        logger.warn(`[${effectiveTraceId}] Agent definition not found: ${agentId}`);
         continue;
       }
 
@@ -278,6 +293,7 @@ class AIAgentOrchestrator {
     const teamSession: TeamSession = {
       teamId,
       sessionId,
+      traceId: effectiveTraceId,
       projectRequirement: requirement,
       workflow: workflowId,
       agents,
@@ -289,7 +305,10 @@ class AIAgentOrchestrator {
 
     this.activeTeams.set(teamId, teamSession);
 
-    // Start workflow execution
+    // End spawn trace successfully
+    endTrace(trace, 'completed', sessionId);
+
+    // Start workflow execution (will create its own trace spans)
     this.executeWorkflow(teamId);
 
     return teamSession;
@@ -305,8 +324,17 @@ class AIAgentOrchestrator {
     const workflow = this.workflowTemplates.get(team.workflow);
     if (!workflow) return;
 
+    const traceId = team.traceId || 'unknown';
+
+    // Start workflow execution trace
+    const workflowTrace = startTrace('workflow:execute', {
+      teamId,
+      workflow: workflow.name,
+      agentCount: workflow.agents.length
+    });
+
     team.status = 'planning';
-    // REMOVED: // REMOVED: // REMOVED: console.log(`📋 Executing workflow: ${workflow.name}`);
+    logger.info(`[${traceId}] Executing workflow: ${workflow.name}`);
 
     try {
       // Execute workflow steps in sequence
@@ -315,12 +343,12 @@ class AIAgentOrchestrator {
         if (!agent) continue;
 
         // Check dependencies
-        const unmetDependencies = step.dependencies.filter(dep => 
+        const unmetDependencies = step.dependencies.filter(dep =>
           !agent.completedDeliverables.includes(dep)
         );
 
         if (unmetDependencies.length > 0) {
-          // REMOVED: // REMOVED: // REMOVED: console.log(`⏸️ Agent ${agent.agentName} waiting for dependencies: ${unmetDependencies.join(', ')}`);
+          logger.info(`[${traceId}] Agent ${agent.agentName} waiting for dependencies: ${unmetDependencies.join(', ')}`);
           agent.status = 'waiting';
           continue;
         }
@@ -330,11 +358,13 @@ class AIAgentOrchestrator {
       }
 
       team.status = 'completed';
-      // REMOVED: // REMOVED: // REMOVED: console.log(`✅ Team ${teamId} completed workflow`);
+      logger.info(`[${traceId}] Team ${teamId} completed workflow`);
+      endTrace(workflowTrace, 'completed', team.sessionId);
 
     } catch (error) {
       team.status = 'error';
-      logger.error(`❌ Team ${teamId} workflow failed:`, error);
+      logger.error(`[${traceId}] Team ${teamId} workflow failed:`, error);
+      endTrace(workflowTrace, 'error', team.sessionId, undefined, error instanceof Error ? error.message : 'Unknown error');
     }
   }
 
@@ -349,14 +379,25 @@ class AIAgentOrchestrator {
     const agentDef = this.agentDefinitions.get(agentId);
     if (!agentDef) return;
 
+    const traceId = team.traceId || 'unknown';
+
+    // Start trace for this agent task
+    const taskTrace = startTrace('agent:task', {
+      teamId,
+      agentId,
+      agentName: agent.agentName,
+      task: step.task,
+      deliverables: step.deliverables
+    });
+
     agent.status = 'thinking';
     agent.currentTask = step.task;
-    // REMOVED: // REMOVED: // REMOVED: console.log(`🤖 ${agent.agentName} starting: ${step.task}`);
+    logger.info(`[${traceId}] Agent ${agent.agentName} starting: ${step.task}`);
 
     try {
       // Prepare context for agent
       const context = this.buildAgentContext(team, agent, step);
-      
+
       // Create specialized prompt for agent
       const prompt = this.buildAgentPrompt(agentDef, team.context, step, context);
 
@@ -365,25 +406,26 @@ class AIAgentOrchestrator {
 
       // Send to Claude API with agent-specific instructions
       const response = await claudeAPI.sendMessage(prompt, context);
-      
+
       agent.progress = 75;
-      
+
       // Process agent response
       const files = await this.processAgentResponse(team, agent, response, step);
-      
+
       agent.files.push(...files);
       team.files.push(...files);
       agent.completedDeliverables.push(...step.deliverables);
       agent.status = 'completed';
       agent.progress = 100;
 
-      // REMOVED: // REMOVED: // REMOVED: console.log(`✅ ${agent.agentName} completed: ${step.task}`);
-      // REMOVED: // REMOVED: // REMOVED: console.log(`📁 Generated ${files.length} files`);
+      logger.info(`[${traceId}] Agent ${agent.agentName} completed: ${step.task} (${files.length} files)`);
+      endTrace(taskTrace, 'completed', team.sessionId, agentId);
 
     } catch (error) {
       agent.status = 'error';
       agent.output.push(`❌ Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
-      logger.error(`❌ ${agent.agentName} failed:`, error);
+      logger.error(`[${traceId}] Agent ${agent.agentName} failed:`, error);
+      endTrace(taskTrace, 'error', team.sessionId, agentId, error instanceof Error ? error.message : 'Unknown error');
     }
   }
 
@@ -607,8 +649,18 @@ Respond with clear file paths and complete file contents in code blocks.`;
   async sendAgentInput(teamId: string, agentId: string, input: string): Promise<boolean> {
     const team = this.activeTeams.get(teamId);
     const agent = team?.agents.find(a => a.agentId === agentId);
-    
+
     if (!team || !agent) return false;
+
+    const traceId = team.traceId || 'unknown';
+
+    // Start trace for agent input
+    const inputTrace = startTrace('agent:input', {
+      teamId,
+      agentId,
+      agentName: agent.agentName,
+      inputLength: input.length
+    });
 
     try {
       // Process agent input with context
@@ -620,13 +672,16 @@ Respond with clear file paths and complete file contents in code blocks.`;
       });
 
       agent.status = 'working';
+      logger.info(`[${traceId}] Sending input to agent ${agent.agentName}`);
       const response = await claudeAPI.sendMessage(input, context);
-      
+
       agent.output.push(`User: ${input}`, `Agent: ${response.content}`);
-      
+
+      endTrace(inputTrace, 'completed', team.sessionId, agentId);
       return true;
     } catch (error) {
-      logger.error(`❌ Failed to send input to ${agentId}:`, error);
+      logger.error(`[${traceId}] Failed to send input to ${agentId}:`, error);
+      endTrace(inputTrace, 'error', team.sessionId, agentId, error instanceof Error ? error.message : 'Unknown error');
       return false;
     }
   }

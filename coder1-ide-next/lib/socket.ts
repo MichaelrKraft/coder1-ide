@@ -1,4 +1,5 @@
 import { io, Socket } from 'socket.io-client';
+import { TraceContext, createTracePayload } from './trace';
 
 // Check if Socket.IO is available (either from bundle or CDN)
 const getSocketIO = () => {
@@ -254,4 +255,72 @@ export const disconnectSocket = () => {
     socket.disconnect();
     socket = null;
   }
+};
+
+// ================================================================================
+// Traced Socket Emission
+// ================================================================================
+
+/**
+ * Emit a Socket.IO event with trace context attached
+ * The trace context is added as _trace property in the payload
+ *
+ * @param socket - The Socket.IO socket instance
+ * @param event - The event name to emit
+ * @param data - The payload data
+ * @param traceContext - Optional trace context to attach
+ *
+ * Example:
+ *   const trace = startTrace('team:spawn');
+ *   emitWithTrace(socket, 'team:spawn', { requirement }, trace);
+ */
+export const emitWithTrace = (
+  socketInstance: Socket,
+  event: string,
+  data: Record<string, unknown>,
+  traceContext?: TraceContext
+): void => {
+  const payload = {
+    ...data,
+    _trace: traceContext ? createTracePayload(traceContext) : undefined
+  };
+
+  // Log the traced emission for debugging
+  if (traceContext) {
+    console.log(`[${traceContext.traceId}] Socket emit: ${event}`);
+  }
+
+  socketInstance.emit(event, payload);
+};
+
+/**
+ * Helper to get current socket and emit with trace in one call
+ * Creates socket if not connected
+ */
+export const emitTracedEvent = async (
+  event: string,
+  data: Record<string, unknown>,
+  traceContext?: TraceContext
+): Promise<void> => {
+  const socketInstance = await getSocket();
+  emitWithTrace(socketInstance, event, data, traceContext);
+};
+
+/**
+ * Extract trace context from incoming Socket.IO payload
+ * Returns undefined if no trace context present
+ */
+export const extractTraceFromMessage = (
+  payload: Record<string, unknown>
+): { traceId: string; spanId?: string; parentSpanId?: string } | undefined => {
+  const trace = payload._trace as Record<string, unknown> | undefined;
+  if (!trace || !trace.traceId) {
+    return undefined;
+  }
+
+  return {
+    traceId: trace.traceId as string,
+    spanId: trace.spanId as string | undefined,
+    parentSpanId: trace.parentSpanId as string | undefined
+  };
 };

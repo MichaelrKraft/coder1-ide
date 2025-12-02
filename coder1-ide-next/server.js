@@ -54,6 +54,52 @@ const express = require('express');
 // Environment detection
 const isDevelopment = process.env.NODE_ENV !== 'production';
 
+// ================================================================================
+// Distributed Tracing Utilities (Server-side)
+// ================================================================================
+
+/**
+ * Extract trace context from Socket.IO payload
+ * Trace context is passed in the _trace property by the client
+ * @param {Object} payload - The Socket.IO event payload
+ * @returns {{ traceId: string, spanId?: string, parentSpanId?: string } | undefined}
+ */
+function extractTraceFromPayload(payload) {
+  if (!payload || typeof payload !== 'object') return undefined;
+  const trace = payload._trace;
+  if (!trace || !trace.traceId) return undefined;
+  return {
+    traceId: trace.traceId,
+    spanId: trace.spanId,
+    parentSpanId: trace.parentSpanId
+  };
+}
+
+/**
+ * Generate a trace ID for server-initiated operations
+ * Format: trace_{timestamp}_{random}
+ */
+function generateServerTraceId() {
+  return `trace_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+}
+
+/**
+ * Log with trace context prefix for distributed tracing
+ * @param {string} traceId - The trace ID
+ * @param {string} level - Log level (info, warn, error)
+ * @param {string} message - Log message
+ * @param {Object} [data] - Additional data to log
+ */
+function logWithTrace(traceId, level, message, data) {
+  const prefix = traceId ? `[${traceId}]` : '[no-trace]';
+  const logFn = level === 'error' ? console.error : level === 'warn' ? console.warn : console.log;
+  if (data !== undefined) {
+    logFn(`${prefix} ${message}`, data);
+  } else {
+    logFn(`${prefix} ${message}`);
+  }
+}
+
 // Memory Optimizer with environment-aware limits - Updated for 2GB Standard plan
 const { getMemoryOptimizer } = require('./services/memory-optimizer');
 const memoryOptimizer = getMemoryOptimizer({
@@ -1346,14 +1392,19 @@ app.prepare().then(() => {
     
     // Handle terminal creation
     socket.on('terminal:create', async (data) => {
-      console.log('📟 TERMINAL CREATE REQUEST:', {
+      // Extract trace context from payload for distributed tracing
+      const traceCtx = extractTraceFromPayload(data);
+      const traceId = traceCtx?.traceId || generateServerTraceId();
+
+      logWithTrace(traceId, 'info', '📟 TERMINAL CREATE REQUEST:', {
         sessionId: data?.id,
         transport: socket.conn.transport.name,
         socketId: socket.id,
         ptyCompatible,
+        hasTrace: !!traceCtx,
         timestamp: new Date().toISOString()
       });
-      
+
       try {
         const { id, cols = 80, rows = 30, workingDirectory } = data || {};
         
@@ -2425,21 +2476,29 @@ app.prepare().then(() => {
     // Agent Terminal Handlers (Phase 2: Interactive Agent Terminals)
     if (agentTerminalManager) {
       // Create agent terminal session
-      socket.on('agent:terminal:create', ({ agentId, teamId, role }) => {
+      socket.on('agent:terminal:create', (payload) => {
+        const { agentId, teamId, role } = payload;
+        // Extract trace context for distributed tracing
+        const traceCtx = extractTraceFromPayload(payload);
+        const traceId = traceCtx?.traceId || generateServerTraceId();
+
         try {
-          console.log(`🤖 Creating agent terminal: ${agentId} (${role})`);
-          const session = agentTerminalManager.createAgentTerminalSession(agentId, teamId, role);
-          socket.emit('agent:terminal:created', { 
-            agentId, 
-            teamId, 
+          logWithTrace(traceId, 'info', `🤖 Creating agent terminal: ${agentId} (${role})`);
+          // Pass traceId to the agent terminal manager
+          const session = agentTerminalManager.createAgentTerminalSession(agentId, teamId, role, traceId);
+          socket.emit('agent:terminal:created', {
+            agentId,
+            teamId,
             role,
-            isInteractive: session.isInteractive 
+            traceId,
+            isInteractive: session.isInteractive
           });
         } catch (error) {
-          console.error(`❌ Failed to create agent terminal: ${error.message}`);
-          socket.emit('agent:terminal:error', { 
+          logWithTrace(traceId, 'error', `❌ Failed to create agent terminal: ${error.message}`);
+          socket.emit('agent:terminal:error', {
             agentId,
-            message: error.message 
+            traceId,
+            message: error.message
           });
         }
       });
