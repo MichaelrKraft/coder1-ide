@@ -1,0 +1,55 @@
+# Artillery Load Testing Configuration for Coder1 Multi-Agent System
+# https://www.artillery.io/docs
+
+config:
+  target: "http://localhost:3001"
+  phases:
+    - duration: 30
+      arrivalRate: 5
+      name: "Warm-up phase"
+    - duration: 60
+      arrivalRate: 10
+      name: "Steady state"
+    - duration: 30
+      arrivalRate: 20
+      name: "Peak load"
+
+  # Socket.IO engine configuration
+  engines:
+    socketio-v3:
+      # Socket.IO v3/v4 client options
+      path: "/socket.io/"
+      transports: ["websocket", "polling"]
+      reconnection: false
+      timeout: 30000
+
+  # Environment variables for test scenarios
+  variables:
+    baseUrl: "http://localhost:3001"
+
+  # Plugin configuration
+  plugins:
+    expect: {}
+
+  # Metrics thresholds for pass/fail
+  ensure:
+    p99: 2000          # 99th percentile under 2 seconds
+    median: 500        # Median under 500ms
+    maxErrorRate: 5    # Max 5% error rate
+
+# Default scenario - can be overridden per test file
+scenarios:
+  - name: "Basic Socket.IO Connection"
+    engine: "socketio-v3"
+    flow:
+      - emit:
+          channel: "ping"
+          data:
+            timestamp: "{{ $timestamp }}"
+      - think: 1
+      - emit:
+          channel: "terminal:create"
+          data:
+            id: "load-test-{{ $uuid }}"
+            cols: 80
+            rows: 30

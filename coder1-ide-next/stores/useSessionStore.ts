@@ -5,9 +5,9 @@
 
 import { create } from 'zustand';
 import { devtools, persist } from 'zustand/middleware';
-import { 
+import {
   SessionData,
-  SessionMetadata, 
+  SessionMetadata,
   SessionCheckpoint,
   SessionInsight,
   SessionSummaryResult,
@@ -15,6 +15,19 @@ import {
   TeamSession,
   SupervisionState
 } from '@/types';
+import {
+  TraceContext,
+  TraceEntry,
+  startTrace as createTrace,
+  createSpan,
+  endTrace,
+  recordTrace,
+  getTraces,
+  getTraceById,
+  clearTraces,
+  getTraceSummary,
+  generateTraceId
+} from '@/lib/trace';
 
 // ================================================================================
 // Session Store Interface
@@ -39,6 +52,10 @@ interface SessionStore {
   summaryInProgress: boolean;
   summaryProgress: number;
   summaryStep: string;
+
+  // Distributed Tracing
+  activeTraces: Map<string, TraceContext>;
+  traceHistory: TraceEntry[];
   
   // ================================================================================
   // Session Actions
@@ -112,9 +129,22 @@ interface SessionStore {
   deleteSession: (sessionId: string) => void;
   
   // ================================================================================
+  // Trace Actions
+  // ================================================================================
+
+  startTrace: (operation: string, metadata?: Record<string, unknown>) => TraceContext;
+  createChildSpan: (parentContext: TraceContext, operation: string, metadata?: Record<string, unknown>) => TraceContext;
+  endTrace: (context: TraceContext, status: 'completed' | 'error', agentId?: string, error?: string) => TraceEntry;
+  recordTraceEntry: (entry: TraceEntry) => void;
+  getTracesBySession: (traceId?: string) => TraceEntry[];
+  getTraceByIdGlobal: (traceId: string) => TraceEntry[];
+  clearSessionTraces: () => void;
+  getTraceSummary: () => ReturnType<typeof getTraceSummary>;
+
+  // ================================================================================
   // Utility Actions
   // ================================================================================
-  
+
   reset: () => void;
 }
 
@@ -147,6 +177,10 @@ const initialState = {
   summaryInProgress: false,
   summaryProgress: 0,
   summaryStep: '',
+
+  // Distributed Tracing
+  activeTraces: new Map<string, TraceContext>(),
+  traceHistory: [] as TraceEntry[],
 };
 
 // ================================================================================
@@ -599,9 +633,130 @@ export const useSessionStore = create<SessionStore>()(
         },
         
         // ================================================================================
+        // Trace Actions
+        // ================================================================================
+
+        startTrace: (operation, metadata) => {
+          const { currentSession } = get();
+          const context = createTrace(operation, metadata);
+
+          set((state) => {
+            const newActiveTraces = new Map(state.activeTraces);
+            newActiveTraces.set(context.traceId, context);
+            return { activeTraces: newActiveTraces };
+          }, false, `startTrace:${operation}`);
+
+          // Record the start entry
+          if (currentSession?.metadata.sessionId) {
+            const startEntry: TraceEntry = {
+              traceId: context.traceId,
+              spanId: context.spanId,
+              operation: context.operation,
+              status: 'started',
+              timestamp: context.startTime,
+              sessionId: currentSession.metadata.sessionId,
+              metadata: context.metadata as Record<string, unknown>
+            };
+            recordTrace(currentSession.metadata.sessionId, startEntry);
+          }
+
+          return context;
+        },
+
+        createChildSpan: (parentContext, operation, metadata) => {
+          const context = createSpan(parentContext, operation, metadata);
+
+          set((state) => {
+            const newActiveTraces = new Map(state.activeTraces);
+            newActiveTraces.set(context.spanId, context);
+            return { activeTraces: newActiveTraces };
+          }, false, `createSpan:${operation}`);
+
+          return context;
+        },
+
+        endTrace: (context, status, agentId, error) => {
+          const { currentSession } = get();
+          const sessionId = currentSession?.metadata.sessionId;
+
+          const entry = endTrace(context, status, sessionId, agentId, error);
+
+          set((state) => {
+            const newActiveTraces = new Map(state.activeTraces);
+            newActiveTraces.delete(context.traceId);
+            newActiveTraces.delete(context.spanId);
+
+            // Add to history (keep last 100)
+            const newHistory = [...state.traceHistory, entry];
+            if (newHistory.length > 100) {
+              newHistory.splice(0, newHistory.length - 100);
+            }
+
+            return {
+              activeTraces: newActiveTraces,
+              traceHistory: newHistory
+            };
+          }, false, `endTrace:${context.operation}:${status}`);
+
+          return entry;
+        },
+
+        recordTraceEntry: (entry) => {
+          const { currentSession } = get();
+          const sessionId = currentSession?.metadata.sessionId || entry.sessionId;
+
+          if (sessionId) {
+            recordTrace(sessionId, entry);
+          }
+
+          set((state) => {
+            const newHistory = [...state.traceHistory, entry];
+            if (newHistory.length > 100) {
+              newHistory.splice(0, newHistory.length - 100);
+            }
+            return { traceHistory: newHistory };
+          }, false, `recordTraceEntry:${entry.operation}`);
+        },
+
+        getTracesBySession: (traceId) => {
+          const { currentSession } = get();
+          const sessionId = currentSession?.metadata.sessionId;
+          if (!sessionId) return [];
+          return getTraces(sessionId, traceId);
+        },
+
+        getTraceByIdGlobal: (traceId) => {
+          return getTraceById(traceId);
+        },
+
+        clearSessionTraces: () => {
+          const { currentSession } = get();
+          const sessionId = currentSession?.metadata.sessionId;
+          if (sessionId) {
+            clearTraces(sessionId);
+          }
+          set({ traceHistory: [], activeTraces: new Map() }, false, 'clearSessionTraces');
+        },
+
+        getTraceSummary: () => {
+          const { currentSession } = get();
+          const sessionId = currentSession?.metadata.sessionId;
+          if (!sessionId) {
+            return {
+              totalTraces: 0,
+              completedCount: 0,
+              errorCount: 0,
+              avgDuration: 0,
+              recentTraces: []
+            };
+          }
+          return getTraceSummary(sessionId);
+        },
+
+        // ================================================================================
         // Utility Actions
         // ================================================================================
-        
+
         reset: () => set(initialState, false, 'reset'),
       }),
       {

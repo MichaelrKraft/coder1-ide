@@ -1,0 +1,148 @@
+# Session Creation Stress Test
+# Tests the system's ability to handle multiple concurrent terminal sessions
+#
+# Run with: npx artillery run load-tests/session-stress.yml
+# Report: npx artillery run --output report.json load-tests/session-stress.yml
+
+config:
+  target: "http://localhost:3001"
+  phases:
+    # Phase 1: Gradual ramp-up
+    - duration: 15
+      arrivalRate: 2
+      name: "Warm-up"
+
+    # Phase 2: Steady moderate load
+    - duration: 30
+      arrivalRate: 5
+      name: "Moderate Load"
+
+    # Phase 3: Peak burst
+    - duration: 15
+      arrivalRate: 15
+      name: "Peak Burst"
+
+    # Phase 4: Cool down
+    - duration: 15
+      arrivalRate: 3
+      name: "Cool Down"
+
+  engines:
+    socketio-v3:
+      path: "/socket.io/"
+      transports: ["websocket"]
+      timeout: 45000
+
+  # Thresholds for passing the test
+  ensure:
+    p99: 3000
+    median: 1000
+    maxErrorRate: 10
+
+  processor: "./session-processor.js"
+
+scenarios:
+  - name: "Create and Use Terminal Session"
+    engine: "socketio-v3"
+    flow:
+      # Connect to Socket.IO server
+      - think: 1
+
+      # Create a terminal session
+      - emit:
+          channel: "terminal:create"
+          data:
+            id: "stress-test-{{ $uuid }}"
+            cols: 120
+            rows: 40
+            _trace:
+              traceId: "trace_stress_{{ $timestamp }}_{{ $randomString(6) }}"
+              operation: "stress:session:create"
+
+      # Wait for terminal ready
+      - think: 2
+
+      # Send some terminal input
+      - emit:
+          channel: "terminal:input"
+          data:
+            id: "stress-test-{{ $uuid }}"
+            data: "echo 'Load test session {{ $uuid }}'\r"
+
+      # Keep session alive for a bit
+      - think: 3
+
+      # Resize terminal (common operation)
+      - emit:
+          channel: "terminal:resize"
+          data:
+            id: "stress-test-{{ $uuid }}"
+            cols: 160
+            rows: 50
+
+      # Wait before cleanup
+      - think: 2
+
+      # Destroy session
+      - emit:
+          channel: "terminal:destroy"
+          data:
+            id: "stress-test-{{ $uuid }}"
+
+  - name: "Rapid Session Lifecycle"
+    weight: 2  # Run this scenario twice as often
+    engine: "socketio-v3"
+    flow:
+      # Quick create
+      - emit:
+          channel: "terminal:create"
+          data:
+            id: "rapid-{{ $uuid }}"
+            cols: 80
+            rows: 24
+
+      # Minimal wait
+      - think: 0.5
+
+      # Quick destroy
+      - emit:
+          channel: "terminal:destroy"
+          data:
+            id: "rapid-{{ $uuid }}"
+
+  - name: "Long-Running Session"
+    weight: 1
+    engine: "socketio-v3"
+    flow:
+      # Create session
+      - emit:
+          channel: "terminal:create"
+          data:
+            id: "long-{{ $uuid }}"
+            cols: 80
+            rows: 30
+
+      # Simulate longer usage with periodic input
+      - think: 5
+
+      - emit:
+          channel: "terminal:input"
+          data:
+            id: "long-{{ $uuid }}"
+            data: "ls -la\r"
+
+      - think: 5
+
+      - emit:
+          channel: "terminal:input"
+          data:
+            id: "long-{{ $uuid }}"
+            data: "pwd\r"
+
+      - think: 5
+
+      # Cleanup
+      - emit:
+          channel: "terminal:destroy"
+          data:
+            id: "long-{{ $uuid }}"
