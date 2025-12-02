@@ -27,6 +27,8 @@ import { useSession } from '@/contexts/SessionContext';
 import EnhancedSessionCreationModal from '@/components/session/EnhancedSessionCreationModal';
 import { memoryDetectionService } from '@/lib/memory-detection-client';
 import type { MemoryDetectionResult } from '@/lib/memory-detection-client';
+import { useClaudeConfigStore } from '@/stores/useClaudeConfigStore';
+import { ClaudeConfigModal } from '@/components/claude-config';
 
 interface TaskCommand {
   id: string;
@@ -52,6 +54,7 @@ export default function DiscoverPanel() {
 
   const { injectCommand, isTerminalReady } = useTerminalCommand();
   const { createEnhancedSession } = useSession();
+  const { openModal: openClaudeConfigModal } = useClaudeConfigStore();
   const { isOpen, commandInput, customCommands, showAddForm, newCommand } = discoverPanel;
   
   // Search state
@@ -296,7 +299,8 @@ export default function DiscoverPanel() {
     // AI & ANALYSIS (keeping original non-slash items)  
     { id: 'requirements', name: 'Requirements', description: 'Gather project requirements', icon: BookOpen, action: () => {}, category: 'AI & ANALYSIS' },
     { id: 'templates', name: 'Templates', description: 'Access code templates', icon: FileText, action: () => {}, category: 'AI & ANALYSIS' },
-    { id: 'agents', name: 'Agents', description: 'Spawn AI development team', icon: Grid, action: () => {}, category: 'AI & ANALYSIS' }
+    { id: 'agents', name: 'Agents', description: 'Spawn AI development team', icon: Grid, action: () => {}, category: 'AI & ANALYSIS' },
+    
   ];
 
   // Combine task commands with wcygan commands
@@ -361,6 +365,14 @@ export default function DiscoverPanel() {
   // Execute command
   const executeCommand = (command: TaskCommand) => {
     if (typeof command.action === 'string') {
+      // Handle special actions
+      if (command.action === 'claude-configs') {
+        openClaudeConfigModal();
+        toggleDiscoverPanel();
+        setSearchInput('');
+        return;
+      }
+      
       // Terminal command
       if (!isTerminalReady()) {
         addToast({
@@ -678,6 +690,9 @@ export default function DiscoverPanel() {
         onClose={() => setShowEnhancedSessionModal(false)}
         onCreateSession={createEnhancedSession}
       />
+      
+      {/* Claude Config Modal */}
+      <ClaudeConfigModal />
     </>
   );
 }
