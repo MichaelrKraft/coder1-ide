@@ -10,6 +10,7 @@ export default function OnboardingPage() {
   const [claudeDetected, setClaudeDetected] = useState(false);
   const [detecting, setDetecting] = useState(true);
   const [claudeCommand, setClaudeCommand] = useState<string | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [email, setEmail] = useState('');
   const [licenseKey, setLicenseKey] = useState('');
   const [validating, setValidating] = useState(false);
@@ -26,13 +27,16 @@ export default function OnboardingPage() {
       const detection = await response.json();
       setClaudeDetected(detection.available);
       setClaudeCommand(detection.command);
-      if (detection.available) {
-        // Auto-advance if Claude is detected
+      setIsAuthenticated(detection.authenticated || false);
+
+      if (detection.available && detection.authenticated) {
+        // Auto-advance only if BOTH installed AND authenticated
         setTimeout(() => setCurrentStep(2), 1500);
       }
     } catch (error) {
       console.error('Error detecting Claude:', error);
       setClaudeDetected(false);
+      setIsAuthenticated(false);
     } finally {
       setDetecting(false);
     }
@@ -116,7 +120,7 @@ export default function OnboardingPage() {
                       <Terminal className="absolute inset-0 m-auto w-8 h-8 text-cyan-400" />
                     </div>
                   </div>
-                ) : claudeDetected ? (
+                ) : claudeDetected && isAuthenticated ? (
                   <div className="space-y-4">
                     <div className="flex items-center gap-3 p-4 bg-green-500/10 border border-green-500/30 rounded-lg">
                       <Check className="w-6 h-6 text-green-400" />
@@ -128,6 +132,34 @@ export default function OnboardingPage() {
                     <p className="text-gray-400">
                       Great! Claude Code CLI is installed and ready to use.
                     </p>
+                  </div>
+                ) : claudeDetected && !isAuthenticated ? (
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-3 p-4 bg-amber-500/10 border border-amber-500/30 rounded-lg">
+                      <AlertCircle className="w-6 h-6 text-amber-400" />
+                      <div>
+                        <p className="font-semibold text-amber-400">Authentication Required</p>
+                        <p className="text-sm text-gray-400">Claude CLI is installed but needs to be logged in</p>
+                      </div>
+                    </div>
+
+                    <div className="space-y-3">
+                      <p className="text-gray-400">Run this command in your Mac Terminal (not Coder1):</p>
+                      <div className="bg-gray-900 rounded-lg p-4 font-mono text-sm border border-gray-700">
+                        <code className="text-cyan-400 select-all">claude auth login</code>
+                      </div>
+                      <p className="text-sm text-gray-500">
+                        This will open a browser to sign in with your Anthropic account.
+                        Once authenticated, click &quot;Retry Detection&quot; below.
+                      </p>
+
+                      <button
+                        onClick={detectClaude}
+                        className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-cyan-500 hover:bg-cyan-600 rounded-lg font-semibold transition-colors mt-4"
+                      >
+                        Retry Detection
+                      </button>
+                    </div>
                   </div>
                 ) : (
                   <div className="space-y-4">
