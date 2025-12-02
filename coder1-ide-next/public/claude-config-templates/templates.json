@@ -1,0 +1,351 @@
+{
+  "version": "1.0.0",
+  "templates": [
+    {
+      "id": "agent-frontend-engineer",
+      "type": "agent",
+      "category": "Development",
+      "name": "Frontend Engineer",
+      "description": "Expert in React, Next.js, TypeScript, and modern web development",
+      "file": "agents/frontend-engineer.md",
+      "tags": ["react", "nextjs", "typescript", "frontend", "ui"],
+      "estimatedCost": 0.05,
+      "permissions": ["read", "write", "execute"],
+      "capabilities": [
+        "Build React components with TypeScript",
+        "Implement responsive designs with Tailwind",
+        "Optimize frontend performance",
+        "Ensure accessibility compliance"
+      ],
+      "icon": "code"
+    },
+    {
+      "id": "agent-backend-engineer",
+      "type": "agent",
+      "category": "Development",
+      "name": "Backend Engineer",
+      "description": "Expert in Node.js, Express, APIs, and database design",
+      "file": "agents/backend-engineer.md",
+      "tags": ["nodejs", "express", "api", "database", "backend"],
+      "estimatedCost": 0.05,
+      "permissions": ["read", "write", "execute"],
+      "capabilities": [
+        "Design RESTful APIs",
+        "Implement authentication with JWT",
+        "Optimize database queries",
+        "Handle errors and validation"
+      ],
+      "icon": "server"
+    },
+    {
+      "id": "agent-debugging-assistant",
+      "type": "agent",
+      "category": "Quality Assurance",
+      "name": "Debugging Assistant",
+      "description": "Systematic problem investigation and root cause analysis",
+      "file": "agents/debugging-assistant.md",
+      "tags": ["debugging", "troubleshooting", "errors", "investigation"],
+      "estimatedCost": 0.03,
+      "permissions": ["read"],
+      "capabilities": [
+        "Analyze error messages and stack traces",
+        "Identify root causes vs symptoms",
+        "Guide through debugging process",
+        "Suggest prevention strategies"
+      ],
+      "icon": "bug"
+    },
+    {
+      "id": "agent-code-reviewer",
+      "type": "agent",
+      "category": "Quality Assurance",
+      "name": "Code Reviewer",
+      "description": "Comprehensive code review for quality, security, and performance",
+      "file": "agents/code-reviewer.md",
+      "tags": ["review", "quality", "security", "performance", "best-practices"],
+      "estimatedCost": 0.04,
+      "permissions": ["read"],
+      "capabilities": [
+        "Review code quality and maintainability",
+        "Identify security vulnerabilities",
+        "Suggest performance optimizations",
+        "Ensure best practices adherence"
+      ],
+      "icon": "check-circle"
+    },
+    {
+      "id": "agent-documentation-writer",
+      "type": "agent",
+      "category": "Documentation",
+      "name": "Documentation Writer",
+      "description": "Create clear, comprehensive technical documentation",
+      "file": "agents/documentation-writer.md",
+      "tags": ["documentation", "readme", "guides", "api-docs"],
+      "estimatedCost": 0.04,
+      "permissions": ["read", "write"],
+      "capabilities": [
+        "Write README files and user guides",
+        "Create API documentation",
+        "Add code comments and JSDoc",
+        "Maintain consistent documentation style"
+      ],
+      "icon": "book"
+    },
+    {
+      "id": "agent-test-engineer",
+      "type": "agent",
+      "category": "Quality Assurance",
+      "name": "Test Engineer",
+      "description": "Comprehensive testing strategies and test automation",
+      "file": "agents/test-engineer.md",
+      "tags": ["testing", "jest", "playwright", "unit-tests", "e2e"],
+      "estimatedCost": 0.05,
+      "permissions": ["read", "write", "execute"],
+      "capabilities": [
+        "Write unit and integration tests",
+        "Create E2E test suites",
+        "Implement testing best practices",
+        "Ensure high code coverage"
+      ],
+      "icon": "flask"
+    },
+    {
+      "id": "hook-pre-commit",
+      "type": "hook",
+      "category": "Git Workflow",
+      "name": "Pre-Commit Hook",
+      "description": "Runs quality checks before every git commit",
+      "file": "hooks/pre-commit.sh",
+      "tags": ["git", "commit", "validation", "quality"],
+      "estimatedCost": 0,
+      "permissions": ["read", "execute"],
+      "capabilities": [
+        "Type check with TypeScript",
+        "Run linter",
+        "Check code formatting",
+        "Run unit tests",
+        "Detect sensitive data"
+      ],
+      "icon": "git-commit"
+    },
+    {
+      "id": "hook-on-error",
+      "type": "hook",
+      "category": "Error Handling",
+      "name": "On-Error Hook",
+      "description": "Runs when Claude Code encounters an error",
+      "file": "hooks/on-error.sh",
+      "tags": ["error", "debugging", "logging"],
+      "estimatedCost": 0,
+      "permissions": ["read", "write"],
+      "capabilities": [
+        "Log errors to file",
+        "Suggest fixes based on error type",
+        "Search for similar code",
+        "Create issue tracking file"
+      ],
+      "icon": "alert-circle"
+    },
+    {
+      "id": "hook-pre-write",
+      "type": "hook",
+      "category": "File Management",
+      "name": "Pre-Write Hook",
+      "description": "Runs before Claude Code writes to a file",
+      "file": "hooks/pre-write.sh",
+      "tags": ["file", "backup", "validation"],
+      "estimatedCost": 0,
+      "permissions": ["read", "write"],
+      "capabilities": [
+        "Backup existing files",
+        "Validate file paths",
+        "Check naming conventions",
+        "Prevent protected directory writes"
+      ],
+      "icon": "file-text"
+    },
+    {
+      "id": "hook-post-edit",
+      "type": "hook",
+      "category": "Code Quality",
+      "name": "Post-Edit Hook",
+      "description": "Runs after Claude Code edits a file",
+      "file": "hooks/post-edit.sh",
+      "tags": ["formatting", "linting", "testing"],
+      "estimatedCost": 0,
+      "permissions": ["read", "write", "execute"],
+      "capabilities": [
+        "Auto-format edited files",
+        "Run type checking",
+        "Execute linter",
+        "Suggest test updates"
+      ],
+      "icon": "edit"
+    },
+    {
+      "id": "skill-git-workflow",
+      "type": "skill",
+      "category": "Version Control",
+      "name": "Git Workflow",
+      "description": "Efficient Git workflows for solo and team development",
+      "file": "skills/git-workflow.md",
+      "tags": ["git", "version-control", "workflow", "branching"],
+      "estimatedCost": 0,
+      "permissions": ["read"],
+      "capabilities": [
+        "Branch naming conventions",
+        "Commit message best practices",
+        "Merge vs rebase strategies",
+        "Conflict resolution techniques"
+      ],
+      "icon": "git-branch"
+    },
+    {
+      "id": "skill-testing-strategy",
+      "type": "skill",
+      "category": "Quality Assurance",
+      "name": "Testing Strategy",
+      "description": "Comprehensive testing strategies for reliable software",
+      "file": "skills/testing-strategy.md",
+      "tags": ["testing", "strategy", "tdd", "best-practices"],
+      "estimatedCost": 0,
+      "permissions": ["read"],
+      "capabilities": [
+        "Testing pyramid principles",
+        "Unit testing best practices",
+        "Component testing patterns",
+        "E2E testing strategies"
+      ],
+      "icon": "shield"
+    },
+    {
+      "id": "skill-debugging-guide",
+      "type": "skill",
+      "category": "Problem Solving",
+      "name": "Debugging Guide",
+      "description": "Systematic debugging methodologies and techniques",
+      "file": "skills/debugging-guide.md",
+      "tags": ["debugging", "troubleshooting", "methodology"],
+      "estimatedCost": 0,
+      "permissions": ["read"],
+      "capabilities": [
+        "Scientific debugging approach",
+        "Browser DevTools usage",
+        "Common bug patterns",
+        "Debugging tools and techniques"
+      ],
+      "icon": "tool"
+    },
+    {
+      "id": "command-quick-fix",
+      "type": "command",
+      "category": "Utilities",
+      "name": "/quick-fix",
+      "description": "Quickly diagnose and fix common coding issues",
+      "file": "commands/quick-fix.md",
+      "tags": ["fix", "error", "quick", "command"],
+      "estimatedCost": 0.02,
+      "permissions": ["read", "write"],
+      "capabilities": [
+        "Diagnose common errors",
+        "Propose targeted fixes",
+        "Explain root causes",
+        "Suggest prevention strategies"
+      ],
+      "icon": "zap"
+    },
+    {
+      "id": "command-code-explain",
+      "type": "command",
+      "category": "Learning",
+      "name": "/code-explain",
+      "description": "Get clear explanations of code patterns and concepts",
+      "file": "commands/code-explain.md",
+      "tags": ["explain", "learn", "patterns", "command"],
+      "estimatedCost": 0.03,
+      "permissions": ["read"],
+      "capabilities": [
+        "Explain code patterns",
+        "Break down complex logic",
+        "Highlight key concepts",
+        "Suggest alternatives"
+      ],
+      "icon": "message-circle"
+    }
+  ],
+  "categories": [
+    {
+      "id": "development",
+      "name": "Development",
+      "description": "Frontend and backend development agents",
+      "color": "#3b82f6"
+    },
+    {
+      "id": "quality-assurance",
+      "name": "Quality Assurance",
+      "description": "Testing, debugging, and code review",
+      "color": "#10b981"
+    },
+    {
+      "id": "documentation",
+      "name": "Documentation",
+      "description": "Technical writing and documentation",
+      "color": "#8b5cf6"
+    },
+    {
+      "id": "git-workflow",
+      "name": "Git Workflow",
+      "description": "Version control and collaboration",
+      "color": "#f59e0b"
+    },
+    {
+      "id": "error-handling",
+      "name": "Error Handling",
+      "description": "Error tracking and debugging assistance",
+      "color": "#ef4444"
+    },
+    {
+      "id": "file-management",
+      "name": "File Management",
+      "description": "File operations and backups",
+      "color": "#6366f1"
+    },
+    {
+      "id": "code-quality",
+      "name": "Code Quality",
+      "description": "Formatting, linting, and code standards",
+      "color": "#14b8a6"
+    },
+    {
+      "id": "version-control",
+      "name": "Version Control",
+      "description": "Git and version control skills",
+      "color": "#f97316"
+    },
+    {
+      "id": "problem-solving",
+      "name": "Problem Solving",
+      "description": "Debugging and troubleshooting guides",
+      "color": "#ec4899"
+    },
+    {
+      "id": "utilities",
+      "name": "Utilities",
+      "description": "Quick commands and helpers",
+      "color": "#06b6d4"
+    },
+    {
+      "id": "learning",
+      "name": "Learning",
+      "description": "Educational tools and explanations",
+      "color": "#a855f7"
+    }
+  ],
+  "metadata": {
+    "totalTemplates": 15,
+    "lastUpdated": "2025-01-27",
+    "version": "1.0.0",
+    "author": "Coder1 IDE",
+    "license": "MIT"
+  }
+}
