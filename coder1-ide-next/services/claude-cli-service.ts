@@ -28,6 +28,8 @@ export interface ClaudeCliDetection {
   version: string;
   available: boolean;
   path?: string;
+  authenticated: boolean;
+  authError?: string;
 }
 
 class ClaudeCliService {
@@ -80,12 +82,17 @@ class ClaudeCliService {
           // Get version
           const { stdout: versionOutput } = await execAsync(`${cmd} --version`);
           const version = this.parseVersion(versionOutput);
-          
+
+          // Check authentication status
+          const authStatus = await this.checkAuthentication(cmd);
+
           return {
             command: cmd,
             version,
             available: true,
-            path: which.trim()
+            path: which.trim(),
+            authenticated: authStatus.authenticated,
+            authError: authStatus.error
           };
         }
       } catch (error) {
@@ -97,8 +104,29 @@ class ClaudeCliService {
     return {
       command: '',
       version: '',
-      available: false
+      available: false,
+      authenticated: false,
+      authError: 'Claude CLI not installed'
     };
+  }
+
+  /**
+   * Check if Claude CLI is authenticated
+   */
+  private async checkAuthentication(command: string): Promise<{ authenticated: boolean; error?: string }> {
+    try {
+      const { stdout, stderr } = await execAsync(`${command} auth status`, { timeout: 10000 });
+      // Check for authentication indicators in output
+      const output = (stdout + stderr).toLowerCase();
+      const isAuthenticated = output.includes('logged in') ||
+                             output.includes('authenticated') ||
+                             output.includes('valid') ||
+                             (!output.includes('not logged in') && !output.includes('not authenticated'));
+      return { authenticated: isAuthenticated };
+    } catch (error) {
+      // Auth check failed - user is not authenticated
+      return { authenticated: false, error: 'Not authenticated - run: claude auth login' };
+    }
   }
 
   /**
