@@ -268,20 +268,25 @@ async function handleContextDeactivation(browserSessionId: string): Promise<Next
 
 /**
  * Cleanup inactive browser sessions (to be called periodically)
+ * Uses global flag to prevent interval stacking on hot reload
  */
-setInterval(() => {
-  const now = Date.now();
-  const INACTIVE_THRESHOLD = 60 * 60 * 1000; // 1 hour
+if (!(global as any).__browserSessionCleanupInitialized) {
+  (global as any).__browserSessionCleanupInitialized = true;
 
-  let cleaned = 0;
-  for (const [sessionId, session] of activeBrowserSessions.entries()) {
-    if (now - session.lastActivity > INACTIVE_THRESHOLD) {
-      activeBrowserSessions.delete(sessionId);
-      cleaned++;
+  setInterval(() => {
+    const now = Date.now();
+    const INACTIVE_THRESHOLD = 60 * 60 * 1000; // 1 hour
+
+    let cleaned = 0;
+    for (const [sessionId, session] of activeBrowserSessions.entries()) {
+      if (now - session.lastActivity > INACTIVE_THRESHOLD) {
+        activeBrowserSessions.delete(sessionId);
+        cleaned++;
+      }
     }
-  }
 
-  if (cleaned > 0) {
-    console.log(`🧹 Cleaned up ${cleaned} inactive browser sessions`);
-  }
-}, 30 * 60 * 1000); // Run every 30 minutes
+    if (cleaned > 0) {
+      console.log(`🧹 Cleaned up ${cleaned} inactive browser sessions`);
+    }
+  }, 30 * 60 * 1000); // Run every 30 minutes
+}

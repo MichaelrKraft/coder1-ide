@@ -8,13 +8,14 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Eye, GitBranch, FileText, Brain } from 'lucide-react';
+import { Eye, GitBranch, FileText, Brain, AlertTriangle } from 'lucide-react';
 import StatusBarActions from './StatusBarActions';
 import DiscoverPanel from './DiscoverPanel';
 import CostDisplay from '../terminal/CostDisplay';
 import { useIDEStore } from '@/stores/useIDEStore';
 import { useSessionStore } from '@/stores/useSessionStore';
 import { useUIStore } from '@/stores/useUIStore';
+import { usePollingHealthStore } from '@/stores/usePollingHealthStore';
 import { logger } from '@/lib/logger';
 import type { IDEFile } from '@/types';
 
@@ -39,6 +40,7 @@ export default function StatusBarCore({
   const { connections } = useIDEStore();
   const { supervision } = useSessionStore();
   const { discoverPanel, addToast } = useUIStore();
+  const { hasIssues: pollingHasIssues, issuesSummary: pollingIssuesSummary } = usePollingHealthStore();
   
   // Git state management
   const [gitInfo, setGitInfo] = useState<{
@@ -152,7 +154,18 @@ export default function StatusBarCore({
 
         {/* Right section - Status info */}
         <div className="flex items-center gap-4 text-sm text-text-muted flex-1 justify-end">
-          
+
+          {/* Service Health Indicator */}
+          {pollingHasIssues && (
+            <div
+              className="flex items-center gap-1 text-yellow-400 cursor-help"
+              title={pollingIssuesSummary || 'Some services are experiencing issues'}
+            >
+              <AlertTriangle className="w-4 h-4" />
+              <span className="hidden sm:inline">Service Issue</span>
+            </div>
+          )}
+
           {/* Connection Status */}
           {actuallyConnected && (
             <div className="flex items-center gap-1">
@@ -160,7 +173,7 @@ export default function StatusBarCore({
               <span className="text-green-400">Connected</span>
             </div>
           )}
-          
+
           {/* Context memory statistics moved to terminal header memory panel */}
         </div>
       </div>

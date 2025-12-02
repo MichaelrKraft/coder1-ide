@@ -1,6 +1,8 @@
-import { useEffect, useCallback, useRef } from 'react';
+import { useEffect, useCallback, useRef, useState } from 'react';
 import { useSession } from '@/contexts/SessionContext';
 import { useIDEStore } from '@/stores/useIDEStore';
+import { usePollingHealthStore } from '@/stores/usePollingHealthStore';
+import { createLogger } from '@/lib/utils/limited-logger';
 
 /**
  * Automatic Checkpoint Hook
@@ -34,6 +36,8 @@ interface CheckpointState {
 
 const DEFAULT_INTERVAL = 10 * 60 * 1000; // 10 minutes
 const CHANGE_DETECTION_ENABLED = true;
+const MAX_CONSECUTIVE_FAILURES = 3; // Circuit breaker threshold
+const logger = createLogger({ maxLogsPerKey: 10, prefix: 'AutoCheckpoint' });
 
 export function useAutoCheckpoint(options: AutoCheckpointOptions = {}) {
   const {
@@ -45,12 +49,20 @@ export function useAutoCheckpoint(options: AutoCheckpointOptions = {}) {
   } = options;
 
   const { currentSession, sessionId: contextSessionId } = useSession();
+  const reportStatus = usePollingHealthStore((state) => state.reportStatus);
+  const reportHealthy = usePollingHealthStore((state) => state.reportHealthy);
+
   const stateRef = useRef<CheckpointState>({
     lastCheckpointTime: null,
     lastTerminalLength: 0,
     lastFileCount: 0,
     lastActiveFile: null
   });
+
+  // Circuit breaker state
+  const [consecutiveFailures, setConsecutiveFailures] = useState(0);
+  const [isCircuitOpen, setIsCircuitOpen] = useState(false);
+  const [lastError, setLastError] = useState<string | null>(null);
 
   /**
    * Detect if there have been meaningful changes since last checkpoint
@@ -98,12 +110,17 @@ export function useAutoCheckpoint(options: AutoCheckpointOptions = {}) {
   }, []);
 
   /**
-   * Create an automatic checkpoint
+   * Create an automatic checkpoint (with circuit breaker protection)
    */
   const createAutoCheckpoint = useCallback(async () => {
+    // Circuit breaker check - don't attempt if circuit is open
+    if (isCircuitOpen) {
+      return;
+    }
+
     // Priority: explicit > currentSession > contextSessionId
     const activeSessionId = explicitSessionId || currentSession?.id || contextSessionId;
-    
+
     if (!activeSessionId) {
       console.log('⏭️ No active session, skipping auto-checkpoint');
       return;
@@ -156,6 +173,14 @@ export function useAutoCheckpoint(options: AutoCheckpointOptions = {}) {
         updateState();
         onSuccess?.(result.checkpoint.id);
 
+        // Reset circuit breaker on success
+        if (consecutiveFailures > 0) {
+          setConsecutiveFailures(0);
+          setLastError(null);
+          reportHealthy('auto-checkpoint');
+          logger.reset('failure');
+        }
+
         // Trigger cleanup (async, non-blocking)
         cleanupOldCheckpoints(activeSessionId).catch(err => {
           console.warn('⚠️ Cleanup failed:', err);
@@ -164,10 +189,39 @@ export function useAutoCheckpoint(options: AutoCheckpointOptions = {}) {
         throw new Error('Checkpoint creation failed');
       }
     } catch (error) {
-      console.error('❌ Auto-checkpoint failed:', error);
+      const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+      const newFailureCount = consecutiveFailures + 1;
+
+      setConsecutiveFailures(newFailureCount);
+      setLastError(errorMsg);
+
+      // Use limited logger to prevent console spam
+      logger.error('failure', `Auto-checkpoint failed (attempt ${newFailureCount}/${MAX_CONSECUTIVE_FAILURES}):`, error);
+
+      // Check if circuit should open
+      if (newFailureCount >= MAX_CONSECUTIVE_FAILURES) {
+        setIsCircuitOpen(true);
+        console.warn(`🔴 Auto-checkpoint circuit breaker opened after ${newFailureCount} failures`);
+        reportStatus({
+          id: 'auto-checkpoint',
+          name: 'Auto-Checkpoint',
+          isCircuitOpen: true,
+          consecutiveFailures: newFailureCount,
+          lastError: errorMsg,
+        });
+      } else {
+        reportStatus({
+          id: 'auto-checkpoint',
+          name: 'Auto-Checkpoint',
+          isCircuitOpen: false,
+          consecutiveFailures: newFailureCount,
+          lastError: errorMsg,
+        });
+      }
+
       onError?.(error as Error);
     }
-  }, [explicitSessionId, currentSession, contextSessionId, hasChanges, updateState, onSuccess, onError]);
+  }, [isCircuitOpen, explicitSessionId, currentSession, contextSessionId, hasChanges, updateState, onSuccess, onError, consecutiveFailures, reportStatus, reportHealthy]);
 
   /**
    * Cleanup old auto-checkpoints
@@ -222,8 +276,32 @@ export function useAutoCheckpoint(options: AutoCheckpointOptions = {}) {
     };
   }, [enabled, explicitSessionId, currentSession, contextSessionId, interval, createAutoCheckpoint]);
 
+  /**
+   * Retry checkpoint creation - resets circuit breaker
+   */
+  const retryCheckpoint = useCallback(() => {
+    setIsCircuitOpen(false);
+    setConsecutiveFailures(0);
+    setLastError(null);
+    logger.reset('failure');
+    reportHealthy('auto-checkpoint');
+    // Trigger immediate checkpoint attempt
+    createAutoCheckpoint();
+  }, [createAutoCheckpoint, reportHealthy]);
+
+  // Clean up health status on unmount
+  useEffect(() => {
+    return () => {
+      reportHealthy('auto-checkpoint');
+    };
+  }, [reportHealthy]);
+
   return {
     createNow: createAutoCheckpoint,
-    enabled: enabled && !!(explicitSessionId || currentSession?.id || contextSessionId)
+    enabled: enabled && !!(explicitSessionId || currentSession?.id || contextSessionId),
+    isCircuitOpen,
+    consecutiveFailures,
+    lastError,
+    retry: retryCheckpoint,
   };
 }
