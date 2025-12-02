@@ -17,6 +17,7 @@ if (typeof window !== 'undefined') {
 import './Terminal.css'; // Re-enabled - critical for xterm viewport fixes
 import { Zap, StopCircle, Brain, Eye, Code2, Mic, MicOff, Speaker, ChevronDown, Plus, Users } from '@/lib/icons';
 import { Edit3, GitBranch, X, Stethoscope } from 'lucide-react';
+import SandboxPanel from '@/components/sandbox/SandboxPanel';
 import { useModelStore } from '@/stores/useModelStore';
 import TerminalSettings, { TerminalSettingsState } from './TerminalSettings';
 import { glows, spacing } from '@/lib/design-tokens';
@@ -141,6 +142,10 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
   const [isConnected, setIsConnected] = useState(false);
   const [agentsRunning, setAgentsRunning] = useState(false);
   const [voiceListening, setVoiceListening] = useState(false);
+  
+  // Emergency stop state (Nov 26, 2025)
+  const [activeAgentCount, setActiveAgentCount] = useState(0);
+  const [isStoppingAgents, setIsStoppingAgents] = useState(false);
   const [companionConnected, setCompanionConnected] = useState(false);
   const companionClientRef = useRef<any>(null);
   const currentCommandBuffer = useRef<string>('');
@@ -286,6 +291,7 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
   const [sandboxCreationStatus, setSandboxCreationStatus] = useState<'idle' | 'creating' | 'success' | 'error'>('idle');
   const [sandboxCreationMessage, setSandboxCreationMessage] = useState<string>('');
   const [createdSandboxId, setCreatedSandboxId] = useState<string>('');
+  const [showSandboxPanel, setShowSandboxPanel] = useState(false);
   
   // Feature flag for staged command line
   const ENABLE_STAGED_COMPOSER = process.env.NEXT_PUBLIC_ENABLE_STAGED_COMPOSER !== 'false'; // Default to enabled
@@ -780,6 +786,27 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
     localStorage.setItem('coder1-terminal-settings', JSON.stringify(terminalSettings));
   }, [terminalSettings]);
 
+  // Poll for active AI Team agents (Nov 26, 2025)
+  useEffect(() => {
+    const pollAgents = async () => {
+      try {
+        const res = await fetch('/api/puppet-bridge/stop');
+        if (res.ok) {
+          const data = await res.json();
+          // Use totalWorkflows instead of totalAgents (workflows are the running teams)
+          const count = data.summary?.totalWorkflows || data.summary?.totalAgents || 0;
+          setActiveAgentCount(count);
+        }
+      } catch (err) {
+        // Silently fail - not critical
+      }
+    };
+    
+    const interval = setInterval(pollAgents, 3000); // Poll every 3 seconds
+    pollAgents(); // Initial check
+    return () => clearInterval(interval);
+  }, []);
+
   // These states are declared at the beginning of the component with all other states
 
   // Separate effect to update error state when errorHistory changes
@@ -844,6 +871,15 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
   const outputFlushTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const writeRAFRef = useRef<number | null>(null);
   const rafBatchBufferRef = useRef<string>(''); // RAF batching buffer for performance (Feb 2, 2025)
+  
+  // 🚀 TWO-LAYER BATCHING: Agent terminal output (Nov 26, 2025 - Fix for repeating status lines)
+  // Layer 1: setTimeout(10ms) groups rapid chunks into array
+  // Layer 2: RAF batches joined output for 60fps rendering
+  const agentOutputBufferRef = useRef<string[]>([]);
+  const agentFlushTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const agentWriteRAFRef = useRef<number | null>(null);
+  const agentRafBatchBufferRef = useRef<string>('');
+  
   const lastLocalStorageSaveRef = useRef<number>(0); // Track last localStorage save time for throttling
   const lastBufferLengthRef = useRef<number>(0); // Track buffer length to optimize scroll logic
   const lastFlushTimeRef = useRef<number>(Date.now()); // Track last flush time to detect idle periods
@@ -1167,7 +1203,7 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
           cursorStyle: 'block',
           allowProposedApi: true, // Add this to prevent API warnings
           // Performance optimizations and scrolling configuration
-          scrollback: 1000, // Optimal balance: ~7-10 questions visible, fast performance (Feb 2, 2025)
+          scrollback: 50000, // Support long Claude Code sessions with full history retention
           fastScrollModifier: 'ctrl', // Enable fast scrolling with Ctrl key
           smoothScrollDuration: 0, // Disable smooth scrolling animations
           scrollOnUserInput: true,
@@ -2060,11 +2096,14 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
     // Connect when terminal is ready (session ID can be created by server if needed)
     // 🔧 FIX (Nov 21, 2025): Skip connectToBackend for agent terminals - they use agent:terminal:connect instead
     // Agent terminals get their output from the CLI puppeteer PTY, not a new bash PTY
-    if (terminalReady && xtermRef.current && !isConnected && !connectionInProgressRef.current && !agentMode) {
-      console.log('🚀 Terminal ready, connecting to backend...', { sessionId, agentMode, agentSession });
+    // 🔧 FIX (Dec 2, 2025): EXCEPT Claude tabs - they need their own bash PTY to run the claude CLI
+    // Claude tabs have agentMode=true but need a PTY session like regular terminals
+    const isClaudeTab = agentMode && agentSession?.name?.startsWith('Claude ');
+    if (terminalReady && xtermRef.current && !isConnected && !connectionInProgressRef.current && (!agentMode || isClaudeTab)) {
+      console.log('🚀 Terminal ready, connecting to backend...', { sessionId, agentMode, agentSession, isClaudeTab });
       connectToBackend(xtermRef.current);
     } else {
-      console.log('❌ Connection condition failed - not connecting');
+      console.log('❌ Connection condition failed - not connecting', { terminalReady, hasXterm: !!xtermRef.current, isConnected, connectionInProgress: connectionInProgressRef.current, agentMode, isClaudeTab });
     }
     
     // 🎯 CRITICAL FIX (Oct 28, 2025): Cleanup Socket.IO listeners on unmount
@@ -2213,6 +2252,14 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
       console.log('   agentSession:', agentSession, '(needs to be defined)');
       return;
     }
+
+    // 🔧 FIX (Dec 2, 2025): Claude tabs use regular PTY via connectToBackend(), not agent terminal system
+    // Skip agent terminal connection for Claude tabs - they get output via terminal:data not agent:terminal:data
+    const isClaudeTab = agentSession.name?.startsWith('Claude ');
+    if (isClaudeTab) {
+      console.log('🔄 [AGENT-DIAGNOSTIC] Claude tab detected - using regular PTY, skipping agent terminal connection');
+      return;
+    }
     
     // 🔧 FIX: Don't check xtermRef.current here - it might not be ready yet
     // Instead, we'll wait for it inside setupAgentTerminalConnection
@@ -2300,6 +2347,10 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
       // Run diagnostic after 2 seconds to check final state
       setTimeout(logFullDiagnostic, 2000);
 
+      // 🔧 FIX (Nov 26, 2025): Remove ALL existing listeners before adding new one
+      // This prevents duplicate listeners from accumulating
+      socket.removeAllListeners('agent:terminal:data');
+      
       // Listen for agent terminal data
       handleAgentTerminalData = ({ agentId, data }: { agentId: string; data: string }) => {
         // 🔧 DIAGNOSTIC LOGGING (Nov 19, 2025)
@@ -2316,9 +2367,22 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
           const currentTerm = xtermRef.current;
           
           if (currentTerm) {
-            // Xterm is ready - write directly
-            console.log('✅ [AGENT-DATA] Xterm ready! Writing', data.length, 'chars to terminal');
-            currentTerm.write(data);
+            // Xterm is ready - use RAF batching to prevent animation flooding
+            console.log('✅ [AGENT-DATA] Xterm ready! Batching', data.length, 'chars with RAF');
+            
+            // 🚀 TWO-LAYER BATCHING (Nov 26, 2025): Fixes repeating status lines
+            // Layer 1: setTimeout(10ms) groups rapid ANSI cursor code chunks
+            // Layer 2: RAF batches for 60fps rendering
+            // This preserves in-place updates (\x1b[2K\x1b[1A sequences)
+            
+            // Push to array buffer (preserves chunk order)
+            agentOutputBufferRef.current.push(data);
+            
+            // Clear existing timeout and schedule new flush
+            if (agentFlushTimeoutRef.current) {
+              clearTimeout(agentFlushTimeoutRef.current);
+            }
+            agentFlushTimeoutRef.current = setTimeout(flushAgentOutput, 10);
           } else {
             // Xterm not ready - buffer the data
             console.log('⏳ [AGENT-DATA] Xterm not ready, buffering', data.length, 'chars');
@@ -2330,21 +2394,8 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
         }
       };
 
-      // Remove any existing listener for this agent
-      socket.off('agent:terminal:data', handleAgentTerminalData);
-      // Register new listener
+      // Register new listener (only one will exist now due to removeAllListeners above)
       socket.on('agent:terminal:data', handleAgentTerminalData);
-      
-      // 🔧 DEBUG (Nov 21, 2025): Log ALL agent:terminal:data events to verify listener registration
-      const globalDebugHandler = (data: any) => {
-        console.log('🌐 [GLOBAL-DEBUG] agent:terminal:data event received:', {
-          agentIdReceived: data?.agentId,
-          dataLength: data?.data?.length || 0,
-          ourAgentId: agentSession.id,
-          match: data?.agentId === agentSession.id
-        });
-      };
-      socket.on('agent:terminal:data', globalDebugHandler);
       console.log('✅ [AGENT-SETUP] Listener registered for agent:terminal:data, agentSession.id:', agentSession.id);
 
       // 🔧 FIX (Nov 21, 2025): Add retry logic for agent terminal connection
@@ -2429,6 +2480,18 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
         connectedAgentIdRef.current = null;
         agentSocketRef = null;
       }
+      
+      // 🚀 TWO-LAYER CLEANUP (Nov 26, 2025): Cancel both setTimeout and RAF
+      if (agentFlushTimeoutRef.current) {
+        clearTimeout(agentFlushTimeoutRef.current);
+        agentFlushTimeoutRef.current = null;
+      }
+      if (agentWriteRAFRef.current) {
+        cancelAnimationFrame(agentWriteRAFRef.current);
+        agentWriteRAFRef.current = null;
+      }
+      agentOutputBufferRef.current = [];
+      agentRafBatchBufferRef.current = '';
     };
   }, [agentMode, agentSession?.id, terminalReady]); // 🔧 FIX: Use terminalReady state instead of xtermRef.current (refs don't trigger re-renders)
 
@@ -3056,6 +3119,36 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
     }
   }, []);
 
+  // Emergency stop all AI Team agents (Nov 26, 2025)
+  const handleEmergencyStop = async () => {
+    const confirmed = window.confirm(
+      `Stop all ${activeAgentCount} running agents?\n\nThis will terminate all Claude CLI processes immediately.\n\nThis action cannot be undone.`
+    );
+    
+    if (!confirmed) return;
+    
+    setIsStoppingAgents(true);
+    
+    try {
+      const res = await fetch('/api/puppet-bridge/stop', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reason: 'User emergency stop from terminal' })
+      });
+      
+      if (res.ok) {
+        console.log('✅ Emergency stop successful');
+        setActiveAgentCount(0);
+      } else {
+        console.error('❌ Emergency stop failed');
+      }
+    } catch (error) {
+      console.error('❌ Emergency stop error:', error);
+    } finally {
+      setIsStoppingAgents(false);
+    }
+  };
+
   const toggleVoiceRecognition = async () => {
     if (!recognition) {
       xtermRef.current?.writeln('\r\n❌ Speech recognition not supported in this browser');
@@ -3102,6 +3195,31 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
   // Input buffer for when socket is reconnecting (moved to component scope)
   const inputBufferRef = useRef<string[]>([]);
   const isProcessingBufferRef = useRef(false);
+  
+  // Function to flush agent output with two-layer batching (Nov 26, 2025)
+  const flushAgentOutput = useCallback(() => {
+    const term = xtermRef.current;
+    if (!term || agentOutputBufferRef.current.length === 0) return;
+    
+    // Layer 1: Join array chunks (preserves order from setTimeout grouping)
+    const output = agentOutputBufferRef.current.join('');
+    agentOutputBufferRef.current = [];
+    
+    // Layer 2: RAF batch for 60fps rendering (groups multiple flushes)
+    agentRafBatchBufferRef.current += output;
+    
+    if (!agentWriteRAFRef.current) {
+      agentWriteRAFRef.current = requestAnimationFrame(() => {
+        if (term && agentRafBatchBufferRef.current) {
+          term.write(agentRafBatchBufferRef.current);
+          agentRafBatchBufferRef.current = '';
+        }
+        agentWriteRAFRef.current = null;
+      });
+    }
+    
+    agentFlushTimeoutRef.current = null;
+  }, []);
   
   // Function to process buffered input (moved to component scope)
   const processInputBuffer = useCallback(() => {
@@ -3997,7 +4115,18 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
             // Listen for agent terminal data
             const handleAgentData = ({ agentId, data }: { agentId: string; data: string }) => {
               if (agentId === sandboxSession.id && term) {
-                term.write(data);
+                // 🚀 TWO-LAYER BATCHING (Nov 26, 2025): Fixes repeating status lines
+                // Layer 1: setTimeout(10ms) groups rapid ANSI cursor code chunks
+                // Layer 2: RAF batches for 60fps rendering
+                
+                // Push to array buffer (preserves chunk order)
+                agentOutputBufferRef.current.push(data);
+                
+                // Clear existing timeout and schedule new flush
+                if (agentFlushTimeoutRef.current) {
+                  clearTimeout(agentFlushTimeoutRef.current);
+                }
+                agentFlushTimeoutRef.current = setTimeout(flushAgentOutput, 10);
               }
             };
             
@@ -4006,6 +4135,18 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
             // Clean up listener on unmount
             return () => {
               socket.off('agent:terminal:data', handleAgentData);
+              
+              // 🚀 TWO-LAYER CLEANUP (Nov 26, 2025): Cancel both setTimeout and RAF
+              if (agentFlushTimeoutRef.current) {
+                clearTimeout(agentFlushTimeoutRef.current);
+                agentFlushTimeoutRef.current = null;
+              }
+              if (agentWriteRAFRef.current) {
+                cancelAnimationFrame(agentWriteRAFRef.current);
+                agentWriteRAFRef.current = null;
+              }
+              agentOutputBufferRef.current = [];
+              agentRafBatchBufferRef.current = '';
             };
           } else if (sandboxSession.terminalHistory) {
             // Regular sandbox mode - restore history
@@ -4262,6 +4403,14 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
         term.writeln(`\x1b[36m║\x1b[0m  ⏱️  Total: ${totalDurationSec}s | 🔤 ${totalTokensFormatted} tokens | 📁 ${totalFiles} files`.padEnd(66) + '\x1b[36m║\x1b[0m');
         term.writeln('\x1b[36m║\x1b[0m                                                               \x1b[36m║\x1b[0m');
         term.writeln(`\x1b[36m║\x1b[0m  📁 Files at: \x1b[33m.claude-parallel-dev/${teamId?.split('-').slice(0,2).join('-')}-.../\x1b[0m`.padEnd(75) + '\x1b[36m║\x1b[0m');
+        term.writeln('\x1b[36m║\x1b[0m                                                               \x1b[36m║\x1b[0m');
+        term.writeln('\x1b[36m╠═══════════════════════════════════════════════════════════════╣\x1b[0m');
+        term.writeln('\x1b[36m║\x1b[0m  \x1b[32m👀 NEXT STEPS:\x1b[0m                                               \x1b[36m║\x1b[0m');
+        term.writeln('\x1b[36m║\x1b[0m                                                               \x1b[36m║\x1b[0m');
+        term.writeln('\x1b[36m║\x1b[0m     1. Click \x1b[36m👁️  Preview\x1b[0m in StatusBar to review code        \x1b[36m║\x1b[0m');
+        term.writeln('\x1b[36m║\x1b[0m     2. Click \x1b[32m⬇  Download\x1b[0m to export project (ZIP/JSON)   \x1b[36m║\x1b[0m');
+        term.writeln('\x1b[36m║\x1b[0m     3. Review changes before merging to main                \x1b[36m║\x1b[0m');
+        term.writeln('\x1b[36m║\x1b[0m                                                               \x1b[36m║\x1b[0m');
         term.writeln('\x1b[36m╚═══════════════════════════════════════════════════════════════╝\x1b[0m');
         term.writeln('');
         term.write('$ ');
@@ -5135,8 +5284,26 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
     };
   }, [sandboxMode, getCurrentLineFromTerminal]);
 
-  // Handle sandbox creation
-  const handleSandboxAction = async () => {
+  // Handle sandbox panel modal
+  const handleSandboxAction = () => {
+    console.log('🎯 [SANDBOX] Button clicked - Opening Sandbox Panel modal');
+    console.log('🎯 [SANDBOX] Current showSandboxPanel state:', showSandboxPanel);
+    
+    try {
+      setShowSandboxPanel(true);
+      console.log('🎯 [SANDBOX] Modal state set to true');
+      
+      // Verify state was set
+      setTimeout(() => {
+        console.log('🎯 [SANDBOX] Modal should now be visible. Check DOM for modal element.');
+      }, 100);
+    } catch (error) {
+      console.error('❌ [SANDBOX] Error opening sandbox panel:', error);
+    }
+  };
+
+  // Legacy sandbox creation function (kept for reference)
+  const createSandboxDirect = async () => {
     console.log('🎯 handleSandboxAction called from Terminal');
     
     // Reset previous status
@@ -5350,6 +5517,18 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
 
         {/* Right section - All terminal control buttons */}
         <div className="flex items-center gap-2">
+          {/* Emergency Stop - Only when agents running (Nov 26, 2025) */}
+          {activeAgentCount > 0 && (
+            <button
+              onClick={handleEmergencyStop}
+              disabled={isStoppingAgents}
+              className="terminal-control-btn p-1.5 rounded-md bg-red-600 hover:bg-red-700 disabled:opacity-50 transition-all shadow-lg hover:shadow-red-500/50"
+              title={`Emergency stop ${activeAgentCount} running agents`}
+            >
+              🛑
+            </button>
+          )}
+
           {/* AI Team button - Spawn parallel AI agents */}
           <button
             onClick={handleSpawnAgents}
@@ -5367,8 +5546,6 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
               <div className="ml-1 w-2 h-2 bg-coder1-cyan rounded-full animate-pulse" />
             )}
           </button>
-
-
 
           {/* Error Doctor button - matches Memory button style exactly */}
           <button
@@ -5880,6 +6057,35 @@ Context: Running in Coder1 IDE development environment`;
                   Close
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Sandbox Panel Modal */}
+      {showSandboxPanel && (
+        <div className="fixed inset-0 z-40 flex items-center justify-center">
+          {/* Backdrop with blur */}
+          <div 
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={() => setShowSandboxPanel(false)}
+          />
+          
+          {/* Modal Container */}
+          <div className="relative z-50 w-full max-w-4xl h-[80vh] bg-bg-secondary border-2 border-coder1-cyan/50 rounded-lg shadow-2xl overflow-hidden"
+               style={{ boxShadow: '0 0 40px rgba(0, 217, 255, 0.3)' }}>
+            {/* Close Button */}
+            <button
+              onClick={() => setShowSandboxPanel(false)}
+              className="absolute top-4 right-4 z-10 p-2 rounded-full bg-bg-tertiary hover:bg-bg-primary text-text-secondary hover:text-text-primary transition-colors"
+              title="Close Sandbox Panel"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            
+            {/* SandboxPanel Component */}
+            <div className="h-full overflow-hidden">
+              <SandboxPanel onRequestClose={() => setShowSandboxPanel(false)} />
             </div>
           </div>
         </div>
