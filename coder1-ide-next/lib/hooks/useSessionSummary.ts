@@ -14,10 +14,13 @@ interface SessionSummaryState {
   summary: string | null;
   insights: string | null;
   nextSteps: string | null;
+  handoff: string | null;
   error: string | null;
   hasGenerated: boolean;
   progress: number;
   currentStep: string;
+  isGeneratingHandoff: boolean;
+  handoffError: string | null;
 }
 
 interface GenerateSummaryParams {
@@ -33,10 +36,13 @@ export const useSessionSummary = () => {
     summary: null,
     insights: null,
     nextSteps: null,
+    handoff: null,
     error: null,
     hasGenerated: false,
     progress: 0,
-    currentStep: ''
+    currentStep: '',
+    isGeneratingHandoff: false,
+    handoffError: null
   });
 
   const generateSummary = useCallback(async (params: GenerateSummaryParams = {}) => {
@@ -157,10 +163,13 @@ export const useSessionSummary = () => {
       summary: null,
       insights: null,
       nextSteps: null,
+      handoff: null,
       error: null,
       hasGenerated: false,
       progress: 0,
-      currentStep: ''
+      currentStep: '',
+      isGeneratingHandoff: false,
+      handoffError: null
     });
   }, []);
 
@@ -233,23 +242,107 @@ export const useSessionSummary = () => {
     }
   }, [state.summary]);
 
+  const generateHandoff = useCallback(async (sessionId?: string, contextUsage?: { total: number; percentage: number }) => {
+    setState(prev => ({
+      ...prev,
+      isGeneratingHandoff: true,
+      handoffError: null
+    }));
+
+    try {
+      const response = await fetch('/api/handoff/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sessionId: sessionId || `session_${Date.now()}`,
+          contextUsage: contextUsage || { total: 0, percentage: 0 }
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const result = await response.json();
+
+      if (result.success && result.handoff) {
+        setState(prev => ({
+          ...prev,
+          isGeneratingHandoff: false,
+          handoff: result.handoff,
+          handoffError: null
+        }));
+        return true;
+      } else {
+        throw new Error(result.error || 'Failed to generate handoff');
+      }
+    } catch (error) {
+      console.error('Handoff generation error:', error);
+      setState(prev => ({
+        ...prev,
+        isGeneratingHandoff: false,
+        handoffError: error instanceof Error ? error.message : 'Unknown error'
+      }));
+      return false;
+    }
+  }, []);
+
+  const copyHandoffToClipboard = useCallback(async (): Promise<boolean> => {
+    if (!state.handoff) return false;
+
+    try {
+      await navigator.clipboard.writeText(state.handoff);
+      return true;
+    } catch (error) {
+      console.error('Failed to copy handoff to clipboard:', error);
+      return false;
+    }
+  }, [state.handoff]);
+
+  const downloadHandoff = useCallback(() => {
+    if (!state.handoff) return false;
+
+    try {
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+      const filename = `handoff-${timestamp}.md`;
+
+      const blob = new Blob([state.handoff], { type: 'text/markdown' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+      return true;
+    } catch (error) {
+      console.error('Failed to download handoff:', error);
+      return false;
+    }
+  }, [state.handoff]);
+
   return {
     // State
     isGenerating: state.isGenerating,
     summary: state.summary,
     insights: state.insights,
     nextSteps: state.nextSteps,
+    handoff: state.handoff,
     error: state.error,
     hasGenerated: state.hasGenerated,
     progress: state.progress,
     currentStep: state.currentStep,
+    isGeneratingHandoff: state.isGeneratingHandoff,
+    handoffError: state.handoffError,
     
     // Actions
     generateSummary,
     clearSummary,
     copySummaryToClipboard,
     exportSummary,
-    storeInDocumentation
+    storeInDocumentation,
+    generateHandoff,
+    copyHandoffToClipboard,
+    downloadHandoff
   };
 };
 

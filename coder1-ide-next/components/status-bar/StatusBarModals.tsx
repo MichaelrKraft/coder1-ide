@@ -8,23 +8,31 @@
 'use client';
 
 import React, { useState } from 'react';
-import { X, Check, Download, Save, Loader2, FileText } from 'lucide-react';
+import { X, Check, Download, Save, Loader2, FileText, Eye, FileArchive } from 'lucide-react';
 import { useSessionSummary } from '@/lib/hooks/useSessionSummary';
 import { useUIStore } from '@/stores/useUIStore';
 import type { IDEFile } from '@/types';
+import PreviewModal from '@/components/modals/PreviewModal';
+import DownloadProjectModal from '@/components/modals/DownloadProjectModal';
 
 interface StatusBarModalsProps {
   activeFile?: string | null;
   openFiles?: IDEFile[];
   getTerminalHistory?: () => string; // ⚡ CHANGED: Callback instead of string
   terminalCommands?: string[];
+  sessionId?: string;
+  contextUsage?: { total: number; percentage: number };
+  currentTeamId?: string | null;
 }
 
 export default function StatusBarModals({
   activeFile,
   openFiles = [],
   getTerminalHistory,
-  terminalCommands = []
+  terminalCommands = [],
+  sessionId,
+  contextUsage,
+  currentTeamId
 }: StatusBarModalsProps) {
   const terminalHistory = getTerminalHistory ? getTerminalHistory() : '';
   console.log('🔍 [MODAL] StatusBarModals component mounting', {
@@ -34,9 +42,12 @@ export default function StatusBarModals({
     terminalCommandsCount: terminalCommands.length
   });
   
-  const [activeTab, setActiveTab] = useState<'summary' | 'insights' | 'nextSteps'>('summary');
+  const [activeTab, setActiveTab] = useState<'summary' | 'insights' | 'nextSteps' | 'handoff'>('summary');
   const [copySuccess, setCopySuccess] = useState(false);
   const [storeSuccess, setStoreSuccess] = useState(false);
+  const [handoffCopySuccess, setHandoffCopySuccess] = useState(false);
+  const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
+  const [isDownloadModalOpen, setIsDownloadModalOpen] = useState(false);
   const [isStoringInDocs, setIsStoringInDocs] = useState(false);
   const [exportFormat, setExportFormat] = useState<'markdown' | 'json' | 'html' | 'all'>('markdown');
   
@@ -47,15 +58,21 @@ export default function StatusBarModals({
     summary,
     insights,
     nextSteps,
+    handoff,
     error: summaryError,
     hasGenerated,
     progress,
     currentStep,
+    isGeneratingHandoff,
+    handoffError,
     generateSummary,
     clearSummary,
     copySummaryToClipboard,
     exportSummary,
-    storeInDocumentation
+    storeInDocumentation,
+    generateHandoff,
+    copyHandoffToClipboard,
+    downloadHandoff
   } = useSessionSummary();
 
   // Handle modal close
@@ -140,6 +157,7 @@ export default function StatusBarModals({
   };
 
   return (
+    <>
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       <div className="bg-bg-secondary border border-border-default rounded-lg w-full max-w-4xl max-h-[80vh] flex flex-col">
         {/* Modal Header */}
@@ -185,6 +203,16 @@ export default function StatusBarModals({
           >
             Next Steps
           </button>
+          <button
+            onClick={() => setActiveTab('handoff')}
+            className={`px-4 py-2 rounded transition-all ${
+              activeTab === 'handoff' 
+                ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/50' 
+                : 'hover:bg-bg-primary text-text-muted'
+            }`}
+          >
+            Handoff
+          </button>
         </div>
 
         {/* Modal Content */}
@@ -211,6 +239,183 @@ export default function StatusBarModals({
               {activeTab === 'summary' && (summary || 'No summary generated yet. Click regenerate to start.')}
               {activeTab === 'insights' && (insights || 'No insights generated yet.')}
               {activeTab === 'nextSteps' && (nextSteps || 'No next steps generated yet.')}
+              {activeTab === 'handoff' && (
+                <div className="space-y-4">
+                  {!handoff ? (
+                    <div className="space-y-4">
+                      <div className="p-4 bg-yellow-500/10 border border-yellow-500/30 rounded">
+                        <h4 className="text-sm font-medium text-yellow-400 mb-2">What is a handoff?</h4>
+                        <p className="text-sm text-text-muted mb-2">
+                          A handoff creates a comprehensive document that captures:
+                        </p>
+                        <ul className="text-sm text-text-muted space-y-1 ml-4 list-disc">
+                          <li>What you've accomplished in this session</li>
+                          <li>Current state of your project</li>
+                          <li>Any blockers or issues encountered</li>
+                          <li>Prioritized next steps</li>
+                          <li>Complete context for the next agent</li>
+                        </ul>
+                      </div>
+                      {contextUsage && (
+                        <div className="p-3 bg-bg-secondary border border-border-default rounded text-sm">
+                          <div className="flex items-center justify-between">
+                            <span className="text-text-muted">Context Usage:</span>
+                            <span className="text-text-primary font-mono">
+                              {contextUsage.total.toLocaleString()} tokens ({contextUsage.percentage}%)
+                            </span>
+                          </div>
+                          {contextUsage.percentage >= 75 && (
+                            <div className="mt-2 text-xs text-orange-400">
+                              ⚠️ Critical - Handoff recommended
+                            </div>
+                          )}
+                          {contextUsage.percentage >= 50 && contextUsage.percentage < 75 && (
+                            <div className="mt-2 text-xs text-yellow-400">
+                              ⚠️ Warning - Consider handoff soon
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      
+                      {/* Project Actions Section - Always Available */}
+                      <div className="space-y-2">
+                        <h4 className="text-xs font-medium text-text-muted uppercase tracking-wider">Project Actions</h4>
+                        <div className="flex gap-2">
+                          {/* Preview Button */}
+                          <button
+                            onClick={() => setIsPreviewModalOpen(true)}
+                            disabled={!currentTeamId}
+                            className="flex-1 py-2 px-3 bg-purple-500/20 hover:bg-purple-500/30 disabled:bg-gray-500/10 border border-purple-500/50 disabled:border-gray-500/20 rounded text-sm font-medium text-purple-400 disabled:text-gray-400 transition-colors flex items-center justify-center gap-2"
+                            title={currentTeamId ? "Preview AI Team Output - Browse files and preview code" : "No AI Team output to preview"}
+                          >
+                            <Eye className="w-4 h-4" />
+                            Preview Project
+                          </button>
+                          
+                          {/* Download Button */}
+                          <button
+                            onClick={() => setIsDownloadModalOpen(true)}
+                            className="flex-1 py-2 px-3 bg-green-500/20 hover:bg-green-500/30 border border-green-500/50 rounded text-sm font-medium text-green-400 transition-colors flex items-center justify-center gap-2"
+                            title="Download Project - Export project as ZIP or JSON with configurable options"
+                          >
+                            <FileArchive className="w-4 h-4" />
+                            Download Project
+                          </button>
+                        </div>
+                      </div>
+                      
+                      <div className="border-t border-border-default my-4"></div>
+                      
+                      <button
+                        onClick={() => generateHandoff(sessionId, contextUsage)}
+                        disabled={isGeneratingHandoff}
+                        className="w-full py-3 px-4 bg-yellow-500 hover:bg-yellow-600 disabled:bg-yellow-500/50 text-black font-medium text-sm rounded transition-colors flex items-center justify-center gap-2"
+                      >
+                        {isGeneratingHandoff ? (
+                          <>
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            Generating Handoff...
+                          </>
+                        ) : (
+                          <>
+                            <FileText className="w-4 h-4" />
+                            Generate Handoff Document
+                          </>
+                        )}
+                      </button>
+                      {handoffError && (
+                        <div className="p-3 bg-red-500/10 border border-red-500/30 rounded text-sm text-red-400">
+                          Error: {handoffError}
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      <div className="p-3 bg-green-500/10 border border-green-500/30 rounded">
+                        <div className="flex items-center gap-2 text-green-400 text-sm">
+                          <Check className="w-4 h-4" />
+                          <span className="font-medium">Handoff document generated successfully!</span>
+                        </div>
+                      </div>
+                      
+                      {/* Project Actions Section */}
+                      <div className="space-y-2">
+                        <h4 className="text-xs font-medium text-text-muted uppercase tracking-wider">Project Actions</h4>
+                        <div className="flex gap-2">
+                          {/* Preview Button */}
+                          <button
+                            onClick={() => setIsPreviewModalOpen(true)}
+                            disabled={!currentTeamId}
+                            className="flex-1 py-2 px-3 bg-purple-500/20 hover:bg-purple-500/30 disabled:bg-gray-500/10 border border-purple-500/50 disabled:border-gray-500/20 rounded text-sm font-medium text-purple-400 disabled:text-gray-400 transition-colors flex items-center justify-center gap-2"
+                            title={currentTeamId ? "Preview AI Team Output - Browse files and preview code" : "No AI Team output to preview"}
+                          >
+                            <Eye className="w-4 h-4" />
+                            Preview Project
+                          </button>
+                          
+                          {/* Download Button */}
+                          <button
+                            onClick={() => setIsDownloadModalOpen(true)}
+                            className="flex-1 py-2 px-3 bg-green-500/20 hover:bg-green-500/30 border border-green-500/50 rounded text-sm font-medium text-green-400 transition-colors flex items-center justify-center gap-2"
+                            title="Download Project - Export project as ZIP or JSON with configurable options"
+                          >
+                            <FileArchive className="w-4 h-4" />
+                            Download Project
+                          </button>
+                        </div>
+                      </div>
+                      
+                      {/* Handoff Document Section */}
+                      <div className="space-y-2">
+                        <h4 className="text-xs font-medium text-text-muted uppercase tracking-wider">Handoff Document</h4>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={async () => {
+                              const success = await copyHandoffToClipboard();
+                              if (success) {
+                                setHandoffCopySuccess(true);
+                                setTimeout(() => setHandoffCopySuccess(false), 2000);
+                              }
+                            }}
+                            className="flex-1 py-2 px-3 bg-bg-secondary hover:bg-bg-tertiary border border-border-default rounded text-sm font-medium text-text-primary transition-colors flex items-center justify-center gap-2"
+                          >
+                            {handoffCopySuccess ? (
+                              <>
+                                <Check className="w-4 h-4 text-green-400" />
+                                Copied!
+                              </>
+                            ) : (
+                              <>
+                                <FileText className="w-4 h-4" />
+                                Copy Handoff
+                              </>
+                            )}
+                          </button>
+                          <button
+                            onClick={downloadHandoff}
+                            className="flex-1 py-2 px-3 bg-bg-secondary hover:bg-bg-tertiary border border-border-default rounded text-sm font-medium text-text-primary transition-colors flex items-center justify-center gap-2"
+                          >
+                            <Download className="w-4 h-4" />
+                            Download .md
+                          </button>
+                        </div>
+                      </div>
+                      <div className="p-3 bg-bg-secondary border border-border-default rounded">
+                        <h4 className="text-sm font-medium text-text-primary mb-2 flex items-center gap-2">
+                          <FileText className="w-4 h-4" />
+                          Document Preview
+                        </h4>
+                        <div className="max-h-64 overflow-y-auto">
+                          <pre className="text-xs text-text-muted whitespace-pre-wrap font-mono">
+                            {handoff.substring(0, 1000)}
+                            {handoff.length > 1000 && '\n\n... [truncated, see full document above] ...'}
+                          </pre>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -289,5 +494,21 @@ export default function StatusBarModals({
         </div>
       </div>
     </div>
+
+    {/* Preview Modal */}
+    {currentTeamId && (
+      <PreviewModal
+        isOpen={isPreviewModalOpen}
+        onClose={() => setIsPreviewModalOpen(false)}
+        teamId={currentTeamId}
+      />
+    )}
+    
+    {/* Download Project Modal */}
+    <DownloadProjectModal
+      isOpen={isDownloadModalOpen}
+      onClose={() => setIsDownloadModalOpen(false)}
+    />
+    </>
   );
 }
