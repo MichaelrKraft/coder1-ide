@@ -1,23 +1,19 @@
 /**
- * Sandbox API Routes - Working Version for IDE Beta
+ * Sandbox API Routes - Working Version for IDE Beta  
+ * Connected to real tmux service for terminal sessions
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { logger } from '@/lib/logger';
-
-// For now, we'll use a simple in-memory store for demo purposes
-// In production, this would connect to the real tmux service
-let sandboxes = new Map();
-let sandboxCounter = 1;
+import * as tmuxServer from '@/lib/enhanced-tmux-server';
 
 // GET /api/sandbox - List user's sandboxes
 export async function GET(request: NextRequest) {
   try {
     const userId = request.headers.get('x-user-id') || 'default-user';
     
-    const userSandboxes = Array.from(sandboxes.values()).filter(
-      (s: any) => s.userId === userId
-    );
+    // Get sandboxes from real tmux service
+    const userSandboxes = await tmuxServer.listUserSandboxes(userId);
     
     return NextResponse.json({
       success: true,
@@ -52,39 +48,18 @@ export async function POST(request: NextRequest) {
     }
     
     // Check sandbox limit
-    const existingSandboxes = Array.from(sandboxes.values()).filter(
-      (s: any) => s.userId === userId
-    );
-    if (existingSandboxes.length >= 15) {
+    const userSandboxes = await tmuxServer.listUserSandboxes(userId);
+    if (userSandboxes.length >= 15) {
       return NextResponse.json(
         { success: false, error: 'Maximum sandbox limit (15) reached' },
         { status: 400 }
       );
     }
     
-    // Create new sandbox
-    const sandboxId = `sandbox_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-    const sandbox = {
-      id: sandboxId,
-      userId,
-      projectId,
-      path: `/tmp/coder1-workspaces/${userId}/sandboxes/${sandboxId}`,
-      tmuxSession: `sandbox_${sandboxId}`,
-      status: 'ready',
-      createdAt: new Date(),
-      lastActivity: new Date(),
-      resources: {
-        cpuUsage: Math.floor(Math.random() * 30),
-        memoryUsage: Math.floor(Math.random() * 500) + 200,
-        diskUsage: Math.floor(Math.random() * 100) + 50
-      },
-      processes: []
-    };
+    // Create new sandbox using real tmux service
+    const sandbox = await tmuxServer.createSandbox(userId, projectId);
     
-    sandboxes.set(sandboxId, sandbox);
-    sandboxCounter++;
-    
-    logger.info(`Created sandbox: ${sandboxId} for project: ${projectId}`);
+    logger.info(`Created sandbox: ${sandbox.id} for project: ${projectId}`);
     
     return NextResponse.json({
       success: true,
@@ -115,12 +90,13 @@ export async function DELETE(request: NextRequest) {
   try {
     const userId = request.headers.get('x-user-id') || 'default-user';
     
+    // Get user's sandboxes and destroy them
+    const userSandboxes = await tmuxServer.listUserSandboxes(userId);
+    
     const destroyed = [];
-    for (const [id, sandbox] of sandboxes.entries()) {
-      if ((sandbox as any).userId === userId) {
-        sandboxes.delete(id);
-        destroyed.push(id);
-      }
+    for (const sandbox of userSandboxes) {
+      await tmuxServer.destroySandbox(sandbox.id);
+      destroyed.push(sandbox.id);
     }
     
     return NextResponse.json({
