@@ -395,7 +395,7 @@ Create a complete implementation for: "${task}"
 ### Primary Focus
 - ${strategy.primaryDimension.axis}: ${strategy.primaryDimension.value}
 
-### Secondary Focus  
+### Secondary Focus
 - ${strategy.secondaryDimension.axis}: ${strategy.secondaryDimension.value}
 
 ### Distinctive Elements to Include
@@ -409,11 +409,62 @@ ${strategy.targetAudience}
 2. Focus on your unique strategy approach - make it distinctively different
 3. Use modern best practices and clean code
 4. Include any necessary CSS/styling inline or in separate files
-5. Make the implementation production-ready
+5. Make the implementation production-ready and BUILD-READY
+
+## CRITICAL BUILD REQUIREMENTS
+
+**Option A: Static HTML (Recommended for UI/visual tasks)**
+- Create a single index.html file with inline CSS and JS
+- No build step required - works immediately in browser
+- Use this for landing pages, pricing pages, dashboards, UI mockups
+
+**Option B: React/Vite Project (Only if dynamic functionality needed)**
+If you must create a React project, follow these EXACT requirements:
+
+1. **tsconfig.json MUST have:**
+   \`\`\`json
+   {
+     "compilerOptions": {
+       "target": "ES2020",
+       "module": "ESNext",
+       "moduleResolution": "bundler",
+       "jsx": "react-jsx",
+       "strict": true,
+       "skipLibCheck": true
+     },
+     "include": ["src"],
+     "exclude": ["node_modules"]
+   }
+   \`\`\`
+
+2. **vite.config.ts - Keep it minimal:**
+   \`\`\`typescript
+   import { defineConfig } from 'vite'
+   import react from '@vitejs/plugin-react'
+   export default defineConfig({ plugins: [react()] })
+   \`\`\`
+
+3. **package.json MUST have these scripts:**
+   \`\`\`json
+   {
+     "scripts": {
+       "dev": "vite",
+       "build": "vite build",
+       "preview": "vite preview"
+     }
+   }
+   \`\`\`
+
+4. **File structure:**
+   - index.html (at root, references /src/main.tsx)
+   - src/main.tsx (React entry point)
+   - src/App.tsx (main component)
+   - All components in src/ directory
 
 ## Important
 - Create ACTUAL FILES using the Write tool - do not just describe what you would create
 - Your implementation should be immediately runnable
+- For UI/visual tasks, PREFER static HTML over React (simpler, no build issues)
 - Focus on quality over quantity - but be comprehensive
 
 Start creating the files now.`;
