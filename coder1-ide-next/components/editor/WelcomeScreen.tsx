@@ -61,7 +61,7 @@ export function WelcomeScreen({ onDismiss, onBridgeClick }: WelcomeScreenProps =
       <div className="max-w-xl w-full">
         <div className="bg-bg-secondary border-2 border-orange-500 rounded-lg p-3 shadow-[0_0_30px_rgba(249,115,22,0.6)]">
           <h1 className="text-lg font-bold mb-2 text-center bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
-            Connect Claude Code to Coder1
+            4 Steps to Connect your Claude Code
           </h1>
           
           {/* What is the Bridge - Compact Version */}

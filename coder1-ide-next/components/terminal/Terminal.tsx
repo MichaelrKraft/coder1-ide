@@ -5208,6 +5208,15 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
     // Only monitor if we have a session ID and not in sandbox mode
     if (!sessionId || sandboxMode) return;
 
+    // ALPHA FIX (Dec 3, 2025): Disable session-usage polling in production
+    // This feature reads local Claude Code session files which only exist on the local machine
+    // Production users would get 404 errors because the hardcoded path doesn't exist on the server
+    // TODO: Re-enable when bridge can report session data from the user's local machine
+    if (typeof window !== 'undefined' && window.location.hostname !== 'localhost') {
+      console.log('📊 Token monitoring disabled in production (requires local Claude Code session access)');
+      return;
+    }
+
     console.log('📊 Starting Claude Code session token monitoring');
 
     // Poll every 5 seconds for token usage updates

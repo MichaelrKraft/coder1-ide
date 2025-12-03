@@ -516,6 +516,38 @@ export class BridgeManager extends EventEmitter {
   }
 
   /**
+   * Find ANY connected bridge (fallback for alpha when userId doesn't match)
+   * This is a temporary fix for the userId mismatch bug in terminal sessions
+   */
+  findAnyConnectedBridge(): {
+    id: string;
+    userId: string;
+    connectedAt: Date;
+    platform: string;
+    version: string;
+  } | null {
+    if (this.bridges.size === 0) {
+      return null;
+    }
+
+    // Get the first available bridge
+    const firstBridge = Array.from(this.bridges.values())[0];
+    if (!firstBridge) {
+      return null;
+    }
+
+    console.log(`[BridgeManager] Fallback: Found bridge ${firstBridge.id} for user ${firstBridge.userId}`);
+
+    return {
+      id: firstBridge.id,
+      userId: firstBridge.userId,
+      connectedAt: firstBridge.pairedAt,
+      platform: firstBridge.platform,
+      version: firstBridge.version
+    };
+  }
+
+  /**
    * Broadcast a message to all bridges for a user
    */
   broadcastToUser(userId: string, event: string, data: any): void {
