@@ -52,18 +52,28 @@ interface PendingCommand {
   timeoutHandle?: NodeJS.Timeout;
 }
 
+interface PendingFileRequest {
+  resolve: (value: any) => void;
+  reject: (error: Error) => void;
+  timeout: NodeJS.Timeout;
+  operation: string;
+  path: string;
+}
+
 export class BridgeManager extends EventEmitter {
   private bridges: Map<string, BridgeConnection> = new Map();
   private userBridges: Map<string, Set<string>> = new Map();
   private pairingCodes: Map<string, PairingCode> = new Map();
   private pendingCommands: Map<string, PendingCommand> = new Map();
-  
+  private pendingFileRequests: Map<string, PendingFileRequest> = new Map();
+
   // Configuration
   private readonly PAIRING_CODE_LENGTH = 6;
   private readonly PAIRING_CODE_EXPIRY = 5 * 60 * 1000; // 5 minutes
   private readonly HEARTBEAT_INTERVAL = 30 * 1000; // 30 seconds
   private readonly HEARTBEAT_TIMEOUT = 3 * 30 * 1000; // 3 missed heartbeats
   private readonly DEFAULT_COMMAND_TIMEOUT = 60 * 1000; // 60 seconds
+  private readonly DEFAULT_FILE_TIMEOUT = 30 * 1000; // 30 seconds for file operations
   private readonly MAX_COMMANDS_PER_BRIDGE = 5;
   
   constructor() {
@@ -222,6 +232,20 @@ export class BridgeManager extends EventEmitter {
 
     // File operation responses
     socket.on('file:response', (data) => {
+      // Resolve pending file request Promise
+      const pending = this.pendingFileRequests.get(data.requestId);
+      if (pending) {
+        clearTimeout(pending.timeout);
+        this.pendingFileRequests.delete(data.requestId);
+
+        if (data.error) {
+          pending.reject(new Error(data.error));
+        } else {
+          pending.resolve(data.result);
+        }
+      }
+
+      // Also emit event for other listeners
       this.emit('file:response', {
         ...data,
         bridgeId
@@ -306,40 +330,85 @@ export class BridgeManager extends EventEmitter {
 
   /**
    * Request a file operation through a bridge
+   * Returns a Promise that resolves with the file operation result
    */
   async requestFileOperation(
     userId: string,
     operation: 'read' | 'write' | 'list' | 'exists',
     path: string,
     options?: any
-  ): Promise<{ success: boolean; error?: string }> {
-    const bridgeId = this.findAvailableBridge(userId);
-    
-    if (!bridgeId) {
-      return {
-        success: false,
-        error: 'No bridge connected'
-      };
+  ): Promise<any> {
+    // Try user-specific bridge first, then fall back to any connected bridge
+    let bridgeId = this.findAvailableBridge(userId);
+    let bridge = bridgeId ? this.bridges.get(bridgeId) : null;
+
+    // Fallback: find any connected bridge (for alpha testing)
+    if (!bridge) {
+      const fallbackBridge = this.findAnyConnectedBridge();
+      if (fallbackBridge) {
+        bridgeId = fallbackBridge.id;
+        bridge = this.bridges.get(bridgeId);
+        console.log(`[BridgeManager] Using fallback bridge ${bridgeId} for file operation`);
+      }
     }
 
-    const bridge = this.bridges.get(bridgeId);
     if (!bridge) {
-      return {
-        success: false,
-        error: 'Bridge connection lost'
-      };
+      throw new Error('No bridge connected. Please connect Coder1 Bridge CLI.');
     }
 
     const requestId = `file_${Date.now()}_${randomBytes(4).toString('hex')}`;
-    
-    bridge.socket.emit('file:request', {
-      requestId,
-      operation,
-      path,
-      ...options
-    });
 
-    return { success: true };
+    return new Promise((resolve, reject) => {
+      // Set timeout for file operation
+      const timeout = setTimeout(() => {
+        this.pendingFileRequests.delete(requestId);
+        reject(new Error(`File operation timed out: ${operation} ${path}`));
+      }, this.DEFAULT_FILE_TIMEOUT);
+
+      // Track the pending request
+      this.pendingFileRequests.set(requestId, {
+        resolve,
+        reject,
+        timeout,
+        operation,
+        path
+      });
+
+      // Send request to bridge
+      bridge!.socket.emit('file:request', {
+        requestId,
+        operation,
+        path,
+        ...options
+      });
+
+      console.log(`[BridgeManager] Sent file request ${requestId}: ${operation} ${path}`);
+    });
+  }
+
+  /**
+   * Check if any bridge is connected for a user
+   */
+  hasBridgeForUser(userId: string): boolean {
+    const userBridgeIds = this.userBridges.get(userId);
+    if (userBridgeIds && userBridgeIds.size > 0) {
+      return true;
+    }
+    // Fallback: check if any bridge is connected
+    return this.bridges.size > 0;
+  }
+
+  /**
+   * Get bridge for a specific user (or any connected bridge as fallback)
+   */
+  getBridgeForUser(userId: string): BridgeConnection | null {
+    const bridgeId = this.findAvailableBridge(userId);
+    if (bridgeId) {
+      return this.bridges.get(bridgeId) || null;
+    }
+    // Fallback: return any connected bridge
+    const fallback = this.findAnyConnectedBridge();
+    return fallback ? this.bridges.get(fallback.id) || null : null;
   }
 
   /**

@@ -3,6 +3,7 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import { withFileMiddleware } from '@/lib/api-middleware';
 import { logger } from '@/lib/logger';
+import { bridgeManager } from '@/services/bridge-manager';
 
 // Get project root directory - SECURITY: Restricts to user workspace only
 const getProjectRoot = () => {
@@ -42,8 +43,9 @@ async function fileWriteHandler({ req }: { req: NextRequest }): Promise<NextResp
     const request = req;
     try {
         const body = await request.json();
-        const { path: filePath, content } = body;
-        
+        const { path: filePath, content, useBridge: useBridgeParam } = body;
+        const useBridge = useBridgeParam !== false; // Default to true
+
         if (!filePath || content === undefined) {
             return NextResponse.json(
                 {
@@ -53,13 +55,56 @@ async function fileWriteHandler({ req }: { req: NextRequest }): Promise<NextResp
                 { status: 400 }
             );
         }
-        
+
+        // Check if bridge is connected and should be used
+        const userId = 'default-user';
+
+        if (useBridge && bridgeManager.hasBridgeForUser(userId)) {
+            // Route through bridge to user's local machine
+            try {
+                console.log(`🌉 [Bridge] Routing file write request through bridge: ${filePath}`);
+
+                await bridgeManager.requestFileOperation(
+                    userId,
+                    'write',
+                    filePath,
+                    { content }
+                );
+
+                return NextResponse.json({
+                    success: true,
+                    message: 'File saved successfully',
+                    path: filePath,
+                    server: 'bridge',
+                    source: 'local-machine'
+                });
+            } catch (bridgeError) {
+                console.error('🌉 [Bridge] File write error:', bridgeError);
+
+                const errorMsg = bridgeError instanceof Error ? bridgeError.message : 'Bridge error';
+                if (errorMsg.includes('No bridge connected') || errorMsg.includes('disconnected')) {
+                    return NextResponse.json({
+                        success: false,
+                        error: 'Bridge connection lost',
+                        message: 'Your local machine is no longer connected. Please reconnect the bridge CLI.',
+                        reconnectUrl: '/bridge-setup'
+                    }, { status: 503 });
+                }
+
+                // For other bridge errors, return the error
+                return NextResponse.json({
+                    success: false,
+                    error: errorMsg
+                }, { status: 500 });
+            }
+        }
+
+        // Fallback: Use server filesystem
         const projectRoot = getProjectRoot();
         const fullPath = path.resolve(projectRoot, filePath);
-        
+
         // Enhanced security checks
         if (!fullPath.startsWith(projectRoot)) {
-            // logger?.error(`❌ Path traversal attempt: ${filePath}`);
             return NextResponse.json(
                 {
                     success: false,
@@ -68,10 +113,9 @@ async function fileWriteHandler({ req }: { req: NextRequest }): Promise<NextResp
                 { status: 403 }
             );
         }
-        
+
         // Check file size
         if (content && Buffer.byteLength(content, 'utf8') > MAX_FILE_SIZE) {
-            // logger?.error(`❌ File too large: ${filePath} (${Buffer.byteLength(content, 'utf8')} bytes)`);
             return NextResponse.json(
                 {
                     success: false,
@@ -80,13 +124,12 @@ async function fileWriteHandler({ req }: { req: NextRequest }): Promise<NextResp
                 { status: 413 }
             );
         }
-        
+
         // Check for blocked files
         const fileName = path.basename(filePath);
         const relativePath = path.relative(projectRoot, fullPath);
-        
+
         if (BLOCKED_FILES.some(blocked => fileName.includes(blocked) || relativePath.includes(blocked))) {
-            // logger?.error(`❌ Write to sensitive file blocked: ${filePath}`);
             return NextResponse.json(
                 {
                     success: false,
@@ -95,19 +138,13 @@ async function fileWriteHandler({ req }: { req: NextRequest }): Promise<NextResp
                 { status: 403 }
             );
         }
-        
-        // SECURITY: Workspace restriction - no need to check allowed paths
-        // since getProjectRoot() already restricts to workspace directory
-        // All files within workspace are allowed for writing
-        
+
         // Ensure directory exists
         const dirPath = path.dirname(fullPath);
         await fs.mkdir(dirPath, { recursive: true });
-        
+
         await fs.writeFile(fullPath, content, 'utf8');
-        
-        // logger?.info(`📝 [Unified] File written: ${filePath} (${Buffer.byteLength(content, 'utf8')} bytes)`);
-        
+
         // Track file operation in project tracker
         try {
             const { projectTracker } = await import('@/services/project-tracker');
@@ -115,16 +152,16 @@ async function fileWriteHandler({ req }: { req: NextRequest }): Promise<NextResp
         } catch (err) {
             // Project tracker not available
         }
-        
+
         return NextResponse.json({
             success: true,
             message: 'File saved successfully',
             path: filePath,
-            server: 'unified-server'
+            server: 'unified-server',
+            source: 'server-sandbox'
         });
-        
+
     } catch (error) {
-        // logger?.error('❌ [Unified] File write error:', error);
         return NextResponse.json(
             {
                 success: false,
