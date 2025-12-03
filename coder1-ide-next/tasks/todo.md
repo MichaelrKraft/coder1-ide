@@ -1,54 +1,58 @@
-# Fix Claude Tab Initialization Hang - COMPLETED
+# Task: Match Coder1 Homepage UI to ReddRider UI Style
 
-## Problem
-Alpha users see "Agent initializing... Please wait" stuck indefinitely in Claude tabs.
+## Current State Analysis
 
-## Root Cause Analysis
-1. Claude tabs have `agentMode=true` (set when tab name starts with "Claude ")
-2. At `Terminal.tsx:2099`, the condition `!agentMode` **prevented Claude tabs from calling `connectToBackend()`**
-3. Without `connectToBackend()`, no PTY session is created on the server
-4. When `claude\r` command is sent at line 1441-1445 via `terminal:input`, it goes to a non-existent session
-5. Server silently fails (no session found) → user stuck at "Agent initializing..."
+### ReddRider UI (Target Style)
+- Clean, minimal light gray gradient background (`#d6dbdc` to white)
+- Centered layout with generous whitespace
+- Single prominent title with emoji (`🤖 Reddit Automation Platform`)
+- Simple subtitle text
+- One prominent orange CTA button (`Go to Dashboard →`)
+- 6 feature cards in a 3x2 grid layout
+- Cards have light gray borders, padding, emoji icons
+- Monospace font (`font-mono`)
+- Footer with tech stack info
+- NO complex animations, NO gradients in buttons, NO glass morphism
 
-## Solution
-Claude tabs need their own PTY session - they should NOT be treated as "agent terminals".
+### Coder1 Current UI
+- Complex dark background with dot-grid pattern
+- Animated logo with glow effects
+- Typewriter text animation cycling through phrases
+- Gradient text subtitle
+- 3 glass-morphic buttons with complex hover states
+- Heavy use of blur effects and shadows
+- Multiple entrance animations
 
-Agent terminals (from AI Team) get output from CLI Puppeteer, but Claude tabs need a regular bash PTY that the user types into.
+## Plan
 
-## Tasks
-- [x] Investigate root cause of Claude tab initialization hang
-- [x] Fix Claude tabs to create PTY session
-- [x] Test the fix locally
-- [x] Push fix to GitHub
+### Phase 1: Simplify Background
+- [ ] Remove dot-grid background
+- [ ] Remove FaultyTerminal animation
+- [ ] Add simple light gray gradient background (like ReddRider)
 
-## Changes Made
+### Phase 2: Simplify Header
+- [ ] Remove typewriter animation - use static title
+- [ ] Remove logo glow animation  
+- [ ] Simplify title styling to match ReddRider
 
-### 1. Terminal.tsx:2099-2107 - Allow Claude tabs to connect to backend
-```typescript
-// BEFORE:
-if (terminalReady && xtermRef.current && !isConnected && !connectionInProgressRef.current && !agentMode) {
+### Phase 3: Update Button Styling
+- [ ] Remove glass-morphism effects
+- [ ] Add single prominent CTA button (solid color like ReddRider orange)
+- [ ] Keep secondary actions but simplify their styling
 
-// AFTER:
-const isClaudeTab = agentMode && agentSession?.name?.startsWith('Claude ');
-if (terminalReady && xtermRef.current && !isConnected && !connectionInProgressRef.current && (!agentMode || isClaudeTab)) {
-```
+### Phase 4: Add Feature Cards Grid
+- [ ] Create 6 feature cards matching ReddRider layout
+- [ ] Use emoji + title + description format
+- [ ] Light border styling, no shadows
 
-### 2. Terminal.tsx:2256-2262 - Skip agent terminal connection for Claude tabs
-```typescript
-// Added after agentMode check:
-const isClaudeTab = agentSession.name?.startsWith('Claude ');
-if (isClaudeTab) {
-  console.log('🔄 [AGENT-DIAGNOSTIC] Claude tab detected - using regular PTY, skipping agent terminal connection');
-  return;
-}
-```
+### Phase 5: Clean Up
+- [ ] Remove complex hover animations
+- [ ] Use monospace font for headers
+- [ ] Add tech stack footer
 
-## Why This Works
-- Claude tabs now create their own PTY session via `connectToBackend()`
-- This gives them a valid `sessionId` when sending `claude\r` command
-- Server receives the command on a real PTY and executes Claude CLI
-- Output flows back via `terminal:data` event (regular terminal flow)
-- Claude tabs skip the agent terminal connection setup (which was designed for AI Team agents)
+## Files to Modify
+1. `/components/HeroSection.tsx` - Main UI changes
+2. `/app/globals.css` - Background and base styles (if needed)
 
-## Date Completed
-December 2, 2025
+## Review
+_To be completed after implementation_
