@@ -456,8 +456,16 @@ async function routeSlashCommandToClaudeCode(sessionId, slashCommand, claudeProm
     
     // Get user ID from session
     const userId = session.userId || 'default';
-    const bridgeStatus = bridgeManager.getBridgeStatus?.(userId);
-    
+    let bridgeStatus = bridgeManager.getBridgeStatus?.(userId);
+
+    // ALPHA FIX (Dec 3, 2025): Fallback to ANY connected bridge
+    if (!bridgeStatus?.connected && bridgeManager.findAnyConnectedBridge) {
+      const anyBridge = bridgeManager.findAnyConnectedBridge();
+      if (anyBridge) {
+        bridgeStatus = { connected: true, bridges: [anyBridge] };
+      }
+    }
+
     if (!bridgeStatus?.connected) {
       socket.emit('terminal:data', {
         id: sessionId,
@@ -1947,8 +1955,18 @@ app.prepare().then(() => {
             } else {
               // Get user ID from socket or session (simplified for now)
               const userId = session.userId || 'default';
-              const bridgeStatus = bridgeManager.getBridgeStatus?.(userId);
-            
+              let bridgeStatus = bridgeManager.getBridgeStatus?.(userId);
+
+              // ALPHA FIX (Dec 3, 2025): If no bridge for this userId, try to find ANY connected bridge
+              // This is needed because terminal sessions have userId='default' but bridges register with JWT userId
+              if (!bridgeStatus?.connected && bridgeManager.findAnyConnectedBridge) {
+                const anyBridge = bridgeManager.findAnyConnectedBridge();
+                if (anyBridge) {
+                  console.log(`[Terminal] Fallback: Using bridge ${anyBridge.id} (registered for user ${anyBridge.userId})`);
+                  bridgeStatus = { connected: true, bridges: [anyBridge] };
+                }
+              }
+
               if (bridgeStatus?.connected) {
               // Bridge is connected! Route command through bridge
               console.log('[Terminal] Routing claude command through bridge');
@@ -2263,8 +2281,16 @@ app.prepare().then(() => {
               // Check if bridge is available
               if (bridgeManager) {
                 const userId = session.userId || 'default';
-                const bridgeStatus = bridgeManager.getBridgeStatus?.(userId);
-                
+                let bridgeStatus = bridgeManager.getBridgeStatus?.(userId);
+
+                // ALPHA FIX (Dec 3, 2025): Fallback to ANY connected bridge
+                if (!bridgeStatus?.connected && bridgeManager.findAnyConnectedBridge) {
+                  const anyBridge = bridgeManager.findAnyConnectedBridge();
+                  if (anyBridge) {
+                    bridgeStatus = { connected: true, bridges: [anyBridge] };
+                  }
+                }
+
                 if (bridgeStatus?.connected) {
                   // Send to Claude through bridge
                   socket.emit('terminal:data', {
