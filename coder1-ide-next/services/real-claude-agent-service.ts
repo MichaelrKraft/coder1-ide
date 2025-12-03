@@ -48,7 +48,7 @@ export interface RealTeam {
 class RealClaudeAgentService {
   private apiKey: string;
   private baseURL: string = 'https://api.anthropic.com/v1';
-  private model: string = 'claude-3-5-sonnet-20241022';
+  private model: string = 'claude-sonnet-4-5-20250929';
   private activeTeams: Map<string, RealTeam> = new Map();
   private conversationHistory: ClaudeMessage[] = [];
 

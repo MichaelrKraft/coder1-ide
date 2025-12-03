@@ -181,7 +181,7 @@ Be conversational and helpful, but focus on getting specific, actionable details
 
     try {
       const response = await this.anthropic.messages.create({
-        model: 'claude-3-5-sonnet-20241022',
+        model: 'claude-sonnet-4-5-20250929',
         max_tokens: 1024,
         messages: this.conversationHistory,
         system: systemPrompt
@@ -331,7 +331,7 @@ Format as structured data.`;
 
     try {
       const response = await this.anthropic.messages.create({
-        model: 'claude-3-5-sonnet-20241022',
+        model: 'claude-sonnet-4-5-20250929',
         max_tokens: 1024,
         messages: [{
           role: 'user',
