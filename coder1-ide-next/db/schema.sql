@@ -25,6 +25,9 @@ CREATE TABLE IF NOT EXISTS context_sessions (
     files_modified TEXT NULL, -- JSON array of file paths
     terminal_commands TEXT NULL, -- JSON array of commands
     success_rating REAL NULL, -- 0.0 to 1.0 success score
+    api_calls INTEGER DEFAULT 0, -- Track API calls (Claude API)
+    cli_calls INTEGER DEFAULT 0, -- Track CLI Puppeteer calls (cost-free)
+    quality_score REAL DEFAULT 0, -- 0-100 quality score
     FOREIGN KEY (folder_id) REFERENCES context_folders(id) ON DELETE CASCADE
 );
 

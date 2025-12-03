@@ -42,6 +42,30 @@ export function filterThinkingAnimations(terminalData: string): string {
     filtered = filtered.replace(pattern, '');
   }
   
+  // 🚨 CRITICAL FIX (Nov 26, 2025): Pattern for "bypass permissions on (shift+tab to cycle)"
+  // Similar to plan mode patterns above
+  const bypassPermissionsPatterns = [
+    // Match exact "bypass permissions on (shift+tab to cycle)" with forward arrows and any whitespace
+    /^\s*⏵⏵?\s*bypass permissions on\s*\(shift\+tab to cycle\)\s*$/gim,
+    // Match without arrows
+    /^\s*bypass permissions on\s*\(shift\+tab to cycle\)\s*$/gim,
+    // Match with potential ANSI codes around the text
+    /\u001b\[[0-9;]*m?\s*⏵⏵?\s*bypass permissions on\s*\(shift\+tab to cycle\)\s*\u001b\[[0-9;]*m?/gi,
+    // Match indented versions
+    /^[ \t]+⏵⏵?\s*bypass permissions on\s*\(shift\+tab to cycle\)\s*$/gim,
+    // Match with carriage returns and newlines
+    /\r?\n?\s*⏵⏵?\s*bypass permissions on\s*\(shift\+tab to cycle\)\s*\r?\n?/gi,
+    // Aggressive catch-all: any line containing this phrase
+    /.*bypass permissions on\s*\(shift\+tab to cycle\).*/gi,
+    // Match the box drawing characters often around this message
+    /╰──+╯\s*\r?\n\s*⏵⏵?\s*bypass permissions on\s*\(shift\+tab to cycle\).*/gi
+  ];
+  
+  // Apply bypass permissions filtering
+  for (const pattern of bypassPermissionsPatterns) {
+    filtered = filtered.replace(pattern, '');
+  }
+  
   // Remove thinking animation patterns with all their ANSI codes
   // This matches lines with spinner symbols followed by "Thinking" (with possible color codes in between)
   const thinkingPatterns = [

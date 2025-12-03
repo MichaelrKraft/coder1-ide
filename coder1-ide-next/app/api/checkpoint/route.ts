@@ -154,11 +154,12 @@ export async function POST(request: NextRequest) {
     
     // Create session metadata if it doesn't exist
     const sessionMetadataPath = path.join(sessionDir, 'metadata.json');
+    const now = new Date();
+    
     try {
       await fs.access(sessionMetadataPath);
     } catch {
       // Session metadata doesn't exist, create it with intelligent naming
-      const now = new Date();
       const hour = now.getHours();
       const timeOfDay = hour < 6 ? 'Late Night' : 
                        hour < 12 ? 'Morning' : 
@@ -176,6 +177,33 @@ export async function POST(request: NextRequest) {
         lastUpdated: now.toISOString()
       };
       await fs.writeFile(sessionMetadataPath, JSON.stringify(sessionMetadata, null, 2));
+    }
+    
+    // ALWAYS ensure session exists in database (moved outside metadata check)
+    // This fixes the issue where existing sessions never get database records
+    try {
+      const currentProjectPath = process.cwd();
+      const folder = await contextDatabase.getOrCreateFolder(currentProjectPath);
+      
+      // Check if session exists in database
+      const db = await getDatabase();
+      const existingSession = db.prepare('SELECT id FROM context_sessions WHERE id = ?').get(sessionId);
+      
+      if (!existingSession) {
+        // Session doesn't exist in database - create it now
+        db.prepare(`
+          INSERT INTO context_sessions (id, folder_id, start_time)
+          VALUES (?, ?, ?)
+        `).run(sessionId, folder.id, now.toISOString());
+        console.log(`✅ Created session in database: ${sessionId}`);
+      } else {
+        console.log(`ℹ️ Session already exists in database: ${sessionId}`);
+      }
+      
+      closeDatabaseSafely(db);
+    } catch (dbError) {
+      console.warn('⚠️ Could not create session in database:', dbError);
+      // Continue anyway - checkpoint will still save to JSON
     }
     
     // ENHANCED: Query conversation history from context database BEFORE creating checkpoint
@@ -235,9 +263,15 @@ export async function POST(request: NextRequest) {
       console.log(`✂️ Truncated oversized terminal history to prevent page freeze`);
     }
     
-    if (rawTerminalHistory.length === 0) {
-      console.warn(`⚠️ CHECKPOINT WARNING: Creating checkpoint with EMPTY terminal history!`);
-      console.warn(`⚠️ This checkpoint will have no terminal content when restored`);
+    // Skip checkpoint creation if terminal history is empty or too small
+    if (rawTerminalHistory.length < 100) {
+      console.log(`⏭️ Skipping checkpoint creation: Terminal history too small (${rawTerminalHistory.length} chars < 100 chars minimum)`);
+      return NextResponse.json({
+        success: false,
+        skipped: true,
+        reason: 'Terminal history too small',
+        message: 'Checkpoint not created: Terminal history must have at least 100 characters'
+      });
     }
     
     console.log(`🔄 Starting async filtering of ${rawTerminalHistory.length} characters...`);
@@ -386,8 +420,18 @@ export async function GET(request: NextRequest) {
       try {
         const sessions = await fs.readdir(sessionsDir);
         if (sessions.length > 0) {
-          // Get the most recent session (assuming folder names have timestamps)
-          const latestSession = sessions.sort().pop();
+          // Get the most recent session by extracting timestamp from session ID
+          // Session IDs are like: session_1764136829642_pf9dgiyq6wq
+          const latestSession = sessions
+            .filter(s => s.startsWith('session_'))
+            .map(s => {
+              const match = s.match(/session_(\d+)_/);
+              return {
+                name: s,
+                timestamp: match ? parseInt(match[1]) : 0
+              };
+            })
+            .sort((a, b) => b.timestamp - a.timestamp)[0]?.name;
           const checkpointsBaseDir = path.join(sessionsDir, latestSession!, 'checkpoints');
           
           try {
