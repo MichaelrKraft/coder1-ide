@@ -12,6 +12,29 @@ import os from 'os';
 // Force dynamic rendering for this route (uses request.url)
 export const dynamic = 'force-dynamic';
 
+// Cache to reduce file system scanning (30-second TTL)
+const usageCache = new Map<string, { data: any; timestamp: number }>();
+const CACHE_TTL = 30000; // 30 seconds
+
+function getCachedUsage(cwd: string) {
+  const cached = usageCache.get(cwd);
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+    console.log('📊 [API] Returning cached usage (age:', Date.now() - cached.timestamp, 'ms)');
+    return cached.data;
+  }
+  return null;
+}
+
+function setCachedUsage(cwd: string, data: any) {
+  usageCache.set(cwd, { data, timestamp: Date.now() });
+  // Clean up old entries (keep only last 10 projects)
+  if (usageCache.size > 10) {
+    const oldest = Array.from(usageCache.entries())
+      .sort((a, b) => a[1].timestamp - b[1].timestamp)[0];
+    usageCache.delete(oldest[0]);
+  }
+}
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
@@ -26,7 +49,18 @@ export async function GET(request: NextRequest) {
 
     console.log('📊 [API] Getting session usage for cwd:', cwd);
     
-    // Debug: Check what directory we're looking for
+    // Check cache first (30-second TTL)
+    const cachedUsage = getCachedUsage(cwd);
+    if (cachedUsage) {
+      return NextResponse.json({
+        success: true,
+        cached: true,
+        usage: cachedUsage
+      });
+    }
+    
+    // Cache miss - scan filesystem
+    console.log('📊 [API] Cache miss - scanning filesystem');
     const projectDir = getClaudeProjectDir(cwd);
     console.log('📊 [API] Project dir would be:', projectDir);
     console.log('📊 [API] Directory exists?:', fs.existsSync(projectDir));
@@ -38,6 +72,17 @@ export async function GET(request: NextRequest) {
     
     const usage = getCurrentSessionUsage(cwd);
     console.log('📊 [API] Usage result:', usage);
+    
+    // Store in cache for next request
+    if (usage) {
+      setCachedUsage(cwd, {
+        input: usage.input,
+        output: usage.output,
+        total: usage.total,
+        cacheCreation: usage.cacheCreation,
+        cacheRead: usage.cacheRead
+      });
+    }
 
     if (!usage) {
       return NextResponse.json(

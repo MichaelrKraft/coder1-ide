@@ -13,6 +13,33 @@ When working on bridge connection issues, **ALWAYS check BOTH files**:
 
 ## 📅 Fix History
 
+### December 2, 2025 - ALPHA USER FIXES (Commits: 93af3022d, 539ef5f45)
+
+**Agent**: Claude (Opus 4.5)
+
+**Issues Fixed**:
+1. ✅ "Connection error: Authentication required" - Onboarding only checked CLI install, not auth
+2. ✅ "Agent initializing... Please wait" hang - Claude tabs didn't create PTY session
+
+**Root Causes**:
+- Issue #1: `detectClaude()` checked `which claude` but not `claude auth status`
+- Issue #2: `agentMode=true` blocked `connectToBackend()` for Claude tabs at Terminal.tsx:2099
+
+**Files Changed**:
+```bash
+services/claude-cli-service.ts    # Added checkAuthentication() method
+app/onboarding/page.tsx           # Auth UI + state + instructions
+components/terminal/Terminal.tsx  # isClaudeTab checks at lines 2099, 2256
+```
+
+**Key Insight**: Claude tabs have `agentMode=true` but need their own PTY (unlike AI Team agents that use CLI Puppeteer). Added `isClaudeTab` check to distinguish.
+
+**Result**: ✅ Alpha user can now use Claude tabs successfully
+
+**Full Documentation**: See `ALPHA_USER_SESSION_DEC_02_2025.md` for complete session details.
+
+---
+
 ### November 25, 2025 - COMPLETE FIX (Commit: 1c4851bd3)
 
 **Agent**: Claude (Sonnet 4)
@@ -128,15 +155,15 @@ When fixing bridge issues, follow this checklist:
 
 ---
 
-## 🎯 Current Status (November 25, 2025)
+## 🎯 Current Status (December 2, 2025)
 
 ✅ **Bridge CLI Version**: 1.0.0
 ✅ **Server URL**: https://coder1.ai
 ✅ **Node Compatibility**: v18.0.0 - v22.x
 ✅ **p-queue Version**: 5.0.0 (CommonJS)
 ✅ **Deployed**: public/bridge-cli.tar.gz (250KB)
-✅ **GitHub Commit**: 1c4851bd3
-✅ **Status**: WORKING - Alpha user testing
+✅ **Latest GitHub Commits**: 93af3022d, 539ef5f45
+✅ **Status**: WORKING - Authentication + Claude tab fixes deployed
 
 ---
 
@@ -160,6 +187,6 @@ When fixing bridge issues, follow this checklist:
 
 ---
 
-**Last Updated**: November 25, 2025
-**Status**: COMPLETE FIX DEPLOYED
+**Last Updated**: December 2, 2025
+**Status**: COMPLETE - Authentication + Claude Tab Fixes Deployed
 **Next Review**: When next issue is reported

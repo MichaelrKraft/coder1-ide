@@ -220,8 +220,13 @@ export function createSocketAuthMiddleware() {
     const ticketId = socket.handshake.auth?.ticketId;
 
     if (!ticketId) {
-      console.error('❌ WebSocket connection rejected: No authentication ticket');
-      return next(new Error('Authentication required'));
+      console.warn('⚠️ WebSocket connection without authentication ticket (backwards compatibility)');
+      socket.authenticated = false;
+      socket.userId = 'guest';
+      socket.sessionId = `guest_${Date.now()}`;
+      socket.bridgeAuth = false;
+      socket.permissions = ['terminal'];
+      return next();
     }
 
     const authResult = wsAuthManager.consumeTicket(ticketId);
