@@ -87,6 +87,21 @@ class AgentCoordinator extends EventEmitter {
     // Setup puppeteer output listener to route to terminal manager
     this.setupPuppeteerListeners();
     
+    // 🔧 FIX (Nov 26, 2025): Auto-cleanup completed/failed workflows after 5 minutes
+    // Prevents memory leaks from workflows that weren't properly cleaned up
+    setInterval(() => {
+      const now = Date.now();
+      for (const [sessionId, workflow] of this.activeWorkflows) {
+        if (workflow.status === 'completed' || workflow.status === 'failed') {
+          const age = now - (workflow.endTime?.getTime() || now);
+          if (age > 300000) { // 5 minutes
+            console.log(`🧹 Auto-cleaning old ${workflow.status} workflow: ${sessionId} (age: ${Math.round(age/1000)}s)`);
+            this.activeWorkflows.delete(sessionId);
+          }
+        }
+      }
+    }, 60000); // Check every minute
+    
     console.log('🎭 Agent Coordinator initialized');
   }
   
@@ -686,6 +701,12 @@ class AgentCoordinator extends EventEmitter {
       console.log(`✅ Workflow completed: ${sessionId}`);
       
       this.emit('workflowCompleted', workflowSession);
+      
+      // 🔧 FIX (Nov 26, 2025): Remove completed workflows from memory
+      // Prevents zombie workflows from auto-resuming on page refresh
+      await this.cleanupWorkflowAgents(sessionId);
+      this.activeWorkflows.delete(sessionId);
+      console.log(`✅ Workflow fully cleaned up and removed from memory: ${sessionId}`);
       
       return {
         sessionId,
@@ -1407,6 +1428,10 @@ Please provide:
     );
 
     await Promise.all(stopPromises);
+    
+    // 🔧 FIX (Nov 26, 2025): Remove from map after cleanup
+    this.activeWorkflows.delete(sessionId);
+    console.log(`🧹 Workflow removed from active map: ${sessionId}`);
   }
 
   /**
