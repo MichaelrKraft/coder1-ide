@@ -69,17 +69,38 @@ class APIKeyStorageClass {
    */
   async saveKey(provider: APIProvider, key: string): Promise<void> {
     try {
-      const keys = this.getAllKeys();
-      keys[provider] = this.encrypt(key);
+      console.log(`[APIKeyStorage] 💾 Saving ${provider} key...`);
       
-      localStorage.setItem(this.STORAGE_KEY, JSON.stringify(keys));
+      const keys = this.getAllKeys();
+      console.log('[APIKeyStorage] 📋 Existing keys:', Object.keys(keys));
+      
+      const encryptedKey = this.encrypt(key);
+      keys[provider] = encryptedKey;
+      
+      const jsonData = JSON.stringify(keys);
+      console.log('[APIKeyStorage] 📦 Saving to localStorage:', {
+        storageKey: this.STORAGE_KEY,
+        provider,
+        encryptedKeyLength: encryptedKey.length,
+        totalDataLength: jsonData.length
+      });
+      
+      localStorage.setItem(this.STORAGE_KEY, jsonData);
+      
+      // Verify it was saved
+      const verification = localStorage.getItem(this.STORAGE_KEY);
+      console.log('[APIKeyStorage] 🔍 Verification:', {
+        saved: !!verification,
+        length: verification?.length
+      });
       
       // Dispatch custom event for same-tab updates
+      console.log('[APIKeyStorage] 📡 Dispatching api-keys-updated event');
       window.dispatchEvent(new Event('api-keys-updated'));
       
-      console.log(`✅ [APIKeyStorage] Saved ${provider} key`);
+      console.log(`✅ [APIKeyStorage] Saved ${provider} key successfully`);
     } catch (error) {
-      console.error('[APIKeyStorage] Error saving key:', error);
+      console.error('[APIKeyStorage] ❌ Error saving key:', error);
       throw new Error(`Failed to save ${provider} API key`);
     }
   }
@@ -93,6 +114,13 @@ class APIKeyStorageClass {
       const encryptedKey = keys[provider];
       
       if (!encryptedKey) {
+        // Fallback to environment variables
+        if (provider === 'glm') {
+          return process.env.NEXT_PUBLIC_GLM_API_KEY || null;
+        }
+        if (provider === 'anthropic') {
+          return process.env.NEXT_PUBLIC_ANTHROPIC_API_KEY || null;
+        }
         return null;
       }
       
@@ -128,7 +156,21 @@ class APIKeyStorageClass {
    */
   hasKey(provider: APIProvider): boolean {
     const keys = this.getAllKeys();
-    return !!(keys[provider] && keys[provider].length > 0);
+    const hasInLocalStorage = !!(keys[provider] && keys[provider].length > 0);
+    
+    if (hasInLocalStorage) {
+      return true;
+    }
+    
+    // Fallback to environment variables
+    if (provider === 'glm') {
+      return !!(process.env.NEXT_PUBLIC_GLM_API_KEY);
+    }
+    if (provider === 'anthropic') {
+      return !!(process.env.NEXT_PUBLIC_ANTHROPIC_API_KEY);
+    }
+    
+    return false;
   }
   
   /**

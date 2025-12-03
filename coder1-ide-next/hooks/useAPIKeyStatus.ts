@@ -27,17 +27,27 @@ export function useAPIKeyStatus(): APIKeyStatus {
   });
 
   useEffect(() => {
+    console.log('[useAPIKeyStatus] 🚀 Hook mounted, initial check');
     checkAPIKeys();
     
     // Listen for storage events (key updates in other tabs)
-    window.addEventListener('storage', handleStorageChange);
+    const storageHandler = (e: StorageEvent) => {
+      console.log('[useAPIKeyStatus] 📡 Storage event received:', e.key);
+      handleStorageChange(e);
+    };
+    window.addEventListener('storage', storageHandler);
     
     // Listen for custom events (key updates in same tab)
-    window.addEventListener('api-keys-updated', checkAPIKeys);
+    const customHandler = () => {
+      console.log('[useAPIKeyStatus] 📡 api-keys-updated event received');
+      checkAPIKeys();
+    };
+    window.addEventListener('api-keys-updated', customHandler);
     
     return () => {
-      window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('api-keys-updated', checkAPIKeys);
+      console.log('[useAPIKeyStatus] 💀 Hook unmounting, removing listeners');
+      window.removeEventListener('storage', storageHandler);
+      window.removeEventListener('api-keys-updated', customHandler);
     };
   }, []);
 
@@ -49,15 +59,29 @@ export function useAPIKeyStatus(): APIKeyStatus {
 
   const checkAPIKeys = () => {
     try {
+      console.log('[useAPIKeyStatus] 🔍 checkAPIKeys() called');
+      
       // Check localStorage for configured keys
       const keysData = localStorage.getItem('coder1-api-keys');
       const preference = localStorage.getItem('coder1-api-key-preference') as 'glm' | 'anthropic' | 'auto' || 'auto';
+      
+      console.log('[useAPIKeyStatus] 📦 localStorage data:', {
+        keysData: keysData ? '(exists)' : '(null)',
+        keysLength: keysData?.length,
+        preference
+      });
       
       let hasGLM = false;
       let hasAnthropic = false;
       
       if (keysData) {
         const keys = JSON.parse(keysData);
+        console.log('[useAPIKeyStatus] 🔓 Parsed keys:', {
+          hasGlmKey: !!keys.glm,
+          hasAnthropicKey: !!keys.anthropic,
+          glmKeyLength: keys.glm?.length,
+          anthropicKeyLength: keys.anthropic?.length
+        });
         hasGLM = !!(keys.glm && keys.glm.length > 0);
         hasAnthropic = !!(keys.anthropic && keys.anthropic.length > 0);
       }
@@ -86,13 +110,16 @@ export function useAPIKeyStatus(): APIKeyStatus {
         active = hasGLM ? 'glm' : hasAnthropic ? 'anthropic' : null;
       }
       
-      setStatus({
+      const newStatus = {
         hasGLMKey: hasGLM,
         hasAnthropicKey: hasAnthropic,
         hasAnyKey: hasAny,
         activeProvider: active,
         preferredProvider: preference
-      });
+      };
+      
+      console.log('[useAPIKeyStatus] ✅ Setting new status:', newStatus);
+      setStatus(newStatus);
       
     } catch (error) {
       console.error('[useAPIKeyStatus] Error checking API keys:', error);
