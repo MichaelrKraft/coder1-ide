@@ -8,14 +8,17 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Eye, GitBranch, FileText, Brain, AlertTriangle } from 'lucide-react';
+import { Eye, GitBranch, FileText, Brain, AlertTriangle, Zap, Link, Unlink } from 'lucide-react';
 import StatusBarActions from './StatusBarActions';
 import DiscoverPanel from './DiscoverPanel';
 import CostDisplay from '../terminal/CostDisplay';
+import { SetupInstructionsModal } from '@/components/bridge/SetupInstructionsModal';
 import { useIDEStore } from '@/stores/useIDEStore';
 import { useSessionStore } from '@/stores/useSessionStore';
 import { useUIStore } from '@/stores/useUIStore';
 import { usePollingHealthStore } from '@/stores/usePollingHealthStore';
+import { useBridgeSessionData, formatTokenCount } from '@/lib/useBridgeSessionData';
+import { useBridgeConnectionState } from '@/lib/useBridgeConnectionState';
 import { logger } from '@/lib/logger';
 import type { IDEFile } from '@/types';
 
@@ -41,6 +44,15 @@ export default function StatusBarCore({
   const { supervision } = useSessionStore();
   const { discoverPanel, addToast } = useUIStore();
   const { hasIssues: pollingHasIssues, issuesSummary: pollingIssuesSummary } = usePollingHealthStore();
+
+  // Bridge session data - real token counts from user's local Claude Code sessions
+  const { tokens: bridgeTokens, hasActiveSession, isConnected: bridgeSessionConnected } = useBridgeSessionData();
+
+  // Bridge connection state - whether user's local machine is connected
+  const bridgeState = useBridgeConnectionState();
+
+  // Bridge setup modal state
+  const [showBridgeSetup, setShowBridgeSetup] = useState(false);
   
   // Git state management
   const [gitInfo, setGitInfo] = useState<{
@@ -130,7 +142,44 @@ export default function StatusBarCore({
           
           {/* Gemini/GLM Cost Display (next to Discover button) */}
           <CostDisplay />
-          
+
+          {/* Bridge Connection Indicator - Shows if local machine is connected */}
+          {bridgeState.isConnected ? (
+            <div
+              className="flex items-center gap-1.5 text-green-400 hover:text-green-300 cursor-help transition-colors"
+              title={`Bridge Connected\n\nYour local machine is connected.\nFiles shown are from your computer.\n\nPlatform: ${bridgeState.platform || 'Unknown'}\nVersion: ${bridgeState.version || 'Unknown'}\nConnected: ${bridgeState.connectedAt?.toLocaleTimeString() || 'Unknown'}`}
+            >
+              <Link className="w-3.5 h-3.5" />
+              <span className="font-medium text-xs">Bridge</span>
+              <span className="w-1.5 h-1.5 rounded-full bg-green-400" />
+            </div>
+          ) : (
+            <div
+              className="flex items-center gap-1.5 text-yellow-500/70 hover:text-yellow-400 cursor-pointer transition-colors"
+              title="Bridge Not Connected&#10;&#10;Connect your local machine to see your own files.&#10;Click to see setup instructions."
+              onClick={() => setShowBridgeSetup(true)}
+            >
+              <Unlink className="w-3.5 h-3.5" />
+              <span className="font-medium text-xs">Connect Bridge</span>
+            </div>
+          )}
+
+          {/* Bridge Session Tokens - Real token counts from local Claude Code */}
+          {bridgeSessionConnected && bridgeTokens && (
+            <div
+              className="flex items-center gap-1.5 text-coder1-cyan/80 hover:text-coder1-cyan cursor-help transition-colors"
+              title={`Claude Code Session Tokens (via Bridge)\n\nInput: ${bridgeTokens.input.toLocaleString()}\nOutput: ${bridgeTokens.output.toLocaleString()}\nCache Read: ${(bridgeTokens.cacheRead || 0).toLocaleString()}\nCache Write: ${(bridgeTokens.cacheCreation || 0).toLocaleString()}\n\nTotal: ${bridgeTokens.total.toLocaleString()}`}
+            >
+              <Zap className="w-3.5 h-3.5" />
+              <span className="font-medium text-xs">
+                {formatTokenCount(bridgeTokens.total)}
+              </span>
+              {hasActiveSession && (
+                <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+              )}
+            </div>
+          )}
+
           {/* Supervision Indicator */}
           {supervisionActive && (
             <div className="flex items-center gap-1 text-coder1-cyan animate-pulse">
@@ -177,6 +226,13 @@ export default function StatusBarCore({
           {/* Context memory statistics moved to terminal header memory panel */}
         </div>
       </div>
+
+      {/* Bridge Setup Modal */}
+      <SetupInstructionsModal
+        isOpen={showBridgeSetup}
+        onClose={() => setShowBridgeSetup(false)}
+        showDontShowAgain={false}
+      />
     </>
   );
 }

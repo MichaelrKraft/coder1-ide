@@ -3,6 +3,7 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import { withGeneralMiddleware } from '@/lib/api-middleware';
 import { logger } from '@/lib/logger';
+import { bridgeManager } from '@/services/bridge-manager';
 
 export const dynamic = 'force-dynamic';
 
@@ -64,7 +65,8 @@ async function fileReadHandler({ req }: { req: NextRequest }): Promise<NextRespo
     try {
         const { searchParams } = new URL(request.url);
         const filePath = searchParams.get('path');
-        
+        const useBridge = searchParams.get('useBridge') !== 'false'; // Default to true
+
         if (!filePath) {
             return NextResponse.json(
                 {
@@ -74,13 +76,62 @@ async function fileReadHandler({ req }: { req: NextRequest }): Promise<NextRespo
                 { status: 400 }
             );
         }
-        
+
+        // Check if bridge is connected and should be used
+        const userId = 'default-user';
+
+        if (useBridge && bridgeManager.hasBridgeForUser(userId)) {
+            // Route through bridge to user's local machine
+            try {
+                console.log(`🌉 [Bridge] Routing file read request through bridge: ${filePath}`);
+
+                const result = await bridgeManager.requestFileOperation(
+                    userId,
+                    'read',
+                    filePath,
+                    {}
+                );
+
+                // FileHandler returns { path, content, size, encoding }
+                // Extract just the content string for the response
+                const content = typeof result === 'object' && result.content !== undefined
+                    ? result.content
+                    : result;
+
+                return NextResponse.json({
+                    success: true,
+                    content,
+                    path: filePath,
+                    server: 'bridge',
+                    source: 'local-machine'
+                });
+            } catch (bridgeError) {
+                console.error('🌉 [Bridge] File read error:', bridgeError);
+
+                const errorMsg = bridgeError instanceof Error ? bridgeError.message : 'Bridge error';
+                if (errorMsg.includes('No bridge connected') || errorMsg.includes('disconnected')) {
+                    return NextResponse.json({
+                        success: false,
+                        error: 'Bridge connection lost',
+                        message: 'Your local machine is no longer connected. Please reconnect the bridge CLI.',
+                        reconnectUrl: '/bridge-setup'
+                    }, { status: 503 });
+                }
+
+                // For other bridge errors (like file not found), pass through the error
+                return NextResponse.json({
+                    success: false,
+                    error: errorMsg
+                }, { status: 404 });
+            }
+        }
+
+        // Fallback: Use server filesystem
         const projectRoot = getProjectRoot();
         const fullPath = path.resolve(projectRoot, filePath);
-        
+
         // Enhanced security checks
         if (!fullPath.startsWith(projectRoot)) {
-            // logger?.error(`❌ Path traversal attempt: ${filePath}`);
             return NextResponse.json(
                 {
                     success: false,
@@ -89,23 +140,20 @@ async function fileReadHandler({ req }: { req: NextRequest }): Promise<NextRespo
                 { status: 403 }
             );
         }
-        
+
         // Check for blocked files and patterns
         const relativePath = path.relative(projectRoot, fullPath);
         const normalizedPath = relativePath.replace(/\\/g, '/'); // Normalize path separators
-        
+
         // Check if the file path matches any blocked pattern
         const isBlocked = BLOCKED_PATTERNS.some(pattern => {
-            // For directory patterns (ending with /), check if path starts with it
             if (pattern.endsWith('/')) {
                 return normalizedPath.startsWith(pattern) || normalizedPath.includes('/' + pattern);
             }
-            // For file patterns, check if path includes or ends with it
             return normalizedPath.includes(pattern) || normalizedPath.endsWith(pattern);
         });
-        
+
         if (isBlocked) {
-            // logger?.error(`❌ Access to sensitive file blocked: ${filePath}`);
             return NextResponse.json(
                 {
                     success: false,
@@ -114,15 +162,11 @@ async function fileReadHandler({ req }: { req: NextRequest }): Promise<NextRespo
                 { status: 403 }
             );
         }
-        
-        // No directory restrictions - if it's not in the blocked list, it's allowed
-        // This ensures any file shown in the explorer can be opened
-        
+
         // Check if file exists
         try {
             await fs.access(fullPath);
         } catch (error) {
-            // logger?.error(`File not found: ${fullPath} (requested path: ${filePath})`);
             return NextResponse.json(
                 {
                     success: false,
@@ -131,9 +175,9 @@ async function fileReadHandler({ req }: { req: NextRequest }): Promise<NextRespo
                 { status: 404 }
             );
         }
-        
+
         const content = await fs.readFile(fullPath, 'utf8');
-        
+
         // Track file operation in project tracker
         try {
             const { projectTracker } = await import('@/services/project-tracker');
@@ -141,16 +185,16 @@ async function fileReadHandler({ req }: { req: NextRequest }): Promise<NextRespo
         } catch (err) {
             // Project tracker not available
         }
-        
+
         return NextResponse.json({
             success: true,
             content,
             path: filePath,
-            server: 'unified-server'
+            server: 'unified-server',
+            source: 'server-sandbox'
         });
-        
+
     } catch (error) {
-        // logger?.error('❌ [Unified] File read error:', error);
         return NextResponse.json(
             {
                 success: false,

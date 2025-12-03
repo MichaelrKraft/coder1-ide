@@ -3,6 +3,7 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import { withGeneralMiddleware } from '@/lib/api-middleware';
 import { logger } from '@/lib/logger';
+import { bridgeManager } from '@/services/bridge-manager';
 
 // Force dynamic rendering for this route
 export const dynamic = 'force-dynamic';
@@ -126,12 +127,77 @@ async function fileTreeHandler({ req }: { req: NextRequest }): Promise<NextRespo
         // Get rootPath from query parameters
         const url = new URL(request.url);
         const rootPath = url.searchParams.get('rootPath');
-        
+        const useBridge = url.searchParams.get('useBridge') !== 'false'; // Default to true
+
+        // Check if bridge is connected and should be used
+        // For now, use a placeholder userId - in production this would come from auth
+        const userId = 'default-user';
+
+        if (useBridge && bridgeManager.hasBridgeForUser(userId)) {
+            // Route through bridge to user's local machine
+            try {
+                console.log(`🌉 [Bridge] Routing file tree request through bridge for path: ${rootPath || '~'}`);
+
+                const actualRoot = rootPath || process.env.HOME || '~';
+                const bridgeResult = await bridgeManager.requestFileOperation(
+                    userId,
+                    'list',
+                    actualRoot,
+                    { recursive: false } // Get immediate children only
+                );
+
+                // Transform bridge result (flat array) to match expected tree format
+                // FileHandler.list() returns: [{ name, path, type, size, modified }, ...]
+                // Expected format: { name, path, type, children: [...] }
+                const transformToTree = (items: any[]): any[] => {
+                    if (!Array.isArray(items)) return [];
+                    return items.map(item => ({
+                        name: item.name,
+                        path: item.path,
+                        type: item.type,
+                        size: item.size,
+                        modified: item.modified,
+                        children: item.type === 'directory' ? [] : undefined
+                    }));
+                };
+
+                const treeData = {
+                    name: path.basename(actualRoot) || 'home',
+                    path: actualRoot,
+                    type: 'directory' as const,
+                    children: transformToTree(bridgeResult)
+                };
+
+                return NextResponse.json({
+                    success: true,
+                    tree: treeData,
+                    currentRoot: actualRoot,
+                    server: 'bridge',
+                    source: 'local-machine'
+                });
+            } catch (bridgeError) {
+                console.error('🌉 [Bridge] File tree error:', bridgeError);
+
+                // If bridge error mentions disconnection, return specific error
+                const errorMsg = bridgeError instanceof Error ? bridgeError.message : 'Bridge error';
+                if (errorMsg.includes('No bridge connected') || errorMsg.includes('disconnected')) {
+                    return NextResponse.json({
+                        success: false,
+                        error: 'Bridge connection lost',
+                        message: 'Your local machine is no longer connected. Please reconnect the bridge CLI.',
+                        reconnectUrl: '/bridge-setup'
+                    }, { status: 503 });
+                }
+
+                // For other bridge errors, fall back to server filesystem
+                console.log('🌉 [Bridge] Falling back to server filesystem');
+            }
+        }
+
+        // Fallback: Use server filesystem (for users without bridge or if bridge fails)
         const projectRoot = getProjectRoot(rootPath || undefined);
         const tree = await buildFileTree(projectRoot);
-        
-        // REMOVED: // REMOVED: console.log(`📂 [Unified] File tree requested for: ${projectRoot}`);
-        
+
         return NextResponse.json({
             success: true,
             tree: {
@@ -141,11 +207,11 @@ async function fileTreeHandler({ req }: { req: NextRequest }): Promise<NextRespo
                 children: tree
             },
             currentRoot: projectRoot,
-            server: 'unified-server'
+            server: 'unified-server',
+            source: 'server-sandbox'
         });
-        
+
     } catch (error) {
-        // logger?.error('❌ [Unified] File tree error:', error);
         const errorMessage = error instanceof Error ? error.message : 'Failed to build file tree';
         return NextResponse.json(
             {
