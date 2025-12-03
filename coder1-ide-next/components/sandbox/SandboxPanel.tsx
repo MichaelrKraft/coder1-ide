@@ -25,11 +25,16 @@ import {
   Loader,
   RefreshCw,
   ChevronRight,
-  Grid
+  Grid,
+  Sparkles
 } from 'lucide-react';
 import { logger } from '@/lib/logger';
 import { useUIStore } from '@/stores/useUIStore';
 import SandboxComparisonView from './SandboxComparisonView';
+import ParallelExplorationModal from './ParallelExplorationModal';
+import ParallelExplorationMonitor from './ParallelExplorationMonitor';
+import { APIKeyStorage } from '@/lib/api-key-storage';
+import { getSocket } from '@/lib/socket';
 
 interface Sandbox {
   id: string;
@@ -46,7 +51,11 @@ interface Sandbox {
   processCount?: number;
 }
 
-export default function SandboxPanel() {
+interface SandboxPanelProps {
+  onRequestClose?: () => void;
+}
+
+export default function SandboxPanel({ onRequestClose }: SandboxPanelProps = {}) {
   const [sandboxes, setSandboxes] = useState<Sandbox[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedSandbox, setSelectedSandbox] = useState<string | null>(null);
@@ -54,6 +63,8 @@ export default function SandboxPanel() {
   const [baseFrom, setBaseFrom] = useState('');
   const [testResults, setTestResults] = useState<Record<string, any>>({});
   const [showComparisonView, setShowComparisonView] = useState(false);
+  const [showParallelExploration, setShowParallelExploration] = useState(false);
+  const [activeExplorationSessionId, setActiveExplorationSessionId] = useState<string | null>(null);
   
   const { addToast } = useUIStore();
 
@@ -62,14 +73,12 @@ export default function SandboxPanel() {
     logger.debug('🏗️ SandboxPanel mounted');
     logger.debug('📋 Initial projectId:', projectId);
     logger.debug('🔄 Initial loading:', loading);
-    logger.debug('🌍 Environment NEXT_PUBLIC_EXPRESS_BACKEND_URL:', process.env.NEXT_PUBLIC_EXPRESS_BACKEND_URL);
   }, []);
 
   const loadSandboxes = useCallback(async () => {
     try {
-      // Use the correct backend URL instead of relative path
-      const backendUrl = process.env.NEXT_PUBLIC_EXPRESS_BACKEND_URL || 'http://localhost:3002';
-      const response = await fetch(`${backendUrl}/api/sandbox`, {
+      // Use relative URL - automatically resolves to unified server
+      const response = await fetch('/api/sandbox', {
         headers: {
           'x-user-id': getUserId()
         }
@@ -85,7 +94,7 @@ export default function SandboxPanel() {
     } catch (error) {
       logger.error('Failed to load sandboxes:', error);
       addToast({
-        message: 'Failed to connect to backend. Check if Express server is running.',
+        message: 'Failed to load sandboxes. Please try again.',
         type: 'error'
       });
     }
@@ -109,12 +118,8 @@ export default function SandboxPanel() {
     logger.debug('🚀 Creating sandbox with projectId:', projectId);
     
     try {
-      // Use the correct backend URL instead of relative path
-      const backendUrl = process.env.NEXT_PUBLIC_EXPRESS_BACKEND_URL || 'http://localhost:3002';
-      logger.debug('🎯 Backend URL:', backendUrl);
-      logger.debug('📦 Environment variable NEXT_PUBLIC_EXPRESS_BACKEND_URL:', process.env.NEXT_PUBLIC_EXPRESS_BACKEND_URL);
-      
-      const response = await fetch(`${backendUrl}/api/sandbox`, {
+      // Use relative URL - automatically resolves to unified server
+      const response = await fetch('/api/sandbox', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -139,6 +144,12 @@ export default function SandboxPanel() {
         });
         await loadSandboxes();
         setSelectedSandbox(data.sandbox.id);
+        // Pass sandbox data directly to avoid race condition
+        connectToSandbox(data.sandbox.id, data.sandbox);
+        
+        // 🔧 FIX (Nov 26, 2025): Skip consultation, open IDE directly with sandbox
+        const ideUrl = `/ide?sandbox=${data.sandbox.id}`;
+        window.open(ideUrl, '_blank');
       } else {
         throw new Error(data.error);
       }
@@ -154,8 +165,7 @@ export default function SandboxPanel() {
 
   const runCommand = async (sandboxId: string, command: string) => {
     try {
-      const backendUrl = process.env.NEXT_PUBLIC_EXPRESS_BACKEND_URL || 'http://localhost:3002';
-      const response = await fetch(`${backendUrl}/api/sandbox/${sandboxId}`, {
+      const response = await fetch(`/api/sandbox/${sandboxId}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -188,8 +198,7 @@ export default function SandboxPanel() {
   const testSandbox = async (sandboxId: string) => {
     setLoading(true);
     try {
-      const backendUrl = process.env.NEXT_PUBLIC_EXPRESS_BACKEND_URL || 'http://localhost:3002';
-      const response = await fetch(`${backendUrl}/api/sandbox/${sandboxId}`, {
+      const response = await fetch(`/api/sandbox/${sandboxId}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -230,8 +239,7 @@ export default function SandboxPanel() {
     
     setLoading(true);
     try {
-      const backendUrl = process.env.NEXT_PUBLIC_EXPRESS_BACKEND_URL || 'http://localhost:3002';
-      const response = await fetch(`${backendUrl}/api/sandbox/${sandboxId}`, {
+      const response = await fetch(`/api/sandbox/${sandboxId}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -260,34 +268,55 @@ export default function SandboxPanel() {
     }
   };
 
-  const connectToSandbox = async (sandboxId: string) => {
+  const connectToSandbox = async (sandboxId: string, sandboxData?: any) => {
     try {
-      // Find the sandbox to get its details
-      const sandbox = sandboxes.find(s => s.id === sandboxId);
+      // 1. Get socket instance first
+      const socket = await getSocket();
+      
+      // 2. Find sandbox
+      let sandbox = sandboxData;
       if (!sandbox) {
-        addToast({
-          message: '❌ Sandbox not found',
-          type: 'error'
-        });
-        return;
+        sandbox = sandboxes.find(s => s.id === sandboxId);
+        if (!sandbox) {
+          addToast({
+            message: '❌ Sandbox not found',
+            type: 'error'
+          });
+          return;
+        }
       }
 
-      // Emit event to terminal to switch context
-      window.dispatchEvent(new CustomEvent('sandbox-connect', {
-        detail: {
-          sandboxId: sandbox.id,
-          projectId: sandbox.projectId,
-          sessionName: `coder1-${sandboxId}`,
-          path: sandbox.path
-        }
-      }));
-
-      addToast({
-        message: `🔌 Connected to sandbox: ${sandbox.projectId}`,
-        type: 'success'
-      });
-
-      logger.debug('🔌 Connecting terminal to sandbox:', sandbox);
+      // 3. Setup cleanup function
+      const cleanup = () => {
+        socket.off('tmux:sandbox-connected', onConnected);
+        socket.off('tmux:error', onError);
+      };
+      
+      // 4. Define handlers
+      const onConnected = () => {
+        cleanup();
+        addToast({
+          message: `🔌 Connected to sandbox: ${sandbox.projectId}`,
+          type: 'success'
+        });
+        logger.debug('🔌 Terminal connected to sandbox:', sandbox);
+      };
+      
+      const onError = (error: any) => {
+        cleanup();
+        addToast({
+          message: `❌ Failed to connect: ${error.message}`,
+          type: 'error'
+        });
+      };
+      
+      // 5. Register listeners BEFORE emit (critical for preventing race)
+      socket.on('tmux:sandbox-connected', onConnected);
+      socket.on('tmux:error', onError);
+      
+      // 6. Now emit - listeners are ready
+      socket.emit('tmux:connect-sandbox', { sandboxId: sandbox.id });
+      
     } catch (error) {
       addToast({
         message: `❌ Failed to connect to sandbox: ${error}`,
@@ -302,8 +331,7 @@ export default function SandboxPanel() {
     }
     
     try {
-      const backendUrl = process.env.NEXT_PUBLIC_EXPRESS_BACKEND_URL || 'http://localhost:3002';
-      const response = await fetch(`${backendUrl}/api/sandbox/${sandboxId}`, {
+      const response = await fetch(`/api/sandbox/${sandboxId}`, {
         method: 'DELETE'
       });
       
@@ -364,6 +392,14 @@ export default function SandboxPanel() {
           </h4>
         </div>
         <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowParallelExploration(true)}
+            className="px-2 py-1 bg-gradient-to-r from-coder1-cyan to-blue-500 hover:from-coder1-cyan-secondary hover:to-blue-600 text-white text-xs rounded transition-all duration-200 flex items-center gap-1 shadow-lg"
+            title="Spawn multiple AI agents to explore different approaches"
+          >
+            <Sparkles className="w-3 h-3" />
+            Parallel Exploration
+          </button>
           {sandboxes.length >= 2 && (
             <button
               onClick={() => setShowComparisonView(true)}
@@ -568,6 +604,104 @@ export default function SandboxPanel() {
               type: 'success'
             });
             loadSandboxes(); // Refresh the list
+          }}
+        />
+      )}
+
+      {/* Parallel Exploration Modal */}
+      {showParallelExploration && (
+        <ParallelExplorationModal
+          isOpen={showParallelExploration}
+          onClose={() => setShowParallelExploration(false)}
+          onStart={async (config) => {
+            console.log('[SandboxPanel] 🎯 onStart called with config:', config);
+            
+            try {
+              // Keep modal open during API call (shows loading state)
+              addToast({
+                message: '🚀 Starting parallel exploration...',
+                type: 'info'
+              });
+
+              // Get API key from storage
+              const provider = APIKeyStorage.getActiveProvider();
+              const apiKey = provider ? await APIKeyStorage.getKey(provider) : null;
+              
+              console.log('[SandboxPanel] 🔑 API Key info:', { 
+                provider, 
+                hasKey: !!apiKey,
+                keyLength: apiKey?.length 
+              });
+
+              if (!provider || !apiKey) {
+                throw new Error('No API key configured. Please set up an API key first.');
+              }
+
+              console.log('[SandboxPanel] 📡 Fetching /api/parallel-exploration/spawn');
+              
+              const requestBody = { 
+                ...config, 
+                userId: getUserId(),
+                projectId: 'exploration',
+                apiKey,
+                provider
+              };
+              
+              console.log('[SandboxPanel] 📦 Request body:', { 
+                ...requestBody, 
+                apiKey: apiKey ? '***' + apiKey.slice(-4) : 'none' 
+              });
+
+              const response = await fetch('/api/parallel-exploration/spawn', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(requestBody)
+              });
+
+              console.log('[SandboxPanel] 📨 Response status:', response.status);
+
+              const data = await response.json();
+              
+              console.log('[SandboxPanel] 📋 Response data:', data);
+
+              if (data.success) {
+                console.log('[SandboxPanel] ✅ Success! Setting session ID:', data.session.id);
+                // Close modal now that API succeeded
+                setShowParallelExploration(false);
+                setActiveExplorationSessionId(data.session.id);
+                console.log('[SandboxPanel] 📍 Modal closed, monitor should show now');
+                addToast({
+                  message: `✅ Exploration started: ${data.session.domain}`,
+                  type: 'success'
+                });
+              } else {
+                throw new Error(data.error || 'Failed to start exploration');
+              }
+            } catch (error) {
+              console.error('[SandboxPanel] ❌ Error:', error);
+              // Close modal on error too
+              setShowParallelExploration(false);
+              addToast({
+                message: `❌ Failed to start exploration: ${error}`,
+                type: 'error'
+              });
+            }
+          }}
+        />
+      )}
+
+      {/* Parallel Exploration Monitor - Corner positioned, non-blocking */}
+      {activeExplorationSessionId && (
+        <ParallelExplorationMonitor
+          sessionId={activeExplorationSessionId}
+          position="corner"
+          onClose={() => setActiveExplorationSessionId(null)}
+          onComplete={(results) => {
+            addToast({
+              message: `✅ Exploration complete! ${results.length} variations created.`,
+              type: 'success'
+            });
+            loadSandboxes();
           }}
         />
       )}
