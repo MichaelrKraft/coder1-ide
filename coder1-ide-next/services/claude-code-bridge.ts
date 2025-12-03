@@ -89,6 +89,9 @@ export class ClaudeCodeBridgeService extends EventEmitter {
   private claudeProcesses: Map<string, ChildProcess> = new Map(); // Track Claude processes
   private isInitialized: boolean = false;
   
+  // Output buffering for debouncing (Nov 26, 2025 - Fix repeating status lines)
+  private outputBuffers: Map<string, {data: string, timeout: NodeJS.Timeout | null}> = new Map();
+  
   // Safety mechanisms
   private readonly MAX_CONCURRENT_TEAMS = 3;
   private readonly MAX_AGENTS_PER_TEAM = 5;
@@ -689,7 +692,8 @@ export class ClaudeCodeBridgeService extends EventEmitter {
         this.claudeProcesses.delete(agent.id);
       }, 180000); // 180 second timeout for Claude to authenticate and start
 
-      // Handle process output
+      // Handle process output - directly forward without debouncing
+      // Filtering happens in handleAgentOutput to strip Claude CLI animations
       claudeProcess.stdout?.on('data', (data) => {
         clearTimeout(processTimeout); // Clear timeout on first output
         this.handleAgentOutput(agent, data.toString());
@@ -780,22 +784,16 @@ export class ClaudeCodeBridgeService extends EventEmitter {
       }
     }
 
-    // Send formatted output to agent terminal manager
+    // Send output directly to terminal (RAF batching in Terminal.tsx handles animation flooding)
     try {
       const { getCoordinatorService } = require('./agent-coordinator');
       const coordinator = getCoordinatorService();
       const terminalManager = coordinator.agentTerminalManager;
       
-      console.log(`🔵 [BRIDGE] Got terminalManager: ${!!terminalManager}, coordinator exists: ${!!coordinator}`);
-      
       if (terminalManager) {
-        console.log(`🔵 [BRIDGE] Calling appendToAgentTerminal for ${agent.id}`);
         terminalManager.appendToAgentTerminal(agent.id, formattedOutput);
-      } else {
-        console.log(`❌ [BRIDGE] No terminalManager available!`);
       }
     } catch (error) {
-      console.error(`❌ [BRIDGE] Error sending to terminal manager:`, error);
       logger.debug('Agent terminal manager not available:', error);
     }
 

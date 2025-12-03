@@ -296,11 +296,15 @@ class ClaudeCLIPuppeteer extends EventEmitter {
         agentSession.outputBuffer += data;
         agentSession.lastOutputTime = Date.now();
         
+        const output = data.toString();
+        
+        // 🔍 DEBUG: Log ALL PTY output from main handler
+        console.log(`📺 [MAIN-PTY-OUTPUT] ${agentId}: "${output.substring(0, 200).replace(/\n/g, '\\n')}..." (${output.length} chars)`);
+        
         // 🔧 AUTO-HANDLE TRUST PROMPTS: Claude asks "Do you trust the files in this folder?"
         // This can appear at ANY time, not just during initialization
         // Auto-respond with "1" (Yes, proceed) to keep automation flowing
         // IMPORTANT: Only respond ONCE to avoid sending multiple "1" inputs
-        const output = data.toString();
         if (!agentSession.trustPromptAnswered && (output.includes('Do you trust') || output.includes('Yes, proceed'))) {
           agentSession.trustPromptAnswered = true;  // Mark as handled immediately
           console.log(`🔐 Agent ${agentId} - Trust prompt detected, auto-approving...`);
@@ -335,26 +339,39 @@ class ClaudeCLIPuppeteer extends EventEmitter {
       // 🔧 FIX (Nov 21, 2025): Wait for welcome message before marking ready
       // Trust prompts are handled automatically in the main onData handler above
       let welcomeReceived = false;
+      let welcomeDisposable; // Store disposable to cleanup listener
       
       const welcomePromise = new Promise((resolve) => {
         const dataHandler = (data) => {
           const output = data.toString();
           
           // Wait for welcome message (trust prompt auto-handled elsewhere)
-          if (output.includes('Welcome to Claude Code') || output.includes('cwd:')) {
+          // Strip ANSI codes for cleaner matching
+          const cleanOutput = output.replace(/\x1B\[[0-9;]*[a-zA-Z]/g, '');
+          if (cleanOutput.includes('Claude Code') || cleanOutput.includes('cwd:') || cleanOutput.includes('bypass permissions')) {
             welcomeReceived = true;
             console.log(`✅ Agent ${agentId} received welcome message - ready for input`);
+            // Dispose listener immediately after detection
+            if (welcomeDisposable) {
+              welcomeDisposable.dispose();
+              console.log(`🧹 Agent ${agentId} welcome listener disposed`);
+            }
             resolve();
           }
         };
-        pty.onData(dataHandler);
+        welcomeDisposable = pty.onData(dataHandler);
         
         // Timeout after 15 seconds
         setTimeout(() => {
           if (!welcomeReceived) {
             console.warn(`⚠️ Agent ${agentId} welcome timeout - proceeding anyway`);
-            resolve();
           }
+          // Always dispose listener on timeout
+          if (welcomeDisposable) {
+            welcomeDisposable.dispose();
+            console.log(`🧹 Agent ${agentId} welcome listener disposed (timeout)`);
+          }
+          resolve();
         }, 15000);
       });
       
@@ -581,51 +598,10 @@ Role: ${agentSession.role}
       console.log(`   - Original lines: ${enhancedPrompt.split('\n').length}`);
       console.log(`   - After conversion: Single line with ${singleLinePrompt.length} chars`);
       
-      // 🔧 FIX (Nov 24, 2025): Force exit any existing composer mode before sending prompt
-      // This prevents agents from getting stuck in "Composing..." or "Calculating..." states
-      console.log(`🧹 [${agentId}] Clearing any existing composer state...`);
-      agentSession.pty.write('\x03'); // Send Ctrl+C to exit composer
-      await new Promise(resolve => setTimeout(resolve, 500)); // Wait 500ms for composer to exit
-      agentSession.pty.write('\r'); // Clear line
-      await new Promise(resolve => setTimeout(resolve, 500)); // Wait 500ms for prompt to clear
-      console.log(`✅ [${agentId}] Composer cleared, ready to send prompt`);
-      
-      // Send prompt one character at a time with small delays (async function)
-      const sendCharByChar = async () => {
-        for (let i = 0; i < singleLinePrompt.length; i++) {
-          agentSession.pty.write(singleLinePrompt[i]);
-          // Add tiny delay every 10 characters to avoid overwhelming PTY
-          if (i % 10 === 0) {
-            await new Promise(resolve => setTimeout(resolve, 5)); // 5ms delay
-          }
-        }
-        
-        // Submit the command
-        console.log(`📊 [DEBUG] Sending first Enter key (\\r = carriage return)`);
-        agentSession.pty.write('\r');
-        console.log(`📊 [DEBUG] First Enter sent to PTY`);
-      };
-      
-      await sendCharByChar();
-      
-      console.log(`✅ Task sent to ${agentId} PTY character-by-character (avoids paste mode)`);
-      console.log(`🔍 [DEBUG] Checking if second Enter needed: prompt length = ${enhancedPrompt.length}`);
-      
-      // 🔧 FIX (Nov 22, 2025): Claude CLI fancy rendering mode issue
-      // ALL prompts need the second Enter to submit - the >500 check was wrong
-      // Always wait and send second Enter
-      console.log(`⏳ Waiting 2s then sending second Enter to submit...`);
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      console.log(`📊 [DEBUG] Sending second Enter key (\\r = carriage return)`);
-      agentSession.pty.write('\r');
-      console.log(`✅ Sent second Enter key to submit task`);
-      console.log(`📊 [DEBUG] Both Enter keys sent. Now monitoring for Claude's response...`);
-      
-      
-      // 🔧 FIX TIER 2 (Nov 24, 2025): Verify Claude accepted the prompt before waiting for files
-      // This detects if Claude understood and started processing the task
-      // Prevents 30-minute waits when prompt was rejected
-      console.log(`⏳ Waiting for ${agentId} to accept prompt and start working...`);
+      // 🔧 CRITICAL FIX (Nov 25, 2025): Attach acceptance listener BEFORE sending prompt
+      // Previous bug: Listener attached AFTER prompt submitted = race condition
+      // Fix: Attach listener first, then send prompt - ensures we catch all output
+      console.log(`⏳ Setting up acceptance listener for ${agentId} BEFORE sending prompt...`);
       
       let promptAccepted = false;
       let dataHandler; // Declare outside Promise to fix scoping
@@ -646,14 +622,17 @@ Role: ${agentSession.role}
           console.log(`📊 [PTY OUTPUT] ${output.substring(0, 300).replace(/\n/g, '\\n')}`);
           
           // Detect Claude starting to process (positive signals)
+          // Strip ANSI codes for cleaner matching
+          const cleanOutput = output.replace(/\x1B\[[0-9;]*[a-zA-Z]/g, '').replace(/[∴✻✽✶✳✢·]/g, '');
           const positiveSignals = [
-            'Thinking', 'I\'ll help', 'Let me', 'I understand',
+            'Thinking', 'Twisting', 'Tinkering',  // Claude CLI loading animations
+            'I\'ll help', 'Let me', 'I understand',
             'Creating', 'Writing', 'Analyzing', 'I\'ve created',
             'I\'ve written', 'I can help', 'Sure', 'I\'ll create'
           ];
           
           for (const signal of positiveSignals) {
-            if (output.includes(signal)) {
+            if (cleanOutput.includes(signal)) {
               promptAccepted = true;
               clearTimeout(acceptanceTimeout);
               if (dataHandler) dataHandler.dispose(); // Dispose onData listener
@@ -683,8 +662,45 @@ Role: ${agentSession.role}
         };
         
         // Listen for PTY output using node-pty's onData API (not EventEmitter)
+        console.log(`🔧 [DEBUG] Attaching acceptance onData listener for ${agentId}`);
+        console.log(`🔧 [DEBUG] PTY exists: ${!!agentSession.pty}, onData exists: ${typeof agentSession.pty?.onData}`);
         dataHandler = agentSession.pty.onData(acceptanceListener);
+        console.log(`🔧 [DEBUG] Acceptance listener attached, dataHandler: ${typeof dataHandler}`);
+        console.log(`✅ Acceptance listener is NOW ACTIVE and ready to capture output`);
       });
+      
+      // NOW that listener is attached and ready, send the prompt
+      console.log(`📤 Acceptance listener ready - now sending prompt to ${agentId}...`);
+      
+      // 🔧 REMOVED (Nov 25, 2025): Composer clearing with Ctrl+C kills Claude CLI!
+      // The agent just spawned - there's no composer mode to exit
+      // Sending Ctrl+C causes Claude CLI to terminate immediately with exit code 0
+      // This was the root cause of agents dying before receiving tasks
+      
+      // Send prompt one character at a time with small delays
+      console.log(`💬 Sending ${singleLinePrompt.length} char prompt character-by-character...`);
+      for (let i = 0; i < singleLinePrompt.length; i++) {
+        agentSession.pty.write(singleLinePrompt[i]);
+        if (i % 10 === 0) {
+          await new Promise(resolve => setTimeout(resolve, 5));
+        }
+      }
+      
+      // Submit with first Enter
+      console.log(`📊 [DEBUG] Sending first Enter key`);
+      agentSession.pty.write('\r');
+      console.log(`📊 [DEBUG] First Enter sent to PTY`);
+      
+      console.log(`✅ Task sent to ${agentId} PTY character-by-character`);
+      
+      // Send second Enter to submit
+      console.log(`⏳ Waiting 2s then sending second Enter to submit...`);
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      console.log(`📊 [DEBUG] Sending second Enter key`);
+      agentSession.pty.write('\r');
+      console.log(`✅ Sent second Enter key to submit task`);
+      console.log(`📊 [DEBUG] Prompt fully submitted - acceptance listener should now capture response`);
+      
       
       try {
         await acceptancePromise;
