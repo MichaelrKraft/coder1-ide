@@ -1294,6 +1294,21 @@ app.prepare().then(() => {
         // TODO: Implement updateHeartbeat method in bridge-manager.js
         // bridgeManager.updateHeartbeat(bridgeId);
         console.log(`💓 Bridge heartbeat received from ${bridgeId}`);
+
+        // Phase 1: Forward session token data to all browser clients
+        if (data.sessionData?.tokens) {
+          io.emit('bridge:session:tokens', {
+            bridgeId,
+            tokens: data.sessionData.tokens,
+            hasActiveSession: data.sessionData.hasActiveSession,
+            timestamp: data.sessionData.timestamp || Date.now()
+          });
+          console.log(`📊 Forwarded session tokens to browsers:`, {
+            input: data.sessionData.tokens.input,
+            output: data.sessionData.tokens.output,
+            total: data.sessionData.tokens.total
+          });
+        }
       });
       
       // Handle disconnect
@@ -1940,10 +1955,10 @@ app.prepare().then(() => {
           
           // ALWAYS intercept claude commands, even if bridgeManager fails to load
           // This prevents "claude: command not found" errors on the server
-          // BUT - for local development, let claude commands pass through normally
-          const isLocalDevelopment = process.env.NODE_ENV === 'development' || 
-                                     process.env.PORT === '3001' || 
-                                     process.env.PORT === '3002';
+          // BUT - for local development WITHOUT bridge, let claude commands pass through
+          // FIXED (Dec 3, 2025): Removed PORT check - it broke production routing!
+          // Now only checks NODE_ENV AND whether bridge is connected
+          const isLocalDevelopment = process.env.NODE_ENV === 'development';
           
           if ((command === 'claude' || command.startsWith('claude ')) && !isLocalDevelopment) {
             console.log('[Terminal] Claude command intercepted, bridgeManager:', !!bridgeManager);
