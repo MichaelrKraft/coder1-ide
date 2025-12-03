@@ -9,11 +9,9 @@
 
 import React from 'react';
 import { useRouter } from 'next/navigation';
-import { Save, Clock, FileText, BookOpen, Loader2, Brain, Link, Sparkles, Download, Eye } from '@/lib/icons';
+import { Save, Clock, FileText, BookOpen, Loader2, Brain, Link, Sparkles } from '@/lib/icons';
 import StatusBarModals from './StatusBarModals';
 import CheckpointNameModal from '@/components/modals/CheckpointNameModal';
-import DownloadProjectModal from '@/components/modals/DownloadProjectModal';
-import PreviewModal from '@/components/modals/PreviewModal';
 import { useIDEStore } from '@/stores/useIDEStore';
 import { useSessionStore } from '@/stores/useSessionStore';
 import { useUIStore } from '@/stores/useUIStore';
@@ -319,31 +317,50 @@ const StatusBarActions = React.memo(function StatusBarActions({
   };
 
   const handleTimeline = async () => {
-    // 🔧 FIX (Nov 17, 2025): Use window.location.href as fallback
-    // After checkpoint restore, Next.js router may not work properly
-    // Use native navigation which always works
-    console.log('📊 [TIMELINE] Navigating to timeline with sessionId:', sessionId);
+    // 🔧 FIX (Nov 26, 2025): Clear any stuck loading state before navigation
+    const { setLoading } = useIDEStore.getState();
+    setLoading(null); // Clear any stuck loading state
+    
+    console.log('📊 [TIMELINE] Button clicked - Navigating to timeline');
+    console.log('📊 [TIMELINE] SessionId:', sessionId);
+    console.log('📊 [TIMELINE] Target URL:', `/timeline?sessionId=${sessionId}`);
+    
+    if (!sessionId) {
+      console.error('❌ [TIMELINE] No sessionId available');
+      addToast({
+        message: '⚠️ No session ID available',
+        type: 'error'
+      });
+      return;
+    }
     
     try {
-      // Try router first (client-side navigation, faster)
-      router.push(`/timeline?sessionId=${sessionId}`);
-      
-      // Fallback to native navigation if router doesn't work after 500ms
-      setTimeout(() => {
-        if (window.location.pathname === '/ide' || window.location.pathname === '/ide/') {
-          console.log('⚠️ [TIMELINE] Router failed, using window.location fallback');
-          window.location.href = `/timeline?sessionId=${sessionId}`;
-        }
-      }, 500);
-      
       addToast({
-        message: '📊 Opening timeline view',
+        message: '📊 Opening timeline view...',
         type: 'info'
       });
+      
+      // Primary method: Direct window navigation
+      console.log('📊 [TIMELINE] Attempting window.location.href navigation');
+      window.location.href = `/timeline?sessionId=${sessionId}`;
+      
+      // Fallback: Use Next.js router if window.location doesn't work
+      setTimeout(() => {
+        console.log('📊 [TIMELINE] Checking if navigation succeeded...');
+        if (window.location.pathname === '/ide') {
+          console.warn('⚠️ [TIMELINE] window.location navigation may have failed, trying router.push fallback');
+          router.push(`/timeline?sessionId=${sessionId}`);
+        }
+      }, 1000);
+      
     } catch (error) {
       console.error('❌ [TIMELINE] Navigation error:', error);
-      // Direct fallback if router.push throws
-      window.location.href = `/timeline?sessionId=${sessionId}`;
+      setLoading(null); // Clear loading state on error
+      
+      addToast({
+        message: '❌ Failed to open timeline',
+        type: 'error'
+      });
     }
   };
 
@@ -620,66 +637,6 @@ const StatusBarActions = React.memo(function StatusBarActions({
           </button>
         </div>
 
-        {/* Preview Button */}
-        <div 
-          className="p-[1px] rounded-md"
-          style={{
-            background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', 
-            boxShadow: glows.purple?.intense || '0 0 12px rgba(139, 92, 246, 0.5)'
-          }}
-        >
-          <button
-            onClick={() => {
-              if (currentTeamId) {
-                setIsPreviewModalOpen(true);
-              }
-            }}
-            disabled={!currentTeamId}
-            className="flex items-center gap-1.5 px-4 py-1.5 text-sm font-medium rounded transition-all duration-200 w-full bg-[#1a1a1a]"
-            style={{
-              color: !currentTeamId ? '#a0a0a0' : undefined,
-              cursor: !currentTeamId ? 'not-allowed' : 'pointer'
-            }}
-            onMouseEnter={(e) => {
-              if (!currentTeamId) return;
-              e.currentTarget.style.color = '#ffffff';
-              applyHoverEffect(e, false);
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.color = !currentTeamId ? '#a0a0a0' : '#a0a0a0';
-              removeHoverEffect(e);
-            }}
-            title={currentTeamId ? "Preview AI Team Output - Browse files and preview code" : "No AI Team output to preview"}
-          >
-            <Eye className="w-4 h-4" />
-            <span>Preview</span>
-          </button>
-        </div>
-
-        {/* Download Button */}
-        <div 
-          className={`p-[1px] rounded-md ${shouldPulseDownload ? 'animate-pulse' : ''}`}
-          style={{
-            background: 'linear-gradient(135deg, #10b981, #14b8a6)', 
-            boxShadow: shouldPulseDownload 
-              ? '0 0 20px rgba(16, 185, 129, 0.8), 0 0 40px rgba(16, 185, 129, 0.4)' 
-              : glows.green?.intense || '0 0 12px rgba(16, 185, 129, 0.5)'
-          }}
-        >
-          <button
-            onClick={() => {
-              setShouldPulseDownload(false);
-              setIsDownloadModalOpen(true);
-            }}
-            className="flex items-center gap-1.5 px-4 py-1.5 text-sm font-medium text-text-secondary hover:text-text-primary rounded transition-all duration-200 bg-bg-secondary w-full"
-            onMouseEnter={(e) => applyHoverEffect(e, false)}
-            onMouseLeave={removeHoverEffect}
-            title="Download Project - Export project as ZIP or JSON with configurable options"
-          >
-            <Download className="w-4 h-4" />
-            <span>Download</span>
-          </button>
-        </div>
 
         {/* ParaThinker Button - Beta Only */}
         {isBetaEnvironment && (
@@ -719,6 +676,8 @@ const StatusBarActions = React.memo(function StatusBarActions({
           openFiles={openFiles}
           getTerminalHistory={getTerminalHistory}
           terminalCommands={terminalCommands}
+          sessionId={sessionId}
+          currentTeamId={currentTeamId}
         />
       )}
 
@@ -731,20 +690,6 @@ const StatusBarActions = React.memo(function StatusBarActions({
         memoryDetection={memoryDetection}
       />
 
-      {/* Download Project Modal */}
-      <DownloadProjectModal
-        isOpen={isDownloadModalOpen}
-        onClose={() => setIsDownloadModalOpen(false)}
-      />
-      
-      {/* Preview AI Team Output Modal */}
-      {currentTeamId && (
-        <PreviewModal
-          isOpen={isPreviewModalOpen}
-          onClose={() => setIsPreviewModalOpen(false)}
-          teamId={currentTeamId}
-        />
-      )}
     </>
   );
 });
