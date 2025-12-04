@@ -15,14 +15,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Fall back to keyword search if OpenAI API not configured
     if (!embeddingService.isConfigured()) {
-      return NextResponse.json(
-        { 
-          error: 'Semantic search unavailable - OpenAI API key not configured',
-          fallback: 'Use keyword search instead'
-        },
-        { status: 503 }
-      );
+      console.log('⚠️ [SEARCH] OpenAI API not configured, using keyword fallback');
+      return await keywordSearchFallback(query, topK);
     }
 
     const startTime = Date.now();
@@ -175,4 +171,98 @@ async function getConversationDetails(ids: string[]): Promise<any[]> {
     filesInvolved: conv.files_involved ? JSON.parse(conv.files_involved) : [],
     tokensUsed: conv.tokens_used,
   }));
+}
+
+// Keyword-only fallback when OpenAI API is not available
+async function keywordSearchFallback(query: string, topK: number): Promise<NextResponse> {
+  const startTime = Date.now();
+
+  try {
+    await contextDatabase.initialize();
+    const db = (contextDatabase as any).db;
+    if (!db) {
+      return NextResponse.json(
+        { error: 'Database not initialized' },
+        { status: 500 }
+      );
+    }
+
+    // Tokenize query into keywords for flexible matching
+    const keywords = query.toLowerCase().split(/\s+/).filter(k => k.length > 2);
+
+    if (keywords.length === 0) {
+      return NextResponse.json({
+        results: [],
+        stats: { queryTime: Date.now() - startTime, resultsCount: 0, searchMode: 'keyword' }
+      });
+    }
+
+    // Build SQL LIKE conditions for each keyword
+    const conditions = keywords.map(() =>
+      `(LOWER(user_input) LIKE ? OR LOWER(claude_reply) LIKE ?)`
+    ).join(' OR ');
+
+    const params = keywords.flatMap(k => [`%${k}%`, `%${k}%`]);
+
+    const conversations = db.prepare(`
+      SELECT
+        id,
+        user_input,
+        claude_reply,
+        timestamp,
+        success,
+        error_type,
+        files_involved,
+        tokens_used
+      FROM claude_conversations
+      WHERE ${conditions}
+      ORDER BY timestamp DESC
+      LIMIT ?
+    `).all(...params, topK);
+
+    // Calculate simple relevance score based on keyword matches
+    const results = conversations.map((conv: any) => {
+      const text = `${conv.user_input || ''} ${conv.claude_reply || ''}`.toLowerCase();
+      const matchCount = keywords.filter(k => text.includes(k)).length;
+      const similarity = matchCount / keywords.length; // 0-1 range
+
+      return {
+        id: conv.id,
+        similarity: Math.round(similarity * 100) / 100,
+        conversation: {
+          id: conv.id,
+          userInput: conv.user_input,
+          claudeReply: conv.claude_reply,
+          timestamp: conv.timestamp,
+          success: conv.success === 1,
+          errorType: conv.error_type,
+          filesInvolved: conv.files_involved ? JSON.parse(conv.files_involved) : [],
+          tokensUsed: conv.tokens_used,
+        }
+      };
+    });
+
+    // Sort by relevance (keyword match count)
+    results.sort((a: any, b: any) => b.similarity - a.similarity);
+
+    const duration = Date.now() - startTime;
+
+    console.log(`🔑 [KEYWORD-SEARCH] Found ${results.length} results in ${duration}ms`);
+
+    return NextResponse.json({
+      results,
+      stats: {
+        queryTime: duration,
+        resultsCount: results.length,
+        searchMode: 'keyword', // Indicates fallback was used
+        keywords,
+      },
+    });
+  } catch (error: any) {
+    logger.error('❌ Keyword search fallback failed:', error);
+    return NextResponse.json(
+      { error: 'Keyword search failed', message: error.message },
+      { status: 500 }
+    );
+  }
 }
