@@ -3,7 +3,7 @@
 import React from 'react';
 import { useMissionControlStore } from '@/stores/useMissionControlStore';
 import BrowserTestPanel from './browser/BrowserTestPanel';
-import ArtifactsGallery from './artifacts/ArtifactsGallery';
+import ArtifactsInbox from './artifacts/ArtifactsInbox';
 import AgentDashboardPanel from './agents/AgentDashboardPanel';
 
 /**
@@ -20,7 +20,7 @@ export default function MCMainContent() {
         return <BrowserTestPanel />;
 
       case 'artifacts':
-        return <ArtifactsGallery />;
+        return <ArtifactsInbox />;
 
       case 'agents':
         return <AgentDashboardPanel />;

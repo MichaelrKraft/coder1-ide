@@ -339,6 +339,7 @@ const MenuBar = React.memo(function MenuBar({
             <SettingsIcon className="w-5 h-5" />
           </button>
         </div>
+
         </div>
       </div>
 
@@ -370,6 +371,37 @@ const MenuBar = React.memo(function MenuBar({
             }
           }
         `}</style>
+
+        {/* Mission Control Button */}
+        <button
+          onClick={() => {
+            window.dispatchEvent(new CustomEvent('openMissionControl'));
+            setActiveMenu(null);
+          }}
+          className="glass-button flex items-center gap-2 px-3 py-1 text-sm font-medium rounded-md transition-all duration-200"
+          style={{
+            background: 'linear-gradient(135deg, rgba(125, 211, 252, 0.1) 0%, rgba(187, 154, 247, 0.1) 100%)',
+            border: '1px solid rgba(0, 217, 255, 0.6)',
+            boxShadow: '0 0 10px rgba(0, 217, 255, 0.5), 0 0 20px rgba(0, 217, 255, 0.3), 0 4px 15px -3px rgba(0, 217, 255, 0.15), 0 2px 4px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.05)',
+            backdropFilter: 'blur(4px)',
+            WebkitBackdropFilter: 'blur(4px)',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.borderColor = 'rgba(251, 146, 60, 0.8)';
+            e.currentTarget.style.boxShadow = '0 0 15px rgba(251, 146, 60, 0.6), 0 0 30px rgba(251, 146, 60, 0.4), 0 8px 25px -5px rgba(251, 146, 60, 0.3), 0 2px 8px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1)';
+            e.currentTarget.style.transform = 'translateY(-2px) scale(1.02)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.borderColor = 'rgba(0, 217, 255, 0.6)';
+            e.currentTarget.style.boxShadow = '0 0 10px rgba(0, 217, 255, 0.5), 0 0 20px rgba(0, 217, 255, 0.3), 0 4px 15px -3px rgba(0, 217, 255, 0.15), 0 2px 4px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.05)';
+            e.currentTarget.style.transform = 'translateY(0) scale(1)';
+          }}
+          title="Mission Control - Monitor AI agents and tasks (Cmd+Shift+M)"
+          data-testid="mission-control-btn"
+        >
+          <span>Mission Control</span>
+        </button>
+
         {/* Menu dropdown */}
         <div className="relative" ref={menuRef}>
         <button
