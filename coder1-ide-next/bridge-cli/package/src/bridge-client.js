@@ -10,6 +10,7 @@ const PQueue = require('p-queue').default;
 const logger = require('./logger');
 const ClaudeExecutor = require('./claude-executor');
 const FileHandler = require('./file-handler');
+const { getSessionDataForHeartbeat } = require('./session-reader');
 
 class BridgeClient extends EventEmitter {
   constructor(options = {}) {
@@ -404,20 +405,24 @@ class BridgeClient extends EventEmitter {
         // Update memory usage
         const memUsage = process.memoryUsage();
         this.stats.memoryUsage = Math.round(memUsage.heapUsed / 1024 / 1024);
-        
+
         // Calculate uptime
         const uptime = Math.floor((Date.now() - this.stats.uptime) / 1000);
-        
-        // Send heartbeat
+
+        // Get Claude Code session data (Phase 1: Token Tracking)
+        const sessionData = getSessionDataForHeartbeat();
+
+        // Send heartbeat with session data
         this.socket.emit('heartbeat', {
           timestamp: Date.now(),
           status: 'active',
           stats: {
             ...this.stats,
             uptime
-          }
+          },
+          sessionData // Include token usage from ~/.claude/projects/
         });
-        
+
         this.lastHeartbeat = Date.now();
       }
     }, 30000); // Every 30 seconds
