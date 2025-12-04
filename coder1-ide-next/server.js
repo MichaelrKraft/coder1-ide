@@ -317,6 +317,47 @@ const claudeCodeSessions = new Map(); // sessionId -> { inClaudeSession: boolean
 const terminalDataBuffers = new Map(); // Buffer terminal data for context capture
 const contextSessions = new Map(); // Map terminal sessions to context sessions
 
+// Activity tracking for memory flush scheduling (Dec 4, 2025)
+let lastTerminalActivity = Date.now();
+let lastClaudeResponseTime = 0; // Track when Claude responses complete
+const markTerminalActivity = () => {
+  lastTerminalActivity = Date.now();
+};
+
+// Detect Claude response completion for early memory flush
+const detectClaudeResponse = (content) => {
+  // Quick patterns that indicate Claude response completion
+  const completionPatterns = [
+    /^\s*\$\s*$/m,                    // Shell prompt after response
+    /Human:|User:/i,                   // Next turn marker
+    /───────────────/,                 // Claude section dividers
+    /✓.*completed/i,                   // Task completion
+    /Created|Modified|Fixed|Added/i,   // Action completion words
+  ];
+
+  return completionPatterns.some(p => p.test(content));
+};
+
+// Smart early flush when Claude response detected
+const triggerEarlyFlushIfNeeded = async (sessionId, content) => {
+  if (!detectClaudeResponse(content)) return;
+
+  // Don't flush too often (min 15s between early flushes)
+  const now = Date.now();
+  if (now - lastClaudeResponseTime < 15000) return;
+
+  lastClaudeResponseTime = now;
+
+  const buffer = terminalDataBuffers.get(sessionId);
+  // Early flush if we have at least 5 chunks (reduced from 10)
+  if (buffer && buffer.length >= 5) {
+    // Fire and forget - don't block terminal
+    flushContextData(sessionId).catch(err => {
+      console.warn(`[Context] Early flush failed:`, err.message);
+    });
+  }
+};
+
 // 🔌 Initialize server buffer access for requirement extraction API
 try {
   const { initializeServerBuffers } = require(path.join(__dirname, 'lib', 'server-terminal-access.js'));
@@ -1710,12 +1751,13 @@ app.prepare().then(() => {
     });
     
     /**
-     * Intercepts claude commands and injects --model flag
+     * Intercepts claude commands and injects --model flag and --dangerously-skip-permissions
      * @param {string} command - The command string (e.g., "claude fix bug")
      * @param {string} selectedModel - Model ID from useModelStore
-     * @returns {string} Modified command with --model flag injected (or original if not applicable)
+     * @param {boolean} skipPermissions - Whether to inject --dangerously-skip-permissions flag
+     * @returns {string} Modified command with flags injected (or original if not applicable)
      */
-    function interceptClaudeCommand(command, selectedModel) {
+    function interceptClaudeCommand(command, selectedModel, skipPermissions = false) {
       // 0. Strip ANSI escape codes (arrow keys, etc.) before checking
       // eslint-disable-next-line no-control-regex
       const cleanCommand = command ? command.replace(/\x1b\[[^m]*m?/g, '').replace(/\[[A-Z]/g, '') : '';
@@ -1766,13 +1808,28 @@ app.prepare().then(() => {
       const claudeCmd = parts[0];  // "claude"
       const restOfCommand = parts.slice(1).join(' ');  // Everything after "claude"
       
-      // 5. Inject --model flag RIGHT after "claude" command
-      // This ensures proper flag order: claude --model X --append-system-prompt "..." query
-      const injectedCommand = restOfCommand 
-        ? `${claudeCmd} --model ${modelAlias} ${restOfCommand}`
-        : `${claudeCmd} --model ${modelAlias}`;
-      
-      console.log(`🎯 Model injection: "${trimmedCommand}" → "${injectedCommand}" (using alias: ${modelAlias})`);
+      // 5. Build injected command with flags
+      // Flag order: claude --dangerously-skip-permissions --model X --append-system-prompt "..." query
+      let flags = [];
+
+      // Add skip permissions flag if enabled (must come before --model)
+      if (skipPermissions) {
+        // Check if flag already exists to prevent duplication
+        if (!cleanCommand.includes('--dangerously-skip-permissions')) {
+          flags.push('--dangerously-skip-permissions');
+          console.log(`🔓 Skip permissions enabled - injecting flag`);
+        }
+      }
+
+      // Add model flag
+      flags.push(`--model ${modelAlias}`);
+
+      const flagsStr = flags.join(' ');
+      const injectedCommand = restOfCommand
+        ? `${claudeCmd} ${flagsStr} ${restOfCommand}`
+        : `${claudeCmd} ${flagsStr}`;
+
+      console.log(`🎯 Command injection: "${trimmedCommand}" → "${injectedCommand}" (model: ${modelAlias}, skipPermissions: ${skipPermissions})`);
       return injectedCommand;
     }
     
@@ -1833,7 +1890,7 @@ app.prepare().then(() => {
     }
     
     // Handle terminal input with Conductor command detection
-    socket.on('terminal:input', async ({ id, data, selectedClaudeModel }) => {
+    socket.on('terminal:input', async ({ id, data, selectedClaudeModel, skipPermissions }) => {
       const sessionId = id || currentSessionId;
       
       // 🔍 DEBUG: Log session lookup
@@ -2393,9 +2450,9 @@ app.prepare().then(() => {
             console.log('✅ [Eternal Memory] Context injected into execution command');
           }
           
-          // 🎯 MODEL INJECTION: Add model flag to execution command (also silent)
+          // 🎯 MODEL & FLAGS INJECTION: Add model flag and skip permissions to execution command (also silent)
           if (needsInjection) {
-            executionCommand = interceptClaudeCommand(executionCommand, selectedClaudeModel);
+            executionCommand = interceptClaudeCommand(executionCommand, selectedClaudeModel, skipPermissions);
           }
           
           console.log(`🔍 [SILENT INJECTION] Display: "${displayCommand}"`);
@@ -2951,7 +3008,7 @@ const bufferTerminalData = (sessionId, type, content) => {
   if (!terminalDataBuffers.has(sessionId)) {
     terminalDataBuffers.set(sessionId, []);
   }
-  
+
   const buffer = terminalDataBuffers.get(sessionId);
   buffer.push({
     timestamp: Date.now(),
@@ -2959,6 +3016,14 @@ const bufferTerminalData = (sessionId, type, content) => {
     content,
     sessionId
   });
+
+  // Track activity for memory flush scheduling
+  markTerminalActivity();
+
+  // Check for early flush on terminal output (Claude response detection)
+  if (type === 'terminal_output') {
+    triggerEarlyFlushIfNeeded(sessionId, content);
+  }
   
   // 🔧 FIX (Nov 19, 2025): Increased buffer size and smart rotation
   // Keep buffer size manageable (last 500 chunks, but prioritize terminal_input)
@@ -3026,32 +3091,49 @@ const flushContextData = async (sessionId) => {
   }
 };
 
-// 🔇 DISABLED: Contextual memory causing second question freeze (Feb 1, 2025)
-// Periodically flush buffered terminal data with safeguards
-// let isFlushingContext = false;
-// setInterval(async () => {
-//   // Prevent concurrent flushes (safeguard against loops)
-//   if (isFlushingContext) {
-//     console.log('[Context] Skipping flush - previous flush still in progress');
-//     return;
-//   }
-//   
-//   isFlushingContext = true;
-//   
-//   try {
-//     for (const [sessionId] of terminalDataBuffers) {
-//       // Only flush if buffer has significant data
-//       const buffer = terminalDataBuffers.get(sessionId);
-//       if (buffer && buffer.length > 5) { // Only flush if we have more than 5 chunks
-//         await flushContextData(sessionId);
-//       }
-//     }
-//   } catch (error) {
-//     console.error('[Context] Error during flush:', error);
-//   } finally {
-//     isFlushingContext = false;
-//   }
-// }, 30000); // Flush every 30 seconds instead of 5 seconds
+// 🔧 RE-ENABLED: Contextual memory with non-blocking flush (Dec 4, 2025)
+// Previous issue: await in for-loop blocked event loop causing terminal freeze
+// Fix: Fire-and-forget pattern with batch limits and activity checks
+let isFlushingContext = false;
+
+setInterval(() => {
+  // Skip if another flush is running
+  if (isFlushingContext) {
+    return;
+  }
+
+  // Skip if no terminal activity in last 2 minutes (user likely idle)
+  const idleTime = Date.now() - lastTerminalActivity;
+  if (idleTime > 120000) {
+    return;
+  }
+
+  isFlushingContext = true;
+
+  // Process each session without awaiting (fire-and-forget)
+  const flushPromises = [];
+  for (const [sessionId] of terminalDataBuffers) {
+    const buffer = terminalDataBuffers.get(sessionId);
+    // Only flush if buffer has meaningful data (>5 chunks, reduced from 10 for faster capture)
+    if (buffer && buffer.length > 5) {
+      // Fire and forget - don't await
+      flushPromises.push(
+        flushContextData(sessionId).catch(err => {
+          console.warn(`[Context] Flush failed for ${sessionId}:`, err.message);
+        })
+      );
+    }
+  }
+
+  // Reset flag after all flushes complete (but don't block interval)
+  if (flushPromises.length > 0) {
+    Promise.all(flushPromises).finally(() => {
+      isFlushingContext = false;
+    });
+  } else {
+    isFlushingContext = false;
+  }
+}, 60000); // Flush every 60 seconds (was 30s)
   
   // Graceful shutdown
   const gracefulShutdown = async (signal) => {
