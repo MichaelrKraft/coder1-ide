@@ -519,6 +519,28 @@ export default function DiscoverPanel() {
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto px-4 py-3" style={{ maxHeight: '500px' }}>
+          {/* AI Plugins - Prominent Feature */}
+          <div className="mb-4 p-4 border-2 border-coder1-purple rounded-lg bg-gradient-to-br from-coder1-purple/10 to-coder1-cyan/5">
+            <a
+              href="http://localhost:3001/templates-hub.html"
+              target="_blank"
+              className="block group"
+            >
+              <div className="flex items-center gap-3 mb-2">
+                <div className="p-2 bg-coder1-purple/20 rounded-lg group-hover:bg-coder1-purple/30 transition-all">
+                  <Grid className="w-5 h-5 text-coder1-purple" />
+                </div>
+                <div className="flex-1">
+                  <h4 className="text-base font-bold text-coder1-purple group-hover:text-coder1-cyan transition-colors">
+                    ✨ AI Plugins
+                  </h4>
+                  <p className="text-xs text-text-muted">Access code templates and workflow automation</p>
+                </div>
+                <Sparkles className="w-5 h-5 text-coder1-cyan opacity-0 group-hover:opacity-100 transition-opacity" />
+              </div>
+            </a>
+          </div>
+
           {/* Slash Commands (Scrollable) */}
           <div className="mb-4">
             <div className="flex items-center justify-between mb-2">
@@ -615,34 +637,6 @@ export default function DiscoverPanel() {
                   </button>
                 </div>
               </div>
-            </div>
-          </div>
-
-          {/* AI Tools Section */}
-          <div className="mb-4 p-3 border-2 border-coder1-purple rounded-lg bg-coder1-purple/5">
-            <h4 className="text-xs font-semibold text-coder1-purple uppercase tracking-wider mb-3">✨ AI TOOLS</h4>
-            <div className="grid grid-cols-2 gap-2 text-sm text-text-secondary">
-              {/* AI Hooks - Deferred for future implementation (Nov 2025)
-              <div className="flex items-center gap-2">
-                <span>•</span>
-                <a href="http://localhost:3001/hooks-v3.html" target="_blank" className="text-coder1-cyan hover:text-coder1-cyan-secondary transition-colors">AI Hooks</a>
-              </div>
-              */}
-              <div className="flex items-center gap-2">
-                <span>•</span>
-                <a href="http://localhost:3001/templates-hub.html" target="_blank" className="text-coder1-cyan hover:text-coder1-cyan-secondary transition-colors">AI Plugins</a>
-              </div>
-              <div className="flex items-center gap-2">
-                <span>•</span>
-                <a href="http://localhost:3001/components-capture.html" target="_blank" className="text-coder1-cyan hover:text-coder1-cyan-secondary transition-colors">AI Components</a>
-              </div>
-              <div className="flex items-center gap-2">
-                <span>•</span>
-                <a href="http://localhost:3001/smart-prd-generator-standalone.html" target="_blank" className="text-coder1-cyan hover:text-coder1-cyan-secondary transition-colors">AI PRD</a>
-              </div>
-            </div>
-            <div className="mt-3 pt-3 border-t border-coder1-purple/30 text-xs text-text-muted">
-              💡 Tip: Analytics moved to AI Dashboard (Menu → AI dashboard)
             </div>
           </div>
 

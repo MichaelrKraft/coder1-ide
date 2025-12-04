@@ -220,6 +220,7 @@ const MenuBar = React.memo(function MenuBar({
     { icon: Home, label: 'Home page', href: '/' },
     { icon: Grid, label: 'AI dashboard', href: '/vibe-dashboard' },
     { icon: Sparkles, label: 'Features', href: '/documentation.html' },
+    { icon: FileText, label: 'AI PRD', href: 'http://localhost:3001/smart-prd-generator-standalone.html', target: '_blank' },
     { icon: BookOpen, label: 'Documentation', href: '/documentation' },
     { icon: SettingsIcon, label: 'Settings', href: '#', onClick: () => onShowSettings?.() },
   ];

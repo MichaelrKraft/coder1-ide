@@ -1038,7 +1038,7 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
         clearInterval(scrollCheckIntervalRef.current);
         scrollCheckIntervalRef.current = null;
       }
-      
+
       // Clean up scroll debounce timer
       if (scrollDebounceRef.current) {
         clearTimeout(scrollDebounceRef.current);
@@ -3750,13 +3750,21 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
         // ENHANCED Auto-scroll for Claude Code accessibility - AGGRESSIVE scrolling during active sessions
         // ⚡ PERFORMANCE FIX (Feb 1, 2025): Only run expensive scroll logic when buffer grows
         // ⚡ PERFORMANCE FIX (Feb 2, 2025): Skip scroll logic entirely for keystroke echoes (data.length <= 10)
+        // 🔧 FIX (Dec 4, 2025): Only auto-scroll if user is near bottom - allow free scrolling during output
         if (claudeActive && lastDataSizeRef.current > 10) {
           const currentBufferLength = term.buffer?.active?.length || 0;
           const bufferGrew = currentBufferLength > lastBufferLengthRef.current;
           lastBufferLengthRef.current = currentBufferLength;
-          
-          // Only do aggressive scrolling when new content is added
-          if (bufferGrew) {
+
+          // Check if user is near the bottom before auto-scrolling
+          // This allows users to scroll up and stay there during Claude output
+          const viewport = terminalRef.current?.querySelector('.xterm-viewport') as HTMLElement;
+          const isNearBottom = viewport
+            ? (viewport.scrollHeight - viewport.scrollTop - viewport.clientHeight < 100)
+            : true; // Default to auto-scroll if we can't check
+
+          // Only do aggressive scrolling when new content is added AND user is near bottom
+          if (bufferGrew && isNearBottom) {
             // ⚡ PERFORMANCE FIX (Feb 2, 2025): Use RAF instead of 4 setTimeout calls
             // Previous: Created 200+ pending timers during long Claude responses
             // Result: Event loop blocked, causing input lag after 5+ questions
@@ -3766,19 +3774,19 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
                 try {
                   // Scroll terminal to bottom
                   term.scrollToBottom();
-                  
+
                   // Scroll container (critical for Claude Code prompt access)
                   const terminalContainer = terminalRef.current?.parentElement;
                   if (terminalContainer) {
                     terminalContainer.scrollTop = terminalContainer.scrollHeight;
                   }
-                  
+
                   // Force viewport scroll for deep content
                   const terminalElement = terminalRef.current;
                   if (terminalElement) {
-                    const viewport = terminalElement.querySelector('.xterm-viewport');
-                    if (viewport) {
-                      viewport.scrollTop = viewport.scrollHeight;
+                    const vp = terminalElement.querySelector('.xterm-viewport');
+                    if (vp) {
+                      (vp as HTMLElement).scrollTop = (vp as HTMLElement).scrollHeight;
                     }
                   }
                 } catch (e) {
@@ -3786,10 +3794,8 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
                 }
               }
             });
-          } else {
-            // Buffer didn't grow - just do simple scroll
-            term.scrollToBottom();
           }
+          // If user scrolled away (not near bottom), don't auto-scroll - let them read
         } else {
           // Smart auto-scroll logic for non-Claude sessions
           if (term.buffer && term.buffer.active) {
