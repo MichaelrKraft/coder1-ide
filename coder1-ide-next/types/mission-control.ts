@@ -86,6 +86,11 @@ export interface CommandResult {
 export type ArtifactType = 'video' | 'trace' | 'screenshot' | 'document' | 'code';
 
 /**
+ * Artifact status in the inbox workflow
+ */
+export type ArtifactStatus = 'pending' | 'saved' | 'deleted';
+
+/**
  * Generated artifact from IDE operations
  */
 export interface Artifact {
@@ -101,6 +106,12 @@ export interface Artifact {
   size: number;
   /** Creation timestamp */
   createdAt: Date;
+  /** Inbox status: pending review, saved, or deleted */
+  status: ArtifactStatus;
+  /** Which agent produced this artifact */
+  sourceAgent?: string;
+  /** Associated task or exploration ID */
+  taskId?: string;
   /** Additional metadata */
   metadata?: {
     /** Associated test ID if applicable */
@@ -113,6 +124,8 @@ export interface Artifact {
     mimeType?: string;
     /** Description or context */
     description?: string;
+    /** Where saved to (if status is 'saved') */
+    savedTo?: string;
   };
 }
 
