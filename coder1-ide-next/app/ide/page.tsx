@@ -23,6 +23,8 @@ import HandoffWarningBanner from "@/components/HandoffWarningBanner";
 // import DragDropOverlay from "@/components/terminal/DragDropOverlay"; // Disabled - conflicts with StagedComposer
 import DocumentationPanel from "@/components/documentation/DocumentationPanel";
 import QuickDocsLookup from "@/components/documentation/QuickDocsLookup";
+import AITeamDashboard from "@/components/preview/AITeamDashboard";
+import MissionControlLayout from "@/components/mission-control/MissionControlLayout";
 
 // Conductor components removed - using simple multi-Claude tabs instead
 
@@ -134,6 +136,9 @@ function IDEPageContent() {
   const [showKeyboardShortcuts, setShowKeyboardShortcuts] = useState(false);
   const [showQuickDocs, setShowQuickDocs] = useState(false);
   const [fontSize, setFontSize] = useState(14);
+
+  // Mission Control state
+  const [missionControlActive, setMissionControlActive] = useState(false);
   
   // Editor state
   const [activeFile, setActiveFile] = useState<string | null>(null);
@@ -1046,12 +1051,12 @@ function IDEPageContent() {
     const handleKeyDown = (e: KeyboardEvent) => {
       const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
       const ctrlKey = isMac ? e.metaKey : e.ctrlKey;
-      
+
       // Debug logging for focus mode
       if (ctrlKey && e.shiftKey) {
         console.log(`⌨️ Keyboard: Ctrl+Shift+${e.key} pressed`);
       }
-      
+
       // File shortcuts
       if (ctrlKey && e.key === 'n') {
         e.preventDefault();
@@ -1070,7 +1075,7 @@ function IDEPageContent() {
         e.preventDefault();
         handleCloseFile();
       }
-      
+
       // Edit shortcuts
       else if (ctrlKey && e.key === 'f') {
         e.preventDefault();
@@ -1079,7 +1084,7 @@ function IDEPageContent() {
         e.preventDefault();
         handleReplace();
       }
-      
+
       // View shortcuts
       else if (ctrlKey && e.shiftKey && e.key === 'E') {
         e.preventDefault();
@@ -1110,13 +1115,21 @@ function IDEPageContent() {
         e.preventDefault();
         handleResetZoom();
       }
-      
+
       // Quick Docs Lookup (Cmd+D / Ctrl+D)
       else if (ctrlKey && e.key === 'd' && !e.shiftKey) {
         e.preventDefault();
         setShowQuickDocs(true);
       }
-      
+
+      // Mission Control (Cmd+Shift+M / Ctrl+Shift+M)
+      else if (ctrlKey && e.shiftKey && (e.key === 'M' || e.key === 'm')) {
+        console.log('🚀 Mission Control keyboard shortcut triggered!');
+        e.preventDefault();
+        e.stopPropagation();
+        setMissionControlActive(prev => !prev);
+      }
+
       // Run shortcuts
       else if (e.key === 'F5') {
         e.preventDefault();
@@ -1272,13 +1285,13 @@ function IDEPageContent() {
   // Handle pending sandbox from Timeline checkpoint restoration
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    
+
     const pendingSandbox = sessionStorage.getItem('pendingSandbox');
     if (pendingSandbox) {
       try {
         const sandboxData = JSON.parse(pendingSandbox);
         console.log('🏖️ IDE: Found pending sandbox from Timeline:', sandboxData.name);
-        
+
         // Wait for terminal to be ready before dispatching
         const dispatchSandbox = () => {
           window.dispatchEvent(new CustomEvent('terminal:createSandbox', {
@@ -1286,7 +1299,7 @@ function IDEPageContent() {
           }));
           console.log('✅ IDE: Sandbox creation event dispatched');
         };
-        
+
         // Check if terminal is already ready
         if ((window as any).terminalSessionId) {
           dispatchSandbox();
@@ -1297,7 +1310,7 @@ function IDEPageContent() {
             window.removeEventListener('terminalReady', handleTerminalReady);
           };
           window.addEventListener('terminalReady', handleTerminalReady);
-          
+
           // Fallback timeout
           setTimeout(() => {
             if (!document.querySelector('[data-sandbox-tab]')) {
@@ -1305,7 +1318,7 @@ function IDEPageContent() {
             }
           }, 2000);
         }
-        
+
         // Clear the pending sandbox
         sessionStorage.removeItem('pendingSandbox');
       } catch (error) {
@@ -1314,6 +1327,44 @@ function IDEPageContent() {
       }
     }
   }, []);
+
+  // Expose Mission Control toggle function and listen for custom event
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    // Expose toggle function for MenuBar to call
+    (window as any).toggleMissionControl = () => {
+      setMissionControlActive(prev => !prev);
+    };
+
+    // Listen for custom event from MenuBar
+    const handleOpenMissionControl = () => {
+      setMissionControlActive(true);
+    };
+
+    window.addEventListener('openMissionControl', handleOpenMissionControl);
+
+    return () => {
+      delete (window as any).toggleMissionControl;
+      window.removeEventListener('openMissionControl', handleOpenMissionControl);
+    };
+  }, []);
+
+  // Render Mission Control if active
+  if (missionControlActive) {
+    return (
+      <SessionProvider>
+        <EnhancedSupervisionProvider>
+          <TerminalCommandProvider
+            sessionId={terminalSessionId}
+            terminalReady={terminalReady}
+          >
+            <MissionControlLayout onClose={() => setMissionControlActive(false)} />
+          </TerminalCommandProvider>
+        </EnhancedSupervisionProvider>
+      </SessionProvider>
+    );
+  }
 
   return (
     <SessionProvider>
@@ -1329,7 +1380,7 @@ function IDEPageContent() {
             isProcessing={isProcessingFiles}
             isComposerVisible={composerVisible}
           /> */}
-          
+
           <div className="h-screen w-full flex flex-col bg-bg-primary">
             {/* Menu Bar */}
             <MenuBar

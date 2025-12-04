@@ -9,15 +9,18 @@ export * from './ide';
 // Session and AI types
 export * from './session';
 
-// UI and component types  
+// UI and component types
 export * from './ui';
 
+// Mission Control types
+export * from './mission-control';
+
 // Re-export commonly used React types for convenience
-export type { 
-  ReactNode, 
-  ReactElement, 
-  ComponentProps, 
-  MouseEvent, 
+export type {
+  ReactNode,
+  ReactElement,
+  ComponentProps,
+  MouseEvent,
   KeyboardEvent,
   ChangeEvent,
   FormEvent

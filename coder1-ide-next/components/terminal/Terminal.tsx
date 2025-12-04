@@ -5538,22 +5538,17 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
             </button>
           )}
 
-          {/* AI Team button - Spawn parallel AI agents */}
+          {/* AI Team button - Opens Mission Control Agent Dashboard */}
           <button
-            onClick={handleSpawnAgents}
-            disabled={agentsRunning}
-            className={`terminal-control-btn flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md transition-all ${
-              agentsRunning 
-                ? 'opacity-50 cursor-not-allowed' 
-                : 'hover:bg-gradient-to-r hover:from-purple-600/20 hover:to-coder1-cyan/20'
-            }`}
-            title={agentsRunning ? 'AI Team is already running' : 'Spawn AI Team to build your project'}
+            onClick={() => {
+              // Open Mission Control with Agent Dashboard as primary module
+              window.dispatchEvent(new CustomEvent('openMissionControl'));
+            }}
+            className="terminal-control-btn flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md transition-all hover:bg-gradient-to-r hover:from-purple-600/20 hover:to-coder1-cyan/20"
+            title="Open Mission Control to spawn AI agents"
           >
             <Users className="w-4 h-4" />
-            <span>{agentsRunning ? 'Team Active' : 'AI Team'}</span>
-            {agentsRunning && (
-              <div className="ml-1 w-2 h-2 bg-coder1-cyan rounded-full animate-pulse" />
-            )}
+            <span>AI Team</span>
           </button>
 
           {/* Error Doctor button - matches Memory button style exactly */}
