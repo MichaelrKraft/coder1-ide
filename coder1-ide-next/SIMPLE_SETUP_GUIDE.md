@@ -22,7 +22,7 @@ coder1:coder1-ide-next$ coder1-bridge start  # WRONG! This is the web server!
 ## 🚀 STEP-BY-STEP SETUP
 
 ### Step 1: Click Connect Bridge Button
-In the web IDE (https://coder1-ide.onrender.com/ide):
+In the web IDE (https://coder1.ai/ide):
 - Look at the bottom status bar
 - Click the blue "🌉 Connect Bridge" button
 - A popup will show a 6-digit code (like `823456`)
@@ -37,7 +37,7 @@ In the web IDE (https://coder1-ide.onrender.com/ide):
 ### Step 3: Install Bridge (One Time Only)
 **In YOUR terminal** (the one you just opened on your computer):
 ```bash
-curl -sL https://coder1-ide.onrender.com/install-bridge.sh | bash
+curl -sL https://coder1.ai/install-bridge.sh | bash
 ```
 
 If curl isn't available (Windows), download and run:

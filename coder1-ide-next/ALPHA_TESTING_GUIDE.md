@@ -4,7 +4,7 @@
 
 ## 📍 Current Status
 
-**Deployment URL**: https://coder1-ide.onrender.com (pending deployment)
+**Deployment URL**: https://coder1.ai (pending deployment)
 **Local Testing**: Available NOW at http://localhost:3001
 
 ## 🎯 Two Ways to Test Coder1
@@ -46,7 +46,7 @@ npm link
 coder1-bridge start
 
 # 3. Open the IDE (local or deployed)
-# Visit http://localhost:3001 or https://coder1-ide.onrender.com
+# Visit http://localhost:3001 or https://coder1.ai
 
 # 4. Click "Connect Bridge" in the IDE
 # You'll see a 6-digit pairing code

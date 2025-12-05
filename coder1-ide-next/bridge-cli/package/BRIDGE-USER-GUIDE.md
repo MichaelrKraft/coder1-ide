@@ -12,7 +12,7 @@ Coder1 Bridge connects your browser-based IDE to your local Claude Code installa
 
 ### Quick Install (Recommended)
 ```bash
-curl -sL https://coder1-ide.onrender.com/install-bridge.sh | bash
+curl -sL https://coder1.ai/install-bridge.sh | bash
 ```
 
 This will:
@@ -32,7 +32,7 @@ npm link
 ## First Connection
 
 1. **Open Coder1 IDE**
-   - Visit: https://coder1-ide.onrender.com/ide
+   - Visit: https://coder1.ai/ide
    - You'll see the IDE interface with terminal and editor
 
 2. **Start Connection**

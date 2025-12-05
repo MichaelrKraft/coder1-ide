@@ -8,7 +8,7 @@ After deep investigation with production endpoint testing, I've identified the *
 
 **Your user is trying to connect to the WRONG server.**
 
-Their bridge CLI is connecting to: `https://coder1-ide.onrender.com`
+Their bridge CLI is connecting to: `https://coder1.ai`
 But that server **DOES NOT EXIST** or is **NOT RUNNING**.
 
 The working server is at: `https://coder1.ai`
@@ -16,8 +16,8 @@ The working server is at: `https://coder1.ai`
 ### Evidence
 
 ```bash
-# Testing coder1-ide.onrender.com (user's URL):
-$ curl https://coder1-ide.onrender.com/api/bridge/pair
+# Testing coder1.ai (user's URL):
+$ curl https://coder1.ai/api/bridge/pair
 Response: "Not Found" (plain text, NOT JSON)
 Header: x-render-routing: no-server
 
@@ -29,7 +29,7 @@ Response: {"success":false,"error":"Invalid or expired pairing code"}
 
 ### Why This Happened
 
-1. User installed an **old version** of the bridge CLI that had `coder1-ide.onrender.com` hardcoded
+1. User installed an **old version** of the bridge CLI that had `coder1.ai` hardcoded
 2. That Render deployment either:
    - Was deleted/stopped
    - Never existed
@@ -93,7 +93,7 @@ The Nov 21-22 fixes were **actually correct**:
 
 | Domain | Status | API Response | Root Cause |
 |--------|--------|--------------|------------|
-| `coder1-ide.onrender.com` | ❌ NOT RUNNING | "Not Found" (plain text) | No server deployed at this URL |
+| `coder1.ai` | ❌ NOT RUNNING | "Not Found" (plain text) | No server deployed at this URL |
 | `coder1.ai` | ✅ RUNNING | Valid JSON errors | Working production server |
 
 ---
@@ -131,7 +131,7 @@ coder1-bridge start
 ```
 
 **What was wrong:**
-Your installed bridge was connecting to an old server URL (`coder1-ide.onrender.com`) that's no longer active. The updated version connects to the correct server at `coder1.ai`.
+Your installed bridge was connecting to an old server URL (`coder1.ai`) that's no longer active. The updated version connects to the correct server at `coder1.ai`.
 
 **Why reinstall is needed:**
 The previous fixes updated the source code, but your installed CLI still has the old URL cached. A fresh install solves this completely.
@@ -151,7 +151,7 @@ Both previous agents made correct code changes:
 - ✅ Rebuilt and deployed tarball
 
 **But they missed**:
-- ❌ Didn't verify `coder1-ide.onrender.com` was actually running
+- ❌ Didn't verify `coder1.ai` was actually running
 - ❌ Didn't test production endpoints before declaring "fixed"
 - ❌ Didn't realize user needs to **reinstall** to get the updated URL
 

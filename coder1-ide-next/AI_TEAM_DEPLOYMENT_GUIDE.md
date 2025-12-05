@@ -81,9 +81,9 @@ NODE_OPTIONS=--max-old-space-size=400 --expose-gc
 MEMORY_PANIC_THRESHOLD_MB=380
 
 # URLs
-NEXT_PUBLIC_API_URL=https://coder1-ide.onrender.com
-NEXT_PUBLIC_UNIFIED_SERVER_URL=https://coder1-ide.onrender.com
-NEXT_PUBLIC_WEBSOCKET_URL=wss://coder1-ide.onrender.com
+NEXT_PUBLIC_API_URL=https://coder1.ai
+NEXT_PUBLIC_UNIFIED_SERVER_URL=https://coder1.ai
+NEXT_PUBLIC_WEBSOCKET_URL=wss://coder1.ai
 NEXT_PUBLIC_UNIFIED_SERVER=true
 
 # Claude OAuth
@@ -127,14 +127,14 @@ NEXT_PUBLIC_ENABLE_LOCAL_SYNC=true
 1. Click **"Create Web Service"**
 2. Wait for build (~5-10 minutes)
 3. Monitor logs for any errors
-4. Once deployed, access: https://coder1-ide.onrender.com
+4. Once deployed, access: https://coder1.ai
 
 ## ✅ Verification Steps
 
 ### 1. Check Health Endpoint
 
 ```bash
-curl https://coder1-ide.onrender.com/api/health
+curl https://coder1.ai/api/health
 ```
 
 Expected response:
@@ -144,7 +144,7 @@ Expected response:
 
 ### 2. Test AI Team Functionality
 
-1. Navigate to https://coder1-ide.onrender.com/ide
+1. Navigate to https://coder1.ai/ide
 2. Click **"AI Team"** button in status bar
 3. Look for success message (not fallback mode)
 4. Verify agents spawn with actual names (not "Setup Assistant")
@@ -192,7 +192,7 @@ In Render dashboard:
 
 **Cause**: CORS or WebSocket configuration
 **Solution**:
-1. Verify WebSocket URL: `wss://coder1-ide.onrender.com`
+1. Verify WebSocket URL: `wss://coder1.ai`
 2. Check CORS_ORIGINS environment variable
 3. Ensure Render supports WebSocket (it does by default)
 
@@ -271,7 +271,7 @@ grep "heap" logs.txt
 
 Your deployment is successful when:
 
-✅ Site loads at https://coder1-ide.onrender.com  
+✅ Site loads at https://coder1.ai  
 ✅ IDE interface appears at /ide  
 ✅ AI Team button spawns real agents (not fallback)  
 ✅ Terminal shows agent activities  

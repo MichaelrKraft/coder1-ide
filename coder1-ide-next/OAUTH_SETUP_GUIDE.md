@@ -81,7 +81,7 @@ npm run dev
 
 ### Test Production
 
-1. Navigate to https://coder1-ide.onrender.com/ide
+1. Navigate to https://coder1.ai/ide
 2. Click the "AI Team" button
 3. Check for successful agent spawning without fallback messages
 

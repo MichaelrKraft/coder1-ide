@@ -107,16 +107,16 @@ this.serverUrl = options.serverUrl || (isLocal ? 'http://localhost:3001' : 'http
 
 ## ❌ What's NOT Working (Old URL)
 
-The old `coder1-ide.onrender.com` domain is **NOT running**:
+The old `coder1.ai` domain is **NOT running**:
 
 ```bash
-$ curl -I https://coder1-ide.onrender.com/api/health
+$ curl -I https://coder1.ai/api/health
 HTTP/2 404
 x-render-routing: no-server
 ❌ Server does not exist at this URL
 ```
 
-**This is why your alpha user is failing** - they have an old CLI installation that connects to `coder1-ide.onrender.com`.
+**This is why your alpha user is failing** - they have an old CLI installation that connects to `coder1.ai`.
 
 ---
 
@@ -139,7 +139,7 @@ x-render-routing: no-server
 Your current alpha user needs to **reinstall** because:
 
 1. ❌ They installed before URL was updated
-2. ❌ Their CLI has old `coder1-ide.onrender.com` URL
+2. ❌ Their CLI has old `coder1.ai` URL
 3. ❌ That server is not running
 4. ✅ Reinstalling will give them the correct `coder1.ai` URL
 
@@ -166,7 +166,7 @@ coder1-bridge start
 | Verify Script | verify-bridge.sh | `coder1.ai` | ✅ Correct |
 | Production Tarball | bridge-cli.tar.gz | `coder1.ai` | ✅ Correct |
 | Production Server | https://coder1.ai | Running | ✅ Working |
-| Old Server | https://coder1-ide.onrender.com | Not Running | ❌ Dead |
+| Old Server | https://coder1.ai | Not Running | ❌ Dead |
 
 ---
 

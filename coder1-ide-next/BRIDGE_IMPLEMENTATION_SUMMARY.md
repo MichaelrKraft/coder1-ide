@@ -14,12 +14,12 @@ We've successfully implemented a **complete bridge system** that connects your w
 
 ### Step 1: Visit Your Deployed IDE
 ```
-https://coder1-ide.onrender.com
+https://coder1.ai
 ```
 
 ### Step 2: Install Bridge (One Command)
 ```bash
-curl -sL https://coder1-ide.onrender.com/install-bridge.sh | bash
+curl -sL https://coder1.ai/install-bridge.sh | bash
 ```
 Or:
 ```bash

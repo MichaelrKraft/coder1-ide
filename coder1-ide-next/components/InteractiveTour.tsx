@@ -419,7 +419,7 @@ If you prefer to set up manually:
 \`\`\`bash
 # On YOUR local computer (not in this web terminal):
 # 1. Install the bridge
-curl -sL https://coder1-ide.onrender.com/install-bridge.sh | bash
+curl -sL https://coder1.ai/install-bridge.sh | bash
 
 # 2. Start the bridge and enter the pairing code
 coder1-bridge start

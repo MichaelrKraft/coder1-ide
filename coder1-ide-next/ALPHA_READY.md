@@ -12,8 +12,8 @@ npm install && npm run dev
 
 ### Option 2: After Render Deployment (Push & Deploy)
 ```bash
-# Users visit: https://coder1-ide.onrender.com
-# Install bridge: curl -sL https://coder1-ide.onrender.com/install-bridge.sh | bash
+# Users visit: https://coder1.ai
+# Install bridge: curl -sL https://coder1.ai/install-bridge.sh | bash
 # Run: coder1-bridge start
 # Enter pairing code from IDE
 # Claude works in browser! 🎊

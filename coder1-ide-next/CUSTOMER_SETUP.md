@@ -12,7 +12,7 @@ Welcome to Coder1 IDE! This guide will help you connect your Claude Code subscri
 ### 1. Install the Bridge Tool
 Open your terminal and run:
 ```bash
-curl -sL https://coder1-ide.onrender.com/install-bridge.sh | bash
+curl -sL https://coder1.ai/install-bridge.sh | bash
 ```
 
 This installs a small tool that connects your local Claude Code to our web IDE.
@@ -25,7 +25,7 @@ coder1-bridge start &
 The `&` runs it in the background - you can close the terminal and it keeps running!
 
 ### 3. Connect to the IDE
-1. Visit: https://coder1-ide.onrender.com/ide
+1. Visit: https://coder1.ai/ide
 2. Click the **Bridge** button
 3. Enter the 6-digit code shown
 4. ✅ Connected!
@@ -41,7 +41,7 @@ Once connected, the bridge stays active in the background:
 
 ## Daily Usage (After Setup)
 
-Just visit https://coder1-ide.onrender.com/ide and start coding!
+Just visit https://coder1.ai/ide and start coding!
 - Your bridge is already connected
 - Claude Code is ready to help
 - No pairing codes needed
@@ -104,7 +104,7 @@ The bridge uses minimal resources (<50MB RAM, <1% CPU) and can run indefinitely:
 **Need to update bridge?**
 ```bash
 # Reinstall latest version
-curl -sL https://coder1-ide.onrender.com/install-bridge.sh | bash
+curl -sL https://coder1.ai/install-bridge.sh | bash
 ```
 
 ## Why This Approach?
@@ -118,7 +118,7 @@ curl -sL https://coder1-ide.onrender.com/install-bridge.sh | bash
 ## Support
 
 Need help? Visit our documentation or reach out:
-- Documentation: https://coder1-ide.onrender.com/docs
+- Documentation: https://coder1.ai/docs
 - Issues: https://github.com/MichaelrKraft/coder1-ide/issues
 
 ---

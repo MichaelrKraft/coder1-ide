@@ -55,7 +55,7 @@ components/terminal/Terminal.tsx  # isClaudeTab checks at lines 2099, 2256
 
 **Files Changed**:
 ```bash
-bridge-cli/src/index.js          # Lines 63, 140: coder1-ide.onrender.com → coder1.ai
+bridge-cli/src/index.js          # Lines 63, 140: coder1.ai → coder1.ai
 bridge-cli/package.json          # p-queue: ^6.6.2 → 5.0.0
 public/bridge-cli.tar.gz         # Rebuilt with both fixes
 ```
@@ -125,7 +125,7 @@ nvm use 22 && npm install -g ./coder1-bridge-1.0.0.tgz && coder1-bridge test
 ## 🔧 Common Issues & Solutions
 
 ### Issue: "Not Found is not valid JSON"
-**Cause**: Wrong server URL (coder1-ide.onrender.com doesn't exist)
+**Cause**: Wrong server URL (coder1.ai doesn't exist)
 **Solution**: Update BOTH `bridge-client.js` AND `index.js`
 
 ### Issue: "ERR_REQUIRE_ESM" on Node v22+

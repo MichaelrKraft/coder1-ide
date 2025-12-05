@@ -40,7 +40,7 @@ PORT=10000  # Render uses port 10000
 
 # Optional (for full features)
 ANTHROPIC_API_KEY=sk-ant-api03-xxx  # For session summaries
-NEXT_PUBLIC_WS_URL=wss://coder1-ide.onrender.com  # WebSocket URL
+NEXT_PUBLIC_WS_URL=wss://coder1.ai  # WebSocket URL
 
 # Bridge Settings
 BRIDGE_ENABLED=true
@@ -51,7 +51,7 @@ BRIDGE_TIMEOUT=300000  # 5 minutes
 
 1. Click "Create Web Service"
 2. Wait for initial deploy (~5-10 minutes)
-3. Access at: `https://coder1-ide.onrender.com`
+3. Access at: `https://coder1.ai`
 
 ## 📦 What Gets Deployed
 
@@ -88,16 +88,16 @@ echo "Run 'coder1-bridge start' to connect to the IDE"
 ### 2. Verify Deployment
 ```bash
 # Check health
-curl https://coder1-ide.onrender.com/api/health
+curl https://coder1.ai/api/health
 
 # Test WebSocket
-wscat -c wss://coder1-ide.onrender.com
+wscat -c wss://coder1.ai
 ```
 
 ### 3. Test Bridge Connection
 ```bash
 # On local machine
-coder1-bridge start --server https://coder1-ide.onrender.com
+coder1-bridge start --server https://coder1.ai
 
 # In IDE
 # Click "Connect Bridge" and enter pairing code
@@ -123,7 +123,7 @@ Render supports WebSockets. If connection fails:
 ```bash
 # Debug commands
 coder1-bridge status
-coder1-bridge test --server https://coder1-ide.onrender.com
+coder1-bridge test --server https://coder1.ai
 ```
 
 ## 📊 Monitoring
@@ -155,7 +155,7 @@ git push origin refactor/clean-phase1
 
 ## 🎯 Success Criteria
 
-✅ IDE loads at https://coder1-ide.onrender.com
+✅ IDE loads at https://coder1.ai
 ✅ Terminal creates sessions successfully
 ✅ Bridge CLI can connect with pairing code
 ✅ Claude commands route through bridge
@@ -168,11 +168,11 @@ Share this with alpha testers:
 ```markdown
 ## Quick Start for Alpha Testers
 
-1. **Visit**: https://coder1-ide.onrender.com
+1. **Visit**: https://coder1.ai
 
 2. **Install Bridge** (one command):
    ```
-   curl -sL https://coder1-ide.onrender.com/install-bridge.sh | bash
+   curl -sL https://coder1.ai/install-bridge.sh | bash
    ```
 
 3. **Connect**:

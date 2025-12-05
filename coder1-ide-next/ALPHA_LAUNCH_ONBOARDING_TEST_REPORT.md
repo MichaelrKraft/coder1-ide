@@ -55,7 +55,7 @@ Successfully improved bridge connection onboarding by replacing intimidating war
 ### 3. `/public/install-bridge.sh`
 **Status**: ✅ Modified and Verified
 
-**Changes**: Updated all URLs from `coder1-ide.onrender.com` to `coder1.ai`
+**Changes**: Updated all URLs from `coder1.ai` to `coder1.ai`
 
 ---
 

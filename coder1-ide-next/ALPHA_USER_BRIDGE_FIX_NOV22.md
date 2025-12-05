@@ -29,7 +29,7 @@ sudo npm install -g https://coder1.ai/bridge-cli.tar.gz
 # 4. Verify correct URL is installed
 cat $(npm root -g)/coder1-bridge/src/bridge-client.js | grep "coder1.ai"
 
-# Should show: https://coder1.ai (NOT coder1-ide.onrender.com!)
+# Should show: https://coder1.ai (NOT coder1.ai!)
 
 # 5. Start bridge
 coder1-bridge start
@@ -66,7 +66,7 @@ After following the installation steps above:
 
 ## 📝 What Went Wrong?
 
-The tarball you installed yesterday had a packaging bug where multiple versions of the code were bundled together (nested `package/package/package/` directories). When npm installed it, it used one of the inner directories that still had the old server URL `coder1-ide.onrender.com`, which doesn't serve the bridge API endpoints.
+The tarball you installed yesterday had a packaging bug where multiple versions of the code were bundled together (nested `package/package/package/` directories). When npm installed it, it used one of the inner directories that still had the old server URL `coder1.ai`, which doesn't serve the bridge API endpoints.
 
 ## 🔧 Technical Details
 

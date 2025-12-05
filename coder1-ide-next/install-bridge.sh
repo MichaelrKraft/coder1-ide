@@ -103,7 +103,7 @@ if command -v coder1-bridge &> /dev/null; then
     echo -e "${GREEN}✅ Coder1 Bridge installed successfully!${NC}"
     echo
     echo -e "${CYAN}🚀 Quick Start:${NC}"
-    echo -e "  1. Visit: ${BLUE}https://coder1-ide.onrender.com/ide${NC}"
+    echo -e "  1. Visit: ${BLUE}https://coder1.ai/ide${NC}"
     echo -e "  2. Click: ${YELLOW}Connect Bridge${NC} button"
     echo -e "  3. Run: ${GREEN}coder1-bridge start${NC}"
     echo -e "  4. Enter the 6-digit pairing code"
