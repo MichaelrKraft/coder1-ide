@@ -502,6 +502,30 @@ export default function DiscoverPanel() {
           </button>
         </div>
 
+        {/* AI Plugins - Prominent Feature (moved above Search) */}
+        <div className="px-4 py-3 border-b border-border-default">
+          <div className="p-4 border-2 border-orange-500 rounded-lg bg-gradient-to-br from-orange-500/10 to-coder1-cyan/5">
+            <a
+              href="http://localhost:3001/templates-hub.html"
+              target="_blank"
+              className="block group"
+            >
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-orange-500/20 rounded-lg group-hover:bg-orange-500/30 transition-all">
+                  <Grid className="w-5 h-5 text-orange-500" />
+                </div>
+                <div className="flex-1">
+                  <h4 className="text-base font-bold text-orange-500 group-hover:text-orange-400 transition-colors">
+                    ✨ AI Plugins
+                  </h4>
+                  <p className="text-xs text-text-muted">Access code templates and workflow automation</p>
+                </div>
+                <Sparkles className="w-5 h-5 text-orange-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+              </div>
+            </a>
+          </div>
+        </div>
+
         {/* Search Bar */}
         <div className="px-4 py-3 border-b border-border-default">
           <div className="relative">
@@ -519,28 +543,6 @@ export default function DiscoverPanel() {
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto px-4 py-3" style={{ maxHeight: '500px' }}>
-          {/* AI Plugins - Prominent Feature */}
-          <div className="mb-4 p-4 border-2 border-coder1-purple rounded-lg bg-gradient-to-br from-coder1-purple/10 to-coder1-cyan/5">
-            <a
-              href="http://localhost:3001/templates-hub.html"
-              target="_blank"
-              className="block group"
-            >
-              <div className="flex items-center gap-3 mb-2">
-                <div className="p-2 bg-coder1-purple/20 rounded-lg group-hover:bg-coder1-purple/30 transition-all">
-                  <Grid className="w-5 h-5 text-coder1-purple" />
-                </div>
-                <div className="flex-1">
-                  <h4 className="text-base font-bold text-coder1-purple group-hover:text-coder1-cyan transition-colors">
-                    ✨ AI Plugins
-                  </h4>
-                  <p className="text-xs text-text-muted">Access code templates and workflow automation</p>
-                </div>
-                <Sparkles className="w-5 h-5 text-coder1-cyan opacity-0 group-hover:opacity-100 transition-opacity" />
-              </div>
-            </a>
-          </div>
-
           {/* Slash Commands (Scrollable) */}
           <div className="mb-4">
             <div className="flex items-center justify-between mb-2">

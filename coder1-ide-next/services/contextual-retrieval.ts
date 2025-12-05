@@ -6,11 +6,8 @@
 
 import { contextDatabase, ClaudeConversation } from './context-database';
 import { logger } from '@/lib/logger';
-import { 
-  extractClaudeContent, 
-  generateSmartSummary, 
-  formatFriendlyTime
-} from '@/lib/terminal-cleaner';
+// Note: terminal-cleaner imports removed due to webpack bundling issues
+// Using inline implementations instead
 
 export interface RelevantMemory {
   id: string;
@@ -249,7 +246,7 @@ export class ContextualRetrievalService {
       logger.debug(`📋 Query params: ${queryParams.length} parameters`);
       
       const results = contextDatabase['db'].prepare(query).all(...queryParams) as (ClaudeConversation & { session_summary?: string })[];
-      
+
       return results;
     } catch (error) {
       logger.error('❌ Failed to query relevant conversations:', error);
@@ -268,19 +265,23 @@ export class ContextualRetrievalService {
     
     for (const conv of conversations) {
       const score = this.calculateRelevanceScore(conv, query);
-      
+
       if (score > 0.3) { // Minimum relevance threshold
-        const relevantMemory: RelevantMemory = {
-          id: conv.id,
-          conversation: conv,
-          relevanceScore: score,
-          matchReason: this.generateMatchReason(conv, query),
-          timeAgo: this.formatTimeAgo(new Date(conv.timestamp)),
-          sessionSummary: conv.session_summary,
-          quickPreview: this.generateQuickPreview(conv)
-        };
-        
-        scoredResults.push(relevantMemory);
+        try {
+          const relevantMemory: RelevantMemory = {
+            id: conv.id,
+            conversation: conv,
+            relevanceScore: score,
+            matchReason: this.generateMatchReason(conv, query),
+            timeAgo: this.formatTimeAgo(new Date(conv.timestamp)),
+            sessionSummary: conv.session_summary,
+            quickPreview: this.generateQuickPreview(conv)
+          };
+
+          scoredResults.push(relevantMemory);
+        } catch (err) {
+          logger.warn(`Failed to create relevantMemory for ${conv.id}:`, err);
+        }
       }
     }
     
@@ -299,7 +300,7 @@ export class ContextualRetrievalService {
     const userInput = conversation.user_input.toLowerCase();
     const claudeReply = conversation.claude_reply.toLowerCase();
     const queryLower = query.userInput.toLowerCase();
-    
+
     // Direct keyword matches (high weight)
     const keywords = this.extractKeywords(query.userInput);
     keywords.forEach(keyword => {
@@ -340,7 +341,7 @@ export class ContextualRetrievalService {
     const replyLength = conversation.claude_reply.length;
     if (replyLength > 500) score += 0.05;
     if (replyLength > 1000) score += 0.05;
-    
+
     return Math.min(score, 1.0); // Cap at 1.0
   }
 
@@ -391,24 +392,38 @@ export class ContextualRetrievalService {
    * Format time difference as human-readable string
    */
   private formatTimeAgo(timestamp: Date): string {
-    // Use the friendly time formatter from terminal-cleaner
-    return formatFriendlyTime(timestamp);
+    // Inline implementation to avoid import issues
+    const now = new Date();
+    const diff = now.getTime() - timestamp.getTime();
+
+    const seconds = Math.floor(diff / 1000);
+    const minutes = Math.floor(seconds / 60);
+    const hours = Math.floor(minutes / 60);
+    const days = Math.floor(hours / 24);
+
+    if (days > 0) return `${days}d ago`;
+    if (hours > 0) return `${hours}h ago`;
+    if (minutes > 0) return `${minutes}m ago`;
+    return 'just now';
   }
 
   /**
    * Generate quick preview of the solution
    */
   private generateQuickPreview(conversation: ClaudeConversation): string {
-    const reply = conversation.claude_reply;
-    
-    // First, clean the terminal output to remove ANSI codes and control characters
-    const cleanedReply = extractClaudeContent(reply);
-    
-    // Generate a smart summary using the terminal cleaner
-    const summary = generateSmartSummary(cleanedReply);
-    
-    // Return the cleaned, summarized preview without emoji
-    return summary;
+    try {
+      let reply = conversation.claude_reply || '';
+
+      // Simple ANSI code removal
+      reply = reply.replace(/\x1b\[[0-9;]*[mGKHFJ]/g, '');
+      reply = reply.replace(/[\x00-\x08\x0B-\x0C\x0E-\x1F\x7F]/g, '');
+
+      // Truncate to first 200 chars and add ellipsis
+      const preview = reply.substring(0, 200).replace(/\s+/g, ' ').trim();
+      return preview.length > 197 ? preview.substring(0, 197) + '...' : preview;
+    } catch (err) {
+      return 'Preview unavailable';
+    }
   }
 
   /**

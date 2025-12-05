@@ -16,6 +16,8 @@ import * as path from 'path';
 import * as crypto from 'crypto';
 import { logger } from '../lib/logger.ts';
 import { getEnhancedTmuxService } from './enhanced-tmux-service.ts';
+import { artifactsService } from './artifacts-service';
+import type { ArtifactType } from '../types/mission-control';
 
 // Types for Claude Code Bridge System
 export interface AgentFinalResult {
@@ -80,6 +82,14 @@ export interface WorkTreeSetupInstructions {
   mergeInstructions: string;
 }
 
+// CONTEXT BRIDGE: Type for terminal conversation context from orchestrator
+export interface ConversationContext {
+  history: string;        // Terminal output history (last ~8KB)
+  commands: string[];     // Recent user commands
+  hasContext: boolean;    // Whether meaningful context exists
+  contextLength: number;  // Length of history in characters
+}
+
 export class ClaudeCodeBridgeService extends EventEmitter {
   private teams: Map<string, ParallelTeam> = new Map();
   private tmuxService: any; // Initialize in constructor
@@ -88,9 +98,15 @@ export class ClaudeCodeBridgeService extends EventEmitter {
   private monitoringIntervals: Map<string, NodeJS.Timeout> = new Map();
   private claudeProcesses: Map<string, ChildProcess> = new Map(); // Track Claude processes
   private isInitialized: boolean = false;
-  
+
   // Output buffering for debouncing (Nov 26, 2025 - Fix repeating status lines)
   private outputBuffers: Map<string, {data: string, timeout: NodeJS.Timeout | null}> = new Map();
+
+  // Track milestone emissions per team to avoid duplicates
+  private teamMilestones: Map<string, Set<number>> = new Map();
+
+  // CONTEXT BRIDGE: Store conversation context for agent prompt injection
+  private currentConversationContext: ConversationContext | null = null;
   
   // Safety mechanisms
   private readonly MAX_CONCURRENT_TEAMS = 3;
@@ -231,13 +247,28 @@ export class ClaudeCodeBridgeService extends EventEmitter {
   /**
    * Spawn a parallel development team using git work trees + automated Claude Code execution
    * This replaces the expensive AI orchestrator approach with cost-free coordination
-   * 
+   *
    * NEW: Now supports CLI Puppeteer mode for true automation when enabled
+   * CONTEXT BRIDGE: Accepts conversationContext from main terminal session (orchestrator pattern)
    */
-  async spawnParallelTeam(requirement: string, sessionId?: string): Promise<ParallelTeam> {
+  async spawnParallelTeam(
+    requirement: string,
+    sessionId?: string,
+    conversationContext?: ConversationContext
+  ): Promise<ParallelTeam> {
+    // CONTEXT BRIDGE: Store context for use in agent prompts
+    if (conversationContext?.hasContext) {
+      this.currentConversationContext = conversationContext;
+      logger.info(`📝 [CONTEXT BRIDGE] Received ${conversationContext.contextLength} chars of terminal context`);
+      logger.info(`📝 [CONTEXT BRIDGE] Recent commands: ${conversationContext.commands?.length || 0}`);
+    } else {
+      this.currentConversationContext = null;
+      logger.info(`📝 [CONTEXT BRIDGE] No terminal context (fresh task)`);
+    }
+
     // CHECK FOR CLI PUPPETEER MODE FIRST
     const puppeteerEnabled = process.env.ENABLE_CLI_PUPPETEER === 'true';
-    
+
     logger.info(`🔍 [DEBUG] CLI Puppeteer environment check: ${process.env.ENABLE_CLI_PUPPETEER} -> ${puppeteerEnabled}`);
     
     if (puppeteerEnabled) {
@@ -545,6 +576,38 @@ export class ClaudeCodeBridgeService extends EventEmitter {
   }
 
   /**
+   * Emit milestone progress event for team (deduped - only emits each milestone once)
+   * Milestones: 0% spawned, 25% processes started, 50% actively working, 75% completing, 100% done
+   */
+  private emitTeamMilestone(teamId: string, milestone: number, description: string): void {
+    const team = this.teams.get(teamId);
+    if (!team) return;
+
+    // Initialize milestone tracking for this team
+    if (!this.teamMilestones.has(teamId)) {
+      this.teamMilestones.set(teamId, new Set());
+    }
+
+    // Skip if already emitted this milestone
+    const emittedMilestones = this.teamMilestones.get(teamId)!;
+    if (emittedMilestones.has(milestone)) {
+      return;
+    }
+    emittedMilestones.add(milestone);
+
+    logger.info(`📊 [MILESTONE] Team ${teamId}: ${milestone}% - ${description}`);
+
+    this.emit('team:progress', {
+      teamId: teamId,
+      team: team,
+      progress: milestone,
+      milestone: description,
+      activeAgents: team.agents.filter(a => a.status === 'working').length,
+      completedAgents: team.agents.filter(a => a.status === 'completed').length
+    });
+  }
+
+  /**
    * Start automated Claude Code execution for all agents in a team
    */
   private async startAutomatedExecution(team: ParallelTeam): Promise<void> {
@@ -565,6 +628,9 @@ export class ClaudeCodeBridgeService extends EventEmitter {
         agent.currentTask = `Failed to start: ${error instanceof Error ? error.message : 'Unknown error'}`;
       }
     }
+
+    // Emit 25% milestone - all processes started
+    this.emitTeamMilestone(team.teamId, 25, 'Agent processes started');
 
     this.emit('team:execution-started', {
       teamId: team.teamId,
@@ -732,6 +798,26 @@ export class ClaudeCodeBridgeService extends EventEmitter {
   private handleAgentOutput(agent: ClaudeCodeAgent, output: string): void {
     console.log(`🔵 [BRIDGE] handleAgentOutput called for ${agent.id}, output length: ${output.length}`);
     let formattedOutput = output;
+
+    // Extract teamId for event filtering
+    const teamId = agent.id.split('-').slice(0, -1).join('-');
+
+    // Emit 50% milestone when we first see meaningful output (agents actively working)
+    const cleanOutput = output.replace(/[\x00-\x1F\x7F]/g, '').trim();
+    if (cleanOutput.length > 20) {
+      this.emitTeamMilestone(teamId, 50, 'Agents actively producing output');
+    }
+
+    // Emit agent:output event for activity stream (sample to avoid flooding)
+    // Only emit if output is meaningful (not just whitespace or control chars)
+    if (cleanOutput.length > 5) {
+      this.emit('agent:output', {
+        teamId: teamId,
+        agentId: agent.id,
+        output: cleanOutput.slice(0, 200), // Limit to 200 chars for UI
+        timestamp: new Date().toISOString()
+      });
+    }
     
     // Try to parse Claude CLI JSON result and format it nicely
     try {
@@ -768,7 +854,10 @@ export class ClaudeCodeBridgeService extends EventEmitter {
         agent.currentTask = parsed.is_error ? 'Completed with errors' : 'Work completed';
         agent.progress = 100;
         agent.status = parsed.is_error ? 'error' : 'completed';
-        
+
+        // Emit 75% milestone when first agent completes
+        this.emitTeamMilestone(teamId, 75, 'Agents completing tasks');
+
         // Check if team is complete and generate summary
         this.checkTeamCompletionAndSummarize(agent);
       } else if (parsed.type === 'progress') {
@@ -798,9 +887,11 @@ export class ClaudeCodeBridgeService extends EventEmitter {
     }
 
     agent.lastActivity = new Date();
-    
+
     // Emit WebSocket event for real-time progress update
+    // teamId already extracted at top of function
     this.emit('agent:progress', {
+      teamId: teamId,
       agentId: agent.id,
       role: agent.role,
       progress: agent.progress,
@@ -859,15 +950,29 @@ export class ClaudeCodeBridgeService extends EventEmitter {
     }
     
     logger.info(`🎉 All agents complete for team ${teamId} - generating summary`);
-    
+
+    // Emit 100% milestone - team done
+    this.emitTeamMilestone(teamId, 100, 'Team completed, transferring artifacts');
+
+    // Clean up milestone tracking for this team
+    this.teamMilestones.delete(teamId);
+
     // Generate and emit team summary
     const summary = await this.generateTeamSummary(team);
-    
+
+    // Transfer generated files to artifacts inbox (non-blocking)
+    try {
+      const artifactResults = await this.transferAgentFilesToArtifacts(team);
+      logger.info(`📦 Transferred ${artifactResults.transferred} files to artifacts inbox`);
+    } catch (artifactError) {
+      logger.warn('Failed to transfer artifacts (non-blocking):', artifactError);
+    }
+
     // Emit to WebSocket via global bridge
     if ((global as any).emitBridgeEvent) {
       (global as any).emitBridgeEvent('team:summary', summary);
     }
-    
+
     this.emit('team:summary', summary);
   }
 
@@ -958,6 +1063,79 @@ export class ClaudeCodeBridgeService extends EventEmitter {
   }
 
   /**
+   * Map file extension to artifact type for artifacts inbox
+   */
+  private mapFileExtensionToArtifactType(filePath: string): ArtifactType {
+    const ext = path.extname(filePath).toLowerCase();
+    const codeExtensions = ['.ts', '.tsx', '.js', '.jsx', '.py', '.go', '.rs', '.java', '.c', '.cpp', '.h', '.css', '.scss', '.html', '.vue', '.svelte'];
+    if (codeExtensions.includes(ext)) return 'code';
+    // Everything else is a document (md, txt, json, yaml, etc.)
+    return 'document';
+  }
+
+  /**
+   * Transfer files from agent work trees to artifacts inbox
+   * Called after team completion to make generated files available in Mission Control
+   */
+  private async transferAgentFilesToArtifacts(team: ParallelTeam): Promise<{transferred: number, failed: number}> {
+    let transferred = 0;
+    let failed = 0;
+    const MAX_FILE_SIZE = 1024 * 1024; // 1MB limit per file
+
+    for (const agent of team.agents) {
+      if (!agent.workTreePath) continue;
+
+      try {
+        // Get list of files from work tree (reuse existing method)
+        const files = await this.listWorkTreeFiles(agent.workTreePath);
+
+        for (const relativePath of files) {
+          try {
+            const fullPath = path.join(agent.workTreePath, relativePath);
+            const stats = await fs.stat(fullPath);
+
+            // Skip large files
+            if (stats.size > MAX_FILE_SIZE) {
+              logger.debug(`Skipping large file: ${relativePath} (${stats.size} bytes)`);
+              continue;
+            }
+
+            // Read file content
+            const content = await fs.readFile(fullPath, 'utf-8');
+
+            // Add to artifacts inbox
+            artifactsService.addToInbox({
+              name: path.basename(relativePath),
+              type: this.mapFileExtensionToArtifactType(relativePath),
+              size: stats.size,
+              sourceAgent: agent.name || agent.role,
+              metadata: {
+                teamId: team.teamId,
+                agentId: agent.id,
+                agentRole: agent.role,
+                relativePath,
+                fullPath,
+                workTreePath: agent.workTreePath
+              }
+            }, content);
+
+            transferred++;
+          } catch (fileError) {
+            logger.warn(`Failed to transfer file ${relativePath}:`, fileError);
+            failed++;
+          }
+        }
+      } catch (error) {
+        logger.warn(`Failed to transfer artifacts from agent ${agent.id}:`, error);
+        failed++;
+      }
+    }
+
+    logger.info(`📦 Artifacts transfer complete: ${transferred} transferred, ${failed} failed`);
+    return { transferred, failed };
+  }
+
+  /**
    * Parse Claude's result text into concise bullet points
    */
   private parseResultIntoBullets(resultText: string): string[] {
@@ -981,12 +1159,34 @@ export class ClaudeCodeBridgeService extends EventEmitter {
 
   /**
    * Generate appropriate prompt for agent role
+   * CONTEXT BRIDGE: Includes conversation context from main terminal when available
    */
   private generateAgentPrompt(role: string, agent: ClaudeCodeAgent): string {
+    // Build context section from terminal conversation (orchestrator pattern)
+    let contextSection = '';
+    if (this.currentConversationContext?.hasContext) {
+      const ctx = this.currentConversationContext;
+      contextSection = `
+## Conversation Context (from orchestrator terminal session)
+The following is relevant context from the main development session. Use this to understand what the user discussed before spawning this task:
+
+### Recent Terminal Output
+\`\`\`
+${ctx.history.slice(-4000)}
+\`\`\`
+
+### Recent User Commands
+${ctx.commands?.slice(-10).map(cmd => `- ${cmd}`).join('\n') || 'None recorded'}
+
+---
+`;
+      logger.info(`📝 [CONTEXT BRIDGE] Injected ${ctx.history.length} chars of context into ${role} agent prompt`);
+    }
+
     const baseContext = `You are a ${agent.name} working on: ${agent.currentTask}
 Working directory: ${agent.workTreePath}
 Git branch: ${agent.branchName}
-
+${contextSection}
 Please implement the ${role} aspects of this requirement. Work directly in the provided directory and commit your changes when complete.`;
 
     const rolePrompts = {
@@ -1852,12 +2052,20 @@ Focus on:
   }
 }
 
-// Singleton instance
-let instance: ClaudeCodeBridgeService | null = null;
+// Singleton instance using global registry to ensure same instance across tsx and Next.js module systems
+const GLOBAL_KEY = '__CLAUDE_CODE_BRIDGE_SERVICE__';
+
+// Extend globalThis type for TypeScript
+declare global {
+  var __CLAUDE_CODE_BRIDGE_SERVICE__: ClaudeCodeBridgeService | undefined;
+}
 
 export function getClaudeCodeBridgeService(): ClaudeCodeBridgeService {
-  if (!instance) {
-    instance = new ClaudeCodeBridgeService();
+  if (!globalThis[GLOBAL_KEY]) {
+    globalThis[GLOBAL_KEY] = new ClaudeCodeBridgeService();
+    console.log('🔗 [BRIDGE] Created new ClaudeCodeBridgeService instance (global registry)');
+  } else {
+    console.log('🔗 [BRIDGE] Using existing ClaudeCodeBridgeService from global registry');
   }
-  return instance;
+  return globalThis[GLOBAL_KEY];
 }

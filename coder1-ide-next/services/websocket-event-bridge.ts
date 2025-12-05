@@ -96,6 +96,16 @@ export class WebSocketEventBridge {
       });
     });
 
+    // Individual agent output streaming for activity feed
+    this.bridgeService.on('agent:output', (data) => {
+      this.forwardEvent('agent:output', {
+        teamId: data.teamId,
+        agentId: data.agentId,
+        output: data.output,
+        timestamp: data.timestamp
+      });
+    });
+
     // Individual agent progress updates
     this.bridgeService.on('agent:progress', (data) => {
       // Find the team to get complete context
@@ -109,13 +119,13 @@ export class WebSocketEventBridge {
             name: agent.name,
             role: agent.role,
             status: agent.status,
-            progress: agent.progress,
+            progress: agent.progress ?? 0,
             currentTask: agent.currentTask,
             completedTasks: agent.completedTasks,
             expertise: [],
             files: agent.files
           })),
-          progress: team.progress,
+          progress: team.progress ?? 0,
           status: team.status,
           workflow: team.workflow,
           generatedFiles: team.files || team.agents.reduce((sum: any, a: any) => sum + a.files, 0),
@@ -137,13 +147,13 @@ export class WebSocketEventBridge {
           name: agent.name,
           role: agent.role,
           status: agent.status,
-          progress: agent.progress,
+          progress: agent.progress ?? 0,
           currentTask: agent.currentTask,
           completedTasks: agent.completedTasks,
           expertise: [],
           files: agent.files
         })),
-        progress: data.progress,
+        progress: data.progress ?? data.team.progress ?? 0,
         status: data.team.status,
         workflow: data.team.workflow,
         generatedFiles: data.team.files || data.team.agents.reduce((sum: any, a: any) => sum + a.files, 0),

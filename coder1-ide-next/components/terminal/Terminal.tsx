@@ -1441,7 +1441,8 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
                       socket.emit('terminal:input', {
                         id: sessionId,
                         data: 'claude\r',
-                        selectedClaudeModel: useModelStore.getState().selectedModel
+                        selectedClaudeModel: useModelStore.getState().selectedModel,
+                        skipPermissions: terminalSettings.skipPermissions
                       });
                     }
                   }, 1000);
@@ -2925,10 +2926,11 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
         xtermRef.current.write('$ ' + command + '\r\n');
         
         // Send the command to the backend
-        socketRef.current.emit('terminal:input', { 
-          id: sessionId, 
+        socketRef.current.emit('terminal:input', {
+          id: sessionId,
           data: command + '\r',
-          selectedClaudeModel 
+          selectedClaudeModel,
+          skipPermissions: terminalSettings.skipPermissions
         });
       }
     };
@@ -3023,21 +3025,23 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
             // Send to backend if we have a valid session
             if (socket && socket.connected && currentSessionId && !currentSessionId.startsWith('simulated-')) {
               // REMOVED: console.log('✅ Sending voice input to real session:', currentSessionId);
-              
+
               // Send as a single message (not character by character)
-              socket.emit('terminal:input', { 
-                id: currentSessionId, 
+              socket.emit('terminal:input', {
+                id: currentSessionId,
                 data: cleanTranscript,
-                selectedClaudeModel: useModelStore.getState().selectedModel
+                selectedClaudeModel: useModelStore.getState().selectedModel,
+                skipPermissions: terminalSettings.skipPermissions
               });
               
-              // Auto-execute for Claude commands  
+              // Auto-execute for Claude commands
               if (cleanTranscript.toLowerCase().includes('claude')) {
                 xtermRef.current.write('\r\n');
-                socket.emit('terminal:input', { 
-                  id: currentSessionId, 
+                socket.emit('terminal:input', {
+                  id: currentSessionId,
                   data: '\r',
-                  selectedClaudeModel: useModelStore.getState().selectedModel
+                  selectedClaudeModel: useModelStore.getState().selectedModel,
+                  skipPermissions: terminalSettings.skipPermissions
                 });
               }
             } else {
@@ -3231,10 +3235,11 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
       while (inputBufferRef.current.length > 0) {
         const bufferedData = inputBufferRef.current.shift();
         if (bufferedData) {
-          socket.emit('terminal:input', { 
-            id: currentSessionId, 
+          socket.emit('terminal:input', {
+            id: currentSessionId,
             data: bufferedData,
-            selectedClaudeModel: useModelStore.getState().selectedModel
+            selectedClaudeModel: useModelStore.getState().selectedModel,
+            skipPermissions: terminalSettings.skipPermissions
           });
         }
       }
@@ -4636,10 +4641,11 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
         // Don't send to PTY socket for API modes
       } else {
         // Use direct socket for Claude CLI mode (PTY)
-        socket.emit('terminal:input', { 
-          id: currentSessionId, 
+        socket.emit('terminal:input', {
+          id: currentSessionId,
           data,
-          selectedClaudeModel: useModelStore.getState().selectedModel
+          selectedClaudeModel: useModelStore.getState().selectedModel,
+          skipPermissions: terminalSettings.skipPermissions
         });
       }
       
@@ -5105,6 +5111,7 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
       id: sessionId,
       data: command + '\r', // Include Enter key to execute command
       selectedClaudeModel,
+      skipPermissions: terminalSettings.skipPermissions,
       // Include image metadata if present
       ...(images && images.length > 0 ? { 
         attachedImages: images 
@@ -6025,7 +6032,8 @@ Context: Running in Coder1 IDE development environment`;
                           socket.emit('terminal:input', {
                             id: sessionId,
                             data: fullReport + '\r',
-                            selectedClaudeModel: useModelStore.getState().selectedModel
+                            selectedClaudeModel: useModelStore.getState().selectedModel,
+                            skipPermissions: terminalSettings.skipPermissions
                           });
                           addToast('✅ Error report sent to Claude Code for analysis!', 'success');
                         } else {

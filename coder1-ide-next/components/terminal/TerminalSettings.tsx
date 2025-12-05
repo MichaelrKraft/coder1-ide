@@ -2,10 +2,9 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { Settings, Zap, Speaker, ChevronDown, Shield, BarChart, Sliders, Info } from 'lucide-react';
+import { Settings, Zap, Speaker, ChevronDown, Shield, BarChart, Info } from 'lucide-react';
 import { soundAlertService, SoundPreset } from '@/lib/sound-alert-service';
 import { logger } from '@/lib/logger';
-import { useEnhancedStatusline } from '@/components/statusline/EnhancedStatusline';
 import { useModelStore } from '@/stores/useModelStore';
 
 interface TerminalSettingsProps {
@@ -65,16 +64,6 @@ export default function TerminalSettings({
   const settingsButtonRef = useRef<HTMLButtonElement>(null);
   const settingsDropdownRef = useRef<HTMLDivElement>(null);
   
-  // Enhanced statusline integration
-  const {
-    config: enhancedConfig,
-    enable: enableEnhanced,
-    disable: disableEnhanced,
-    setShadowMode,
-    enableComponent,
-    disableComponent
-  } = useEnhancedStatusline();
-
   // Close dropdowns when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -317,49 +306,72 @@ export default function TerminalSettings({
             </div>
           </div>
 
-          {/* Claude Model Selection Section */}
+          {/* LLM Model Selection Section */}
           <div className="p-4 border-b border-border-default">
-            <div className="flex items-center gap-2 mb-3">
-              <Zap className="w-4 h-4 text-coder1-cyan" />
-              <span className="text-sm font-medium text-text-primary">Claude Model</span>
-              <span className="text-xs text-text-muted">(session default)</span>
-            </div>
-            <div className="space-y-2">
-              {[
-                { model: 'claude-sonnet-4-5-20250929', label: 'Claude Sonnet 4.5', description: '🆕 Latest (Default)', category: 'Claude', helpText: '' },
-                { model: 'claude-opus-4-1-20250805', label: 'Claude Opus 4.1', description: 'Most Capable', category: 'Claude', helpText: '' },
-                { model: 'glm-4.6', label: 'GLM 4.6', description: '💰 Overflow Backend ($0.10/M)', category: 'GLM', helpText: '🔄 Switch here when Claude hits rate limits. Requires Z.AI setup - see Help → GLM 4.6 Setup Guide' },
-                { model: 'claude-haiku-3-5-20241022', label: 'Claude Haiku 3.5', description: 'Ultra Fast', category: 'Claude', helpText: '' },
-                { model: 'gemini-2.5-flash-lite', label: 'Gemini 2.5 Flash-Lite', description: '⚡ Cost-Effective ($0.10/M)', category: 'Gemini', helpText: '' }
-              ].map((item) => (
-                <button
-                  key={item.model}
-                  onClick={() => {
-                    setSelectedClaudeModel(item.model);
-                    useModelStore.getState().setSelectedModel(item.model);
-                    xtermRef.current?.writeln(`\r\n✅ Claude model changed to: ${item.label}`);
-                    xtermRef.current?.writeln(`📌 Model will apply to all future commands`);
-                  }}
-                  className={`w-full flex items-center justify-between px-3 py-2 text-sm rounded hover:bg-bg-tertiary transition-colors ${
-                    selectedClaudeModel === item.model ? 'text-coder1-cyan bg-coder1-purple bg-opacity-20' : 'text-text-secondary'
-                  }`}
-                  title={item.helpText || ''}
-                >
-                  <div className="flex items-center gap-2">
-                    <div className={`w-2 h-2 rounded-full ${selectedClaudeModel === item.model ? 'bg-coder1-cyan' : 'bg-border-default'}`} />
-                    <div className="flex flex-col items-start">
-                      <div className="flex items-center gap-1">
-                        <span>{item.label}</span>
-                        {item.helpText && (
-                          <Info className="w-3 h-3 text-cyan-400 opacity-50" />
-                        )}
+            <button
+              onClick={() => setShowModelDropdown(!showModelDropdown)}
+              className="w-full flex items-center justify-between"
+            >
+              <div className="flex items-center gap-2">
+                <Zap className="w-4 h-4 text-coder1-cyan" />
+                <span className="text-sm font-medium text-text-primary">LLM Model</span>
+                <span className="text-xs text-text-muted">(session default)</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-coder1-cyan">
+                  {(() => {
+                    const models = [
+                      { model: 'claude-sonnet-4-5-20250929', label: 'Claude Sonnet 4.5' },
+                      { model: 'claude-opus-4-1-20250805', label: 'Claude Opus 4.1' },
+                      { model: 'glm-4.6', label: 'GLM 4.6' },
+                      { model: 'claude-haiku-3-5-20241022', label: 'Claude Haiku 3.5' },
+                      { model: 'gemini-2.5-flash-lite', label: 'Gemini 2.5 Flash-Lite' }
+                    ];
+                    return models.find(m => m.model === selectedClaudeModel)?.label || 'Select Model';
+                  })()}
+                </span>
+                <ChevronDown className={`w-4 h-4 text-text-muted transition-transform ${showModelDropdown ? 'rotate-180' : ''}`} />
+              </div>
+            </button>
+
+            {showModelDropdown && (
+              <div className="mt-3 space-y-2">
+                {[
+                  { model: 'claude-sonnet-4-5-20250929', label: 'Claude Sonnet 4.5', description: '🆕 Latest (Default)', category: 'Claude', helpText: '' },
+                  { model: 'claude-opus-4-1-20250805', label: 'Claude Opus 4.1', description: 'Most Capable', category: 'Claude', helpText: '' },
+                  { model: 'glm-4.6', label: 'GLM 4.6', description: '💰 Overflow Backend ($0.10/M)', category: 'GLM', helpText: '🔄 Switch here when Claude hits rate limits. Requires Z.AI setup - see Help → GLM 4.6 Setup Guide' },
+                  { model: 'claude-haiku-3-5-20241022', label: 'Claude Haiku 3.5', description: 'Ultra Fast', category: 'Claude', helpText: '' },
+                  { model: 'gemini-2.5-flash-lite', label: 'Gemini 2.5 Flash-Lite', description: '⚡ Cost-Effective ($0.10/M)', category: 'Gemini', helpText: '' }
+                ].map((item) => (
+                  <button
+                    key={item.model}
+                    onClick={() => {
+                      setSelectedClaudeModel(item.model);
+                      useModelStore.getState().setSelectedModel(item.model);
+                      xtermRef.current?.writeln(`\r\n✅ LLM model changed to: ${item.label}`);
+                      xtermRef.current?.writeln(`📌 Model will apply to all future commands`);
+                    }}
+                    className={`w-full flex items-center justify-between px-3 py-2 text-sm rounded hover:bg-bg-tertiary transition-colors ${
+                      selectedClaudeModel === item.model ? 'text-coder1-cyan bg-coder1-purple bg-opacity-20' : 'text-text-secondary'
+                    }`}
+                    title={item.helpText || ''}
+                  >
+                    <div className="flex items-center gap-2">
+                      <div className={`w-2 h-2 rounded-full ${selectedClaudeModel === item.model ? 'bg-coder1-cyan' : 'bg-border-default'}`} />
+                      <div className="flex flex-col items-start">
+                        <div className="flex items-center gap-1">
+                          <span>{item.label}</span>
+                          {item.helpText && (
+                            <Info className="w-3 h-3 text-cyan-400 opacity-50" />
+                          )}
+                        </div>
+                        <span className="text-xs text-text-muted">{item.description}</span>
                       </div>
-                      <span className="text-xs text-text-muted">{item.description}</span>
                     </div>
-                  </div>
-                </button>
-              ))}
-            </div>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Audio Alerts Section */}
@@ -623,143 +635,6 @@ export default function TerminalSettings({
                     </button>
                   </div>
                 ))}
-              </div>
-            )}
-          </div>
-
-          {/* Enhanced Status Line Section */}
-          <div className="p-4 border-b border-border-default">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <Sliders className="w-4 h-4 text-coder1-cyan" />
-                <span className="text-sm font-medium text-text-primary">Enhanced Status Line</span>
-                <span className="text-xs text-orange-400 bg-orange-400 bg-opacity-20 px-2 py-1 rounded">BETA</span>
-              </div>
-              <button
-                onClick={() => {
-                  try {
-                    const newState = !enhancedConfig?.enabled;
-                    
-                    if (newState) {
-                      enableEnhanced();
-                      xtermRef.current?.writeln('\r\n🚀 Enhanced Status Line ENABLED');
-                      xtermRef.current?.writeln('Professional statusline with 7 components activated');
-                      xtermRef.current?.writeln('⚠️ BETA: Monitor for any layout issues');
-                    } else {
-                      disableEnhanced();
-                      xtermRef.current?.writeln('\r\n📊 Enhanced Status Line DISABLED');
-                      xtermRef.current?.writeln('Reverted to basic status line');
-                    }
-                  } catch (error) {
-                    logger.error('[TerminalSettings] Error toggling enhanced status line:', error);
-                    xtermRef.current?.writeln('\r\n❌ Error toggling enhanced status line: ' + (error instanceof Error ? error.message : 'Unknown error'));
-                  }
-                }}
-                className={`w-12 h-6 rounded-full transition-colors ${
-                  enhancedConfig?.enabled ? 'bg-coder1-cyan' : 'bg-border-default'
-                }`}
-              >
-                <div className={`w-4 h-4 rounded-full bg-white transition-transform ${
-                  enhancedConfig?.enabled ? 'translate-x-7' : 'translate-x-1'
-                }`} />
-              </button>
-            </div>
-
-            {/* Enhanced Status Line Options */}
-            {enhancedConfig?.enabled && (
-              <div className="space-y-3 ml-4 border-l-2 border-border-default pl-3">
-                {/* Shadow Mode Toggle */}
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm text-text-secondary">Shadow Mode</span>
-                    <span className="text-xs text-text-muted">(testing)</span>
-                  </div>
-                  <button
-                    onClick={() => {
-                      const newShadowMode = !enhancedConfig.shadowMode;
-                      setShadowMode(newShadowMode);
-                      
-                      if (newShadowMode) {
-                        xtermRef.current?.writeln('\r\n👻 Shadow Mode ENABLED - statusline hidden for testing');
-                      } else {
-                        xtermRef.current?.writeln('\r\n🎯 Shadow Mode DISABLED - statusline now visible');
-                      }
-                    }}
-                    className={`w-8 h-4 rounded-full transition-colors ${
-                      enhancedConfig.shadowMode ? 'bg-orange-400' : 'bg-border-default'
-                    }`}
-                  >
-                    <div className={`w-2 h-2 rounded-full bg-white transition-transform ${
-                      enhancedConfig.shadowMode ? 'translate-x-5' : 'translate-x-1'
-                    }`} />
-                  </button>
-                </div>
-
-                {/* Component Toggles */}
-                <div className="space-y-2">
-                  <span className="text-xs text-text-muted uppercase tracking-wider">Components</span>
-                  
-                  {[
-                    { key: 'model_info', label: 'Model Info', icon: '🎭' },
-                    { key: 'cost_daily', label: 'Daily Cost', icon: '📊' },
-                    { key: 'time_display', label: 'Time', icon: '⏰' },
-                    { key: 'repo_info', label: 'Git Repo', icon: '📁' },
-                    { key: 'commits', label: 'Commits', icon: '📝' },
-                    { key: 'mcp_status', label: 'MCP Status', icon: '🔗' }
-                  ].map(({ key, label, icon }) => {
-                    const isEnabled = enhancedConfig.components[key as keyof typeof enhancedConfig.components]?.enabled;
-                    
-                    return (
-                      <div key={key} className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs">{icon}</span>
-                          <span className="text-sm text-text-secondary">{label}</span>
-                          {key === 'cost_live' && (
-                            <span className="text-xs text-orange-400">🚧</span>
-                          )}
-                        </div>
-                        <button
-                          onClick={() => {
-                            if (isEnabled) {
-                              disableComponent(key as any);
-                              xtermRef.current?.writeln(`\r\n${icon} ${label} component disabled`);
-                            } else {
-                              enableComponent(key as any);
-                              xtermRef.current?.writeln(`\r\n${icon} ${label} component enabled`);
-                            }
-                          }}
-                          className={`w-6 h-3 rounded-full transition-colors ${
-                            isEnabled ? 'bg-coder1-cyan' : 'bg-border-default'
-                          }`}
-                        >
-                          <div className={`w-2 h-2 rounded-full bg-white transition-transform ${
-                            isEnabled ? 'translate-x-3' : 'translate-x-0.5'
-                          }`} />
-                        </button>
-                      </div>
-                    );
-                  })}
-                </div>
-
-                {/* Status Info */}
-                {enhancedConfig.enabled && (
-                  <div className="mt-3 p-2 bg-bg-tertiary rounded text-xs">
-                    <div className="flex items-center gap-2 text-text-muted">
-                      <span className={enhancedConfig.shadowMode ? 'text-orange-400' : 'text-green-400'}>
-                        ●
-                      </span>
-                      <span>
-                        {enhancedConfig.shadowMode ? 'Testing Mode' : 'Active'} | 
-                        {' '}{Object.values(enhancedConfig.components).filter(c => c.enabled).length}/7 components
-                      </span>
-                    </div>
-                    {enhancedConfig.shadowMode && (
-                      <div className="text-orange-400 text-xs mt-1">
-                        Statusline is hidden for safety testing
-                      </div>
-                    )}
-                  </div>
-                )}
               </div>
             )}
           </div>

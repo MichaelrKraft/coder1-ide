@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getClaudeCodeBridgeService } from '@/services/claude-code-bridge';
 import { logger } from '@/lib/logger';
+import type { ContextBridge } from '@/types/context-bridge';
 
 /**
  * POST /api/claude-bridge/spawn
@@ -8,8 +9,12 @@ import { logger } from '@/lib/logger';
  */
 export async function POST(request: NextRequest) {
   try {
-    const { requirement, sessionId } = await request.json();
-    
+    const { requirement, sessionId, conversationContext } = await request.json() as {
+      requirement: string;
+      sessionId?: string;
+      conversationContext?: ContextBridge;
+    };
+
     if (!requirement) {
       return NextResponse.json({
         success: false,
@@ -18,7 +23,34 @@ export async function POST(request: NextRequest) {
     }
 
     logger.info(`🚀 [BRIDGE] Spawning cost-free team for: "${requirement}"`);
-    
+
+    // CONTEXT BRIDGE: Build enhanced requirement with terminal context
+    let enhancedRequirement = requirement;
+    if (conversationContext?.hasContext) {
+      logger.info(`📝 [CONTEXT BRIDGE] Terminal context received: ${conversationContext.historyLength} chars, ${conversationContext.commandCount} commands`);
+
+      // Build context-aware prompt for agents
+      enhancedRequirement = `## Context from Current Terminal Session
+The user has been working in the terminal. Here's recent context:
+
+### Recent Commands
+${conversationContext.recentCommands.join('\n')}
+
+### Terminal History (last 5000 chars)
+\`\`\`
+${conversationContext.history}
+\`\`\`
+
+## User's Task Request
+${requirement}
+
+Continue the work based on the above context.`;
+
+      logger.info(`📝 [CONTEXT BRIDGE] Enhanced requirement with terminal context`);
+    } else {
+      logger.info(`📝 [CONTEXT BRIDGE] No terminal context (fresh task entry)`);
+    }
+
     // Check for OAuth token with detailed error messages
     const oauthToken = process.env.CLAUDE_CODE_OAUTH_TOKEN;
     
@@ -99,7 +131,8 @@ export async function POST(request: NextRequest) {
       }
       
       // Spawn the parallel team using tmux sandboxes
-      const team = await bridgeService.spawnParallelTeam(requirement, sessionId);
+      // CONTEXT BRIDGE: Pass enhanced requirement with terminal context
+      const team = await bridgeService.spawnParallelTeam(enhancedRequirement, sessionId, conversationContext);
       
       if (!team) {
         // No fallback - return real error
