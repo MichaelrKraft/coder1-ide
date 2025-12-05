@@ -10,12 +10,12 @@ After investigating the alpha user's terminal screenshots and code inspection, w
 **Problem**: 
 The CLI's `start` command had hardcoded defaults pointing to the non-existent server:
 ```javascript
-.option('-s, --server <url>', 'Server URL', 'https://coder1-ide.onrender.com')  // ❌ WRONG
+.option('-s, --server <url>', 'Server URL', 'https://coder1.ai')  // ❌ WRONG
 ```
 
 **Evidence from User Screenshot**:
 ```
-FetchError: invalid json response body at https://coder1-ide.onrender.com/api/bridge/pair
+FetchError: invalid json response body at https://coder1.ai/api/bridge/pair
 reason: Unexpected token 'N', "Not Found" is not valid JSON
 ```
 
@@ -51,7 +51,7 @@ reason: Unexpected token 'N', "Not Found" is not valid JSON
 1. **Fixed index.js (Lines 63 & 140)**:
 ```javascript
 // BEFORE:
-.option('-s, --server <url>', 'Server URL', 'https://coder1-ide.onrender.com')
+.option('-s, --server <url>', 'Server URL', 'https://coder1.ai')
 
 // AFTER:
 .option('-s, --server <url>', 'Server URL', 'https://coder1.ai')

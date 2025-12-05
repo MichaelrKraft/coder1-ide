@@ -50,6 +50,9 @@ const PreviewPanel = React.memo(function PreviewPanel({
   const [devServerUrl, setDevServerUrl] = useState<string | null>(null);
   const [isLiveMode, setIsLiveMode] = useState(false);
 
+  // 🎯 AUTO-PREVIEW STATE (Dec 4, 2025): Auto-show files Claude creates
+  const [autoPreviewFile, setAutoPreviewFile] = useState<string | null>(null);
+
   // Debounced preview update function with loop prevention
   const debouncedPreviewUpdate = useMemo(
     () => createDebouncedPreviewUpdate((file: string, content: string) => {
@@ -148,28 +151,56 @@ const PreviewPanel = React.memo(function PreviewPanel({
     };
   }, []);
 
-  // 🚀 LIVE DEV SERVER DETECTION (Dec 4, 2025): Emergent-style live preview
-  // Listen for terminal output to detect when dev server starts
+  // 🚀 AUTO-PREVIEW (Dec 4, 2025): Automatically show files Claude creates
+  // Listen for terminal output to detect file creation and dev servers
   useEffect(() => {
-    // Dev server detection patterns (prioritize Next.js)
+    // File creation patterns - detect when Claude creates HTML files
+    // IMPORTANT: Patterns with full paths MUST come first
+    const FILE_CREATION_PATTERNS = [
+      // Claude Code Write tool - always outputs full absolute paths
+      /Wrote\s+(?:to\s+)?[`"']?(\/[^\s`"'\n]+\.html)[`"']?/i,
+      /Created\s+(?:file\s+)?[`"']?(\/[^\s`"'\n]+\.html)[`"']?/i,
+      /Writing\s+(?:to\s+)?[`"']?(\/[^\s`"'\n]+\.html)[`"']?/i,
+      /Saved\s+(?:to\s+)?[`"']?(\/[^\s`"'\n]+\.html)[`"']?/i,
+      // Shell redirects with full path
+      />\s*(\/[^\s\n]+\.html)/,
+      /cat\s+>\s*(\/[^\s\n]+\.html)/i,
+      /echo\s+.*>\s*(\/[^\s\n]+\.html)/i,
+      // Git patterns with full path
+      /new file:\s+(\/[^\s\n]+\.html)/i,
+      // touch with full path
+      /touch\s+(\/[^\s\n]+\.html)/,
+      // Fallback: relative paths (less reliable, will search in project root)
+      /Wrote\s+(?:to\s+)?[`"']?([^\s`"'\n\/][^\s`"'\n]*\.html)[`"']?/i,
+      /Created\s+(?:file\s+)?[`"']?([^\s`"'\n\/][^\s`"'\n]*\.html)[`"']?/i,
+    ];
+
+    // Dev server detection patterns
     const DEV_SERVER_PATTERNS = [
-      // Next.js patterns (primary)
       /Local:\s+http:\/\/localhost:(\d+)/,
       /ready\s+-\s+started\s+server\s+on\s+.*?localhost:(\d+)/i,
       /url:\s*http:\/\/localhost:(\d+)/i,
-      // Vite patterns
       /Local:\s+http:\/\/localhost:(\d+)\//,
       /VITE\s+v[\d.]+\s+ready.*localhost:(\d+)/i,
-      // CRA patterns
       /You can now view.*http:\/\/localhost:(\d+)/i,
-      // Generic patterns (covers custom servers)
       /listening\s+(?:on\s+)?(?:port\s+)?(\d+)/i,
       /server\s+(?:is\s+)?(?:running|started|listening)\s+(?:at\s+|on\s+)?(?:http:\/\/)?localhost:(\d+)/i,
-      /http:\/\/localhost:(\d+)\/(?:ide|app|dev)?/i,
     ];
 
     const handleTerminalOutput = (event: CustomEvent) => {
       const output = event.detail?.output || '';
+
+      // 🎯 SIMPLE AUTO-PREVIEW: Detect HTML file creation
+      for (const pattern of FILE_CREATION_PATTERNS) {
+        const match = output.match(pattern);
+        if (match) {
+          const filePath = match[1];
+          console.log('📄 PreviewPanel: HTML file created, auto-previewing:', filePath);
+          setAutoPreviewFile(filePath);
+          setMode('preview'); // Switch to preview mode
+          break;
+        }
+      }
 
       // Check for dev server startup patterns
       for (const pattern of DEV_SERVER_PATTERNS) {
@@ -180,7 +211,7 @@ const PreviewPanel = React.memo(function PreviewPanel({
           console.log('🚀 PreviewPanel: Dev server detected at', url);
           setDevServerUrl(url);
           setIsLiveMode(true);
-          setMode('preview'); // Auto-switch to preview mode
+          setMode('preview');
           break;
         }
       }
@@ -360,6 +391,19 @@ const PreviewPanel = React.memo(function PreviewPanel({
                             <X className="w-3 h-3" />
                           </button>
                         </div>
+                      ) : autoPreviewFile ? (
+                        <div className="flex items-center gap-2 px-3 py-1 bg-coder1-cyan/20 border border-coder1-cyan/40 rounded-full">
+                          <span className="w-2 h-2 bg-coder1-cyan rounded-full animate-pulse" />
+                          <span className="text-coder1-cyan text-xs font-medium">AUTO</span>
+                          <span className="text-coder1-cyan/70 text-xs font-mono truncate max-w-[200px]">{autoPreviewFile}</span>
+                          <button
+                            onClick={() => setAutoPreviewFile(null)}
+                            className="ml-1 text-coder1-cyan hover:text-white transition-colors"
+                            title="Clear auto-preview"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </div>
                       ) : (
                         <span className="text-text-muted">
                           {activeFile ? `Preview: ${activeFile}` : 'No file selected'}
@@ -432,8 +476,8 @@ const PreviewPanel = React.memo(function PreviewPanel({
                             <div className="w-3 h-3 bg-green-500/80 rounded-full hover:bg-green-500 transition-colors cursor-pointer" />
                           </div>
                           <div className="flex-1 bg-bg-primary/50 rounded-lg px-3 py-1 border border-border-default/50">
-                            <span className="text-xs text-text-muted font-mono">
-                              {isLiveMode && devServerUrl ? devServerUrl : 'Preview Window'}
+                            <span className="text-xs text-text-muted font-mono truncate">
+                              {isLiveMode && devServerUrl ? devServerUrl : autoPreviewFile ? autoPreviewFile : 'Preview Window'}
                             </span>
                           </div>
                           <div className="flex gap-2">
@@ -458,6 +502,17 @@ const PreviewPanel = React.memo(function PreviewPanel({
                               onError={handleIframeError}
                               title={`Live App at ${devServerUrl}`}
                             />
+                          ) : autoPreviewFile ? (
+                            // 🎯 AUTO-PREVIEW: Show file Claude just created
+                            <iframe
+                              ref={iframeRef}
+                              src={`/api/preview?file=${encodeURIComponent(autoPreviewFile)}&v=${Date.now()}`}
+                              className="w-full h-full border-0 bg-white"
+                              sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals"
+                              onLoad={handleIframeLoad}
+                              onError={handleIframeError}
+                              title={`Auto-preview of ${autoPreviewFile}`}
+                            />
                           ) : activeFile && isPreviewable ? (
                             // File-based preview iframe
                             <iframe
@@ -469,7 +524,7 @@ const PreviewPanel = React.memo(function PreviewPanel({
                               onError={handleIframeError}
                               title={`Preview of ${activeFile}`}
                             />
-                          ) : !activeFile && !isLiveMode ? (
+                          ) : !activeFile && !isLiveMode && !autoPreviewFile ? (
                             // Demo preview when no file is selected
                             <iframe
                               ref={iframeRef}
@@ -525,7 +580,26 @@ const PreviewPanel = React.memo(function PreviewPanel({
                   <div className="px-4 py-2 bg-bg-primary/50 backdrop-blur-sm border-t border-coder1-cyan/20 flex items-center justify-between">
                     <div className="flex items-center gap-4 text-xs">
                       <span className="text-text-muted">Live Preview</span>
-                      {activeFile && isPreviewable ? (
+                      {isLiveMode && devServerUrl ? (
+                        // 🚀 LIVE DEV SERVER MODE
+                        <>
+                          <span className="text-green-400 flex items-center gap-1.5">
+                            <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse shadow-glow-green" />
+                            Live Server
+                          </span>
+                          <span className="text-green-400">{devServerUrl}</span>
+                        </>
+                      ) : autoPreviewFile ? (
+                        // 🎯 AUTO-PREVIEW MODE
+                        <>
+                          <span className="text-coder1-cyan flex items-center gap-1.5">
+                            <div className="w-2 h-2 bg-coder1-cyan rounded-full animate-pulse" />
+                            Auto-Preview
+                          </span>
+                          <span className="text-coder1-cyan">{autoPreviewFile.split('/').pop()}</span>
+                        </>
+                      ) : activeFile && isPreviewable ? (
+                        // 📄 FILE-BASED PREVIEW MODE
                         <>
                           <span className="text-green-400 flex items-center gap-1.5">
                             <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse shadow-glow-green" />
@@ -534,6 +608,7 @@ const PreviewPanel = React.memo(function PreviewPanel({
                           <span className="text-coder1-cyan">Real-time Updates</span>
                         </>
                       ) : (
+                        // ⏳ WAITING MODE
                         <>
                           <span className="text-text-muted flex items-center gap-1.5">
                             <div className="w-2 h-2 bg-text-muted rounded-full" />
@@ -544,8 +619,8 @@ const PreviewPanel = React.memo(function PreviewPanel({
                       )}
                     </div>
                     <div className="flex items-center gap-4 text-xs text-text-muted font-mono">
-                      {activeFile && (
-                        <span className="text-coder1-cyan">{activeFile.split('.').pop()?.toUpperCase()}</span>
+                      {(activeFile || autoPreviewFile) && (
+                        <span className="text-coder1-cyan">{(activeFile || autoPreviewFile)?.split('.').pop()?.toUpperCase()}</span>
                       )}
                       <span>Auto-refresh: 300ms</span>
                       <span className="text-coder1-purple">Loop Protection: ON</span>

@@ -53,7 +53,7 @@ Think of it like a secure phone line between Coder1's website and YOUR computer:
 This one-line command downloads and installs the Bridge:
 
 ```bash
-curl -sL https://coder1-ide.onrender.com/install-bridge.sh | bash
+curl -sL https://coder1.ai/install-bridge.sh | bash
 ```
 
 **What this actually does:**
@@ -70,7 +70,7 @@ If you want to review the code first:
 
 ```bash
 # 1. Download and review the installer
-curl -sL https://coder1-ide.onrender.com/install-bridge.sh > install.sh
+curl -sL https://coder1.ai/install-bridge.sh > install.sh
 
 # 2. Open and read it (see what it does)
 cat install.sh
@@ -90,7 +90,7 @@ npm link
 ## Connecting the Bridge
 
 ### Step 1: Start Coder1 IDE
-Go to: https://coder1-ide.onrender.com/ide
+Go to: https://coder1.ai/ide
 
 You'll see a welcome screen with Bridge instructions.
 
@@ -110,7 +110,7 @@ coder1-bridge start
 You'll see:
 ```
 🌉 Coder1 Bridge Starting...
-📍 Connecting to: coder1-ide.onrender.com
+📍 Connecting to: coder1.ai
 🔐 Enter your 6-digit pairing code:
 ```
 
@@ -272,7 +272,7 @@ Codes expire after 5 minutes. Just click "Bridge" button again to get a new one.
 ### "Connection failed"
 
 1. Check your internet connection
-2. Make sure you can access coder1-ide.onrender.com
+2. Make sure you can access coder1.ai
 3. Try restarting the Bridge: Ctrl+C, then `coder1-bridge start` again
 
 ### "Claude Code not found"

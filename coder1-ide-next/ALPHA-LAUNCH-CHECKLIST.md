@@ -19,7 +19,7 @@
 **File Changed:** `/components/bridge/SetupInstructionsModal.tsx`
 
 ### 2. URL Consistency - COMPLETED ✅
-**Problem:** Mixed references to `coder1-ide.onrender.com` and `coder1.ai`  
+**Problem:** Mixed references to `coder1.ai` and `coder1.ai`  
 **Solution:** Updated all URLs to use `coder1.ai` (production domain)
 
 **Files Changed:**

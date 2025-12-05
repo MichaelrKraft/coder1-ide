@@ -12,7 +12,7 @@ Great news! I've identified and fixed the bridge connection issue. The problem w
 
 ## What Was Wrong:
 
-1. **Wrong Server URL**: The CLI was trying to connect to `coder1-ide.onrender.com` (which doesn't exist anymore) instead of `coder1.ai`
+1. **Wrong Server URL**: The CLI was trying to connect to `coder1.ai` (which doesn't exist anymore) instead of `coder1.ai`
 2. **Node v22 Compatibility**: The bridge had a dependency (p-queue) that doesn't work with Node v22.3.0
 
 I've fixed both issues and deployed a new version.
@@ -46,7 +46,7 @@ Then just enter your pairing code from the IDE and you should be connected!
 
 ## What Changed:
 
-- ✅ Fixed server URL from `coder1-ide.onrender.com` → `coder1.ai`
+- ✅ Fixed server URL from `coder1.ai` → `coder1.ai`
 - ✅ Fixed Node v22 compatibility issue
 - ✅ No more "Not Found is not valid JSON" errors
 - ✅ No more ESM module errors

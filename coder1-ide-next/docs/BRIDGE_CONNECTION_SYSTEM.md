@@ -109,7 +109,7 @@ The Bridge button is strategically placed:
 2. **Bridge Installation**
    ```bash
    # One-line installer
-   curl -sL https://coder1-ide.onrender.com/install-bridge.sh | bash
+   curl -sL https://coder1.ai/install-bridge.sh | bash
    ```
 
 3. **Initial Connection**
@@ -208,7 +208,7 @@ const checkBridgeConnection = (userId: string) => {
 - Ensure prompt code entry
 
 **Bridge command not found**
-- Run installer: `curl -sL https://coder1-ide.onrender.com/install-bridge.sh | bash`
+- Run installer: `curl -sL https://coder1.ai/install-bridge.sh | bash`
 - Add to PATH if needed
 - Verify installation with `coder1-bridge --version`
 

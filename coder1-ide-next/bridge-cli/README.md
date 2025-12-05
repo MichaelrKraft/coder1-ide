@@ -27,7 +27,7 @@ npm start
 ### Usage
 
 1. **Open Coder1 IDE** in your browser:
-   - Production: https://coder1-ide.onrender.com
+   - Production: https://coder1.ai
    - Local: http://localhost:3001
 
 2. **Generate a Pairing Code** in the IDE:
@@ -69,7 +69,7 @@ npm start
 Start the bridge service and connect to Coder1 IDE.
 
 **Options:**
-- `-s, --server <url>` - Server URL (default: https://coder1-ide.onrender.com)
+- `-s, --server <url>` - Server URL (default: https://coder1.ai)
 - `-d, --dev` - Development mode (connects to localhost:3001)
 - `-v, --verbose` - Enable verbose logging
 - `--no-banner` - Skip banner display
@@ -112,7 +112,7 @@ Create a `.env` file in your project directory:
 
 ```env
 # Server configuration
-CODER1_SERVER=https://coder1-ide.onrender.com
+CODER1_SERVER=https://coder1.ai
 
 # Bridge settings
 BRIDGE_VERBOSE=true

@@ -38,12 +38,12 @@ Click "Environment" tab and add:
 # Required
 NODE_ENV=production
 PORT=3000
-NEXTAUTH_URL=https://coder1-ide.onrender.com
-NEXT_PUBLIC_API_URL=https://coder1-ide.onrender.com
+NEXTAUTH_URL=https://coder1.ai
+NEXT_PUBLIC_API_URL=https://coder1.ai
 
 # Bridge Configuration
 ENABLE_BRIDGE=true
-BRIDGE_SERVER_URL=https://coder1-ide.onrender.com
+BRIDGE_SERVER_URL=https://coder1.ai
 BRIDGE_PAIRING_TIMEOUT=300000
 
 # Optional (for AI features)
@@ -67,23 +67,23 @@ ENABLE_AI_SUPERVISION=true
 
 1. Click "Create Web Service"
 2. Wait for build and deploy (5-10 minutes)
-3. Visit your URL: `https://coder1-ide.onrender.com`
+3. Visit your URL: `https://coder1.ai`
 
 ## Testing the Deployment
 
 ### 1. Health Check
 ```bash
-curl https://coder1-ide.onrender.com/api/health
+curl https://coder1.ai/api/health
 ```
 
 ### 2. Access IDE
-- Main IDE: https://coder1-ide.onrender.com/ide
-- Dashboard: https://coder1-ide.onrender.com
+- Main IDE: https://coder1.ai/ide
+- Dashboard: https://coder1.ai
 
 ### 3. Test Bridge Connection
 ```bash
 # Install bridge locally
-curl -sL https://coder1-ide.onrender.com/install-bridge.sh | bash
+curl -sL https://coder1.ai/install-bridge.sh | bash
 
 # Connect to production
 coder1-bridge start

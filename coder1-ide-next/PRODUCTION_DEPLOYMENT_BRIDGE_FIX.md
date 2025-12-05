@@ -142,7 +142,7 @@ After Render deployment completes, your bridge tarball will be available at:
 **Production URL**: `https://coder1.ai/bridge-cli.tar.gz`
 
 **Custom Domain Setup** (if using Render subdomain):
-If your Render URL is something like `coder1-ide.onrender.com`, you may need to:
+If your Render URL is something like `coder1.ai`, you may need to:
 1. Update `coder1.ai` DNS to point to Render
 2. OR use the Render URL directly until DNS is configured
 

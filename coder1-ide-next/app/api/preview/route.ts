@@ -111,14 +111,23 @@ export async function GET(request: NextRequest) {
 
     // Validate and read file
     const projectRoot = getProjectRoot();
-    const fullPath = path.resolve(projectRoot, filePath);
-    
-    // Security check - ensure file is within project
-    if (!fullPath.startsWith(projectRoot)) {
+
+    // 🎯 AUTO-PREVIEW (Dec 4, 2025): Handle absolute paths for auto-preview
+    // If path starts with /, it's absolute - use directly
+    // Otherwise, resolve relative to project root
+    const fullPath = filePath.startsWith('/')
+      ? filePath
+      : path.resolve(projectRoot, filePath);
+
+    // Security check - allow files in project OR in /tmp/ (for auto-preview demos)
+    const isInProject = fullPath.startsWith(projectRoot);
+    const isInTmp = fullPath.startsWith('/tmp/') || fullPath.startsWith('/private/tmp/');
+
+    if (!isInProject && !isInTmp) {
       return NextResponse.json(
         {
           success: false,
-          error: 'Access denied - file outside project directory'
+          error: 'Access denied - file outside allowed directories'
         },
         { status: 403 }
       );

@@ -8,13 +8,13 @@
 
 Alpha customer reported bridge connection failure with error:
 ```
-invalid json response body at https://coder1-ide.onrender.com/api/bridge/pair 
+invalid json response body at https://coder1.ai/api/bridge/pair 
 reason: Unexpected token 'N', "Not Found" is not valid JSON
 ```
 
 **Root Causes Identified**:
 1. **Next.js Configuration Issue**: `output: 'standalone'` mode incompatible with custom server
-2. **Wrong Production URL**: Bridge CLI hardcoded to `coder1-ide.onrender.com` instead of `coder1.ai`
+2. **Wrong Production URL**: Bridge CLI hardcoded to `coder1.ai` instead of `coder1.ai`
 
 ---
 
@@ -51,7 +51,7 @@ trailingSlash: process.env.GITHUB_PAGES ? true : false,
 **Changed** (Line 21):
 ```javascript
 // BEFORE (BROKEN):
-this.serverUrl = options.serverUrl || (isLocal ? 'http://localhost:3001' : 'https://coder1-ide.onrender.com');
+this.serverUrl = options.serverUrl || (isLocal ? 'http://localhost:3001' : 'https://coder1.ai');
 
 // AFTER (FIXED):
 this.serverUrl = options.serverUrl || (isLocal ? 'http://localhost:3001' : 'https://coder1.ai');
@@ -120,7 +120,7 @@ coder1-bridge start
 npm root -g
 
 # Edit bridge-client.js in that directory
-# Change line 21: https://coder1-ide.onrender.com → https://coder1.ai
+# Change line 21: https://coder1.ai → https://coder1.ai
 ```
 
 ---

@@ -96,7 +96,7 @@ It's like a phone call - the phone company knows you're talking to someone, but 
 **Option 1: Review First (Recommended for Security-Conscious)**
 ```bash
 # Download the script
-curl -sL https://coder1-ide.onrender.com/install-bridge.sh > install.sh
+curl -sL https://coder1.ai/install-bridge.sh > install.sh
 
 # Read it thoroughly
 cat install.sh
@@ -157,7 +157,7 @@ npm link
 ### "Can my company's IT see what I'm doing?"
 
 **They can see:**
-- You're connected to coder1-ide.onrender.com
+- You're connected to coder1.ai
 - Data is being transferred (but it's encrypted)
 - Connection timing and bandwidth
 
@@ -344,7 +344,7 @@ $ coder1-bridge start
 Enter 6-digit code: 842395
 
 // 2. Bridge connects to server
-const ws = new WebSocket('wss://coder1-ide.onrender.com/bridge');
+const ws = new WebSocket('wss://coder1.ai/bridge');
 ws.send({
   type: 'AUTH',
   pairingCode: '842395',

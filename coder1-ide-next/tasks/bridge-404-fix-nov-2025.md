@@ -4,7 +4,7 @@
 
 Alpha customer could not connect Coder1 Bridge CLI to production server. Error:
 ```
-invalid json response body at https://coder1-ide.onrender.com/api/bridge/pair 
+invalid json response body at https://coder1.ai/api/bridge/pair 
 reason: Unexpected token 'N', "Not Found" is not valid JSON
 ```
 
@@ -172,7 +172,7 @@ Once deployment shows **"Live"** status:
 
 ```bash
 # Test the production endpoint
-curl -X POST https://coder1-ide.onrender.com/api/bridge/pair \
+curl -X POST https://coder1.ai/api/bridge/pair \
   -H "Content-Type: application/json" \
   -d '{"code":"123456"}'
 

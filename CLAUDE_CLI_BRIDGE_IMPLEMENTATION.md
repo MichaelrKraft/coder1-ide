@@ -35,7 +35,7 @@ We implemented a **Claude CLI Bridge** - a WebSocket-based connection system tha
                      │ WebSocket (wss://)
                      ↓
 ┌──────────────────────────────────────────────────────────────────────┐
-│                     RENDER SERVER (coder1-ide.onrender.com)          │
+│                     RENDER SERVER (coder1.ai)          │
 ├──────────────────────────────────────────────────────────────────────┤
 │  • server.js (terminal interception, WebSocket server)               │
 │  • BridgeManager (connection orchestration)                          │
@@ -163,7 +163,7 @@ Optimized to ~10MB, includes:
 
 ### Final UX Flow
 
-1. User opens IDE at `https://coder1-ide.onrender.com`
+1. User opens IDE at `https://coder1.ai`
 2. Sees WelcomeScreen with setup instructions (editor area)
 3. Opens LOCAL terminal on their computer
 4. Installs bridge: `curl -sL .../install-bridge.sh | bash`
@@ -212,7 +212,7 @@ Optimized to ~10MB, includes:
 ```env
 # Required on Render deployment
 JWT_SECRET=coder1-bridge-secret-2025-change-in-production
-BRIDGE_SERVER_URL=https://coder1-ide.onrender.com
+BRIDGE_SERVER_URL=https://coder1.ai
 BRIDGE_PAIRING_TIMEOUT=300000
 ENABLE_BRIDGE=true
 
