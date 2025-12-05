@@ -1193,6 +1193,150 @@
     }
 
     // ========================================
+    // AI Agent One-Click Installation
+    // ========================================
+
+    // Install an AI agent via API
+    window.installAgent = async function(event, agentId) {
+        if (event) {
+            event.preventDefault();
+            event.stopPropagation();
+        }
+
+        const btn = event?.currentTarget || event?.target?.closest('button');
+        if (!btn) return;
+
+        const originalHTML = btn.innerHTML;
+        const originalBg = btn.style.background;
+
+        try {
+            // Show loading state
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Installing...';
+            btn.disabled = true;
+            btn.style.background = '#666';
+
+            // Call installation API
+            const response = await fetch('/api/agents/install', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    agentId: agentId
+                })
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                if (result.alreadyInstalled) {
+                    btn.innerHTML = '<i class="fas fa-check"></i> Already Installed';
+                    btn.style.background = '#059669';
+                    showNotification(`Agent "${agentId}" is already installed`);
+                } else {
+                    btn.innerHTML = '<i class="fas fa-check"></i> Installed!';
+                    btn.style.background = '#10b981';
+                    showNotification(`Agent "${agentId}" installed! Restart Claude Code to use it.`);
+                }
+
+                // Keep success state
+                setTimeout(() => {
+                    btn.innerHTML = '<i class="fas fa-check"></i> Installed';
+                    btn.disabled = true;
+                }, 2000);
+
+            } else {
+                throw new Error(result.error || 'Installation failed');
+            }
+
+        } catch (error) {
+            console.error('Agent installation error:', error);
+            btn.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Failed';
+            btn.style.background = '#dc2626';
+            showNotification('Installation failed: ' + error.message);
+
+            // Reset after delay
+            setTimeout(() => {
+                btn.innerHTML = originalHTML;
+                btn.style.background = originalBg;
+                btn.disabled = false;
+            }, 3000);
+        }
+    };
+
+    // ========================================
+    // Skills One-Click Installation
+    // ========================================
+
+    // Install a skill via API
+    window.installSkill = async function(event, skillId) {
+        if (event) {
+            event.preventDefault();
+            event.stopPropagation();
+        }
+
+        const btn = event?.currentTarget || event?.target?.closest('button');
+        if (!btn) return;
+
+        const originalHTML = btn.innerHTML;
+        const originalBg = btn.style.background;
+
+        try {
+            // Show loading state
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Installing...';
+            btn.disabled = true;
+            btn.style.background = '#666';
+
+            // Call installation API
+            const response = await fetch('/api/skills/install', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    skillId: skillId
+                })
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                if (result.alreadyInstalled) {
+                    btn.innerHTML = '<i class="fas fa-check"></i> Already Installed';
+                    btn.style.background = '#059669';
+                    showNotification(`Skill "${skillId}" is already installed`);
+                } else {
+                    btn.innerHTML = '<i class="fas fa-check"></i> Installed!';
+                    btn.style.background = '#10b981';
+                    showNotification(`Skill "${skillId}" installed! Restart Claude Code to use it.`);
+                }
+
+                // Keep success state
+                setTimeout(() => {
+                    btn.innerHTML = '<i class="fas fa-check"></i> Installed';
+                    btn.disabled = true;
+                }, 2000);
+
+            } else {
+                throw new Error(result.error || 'Installation failed');
+            }
+
+        } catch (error) {
+            console.error('Skill installation error:', error);
+            btn.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Failed';
+            btn.style.background = '#dc2626';
+            showNotification('Installation failed: ' + error.message);
+
+            // Reset after delay
+            setTimeout(() => {
+                btn.innerHTML = originalHTML;
+                btn.style.background = originalBg;
+                btn.disabled = false;
+            }, 3000);
+        }
+    };
+
+    // ========================================
     // Typewriter Effect for AI Prompt Placeholder
     // ========================================
 
