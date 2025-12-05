@@ -26,10 +26,10 @@ services:
         value: 3000
       
       - key: NEXTAUTH_URL
-        value: https://coder1-ide.onrender.com
-      
+        value: https://coder1.ai
+
       - key: NEXT_PUBLIC_API_URL
-        value: https://coder1-ide.onrender.com
+        value: https://coder1.ai
       
       # Claude API Configuration (for Error Doctor, Session Summary)
       - key: ANTHROPIC_API_KEY
@@ -41,7 +41,7 @@ services:
       
       # Bridge Configuration
       - key: BRIDGE_SERVER_URL
-        value: https://coder1-ide.onrender.com
+        value: https://coder1.ai
       
       - key: BRIDGE_PAIRING_TIMEOUT
         value: 300000

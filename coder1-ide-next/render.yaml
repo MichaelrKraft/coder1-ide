@@ -71,7 +71,7 @@ services:
         sync: false # Secret - set manually in Render dashboard
         
       - key: CLAUDE_CODE_REDIRECT_URI
-        value: https://coder1-ide.onrender.com/auth/claude/callback
+        value: https://coder1.ai/auth/claude/callback
         
       # Coder1 Bridge Service Configuration
       - key: ENABLE_BRIDGE_SERVICE
