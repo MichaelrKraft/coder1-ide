@@ -60,7 +60,7 @@ program
 program
   .command('start')
   .description('Start the bridge service and connect to Coder1 IDE')
-  .option('-s, --server <url>', 'Server URL', 'https://coder1-ide.onrender.com')
+  .option('-s, --server <url>', 'Server URL', 'https://coder1.ai')
   .option('-d, --dev', 'Development mode (connect to localhost)')
   .option('-v, --verbose', 'Verbose logging')
   .option('--no-banner', 'Skip banner display')
@@ -137,7 +137,7 @@ program
 program
   .command('status')
   .description('Check bridge connection status')
-  .option('-s, --server <url>', 'Server URL', 'https://coder1-ide.onrender.com')
+  .option('-s, --server <url>', 'Server URL', 'https://coder1.ai')
   .action(async (options) => {
     console.log('\x1b[34m🔍 Checking bridge status...\x1b[0m');
     
