@@ -295,7 +295,70 @@ const davila7TemplatesExpansion = [
         popularity: 'new'
     },
 
-    // SMART HOOKS - 5 Additional Workflow Automation
+    // SMART HOOKS - Developer Workflow Hooks (INSTALLABLE via one-click)
+    // These 3 hooks work out-of-the-box with one-click install from Templates Hub
+    {
+        id: 'session-complete-notifier',
+        name: 'Session Complete Notifier',
+        category: 'SMART HOOKS',
+        categorySlug: 'hooks',
+        description: 'Plays sound and shows desktop notification when Claude Code finishes a task. Eliminates constantly checking if long-running tasks are done.',
+        tags: ['Notification', 'Productivity', 'Session', 'Alerts'],
+        stats: { rating: 4.8, downloads: 280, comments: 8 },
+        command: 'npx claude-code-templates@latest --hook=session-complete-notifier --yes',
+        features: [
+            'System sound on task completion (macOS/Linux)',
+            'Desktop notification with task summary',
+            'Session completion logging',
+            'Cross-platform support',
+            'Zero configuration required'
+        ],
+        source: 'production-hooks-guide',
+        popularity: 'new',
+        installable: true  // One-click install available
+    },
+    {
+        id: 'session-start-context',
+        name: 'Session Start Context',
+        category: 'SMART HOOKS',
+        categorySlug: 'hooks',
+        description: 'Automatically injects git status, recent commits, and open issues when Claude starts. Claude sees full project context before your first prompt.',
+        tags: ['Context', 'Git', 'Session', 'Productivity'],
+        stats: { rating: 4.9, downloads: 260, comments: 7 },
+        command: 'npx claude-code-templates@latest --hook=session-start-context --yes',
+        features: [
+            'Current git branch and status display',
+            'Recent commits summary (last 5)',
+            'Open GitHub issues (if gh CLI installed)',
+            'Uncommitted changes count',
+            'Available npm scripts hint'
+        ],
+        source: 'production-hooks-guide',
+        popularity: 'new',
+        installable: true  // One-click install available
+    },
+    {
+        id: 'auto-test-on-edit',
+        name: 'Auto-Test on Edit',
+        category: 'SMART HOOKS',
+        categorySlug: 'hooks',
+        description: 'Automatically runs relevant tests after code changes. TDD workflow without remembering to run tests - catches bugs immediately.',
+        tags: ['Testing', 'TDD', 'Automation', 'Quality'],
+        stats: { rating: 4.7, downloads: 240, comments: 6 },
+        command: 'npx claude-code-templates@latest --hook=auto-test-on-edit --yes',
+        features: [
+            'Auto-detect project test framework',
+            'Run tests for changed files only',
+            'Support Jest, Vitest, Pytest, Go test',
+            'Truncated output (last 20-30 lines)',
+            'Non-blocking execution'
+        ],
+        source: 'production-hooks-guide',
+        popularity: 'new',
+        installable: true  // One-click install available
+    },
+
+    // SMART HOOKS - Coming Soon (require additional infrastructure)
     {
         id: 'deployment-automation',
         name: 'Deployment Automation',

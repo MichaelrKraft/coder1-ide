@@ -1,0 +1,12 @@
+{
+  "id": "qa-expert",
+  "name": "QA Expert Agent",
+  "description": "Specialized AI agent for test automation, quality assurance strategies, and comprehensive testing workflows",
+  "category": "agents",
+  "tools": ["filesystem", "git", "grep", "bash"],
+  "version": "1.0.0",
+  "estimatedTokens": 1600,
+  "lastUpdated": "2025-12-04",
+  "author": "Coder1 Team",
+  "tags": ["testing", "qa", "automation", "jest", "playwright", "cypress"]
+}

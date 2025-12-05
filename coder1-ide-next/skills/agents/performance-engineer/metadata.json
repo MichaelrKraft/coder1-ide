@@ -1,0 +1,12 @@
+{
+  "id": "performance-engineer",
+  "name": "Performance Engineer Agent",
+  "description": "Specialized AI agent for application profiling, bottleneck analysis, and scalability optimization",
+  "category": "agents",
+  "tools": ["filesystem", "git", "grep", "web_search"],
+  "version": "1.0.0",
+  "estimatedTokens": 1600,
+  "lastUpdated": "2025-12-04",
+  "author": "Coder1 Team",
+  "tags": ["performance", "optimization", "profiling", "scalability", "memory", "cpu"]
+}

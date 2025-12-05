@@ -2071,15 +2071,14 @@
         <div class="hero-container">
             <div class="hero-header">
                 <h1 class="hero-title">Supercharge Your Development</h1>
-                <p class="hero-subtitle">Pre-built Claude Code templates that transform how you work with AI</p>
+                <p class="hero-subtitle">Pre-built Claude Code templates 10x your productivity.</p>
             </div>
-            
+
             <!-- AI Generation Bar -->
             <div class="ai-generation-bar">
                 <div class="ai-bar-glow"></div>
                 <div class="ai-bar-content">
-                    <h3 class="ai-bar-title">Create with AI</h3>
-                    <p class="ai-bar-description">Describe what you want and Claude will generate a ready-to-install config</p>
+                    <p class="ai-bar-description">Describe what you want and Claude will generate a ready-to-install config using AI</p>
                     <div class="ai-bar-input-wrapper">
                         <input
                             type="text"
@@ -2314,22 +2313,66 @@ export const Button: React.FC<ButtonProps> = ({
                     'Test-driven development support'
                 ]
             },
+            // ==================== SMART HOOKS ====================
+            // INSTALLABLE HOOKS (One-click install available)
             {
-                id: 'precommit-hook',
-                name: 'Pre-commit Validator',
+                id: 'session-complete-notifier',
+                name: 'Session Complete Notifier',
                 category: 'SMART HOOKS',
                 categorySlug: 'hooks',
-                description: 'Runs linting, formatting, and tests before commits. Ensures code quality standards.',
-                tags: ['Git Hooks', 'Linting', 'Quality', 'Automation'],
-                stats: { rating: 4.9, downloads: 2700, comments: 93 },
-                command: 'coderone install precommit-hook',
+                description: 'Plays sound and shows desktop notification when Claude Code finishes a task. Eliminates constantly checking if long-running tasks are done.',
+                tags: ['Notification', 'Productivity', 'Session', 'Alerts'],
+                stats: { rating: 4.8, downloads: 280, comments: 8 },
+                command: 'npx claude-code-templates@latest --hook=session-complete-notifier --yes',
                 features: [
-                    'ESLint and Prettier integration',
-                    'Unit test execution',
-                    'Commit message validation',
-                    'File size checking'
-                ]
+                    'System sound on task completion (macOS/Linux)',
+                    'Desktop notification with task summary',
+                    'Session completion logging',
+                    'Cross-platform support',
+                    'Zero configuration required'
+                ],
+                source: 'production-hooks-guide',
+                popularity: 'new'
             },
+            {
+                id: 'session-start-context',
+                name: 'Session Start Context',
+                category: 'SMART HOOKS',
+                categorySlug: 'hooks',
+                description: 'Automatically injects git status, recent commits, and open issues when Claude starts. Claude sees full project context before your first prompt.',
+                tags: ['Context', 'Git', 'Session', 'Productivity'],
+                stats: { rating: 4.9, downloads: 260, comments: 7 },
+                command: 'npx claude-code-templates@latest --hook=session-start-context --yes',
+                features: [
+                    'Current git branch and status display',
+                    'Recent commits summary (last 5)',
+                    'Open GitHub issues (if gh CLI installed)',
+                    'Uncommitted changes count',
+                    'Available npm scripts hint'
+                ],
+                source: 'production-hooks-guide',
+                popularity: 'new'
+            },
+            {
+                id: 'auto-test-on-edit',
+                name: 'Auto-Test on Edit',
+                category: 'SMART HOOKS',
+                categorySlug: 'hooks',
+                description: 'Automatically runs relevant tests after code changes. TDD workflow without remembering to run tests - catches bugs immediately.',
+                tags: ['Testing', 'TDD', 'Automation', 'Quality'],
+                stats: { rating: 4.7, downloads: 240, comments: 6 },
+                command: 'npx claude-code-templates@latest --hook=auto-test-on-edit --yes',
+                features: [
+                    'Auto-detect project test framework',
+                    'Run tests for changed files only',
+                    'Support Jest, Vitest, Pytest, Go test',
+                    'Truncated output (last 20-30 lines)',
+                    'Non-blocking execution'
+                ],
+                source: 'production-hooks-guide',
+                popularity: 'new'
+            },
+            // COMING SOON HOOKS (require additional infrastructure)
             {
                 id: 'database-architect',
                 name: 'Database Architect',
@@ -3950,7 +3993,7 @@ export const Button: React.FC<ButtonProps> = ({
     </script>
     
     <!-- Button Fix Script -->
-    <script src="/templates-hub-fix.js?v=2.7.0"></script>
+    <script src="/templates-hub-fix.js?v=3.5.0"></script>
     
     <!-- Unified Design System JavaScript -->
     <script src="unified-design-system.js"></script>

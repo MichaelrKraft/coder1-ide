@@ -143,6 +143,7 @@ function IDEPageContent() {
   // Editor state
   const [activeFile, setActiveFile] = useState<string | null>(null);
   const [files, setFiles] = useState<Record<string, string>>({});
+  const [dirtyFiles, setDirtyFiles] = useState<Set<string>>(new Set());
   const [fileTreeRefresh, setFileTreeRefresh] = useState(0);
   const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
   
@@ -481,6 +482,12 @@ function IDEPageContent() {
       },
       onSaveFile: (file: FileInfo) => {
         console.log('File saved:', file.path);
+        // Mark file as clean after successful save
+        setDirtyFiles((prev) => {
+          const newSet = new Set(prev);
+          newSet.delete(file.path);
+          return newSet;
+        });
       },
       onFileChange: (file: FileInfo) => {
         if (file.path === '') {
@@ -821,10 +828,14 @@ function IDEPageContent() {
       setFiles(prev => ({ ...prev, [path]: data.content || '' }));
       setActiveFile(path);
 
-      // TODO: Handle line positioning in Monaco editor
-      if (line) {
-        // Future enhancement: editor.revealLineInCenter(line);
-        // Future enhancement: editor.setPosition({lineNumber: line, column: 1});
+      // Position Monaco editor to specific line if requested
+      if (line && editorRef.current) {
+        // Give Monaco time to render the new content, then scroll to line
+        setTimeout(() => {
+          editorRef.current?.revealLineInCenter(line);
+          editorRef.current?.setPosition({ lineNumber: line, column: 1 });
+          editorRef.current?.focus();
+        }, 100);
       }
       
     } catch (error) {
@@ -858,6 +869,8 @@ function IDEPageContent() {
 
   const handleFileChange = (path: string, content: string) => {
     setFiles((prev) => ({ ...prev, [path]: content }));
+    // Mark file as dirty when content changes
+    setDirtyFiles((prev) => new Set(prev).add(path));
   };
 
   // Menu action handlers
@@ -1577,7 +1590,7 @@ function IDEPageContent() {
                   path,
                   name: path.split("/").pop() || path,
                   content: files[path],
-                  isDirty: false, // TODO: Track dirty state properly
+                  isDirty: dirtyFiles.has(path),
                 }))}
                 getTerminalHistory={() => terminalHistoryRef.current}
                 terminalCommands={terminalCommands}
@@ -1588,26 +1601,32 @@ function IDEPageContent() {
               <StatusLine />
             </div>
             
-            {/* Onboarding Overlay - Forces user to click Start Interactive Tour */}
+            {/* Onboarding Overlay - For first-time users */}
             {showOnboardingOverlay && (
-              <div 
-                className="fixed inset-0 z-[100] flex items-center justify-center"
+              <div
+                className="fixed inset-0 z-[100] flex items-center justify-center animate-fadeIn"
                 style={{
                   backgroundColor: 'rgba(0, 0, 0, 0.5)',
-                  backdropFilter: 'blur(1px)'
+                  backdropFilter: 'blur(1px)',
+                  animation: 'fadeIn 0.3s ease-out'
                 }}
               >
                 {/* Spotlight effect around button area */}
-                <div className="relative">
+                <div
+                  className="relative"
+                  style={{
+                    animation: 'slideUp 0.4s ease-out 0.1s both'
+                  }}
+                >
                   {/* Glow effect */}
-                  <div 
+                  <div
                     className="absolute inset-0 rounded-lg"
                     style={{
                       boxShadow: '0 0 40px 20px rgba(0, 217, 255, 0.3), 0 0 80px 40px rgba(0, 217, 255, 0.15)',
                       filter: 'blur(15px)'
                     }}
                   />
-                  
+
                   {/* The actual button with highlight */}
                   <button
                     onClick={() => {
@@ -1622,11 +1641,22 @@ function IDEPageContent() {
                   >
                     🚀 Start Interactive Tour
                   </button>
-                  
+
                   {/* Helpful text below button */}
                   <p className="text-center mt-6 text-coder1-cyan text-sm font-medium">
                     Click to begin your journey • Takes ~3 minutes
                   </p>
+
+                  {/* Skip button for power users */}
+                  <button
+                    onClick={() => {
+                      localStorage.setItem('coder1-tour-status', 'dismissed');
+                      setShowOnboardingOverlay(false);
+                    }}
+                    className="block mx-auto mt-4 text-text-muted text-xs hover:text-text-secondary transition-colors"
+                  >
+                    Skip tour, I know my way around
+                  </button>
                 </div>
               </div>
             )}
