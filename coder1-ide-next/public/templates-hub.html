@@ -3337,6 +3337,105 @@ export const Button: React.FC<ButtonProps> = ({
             }
         }
 
+        // ========================================
+        // AI Agent & Skill Installation Functions
+        // Must be defined before renderTemplates uses them
+        // ========================================
+
+        async function installAgent(event, agentId) {
+            if (event) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+
+            const btn = event?.currentTarget || event?.target?.closest('button');
+            if (!btn) return;
+
+            const originalHTML = btn.innerHTML;
+
+            try {
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Installing...';
+                btn.disabled = true;
+
+                const response = await fetch('/api/agents/install', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ agentId: agentId })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    btn.innerHTML = '<i class="fas fa-check"></i> Installed!';
+                    btn.style.background = '#10b981';
+                    const msg = result.alreadyInstalled
+                        ? `Agent already installed`
+                        : `Agent installed! Restart Claude Code to use it.`;
+                    showNotification(msg);
+                } else {
+                    throw new Error(result.error || 'Installation failed');
+                }
+
+            } catch (error) {
+                console.error('Agent installation error:', error);
+                btn.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Failed';
+                btn.style.background = '#dc2626';
+                showNotification('Installation failed: ' + error.message);
+                setTimeout(() => {
+                    btn.innerHTML = originalHTML;
+                    btn.style.background = '';
+                    btn.disabled = false;
+                }, 3000);
+            }
+        }
+
+        async function installSkill(event, skillId) {
+            if (event) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+
+            const btn = event?.currentTarget || event?.target?.closest('button');
+            if (!btn) return;
+
+            const originalHTML = btn.innerHTML;
+
+            try {
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Installing...';
+                btn.disabled = true;
+
+                const response = await fetch('/api/skills/install', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ skillId: skillId })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    btn.innerHTML = '<i class="fas fa-check"></i> Installed!';
+                    btn.style.background = '#10b981';
+                    const msg = result.alreadyInstalled
+                        ? `Skill already installed`
+                        : `Skill installed! Restart Claude Code to use it.`;
+                    showNotification(msg);
+                } else {
+                    throw new Error(result.error || 'Installation failed');
+                }
+
+            } catch (error) {
+                console.error('Skill installation error:', error);
+                btn.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Failed';
+                btn.style.background = '#dc2626';
+                showNotification('Installation failed: ' + error.message);
+                setTimeout(() => {
+                    btn.innerHTML = originalHTML;
+                    btn.style.background = '';
+                    btn.disabled = false;
+                }, 3000);
+            }
+        }
+
         function renderTemplates() {
             console.log('Rendering templates for category:', currentCategory);
             const grid = document.getElementById('templatesGrid');
@@ -3390,7 +3489,9 @@ export const Button: React.FC<ButtonProps> = ({
                 // Determine install button state
                 let installButton = '';
                 const isMCP = template.category === 'MCP INTEGRATIONS' || template.categorySlug === 'mcp';
-                
+                const isAgent = template.category === 'AI AGENTS' || template.categorySlug === 'ai-agents';
+                const isSkill = template.category === 'SKILLS' || template.categorySlug === 'skills';
+
                 if (isMCP) {
                     // Check if it's already installed based on installCommand
                     if (template.installCommand === 'Already installed') {
@@ -3402,8 +3503,18 @@ export const Button: React.FC<ButtonProps> = ({
                             <i class="fas fa-download"></i> Install
                         </button>`;
                     }
+                } else if (isAgent) {
+                    // AI Agents get Install button
+                    installButton = `<button class="quick-install coder1-btn agent-install-btn" onclick="installAgent(event, '${template.id}')">
+                        <i class="fas fa-download"></i> Install
+                    </button>`;
+                } else if (isSkill) {
+                    // Skills get Install button
+                    installButton = `<button class="quick-install coder1-btn skill-install-btn" onclick="installSkill(event, '${template.id}')">
+                        <i class="fas fa-download"></i> Install
+                    </button>`;
                 } else {
-                    // Non-MCP templates use traditional command copy
+                    // Other templates use traditional command copy
                     installButton = `<button class="quick-install coder1-btn" onclick="quickInstall(event, '${template.id}')">
                         <i class="fas fa-copy"></i> Copy Command
                     </button>`;
