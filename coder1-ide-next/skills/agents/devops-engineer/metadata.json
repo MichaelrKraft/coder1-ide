@@ -1,0 +1,12 @@
+{
+  "id": "devops-engineer",
+  "name": "DevOps Engineer Agent",
+  "description": "Specialized AI agent for CI/CD pipelines, infrastructure as code, and container orchestration",
+  "category": "agents",
+  "tools": ["filesystem", "git", "grep", "bash"],
+  "version": "1.0.0",
+  "estimatedTokens": 1700,
+  "lastUpdated": "2025-12-04",
+  "author": "Coder1 Team",
+  "tags": ["devops", "ci-cd", "docker", "kubernetes", "terraform", "github-actions"]
+}

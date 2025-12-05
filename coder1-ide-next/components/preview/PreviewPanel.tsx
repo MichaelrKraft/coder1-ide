@@ -46,6 +46,10 @@ const PreviewPanel = React.memo(function PreviewPanel({
   const updateTimeoutRef = useRef<NodeJS.Timeout>();
   const lastUpdateRef = useRef({ file: '', content: '', timestamp: 0 });
 
+  // 🚀 LIVE DEV SERVER STATE (Dec 4, 2025): Emergent-style live preview
+  const [devServerUrl, setDevServerUrl] = useState<string | null>(null);
+  const [isLiveMode, setIsLiveMode] = useState(false);
+
   // Debounced preview update function with loop prevention
   const debouncedPreviewUpdate = useMemo(
     () => createDebouncedPreviewUpdate((file: string, content: string) => {
@@ -138,11 +142,65 @@ const PreviewPanel = React.memo(function PreviewPanel({
     };
 
     window.addEventListener('sessionRefreshed', handleSessionRefreshed as EventListener);
-    
+
     return () => {
       window.removeEventListener('sessionRefreshed', handleSessionRefreshed as EventListener);
     };
   }, []);
+
+  // 🚀 LIVE DEV SERVER DETECTION (Dec 4, 2025): Emergent-style live preview
+  // Listen for terminal output to detect when dev server starts
+  useEffect(() => {
+    // Dev server detection patterns (prioritize Next.js)
+    const DEV_SERVER_PATTERNS = [
+      // Next.js patterns (primary)
+      /Local:\s+http:\/\/localhost:(\d+)/,
+      /ready\s+-\s+started\s+server\s+on\s+.*?localhost:(\d+)/i,
+      /url:\s*http:\/\/localhost:(\d+)/i,
+      // Vite patterns
+      /Local:\s+http:\/\/localhost:(\d+)\//,
+      /VITE\s+v[\d.]+\s+ready.*localhost:(\d+)/i,
+      // CRA patterns
+      /You can now view.*http:\/\/localhost:(\d+)/i,
+      // Generic patterns (covers custom servers)
+      /listening\s+(?:on\s+)?(?:port\s+)?(\d+)/i,
+      /server\s+(?:is\s+)?(?:running|started|listening)\s+(?:at\s+|on\s+)?(?:http:\/\/)?localhost:(\d+)/i,
+      /http:\/\/localhost:(\d+)\/(?:ide|app|dev)?/i,
+    ];
+
+    const handleTerminalOutput = (event: CustomEvent) => {
+      const output = event.detail?.output || '';
+
+      // Check for dev server startup patterns
+      for (const pattern of DEV_SERVER_PATTERNS) {
+        const match = output.match(pattern);
+        if (match) {
+          const port = match[1];
+          const url = `http://localhost:${port}`;
+          console.log('🚀 PreviewPanel: Dev server detected at', url);
+          setDevServerUrl(url);
+          setIsLiveMode(true);
+          setMode('preview'); // Auto-switch to preview mode
+          break;
+        }
+      }
+
+      // Detect server shutdown
+      if (output.includes('SIGINT') ||
+          output.includes('Shutting down') ||
+          output.includes('Killed') ||
+          output.includes('exit code')) {
+        if (isLiveMode) {
+          console.log('🛑 PreviewPanel: Dev server stopped');
+          setDevServerUrl(null);
+          setIsLiveMode(false);
+        }
+      }
+    };
+
+    window.addEventListener('terminalOutput', handleTerminalOutput as EventListener);
+    return () => window.removeEventListener('terminalOutput', handleTerminalOutput as EventListener);
+  }, [isLiveMode]);
 
   // Handle iframe load events
   const handleIframeLoad = useCallback(() => {
@@ -288,9 +346,25 @@ const PreviewPanel = React.memo(function PreviewPanel({
                   {/* Preview Actions Bar */}
                   <div className="flex items-center justify-between px-4 py-2 bg-transparent">
                     <div className="flex items-center gap-3 text-xs">
-                      <span className="text-text-muted">
-                        {activeFile ? `Preview: ${activeFile}` : 'No file selected'}
-                      </span>
+                      {/* 🚀 LIVE MODE INDICATOR (Dec 4, 2025) */}
+                      {isLiveMode && devServerUrl ? (
+                        <div className="flex items-center gap-2 px-3 py-1 bg-green-500/20 border border-green-500/40 rounded-full">
+                          <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                          <span className="text-green-400 text-xs font-medium">LIVE</span>
+                          <span className="text-green-400/70 text-xs font-mono">{devServerUrl}</span>
+                          <button
+                            onClick={() => { setIsLiveMode(false); setDevServerUrl(null); }}
+                            className="ml-1 text-green-400 hover:text-white transition-colors"
+                            title="Disconnect from dev server"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </div>
+                      ) : (
+                        <span className="text-text-muted">
+                          {activeFile ? `Preview: ${activeFile}` : 'No file selected'}
+                        </span>
+                      )}
                       {previewLoading && (
                         <span className="text-coder1-cyan flex items-center gap-1.5">
                           <div className="w-2 h-2 bg-coder1-cyan rounded-full animate-pulse" />
@@ -304,22 +378,34 @@ const PreviewPanel = React.memo(function PreviewPanel({
                         </span>
                       )}
                     </div>
-                    
+
                     {/* Preview Actions */}
                     <div className="flex items-center gap-2">
-                      <button 
-                        className="p-2 hover:bg-coder1-cyan/10 rounded-lg transition-all duration-200 group disabled:opacity-50 disabled:cursor-not-allowed" 
+                      <button
+                        className="p-2 hover:bg-coder1-cyan/10 rounded-lg transition-all duration-200 group disabled:opacity-50 disabled:cursor-not-allowed"
                         title="Refresh Preview"
-                        onClick={handleRefreshPreview}
-                        disabled={!activeFile || previewLoading}
+                        onClick={() => {
+                          if (isLiveMode && iframeRef.current) {
+                            iframeRef.current.contentWindow?.location.reload();
+                          } else {
+                            handleRefreshPreview();
+                          }
+                        }}
+                        disabled={(!activeFile && !isLiveMode) || previewLoading}
                       >
                         <RefreshCw className={`w-4 h-4 text-text-muted group-hover:text-coder1-cyan ${previewLoading ? 'animate-spin' : ''}`} />
                       </button>
-                      <button 
-                        className="p-2 hover:bg-coder1-purple/10 rounded-lg transition-all duration-200 group disabled:opacity-50 disabled:cursor-not-allowed" 
+                      <button
+                        className="p-2 hover:bg-coder1-purple/10 rounded-lg transition-all duration-200 group disabled:opacity-50 disabled:cursor-not-allowed"
                         title="Open in New Window"
-                        onClick={handleOpenExternal}
-                        disabled={!activeFile}
+                        onClick={() => {
+                          if (isLiveMode && devServerUrl) {
+                            window.open(devServerUrl, '_blank');
+                          } else {
+                            handleOpenExternal();
+                          }
+                        }}
+                        disabled={!activeFile && !isLiveMode}
                       >
                         <ExternalLink className="w-4 h-4 text-text-muted group-hover:text-coder1-purple" />
                       </button>
@@ -346,7 +432,9 @@ const PreviewPanel = React.memo(function PreviewPanel({
                             <div className="w-3 h-3 bg-green-500/80 rounded-full hover:bg-green-500 transition-colors cursor-pointer" />
                           </div>
                           <div className="flex-1 bg-bg-primary/50 rounded-lg px-3 py-1 border border-border-default/50">
-                            <span className="text-xs text-text-muted font-mono">Preview Window</span>
+                            <span className="text-xs text-text-muted font-mono">
+                              {isLiveMode && devServerUrl ? devServerUrl : 'Preview Window'}
+                            </span>
                           </div>
                           <div className="flex gap-2">
                             <button className="p-1 hover:bg-bg-primary/50 rounded transition-colors" title="Preview options menu">
@@ -359,8 +447,19 @@ const PreviewPanel = React.memo(function PreviewPanel({
                         
                         {/* Live Preview Content */}
                         <div className="h-[calc(100%-44px)] bg-gradient-to-b from-bg-primary to-bg-secondary/95 overflow-hidden">
-                          {activeFile && isPreviewable ? (
-                            // Live Preview iframe
+                          {/* 🚀 LIVE DEV SERVER MODE (Dec 4, 2025): Show running app */}
+                          {isLiveMode && devServerUrl ? (
+                            <iframe
+                              ref={iframeRef}
+                              src={devServerUrl}
+                              className="w-full h-full border-0 bg-white"
+                              sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals"
+                              onLoad={handleIframeLoad}
+                              onError={handleIframeError}
+                              title={`Live App at ${devServerUrl}`}
+                            />
+                          ) : activeFile && isPreviewable ? (
+                            // File-based preview iframe
                             <iframe
                               ref={iframeRef}
                               src={`/api/preview?file=${encodeURIComponent(activeFile)}&v=${Date.now()}`}
@@ -370,7 +469,7 @@ const PreviewPanel = React.memo(function PreviewPanel({
                               onError={handleIframeError}
                               title={`Preview of ${activeFile}`}
                             />
-                          ) : !activeFile ? (
+                          ) : !activeFile && !isLiveMode ? (
                             // Demo preview when no file is selected
                             <iframe
                               ref={iframeRef}

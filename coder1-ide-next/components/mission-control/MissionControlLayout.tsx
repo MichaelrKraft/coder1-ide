@@ -46,17 +46,7 @@ export default function MissionControlLayout({ onClose }: MissionControlLayoutPr
 
           {/* Left Resize Handle */}
           <PanelResizeHandle
-            className="group w-1 bg-bg-secondary hover:bg-orange-400/20 transition-all duration-200 cursor-col-resize relative"
-            style={{
-              boxShadow: '0 0 0 0 rgba(251, 146, 60, 0)',
-              transition: 'all 0.3s ease',
-            }}
-            onMouseEnter={(e) => {
-              (e.currentTarget as HTMLElement).style.boxShadow = '0 0 20px rgba(251, 146, 60, 0.8), inset 0 0 10px rgba(251, 146, 60, 0.4)';
-            }}
-            onMouseLeave={(e) => {
-              (e.currentTarget as HTMLElement).style.boxShadow = '0 0 0 0 rgba(251, 146, 60, 0)';
-            }}
+            className="group w-1 bg-bg-secondary hover:bg-orange-400/20 transition-all duration-200 cursor-col-resize relative mc-resize-handle"
           >
             <div className="w-full h-full flex items-center justify-center">
               <div
@@ -79,17 +69,7 @@ export default function MissionControlLayout({ onClose }: MissionControlLayoutPr
 
           {/* Right Resize Handle */}
           <PanelResizeHandle
-            className="group w-1 bg-bg-secondary hover:bg-orange-400/20 transition-all duration-200 cursor-col-resize relative"
-            style={{
-              boxShadow: '0 0 0 0 rgba(251, 146, 60, 0)',
-              transition: 'all 0.3s ease',
-            }}
-            onMouseEnter={(e) => {
-              (e.currentTarget as HTMLElement).style.boxShadow = '0 0 20px rgba(251, 146, 60, 0.8), inset 0 0 10px rgba(251, 146, 60, 0.4)';
-            }}
-            onMouseLeave={(e) => {
-              (e.currentTarget as HTMLElement).style.boxShadow = '0 0 0 0 rgba(251, 146, 60, 0)';
-            }}
+            className="group w-1 bg-bg-secondary hover:bg-orange-400/20 transition-all duration-200 cursor-col-resize relative mc-resize-handle"
           >
             <div className="w-full h-full flex items-center justify-center">
               <div

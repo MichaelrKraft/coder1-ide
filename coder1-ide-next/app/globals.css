@@ -350,8 +350,35 @@ body {
   100% { transform: scale(1); opacity: 1; }
 }
 
+/* Onboarding overlay animations */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .animate-slideIn {
   animation: slideIn 0.3s ease-out;
+}
+
+/* Mission Control Panel Resize Handle */
+.mc-resize-handle {
+  box-shadow: 0 0 0 0 rgba(251, 146, 60, 0);
+  transition: all 0.3s ease;
+}
+
+.mc-resize-handle:hover {
+  box-shadow: 0 0 20px rgba(251, 146, 60, 0.8), inset 0 0 10px rgba(251, 146, 60, 0.4);
 }
 
 .hero-top-line {

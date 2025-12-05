@@ -143,6 +143,19 @@ export default function StatusBarCore({
           {/* Gemini/GLM Cost Display (next to Discover button) */}
           <CostDisplay />
 
+          {/* Unsaved Files Indicator */}
+          {openFiles.filter(f => f.isDirty).length > 0 && (
+            <div
+              className="flex items-center gap-1.5 text-yellow-400 hover:text-yellow-300 cursor-help transition-colors"
+              title={`Unsaved changes in ${openFiles.filter(f => f.isDirty).length} file(s):\n${openFiles.filter(f => f.isDirty).map(f => '• ' + f.name).join('\n')}`}
+            >
+              <FileText className="w-3.5 h-3.5" />
+              <span className="font-medium text-xs">
+                {openFiles.filter(f => f.isDirty).length} unsaved
+              </span>
+            </div>
+          )}
+
           {/* Bridge Connection Indicator - Shows if local machine is connected */}
           {bridgeState.isConnected ? (
             <div

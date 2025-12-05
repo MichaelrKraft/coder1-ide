@@ -653,6 +653,9 @@
         // Get current category filter (from the main page's variable)
         const currentCat = (typeof currentCategory !== 'undefined') ? currentCategory : 'all';
 
+        // IDs of the 3 installable hooks that should always appear first
+        const installableHookIds = ['session-complete-notifier', 'session-start-context', 'auto-test-on-edit'];
+
         // Add user config cards (filtered by current category)
         configs.forEach(config => {
             const configCategory = typeToCategory[config.type] || 'all';
@@ -661,7 +664,24 @@
             if (currentCat === 'all' || configCategory === currentCat) {
                 const card = createUserConfigCard(config);
                 card.dataset.category = configCategory;
-                grid.insertBefore(card, grid.firstChild);
+
+                // For hooks: insert AFTER the 3 installable hooks, not at the beginning
+                if (config.type === 'hook') {
+                    // Find the last installable hook card
+                    const lastInstallableHook = Array.from(grid.querySelectorAll('.coder1-template-card'))
+                        .filter(c => installableHookIds.includes(c.dataset.templateId))
+                        .pop();
+
+                    if (lastInstallableHook && lastInstallableHook.nextSibling) {
+                        grid.insertBefore(card, lastInstallableHook.nextSibling);
+                    } else {
+                        // Fallback: insert at beginning if installable hooks not found
+                        grid.insertBefore(card, grid.firstChild);
+                    }
+                } else {
+                    // For other types, insert at beginning as before
+                    grid.insertBefore(card, grid.firstChild);
+                }
             }
         });
     }
@@ -879,6 +899,297 @@
             initAIGenerationBar();
             setTimeout(hookRenderTemplates, 200);
         }, 100);
+    }
+
+    // ========================================
+    // Smart Hook One-Click Installation
+    // ========================================
+
+    // Installable hook IDs
+    const INSTALLABLE_HOOKS = ['session-complete-notifier', 'session-start-context', 'auto-test-on-edit'];
+
+    // Check if a hook is installable
+    function isInstallableHook(templateId) {
+        return INSTALLABLE_HOOKS.includes(templateId);
+    }
+
+    // Install a hook via API
+    window.installHook = async function(event, hookId) {
+        if (event) {
+            event.preventDefault();
+            event.stopPropagation();
+        }
+
+        const btn = event?.currentTarget || event?.target?.closest('button');
+        if (!btn) return;
+
+        const originalHTML = btn.innerHTML;
+        const originalBg = btn.style.background;
+
+        try {
+            // Show loading state
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Installing...';
+            btn.disabled = true;
+            btn.style.background = '#666';
+
+            // Call installation API
+            const response = await fetch('/api/hooks/install', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    hookId: hookId,
+                    scope: 'global'
+                })
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                if (result.alreadyInstalled) {
+                    btn.innerHTML = '<i class="fas fa-check"></i> Already Installed';
+                    btn.style.background = '#059669';
+                    showNotification(`Hook "${hookId}" is already installed`);
+                } else {
+                    btn.innerHTML = '<i class="fas fa-check"></i> Installed!';
+                    btn.style.background = '#10b981';
+                    showNotification(`Hook "${hookId}" installed! Restart Claude to activate.`);
+                }
+
+                // Keep success state
+                setTimeout(() => {
+                    btn.innerHTML = '<i class="fas fa-check"></i> Installed';
+                    btn.disabled = true;
+                }, 2000);
+
+            } else {
+                throw new Error(result.error || 'Installation failed');
+            }
+
+        } catch (error) {
+            console.error('Hook installation error:', error);
+            btn.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Failed';
+            btn.style.background = '#dc2626';
+            showNotification('Installation failed: ' + error.message);
+
+            // Reset after delay
+            setTimeout(() => {
+                btn.innerHTML = originalHTML;
+                btn.style.background = originalBg;
+                btn.disabled = false;
+            }, 3000);
+        }
+    };
+
+    // Show hook installation modal
+    window.showHookInstallModal = function(hookId, hookName) {
+        // Create modal if it doesn't exist
+        let modal = document.getElementById('hookInstallModal');
+        if (!modal) {
+            modal = document.createElement('div');
+            modal.id = 'hookInstallModal';
+            modal.className = 'modal-overlay';
+            modal.innerHTML = `
+                <div class="modal-content" style="max-width: 450px;">
+                    <button class="modal-close" onclick="closeHookInstallModal()">&times;</button>
+                    <div class="modal-header">
+                        <h2 id="hookInstallName">Install Hook</h2>
+                    </div>
+                    <div class="modal-body" style="padding: 20px;">
+                        <p style="margin-bottom: 20px; color: #aaa;">Choose where to install this hook:</p>
+                        <div style="display: flex; flex-direction: column; gap: 12px;">
+                            <button class="coder1-btn" id="installGlobalHookBtn" style="padding: 16px; font-size: 15px;">
+                                <i class="fas fa-globe"></i> Install Globally
+                                <span style="display: block; font-size: 12px; color: #888; margin-top: 4px;">All projects (~/. claude/hooks/)</span>
+                            </button>
+                            <button class="coder1-btn btn-secondary" id="installProjectHookBtn" style="padding: 16px; font-size: 15px;">
+                                <i class="fas fa-folder"></i> Install to Project
+                                <span style="display: block; font-size: 12px; color: #888; margin-top: 4px;">Current project only (.claude/hooks/)</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+
+        // Set hook name
+        document.getElementById('hookInstallName').textContent = `Install: ${hookName}`;
+
+        // Set up button handlers
+        document.getElementById('installGlobalHookBtn').onclick = async (e) => {
+            await performHookInstall(hookId, 'global', e.currentTarget);
+        };
+        document.getElementById('installProjectHookBtn').onclick = async (e) => {
+            await performHookInstall(hookId, 'project', e.currentTarget);
+        };
+
+        // Show modal
+        modal.classList.add('active');
+    };
+
+    // Close hook install modal
+    window.closeHookInstallModal = function() {
+        const modal = document.getElementById('hookInstallModal');
+        if (modal) {
+            modal.classList.remove('active');
+        }
+    };
+
+    // Perform hook installation
+    async function performHookInstall(hookId, scope, btn) {
+        const originalHTML = btn.innerHTML;
+
+        try {
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Installing...';
+            btn.disabled = true;
+
+            const response = await fetch('/api/hooks/install', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    hookId: hookId,
+                    scope: scope
+                })
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                btn.innerHTML = '<i class="fas fa-check"></i> Installed!';
+                btn.style.background = '#10b981';
+
+                const message = result.alreadyInstalled
+                    ? `Hook already installed`
+                    : `Hook installed ${scope === 'global' ? 'globally' : 'to project'}! Restart Claude to activate.`;
+                showNotification(message);
+
+                // Close modal after success
+                setTimeout(() => {
+                    closeHookInstallModal();
+                    // Update the card button if visible
+                    updateHookCardStatus(hookId, 'installed');
+                }, 1500);
+
+            } else {
+                throw new Error(result.error || 'Installation failed');
+            }
+
+        } catch (error) {
+            console.error('Hook installation error:', error);
+            btn.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Failed';
+            btn.style.background = '#dc2626';
+            showNotification('Installation failed: ' + error.message);
+
+            setTimeout(() => {
+                btn.innerHTML = originalHTML;
+                btn.style.background = '';
+                btn.disabled = false;
+            }, 3000);
+        }
+    }
+
+    // Update hook card status after installation
+    function updateHookCardStatus(hookId, status) {
+        const card = document.querySelector(`[data-template-id="${hookId}"]`);
+        if (!card) return;
+
+        const btn = card.querySelector('.quick-install, .hook-install-btn');
+        if (!btn) return;
+
+        if (status === 'installed') {
+            btn.innerHTML = '<i class="fas fa-check"></i> Installed';
+            btn.style.background = '#10b981';
+            btn.disabled = true;
+            btn.onclick = null;
+        }
+    }
+
+    // Check installation status for all hooks on page load
+    async function checkHookInstallationStatus() {
+        for (const hookId of INSTALLABLE_HOOKS) {
+            try {
+                const response = await fetch(`/api/hooks/install?hookId=${hookId}&scope=global`);
+                const result = await response.json();
+
+                if (result.installed) {
+                    updateHookCardStatus(hookId, 'installed');
+                }
+            } catch (error) {
+                // Silently fail - status check is optional
+            }
+        }
+    }
+
+    // Override card rendering to add Install buttons for hooks
+    function enhanceHookCards() {
+        // Find all hook cards
+        const hookCards = document.querySelectorAll('.coder1-template-card[data-category="hooks"], .template-card[data-category="hooks"]');
+
+        hookCards.forEach(card => {
+            const templateId = card.dataset.templateId;
+            if (!templateId) return;
+
+            // Find the button
+            const btn = card.querySelector('.quick-install, .template-btn');
+            if (!btn) return;
+
+            // Remove any existing onclick attribute from HTML
+            btn.removeAttribute('onclick');
+
+            if (isInstallableHook(templateId)) {
+                // Installable hook - add Install button
+                btn.innerHTML = '<i class="fas fa-download"></i> Install';
+                btn.className = 'quick-install coder1-btn hook-install-btn';
+                btn.style.background = 'linear-gradient(135deg, #10b981, #059669)';
+                btn.onclick = (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const name = card.querySelector('.template-name')?.textContent || templateId;
+                    showHookInstallModal(templateId, name);
+                };
+            } else {
+                // Non-installable hook - show Coming Soon
+                btn.innerHTML = '<i class="fas fa-clock"></i> Coming Soon';
+                btn.className = 'quick-install coder1-btn coming-soon-btn';
+                btn.style.background = '#4b5563';
+                btn.style.cursor = 'not-allowed';
+                btn.disabled = true;
+                btn.onclick = (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    showNotification('This hook is coming soon!');
+                };
+            }
+        });
+    }
+
+    // Hook into page rendering
+    function initHookEnhancements() {
+        // Initial enhancement
+        setTimeout(enhanceHookCards, 500);
+
+        // Re-enhance after category changes
+        const originalRenderTemplates = window.renderTemplates;
+        if (typeof originalRenderTemplates === 'function') {
+            window.renderTemplates = function() {
+                originalRenderTemplates.apply(this, arguments);
+                setTimeout(enhanceHookCards, 100);
+            };
+        }
+
+        // Check installation status
+        setTimeout(checkHookInstallationStatus, 1000);
+    }
+
+    // Initialize hook enhancements
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initHookEnhancements);
+    } else {
+        setTimeout(initHookEnhancements, 100);
     }
 
 })();

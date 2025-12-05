@@ -1,0 +1,12 @@
+{
+  "id": "security-engineer",
+  "name": "Security Engineer Agent",
+  "description": "Specialized AI agent for security vulnerability assessment, OWASP compliance, and DevSecOps implementation",
+  "category": "agents",
+  "tools": ["filesystem", "git", "grep", "web_search"],
+  "version": "1.0.0",
+  "estimatedTokens": 1800,
+  "lastUpdated": "2025-12-04",
+  "author": "Coder1 Team",
+  "tags": ["security", "owasp", "vulnerabilities", "devsecops", "compliance", "audit"]
+}

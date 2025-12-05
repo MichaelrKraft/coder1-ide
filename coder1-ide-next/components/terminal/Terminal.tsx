@@ -4056,7 +4056,15 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
         if (onTerminalData) {
           onTerminalData(data);
         }
-        
+
+        // 🚀 LIVE PREVIEW (Dec 4, 2025): Dispatch event for preview panel to detect dev server
+        // This enables Emergent-style live preview when npm run dev starts
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('terminalOutput', {
+            detail: { output: data }
+          }));
+        }
+
         // Check for Claude activation in output
         if (data.includes('Claude conversation mode') || data.includes('Claude>')) {
           // REMOVED: // REMOVED: console.log('🤖 CLAUDE ACTIVATED');
