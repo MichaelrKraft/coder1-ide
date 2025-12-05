@@ -11,8 +11,8 @@
 
 import fs from 'fs';
 import path from 'path';
-import { Artifact, ArtifactType, ArtifactFilter, ArtifactStats, ArtifactStatus } from '@/types/mission-control';
-import { logger } from '@/lib/logger';
+import { Artifact, ArtifactType, ArtifactFilter, ArtifactStats, ArtifactStatus } from '../types/mission-control';
+import { logger } from '../lib/logger.ts';
 
 // Storage paths
 const DATA_DIR = path.join(process.cwd(), 'data', 'artifacts');

@@ -1,8 +1,10 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useMissionControlStore, DashboardMode } from '@/stores/useMissionControlStore';
 import ParallelExplorationModal from '@/components/sandbox/ParallelExplorationModal';
+import { getSocket } from '@/lib/socket';
+import { extractTerminalContext } from '@/lib/terminal-context';
 
 interface Agent {
   id: string;
@@ -13,6 +15,17 @@ interface Agent {
   currentTask: string;
   icon: string;
 }
+
+// Agent role to icon mapping
+const AGENT_ICONS: Record<string, string> = {
+  frontend: '🎨',
+  backend: '⚙️',
+  fullstack: '🔧',
+  testing: '🧪',
+  devops: '🚀',
+  architect: '📐',
+  default: '🤖'
+};
 
 /**
  * Agent Dashboard Panel - The PRIMARY Mission Control feature
@@ -36,6 +49,9 @@ export default function AgentDashboardPanel() {
   const [showParallelModal, setShowParallelModal] = useState(false);
   const [showAITeamConfig, setShowAITeamConfig] = useState(false);
   const [aiTeamTask, setAiTeamTask] = useState('');
+  const [isSpawning, setIsSpawning] = useState(false);
+  const [spawnError, setSpawnError] = useState<string | null>(null);
+  const [currentTeamId, setCurrentTeamId] = useState<string | null>(null);
 
   // Handle parallel exploration start
   const handleParallelStart = (config: { task: string; count: number; budget: string }) => {
@@ -56,54 +72,191 @@ export default function AgentDashboardPanel() {
     startMonitoring(agents);
   };
 
-  // Handle AI Team start
-  const handleAITeamStart = () => {
+  // Handle AI Team start - calls real /api/claude-bridge/spawn endpoint
+  // NOW WITH CONTEXT BRIDGE: Extracts terminal history and passes to agents
+  const handleAITeamStart = async () => {
     if (!aiTeamTask.trim()) return;
 
     console.log('[AgentDashboard] Starting AI Team:', aiTeamTask);
+    setIsSpawning(true);
+    setSpawnError(null);
     setShowAITeamConfig(false);
 
-    // Create specialized agents
-    const agents: Agent[] = [
-      { id: 'frontend', name: 'Frontend Engineer', role: 'React, UI/UX', status: 'working', progress: 0, currentTask: 'Analyzing UI requirements...', icon: '🎨' },
-      { id: 'backend', name: 'Backend Engineer', role: 'APIs, Database', status: 'working', progress: 0, currentTask: 'Setting up API structure...', icon: '⚙️' },
-    ];
+    // CONTEXT BRIDGE: Extract terminal context from localStorage
+    // This reads from localStorage.mainTerminalHistory which Terminal.tsx already populates
+    const conversationContext = extractTerminalContext();
 
-    startMonitoring(agents);
-  };
+    console.log('📝 [CONTEXT BRIDGE] Captured context:', {
+      hasContext: conversationContext.hasContext,
+      historyLength: conversationContext.historyLength,
+      commandCount: conversationContext.commandCount
+    });
 
-  // Simulate agent progress (for demo)
-  useEffect(() => {
-    if (dashboardMode !== 'monitoring' || activeAgents.length === 0) return;
-
-    const interval = setInterval(() => {
-      const updatedAgents = activeAgents.map(agent => {
-        if (agent.progress >= 100) return { ...agent, status: 'completed' };
-        const increment = Math.random() * 15 + 5;
-        const newProgress = Math.min(agent.progress + increment, 100);
-        return {
-          ...agent,
-          progress: newProgress,
-          status: newProgress >= 100 ? 'completed' : 'working',
-          currentTask: newProgress >= 100 ? '✅ Complete!' : agent.currentTask
-        };
+    try {
+      const response = await fetch('/api/claude-bridge/spawn', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          requirement: aiTeamTask,
+          sessionId: `team-${Date.now()}`,
+          // ORCHESTRATOR PATTERN: Pass terminal context to agents
+          conversationContext: conversationContext
+        })
       });
 
-      // Check if all complete
-      const allComplete = updatedAgents.every(a => a.progress >= 100);
-      if (allComplete) {
-        completeExploration(updatedAgents.map(a => ({
-          agentId: a.id,
-          name: a.name,
-          preview: `/api/preview/${a.id}`
-        })));
-      } else {
-        useMissionControlStore.getState().setActiveAgents(updatedAgents);
-      }
-    }, 1500);
+      const data = await response.json();
+      console.log('[AgentDashboard] Spawn response:', data);
 
-    return () => clearInterval(interval);
-  }, [dashboardMode, activeAgents.length]);
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to spawn AI team');
+      }
+
+      // Check if setup is required (OAuth token missing)
+      if (data.setupRequired || data.fallbackMode) {
+        setSpawnError(data.message || 'OAuth setup required - see terminal for instructions');
+        setIsSpawning(false);
+        return;
+      }
+
+      // Store team ID for WebSocket event filtering
+      setCurrentTeamId(data.teamId);
+
+      // Convert API response agents to our Agent format
+      const agents: Agent[] = (data.agents || []).map((agent: any) => ({
+        id: agent.id || agent.agentId,
+        name: agent.name,
+        role: agent.role,
+        status: agent.status === 'running' ? 'working' : agent.status,
+        progress: agent.progress || 0,
+        currentTask: agent.currentTask || 'Starting...',
+        icon: AGENT_ICONS[agent.role] || AGENT_ICONS.default
+      }));
+
+      // Start monitoring with real agent data
+      startMonitoring(agents);
+      setIsSpawning(false);
+
+    } catch (error) {
+      console.error('[AgentDashboard] Spawn error:', error);
+      setSpawnError(error instanceof Error ? error.message : 'Failed to spawn AI team');
+      setIsSpawning(false);
+    }
+  };
+
+  // Activity stream state for real-time logs
+  const [activityStream, setActivityStream] = useState<string[]>([]);
+
+  // WebSocket event listeners for REAL agent progress
+  useEffect(() => {
+    if (dashboardMode !== 'monitoring') return;
+
+    let socket: any = null;
+    let isActive = true;
+
+    const setupSocket = async () => {
+      try {
+        socket = await getSocket();
+        if (!socket || !isActive) return;
+
+        // Listen for team progress updates (forwarded from WebSocketEventBridge)
+        socket.on('ai-team:progress', (data: { teamId: string; agents: any[]; progress: number; activeAgents?: number }) => {
+          if (currentTeamId && data.teamId !== currentTeamId) return;
+
+          const store = useMissionControlStore.getState();
+          const updatedAgents = data.agents.map((agent: any) => ({
+            id: agent.id,
+            name: agent.name,
+            role: agent.role,
+            status: agent.status === 'working' ? 'working' : agent.status === 'completed' ? 'completed' : 'idle',
+            progress: agent.progress || 0,
+            currentTask: agent.currentTask || 'Working...',
+            icon: AGENT_ICONS[agent.role] || AGENT_ICONS.default
+          }));
+          store.setActiveAgents(updatedAgents);
+          setActivityStream(prev => [...prev.slice(-9), `📊 Team progress: ${Math.round(data.progress)}%`]);
+        });
+
+        // Also listen for individual agent progress (direct events)
+        socket.on('agent:progress', (data: { agentId: string; progress: number; currentTask: string; teamId?: string }) => {
+          if (currentTeamId && data.teamId && data.teamId !== currentTeamId) return;
+
+          const store = useMissionControlStore.getState();
+          const updatedAgents = store.activeAgents.map(agent =>
+            agent.id === data.agentId
+              ? { ...agent, progress: data.progress, currentTask: data.currentTask }
+              : agent
+          );
+          store.setActiveAgents(updatedAgents);
+          setActivityStream(prev => [...prev.slice(-9), `[${data.agentId}] ${data.currentTask}`]);
+        });
+
+        // Listen for agent output streaming
+        socket.on('agent:output', (data: { agentId: string; output: string; teamId?: string }) => {
+          if (currentTeamId && data.teamId && data.teamId !== currentTeamId) return;
+          setActivityStream(prev => [...prev.slice(-9), `[${data.agentId}] ${data.output.slice(0, 100)}`]);
+        });
+
+        // Listen for team completion (forwarded from WebSocketEventBridge)
+        socket.on('ai-team:completed', (data: { teamId: string; agents: any[]; duration?: number; generatedFiles?: number }) => {
+          if (currentTeamId && data.teamId !== currentTeamId) return;
+
+          setActivityStream(prev => [...prev.slice(-9), `🎉 AI Team completed! ${data.generatedFiles || 0} files generated`]);
+          completeExploration(data.agents.map((a: any) => ({
+            agentId: a.id,
+            name: a.name,
+            preview: `/api/preview/${a.id}`
+          })));
+        });
+
+        // Also listen for direct team:completed events
+        socket.on('team:completed', (data: { teamId: string; summary?: string; agents?: any[] }) => {
+          if (currentTeamId && data.teamId !== currentTeamId) return;
+          if (!data.agents) return; // Skip if no agents data
+
+          setActivityStream(prev => [...prev.slice(-9), `🎉 AI Team completed!`]);
+          completeExploration(data.agents.map((a: any) => ({
+            agentId: a.id || a.agentId,
+            name: a.name,
+            preview: `/api/preview/${a.id || a.agentId}`
+          })));
+        });
+
+        // Listen for agent errors
+        socket.on('agent:error', (data: { agentId: string; error: string; teamId?: string }) => {
+          if (currentTeamId && data.teamId && data.teamId !== currentTeamId) return;
+
+          const store = useMissionControlStore.getState();
+          const updatedAgents = store.activeAgents.map(agent =>
+            agent.id === data.agentId
+              ? { ...agent, status: 'error' as const, currentTask: `❌ ${data.error}` }
+              : agent
+          );
+          store.setActiveAgents(updatedAgents);
+          setActivityStream(prev => [...prev.slice(-9), `❌ [${data.agentId}] Error: ${data.error}`]);
+        });
+
+        console.log('[AgentDashboard] WebSocket listeners attached for team:', currentTeamId);
+
+      } catch (error) {
+        console.error('[AgentDashboard] Failed to setup WebSocket:', error);
+      }
+    };
+
+    setupSocket();
+
+    return () => {
+      isActive = false;
+      if (socket) {
+        socket.off('ai-team:progress');
+        socket.off('agent:progress');
+        socket.off('agent:output');
+        socket.off('ai-team:completed');
+        socket.off('team:completed');
+        socket.off('agent:error');
+        console.log('[AgentDashboard] WebSocket listeners removed');
+      }
+    };
+  }, [dashboardMode, currentTeamId, completeExploration]);
 
   // ============================================================================
   // SETUP MODE - Show two option cards
@@ -142,20 +295,34 @@ export default function AgentDashboardPanel() {
                 onChange={e => setAiTeamTask(e.target.value)}
                 placeholder="Describe your project..."
                 className="w-full h-24 px-3 py-2 bg-bg-primary border border-border-default rounded text-text-primary text-sm resize-none focus:outline-none focus:ring-2 focus:ring-coder1-cyan/50"
+                disabled={isSpawning}
               />
+              {spawnError && (
+                <div className="p-2 bg-red-500/10 border border-red-500/30 rounded text-red-400 text-xs">
+                  {spawnError}
+                </div>
+              )}
               <div className="flex gap-2">
                 <button
-                  onClick={() => setShowAITeamConfig(false)}
+                  onClick={() => { setShowAITeamConfig(false); setSpawnError(null); }}
                   className="px-4 py-2 text-sm text-text-secondary hover:text-text-primary"
+                  disabled={isSpawning}
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleAITeamStart}
-                  disabled={!aiTeamTask.trim()}
-                  className="px-4 py-2 bg-coder1-cyan text-black text-sm font-medium rounded disabled:opacity-50"
+                  disabled={!aiTeamTask.trim() || isSpawning}
+                  className="px-4 py-2 bg-coder1-cyan text-black text-sm font-medium rounded disabled:opacity-50 flex items-center gap-2"
                 >
-                  Start AI Team
+                  {isSpawning ? (
+                    <>
+                      <span className="animate-spin">⏳</span>
+                      Spawning...
+                    </>
+                  ) : (
+                    'Start AI Team'
+                  )}
                 </button>
               </div>
             </div>
@@ -266,8 +433,16 @@ export default function AgentDashboardPanel() {
       {/* Activity Stream */}
       <div className="mt-4 p-4 bg-bg-tertiary rounded-lg border border-border-default">
         <h4 className="text-sm font-medium text-text-primary mb-2">Activity Stream</h4>
-        <div className="text-xs text-text-muted font-mono">
-          <div className="text-green-400">▶ Agents are working on your task...</div>
+        <div className="text-xs text-text-muted font-mono space-y-1 max-h-32 overflow-y-auto">
+          {activityStream.length > 0 ? (
+            activityStream.map((line, idx) => (
+              <div key={idx} className={line.startsWith('✅') ? 'text-green-400' : line.startsWith('❌') ? 'text-red-400' : 'text-coder1-cyan/80'}>
+                {line}
+              </div>
+            ))
+          ) : (
+            <div className="text-green-400">▶ Waiting for agent activity...</div>
+          )}
         </div>
       </div>
     </div>

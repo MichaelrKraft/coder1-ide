@@ -153,11 +153,16 @@ class BridgeClient extends EventEmitter {
         auth: {
           token: this.token
         },
-        transports: ['websocket'],
+        transports: ['polling', 'websocket'], // Start with polling, upgrade to websocket (matches server config)
         reconnection: true,
         reconnectionDelay: 1000,
         reconnectionDelayMax: 30000,
-        reconnectionAttempts: this.maxReconnectAttempts
+        reconnectionAttempts: this.maxReconnectAttempts,
+        upgrade: true, // Allow upgrade from polling to websocket
+        rememberUpgrade: true, // Remember successful upgrades
+        timeout: 45000, // Match server connectTimeout
+        pingTimeout: 120000, // 2 minutes - generous timeout for production
+        pingInterval: 25000 // 25 seconds - keep connection alive
       });
       
       // Connection success

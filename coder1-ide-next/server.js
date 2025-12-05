@@ -392,11 +392,31 @@ function startClaudeCodeSession(sessionId) {
 function endClaudeCodeSession(sessionId) {
   const sessionState = claudeCodeSessions.get(sessionId);
   if (sessionState) {
+    // Calculate session duration
+    const duration = sessionState.sessionStartTime
+      ? Date.now() - sessionState.sessionStartTime.getTime()
+      : 0;
+
     claudeCodeSessions.set(sessionId, {
       ...sessionState,
       inClaudeSession: false
     });
-    console.log(`[Claude Session] Ended Claude Code session for terminal ${sessionId}`);
+    console.log(`[Claude Session] Ended Claude Code session for terminal ${sessionId} (duration: ${duration}ms)`);
+
+    // 🔔 Emit claude:sessionComplete for audio alert feature
+    // Terminal.tsx listens for this event to play completion sound
+    const terminalSession = terminalSessions.get(sessionId);
+    if (terminalSession && terminalSession.connectedSockets) {
+      terminalSession.connectedSockets.forEach(socket => {
+        if (socket.connected) {
+          socket.emit('claude:sessionComplete', {
+            sessionId: sessionId,
+            duration: duration
+          });
+          console.log(`[Claude Session] Emitted claude:sessionComplete to socket (duration: ${duration}ms)`);
+        }
+      });
+    }
   }
 }
 
