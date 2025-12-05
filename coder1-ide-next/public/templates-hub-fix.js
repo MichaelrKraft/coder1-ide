@@ -1192,4 +1192,89 @@
         setTimeout(initHookEnhancements, 100);
     }
 
+    // ========================================
+    // Typewriter Effect for AI Prompt Placeholder
+    // ========================================
+
+    const typewriterPrompts = [
+        "Build me a React code reviewer that checks for performance issues...",
+        "Create a hook that notifies me when Claude finishes a task...",
+        "Design an MCP server for database management...",
+        "Build a security auditor agent for OWASP compliance..."
+    ];
+
+    let promptIndex = 0;
+    let charIndex = 0;
+    let isDeleting = false;
+    let typewriterActive = true;
+
+    function typeWriter() {
+        const input = document.getElementById('aiPromptInput');
+        if (!input || !typewriterActive) return;
+
+        // Stop animation if user is focused on input
+        if (document.activeElement === input) {
+            setTimeout(typeWriter, 100);
+            return;
+        }
+
+        const currentPrompt = typewriterPrompts[promptIndex];
+
+        if (!isDeleting) {
+            // Typing
+            input.placeholder = currentPrompt.substring(0, charIndex + 1);
+            charIndex++;
+
+            if (charIndex === currentPrompt.length) {
+                // Pause before deleting
+                setTimeout(() => { isDeleting = true; typeWriter(); }, 2000);
+                return;
+            }
+            setTimeout(typeWriter, 50); // Typing speed
+        } else {
+            // Deleting
+            input.placeholder = currentPrompt.substring(0, charIndex - 1);
+            charIndex--;
+
+            if (charIndex === 0) {
+                isDeleting = false;
+                promptIndex = (promptIndex + 1) % typewriterPrompts.length;
+            }
+            setTimeout(typeWriter, 30); // Deleting speed (faster)
+        }
+    }
+
+    // Start typewriter when DOM is ready
+    function initTypewriter() {
+        const input = document.getElementById('aiPromptInput');
+        if (input) {
+            // Clear initial placeholder
+            input.placeholder = '';
+            // Start animation after a brief delay
+            setTimeout(typeWriter, 500);
+
+            // Pause animation when user focuses input
+            input.addEventListener('focus', () => {
+                if (input.value === '') {
+                    input.placeholder = 'Describe what you want to build...';
+                }
+            });
+
+            // Resume animation when user leaves input (if empty)
+            input.addEventListener('blur', () => {
+                if (input.value === '') {
+                    charIndex = 0;
+                    isDeleting = false;
+                }
+            });
+        }
+    }
+
+    // Initialize typewriter
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initTypewriter);
+    } else {
+        setTimeout(initTypewriter, 200);
+    }
+
 })();
