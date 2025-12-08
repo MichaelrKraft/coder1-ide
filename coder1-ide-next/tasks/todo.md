@@ -1046,3 +1046,46 @@ AI Team agents receive full context!
 - [x] spawn/route.ts builds enhanced requirement with context
 - [x] Server logs show context metrics
 - [ ] Test: Work in terminal for 2 minutes, spawn AI Team, verify agents mention prior context
+
+---
+
+## CODER1 BRIDGE COMMAND EXECUTION FIX (December 8, 2025)
+
+### Problem
+Alpha users reported that `claude` commands typed in the IDE terminal were not executing on their local machines via the bridge. The bridge connected successfully (`connection:accepted` with capabilities), but commands never reached the bridge CLI.
+
+### Root Cause Analysis
+The server import at line 1283 referenced a non-existent file:
+```javascript
+const { bridgeManager: manager } = require('./services/bridge-manager.js');
+```
+
+However, the actual file is `bridge-manager.ts` (TypeScript). This caused:
+1. The require() to fail silently (caught by try/catch)
+2. `bridgeManager` to be set to `null`
+3. All bridge routing logic to be bypassed (line 2044: `if (!bridgeManager)`)
+4. Help message shown instead of routing commands to bridge
+
+### The Fix
+Single line change at `server.js:1283`:
+```javascript
+// Before:
+const { bridgeManager: manager } = require('./services/bridge-manager.js');
+
+// After:
+const { bridgeManager: manager } = require('./services/bridge-manager');
+```
+
+The `tsx` runtime (loaded at line 37) automatically resolves `.ts` extensions.
+
+### Files Modified
+- `server.js:1283` - Fixed import path
+
+### Verification
+After the fix:
+1. Server should log: "Coder1 Bridge Manager initialized" on startup
+2. Bridge CLI should receive `claude:execute` events
+3. Command output should stream back to the IDE terminal
+
+### Review
+This was a simple typo - the import used `.js` extension when the file was `.ts`. The previous agent's analysis was correct that the server wasn't emitting events, but missed that the entire bridge manager module was failing to load.

@@ -1280,7 +1280,7 @@ app.prepare().then(() => {
   // Initialize Coder1 Bridge Manager for local Claude CLI connections
   let bridgeManager;
   try {
-    const { bridgeManager: manager } = require('./services/bridge-manager.js');
+    const { bridgeManager: manager } = require('./services/bridge-manager.ts');
     bridgeManager = manager;
     
     // Set up bridge namespace
