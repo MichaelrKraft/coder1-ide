@@ -272,9 +272,20 @@ export class BridgeManager extends EventEmitter {
     userId: string,
     request: CommandRequest
   ): Promise<{ success: boolean; error?: string }> {
-    // Find an available bridge for this user
-    const bridgeId = this.findAvailableBridge(userId);
-    
+    // Try user-specific bridge first, then fall back to any connected bridge
+    let bridgeId = this.findAvailableBridge(userId);
+
+    // Fallback: find any connected bridge (for alpha testing)
+    // This handles the case where terminal session has userId='default'
+    // but bridge is registered with a different userId from JWT auth
+    if (!bridgeId) {
+      const fallbackBridge = this.findAnyConnectedBridge();
+      if (fallbackBridge) {
+        bridgeId = fallbackBridge.id;
+        console.log(`[BridgeManager] Using fallback bridge ${bridgeId} for command execution`);
+      }
+    }
+
     if (!bridgeId) {
       return {
         success: false,
