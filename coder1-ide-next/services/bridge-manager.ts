@@ -72,7 +72,8 @@ export class BridgeManager extends EventEmitter {
   private readonly PAIRING_CODE_EXPIRY = 5 * 60 * 1000; // 5 minutes
   private readonly HEARTBEAT_INTERVAL = 30 * 1000; // 30 seconds
   private readonly HEARTBEAT_TIMEOUT = 3 * 30 * 1000; // 3 missed heartbeats
-  private readonly DEFAULT_COMMAND_TIMEOUT = 60 * 1000; // 60 seconds
+  // FIXED (Dec 10, 2025): Increased from 60s to 120s for long-running Claude commands
+  private readonly DEFAULT_COMMAND_TIMEOUT = 120 * 1000; // 120 seconds
   private readonly DEFAULT_FILE_TIMEOUT = 30 * 1000; // 30 seconds for file operations
   private readonly MAX_COMMANDS_PER_BRIDGE = 5;
   
@@ -327,6 +328,20 @@ export class BridgeManager extends EventEmitter {
 
     this.pendingCommands.set(request.commandId, pendingCommand);
 
+    // FIXED (Dec 10, 2025): Validate socket is still connected before emit
+    // If bridge disconnected right before emit, command would be lost silently
+    if (!bridge.socket.connected) {
+      // Clean up pending command since we can't send it
+      if (pendingCommand.timeoutHandle) {
+        clearTimeout(pendingCommand.timeoutHandle);
+      }
+      this.pendingCommands.delete(request.commandId);
+      return {
+        success: false,
+        error: 'Bridge connection lost. Please reconnect and try again.'
+      };
+    }
+
     // Send command to bridge
     bridge.socket.emit('claude:execute', {
       sessionId: request.sessionId,
@@ -423,6 +438,13 @@ export class BridgeManager extends EventEmitter {
   }
 
   /**
+   * Get bridge by ID (Dec 10, 2025: Added for interactive Claude session input routing)
+   */
+  getBridge(bridgeId: string): BridgeConnection | null {
+    return this.bridges.get(bridgeId) || null;
+  }
+
+  /**
    * Find an available bridge for a user
    */
   private findAvailableBridge(userId: string): string | null {
@@ -484,13 +506,20 @@ export class BridgeManager extends EventEmitter {
     }
 
     // Cancel pending commands
+    // FIXED (Dec 10, 2025): Include sessionId and error message so server can notify terminal
     this.pendingCommands.forEach((cmd, commandId) => {
       if (cmd.bridgeId === bridgeId) {
         if (cmd.timeoutHandle) {
           clearTimeout(cmd.timeoutHandle);
         }
         this.pendingCommands.delete(commandId);
-        this.emit('command:cancelled', { commandId, bridgeId });
+        // Emit with full context so server can route error to terminal
+        this.emit('command:cancelled', {
+          commandId,
+          bridgeId,
+          sessionId: cmd.request.sessionId,
+          error: 'Bridge disconnected while command was executing. Please reconnect and try again.'
+        });
       }
     });
 

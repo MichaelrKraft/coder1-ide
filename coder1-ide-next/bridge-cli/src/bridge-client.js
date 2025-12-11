@@ -2,6 +2,11 @@
  * Bridge Client - Production Version
  * Handles WebSocket connection to Coder1 IDE and Claude CLI execution
  * Features: Winston logging, p-queue command management, auto-reconnection
+ *
+ * UPDATED (Dec 10, 2025): Added PTY support for interactive Claude sessions
+ * - Bidirectional stdin streaming for interactive mode
+ * - Terminal resize support
+ * - Session tracking for input routing
  */
 
 const io = require('socket.io-client');
@@ -14,7 +19,7 @@ const FileHandler = require('./file-handler');
 class BridgeClient extends EventEmitter {
   constructor(options = {}) {
     super();
-    
+
     // Detect if we should use local or production URL
     // Check for --local flag or environment variable
     const isLocal = options.local || process.env.CODER1_LOCAL === 'true';
@@ -27,51 +32,114 @@ class BridgeClient extends EventEmitter {
     this.connected = false;
     this.reconnectAttempts = 0;
     this.maxReconnectAttempts = null; // Infinite reconnection attempts
-    
+
     // Production command queue - prevents overwhelming Claude CLI
-    this.commandQueue = new PQueue({ 
+    this.commandQueue = new PQueue({
       concurrency: 1,           // One command at a time
       timeout: 300000,          // 5 minute timeout per command
       throwOnTimeout: true,     // Throw error on timeout
       intervalCap: 1,           // Rate limiting: 1 command per interval
       interval: 1000            // 1 second interval
     });
-    
+
     // Queue monitoring
     this.commandQueue.on('add', () => {
       logger.debug('Command added to queue', { queueSize: this.commandQueue.size });
     });
-    
+
     this.commandQueue.on('next', () => {
-      logger.debug('Processing next command', { 
+      logger.debug('Processing next command', {
         queueSize: this.commandQueue.size,
-        pending: this.commandQueue.pending 
+        pending: this.commandQueue.pending
       });
     });
-    
+
     // Initialize sub-modules
     this.claudeExecutor = new ClaudeExecutor({ verbose: this.verbose });
     this.fileHandler = new FileHandler({ verbose: this.verbose });
-    
+
+    // Track active interactive sessions for input routing
+    this.activeInteractiveSessions = new Map(); // sessionId -> commandId
+    this.commandToSessionMap = new Map();       // commandId -> sessionId (reverse lookup)
+
+    // Set up claudeExecutor event listeners for interactive sessions
+    this.setupClaudeExecutorListeners();
+
     // Heartbeat interval
     this.heartbeatInterval = null;
     this.lastHeartbeat = Date.now();
-    
+
     // Enhanced statistics for production monitoring
     this.stats = {
       commandsExecuted: 0,
       commandsQueued: 0,
       commandsFailed: 0,
+      interactiveSessions: 0,
       uptime: Date.now(),
       memoryUsage: 0,
       reconnections: 0,
       lastError: null
     };
-    
+
     logger.info('Bridge client initialized', {
       serverUrl: this.serverUrl,
       maxReconnectAttempts: this.maxReconnectAttempts,
-      queueConcurrency: this.commandQueue.concurrency
+      queueConcurrency: this.commandQueue.concurrency,
+      interactiveSupported: this.claudeExecutor.isInteractiveSupported()
+    });
+  }
+
+  /**
+   * Set up event listeners for ClaudeExecutor interactive sessions
+   */
+  setupClaudeExecutorListeners() {
+    // When an interactive session starts
+    this.claudeExecutor.on('interactive:started', ({ commandId, pid }) => {
+      logger.info('Interactive session started', { commandId, pid });
+      this.stats.interactiveSessions++;
+
+      // Direct O(1) lookup using reverse map instead of iteration
+      const foundSessionId = this.commandToSessionMap.get(commandId) || null;
+      if (!foundSessionId) {
+        logger.warn('No sessionId found for commandId in interactive:started', { commandId });
+      }
+
+      if (this.socket) {
+        this.socket.emit('claude:interactive:started', {
+          commandId,
+          pid,
+          sessionId: foundSessionId, // Include sessionId for server-side tracking
+          interactiveSupported: true
+        });
+      }
+    });
+
+    // Stream data from interactive sessions
+    this.claudeExecutor.on('data', ({ type, data, commandId }) => {
+      // Data is already sent in handleClaudeCommand, but this catches
+      // any data that might come through the event system
+      logger.debug('ClaudeExecutor data event', { type, commandId, length: data?.length });
+    });
+
+    // When an interactive session exits
+    this.claudeExecutor.on('exit', ({ commandId, exitCode, signal }) => {
+      logger.info('Interactive session exited', { commandId, exitCode, signal });
+
+      // Direct O(1) lookup using reverse map and clean up both maps
+      const foundSessionId = this.commandToSessionMap.get(commandId) || null;
+      if (foundSessionId) {
+        this.activeInteractiveSessions.delete(foundSessionId);
+        this.commandToSessionMap.delete(commandId);
+      }
+
+      if (this.socket) {
+        this.socket.emit('claude:interactive:ended', {
+          commandId,
+          sessionId: foundSessionId, // Include sessionId for server-side cleanup
+          exitCode,
+          signal
+        });
+      }
     });
   }
 
@@ -189,12 +257,27 @@ class BridgeClient extends EventEmitter {
       this.socket.on('claude:execute', async (data) => {
         await this.handleClaudeCommand(data);
       });
-      
+
+      // Handle stdin input for interactive Claude sessions
+      this.socket.on('claude:input', (data) => {
+        this.handleClaudeInput(data);
+      });
+
+      // Handle terminal resize for interactive Claude sessions
+      this.socket.on('claude:resize', (data) => {
+        this.handleClaudeResize(data);
+      });
+
+      // Handle kill request for interactive Claude sessions
+      this.socket.on('claude:kill', (data) => {
+        this.handleClaudeKill(data);
+      });
+
       // Handle file operation requests
       this.socket.on('file:request', async (data) => {
         await this.handleFileRequest(data);
       });
-      
+
       // Handle configuration updates
       this.socket.on('config:update', (data) => {
         this.handleConfigUpdate(data);
@@ -235,35 +318,52 @@ class BridgeClient extends EventEmitter {
 
   /**
    * Handle Claude command execution - Production Version with Queue
+   * UPDATED (Dec 10, 2025): Added PTY support for interactive sessions
+   * FIXED (Dec 10, 2025): Interactive sessions don't await - run in background
    */
   async handleClaudeCommand(data) {
     const { sessionId, commandId, command, context } = data;
-    
+
+    // Check if this will be an interactive session
+    const isInteractive = this.claudeExecutor.needsInteractiveMode(command);
+
     // Add command to production queue
     this.stats.commandsQueued++;
-    
+
     // Queue the command for execution
     await this.commandQueue.add(async () => {
       const startTime = Date.now();
-      
-      logger.info('Executing Claude command', { 
-        commandId, 
+
+      logger.info('Executing Claude command', {
+        commandId,
         command: command.substring(0, 100), // Log first 100 chars
         sessionId,
+        isInteractive,
         queueSize: this.commandQueue.size
       });
-      
+
       try {
         // Change to working directory if specified
         if (context?.workingDirectory) {
           process.chdir(context.workingDirectory);
-          logger.debug('Changed working directory', { 
-            workingDirectory: context.workingDirectory 
+          logger.debug('Changed working directory', {
+            workingDirectory: context.workingDirectory
           });
         }
-        
-        // Execute Claude command
-        const result = await this.claudeExecutor.execute(command, {
+
+        // Track interactive session for input routing
+        if (isInteractive) {
+          this.activeInteractiveSessions.set(sessionId, commandId);
+          this.commandToSessionMap.set(commandId, sessionId); // Reverse mapping for O(1) lookup
+          logger.info('Tracking interactive session', { sessionId, commandId });
+        }
+
+        // Common execution options
+        const executeOptions = {
+          commandId, // Pass commandId for session tracking
+          context,   // Pass full context including selectedClaudeModel
+          cols: context?.cols || 120,
+          rows: context?.rows || 30,
           onData: (chunk) => {
             // Stream output back to server
             this.socket.emit('claude:output', {
@@ -271,7 +371,8 @@ class BridgeClient extends EventEmitter {
               commandId,
               data: chunk,
               stream: 'stdout',
-              timestamp: Date.now()
+              timestamp: Date.now(),
+              interactive: isInteractive
             });
           },
           onError: (chunk) => {
@@ -281,47 +382,120 @@ class BridgeClient extends EventEmitter {
               commandId,
               data: chunk,
               stream: 'stderr',
-              timestamp: Date.now()
+              timestamp: Date.now(),
+              interactive: isInteractive
             });
-            
-            logger.warn('Claude command stderr', { 
-              commandId, 
-              error: chunk.substring(0, 200) 
+
+            logger.warn('Claude command stderr', {
+              commandId,
+              error: chunk.substring(0, 200)
             });
           }
-        });
-        
+        };
+
+        // CRITICAL FIX: For interactive sessions, DON'T await the execution
+        // The PTY will stay open and stream output via onData callback
+        // The 'interactive:started' event signals when session is ready
+        // The 'exit' event handles cleanup when user exits
+        if (isInteractive) {
+          // Start execution WITHOUT awaiting - let it run in background
+          this.claudeExecutor.execute(command, executeOptions)
+            .then((result) => {
+              // Interactive session ended (user typed /exit or Ctrl+C)
+              logger.info('Interactive session ended normally', {
+                commandId,
+                exitCode: result.exitCode,
+                duration: result.duration
+              });
+
+              // Clean up tracking (both maps)
+              this.activeInteractiveSessions.delete(sessionId);
+              this.commandToSessionMap.delete(commandId);
+
+              // Send completion
+              this.socket.emit('claude:complete', {
+                sessionId,
+                commandId,
+                exitCode: result.exitCode,
+                duration: result.duration,
+                error: result.error,
+                interactive: true
+              });
+
+              this.stats.commandsExecuted++;
+            })
+            .catch((error) => {
+              // Interactive session failed
+              logger.error('Interactive session error', {
+                commandId,
+                error: error.message
+              });
+
+              this.activeInteractiveSessions.delete(sessionId);
+              this.commandToSessionMap.delete(commandId); // Clean up reverse map
+              this.stats.commandsFailed++;
+              this.stats.lastError = error.message;
+
+              this.socket.emit('claude:complete', {
+                sessionId,
+                commandId,
+                exitCode: 1,
+                duration: Date.now() - startTime,
+                error: error.message,
+                interactive: true
+              });
+            });
+
+          // Immediately return from queue - session is running in background
+          // The 'interactive:started' event will notify the server
+          logger.info('Interactive session spawned, returning immediately', {
+            commandId,
+            sessionId
+          });
+          return;
+        }
+
+        // Non-interactive: await the full execution
+        const result = await this.claudeExecutor.execute(command, executeOptions);
+
         // Send completion
         this.socket.emit('claude:complete', {
           sessionId,
           commandId,
           exitCode: result.exitCode,
           duration: result.duration,
-          error: result.error
+          error: result.error,
+          interactive: result.interactive
         });
-        
+
         const duration = Date.now() - startTime;
         this.stats.commandsExecuted++;
-        
-        logger.info('Claude command completed', { 
-          commandId, 
+
+        logger.info('Claude command completed', {
+          commandId,
           exitCode: result.exitCode,
           duration,
+          interactive: result.interactive,
           success: result.exitCode === 0
         });
-      
+
       } catch (error) {
         const duration = Date.now() - startTime;
         this.stats.commandsFailed++;
         this.stats.lastError = error.message;
-        
-        logger.error('Command execution error', { 
-          commandId, 
+
+        // Clean up interactive session tracking on error
+        if (isInteractive) {
+          this.activeInteractiveSessions.delete(sessionId);
+        }
+
+        logger.error('Command execution error', {
+          commandId,
           error: error.message,
           stack: error.stack,
           duration
         });
-        
+
         // Send error completion
         this.socket.emit('claude:complete', {
           sessionId,
@@ -332,6 +506,86 @@ class BridgeClient extends EventEmitter {
         });
       }
     });
+  }
+
+  /**
+   * Handle stdin input for interactive Claude sessions
+   * Routes keyboard input from IDE terminal to the PTY process
+   */
+  handleClaudeInput(data) {
+    const { sessionId, commandId, input } = data;
+
+    // Try to find the session by commandId first, then by sessionId mapping
+    let targetCommandId = commandId;
+    if (!targetCommandId && sessionId) {
+      targetCommandId = this.activeInteractiveSessions.get(sessionId);
+    }
+
+    if (!targetCommandId) {
+      logger.warn('No active interactive session for input', { sessionId, commandId });
+      return;
+    }
+
+    const success = this.claudeExecutor.writeToSession(targetCommandId, input);
+
+    if (!success) {
+      logger.warn('Failed to write to interactive session', { targetCommandId, inputLength: input?.length });
+    } else {
+      logger.debug('Wrote input to interactive session', { targetCommandId, inputLength: input?.length });
+    }
+  }
+
+  /**
+   * Handle terminal resize for interactive Claude sessions
+   */
+  handleClaudeResize(data) {
+    const { sessionId, commandId, cols, rows } = data;
+
+    // Try to find the session
+    let targetCommandId = commandId;
+    if (!targetCommandId && sessionId) {
+      targetCommandId = this.activeInteractiveSessions.get(sessionId);
+    }
+
+    if (!targetCommandId) {
+      logger.warn('No active interactive session for resize', { sessionId, commandId });
+      return;
+    }
+
+    const success = this.claudeExecutor.resizeSession(targetCommandId, cols, rows);
+
+    if (success) {
+      logger.debug('Resized interactive session', { targetCommandId, cols, rows });
+    } else {
+      logger.warn('Failed to resize interactive session', { targetCommandId });
+    }
+  }
+
+  /**
+   * Handle kill request for interactive Claude sessions
+   */
+  handleClaudeKill(data) {
+    const { sessionId, commandId } = data;
+
+    // Try to find the session
+    let targetCommandId = commandId;
+    if (!targetCommandId && sessionId) {
+      targetCommandId = this.activeInteractiveSessions.get(sessionId);
+    }
+
+    if (!targetCommandId) {
+      logger.warn('No active interactive session to kill', { sessionId, commandId });
+      return;
+    }
+
+    const success = this.claudeExecutor.killSession(targetCommandId);
+
+    if (success) {
+      logger.info('Killed interactive session', { targetCommandId });
+      this.activeInteractiveSessions.delete(sessionId);
+    } else {
+      logger.warn('Failed to kill interactive session', { targetCommandId });
+    }
   }
 
   /**
