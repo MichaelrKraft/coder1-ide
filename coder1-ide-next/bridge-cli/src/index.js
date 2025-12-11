@@ -81,7 +81,12 @@ program
     const claudeCheck = await checkClaudeCLI();
     if (!claudeCheck.installed) {
       console.log('\x1b[31m❌ Claude CLI not found!\x1b[0m');
-      console.log('\x1b[33mPlease install Claude Code from: https://claude.ai/download\x1b[0m');
+      console.log('\x1b[33m\nTo install Claude Code:\x1b[0m');
+      console.log('  npm install -g @anthropic-ai/claude-code');
+      console.log('\x1b[33m\nThen authenticate:\x1b[0m');
+      console.log('  claude auth login');
+      console.log('\x1b[33m\nAlternatively, download from:\x1b[0m');
+      console.log('  https://claude.ai/download');
       process.exit(1);
     }
     console.log(`\x1b[32m✅ Claude CLI detected: ${claudeCheck.version || 'Unknown version'}\x1b[0m`);
@@ -191,10 +196,12 @@ program
     } else {
       console.log('\x1b[31m❌ Claude CLI not found\x1b[0m');
       console.log('\x1b[33m\nTo install Claude Code:\x1b[0m');
-      console.log('1. Visit: https://claude.ai/download');
-      console.log('2. Download and install for your platform');
-      console.log('3. Restart your terminal');
-      console.log('4. Run this test again');
+      console.log('  npm install -g @anthropic-ai/claude-code');
+      console.log('\x1b[33m\nThen authenticate:\x1b[0m');
+      console.log('  claude auth login');
+      console.log('\x1b[33m\nAlternatively, download from:\x1b[0m');
+      console.log('  https://claude.ai/download');
+      console.log('\x1b[33m\nAfter installation, run this test again.\x1b[0m');
     }
   });
 

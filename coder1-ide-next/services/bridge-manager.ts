@@ -214,7 +214,7 @@ export class BridgeManager extends EventEmitter {
         if (command.timeoutHandle) {
           clearTimeout(command.timeoutHandle);
         }
-        
+
         // Update stats
         const bridge = this.bridges.get(bridgeId);
         if (bridge) {
@@ -223,12 +223,21 @@ export class BridgeManager extends EventEmitter {
 
         // Remove from pending
         this.pendingCommands.delete(data.commandId);
-        
+
         this.emit('command:complete', {
           ...data,
           bridgeId
         });
       }
+    });
+
+    // Claude command error - forwards errors to terminal for user visibility
+    socket.on('claude:error', (data) => {
+      console.log(`[BridgeManager] Claude error for command ${data.commandId}: ${data.error}`);
+      this.emit('command:error', {
+        ...data,
+        bridgeId
+      });
     });
 
     // File operation responses

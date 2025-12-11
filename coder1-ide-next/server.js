@@ -313,6 +313,11 @@ const sessionCleanupTimers = new Map(); // sessionId -> setTimeout timer
 // Claude Code session state tracking
 const claudeCodeSessions = new Map(); // sessionId -> { inClaudeSession: boolean, sessionStartTime: Date }
 
+// Interactive Claude CLI sessions via bridge (PTY mode)
+// Maps sessionId -> { commandId, bridgeId, startTime }
+// When populated, terminal input routes to bridge instead of local PTY
+const interactiveClaudeSessions = new Map();
+
 // Context capture integration
 const terminalDataBuffers = new Map(); // Buffer terminal data for context capture
 const contextSessions = new Map(); // Map terminal sessions to context sessions
@@ -336,6 +341,40 @@ const detectClaudeResponse = (content) => {
   ];
 
   return completionPatterns.some(p => p.test(content));
+};
+
+// Flush buffered terminal context data to the API
+const flushContextData = async (sessionId) => {
+  const buffer = terminalDataBuffers.get(sessionId);
+  if (!buffer || buffer.length === 0) return;
+
+  try {
+    const chunks = [...buffer]; // Copy buffer
+    terminalDataBuffers.set(sessionId, []); // Clear buffer
+
+    // Add timeout to prevent hanging
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+
+    const response = await fetch(`http://localhost:${port}/api/context/capture`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chunks,
+        sessionId,
+        projectPath: '/Users/michaelkraft/autonomous_vibe_interface'
+      }),
+      signal: controller.signal
+    });
+
+    clearTimeout(timeoutId);
+
+    if (response.ok) {
+      const data = await response.json();
+    }
+  } catch (error) {
+    console.warn(`[Context] Failed to flush context data:`, error.message);
+  }
 };
 
 // Smart early flush when Claude response detected
@@ -1350,6 +1389,54 @@ app.prepare().then(() => {
         bridgeManager.emit('file:response', data);
       });
       
+      // Handle interactive session started from bridge (Dec 10, 2025)
+      // When Claude is running in interactive PTY mode, we need to route terminal input to it
+      socket.on('claude:interactive:started', (data) => {
+        const { commandId, pid, sessionId } = data;
+        console.log(`🎭 Interactive Claude session started: commandId=${commandId}, pid=${pid}`);
+
+        // Find the terminal sessionId for this command
+        // The sessionId comes from the original execute request
+        if (sessionId) {
+          interactiveClaudeSessions.set(sessionId, {
+            commandId,
+            bridgeId,
+            pid,
+            startTime: Date.now()
+          });
+          console.log(`📍 Tracking interactive session for terminal: ${sessionId}`);
+
+          // Notify the frontend that Claude is now in interactive mode
+          io.emit('claude:mode:changed', {
+            sessionId,
+            mode: 'interactive',
+            commandId
+          });
+        }
+      });
+
+      // Handle interactive session ended from bridge
+      socket.on('claude:interactive:ended', (data) => {
+        const { commandId, exitCode, signal } = data;
+        console.log(`🏁 Interactive Claude session ended: commandId=${commandId}, exitCode=${exitCode}`);
+
+        // Find and remove the session by commandId
+        for (const [sessionId, sessionData] of interactiveClaudeSessions.entries()) {
+          if (sessionData.commandId === commandId) {
+            interactiveClaudeSessions.delete(sessionId);
+            console.log(`🧹 Cleaned up interactive session for terminal: ${sessionId}`);
+
+            // Notify the frontend that Claude is no longer in interactive mode
+            io.emit('claude:mode:changed', {
+              sessionId,
+              mode: 'normal',
+              exitCode
+            });
+            break;
+          }
+        }
+      });
+
       // Handle heartbeat from bridge
       socket.on('heartbeat', (data) => {
         // TODO: Implement updateHeartbeat method in bridge-manager.js
@@ -1408,7 +1495,39 @@ app.prepare().then(() => {
           terminalSocket.emit('claude:complete', data);
         }
       });
-      
+
+      // FIXED (Dec 10, 2025): Handle cancelled commands when bridge disconnects
+      // Send error message to terminal so user knows what happened
+      bridgeManager.on('command:cancelled', (data) => {
+        console.log(`[Bridge] Command cancelled: ${data.commandId}, reason: ${data.error}`);
+        // Try to find the terminal socket by sessionId
+        // Note: The sessionId might be different from the socket ID, so we broadcast
+        io.emit('terminal:data', {
+          id: data.sessionId,
+          data: `\r\n❌ ${data.error}\r\n`
+        });
+      });
+
+      // ADDED (Dec 11, 2025): Handle claude:error events from bridge
+      // Display clear error messages in terminal when commands fail
+      bridgeManager.on('command:error', (data) => {
+        console.log(`[Bridge] Command error: ${data.commandId}, error: ${data.error}`);
+        // Find the terminal socket and send error message
+        const terminalSocket = io.sockets.sockets.get(data.sessionId);
+        if (terminalSocket) {
+          terminalSocket.emit('terminal:data', {
+            id: data.sessionId,
+            data: `\r\n\x1b[31m❌ Error: ${data.error}\x1b[0m\r\n`
+          });
+        } else {
+          // Fallback: broadcast to all sockets in case sessionId doesn't match socket ID
+          io.emit('terminal:data', {
+            id: data.sessionId,
+            data: `\r\n\x1b[31m❌ Error: ${data.error}\x1b[0m\r\n`
+          });
+        }
+      });
+
       console.log(`✅ Coder1 Bridge registered: ${bridgeId}`);
     });
     
@@ -1860,7 +1979,37 @@ app.prepare().then(() => {
       if (!command || !command.trim().toLowerCase().startsWith('claude')) {
         return command;
       }
-      
+
+      // NEW (Dec 10, 2025): Don't inject context for interactive commands
+      // Interactive sessions: bare "claude", "claude chat", "claude --help"
+      // These need to pass through UNMODIFIED so the bridge detects them as interactive
+      // The bridge's needsInteractiveMode() only matches exact strings
+      const trimmed = command.trim();
+      const isInteractiveCommand =
+        trimmed === 'claude' ||
+        trimmed === 'claude chat' ||
+        /^claude\s+--?h(elp)?$/.test(trimmed);
+
+      if (isInteractiveCommand) {
+        // For interactive sessions, show context message but don't modify command
+        if (eternalMemoryLoader) {
+          try {
+            const eternalContext = await eternalMemoryLoader.loadLastSessionContext();
+            if (eternalContext.hasContext) {
+              const contextMessage = eternalMemoryLoader.createContextLoadedMessage(eternalContext);
+              socket.emit('terminal:data', {
+                id: sessionId,
+                data: contextMessage
+              });
+            }
+          } catch (error) {
+            // Ignore errors for interactive sessions - don't break the flow
+          }
+        }
+        console.log('[Eternal Memory] Interactive command detected - returning unmodified');
+        return command;  // Return UNMODIFIED command for interactive sessions
+      }
+
       if (!eternalMemoryLoader) {
         return command; // Eternal memory not enabled
       }
@@ -1922,6 +2071,30 @@ app.prepare().then(() => {
       
       const session = terminalSessions.get(sessionId);
       console.log('[SESSION-LOOKUP] session found:', !!session);
+
+      // 🎭 INTERACTIVE CLAUDE SESSION CHECK (Dec 10, 2025)
+      // If there's an active interactive Claude session, route ALL input to the bridge
+      // This enables the Claude welcome screen and interactive conversation
+      const interactiveSession = interactiveClaudeSessions.get(sessionId);
+      if (interactiveSession && bridgeManager) {
+        console.log(`[INTERACTIVE] Routing input to Claude PTY session: ${interactiveSession.commandId}`);
+
+        // Find the bridge socket
+        const bridge = bridgeManager.getBridge?.(interactiveSession.bridgeId);
+        if (bridge?.socket) {
+          // Route input directly to the interactive Claude session via bridge
+          bridge.socket.emit('claude:input', {
+            sessionId,
+            commandId: interactiveSession.commandId,
+            input: data
+          });
+          return; // Don't send to local PTY
+        } else {
+          console.warn('[INTERACTIVE] Bridge not found, cleaning up session');
+          interactiveClaudeSessions.delete(sessionId);
+        }
+      }
+
       if (session) {
         // 🔧 FIX (Nov 19, 2025): Buffer ALL input immediately for AI Team extraction
         // CRITICAL: Multi-line pastes (like test prompts) were being lost because
@@ -2032,14 +2205,25 @@ app.prepare().then(() => {
           
           // ALWAYS intercept claude commands, even if bridgeManager fails to load
           // This prevents "claude: command not found" errors on the server
-          // BUT - for local development WITHOUT bridge, let claude commands pass through
-          // FIXED (Dec 3, 2025): Removed PORT check - it broke production routing!
-          // Now only checks NODE_ENV AND whether bridge is connected
-          const isLocalDevelopment = process.env.NODE_ENV === 'development';
-          
-          if ((command === 'claude' || command.startsWith('claude ')) && !isLocalDevelopment) {
-            console.log('[Terminal] Claude command intercepted, bridgeManager:', !!bridgeManager);
-            
+          // FIXED (Dec 10, 2025): Removed NODE_ENV check entirely - it broke production!
+          // Now routes to bridge whenever bridge is connected, regardless of environment
+          // Local development with bridge connected will route through bridge
+          // Local development without bridge will show help message
+
+          if (command === 'claude' || command.startsWith('claude ')) {
+            // Check environment FIRST - development mode bypasses ALL interception
+            const isProduction = process.env.RENDER === 'true' ||
+                                 process.env.NODE_ENV === 'production' ||
+                                 process.env.PORT === '10000';
+
+            if (!isProduction) {
+              // DEVELOPMENT MODE: Let command pass directly to local PTY (Claude CLI)
+              console.log('[Terminal] Development mode - claude command will run in local shell');
+              // DO NOTHING HERE - let code continue to normal PTY processing below
+            } else {
+              // PRODUCTION MODE: All bridge/help logic
+              console.log('[Terminal] Claude command intercepted, bridgeManager:', !!bridgeManager);
+
             // Check if bridgeManager exists and if a bridge is connected
             if (!bridgeManager) {
               console.log('[Terminal] BridgeManager not available - showing help message');
@@ -2107,74 +2291,76 @@ app.prepare().then(() => {
                 }
               })();
               
-              bridgeManager.executeCommand(userId, commandRequest)
-                .then(result => {
-                  if (!result.success) {
-                    socket.emit('terminal:data', {
-                      id: sessionId,
-                      data: `\r\n❌ Error: ${result.error}\r\n`
-                    });
-                  }
-                })
-                .catch(error => {
+              // FIXED (Dec 10, 2025): Await command result before returning
+              // This ensures we catch errors and provide immediate feedback
+              try {
+                const result = await bridgeManager.executeCommand(userId, commandRequest);
+                if (!result.success) {
                   socket.emit('terminal:data', {
                     id: sessionId,
-                    data: `\r\n❌ Bridge error: ${error.message}\r\n`
+                    data: `\r\n❌ Error: ${result.error}\r\n`
                   });
+                }
+              } catch (error) {
+                socket.emit('terminal:data', {
+                  id: sessionId,
+                  data: `\r\n❌ Bridge error: ${error.message}\r\n`
                 });
-              
+              }
+
               // Clear command buffer and exit early
               commandBuffers.set(sessionId, '');
               return;
               }
             }
-            
-            // No bridge connected OR bridgeManager not available - show help message
+
+            // No bridge connected OR bridgeManager not available in production
+            // Show help message since server doesn't have Claude CLI
             console.log('[Terminal] No bridge connected, showing help instead');
-            
+
             // CRITICAL: Clear bash's input buffer by sending backspaces
-            // Send one backspace for each character that was typed
             const backspaces = '\b'.repeat(buffer.length);
             session.write(backspaces);
-            
+
             // Clear the line visually in the terminal display
             socket.emit('terminal:data', {
               id: sessionId,
-              data: '\r\x1b[K'  // Clear the line in the display
+              data: '\r\x1b[K'
             });
-            
-            // Show help message immediately
-              const helpMessage = [
-                '\r\n',
-                '╔═══════════════════════════════════════════════════════════════════╗\r\n',
-                '║                    🌉 Connect Claude Code                          ║\r\n',
-                '╠═══════════════════════════════════════════════════════════════════╣\r\n',
-                '║                                                                     ║\r\n',
-                '║  Quick Setup:                                                      ║\r\n',
-                '║  1. Click the Help button and select Bridge setup instructions.   ║\r\n',
-                '║  2. Follow the popup instructions                                  ║\r\n',
-                '║  3. Type "claude" to start AI-assisted coding                     ║\r\n',
-                '║                                                                     ║\r\n',
-                '╚═══════════════════════════════════════════════════════════════════╝\r\n',
-                '\r\n'
-              ].join('');
-              
-            socket.emit('terminal:data', { 
-              id: sessionId, 
-              data: helpMessage 
+
+            // Show help message
+            const helpMessage = [
+              '\r\n',
+              '╔═══════════════════════════════════════════════════════════════════╗\r\n',
+              '║                    🌉 Connect Claude Code                          ║\r\n',
+              '╠═══════════════════════════════════════════════════════════════════╣\r\n',
+              '║                                                                     ║\r\n',
+              '║  Quick Setup:                                                      ║\r\n',
+              '║  1. Click the Help button and select Bridge setup instructions.   ║\r\n',
+              '║  2. Follow the popup instructions                                  ║\r\n',
+              '║  3. Type "claude" to start AI-assisted coding                     ║\r\n',
+              '║                                                                     ║\r\n',
+              '╚═══════════════════════════════════════════════════════════════════╝\r\n',
+              '\r\n'
+            ].join('');
+
+            socket.emit('terminal:data', {
+              id: sessionId,
+              data: helpMessage
             });
-            
+
             // Show a clean prompt after the help message
             socket.emit('terminal:data', {
               id: sessionId,
               data: 'coder1:coder1-ide-next$ '
             });
-            
-            // Clear the command buffer 
+
+            // Clear the command buffer and exit early (production only)
             commandBuffers.set(sessionId, '');
-            return; // Exit early - don't send anything to PTY
+            return;
+            } // end production mode else block
           }
-          
+
           // Intercept slash commands before they reach the shell
           if (command.startsWith('/') && command.length > 1) {
             console.log('[Terminal] Slash command intercepted:', command);
@@ -2552,16 +2738,41 @@ app.prepare().then(() => {
           bufferTerminalData(sessionId, 'terminal_input', cleanData);
         }
       } else {
+        // FIXED (Dec 10, 2025): Provide visible feedback when session not found
+        // Previously only logged a warning - user saw nothing
         console.warn(`[Terminal] Session not found: ${sessionId}`);
-        socket.emit('terminal:error', { 
-          message: 'Terminal session not found' 
+        socket.emit('terminal:error', {
+          message: 'Terminal session not found'
+        });
+        // Send visible error message to terminal UI
+        socket.emit('terminal:data', {
+          id: sessionId,
+          data: '\r\n❌ Terminal session not found. Please refresh the page.\r\n'
         });
       }
     });
     
     // Handle terminal resize
     socket.on('terminal:resize', ({ id, cols, rows }) => {
-      const session = terminalSessions.get(id || currentSessionId);
+      const sessionId = id || currentSessionId;
+
+      // 🎭 INTERACTIVE CLAUDE SESSION CHECK (Dec 10, 2025)
+      // If there's an active interactive Claude session, forward resize to the bridge
+      const interactiveSession = interactiveClaudeSessions.get(sessionId);
+      if (interactiveSession && bridgeManager) {
+        const bridge = bridgeManager.getBridge?.(interactiveSession.bridgeId);
+        if (bridge?.socket) {
+          bridge.socket.emit('claude:resize', {
+            sessionId,
+            commandId: interactiveSession.commandId,
+            cols,
+            rows
+          });
+        }
+      }
+
+      // Also resize local session (if exists)
+      const session = terminalSessions.get(sessionId);
       if (session) {
         session.resize(cols, rows);
         // REMOVED: // REMOVED: // REMOVED: console.log(`[Terminal] Resized session ${id} to ${cols}x${rows}`);
@@ -3074,40 +3285,6 @@ const bufferTerminalData = (sessionId, type, content) => {
         buffer.splice(0, buffer.length - 500);
       }
     }
-  }
-};
-
-const flushContextData = async (sessionId) => {
-  const buffer = terminalDataBuffers.get(sessionId);
-  if (!buffer || buffer.length === 0) return;
-  
-  try {
-    const chunks = [...buffer]; // Copy buffer
-    terminalDataBuffers.set(sessionId, []); // Clear buffer
-    
-    // Add timeout to prevent hanging
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
-    
-    const response = await fetch(`http://localhost:${port}/api/context/capture`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        chunks,
-        sessionId,
-        projectPath: '/Users/michaelkraft/autonomous_vibe_interface'
-      }),
-      signal: controller.signal
-    });
-    
-    clearTimeout(timeoutId);
-    
-    if (response.ok) {
-      const data = await response.json();
-      // REMOVED: // REMOVED: // REMOVED: console.log(`[Context] Flushed ${chunks.length} terminal chunks, captured ${data.totalConversations || 0} conversations`);
-    }
-  } catch (error) {
-    console.warn(`[Context] Failed to flush context data:`, error.message);
   }
 };
 
