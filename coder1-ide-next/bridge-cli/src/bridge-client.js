@@ -436,6 +436,18 @@ class BridgeClient extends EventEmitter {
               this.stats.commandsFailed++;
               this.stats.lastError = error.message;
 
+              // Emit specific error event for terminal display
+              const errorMessage = error.message.includes('ENOENT') || error.message.includes('not found')
+                ? 'Claude CLI not found. Please install: npm install -g @anthropic-ai/claude-code'
+                : error.message;
+
+              this.socket.emit('claude:error', {
+                sessionId,
+                commandId,
+                error: errorMessage,
+                timestamp: Date.now()
+              });
+
               this.socket.emit('claude:complete', {
                 sessionId,
                 commandId,
@@ -487,6 +499,7 @@ class BridgeClient extends EventEmitter {
         // Clean up interactive session tracking on error
         if (isInteractive) {
           this.activeInteractiveSessions.delete(sessionId);
+          this.commandToSessionMap.delete(commandId);
         }
 
         logger.error('Command execution error', {
@@ -494,6 +507,18 @@ class BridgeClient extends EventEmitter {
           error: error.message,
           stack: error.stack,
           duration
+        });
+
+        // Emit specific error event for terminal display
+        const errorMessage = error.message.includes('ENOENT') || error.message.includes('not found')
+          ? 'Claude CLI not found. Please install: npm install -g @anthropic-ai/claude-code'
+          : error.message;
+
+        this.socket.emit('claude:error', {
+          sessionId,
+          commandId,
+          error: errorMessage,
+          timestamp: Date.now()
         });
 
         // Send error completion
