@@ -248,7 +248,7 @@ class ClaudeExecutor extends EventEmitter {
           CODER1_BRIDGE: 'true',
           TERM: 'xterm-256color'
         },
-        shell: false
+        shell: true  // Use shell for proper PATH resolution (finds claude in user's PATH)
       });
 
       let outputBuffer = '';
