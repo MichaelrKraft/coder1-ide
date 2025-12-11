@@ -3,17 +3,20 @@
  * Loads and manages Claude Code config templates
  */
 
-import { 
-  ConfigTemplate, 
-  TemplatesData, 
+import { readFileSync, existsSync } from 'fs';
+import { join } from 'path';
+import {
+  ConfigTemplate,
+  TemplatesData,
   TemplateLoadResult,
   FilterOptions,
   SortOptions,
-  ConfigType 
+  ConfigType
 } from './types';
 
-const TEMPLATES_BASE_PATH = '/claude-config-templates';
-const TEMPLATES_JSON_PATH = `${TEMPLATES_BASE_PATH}/templates.json`;
+// Use filesystem paths for server-side loading (not fetch with relative URLs)
+const TEMPLATES_BASE_PATH = join(process.cwd(), 'public', 'claude-config-templates');
+const TEMPLATES_JSON_PATH = join(TEMPLATES_BASE_PATH, 'templates.json');
 
 export class TemplateLoader {
   private static instance: TemplateLoader;
@@ -38,13 +41,12 @@ export class TemplateLoader {
     }
 
     try {
-      const response = await fetch(TEMPLATES_JSON_PATH);
-      
-      if (!response.ok) {
-        throw new Error(`Failed to load templates.json: ${response.statusText}`);
+      if (!existsSync(TEMPLATES_JSON_PATH)) {
+        throw new Error(`Templates file not found: ${TEMPLATES_JSON_PATH}`);
       }
 
-      this.templatesData = await response.json();
+      const fileContent = readFileSync(TEMPLATES_JSON_PATH, 'utf-8');
+      this.templatesData = JSON.parse(fileContent);
       return this.templatesData;
     } catch (error) {
       console.error('Error loading templates data:', error);
@@ -94,18 +96,17 @@ export class TemplateLoader {
     }
 
     try {
-      const contentPath = `${TEMPLATES_BASE_PATH}/${template.file}`;
-      const response = await fetch(contentPath);
-      
-      if (!response.ok) {
-        throw new Error(`Failed to load template content: ${response.statusText}`);
+      const contentPath = join(TEMPLATES_BASE_PATH, template.file);
+
+      if (!existsSync(contentPath)) {
+        throw new Error(`Template file not found: ${contentPath}`);
       }
 
-      const content = await response.text();
-      
+      const content = readFileSync(contentPath, 'utf-8');
+
       // Cache the content
       this.templatesCache.set(template.id, content);
-      
+
       return content;
     } catch (error) {
       console.error(`Error loading template content for ${template.id}:`, error);
