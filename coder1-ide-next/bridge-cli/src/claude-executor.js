@@ -27,10 +27,64 @@ class ClaudeExecutor extends EventEmitter {
     this.verbose = options.verbose || false;
     // FIXED (Dec 10, 2025): Increased from 60s to 120s to match server timeout
     this.maxTimeout = options.maxTimeout || 120000; // 120 seconds default
-    this.claudePath = options.claudePath || 'claude'; // Assume in PATH
+
+    // FIXED (Dec 12, 2025): Resolve full path to claude at startup
+    // node-pty requires absolute path or binary in PATH - doesn't use shell resolution
+    this.claudePath = this.resolveClaudePath(options.claudePath);
 
     // Track active interactive sessions
     this.activeSessions = new Map(); // commandId -> ptyProcess
+  }
+
+  /**
+   * Resolve the full path to claude CLI
+   * Critical for node-pty which doesn't use shell for PATH resolution
+   */
+  resolveClaudePath(providedPath) {
+    if (providedPath && providedPath !== 'claude') {
+      return providedPath; // Use provided absolute path
+    }
+
+    try {
+      // Try to find claude using 'which' command
+      const resolvedPath = execSync('which claude 2>/dev/null', {
+        encoding: 'utf-8',
+        stdio: ['pipe', 'pipe', 'pipe']
+      }).trim();
+
+      if (resolvedPath) {
+        console.log(`[Claude] Resolved path: ${resolvedPath}`);
+        return resolvedPath;
+      }
+    } catch (error) {
+      // which failed, try common locations
+    }
+
+    // Try common installation paths
+    const commonPaths = [
+      '/usr/local/bin/claude',
+      '/opt/homebrew/bin/claude',
+      `${process.env.HOME}/.local/bin/claude`,
+      `${process.env.HOME}/.claude/bin/claude`,
+      `${process.env.HOME}/.npm-global/bin/claude`,
+      '/usr/bin/claude'
+    ];
+
+    const fs = require('fs');
+    for (const testPath of commonPaths) {
+      try {
+        if (fs.existsSync(testPath)) {
+          console.log(`[Claude] Found at: ${testPath}`);
+          return testPath;
+        }
+      } catch (e) {
+        // Continue checking other paths
+      }
+    }
+
+    // Fall back to 'claude' and hope PATH is set correctly
+    console.warn('[Claude] Could not resolve absolute path, using "claude"');
+    return 'claude';
   }
 
   /**
