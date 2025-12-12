@@ -18,11 +18,33 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const sessionId = searchParams.get('sessionId');
-    
+
+    // If no sessionId provided, return aggregate usage across all sessions
     if (!sessionId) {
+      // Calculate totals from all sessions
+      let totalInput = 0;
+      let totalOutput = 0;
+      let totalCommands = 0;
+
+      sessionMetrics.forEach((metrics) => {
+        totalInput += metrics.inputTokens;
+        totalOutput += metrics.outputTokens;
+        totalCommands += metrics.commandCount;
+      });
+
+      const inputCost = (totalInput / 1000000) * 3;
+      const outputCost = (totalOutput / 1000000) * 15;
+      const totalCost = inputCost + outputCost;
+
       return NextResponse.json({
-        success: false,
-        error: 'Session ID required'
+        success: true,
+        inputTokens: totalInput,
+        outputTokens: totalOutput,
+        commandCount: totalCommands,
+        sessionCount: sessionMetrics.size,
+        cost: totalCost,
+        formattedCost: `$${totalCost.toFixed(4)}`,
+        timestamp: new Date().toISOString()
       });
     }
     
