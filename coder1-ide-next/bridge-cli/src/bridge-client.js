@@ -25,6 +25,7 @@ class BridgeClient extends EventEmitter {
     const isLocal = options.local || process.env.CODER1_LOCAL === 'true';
     this.serverUrl = options.serverUrl || (isLocal ? 'http://localhost:3001' : 'https://coder1.ai');
     this.verbose = options.verbose || false;
+    this.claudePath = options.claudePath || 'claude'; // 🔧 FIX: Accept resolved Claude path
     this.socket = null;
     this.bridgeId = null;
     this.userId = null;
@@ -55,7 +56,11 @@ class BridgeClient extends EventEmitter {
     });
 
     // Initialize sub-modules
-    this.claudeExecutor = new ClaudeExecutor({ verbose: this.verbose });
+    // 🔧 FIX: Pass claudePath to ClaudeExecutor so pty.spawn uses full path
+    this.claudeExecutor = new ClaudeExecutor({
+      verbose: this.verbose,
+      claudePath: this.claudePath
+    });
     this.fileHandler = new FileHandler({ verbose: this.verbose });
 
     // Track active interactive sessions for input routing

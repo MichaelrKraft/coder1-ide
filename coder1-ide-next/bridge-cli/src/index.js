@@ -90,6 +90,7 @@ program
       process.exit(1);
     }
     console.log(`\x1b[32m✅ Claude CLI detected: ${claudeCheck.version || 'Unknown version'}\x1b[0m`);
+    console.log(`\x1b[90m   Path: ${claudeCheck.path}\x1b[0m`);
 
     // Get pairing code using readline
     const pairingCode = await askForPairingCode();
@@ -101,7 +102,8 @@ program
       const bridge = new BridgeClient({
         serverUrl: options.server,
         verbose: options.verbose,
-        local: options.dev  // Pass the dev flag to indicate local connection
+        local: options.dev,  // Pass the dev flag to indicate local connection
+        claudePath: claudeCheck.path  // 🔧 FIX: Pass resolved Claude path to executor
       });
 
       await bridge.connect(pairingCode);
@@ -205,34 +207,107 @@ program
     }
   });
 
+// Diagnose command - full diagnostic for troubleshooting
+program
+  .command('diagnose')
+  .description('Full diagnostic check for troubleshooting')
+  .action(async () => {
+    console.log('\n🔍 Coder1 Bridge Diagnostic Report\n');
+    console.log('='.repeat(50));
+
+    // System info
+    console.log('\n📋 System Information:');
+    console.log(`   Platform: ${process.platform}`);
+    console.log(`   Node.js: ${process.version}`);
+    console.log(`   Architecture: ${process.arch}`);
+
+    // Claude CLI check
+    console.log('\n🤖 Claude CLI Status:');
+    const check = await checkClaudeCLI();
+    if (check.installed) {
+      console.log(`   ✅ Installed: ${check.path}`);
+      console.log(`   Version: ${check.version || 'Unknown'}`);
+    } else {
+      console.log('   ❌ NOT FOUND');
+      console.log('\n   Checked locations:');
+      console.log('   - /usr/local/bin/claude');
+      console.log('   - /opt/homebrew/bin/claude');
+      console.log('   - ~/.npm-global/bin/claude');
+    }
+
+    // PATH info
+    console.log('\n📁 PATH Environment:');
+    const pathDirs = (process.env.PATH || '').split(':').slice(0, 5);
+    pathDirs.forEach(p => console.log(`   - ${p}`));
+    if (pathDirs.length < (process.env.PATH || '').split(':').length) {
+      console.log('   ... (truncated)');
+    }
+
+    console.log('\n' + '='.repeat(50));
+    console.log('Share this output when reporting issues.\n');
+  });
+
 // Helper function to check Claude CLI
+// 🔧 FIX (Dec 15, 2025): Enhanced to try common paths and always return full path
+// This fixes "Claude CLI not found" errors when pty.spawn can't find 'claude' in PATH
 async function checkClaudeCLI() {
   const { execSync } = require('child_process');
-  
+  const fs = require('fs');
+
+  // Common Claude CLI install locations on macOS/Linux
+  const commonPaths = [
+    '/usr/local/bin/claude',
+    '/opt/homebrew/bin/claude',
+    `${process.env.HOME}/.npm-global/bin/claude`,
+    '/usr/bin/claude'
+  ];
+
+  // First try 'which claude' to find in PATH
+  let claudePath = null;
   try {
-    // Try to run claude --version
-    const version = execSync('claude --version 2>&1', { encoding: 'utf-8' }).trim();
-    
-    // Try to find claude path
-    let path;
-    try {
-      path = execSync('which claude 2>&1', { encoding: 'utf-8' }).trim();
-    } catch {
-      path = null;
+    claudePath = execSync('which claude 2>/dev/null', { encoding: 'utf-8' }).trim();
+    if (claudePath && !fs.existsSync(claudePath)) {
+      claudePath = null; // Invalid path from which
     }
-    
-    return {
-      installed: true,
-      version: version,
-      path: path
-    };
-  } catch (error) {
+  } catch {
+    claudePath = null;
+  }
+
+  // If which failed, try common paths
+  if (!claudePath) {
+    for (const p of commonPaths) {
+      try {
+        if (fs.existsSync(p)) {
+          claudePath = p;
+          break;
+        }
+      } catch {}
+    }
+  }
+
+  // If still not found, Claude is not installed
+  if (!claudePath) {
     return {
       installed: false,
       version: null,
       path: null
     };
   }
+
+  // Get version using the full path
+  let version = null;
+  try {
+    version = execSync(`"${claudePath}" --version 2>&1`, { encoding: 'utf-8' }).trim();
+  } catch {
+    // Claude exists but --version failed - still usable
+    version = 'unknown';
+  }
+
+  return {
+    installed: true,
+    version: version,
+    path: claudePath
+  };
 }
 
 // Parse arguments
