@@ -1,6 +1,6 @@
 {
   "name": "coder1-bridge",
-  "version": "1.0.1",
+  "version": "1.0.3",
   "description": "Bridge service to connect Coder1 IDE with local Claude CLI",
   "main": "src/index.js",
   "bin": {
@@ -25,7 +25,8 @@
     "p-queue": "5.0.0",
     "winston": "^3.11.0",
     "commander": "^11.1.0",
-    "node-fetch": "^2.7.0"
+    "node-fetch": "^2.7.0",
+    "node-pty": "^1.0.0"
   },
   "bundledDependencies": [
     "node-fetch"
