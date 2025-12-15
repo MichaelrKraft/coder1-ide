@@ -258,7 +258,9 @@ async function checkClaudeCLI() {
   const commonPaths = [
     '/usr/local/bin/claude',
     '/opt/homebrew/bin/claude',
+    `${process.env.HOME}/.local/bin/claude`,      // Common Linux/pip location
     `${process.env.HOME}/.npm-global/bin/claude`,
+    `${process.env.HOME}/.claude/bin/claude`,     // Claude's own install location
     '/usr/bin/claude'
   ];
 
