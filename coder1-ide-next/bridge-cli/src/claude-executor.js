@@ -432,15 +432,30 @@ class ClaudeExecutor extends EventEmitter {
   /**
    * Quick synchronous check if Claude CLI is installed
    * Used for startup validation before accepting commands
+   * 🔧 FIX (Dec 15, 2025): Use this.claudePath instead of 'which claude'
    */
   checkClaudeAvailable() {
+    const fs = require('fs');
+
+    // First check if we have a resolved path that exists
+    if (this.claudePath && this.claudePath !== 'claude') {
+      try {
+        if (fs.existsSync(this.claudePath)) {
+          return { available: true, path: this.claudePath };
+        }
+      } catch (e) {
+        // Continue to fallback check
+      }
+    }
+
+    // Fallback: try 'which claude'
     try {
       execSync('which claude', { stdio: 'pipe' });
       return { available: true };
     } catch {
       return {
         available: false,
-        error: 'Claude CLI not found. Please install: npm install -g @anthropic-ai/claude-code'
+        error: `Claude CLI not found at ${this.claudePath || 'any location'}. Please install: npm install -g @anthropic-ai/claude-code`
       };
     }
   }
