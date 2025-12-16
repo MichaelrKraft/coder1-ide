@@ -348,12 +348,22 @@ class BridgeClient extends EventEmitter {
       });
 
       try {
-        // Change to working directory if specified
+        // Change to working directory if specified AND it exists locally
+        // 🔧 FIX (Dec 15, 2025): Server sends Render's cwd which doesn't exist on user's Mac
+        // Only chdir if the directory actually exists on the local machine
         if (context?.workingDirectory) {
-          process.chdir(context.workingDirectory);
-          logger.debug('Changed working directory', {
-            workingDirectory: context.workingDirectory
-          });
+          const fs = require('fs');
+          if (fs.existsSync(context.workingDirectory)) {
+            process.chdir(context.workingDirectory);
+            logger.debug('Changed working directory', {
+              workingDirectory: context.workingDirectory
+            });
+          } else {
+            logger.warn('Ignoring non-existent working directory from server', {
+              requested: context.workingDirectory,
+              using: process.cwd()
+            });
+          }
         }
 
         // Track interactive session for input routing
