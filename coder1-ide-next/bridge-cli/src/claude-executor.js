@@ -102,8 +102,36 @@ class ClaudeExecutor extends EventEmitter {
 
   /**
    * Execute a Claude command - chooses PTY or spawn based on command type
+   * 🔧 FIX (Dec 15, 2025): Added pre-spawn validation to catch path issues early
    */
   async execute(command, options = {}) {
+    // Pre-spawn validation: Check if Claude CLI exists at resolved path
+    const fs = require('fs');
+
+    this.log(`Executing command with claudePath: ${this.claudePath}`);
+
+    if (!this.claudePath || this.claudePath === 'claude') {
+      // Path was never resolved - try to resolve now
+      this.claudePath = this.resolveClaudePath(this.claudePath);
+      this.log(`Re-resolved claudePath to: ${this.claudePath}`);
+    }
+
+    // Validate the path exists before attempting spawn
+    if (this.claudePath && this.claudePath !== 'claude') {
+      try {
+        if (!fs.existsSync(this.claudePath)) {
+          throw new Error(`Claude CLI binary not found at resolved path: ${this.claudePath}`);
+        }
+        this.log(`Validated Claude CLI exists at: ${this.claudePath}`);
+      } catch (e) {
+        this.error(`Path validation failed: ${e.message}`);
+        throw new Error(`Claude CLI path validation failed: ${this.claudePath} - ${e.message}`);
+      }
+    } else {
+      // Fallback to 'claude' - will rely on shell PATH resolution
+      this.warn(`Using fallback 'claude' command - PATH resolution required`);
+    }
+
     // Check if this needs interactive mode
     if (this.needsInteractiveMode(command) && pty) {
       return this.executeInteractive(command, options);
