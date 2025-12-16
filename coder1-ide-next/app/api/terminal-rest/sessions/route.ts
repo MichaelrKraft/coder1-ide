@@ -11,10 +11,14 @@ const sessionCounter = new Map();
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    
+
     // Generate session ID for REST API compatibility
     const { cols, rows } = body;
     const sessionId = `session_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
+
+    // 🔍 DEBUG: Log REST API session creation
+    console.log('[REST-SESSION-CREATE] New session ID:', sessionId);
+    console.log('[REST-SESSION-CREATE] Request cols:', cols, 'rows:', rows);
     
     // Store minimal session info
     sessionCounter.set(sessionId, {

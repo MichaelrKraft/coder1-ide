@@ -277,6 +277,11 @@ const deploymentMode = process.env.DEPLOYMENT_MODE || 'standard';
 // Track active alpha sessions
 const alphaActiveSessions = new Map();
 
+// 🔧 FIX (Dec 15, 2025): Map terminal session IDs to their Socket.IO sockets
+// This fixes bridge response routing - sessionId is NOT a socket ID
+// Used by bridgeManager event handlers to find the correct socket
+const terminalSessionSockets = new Map();
+
 // Run database migrations before starting server
 console.log('📦 Running database migrations...');
 try {
@@ -1479,20 +1484,27 @@ app.prepare().then(() => {
         })();
         
         // Forward to terminal session
-        const terminalSocket = io.sockets.sockets.get(data.sessionId);
+        // 🔧 FIX (Dec 15, 2025): Use terminalSessionSockets map instead of socket ID lookup
+        // data.sessionId is an app-level ID like "term_abc123", NOT a Socket.IO socket ID
+        const terminalSocket = terminalSessionSockets.get(data.sessionId);
         if (terminalSocket) {
           terminalSocket.emit('terminal:data', {
             id: data.sessionId,
             data: data.data
           });
+        } else {
+          console.warn(`⚠️ No socket found for session ${data.sessionId} - bridge output lost`);
         }
       });
-      
+
       bridgeManager.on('command:complete', (data) => {
         // Forward completion to terminal session
-        const terminalSocket = io.sockets.sockets.get(data.sessionId);
+        // 🔧 FIX (Dec 15, 2025): Use terminalSessionSockets map instead of socket ID lookup
+        const terminalSocket = terminalSessionSockets.get(data.sessionId);
         if (terminalSocket) {
           terminalSocket.emit('claude:complete', data);
+        } else {
+          console.warn(`⚠️ No socket found for session ${data.sessionId} - completion event lost`);
         }
       });
 
@@ -1513,14 +1525,16 @@ app.prepare().then(() => {
       bridgeManager.on('command:error', (data) => {
         console.log(`[Bridge] Command error: ${data.commandId}, error: ${data.error}`);
         // Find the terminal socket and send error message
-        const terminalSocket = io.sockets.sockets.get(data.sessionId);
+        // 🔧 FIX (Dec 15, 2025): Use terminalSessionSockets map instead of socket ID lookup
+        const terminalSocket = terminalSessionSockets.get(data.sessionId);
         if (terminalSocket) {
           terminalSocket.emit('terminal:data', {
             id: data.sessionId,
             data: `\r\n\x1b[31m❌ Error: ${data.error}\x1b[0m\r\n`
           });
         } else {
-          // Fallback: broadcast to all sockets in case sessionId doesn't match socket ID
+          // Fallback: broadcast to all sockets since no mapping found
+          console.warn(`⚠️ No socket found for session ${data.sessionId} - broadcasting error`);
           io.emit('terminal:data', {
             id: data.sessionId,
             data: `\r\n\x1b[31m❌ Error: ${data.error}\x1b[0m\r\n`
@@ -1610,7 +1624,13 @@ app.prepare().then(() => {
 
       try {
         const { id, cols = 80, rows = 30, workingDirectory } = data || {};
-        
+
+        // 🔍 DEBUG: Log terminal:create event
+        console.log('[TERMINAL-CREATE] Received terminal:create event');
+        console.log('[TERMINAL-CREATE] Client provided id:', id || '(none - will auto-generate)');
+        console.log('[TERMINAL-CREATE] Current terminalSessions.size:', terminalSessions.size);
+        console.log('[TERMINAL-CREATE] Existing sessions:', Array.from(terminalSessions.keys()));
+
         // Check memory before creating new session (environment-aware threshold)
         const memStats = memoryOptimizer.getMemoryUsage();
         const memoryThreshold = isDevelopment ? 1500 : 350;
@@ -1623,19 +1643,26 @@ app.prepare().then(() => {
         
         // Use passed session ID or create new one
         const sessionId = id || `session_${Date.now()}_${uuidv4().slice(0, 8)}`;
-        
+        console.log('[TERMINAL-CREATE] Using sessionId:', sessionId);
+
         let session;
         try {
           session = getOrCreateSession(sessionId);
           currentSessionId = sessionId;
+          console.log('[TERMINAL-CREATE] Session created/retrieved. terminalSessions.size:', terminalSessions.size);
         } catch (error) {
           console.error(`[Terminal] Failed to create/get session ${sessionId}:`, error);
-          socket.emit('terminal:error', { 
-            message: `Failed to create terminal session: ${error.message}` 
+          socket.emit('terminal:error', {
+            message: `Failed to create terminal session: ${error.message}`
           });
           return;
         }
-        
+
+        // 🔧 FIX (Dec 15, 2025): Store sessionId → socket mapping for bridge response routing
+        // This allows bridgeManager to forward output to the correct terminal socket
+        terminalSessionSockets.set(sessionId, socket);
+        console.log(`📍 Mapped terminal session ${sessionId} → socket ${socket.id}`);
+
         // Register session with memory optimizer
         memoryOptimizer.registerSession(sessionId, {
           type: 'terminal',
@@ -1794,7 +1821,11 @@ app.prepare().then(() => {
           // 🔧 FIX (Oct 24, 2025): Use sessionId from closure (always available)
           // socketToSession.get() can return undefined if socket wasn't properly registered
           const disconnectSessionId = sessionId; // Use closure variable (guaranteed to exist)
-          
+
+          // 🔧 FIX (Dec 15, 2025): Clean up sessionId → socket mapping
+          terminalSessionSockets.delete(disconnectSessionId);
+          console.log(`📍 Removed terminal session mapping: ${disconnectSessionId}`);
+
           if (session.connectedSockets) {
             session.connectedSockets.delete(socket);
             
