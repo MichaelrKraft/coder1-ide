@@ -441,10 +441,9 @@ class BridgeClient extends EventEmitter {
               this.stats.commandsFailed++;
               this.stats.lastError = error.message;
 
-              // Emit specific error event for terminal display
-              const errorMessage = error.message.includes('ENOENT') || error.message.includes('not found')
-                ? 'Claude CLI not found. Please install: npm install -g @anthropic-ai/claude-code'
-                : error.message;
+              // 🔧 FIX (Dec 15, 2025): More specific error detection
+              // Only show "Claude CLI not found" if the error is actually about Claude CLI
+              const errorMessage = this.formatClaudeError(error.message);
 
               this.socket.emit('claude:error', {
                 sessionId,
@@ -514,10 +513,8 @@ class BridgeClient extends EventEmitter {
           duration
         });
 
-        // Emit specific error event for terminal display
-        const errorMessage = error.message.includes('ENOENT') || error.message.includes('not found')
-          ? 'Claude CLI not found. Please install: npm install -g @anthropic-ai/claude-code'
-          : error.message;
+        // 🔧 FIX (Dec 15, 2025): More specific error detection
+        const errorMessage = this.formatClaudeError(error.message);
 
         this.socket.emit('claude:error', {
           sessionId,
@@ -737,6 +734,35 @@ class BridgeClient extends EventEmitter {
     
     this.connected = false;
     this.emit('disconnected', 'manual');
+  }
+
+  /**
+   * Format error messages for Claude-specific errors
+   * 🔧 FIX (Dec 15, 2025): More specific error detection to avoid misleading messages
+   */
+  formatClaudeError(errorMsg) {
+    // Check if error is specifically about Claude CLI not being found
+    if (errorMsg.includes('Claude CLI') && (errorMsg.includes('not found') || errorMsg.includes('ENOENT'))) {
+      return 'Claude CLI not found. Please install: npm install -g @anthropic-ai/claude-code';
+    }
+
+    // Check for path validation errors (more specific)
+    if (errorMsg.includes('path validation failed')) {
+      return errorMsg; // Show the detailed path validation error
+    }
+
+    // Check for generic ENOENT that might be about working directory
+    if (errorMsg.includes('ENOENT') && errorMsg.includes('chdir')) {
+      return `Working directory error: ${errorMsg}`;
+    }
+
+    // Check for spawn errors with 'claude' in the path
+    if ((errorMsg.includes('ENOENT') || errorMsg.includes('spawn')) && errorMsg.toLowerCase().includes('claude')) {
+      return 'Claude CLI not found. Please install: npm install -g @anthropic-ai/claude-code';
+    }
+
+    // Default: return original error message for debugging
+    return errorMsg;
   }
 
   /**
