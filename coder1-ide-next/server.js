@@ -2242,18 +2242,11 @@ app.prepare().then(() => {
           // Local development without bridge will show help message
 
           if (command === 'claude' || command.startsWith('claude ')) {
-            // Check environment FIRST - development mode bypasses ALL interception
-            const isProduction = process.env.RENDER === 'true' ||
-                                 process.env.NODE_ENV === 'production' ||
-                                 process.env.PORT === '10000';
-
-            if (!isProduction) {
-              // DEVELOPMENT MODE: Let command pass directly to local PTY (Claude CLI)
-              console.log('[Terminal] Development mode - claude command will run in local shell');
-              // DO NOTHING HERE - let code continue to normal PTY processing below
-            } else {
-              // PRODUCTION MODE: All bridge/help logic
-              console.log('[Terminal] Claude command intercepted, bridgeManager:', !!bridgeManager);
+            // FIXED (Dec 16, 2025): Removed NODE_ENV check that was bypassing bridge in development
+            // The Dec 10, 2025 fix documented in comments above was never actually applied to code
+            // Now properly routes through bridge when connected, shows help when not
+            // Environment does NOT matter - only bridge availability matters
+            console.log('[Terminal] Claude command intercepted, bridgeManager:', !!bridgeManager);
 
             // Check if bridgeManager exists and if a bridge is connected
             if (!bridgeManager) {
@@ -2386,10 +2379,9 @@ app.prepare().then(() => {
               data: 'coder1:coder1-ide-next$ '
             });
 
-            // Clear the command buffer and exit early (production only)
+            // Clear the command buffer and exit early
             commandBuffers.set(sessionId, '');
             return;
-            } // end production mode else block
           }
 
           // Intercept slash commands before they reach the shell
