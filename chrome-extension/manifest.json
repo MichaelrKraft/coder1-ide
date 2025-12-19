@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Coder1 Component Capture",
-  "version": "1.2.7",
-  "description": "Capture any web component and generate code instantly in Coder1 IDE [v1.2.0 - Simplified version]",
+  "version": "2.0.0",
+  "description": "Capture any web component with full CSS (animations, gradients, hover states) in Coder1 IDE",
   "permissions": [
     "activeTab",
     "contextMenus",
@@ -11,6 +11,7 @@
     "scripting"
   ],
   "host_permissions": [
+    "<all_urls>",
     "http://localhost:3001/*",
     "http://localhost:3002/*",
     "http://127.0.0.1:3001/*",

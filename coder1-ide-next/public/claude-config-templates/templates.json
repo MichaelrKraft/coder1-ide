@@ -237,6 +237,82 @@
       "icon": "tool"
     },
     {
+      "id": "skill-development",
+      "type": "skill",
+      "category": "Plugin Development",
+      "name": "Skill Development Guide",
+      "description": "Create Claude Code skills with proper structure and progressive disclosure",
+      "file": "skills/skill-development.md",
+      "tags": ["skill", "plugin", "claude-code", "development", "extension"],
+      "estimatedCost": 0,
+      "permissions": ["read"],
+      "capabilities": [
+        "6-step skill creation process",
+        "YAML frontmatter requirements",
+        "Progressive disclosure architecture",
+        "Resource organization (scripts, references, assets)",
+        "Validation checklist"
+      ],
+      "icon": "sparkles"
+    },
+    {
+      "id": "skill-hook-development",
+      "type": "skill",
+      "category": "Plugin Development",
+      "name": "Hook Development Guide",
+      "description": "Create Claude Code hooks for event-driven automation",
+      "file": "skills/hook-development.md",
+      "tags": ["hook", "plugin", "claude-code", "automation", "events"],
+      "estimatedCost": 0,
+      "permissions": ["read"],
+      "capabilities": [
+        "9 hook event types",
+        "Prompt-based vs command hooks",
+        "Tool matching patterns",
+        "Security best practices",
+        "Debugging with claude --debug"
+      ],
+      "icon": "anchor"
+    },
+    {
+      "id": "skill-command-development",
+      "type": "skill",
+      "category": "Plugin Development",
+      "name": "Command Development Guide",
+      "description": "Create Claude Code slash commands for reusable workflows",
+      "file": "skills/command-development.md",
+      "tags": ["command", "plugin", "claude-code", "slash-command", "workflow"],
+      "estimatedCost": 0,
+      "permissions": ["read"],
+      "capabilities": [
+        "YAML frontmatter configuration",
+        "Dynamic argument patterns ($1, $2, $ARGUMENTS)",
+        "File references with @ syntax",
+        "Tool restrictions with allowed-tools",
+        "Organization strategies"
+      ],
+      "icon": "terminal"
+    },
+    {
+      "id": "skill-stripe-integration",
+      "type": "skill",
+      "category": "Payments",
+      "name": "Stripe Integration Guide",
+      "description": "Implement PCI-compliant Stripe payment processing",
+      "file": "skills/stripe-integration.md",
+      "tags": ["stripe", "payments", "subscriptions", "webhooks", "billing"],
+      "estimatedCost": 0,
+      "permissions": ["read"],
+      "capabilities": [
+        "Checkout Sessions implementation",
+        "Payment Intents with custom UI",
+        "Subscription architecture",
+        "Webhook handling and security",
+        "PCI compliance best practices"
+      ],
+      "icon": "credit-card"
+    },
+    {
       "id": "command-quick-fix",
       "type": "command",
       "category": "Utilities",
@@ -339,12 +415,24 @@
       "name": "Learning",
       "description": "Educational tools and explanations",
       "color": "#a855f7"
+    },
+    {
+      "id": "plugin-development",
+      "name": "Plugin Development",
+      "description": "Claude Code plugin, skill, hook, and command development",
+      "color": "#f472b6"
+    },
+    {
+      "id": "payments",
+      "name": "Payments",
+      "description": "Payment processing and billing integrations",
+      "color": "#22c55e"
     }
   ],
   "metadata": {
-    "totalTemplates": 15,
-    "lastUpdated": "2025-01-27",
-    "version": "1.0.0",
+    "totalTemplates": 19,
+    "lastUpdated": "2025-12-05",
+    "version": "1.1.0",
     "author": "Coder1 IDE",
     "license": "MIT"
   }

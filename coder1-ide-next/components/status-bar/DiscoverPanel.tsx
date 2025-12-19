@@ -8,13 +8,13 @@
 'use client';
 
 import React, { useEffect, useState, useRef } from 'react';
-import { 
-  Compass, X, ChevronUp, ChevronDown, Plus, Terminal, Grid, FileText, Code, 
-  Sparkles, BookOpen, Command as CommandIcon, Box, Search, GitBranch, 
+import {
+  Compass, X, ChevronUp, ChevronDown, Plus, Terminal, Grid, FileText, Code,
+  Sparkles, BookOpen, Command as CommandIcon, Box, Search, GitBranch,
   Play, TestTube, Upload, Trash2, HelpCircle, RotateCcw, Activity,
   Wrench, Palette, Bug, MessageSquare, Zap, ClipboardList, FileSearch,
   Database, FolderOpen, Users, Calculator, ListTodo, Hash,
-  Shield, Rocket, Monitor, Server, Brain, Clock, Archive
+  Shield, Rocket, Monitor, Server, Brain, Clock, Archive, Download, Check
 } from 'lucide-react';
 import WcyganCommandsSection from '../WcyganCommandsSection';
 import { useUIStore } from '@/stores/useUIStore';
@@ -70,6 +70,10 @@ export default function DiscoverPanel() {
   // Wcygan commands state
   const [wcyganCommands, setWcyganCommands] = useState<WcyganCommand[]>([]);
   const [isLoadingWcygan, setIsLoadingWcygan] = useState(false);
+
+  // Track installed commands
+  const [installedCommands, setInstalledCommands] = useState<Set<string>>(new Set());
+  const [installingCommand, setInstallingCommand] = useState<string | null>(null);
   
   
   // Enhanced session creation modal state
@@ -182,10 +186,67 @@ export default function DiscoverPanel() {
       const commands = wcyganCommandManager.getCommands();
       setWcyganCommands(commands);
       logger.debug(`[DiscoverPanel] Loaded ${commands.length} wcygan commands`);
+
+      // Check which commands are already installed
+      await checkInstalledCommands();
     } catch (error) {
       logger.error('[DiscoverPanel] Failed to load wcygan commands:', error);
     } finally {
       setIsLoadingWcygan(false);
+    }
+  };
+
+  // Check which commands are installed
+  const checkInstalledCommands = async () => {
+    try {
+      const response = await fetch('/api/commands/install');
+      if (response.ok) {
+        const data = await response.json();
+        setInstalledCommands(new Set(data.installedCommands || []));
+      }
+    } catch (error) {
+      logger.error('[DiscoverPanel] Failed to check installed commands:', error);
+    }
+  };
+
+  // Install a wcygan command to ~/.claude/commands/
+  const installCommand = async (cmd: WcyganCommand) => {
+    try {
+      setInstallingCommand(cmd.id);
+
+      const response = await fetch('/api/commands/install', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          commandId: cmd.id,
+          content: cmd.template,
+          name: cmd.name
+        })
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        setInstalledCommands(prev => new Set([...prev, cmd.id]));
+        addToast({
+          message: data.alreadyInstalled
+            ? `Command /${cmd.id} is already installed`
+            : `Command /${cmd.id} installed to ~/.claude/commands/`,
+          type: 'success'
+        });
+      } else {
+        addToast({
+          message: `Failed to install /${cmd.id}: ${data.error}`,
+          type: 'error'
+        });
+      }
+    } catch (error) {
+      addToast({
+        message: `Failed to install command: ${error}`,
+        type: 'error'
+      });
+    } finally {
+      setInstallingCommand(null);
     }
   };
 
@@ -553,7 +614,7 @@ export default function DiscoverPanel() {
                 Scroll for more
               </span>
             </div>
-            <div 
+            <div
               className="space-y-1 max-h-[140px] overflow-y-auto pr-2 custom-scrollbar"
               style={{
                 scrollbarWidth: 'thin',
@@ -562,18 +623,54 @@ export default function DiscoverPanel() {
             >
               {slashCommands.map((cmd) => {
                 const IconComponent = cmd.icon;
+                const isWcyganCommand = cmd.id.startsWith('wcygan-');
+                const wcyganId = isWcyganCommand ? cmd.id.replace('wcygan-', '') : null;
+                const isInstalled = wcyganId ? installedCommands.has(wcyganId) : false;
+                const isInstalling = wcyganId ? installingCommand === wcyganId : false;
+                const wcyganCmd = isWcyganCommand ? wcyganCommands.find(w => w.id === wcyganId) : null;
+
                 return (
-                  <button
+                  <div
                     key={cmd.id}
-                    onClick={() => executeCommand(cmd)}
-                    className="w-full flex items-center gap-3 px-3 py-2 text-left text-text-secondary hover:text-text-primary hover:bg-bg-primary rounded-lg transition-all group"
+                    className="flex items-center gap-2 px-3 py-2 text-text-secondary hover:text-text-primary hover:bg-bg-primary rounded-lg transition-all group"
                   >
-                    <IconComponent className="w-4 h-4 text-text-muted group-hover:text-coder1-cyan transition-colors" />
-                    <div className="flex-1 min-w-0">
-                      <div className="font-medium text-sm">{cmd.name}</div>
-                      <div className="text-xs text-text-muted">{cmd.description}</div>
-                    </div>
-                  </button>
+                    <button
+                      onClick={() => executeCommand(cmd)}
+                      className="flex-1 flex items-center gap-3 text-left"
+                    >
+                      <IconComponent className="w-4 h-4 text-text-muted group-hover:text-coder1-cyan transition-colors" />
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium text-sm">{cmd.name}</div>
+                        <div className="text-xs text-text-muted">{cmd.description}</div>
+                      </div>
+                    </button>
+                    {/* Install button for wcygan commands */}
+                    {isWcyganCommand && wcyganCmd && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          installCommand(wcyganCmd);
+                        }}
+                        disabled={isInstalled || isInstalling}
+                        className={`p-1.5 rounded transition-all ${
+                          isInstalled
+                            ? 'bg-green-500/20 text-green-400 cursor-default'
+                            : isInstalling
+                            ? 'bg-coder1-cyan/20 text-coder1-cyan animate-pulse'
+                            : 'bg-bg-tertiary hover:bg-coder1-cyan/20 text-text-muted hover:text-coder1-cyan'
+                        }`}
+                        title={isInstalled ? 'Installed to ~/.claude/commands/' : 'Install as Claude Code command'}
+                      >
+                        {isInstalled ? (
+                          <Check className="w-3.5 h-3.5" />
+                        ) : isInstalling ? (
+                          <Download className="w-3.5 h-3.5" />
+                        ) : (
+                          <Download className="w-3.5 h-3.5" />
+                        )}
+                      </button>
+                    )}
+                  </div>
                 );
               })}
             </div>

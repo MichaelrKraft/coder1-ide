@@ -75,7 +75,12 @@ public/games/
 
 # Next.js
 coder1-ide-next/.next/
+coder1-ide-next/docs/.next/
+.next/
 test-supervision/
+
+# Archive directory (large, not needed for development)
+ARCHIVE/
 
 # GitHub CLI integration test files
 playwright-*.js

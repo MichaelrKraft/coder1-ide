@@ -2059,8 +2059,9 @@
                     <span class="category-count">0</span>
                 </div>
                 <div class="category-pill" data-category="commands">
-                    Quick Commands
-                    <span class="category-count">7</span>
+                    <i class="fas fa-terminal" style="margin-right: 6px; opacity: 0.8;"></i>
+                    Slash Commands
+                    <span class="category-count" id="slash-commands-count">7</span>
                 </div>
             </div>
         </div>
@@ -3219,6 +3220,83 @@ export const Button: React.FC<ButtonProps> = ({
                 ],
                 source: 'pda-skills',
                 popularity: 'new'
+            },
+            // ==================== NEW PLUGIN DEVELOPMENT SKILLS ====================
+            {
+                id: 'skill-development',
+                name: 'Skill Development Guide',
+                category: 'SKILLS',
+                categorySlug: 'skills',
+                description: 'Create Claude Code skills with proper structure, YAML frontmatter, and progressive disclosure architecture.',
+                tags: ['Skill', 'Plugin', 'Claude Code', 'Development'],
+                stats: { rating: 4.9, downloads: 0, comments: 0 },
+                command: 'coderone install skill-development',
+                features: [
+                    '6-step skill creation process',
+                    'YAML frontmatter requirements',
+                    'Progressive disclosure architecture',
+                    'Resource organization (scripts, references, assets)',
+                    'Validation checklist'
+                ],
+                source: 'anthropic-plugin-dev',
+                popularity: 'new'
+            },
+            {
+                id: 'hook-development',
+                name: 'Hook Development Guide',
+                category: 'SKILLS',
+                categorySlug: 'skills',
+                description: 'Create Claude Code hooks for event-driven automation with 9 hook event types.',
+                tags: ['Hook', 'Plugin', 'Claude Code', 'Automation'],
+                stats: { rating: 4.9, downloads: 0, comments: 0 },
+                command: 'coderone install hook-development',
+                features: [
+                    '9 hook event types (PreToolUse, PostToolUse, Stop, etc.)',
+                    'Prompt-based vs command hooks',
+                    'Tool matching patterns',
+                    'Security best practices',
+                    'Debugging with claude --debug'
+                ],
+                source: 'anthropic-plugin-dev',
+                popularity: 'new'
+            },
+            {
+                id: 'command-development',
+                name: 'Command Development Guide',
+                category: 'SKILLS',
+                categorySlug: 'skills',
+                description: 'Create Claude Code slash commands for reusable workflows with argument handling.',
+                tags: ['Command', 'Plugin', 'Claude Code', 'Workflow'],
+                stats: { rating: 4.9, downloads: 0, comments: 0 },
+                command: 'coderone install command-development',
+                features: [
+                    'YAML frontmatter configuration',
+                    'Dynamic argument patterns ($1, $2, $ARGUMENTS)',
+                    'File references with @ syntax',
+                    'Tool restrictions with allowed-tools',
+                    'Organization strategies'
+                ],
+                source: 'anthropic-plugin-dev',
+                popularity: 'new'
+            },
+            {
+                id: 'stripe-integration',
+                name: 'Stripe Integration Guide',
+                category: 'SKILLS',
+                categorySlug: 'skills',
+                description: 'Implement PCI-compliant Stripe payment processing with subscriptions and webhooks.',
+                tags: ['Stripe', 'Payments', 'Subscriptions', 'Webhooks'],
+                stats: { rating: 4.8, downloads: 0, comments: 0 },
+                command: 'coderone install stripe-integration',
+                features: [
+                    'Checkout Sessions implementation',
+                    'Payment Intents with custom UI',
+                    'Subscription architecture',
+                    'Webhook handling and security',
+                    'PCI compliance best practices'
+                ],
+                source: 'wshobson-agents',
+                popularity: 'new'
             }
         ];
 
@@ -3613,9 +3691,15 @@ export const Button: React.FC<ButtonProps> = ({
             });
         }
 
+        // Store current modal template for install button
+        let currentModalTemplate = null;
+
         function openModal(templateId) {
             const template = templates.find(t => t.id === templateId);
             if (!template) return;
+
+            // Store the template for the install button
+            currentModalTemplate = template;
 
             document.getElementById('modalCategory').textContent = template.category;
             document.getElementById('modalName').textContent = template.name;
@@ -3875,51 +3959,182 @@ export const Button: React.FC<ButtonProps> = ({
         // Make functions globally available immediately
         console.log('Initializing template functions...');
         
-        window.installTemplate = function(event) {
+        window.installTemplate = async function(event) {
             // Prevent event bubbling
             if (event) {
                 event.preventDefault();
                 event.stopPropagation();
             }
-            
+
             // Get the button that was clicked
             const btn = event ? event.currentTarget : document.querySelector('.modal-content .btn-primary');
             if (!btn) {
                 console.error('Install button not found');
                 return;
             }
-            
+
+            // Check if we have a current modal template
+            if (!currentModalTemplate) {
+                console.error('No template selected');
+                showNotification('Error: No template selected');
+                return;
+            }
+
+            const template = currentModalTemplate;
             const originalContent = btn.innerHTML;
             const originalBackground = btn.style.background;
-            
-            // Get the current template name
-            const templateName = document.getElementById('modalName').textContent;
-            const command = document.getElementById('installCommand').textContent;
-            
-            console.log('Installing template:', templateName);
-            console.log('Command:', command);
-            console.log('Button element:', btn);
-            
+
+            console.log('Installing template:', template.name, 'ID:', template.id, 'Category:', template.categorySlug);
+
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Installing...';
             btn.disabled = true;
-            
-            // Simulate installation process
-            setTimeout(() => {
-                btn.innerHTML = '<i class="fas fa-check"></i> Installed Successfully';
-                btn.style.background = 'var(--success)';
-                
-                // Show success notification
-                showNotification(`Template "${templateName}" installed successfully!`);
-                
+
+            try {
+                let response;
+                let apiEndpoint;
+
+                // Determine the correct API endpoint based on category
+                if (template.categorySlug === 'skills') {
+                    apiEndpoint = '/api/skills/install';
+                    response = await fetch(apiEndpoint, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ skillId: template.id })
+                    });
+                } else if (template.categorySlug === 'agents') {
+                    apiEndpoint = '/api/agents/install';
+                    response = await fetch(apiEndpoint, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ agentId: template.id })
+                    });
+                } else {
+                    // For other categories (hooks, commands, mcp), use a generic approach
+                    // Store in localStorage as installed
+                    const installed = JSON.parse(localStorage.getItem('installedTemplates') || '[]');
+                    if (!installed.includes(template.id)) {
+                        installed.push(template.id);
+                        localStorage.setItem('installedTemplates', JSON.stringify(installed));
+                    }
+
+                    btn.innerHTML = '<i class="fas fa-check"></i> Installed!';
+                    btn.style.background = '#10b981';
+                    showNotification(`"${template.name}" marked as installed. Use the command to set it up.`);
+
+                    // Mark the card as installed
+                    markTemplateAsInstalled(template.id);
+
+                    setTimeout(() => {
+                        closeModal();
+                        btn.innerHTML = originalContent;
+                        btn.style.background = originalBackground;
+                        btn.disabled = false;
+                    }, 1500);
+                    return;
+                }
+
+                const result = await response.json();
+
+                if (result.success) {
+                    btn.innerHTML = '<i class="fas fa-check"></i> Installed!';
+                    btn.style.background = '#10b981';
+
+                    const msg = result.alreadyInstalled
+                        ? `"${template.name}" already installed`
+                        : `"${template.name}" installed! Restart Claude Code to use it.`;
+                    showNotification(msg);
+
+                    // Mark the card as installed
+                    markTemplateAsInstalled(template.id);
+
+                    // Store in localStorage for persistence
+                    const installed = JSON.parse(localStorage.getItem('installedTemplates') || '[]');
+                    if (!installed.includes(template.id)) {
+                        installed.push(template.id);
+                        localStorage.setItem('installedTemplates', JSON.stringify(installed));
+                    }
+
+                    setTimeout(() => {
+                        closeModal();
+                        btn.innerHTML = originalContent;
+                        btn.style.background = originalBackground;
+                        btn.disabled = false;
+                    }, 1500);
+                } else {
+                    throw new Error(result.error || 'Installation failed');
+                }
+            } catch (error) {
+                console.error('Installation error:', error);
+                btn.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Failed';
+                btn.style.background = '#dc2626';
+                showNotification('Installation failed: ' + error.message);
+
                 setTimeout(() => {
-                    closeModal();
-                    // Reset button state
                     btn.innerHTML = originalContent;
                     btn.style.background = originalBackground;
                     btn.disabled = false;
-                }, 1500);
-            }, 2000);
+                }, 3000);
+            }
         }
+
+        // Helper function to mark a template card as installed
+        function markTemplateAsInstalled(templateId) {
+            const card = document.querySelector(`[data-template-id="${templateId}"]`);
+            if (card) {
+                const installBtn = card.querySelector('.quick-install, .skill-install-btn, .agent-install-btn');
+                if (installBtn) {
+                    installBtn.innerHTML = '<i class="fas fa-check"></i> Installed';
+                    installBtn.style.background = '#10b981';
+                    installBtn.disabled = true;
+                }
+            }
+        }
+
+        // Check which templates are already installed on page load
+        async function checkInstalledTemplates() {
+            console.log('Checking installed templates...');
+
+            // Get locally stored installed templates
+            const localInstalled = JSON.parse(localStorage.getItem('installedTemplates') || '[]');
+            console.log('Locally stored installed:', localInstalled);
+
+            // Mark locally stored templates as installed
+            localInstalled.forEach(templateId => {
+                markTemplateAsInstalled(templateId);
+            });
+
+            // Check skills from API
+            try {
+                const skillsToCheck = templates
+                    .filter(t => t.categorySlug === 'skills')
+                    .map(t => t.id);
+
+                for (const skillId of skillsToCheck) {
+                    try {
+                        const response = await fetch(`/api/skills/install?skillId=${skillId}`);
+                        const result = await response.json();
+                        if (result.installed) {
+                            console.log('Skill already installed:', skillId);
+                            markTemplateAsInstalled(skillId);
+                            // Also update localStorage
+                            if (!localInstalled.includes(skillId)) {
+                                localInstalled.push(skillId);
+                            }
+                        }
+                    } catch (e) {
+                        // Skill check failed, skip
+                    }
+                }
+
+                // Update localStorage with newly discovered installed templates
+                localStorage.setItem('installedTemplates', JSON.stringify(localInstalled));
+            } catch (error) {
+                console.log('Could not check installed skills:', error);
+            }
+        }
+
+        // Call checkInstalledTemplates after templates are rendered
+        setTimeout(checkInstalledTemplates, 500);
 
         window.viewDocs = function(event) {
             // Prevent event bubbling
@@ -4104,7 +4319,7 @@ export const Button: React.FC<ButtonProps> = ({
     </script>
     
     <!-- Button Fix Script -->
-    <script src="/templates-hub-fix.js?v=3.6.0"></script>
+    <script src="/templates-hub-fix.js?v=3.8.0"></script>
     
     <!-- Unified Design System JavaScript -->
     <script src="unified-design-system.js"></script>

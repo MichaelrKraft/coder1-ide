@@ -1301,43 +1301,90 @@ function IDEPageContent() {
 
     const pendingSandbox = sessionStorage.getItem('pendingSandbox');
     if (pendingSandbox) {
-      try {
-        const sandboxData = JSON.parse(pendingSandbox);
-        console.log('🏖️ IDE: Found pending sandbox from Timeline:', sandboxData.name);
+      // Clear immediately to prevent re-processing on re-renders
+      sessionStorage.removeItem('pendingSandbox');
 
-        // Wait for terminal to be ready before dispatching
-        const dispatchSandbox = () => {
-          window.dispatchEvent(new CustomEvent('terminal:createSandbox', {
-            detail: sandboxData
-          }));
-          console.log('✅ IDE: Sandbox creation event dispatched');
-        };
+      const processPendingSandbox = async () => {
+        try {
+          const sandboxRef = JSON.parse(pendingSandbox);
+          console.log('🏖️ IDE: Found pending sandbox reference from Timeline:', sandboxRef);
 
-        // Check if terminal is already ready
-        if ((window as any).terminalSessionId) {
-          dispatchSandbox();
-        } else {
-          // Wait for terminal ready event
-          const handleTerminalReady = () => {
-            dispatchSandbox();
-            window.removeEventListener('terminalReady', handleTerminalReady);
-          };
-          window.addEventListener('terminalReady', handleTerminalReady);
+          // 🔧 FIX (Dec 14, 2025): Fetch full checkpoint data from API
+          // Timeline now only stores a reference to avoid sessionStorage quota issues
+          let sandboxData = sandboxRef;
 
-          // Fallback timeout
-          setTimeout(() => {
-            if (!document.querySelector('[data-sandbox-tab]')) {
-              dispatchSandbox();
+          if (sandboxRef.checkpointId && sandboxRef.sessionId) {
+            console.log('📡 IDE: Fetching full checkpoint data from API...');
+            const restoreUrl = `/api/sessions/${sandboxRef.sessionId}/checkpoints/${sandboxRef.checkpointId}/restore`;
+
+            const response = await fetch(restoreUrl, { method: 'POST' });
+            if (response.ok) {
+              const restoreData = await response.json();
+              const snapshot = restoreData.checkpoint?.data?.snapshot;
+
+              // Import and filter terminal history
+              const { filterThinkingAnimations } = await import('@/lib/checkpoint-utils');
+              const terminalHistory =
+                restoreData.checkpoint.terminalHistory ||
+                restoreData.checkpoint.data?.terminalHistory ||
+                snapshot?.terminal || '';
+              const cleanedTerminalHistory = terminalHistory ? filterThinkingAnimations(terminalHistory) : '';
+
+              // Build full sandbox data
+              sandboxData = {
+                name: sandboxRef.name,
+                timestamp: sandboxRef.timestamp,
+                terminalHistory: cleanedTerminalHistory,
+                originalCheckpoint: restoreData.checkpoint,
+                checkpointData: {
+                  timestamp: sandboxRef.timestamp,
+                  terminalHistory: cleanedTerminalHistory
+                }
+              };
+              console.log('✅ IDE: Full checkpoint data fetched, terminal history length:', cleanedTerminalHistory.length);
+            } else {
+              console.error('❌ IDE: Failed to fetch checkpoint data:', response.status);
+              return;
             }
-          }, 2000);
-        }
+          }
 
-        // Clear the pending sandbox
-        sessionStorage.removeItem('pendingSandbox');
-      } catch (error) {
-        console.error('❌ IDE: Failed to restore pending sandbox:', error);
-        sessionStorage.removeItem('pendingSandbox');
-      }
+          // Wait for terminal to be ready before dispatching
+          const dispatchSandbox = () => {
+            window.dispatchEvent(new CustomEvent('terminal:createSandbox', {
+              detail: sandboxData
+            }));
+            console.log('✅ IDE: Sandbox creation event dispatched');
+
+            // 🔧 FIX (Dec 14, 2025): Focus the sandbox terminal after creation
+            setTimeout(() => {
+              window.dispatchEvent(new CustomEvent('terminal:refocus'));
+            }, 300);
+          };
+
+          // Check if terminal is already ready
+          if ((window as any).terminalSessionId) {
+            dispatchSandbox();
+          } else {
+            // Wait for terminal ready event
+            const handleTerminalReady = () => {
+              dispatchSandbox();
+              window.removeEventListener('terminalReady', handleTerminalReady);
+            };
+            window.addEventListener('terminalReady', handleTerminalReady);
+
+            // Fallback timeout
+            setTimeout(() => {
+              if (!document.querySelector('[data-sandbox-tab]')) {
+                dispatchSandbox();
+              }
+            }, 2000);
+          }
+        } catch (error) {
+          console.error('❌ IDE: Failed to restore pending sandbox:', error);
+        }
+      };
+
+      processPendingSandbox();
     }
   }, []);
 

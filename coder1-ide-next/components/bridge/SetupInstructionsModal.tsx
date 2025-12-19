@@ -207,17 +207,16 @@ export function SetupInstructionsModal({
                 <div className="border-l-4 border-blue-500 pl-4">
                   <h3 className="font-semibold text-green-400 mb-2">
                     <span className="text-white bg-blue-600 rounded-full w-6 h-6 inline-flex items-center justify-center text-xs mr-2">2</span>
-                    Run One Command
+                    Install the Bridge
                   </h3>
-                  <p className="text-xs text-gray-400 mb-2">Copy-paste this into your terminal (auto-installs & starts!):</p>
+                  <p className="text-xs text-gray-400 mb-2">Copy-paste this into your terminal:</p>
                   <div className="bg-black rounded p-3 font-mono text-sm flex items-center justify-between group">
                     <div className="flex-1 overflow-x-auto">
-                      <span className="text-green-400">$</span> <span className="text-white select-all">curl -sL {isProduction ? 'https://coder1.ai' : 'http://localhost:3001'}/install-bridge.sh | bash -s -- --auto-start{isProduction ? '' : ' --dev'}</span>
+                      <span className="text-green-400">$</span> <span className="text-white select-all">npm install -g coder1-bridge</span>
                     </div>
                     <button
                       onClick={() => {
-                        const command = `curl -sL ${isProduction ? 'https://coder1.ai' : 'http://localhost:3001'}/install-bridge.sh | bash -s -- --auto-start${isProduction ? '' : ' --dev'}`;
-                        navigator.clipboard.writeText(command);
+                        navigator.clipboard.writeText('npm install -g coder1-bridge');
                       }}
                       className="ml-2 px-2 py-1 text-xs bg-cyan-600 hover:bg-cyan-500 rounded font-semibold whitespace-nowrap"
                       title="Copy command"
@@ -225,7 +224,7 @@ export function SetupInstructionsModal({
                       Copy
                     </button>
                   </div>
-                  <p className="text-xs text-gray-400 mt-2">⏱️ ~1 minute • Installs, starts & prompts for code automatically</p>
+                  <p className="text-xs text-gray-400 mt-2">⏱️ ~30 seconds • Then run: <code className="bg-gray-800 px-1 rounded">coder1-bridge start</code></p>
                 </div>
 
                 {/* Step 3 */}
