@@ -2935,22 +2935,47 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
       }
     };
     
+    // 🔧 FIX (Dec 14, 2025): Handler to refocus terminal after checkpoint modal closes or sandbox restore
+    const handleTerminalRefocus = () => {
+      // For sandbox/agent terminals, only focus if they are visible
+      // This allows timeline restore to focus the sandbox terminal
+      if ((sandboxMode || agentMode) && !isVisible) {
+        console.log('🚫 Ignoring terminal:refocus for non-visible sandbox/agent terminal');
+        return;
+      }
+
+      if (xtermRef.current && isVisible) {
+        console.log(`🎯 Terminal: Refocusing ${sandboxMode ? 'sandbox' : agentMode ? 'agent' : 'main'} terminal`);
+        setTimeout(() => {
+          try {
+            xtermRef.current?.focus();
+            console.log('✅ Terminal refocused successfully');
+          } catch (error) {
+            console.warn('Could not refocus terminal:', error);
+          }
+        }, 50);
+      }
+    };
+
     // Remove any existing listeners first to prevent duplicates
     window.removeEventListener('checkpointRestored', handleCheckpointRestored as any);
     window.removeEventListener('ideStateChanged', handleIdeStateChanged as any);
     window.removeEventListener('terminal:injectCommand', handleInjectCommand as any);
-    
+    window.removeEventListener('terminal:refocus', handleTerminalRefocus);
+
     // Add fresh listeners
     window.addEventListener('checkpointRestored', handleCheckpointRestored as any);
     window.addEventListener('ideStateChanged', handleIdeStateChanged as any);
     window.addEventListener('terminal:injectCommand', handleInjectCommand as any);
-    
+    window.addEventListener('terminal:refocus', handleTerminalRefocus);
+
     return () => {
       window.removeEventListener('checkpointRestored', handleCheckpointRestored as any);
       window.removeEventListener('ideStateChanged', handleIdeStateChanged as any);
       window.removeEventListener('terminal:injectCommand', handleInjectCommand as any);
+      window.removeEventListener('terminal:refocus', handleTerminalRefocus);
     };
-  }, [sessionId]); // Removed sandboxMode dependency to prevent event listener churn
+  }, [sessionId, sandboxMode, agentMode, isVisible]); // Added dependencies for new handler
 
   // Initialize speech recognition
   useEffect(() => {

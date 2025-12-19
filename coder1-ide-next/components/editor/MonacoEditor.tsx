@@ -1,14 +1,15 @@
 'use client';
 
-import React, { useRef, useEffect, useState, useMemo } from 'react';
+import React, { useRef, useEffect, useState, useMemo, useCallback } from 'react';
 import dynamic from 'next/dynamic';
 import type * as monaco from 'monaco-editor';
 import { WelcomeScreen } from './WelcomeScreen';
 
 // Dynamically import HeroSection to avoid SSR issues
+// Using a wrapper to prevent removeChild errors during unmount
 const HeroSection = dynamic(
   () => import('@/components/HeroSection'),
-  { 
+  {
     ssr: false,
     loading: () => (
       <div className="flex items-center justify-center h-full bg-bg-primary">
@@ -18,10 +19,11 @@ const HeroSection = dynamic(
   }
 );
 
-// Dynamically import Monaco Editor to avoid SSR issues  
+// Dynamically import Monaco Editor to avoid SSR issues
+// Using React.ComponentType to prevent removeChild errors during HMR/re-renders
 const Editor = dynamic(
-  () => import('@monaco-editor/react'),
-  { 
+  () => import('@monaco-editor/react').then(mod => ({ default: mod.default })),
+  {
     ssr: false,
     loading: () => (
       <div className="flex items-center justify-center h-full bg-bg-primary">
@@ -30,6 +32,31 @@ const Editor = dynamic(
     )
   }
 );
+
+// Wrapper component to prevent DOM manipulation errors during unmount
+const SafeHeroSection = React.memo(({ onDismiss, onTourStart }: { onDismiss?: () => void; onTourStart?: () => void }) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [isUnmounting, setIsUnmounting] = useState(false);
+
+  const handleDismiss = useCallback(() => {
+    // Set unmounting state to prevent further DOM updates
+    setIsUnmounting(true);
+    // Give the component time to stop any animations before actual unmount
+    setTimeout(() => {
+      if (onDismiss) onDismiss();
+    }, 50);
+  }, [onDismiss]);
+
+  if (isUnmounting) {
+    return <div className="flex items-center justify-center h-full bg-bg-primary" />;
+  }
+
+  return (
+    <div ref={containerRef} className="h-full w-full" suppressHydrationWarning>
+      <HeroSection onDismiss={handleDismiss} onTourStart={onTourStart} />
+    </div>
+  );
+});
 
 interface MonacoEditorProps {
   value?: string;
@@ -292,6 +319,11 @@ export default function MonacoEditor({
     return language || (file ? getLanguage(file) : 'javascript');
   }, [language, file]);
 
+  // Stable key for editor instance to prevent removeChild errors
+  const editorKey = useMemo(() => {
+    return `editor-${file || 'welcome'}-${heroSectionDismissed ? 'dismissed' : 'active'}`;
+  }, [file, heroSectionDismissed]);
+
   // Show welcome screen or hero section if no file is open and no value provided
   if (!file && value === undefined) {
     // Wait for localStorage to be checked (avoid SSR issues)
@@ -300,12 +332,12 @@ export default function MonacoEditor({
         <span className="text-text-muted">Loading...</span>
       </div>;
     }
-    
+
     // If HeroSection was dismissed in this session, show empty editor
     if (heroSectionDismissed === true) {
       // Show empty editor with welcome message
       return (
-        <div className="h-full w-full monaco-editor-container">
+        <div key={editorKey} className="h-full w-full monaco-editor-container">
           <Editor
             height="100%"
             defaultLanguage="typescript"
@@ -335,10 +367,10 @@ export default function MonacoEditor({
         </div>
       );
     }
-    
+
     // Show appropriate welcome experience based on user status
     if (!setupViewed) {
-      return <WelcomeScreen 
+      return <WelcomeScreen
         onDismiss={() => {
           if (typeof window !== 'undefined') {
             localStorage.setItem('coder1-bridge-setup-viewed', 'true');
@@ -347,24 +379,24 @@ export default function MonacoEditor({
         }}
       />;
     } else {
-      return <HeroSection 
+      return <SafeHeroSection
         onDismiss={() => {
           setHeroSectionDismissed(true);
           if (typeof window !== 'undefined') {
             sessionStorage.setItem('coder1-hero-dismissed', 'true');
           }
         }}
-      onTourStart={() => {
-        if (onTourStart) {
-          onTourStart();
-        }
-      }}
-    />;
+        onTourStart={() => {
+          if (onTourStart) {
+            onTourStart();
+          }
+        }}
+      />;
     }
   }
 
   return (
-    <div className="h-full w-full monaco-editor-container relative">
+    <div key={editorKey} className="h-full w-full monaco-editor-container relative">
       <Editor
         height="100%"
         defaultLanguage="typescript"

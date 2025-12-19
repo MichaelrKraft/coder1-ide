@@ -251,7 +251,12 @@ const StatusBarActions = React.memo(function StatusBarActions({
           message: `✅ Smart checkpoint: ${result.checkpoint?.name || 'Saved successfully'}`,
           type: 'success'
         });
-        
+
+        // 🔧 FIX (Dec 14, 2025): Refocus terminal after checkpoint modal closes
+        setTimeout(() => {
+          window.dispatchEvent(new CustomEvent('terminal:refocus'));
+        }, 100);
+
       } else {
         // Fallback to original checkpoint system with custom name support
         createCheckpoint(customName || 'Manual checkpoint', false);
@@ -286,13 +291,19 @@ const StatusBarActions = React.memo(function StatusBarActions({
             sessionId: data.sessionId 
           });
           
-          window.dispatchEvent(new CustomEvent('checkpointCreated', { 
-            detail: { 
+          window.dispatchEvent(new CustomEvent('checkpointCreated', {
+            detail: {
               checkpoint: data.checkpoint,
-              sessionId: data.sessionId 
-            } 
+              sessionId: data.sessionId
+            }
           }));
-          
+
+          // 🔧 FIX (Dec 14, 2025): Refocus terminal after checkpoint modal closes
+          // The modal steals focus, so we need to explicitly refocus the terminal
+          setTimeout(() => {
+            window.dispatchEvent(new CustomEvent('terminal:refocus'));
+          }, 100);
+
           const checkpointName = customName 
             ? `"${customName}" saved! You're crushing it 🚀` 
             : 'Checkpoint saved! Keep up the great work 🎉';
@@ -309,6 +320,11 @@ const StatusBarActions = React.memo(function StatusBarActions({
       }
     } catch (error) {
       // logger?.error('Failed to save checkpoint:', error);
+      // 🔧 FIX (Dec 14, 2025): Refocus terminal even on error
+      setTimeout(() => {
+        window.dispatchEvent(new CustomEvent('terminal:refocus'));
+      }, 100);
+
       addToast({
         message: '⚠️ Failed to save checkpoint',
         type: 'error'

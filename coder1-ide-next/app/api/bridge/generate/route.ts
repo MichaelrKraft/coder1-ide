@@ -4,7 +4,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { bridgeManager } from '@/services/bridge-manager';
+import { bridgeStore } from '@/lib/bridge-store';
 
 export async function POST(request: NextRequest) {
   try {
@@ -17,8 +17,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Generate a new pairing code
-    const code = bridgeManager.generatePairingCode(userId);
+    // Generate a new pairing code (using bridgeStore to match /api/bridge/pair validation)
+    const code = bridgeStore.generateCode(userId);
     
     console.log(`[Bridge Generate API] Generated pairing code ${code} for user ${userId}`);
 

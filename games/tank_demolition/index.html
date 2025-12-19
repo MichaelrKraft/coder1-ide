@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tank Demolition - Session 1</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <header>
+        <h1>🎮 Tank Demolition</h1>
+        <p class="subtitle">An Atari-Style Tank Game Adventure</p>
+        <div class="session-badge">✓ Session 2: Shooting Mechanics Complete</div>
+    </header>
+
+    <div class="game-container">
+        <canvas id="gameCanvas"></canvas>
+    </div>
+
+    <div class="controls">
+        <h2>🎯 Controls</h2>
+        <div class="controls-grid">
+            <div class="control-item">
+                <strong>↑ UP Arrow</strong>
+                Move tank forward
+            </div>
+            <div class="control-item">
+                <strong>↓ DOWN Arrow</strong>
+                Move tank backward
+            </div>
+            <div class="control-item">
+                <strong>← LEFT Arrow</strong>
+                Rotate tank left
+            </div>
+            <div class="control-item">
+                <strong>→ RIGHT Arrow</strong>
+                Rotate tank right
+            </div>
+            <div class="control-item">
+                <strong>A Key</strong>
+                Rotate turret left
+            </div>
+            <div class="control-item">
+                <strong>D Key</strong>
+                Rotate turret right
+            </div>
+            <div class="control-item">
+                <strong>SPACEBAR</strong>
+                Fire projectile (max 3)
+            </div>
+        </div>
+
+        <div class="tips">
+            <h3>💡 Tips for Session 2</h3>
+            <ul>
+                <li>The turret rotates independently from the tank body!</li>
+                <li>You can only have 3 projectiles on screen at once</li>
+                <li>Watch for the muzzle flash when you fire</li>
+                <li>Try moving and shooting at the same time</li>
+                <li>Notice the cool trail effect behind projectiles</li>
+            </ul>
+        </div>
+
+        <div class="tips" style="margin-top: 15px; border-left-color: #507860; background: rgba(80, 120, 96, 0.1);">
+            <h3>🚀 What's Next?</h3>
+            <ul>
+                <li><strong>Session 3:</strong> Create destructible buildings made of blocks</li>
+                <li><strong>Session 4:</strong> Add scoring, ammo system, and game polish</li>
+            </ul>
+        </div>
+    </div>
+
+    <footer>
+        <p>Built with ❤️ by a father and son team | <a href="README.md" target="_blank">View Documentation</a></p>
+    </footer>
+
+    <!-- Load game scripts -->
+    <script src="js/tank.js"></script>
+    <script src="js/projectile.js"></script>
+    <script src="js/game.js"></script>
+</body>
+</html>

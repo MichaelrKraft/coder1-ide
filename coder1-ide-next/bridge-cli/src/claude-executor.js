@@ -45,30 +45,51 @@ class ClaudeExecutor extends EventEmitter {
       return providedPath; // Use provided absolute path
     }
 
+    // Detect platform
+    const isWindows = process.platform === 'win32';
+
     try {
-      // Try to find claude using 'which' command
-      const resolvedPath = execSync('which claude 2>/dev/null', {
-        encoding: 'utf-8',
-        stdio: ['pipe', 'pipe', 'pipe']
-      }).trim();
+      // Try platform-specific command to find in PATH
+      let findCommand, resolvedPath;
+      if (isWindows) {
+        resolvedPath = execSync('where claude 2>nul', {
+          encoding: 'utf-8',
+          stdio: ['pipe', 'pipe', 'pipe']
+        }).split('\n')[0].trim();
+      } else {
+        resolvedPath = execSync('which claude 2>/dev/null', {
+          encoding: 'utf-8',
+          stdio: ['pipe', 'pipe', 'pipe']
+        }).trim();
+      }
 
       if (resolvedPath) {
         console.log(`[Claude] Resolved path: ${resolvedPath}`);
         return resolvedPath;
       }
     } catch (error) {
-      // which failed, try common locations
+      // Command failed, try common locations
     }
 
-    // Try common installation paths
-    const commonPaths = [
-      '/usr/local/bin/claude',
-      '/opt/homebrew/bin/claude',
-      `${process.env.HOME}/.local/bin/claude`,
-      `${process.env.HOME}/.claude/bin/claude`,
-      `${process.env.HOME}/.npm-global/bin/claude`,
-      '/usr/bin/claude'
-    ];
+    // Try common installation paths - platform specific
+    const commonPaths = isWindows
+      ? [
+          // Windows paths
+          `${process.env.LOCALAPPDATA}\\Programs\\Claude\\claude.exe`,
+          `${process.env.APPDATA}\\npm\\claude.cmd`,
+          `${process.env.USERPROFILE}\\.claude\\bin\\claude.exe`,
+          'C:\\Program Files\\Claude\\claude.exe',
+          'C:\\Program Files (x86)\\Claude\\claude.exe'
+        ]
+      : [
+          // macOS/Linux paths
+          '/usr/local/bin/claude',
+          '/opt/homebrew/bin/claude',
+          `${process.env.HOME}/.local/bin/claude`,
+          `${process.env.HOME}/.claude/bin/claude`,
+          `${process.env.HOME}/.npm-global/bin/claude`,
+          '/usr/bin/claude'
+        ];
 
     const fs = require('fs');
     for (const testPath of commonPaths) {
@@ -476,9 +497,14 @@ class ClaudeExecutor extends EventEmitter {
       }
     }
 
-    // Fallback: try 'which claude'
+    // Fallback: try platform-specific command
     try {
-      execSync('which claude', { stdio: 'pipe' });
+      const isWindows = process.platform === 'win32';
+      if (isWindows) {
+        execSync('where claude', { stdio: 'pipe' });
+      } else {
+        execSync('which claude', { stdio: 'pipe' });
+      }
       return { available: true };
     } catch {
       return {

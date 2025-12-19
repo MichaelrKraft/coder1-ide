@@ -2058,10 +2058,6 @@
                     Skills
                     <span class="category-count">0</span>
                 </div>
-                <div class="category-pill" data-category="commands">
-                    Quick Commands
-                    <span class="category-count">7</span>
-                </div>
             </div>
         </div>
     </div>
@@ -2295,22 +2291,6 @@ export const Button: React.FC<ButtonProps> = ({
                     'Issue tracking and creation',
                     'GitHub Actions integration',
                     'Branch protection rules'
-                ]
-            },
-            {
-                id: 'test-generator',
-                name: 'Test Generator',
-                category: 'QUICK COMMANDS',
-                categorySlug: 'commands',
-                description: 'Automatically generates comprehensive test suites for your code with coverage reports.',
-                tags: ['Testing', 'Jest', 'Coverage', 'TDD'],
-                stats: { rating: 4.7, downloads: 1500, comments: 45 },
-                command: 'coderone install test-generator',
-                features: [
-                    'Unit test generation',
-                    'Integration test templates',
-                    'Coverage report analysis',
-                    'Test-driven development support'
                 ]
             },
             // ==================== SMART HOOKS ====================
@@ -2622,25 +2602,6 @@ export const Button: React.FC<ButtonProps> = ({
                 popularity: 'stable'
             },
             {
-                id: 'davila7-test-generator',
-                name: 'Test Generator Pro',
-                category: 'QUICK COMMANDS',
-                categorySlug: 'commands',
-                description: 'Intelligent test generation for multiple frameworks and testing patterns. Creates comprehensive test suites automatically. From davila7 templates (780 downloads).',
-                tags: ['Testing', 'Automation', 'Jest', 'Pytest', 'davila7'],
-                stats: { rating: 4.7, downloads: 780, comments: 19 },
-                command: 'npx claude-code-templates@latest --command=generate-tests --yes',
-                features: [
-                    'Multi-framework test generation',
-                    'Unit and integration test creation',
-                    'Mock and fixture generation',
-                    'Coverage optimization',
-                    'Test automation setup'
-                ],
-                source: 'davila7/claude-code-templates',
-                popularity: 'new'
-            },
-            {
                 id: 'davila7-postgresql-mcp',
                 name: 'PostgreSQL Integration Pro',
                 category: 'MCP INTEGRATIONS',
@@ -2676,6 +2637,25 @@ export const Button: React.FC<ButtonProps> = ({
                     'PCI compliance helpers'
                 ],
                 source: 'davila7/claude-code-templates',
+                popularity: 'hot'
+            },
+            {
+                id: 'claudekit-mcp-management',
+                name: 'MCP Management (ClaudeKit)',
+                category: 'MCP INTEGRATIONS',
+                categorySlug: 'mcp',
+                description: 'Meta-MCP for intelligent discovery, analysis, and orchestration of MCP servers with subagent delegation. From mrgoonie/claudekit-skills.',
+                tags: ['MCP', 'Meta', 'Discovery', 'Orchestration', 'AI'],
+                stats: { rating: 4.9, downloads: 850, comments: 42 },
+                command: 'git clone https://github.com/mrgoonie/claudekit-skills.git && cd claudekit-skills/.claude/skills/mcp-management/scripts && npm install',
+                features: [
+                    'Multi-server MCP connectivity',
+                    'Intelligent tool discovery',
+                    'LLM-driven tool selection',
+                    'Subagent-based delegation',
+                    'CLI for list-tools, call-tool operations'
+                ],
+                source: 'mrgoonie/claudekit-skills',
                 popularity: 'hot'
             },
             {
@@ -2910,103 +2890,6 @@ export const Button: React.FC<ButtonProps> = ({
                 ],
                 source: 'community-contributions',
                 popularity: 'stable'
-            },
-
-            // QUICK COMMANDS - 5 Additional Developer Utilities
-            {
-                id: 'security-scanner',
-                name: 'Security Scanner',
-                category: 'QUICK COMMANDS',
-                categorySlug: 'commands',
-                description: 'Comprehensive security scanning for vulnerabilities, dependency checks, and code security analysis.',
-                tags: ['Security', 'Scanning', 'Vulnerabilities', 'Dependencies'],
-                stats: { rating: 4.9, downloads: 650, comments: 15 },
-                command: 'npx claude-code-templates@latest --command=security-scanner --yes',
-                features: [
-                    'Dependency vulnerability scanning',
-                    'Code security analysis',
-                    'OWASP compliance checking',
-                    'License compliance verification',
-                    'Security report generation'
-                ],
-                source: 'security-tools-collection',
-                popularity: 'hot'
-            },
-            {
-                id: 'bundle-optimizer',
-                name: 'Bundle Optimizer',
-                category: 'QUICK COMMANDS',
-                categorySlug: 'commands',
-                description: 'Advanced bundle analysis and optimization for web applications with size reduction and performance improvements.',
-                tags: ['Bundle', 'Optimization', 'Performance', 'Analysis'],
-                stats: { rating: 4.8, downloads: 580, comments: 13 },
-                command: 'npx claude-code-templates@latest --command=bundle-optimizer --yes',
-                features: [
-                    'Bundle size analysis and visualization',
-                    'Dead code elimination',
-                    'Dependency optimization',
-                    'Chunk splitting strategies',
-                    'Performance recommendations'
-                ],
-                source: 'performance-tools-collection',
-                popularity: 'trending'
-            },
-            {
-                id: 'api-tester',
-                name: 'API Tester',
-                category: 'QUICK COMMANDS',
-                categorySlug: 'commands',
-                description: 'Automated API testing and validation with endpoint testing, schema validation, and performance benchmarking.',
-                tags: ['API', 'Testing', 'Validation', 'Performance'],
-                stats: { rating: 4.7, downloads: 520, comments: 11 },
-                command: 'npx claude-code-templates@latest --command=api-tester --yes',
-                features: [
-                    'Automated endpoint testing',
-                    'Schema validation',
-                    'Performance benchmarking',
-                    'Load testing capabilities',
-                    'API documentation generation'
-                ],
-                source: 'testing-tools-collection',
-                popularity: 'stable'
-            },
-            {
-                id: 'code-formatter',
-                name: 'Code Formatter',
-                category: 'QUICK COMMANDS',
-                categorySlug: 'commands',
-                description: 'Universal code formatting and style enforcement across multiple languages with customizable rules.',
-                tags: ['Formatting', 'Style', 'Linting', 'Standards'],
-                stats: { rating: 4.6, downloads: 480, comments: 9 },
-                command: 'npx claude-code-templates@latest --command=code-formatter --yes',
-                features: [
-                    'Multi-language code formatting',
-                    'Customizable style rules',
-                    'Automated fix suggestions',
-                    'Team standards enforcement',
-                    'IDE integration support'
-                ],
-                source: 'developer-tools-collection',
-                popularity: 'stable'
-            },
-            {
-                id: 'dependency-updater',
-                name: 'Dependency Updater',
-                category: 'QUICK COMMANDS',
-                categorySlug: 'commands',
-                description: 'Intelligent dependency management with automated updates, compatibility checking, and security patch application.',
-                tags: ['Dependencies', 'Updates', 'Security', 'Management'],
-                stats: { rating: 4.8, downloads: 440, comments: 8 },
-                command: 'npx claude-code-templates@latest --command=dependency-updater --yes',
-                features: [
-                    'Automated dependency updates',
-                    'Compatibility checking',
-                    'Security patch identification',
-                    'Breaking change analysis',
-                    'Update scheduling'
-                ],
-                source: 'maintenance-tools-collection',
-                popularity: 'new'
             },
 
             // SMART HOOKS - 5 Additional Workflow Automation

@@ -1337,6 +1337,462 @@
     };
 
     // ========================================
+    // Wcygan Slash Commands Integration
+    // ========================================
+
+    // GitHub repository info for wcygan commands
+    const WCYGAN_REPO = {
+        owner: 'wcygan',
+        repo: 'dotfiles',
+        branch: 'd8ab6b9f5a7a81007b7f5fa3025d4f83ce12cc02',
+        path: 'claude/commands'
+    };
+
+    // Cache for wcygan commands
+    let wcyganCommandsCache = [];
+    let installedSlashCommands = new Set();
+    let isLoadingWcygan = false;
+
+    // Category icons and colors for wcygan commands
+    const CATEGORY_ICONS = {
+        debugging: '🐛', documentation: '📚', planning: '📋', quality: '⭐',
+        refactoring: '🔧', testing: '🧪', optimization: '⚡', security: '🛡️',
+        deployment: '🚀', architecture: '🏗️', database: '🗄️', frontend: '🎨',
+        backend: '⚙️', devops: '🔄', general: '📦'
+    };
+
+    const CATEGORY_COLORS = {
+        debugging: '#ff6b6b', documentation: '#4ecdc4', planning: '#45b7d1',
+        quality: '#f9ca24', refactoring: '#6c5ce7', testing: '#a29bfe',
+        optimization: '#fd79a8', security: '#e17055', deployment: '#00b894',
+        architecture: '#fdcb6e', database: '#e84393', frontend: '#74b9ff',
+        backend: '#55a3ff', devops: '#00cec9', general: '#636e72'
+    };
+
+    // Load wcygan commands from GitHub
+    async function loadWcyganCommands() {
+        if (isLoadingWcygan || wcyganCommandsCache.length > 0) return;
+
+        try {
+            isLoadingWcygan = true;
+
+            // Check localStorage cache first
+            const cached = localStorage.getItem('wcygan-commands-library');
+            if (cached) {
+                const library = JSON.parse(cached);
+                const lastFetched = new Date(library.stats?.lastFetched || 0).getTime();
+                if (Date.now() - lastFetched < 24 * 60 * 60 * 1000) { // 24 hour cache
+                    wcyganCommandsCache = library.commands || [];
+                    await checkInstalledSlashCommands();
+                    displayWcyganCommands();
+                    isLoadingWcygan = false;
+                    return;
+                }
+            }
+
+            // Fetch from GitHub
+            const url = `https://api.github.com/repos/${WCYGAN_REPO.owner}/${WCYGAN_REPO.repo}/contents/${WCYGAN_REPO.path}?ref=${WCYGAN_REPO.branch}`;
+            const response = await fetch(url, {
+                headers: {
+                    'Accept': 'application/vnd.github.v3+json',
+                    'User-Agent': 'Coder1-IDE-Templates-Hub'
+                }
+            });
+
+            if (!response.ok) throw new Error(`GitHub API error: ${response.status}`);
+
+            const files = await response.json();
+            const mdFiles = files.filter(f => f.name.endsWith('.md'));
+
+            // Parse each command file
+            const commands = [];
+            for (const file of mdFiles) {
+                try {
+                    const contentRes = await fetch(file.download_url);
+                    if (contentRes.ok) {
+                        const content = await contentRes.text();
+                        const cmd = parseWcyganCommand(file.name, content);
+                        if (cmd) commands.push(cmd);
+                    }
+                } catch (e) {
+                    console.warn(`Failed to parse ${file.name}:`, e);
+                }
+            }
+
+            // Cache results
+            wcyganCommandsCache = commands;
+            localStorage.setItem('wcygan-commands-library', JSON.stringify({
+                commands,
+                stats: { lastFetched: new Date().toISOString() }
+            }));
+
+            // Check installed commands and display
+            await checkInstalledSlashCommands();
+            displayWcyganCommands();
+
+        } catch (error) {
+            console.error('Failed to load wcygan commands:', error);
+
+            // Fall back to stale cache if available
+            const cached = localStorage.getItem('wcygan-commands-library');
+            if (cached) {
+                try {
+                    const library = JSON.parse(cached);
+                    wcyganCommandsCache = library.commands || [];
+                    console.log('Using stale cache due to GitHub error:', wcyganCommandsCache.length, 'commands');
+                    await checkInstalledSlashCommands();
+                    displayWcyganCommands();
+                } catch (e) {
+                    console.error('Failed to parse stale cache:', e);
+                    displayWcyganError('GitHub rate limit exceeded. Please try again later.');
+                }
+            } else {
+                displayWcyganError('Unable to load commands. GitHub rate limit may be exceeded.');
+            }
+        } finally {
+            isLoadingWcygan = false;
+        }
+    }
+
+    // Parse a wcygan command file
+    function parseWcyganCommand(fileName, content) {
+        const name = fileName.replace('.md', '');
+        const slashCommand = `/${name}`;
+
+        // Extract description from content
+        const lines = content.split('\n').slice(0, 10);
+        let description = 'Structured AI command workflow';
+
+        const helpPattern = lines.find(l => l.startsWith('Help '));
+        if (helpPattern) {
+            description = helpPattern.replace('$ARGUMENTS', '').replace('Help ', '').trim();
+        } else {
+            const providePattern = lines.find(l => l.startsWith('Provide '));
+            if (providePattern) {
+                description = providePattern.replace('$ARGUMENTS', '').replace('Provide ', '').trim();
+            } else {
+                const meaningful = lines.find(l => l.length > 10 && !l.startsWith('#') && l.trim());
+                if (meaningful) description = meaningful.trim().substring(0, 100);
+            }
+        }
+
+        // Infer category
+        const category = inferCommandCategory(name, content);
+
+        // Infer complexity
+        const lineCount = content.split('\n').length;
+        const complexity = lineCount < 50 ? 'simple' : lineCount < 150 ? 'moderate' : 'complex';
+
+        return {
+            id: name,
+            name: name,
+            slashCommand,
+            category,
+            description,
+            template: content,
+            complexity,
+            estimatedTime: complexity === 'simple' ? '2-5 min' : complexity === 'moderate' ? '5-15 min' : '15-30 min'
+        };
+    }
+
+    // Infer command category
+    function inferCommandCategory(name, content) {
+        const n = name.toLowerCase();
+        const t = content.toLowerCase();
+
+        if (n.includes('debug') || n.includes('fix') || n.includes('error')) return 'debugging';
+        if (n.includes('explain') || n.includes('doc')) return 'documentation';
+        if (n.includes('plan') || n.includes('design') || n.includes('architect')) return 'planning';
+        if (n.includes('review') || n.includes('audit') || n.includes('quality')) return 'quality';
+        if (n.includes('refactor') || n.includes('improve') || n.includes('optimize')) return 'refactoring';
+        if (n.includes('test') || n.includes('spec') || n.includes('validate')) return 'testing';
+        if (n.includes('security') || n.includes('secure')) return 'security';
+        if (n.includes('deploy') || n.includes('release')) return 'deployment';
+        if (n.includes('database') || n.includes('db') || n.includes('sql')) return 'database';
+        if (n.includes('frontend') || n.includes('ui') || n.includes('react')) return 'frontend';
+        if (n.includes('backend') || n.includes('api') || n.includes('server')) return 'backend';
+        if (t.includes('performance') || t.includes('speed')) return 'optimization';
+        if (t.includes('architecture') || t.includes('system design')) return 'architecture';
+
+        return 'general';
+    }
+
+    // Check which slash commands are installed
+    async function checkInstalledSlashCommands() {
+        try {
+            const response = await fetch('/api/commands/install');
+            if (response.ok) {
+                const data = await response.json();
+                installedSlashCommands = new Set(data.installedCommands || []);
+            }
+        } catch (e) {
+            console.warn('Failed to check installed commands:', e);
+        }
+    }
+
+    // Install a slash command via API
+    window.installSlashCommand = async function(event, commandId) {
+        if (event) {
+            event.preventDefault();
+            event.stopPropagation();
+        }
+
+        const btn = event?.currentTarget || event?.target?.closest('button');
+        if (!btn) return;
+
+        const originalHTML = btn.innerHTML;
+        const cmd = wcyganCommandsCache.find(c => c.id === commandId);
+        if (!cmd) {
+            showNotification('Command not found');
+            return;
+        }
+
+        try {
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Installing...';
+            btn.disabled = true;
+            btn.style.background = '#666';
+
+            const response = await fetch('/api/commands/install', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    commandId: cmd.id,
+                    content: cmd.template,
+                    name: cmd.name
+                })
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                installedSlashCommands.add(cmd.id);
+
+                if (result.alreadyInstalled) {
+                    btn.innerHTML = '<i class="fas fa-check"></i> Already Installed';
+                    btn.style.background = '#059669';
+                    showNotification(`Command "/${cmd.id}" is already installed`);
+                } else {
+                    btn.innerHTML = '<i class="fas fa-check"></i> Installed!';
+                    btn.style.background = '#10b981';
+                    showNotification(`Command "/${cmd.id}" installed to ~/.claude/commands/`);
+                }
+
+                setTimeout(() => {
+                    btn.innerHTML = '<i class="fas fa-check"></i> Installed';
+                    btn.disabled = true;
+                }, 2000);
+            } else {
+                throw new Error(result.error || 'Installation failed');
+            }
+        } catch (error) {
+            console.error('Command installation error:', error);
+            btn.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Failed';
+            btn.style.background = '#dc2626';
+            showNotification('Installation failed: ' + error.message);
+
+            setTimeout(() => {
+                btn.innerHTML = originalHTML;
+                btn.style.background = '';
+                btn.disabled = false;
+            }, 3000);
+        }
+    };
+
+    // Display wcygan commands in the templates grid
+    function displayWcyganCommands() {
+        const grid = document.getElementById('templatesGrid');
+        if (!grid) return;
+
+        // Remove existing wcygan command cards
+        grid.querySelectorAll('.wcygan-command-card').forEach(c => c.remove());
+
+        // Only show if commands category is active or showing all
+        const currentCat = (typeof currentCategory !== 'undefined') ? currentCategory : 'all';
+        if (currentCat !== 'all' && currentCat !== 'commands') return;
+
+        // Create and insert cards
+        wcyganCommandsCache.forEach(cmd => {
+            const card = createWcyganCommandCard(cmd);
+            grid.appendChild(card);
+        });
+
+        // Update count
+        const countEl = document.getElementById('slash-commands-count');
+        if (countEl) {
+            // Count existing quick commands + wcygan commands
+            const existingCommandCount = (typeof templates !== 'undefined' && Array.isArray(templates))
+                ? templates.filter(t => t.categorySlug === 'commands').length
+                : 0;
+            countEl.textContent = existingCommandCount + wcyganCommandsCache.length;
+        }
+    }
+
+    // Display error message for wcygan commands
+    function displayWcyganError(message) {
+        const grid = document.getElementById('templatesGrid');
+        if (!grid) return;
+
+        // Only show if commands category is active or showing all
+        const currentCat = (typeof currentCategory !== 'undefined') ? currentCategory : 'all';
+        if (currentCat !== 'all' && currentCat !== 'commands') return;
+
+        // Create error card
+        const errorCard = document.createElement('div');
+        errorCard.className = 'coder1-template-card wcygan-command-card wcygan-error-card';
+        errorCard.dataset.category = 'commands';
+        errorCard.dataset.templateId = 'wcygan-error';
+        errorCard.style.cssText = 'background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3);';
+        errorCard.innerHTML = `
+            <div class="template-header">
+                <div class="template-category" style="background: #ef444415; color: #ef4444; border: 1px solid #ef444440;">
+                    <i class="fas fa-exclamation-triangle"></i> ERROR
+                </div>
+                <div class="template-name">Slash Commands Unavailable</div>
+            </div>
+            <div class="template-description" style="color: #f87171;">
+                ${message}
+            </div>
+            <div class="template-footer" style="padding-top: 12px;">
+                <button class="install-button" onclick="location.reload()" style="background: linear-gradient(135deg, #3b82f6, #2563eb);">
+                    <i class="fas fa-redo"></i> Retry
+                </button>
+            </div>
+        `;
+        grid.appendChild(errorCard);
+    }
+
+    // Create a card element for wcygan command
+    function createWcyganCommandCard(cmd) {
+        const card = document.createElement('div');
+        card.className = 'coder1-template-card coder1-card-3d wcygan-command-card';
+        card.dataset.templateId = cmd.id;
+        card.dataset.category = 'commands';
+
+        const isInstalled = installedSlashCommands.has(cmd.id);
+        const icon = CATEGORY_ICONS[cmd.category] || '📦';
+        const color = CATEGORY_COLORS[cmd.category] || '#636e72';
+
+        card.innerHTML = `
+            <div class="template-header">
+                <div class="template-category" style="background: ${color}15; color: ${color}; border: 1px solid ${color}40;">
+                    ${icon} ${cmd.category.toUpperCase()}
+                </div>
+                <div class="template-name">${cmd.slashCommand}</div>
+                <span class="wcygan-badge" style="background: linear-gradient(135deg, #00d4ff, #00a3cc); font-size: 10px; padding: 2px 8px; border-radius: 10px;">wcygan</span>
+            </div>
+            <div class="template-description">${cmd.description}</div>
+            <div class="template-tags">
+                <span class="template-tag">${cmd.category}</span>
+                <span class="template-tag">${cmd.complexity}</span>
+            </div>
+            <div class="template-footer">
+                <div class="template-stats">
+                    <span class="stat"><i class="fas fa-clock"></i> ${cmd.estimatedTime}</span>
+                </div>
+                <button class="quick-install coder1-btn slash-command-btn"
+                        onclick="event.stopPropagation(); installSlashCommand(event, '${cmd.id}')"
+                        style="${isInstalled ? 'background: #10b981;' : 'background: linear-gradient(135deg, #667eea, #764ba2);'}"
+                        ${isInstalled ? 'disabled' : ''}>
+                    <i class="fas fa-${isInstalled ? 'check' : 'download'}"></i>
+                    ${isInstalled ? 'Installed' : 'Install'}
+                </button>
+            </div>
+        `;
+
+        // Click to view command details
+        card.onclick = () => showSlashCommandModal(cmd);
+
+        return card;
+    }
+
+    // Show modal for slash command details
+    function showSlashCommandModal(cmd) {
+        const icon = CATEGORY_ICONS[cmd.category] || '📦';
+        const isInstalled = installedSlashCommands.has(cmd.id);
+
+        // Use existing modal or create new one
+        let modal = document.getElementById('slashCommandModal');
+        if (!modal) {
+            modal = document.createElement('div');
+            modal.id = 'slashCommandModal';
+            modal.className = 'modal-overlay';
+            document.body.appendChild(modal);
+        }
+
+        modal.innerHTML = `
+            <div class="modal-content" style="max-width: 600px;">
+                <button class="modal-close" onclick="document.getElementById('slashCommandModal').classList.remove('active')">&times;</button>
+                <div class="modal-header">
+                    <div class="modal-title">
+                        <div class="template-category">${icon} ${cmd.category.toUpperCase()}</div>
+                        <div class="template-name" style="font-size: 24px;">${cmd.slashCommand}</div>
+                    </div>
+                </div>
+                <div class="modal-body" style="padding: 20px;">
+                    <p style="color: #bbb; margin-bottom: 16px;">${cmd.description}</p>
+
+                    <div style="background: #1a1a2e; border-radius: 8px; padding: 16px; margin-bottom: 16px;">
+                        <div style="font-size: 12px; color: #888; margin-bottom: 8px;">USAGE</div>
+                        <code style="color: #00d4ff; font-size: 14px;">${cmd.slashCommand} [target]</code>
+                    </div>
+
+                    <div style="background: #1a1a2e; border-radius: 8px; padding: 16px; margin-bottom: 16px; max-height: 200px; overflow-y: auto;">
+                        <div style="font-size: 12px; color: #888; margin-bottom: 8px;">COMMAND TEMPLATE</div>
+                        <pre style="color: #ccc; font-size: 12px; white-space: pre-wrap; margin: 0;">${escapeHtml(cmd.template.substring(0, 500))}${cmd.template.length > 500 ? '...' : ''}</pre>
+                    </div>
+
+                    <div style="display: flex; gap: 12px; margin-top: 20px;">
+                        <button class="coder1-btn"
+                                onclick="installSlashCommand(event, '${cmd.id}')"
+                                style="${isInstalled ? 'background: #10b981;' : 'background: linear-gradient(135deg, #667eea, #764ba2);'} flex: 1; padding: 14px;"
+                                ${isInstalled ? 'disabled' : ''}>
+                            <i class="fas fa-${isInstalled ? 'check' : 'download'}"></i>
+                            ${isInstalled ? 'Already Installed' : 'Install to ~/.claude/commands/'}
+                        </button>
+                    </div>
+
+                    <p style="font-size: 11px; color: #666; margin-top: 12px; text-align: center;">
+                        Source: github.com/wcygan/dotfiles
+                    </p>
+                </div>
+            </div>
+        `;
+
+        modal.classList.add('active');
+    }
+
+    // Helper to escape HTML
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    // Hook into page rendering to reload wcygan commands
+    function initWcyganCommands() {
+        // Load commands on page load
+        loadWcyganCommands();
+
+        // Re-display after category changes
+        const originalRenderTemplates = window.renderTemplates;
+        if (typeof originalRenderTemplates === 'function') {
+            window.renderTemplates = function() {
+                originalRenderTemplates.apply(this, arguments);
+                if (wcyganCommandsCache.length > 0) {
+                    setTimeout(displayWcyganCommands, 100);
+                }
+            };
+        }
+    }
+
+    // Initialize wcygan commands
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initWcyganCommands);
+    } else {
+        setTimeout(initWcyganCommands, 300);
+    }
+
+    // ========================================
     // Typewriter Effect for AI Prompt Placeholder
     // ========================================
 

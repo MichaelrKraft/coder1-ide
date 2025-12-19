@@ -340,110 +340,29 @@ export default function TimelinePage() {
     console.log('🔄 TIMELINE: Restoring checkpoint to sandbox:', { checkpointId, checkpointSessionId });
 
     try {
-      // Fetch checkpoint data from restore API
-      const restoreUrl = `/api/sessions/${checkpointSessionId}/checkpoints/${checkpointId}/restore`;
-      console.log('🔗 TIMELINE: Restore URL:', restoreUrl);
-      
-      const restoreResponse = await fetch(restoreUrl, {
-        method: 'POST'
-      });
+      // 🔧 FIX (Dec 14, 2025): Don't fetch checkpoint data here - it can be huge (36MB+) and timeout
+      // Instead, store a reference and let the IDE page fetch it with proper loading UI
+      // This also avoids sessionStorage quota exceeded errors
 
-      if (!restoreResponse.ok) {
-        const errorData = await restoreResponse.json().catch(() => ({ error: 'Unknown error' }));
-        console.error('❌ TIMELINE: Restore failed:', errorData);
-        alert(`Failed to restore checkpoint: ${errorData.error || 'Unknown error'}`);
-        return;
-      }
+      // Find the checkpoint info from our local events state (already loaded in the list)
+      const event = events.find(e => e.id === checkpointId);
+      const checkpointName = event
+        ? formatCheckpointDate(event.timestamp)
+        : `Checkpoint ${new Date().toLocaleDateString()}`;
 
-      const restoreData = await restoreResponse.json();
-      console.log('✅ TIMELINE: Checkpoint data loaded:', {
-        hasCheckpoint: !!restoreData.checkpoint,
-        hasSnapshot: !!restoreData.checkpoint?.data?.snapshot,
-        timestamp: restoreData.checkpoint?.timestamp
-      });
-
-      const snapshot = restoreData.checkpoint?.data?.snapshot;
-      if (!snapshot) {
-        alert('Checkpoint data is incomplete');
-        return;
-      }
-
-      // Extract terminal history from multiple possible locations
-      const terminalHistory = 
-        restoreData.checkpoint.terminalHistory ||
-        restoreData.checkpoint.data?.terminalHistory ||
-        snapshot.terminal || '';
-
-      console.log('📊 TIMELINE: Terminal history length:', terminalHistory.length);
-
-      // Filter out thinking animations from terminal history
-      const { filterThinkingAnimations } = await import('@/lib/checkpoint-utils');
-      const cleanedTerminalHistory = terminalHistory ? filterThinkingAnimations(terminalHistory) : '';
-      
-      console.log('🧽 TIMELINE: Filtered terminal history:', {
-        before: terminalHistory.length,
-        after: cleanedTerminalHistory.length,
-        removed: terminalHistory.length - cleanedTerminalHistory.length
-      });
-
-      // Parse files and commands from snapshot
-      let filesArray = [];
-      if (snapshot.files) {
-        try {
-          const parsed = JSON.parse(snapshot.files);
-          filesArray = Array.isArray(parsed) ? parsed : [];
-        } catch (e) {
-          console.log('⚠️ TIMELINE: Failed to parse files:', e);
-        }
-      }
-
-      let commandsArray = [];
-      if (snapshot.terminal) {
-        // Extract commands from terminal history
-        const terminalLines = snapshot.terminal.split('\n');
-        const promptRegex = /(?:bash-\d+\.\d+\$|╰─\$|\$)\s+(.+)/;
-        commandsArray = terminalLines
-          .map(line => {
-            const match = line.match(promptRegex);
-            return match ? match[1].trim() : null;
-          })
-          .filter(cmd => cmd && cmd.length > 0)
-          .slice(-5); // Get last 5 commands
-      }
-
-      // Format checkpoint name with date
-      const checkpointName = formatCheckpointDate(restoreData.checkpoint.timestamp);
-      
-      // Create sandbox data matching SessionsPanel structure
-      const sandboxData = {
+      const pendingSandboxRef = {
+        checkpointId,
+        sessionId: checkpointSessionId,
         name: checkpointName,
-        files: filesArray,
-        commands: commandsArray,
-        timestamp: restoreData.checkpoint.timestamp,
-        description: 'Restored checkpoint from Timeline',
-        originalCheckpoint: restoreData.checkpoint,
-        terminalHistory: cleanedTerminalHistory,
-        checkpointData: {
-          files: filesArray,
-          commands: commandsArray,
-          timestamp: restoreData.checkpoint.timestamp,
-          terminalHistory: cleanedTerminalHistory
-        }
+        timestamp: event?.timestamp || Date.now()
       };
 
-      console.log('🏖️ TIMELINE: Creating sandbox with data:', {
-        name: sandboxData.name,
-        filesCount: filesArray.length,
-        commandsCount: commandsArray.length,
-        terminalHistoryLength: cleanedTerminalHistory.length
-      });
+      sessionStorage.setItem('pendingSandbox', JSON.stringify(pendingSandboxRef));
+      console.log('💾 TIMELINE: Stored sandbox reference:', pendingSandboxRef);
 
-      // Store sandbox data in sessionStorage for IDE to pick up
-      sessionStorage.setItem('pendingSandbox', JSON.stringify(sandboxData));
-      
-      // Navigate to IDE - it will create the sandbox on load
+      // Navigate to IDE - it will fetch the full checkpoint data on load
       window.location.href = '/ide';
-      
+
     } catch (error) {
       console.error('❌ TIMELINE: Failed to restore checkpoint:', error);
       alert(`Failed to restore checkpoint: ${error instanceof Error ? error.message : 'Unknown error'}`);

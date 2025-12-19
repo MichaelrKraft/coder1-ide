@@ -123,7 +123,31 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             .catch(error => {
                 sendResponse({ connected: false, error: error.message });
             });
-        
+
+        return true;
+    }
+
+    // Handle CSS fetch requests from content script (for CORS-blocked stylesheets)
+    if (request.action === 'fetchCSS') {
+        const cssUrl = request.url;
+        console.log('[Coder1 Background] Fetching external CSS:', cssUrl);
+
+        fetch(cssUrl)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                return response.text();
+            })
+            .then(css => {
+                console.log('[Coder1 Background] CSS fetched successfully, length:', css.length);
+                sendResponse({ success: true, css: css });
+            })
+            .catch(error => {
+                console.warn('[Coder1 Background] Failed to fetch CSS:', cssUrl, error.message);
+                sendResponse({ success: false, error: error.message });
+            });
+
         return true;
     }
 });

@@ -230,14 +230,21 @@ program
     } else {
       console.log('   ❌ NOT FOUND');
       console.log('\n   Checked locations:');
-      console.log('   - /usr/local/bin/claude');
-      console.log('   - /opt/homebrew/bin/claude');
-      console.log('   - ~/.npm-global/bin/claude');
+      if (process.platform === 'win32') {
+        console.log('   - %LOCALAPPDATA%\\Programs\\Claude\\claude.exe');
+        console.log('   - %APPDATA%\\npm\\claude.cmd');
+        console.log('   - C:\\Program Files\\Claude\\claude.exe');
+      } else {
+        console.log('   - /usr/local/bin/claude');
+        console.log('   - /opt/homebrew/bin/claude');
+        console.log('   - ~/.npm-global/bin/claude');
+      }
     }
 
     // PATH info
+    const pathSeparator = process.platform === 'win32' ? ';' : ':';
     console.log('\n📁 PATH Environment:');
-    const pathDirs = (process.env.PATH || '').split(':').slice(0, 5);
+    const pathDirs = (process.env.PATH || '').split(pathSeparator).slice(0, 5);
     pathDirs.forEach(p => console.log(`   - ${p}`));
     if (pathDirs.length < (process.env.PATH || '').split(':').length) {
       console.log('   ... (truncated)');
@@ -254,22 +261,40 @@ async function checkClaudeCLI() {
   const { execSync } = require('child_process');
   const fs = require('fs');
 
-  // Common Claude CLI install locations on macOS/Linux
-  const commonPaths = [
-    '/usr/local/bin/claude',
-    '/opt/homebrew/bin/claude',
-    `${process.env.HOME}/.local/bin/claude`,      // Common Linux/pip location
-    `${process.env.HOME}/.npm-global/bin/claude`,
-    `${process.env.HOME}/.claude/bin/claude`,     // Claude's own install location
-    '/usr/bin/claude'
-  ];
+  // Detect platform
+  const isWindows = process.platform === 'win32';
 
-  // First try 'which claude' to find in PATH
+  // Common Claude CLI install locations - platform specific
+  const commonPaths = isWindows
+    ? [
+        // Windows paths
+        `${process.env.LOCALAPPDATA}\\Programs\\Claude\\claude.exe`,
+        `${process.env.APPDATA}\\npm\\claude.cmd`,
+        `${process.env.USERPROFILE}\\.claude\\bin\\claude.exe`,
+        'C:\\Program Files\\Claude\\claude.exe',
+        'C:\\Program Files (x86)\\Claude\\claude.exe'
+      ]
+    : [
+        // macOS/Linux paths
+        '/usr/local/bin/claude',
+        '/opt/homebrew/bin/claude',
+        `${process.env.HOME}/.local/bin/claude`,      // Common Linux/pip location
+        `${process.env.HOME}/.npm-global/bin/claude`,
+        `${process.env.HOME}/.claude/bin/claude`,     // Claude's own install location
+        '/usr/bin/claude'
+      ];
+
+  // First try platform-specific command to find in PATH
   let claudePath = null;
   try {
-    claudePath = execSync('which claude 2>/dev/null', { encoding: 'utf-8' }).trim();
+    if (isWindows) {
+      // Windows uses 'where' instead of 'which'
+      claudePath = execSync('where claude 2>nul', { encoding: 'utf-8' }).split('\n')[0].trim();
+    } else {
+      claudePath = execSync('which claude 2>/dev/null', { encoding: 'utf-8' }).trim();
+    }
     if (claudePath && !fs.existsSync(claudePath)) {
-      claudePath = null; // Invalid path from which
+      claudePath = null; // Invalid path
     }
   } catch {
     claudePath = null;

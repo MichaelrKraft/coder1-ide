@@ -280,6 +280,114 @@ Invoke this skill when designing systems, refactoring code, or reviewing archite
 - Introduce Parameter Object
 - Replace Magic Number with Constant
 `
+  },
+  'skill-development': {
+    name: 'Skill Development Guide',
+    description: 'Create Claude Code skills with proper structure, YAML frontmatter, and progressive disclosure architecture.',
+    content: `# Skill Development Guide
+
+## When to Use
+Invoke this skill when creating new skills for Claude Code plugins, structuring skill content, or writing YAML frontmatter.
+
+## Quick Reference
+| Component | Purpose | Required |
+|-----------|---------|----------|
+| SKILL.md | Main skill file with frontmatter + instructions | Yes |
+| scripts/ | Executable code for deterministic operations | No |
+| references/ | Documentation Claude should consult | No |
+
+## 6-Step Creation Process
+1. Understand Use Cases
+2. Plan Resources
+3. Create Directory Structure
+4. Write SKILL.md
+5. Validate Structure
+6. Iterate Based on Usage
+
+## Writing Standards
+- Use imperative form
+- Never use second person
+- Keep SKILL.md lean (1,500-2,000 words)
+`
+  },
+  'hook-development': {
+    name: 'Hook Development Guide',
+    description: 'Create Claude Code hooks for event-driven automation with 9 hook event types.',
+    content: `# Hook Development Guide
+
+## When to Use
+Invoke this skill when creating event-driven automation for Claude Code.
+
+## Hook Types
+- Prompt-Based: Complex reasoning (~2-4s)
+- Command Hooks: Deterministic checks (~30-150ms)
+
+## Available Events
+- PreToolUse: Before tool execution
+- PostToolUse: After tool completion
+- Stop: Agent considers stopping
+- UserPromptSubmit: User input submission
+- SessionStart: Session begins
+- SessionEnd: Session terminates
+
+## Security
+1. Validate all inputs
+2. Check for path traversal
+3. Quote all bash variables
+`
+  },
+  'command-development': {
+    name: 'Command Development Guide',
+    description: 'Create Claude Code slash commands for reusable workflows with argument handling.',
+    content: `# Command Development Guide
+
+## When to Use
+Invoke this skill when creating reusable slash commands or building project workflows.
+
+## Command Locations
+- Project: .claude/commands/
+- Personal: ~/.claude/commands/
+- Plugin: plugin-name/commands/
+
+## Arguments
+- $ARGUMENTS: All arguments as one string
+- $1, $2, $3: Positional arguments
+- @filename: Include file contents
+
+## Best Practices
+1. Single responsibility per command
+2. Use allowed-tools for safety
+3. Always include argument-hint
+`
+  },
+  'stripe-integration': {
+    name: 'Stripe Integration Guide',
+    description: 'Implement PCI-compliant Stripe payment processing with subscriptions and webhooks.',
+    content: `# Stripe Integration Guide
+
+## When to Use
+Invoke this skill when adding payment processing, subscription billing, or webhooks.
+
+## Implementation Approaches
+- Checkout Sessions: Quick setup, minimal PCI burden
+- Payment Intents: Custom UI, low PCI burden
+- Stripe Elements: Embedded forms
+
+## Critical Webhook Events
+- payment_intent.succeeded/failed
+- customer.subscription.updated/deleted
+- invoice.payment_succeeded/failed
+
+## Test Cards
+- 4242424242424242: Success
+- 4000000000000002: Decline
+- 4000002500003155: 3D Secure
+
+## Security
+- Verify webhook signatures
+- Use Stripe.js (never raw card data)
+- Implement 3D Secure for EU
+`
   }
 };
 
