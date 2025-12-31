@@ -424,6 +424,8 @@ export default function AlphaPage() {
                   onClick={() => {
                     // Mark that user has completed Bridge setup flow
                     localStorage.setItem('coder1-bridge-setup', 'completed');
+                    // Also skip the editor WelcomeScreen since they've seen setup here
+                    localStorage.setItem('coder1-bridge-setup-viewed', 'true');
                     window.location.href = '/ide';
                   }}
                   className="px-8 py-4 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white font-bold text-lg rounded-xl transition-all shadow-lg hover:shadow-xl hover:scale-105 inline-flex items-center justify-center gap-3"
@@ -436,6 +438,8 @@ export default function AlphaPage() {
                   onClick={() => {
                     // Mark that user skipped Bridge setup
                     localStorage.setItem('coder1-bridge-setup', 'skipped');
+                    // Also skip the editor WelcomeScreen since they chose to skip
+                    localStorage.setItem('coder1-bridge-setup-viewed', 'true');
                     window.location.href = '/ide';
                   }}
                   className="px-6 py-4 bg-gray-700 hover:bg-gray-600 text-gray-300 font-medium rounded-xl transition-all inline-flex items-center justify-center gap-2"
