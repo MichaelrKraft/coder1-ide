@@ -413,6 +413,43 @@ export default function AlphaPage() {
             </div>
           </div>
 
+          {/* Launch IDE CTA */}
+          <div className="mt-12 bg-gradient-to-r from-green-500/20 to-emerald-500/20 rounded-2xl p-8 border border-green-500/40">
+            <div className="text-center">
+              <h2 className="text-3xl font-bold mb-4 text-green-400">Ready to Code?</h2>
+              <p className="text-gray-300 mb-6">Once you've installed and started the Bridge, you're all set!</p>
+
+              <div className="flex flex-col sm:flex-row justify-center gap-4">
+                <button
+                  onClick={() => {
+                    // Mark that user has completed Bridge setup flow
+                    localStorage.setItem('coder1-bridge-setup', 'completed');
+                    window.location.href = '/ide';
+                  }}
+                  className="px-8 py-4 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white font-bold text-lg rounded-xl transition-all shadow-lg hover:shadow-xl hover:scale-105 inline-flex items-center justify-center gap-3"
+                >
+                  <Zap className="w-6 h-6" />
+                  Launch Coder1 IDE
+                </button>
+
+                <button
+                  onClick={() => {
+                    // Mark that user skipped Bridge setup
+                    localStorage.setItem('coder1-bridge-setup', 'skipped');
+                    window.location.href = '/ide';
+                  }}
+                  className="px-6 py-4 bg-gray-700 hover:bg-gray-600 text-gray-300 font-medium rounded-xl transition-all inline-flex items-center justify-center gap-2"
+                >
+                  Skip for now →
+                </button>
+              </div>
+
+              <p className="mt-4 text-sm text-gray-400">
+                You can always set up the Bridge later from the IDE
+              </p>
+            </div>
+          </div>
+
           {/* Support */}
           <div className="mt-12 text-center">
             <h2 className="text-2xl font-bold mb-6">Need Help?</h2>
