@@ -16,7 +16,26 @@ npm install -g coder1-bridge
 npx coder1-bridge start
 ```
 
-#### Option 3: Direct from Source
+#### Option 3: Pre-built Binaries
+Download the appropriate binary for your platform:
+
+| Platform | Binary | Notes |
+|----------|--------|-------|
+| macOS Apple Silicon (M1/M2/M3) | `coder1-bridge-macos-arm64` | For newer Macs |
+| macOS Intel | `coder1-bridge-macos-x64` | For older Macs |
+| Linux x64 | `coder1-bridge-linux` | Most Linux distros |
+| Windows x64 | `coder1-bridge-win.exe` | Windows 10/11 |
+
+After downloading:
+```bash
+# macOS/Linux: Make executable
+chmod +x coder1-bridge-*
+
+# Run
+./coder1-bridge-macos-arm64 start  # or your platform's binary
+```
+
+#### Option 4: Direct from Source
 ```bash
 git clone https://github.com/MichaelrKraft/coder1-ide.git
 cd coder1-ide/coder1-ide-next/bridge-cli
