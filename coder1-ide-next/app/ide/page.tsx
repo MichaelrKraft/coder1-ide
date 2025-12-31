@@ -70,33 +70,71 @@ function IDEPageContent() {
   const [showTour, setShowTour] = useState(false);
   const [showOnboardingOverlay, setShowOnboardingOverlay] = useState(false);
   
-  // Show onboarding overlay for first-time users
+  // 🌉 Bridge setup check - redirect first-time users to /alpha
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    
+
+    // Check if coming from specific URL params (skip redirect)
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.has('sessionId') || urlParams.has('restored') || urlParams.has('skipSetup')) {
+      console.log('🌉 Skipping Bridge redirect - URL params indicate existing session');
+      return;
+    }
+
+    // Check if user has already been through Bridge setup flow
+    const bridgeSetupStatus = localStorage.getItem('coder1-bridge-setup');
+    if (bridgeSetupStatus === 'completed' || bridgeSetupStatus === 'skipped') {
+      console.log('🌉 User already went through Bridge setup:', bridgeSetupStatus);
+      return;
+    }
+
+    // Check if user has IDE usage history (returning user, not first-time)
+    const hasUsageHistory =
+      localStorage.getItem('ide-terminalSessionId') ||
+      localStorage.getItem('ide-activeFile') ||
+      localStorage.getItem('ide-openFiles') ||
+      localStorage.getItem('coder1-tour-status') === 'completed' ||
+      localStorage.getItem('coder1-tour-status') === 'dismissed';
+
+    if (hasUsageHistory) {
+      console.log('🌉 Returning user - skipping Bridge setup redirect');
+      // Mark as skipped for returning users so they don't see redirect later
+      localStorage.setItem('coder1-bridge-setup', 'skipped');
+      return;
+    }
+
+    // First-time user who hasn't done Bridge setup - redirect to /alpha
+    console.log('🌉 First-time user detected - redirecting to Bridge setup at /alpha');
+    window.location.href = '/alpha';
+  }, []);
+
+  // Show onboarding overlay for first-time users (after Bridge setup)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
     // 🔧 FIX (Feb 2, 2025): Use better heuristics for "first-time user"
     // Don't rely solely on tour completion - check if they've USED the IDE
-    
+
     // 1. Check if they came from Timeline (has sessionId in URL) - NOT first-time
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.has('sessionId') || urlParams.has('restored')) {
       console.log('🚫 Skipping onboarding - user came from Timeline');
       return;
     }
-    
+
     // 2. Check if they have any IDE usage history in localStorage - NOT first-time
-    const hasUsageHistory = 
+    const hasUsageHistory =
       localStorage.getItem('ide-terminalSessionId') ||
       localStorage.getItem('ide-activeFile') ||
       localStorage.getItem('ide-openFiles') ||
       localStorage.getItem('coder1-tour-status') === 'completed' ||
       localStorage.getItem('coder1-tour-status') === 'dismissed';
-    
+
     if (hasUsageHistory) {
       console.log('🚫 Skipping onboarding - user has IDE usage history');
       return;
     }
-    
+
     // 3. Only NOW show overlay if truly first-time (no history at all)
     console.log('👋 First-time user detected - showing onboarding overlay');
     setShowOnboardingOverlay(true);
