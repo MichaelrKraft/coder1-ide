@@ -64,19 +64,22 @@ export default function AlphaPage() {
     windows: {
       name: 'Windows (x64)',
       file: 'coder1-bridge-win.exe',
-      size: '28.3 MB',
+      size: '36.2 MB',
       icon: '🪟'
     },
     macos: {
-      name: 'macOS (Intel/Apple)',
-      file: 'coder1-bridge-macos',
-      size: '29.1 MB', 
-      icon: '🍎'
+      name: 'macOS (Apple Silicon)',
+      file: 'coder1-bridge-macos-arm64',
+      size: '51.4 MB',
+      icon: '🍎',
+      altName: 'macOS (Intel)',
+      altFile: 'coder1-bridge-macos-x64',
+      altSize: '49.6 MB'
     },
     linux: {
       name: 'Linux (x64)',
       file: 'coder1-bridge-linux',
-      size: '28.7 MB',
+      size: '44.4 MB',
       icon: '🐧'
     }
   };
@@ -342,8 +345,13 @@ export default function AlphaPage() {
                   <div className="space-y-2">
                     <p className="text-gray-300">Make executable and run:</p>
                     <div className="bg-gray-900 rounded-lg p-3 font-mono text-sm text-cyan-300">
-                      chmod +x coder1-bridge-macos<br />
-                      ./coder1-bridge-macos
+                      <span className="text-gray-500"># Apple Silicon (M1/M2/M3):</span><br />
+                      chmod +x coder1-bridge-macos-arm64<br />
+                      ./coder1-bridge-macos-arm64<br />
+                      <br />
+                      <span className="text-gray-500"># Or for Intel Macs:</span><br />
+                      chmod +x coder1-bridge-macos-x64<br />
+                      ./coder1-bridge-macos-x64
                     </div>
                   </div>
                 ) : (

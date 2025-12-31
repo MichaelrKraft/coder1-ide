@@ -11,21 +11,25 @@ export async function GET(
   // Validate filename to prevent directory traversal
   const validFiles = [
     'coder1-bridge-win.exe',
-    'coder1-bridge-macos', 
+    'coder1-bridge-macos-arm64',  // Apple Silicon
+    'coder1-bridge-macos-x64',    // Intel Mac
+    'coder1-bridge-macos',        // Legacy alias for Intel (backward compat)
     'coder1-bridge-linux'
   ];
-  
+
   if (!validFiles.includes(filename)) {
     return NextResponse.json(
       { error: 'Invalid file requested' },
       { status: 400 }
     );
   }
-  
-  // Map to actual file paths in dist folder
+
+  // Map to actual file paths in downloads folder
   const fileMap: Record<string, string> = {
     'coder1-bridge-win.exe': 'coder1-bridge-win.exe',
-    'coder1-bridge-macos': 'coder1-bridge-macos',
+    'coder1-bridge-macos-arm64': 'coder1-bridge-macos-arm64',
+    'coder1-bridge-macos-x64': 'coder1-bridge-macos-x64',
+    'coder1-bridge-macos': 'coder1-bridge-macos-x64',  // Legacy alias -> Intel
     'coder1-bridge-linux': 'coder1-bridge-linux'
   };
   
