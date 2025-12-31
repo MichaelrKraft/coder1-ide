@@ -234,7 +234,7 @@ export default function AlphaPage() {
                   </div>
                 </div>
                 
-                <a 
+                <a
                   href={`/api/bridge/download/${downloads[selectedOS].file}`}
                   className="block w-full bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-semibold py-3 px-6 rounded-lg transition-all shadow-lg hover:shadow-xl text-center"
                 >
@@ -243,9 +243,22 @@ export default function AlphaPage() {
                     Download Bridge
                   </div>
                 </a>
-                
+
+                {/* Intel Mac alternate download */}
+                {selectedOS === 'macos' && (
+                  <a
+                    href="/api/bridge/download/coder1-bridge-macos-x64"
+                    className="block w-full mt-2 bg-gray-700 hover:bg-gray-600 text-gray-300 font-medium py-2 px-4 rounded-lg transition-all text-center text-sm"
+                  >
+                    <div className="flex items-center justify-center gap-2">
+                      <Download className="w-4 h-4" />
+                      Download for Intel Mac (x64)
+                    </div>
+                  </a>
+                )}
+
                 <p className="text-center text-gray-400 text-sm mt-3">
-                  v1.0.0-alpha.1 • Released today
+                  v1.1.1 • Apple Silicon + Intel support
                 </p>
               </div>
             </div>
@@ -366,11 +379,21 @@ export default function AlphaPage() {
               </div>
               
               <div>
-                <h3 className="text-lg font-semibold mb-4 text-cyan-400">2. Connect to IDE</h3>
-                <p className="text-gray-300 mb-2">Open your web browser and visit:</p>
-                <div className="bg-gray-900 rounded-lg p-3 font-mono text-sm text-cyan-300">
-                  https://coder1.app/ide
+                <h3 className="text-lg font-semibold mb-4 text-cyan-400">2. Get Pairing Code</h3>
+                <p className="text-gray-300 mb-2">Open the IDE in your browser:</p>
+                <div className="bg-gray-900 rounded-lg p-3 font-mono text-sm text-cyan-300 mb-3">
+                  https://coder1.ai/ide
                 </div>
+                <p className="text-gray-300 mb-2">Click <strong>"Connect Bridge"</strong> in the terminal to get a 6-digit code.</p>
+              </div>
+            </div>
+
+            <div className="mt-6">
+              <h3 className="text-lg font-semibold mb-4 text-cyan-400">3. Enter Pairing Code</h3>
+              <p className="text-gray-300 mb-2">When the bridge prompts you, enter the 6-digit code:</p>
+              <div className="bg-gray-900 rounded-lg p-3 font-mono text-sm text-cyan-300">
+                Enter pairing code: <span className="text-amber-400">123456</span><br />
+                ✅ Connected to Coder1 IDE!
               </div>
             </div>
 
@@ -402,7 +425,7 @@ export default function AlphaPage() {
                 Discord Community <ExternalLink className="w-4 h-4" />
               </a>
               <a 
-                href="mailto:alpha@coder1.app" 
+                href="mailto:alpha@coder1.ai" 
                 className="px-6 py-3 bg-gray-700 hover:bg-gray-600 rounded-lg font-semibold transition-colors inline-flex items-center gap-2"
               >
                 Email Support <ExternalLink className="w-4 h-4" />
