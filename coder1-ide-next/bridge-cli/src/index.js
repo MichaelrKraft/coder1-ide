@@ -92,6 +92,16 @@ program
     console.log(`\x1b[32m✅ Claude CLI detected: ${claudeCheck.version || 'Unknown version'}\x1b[0m`);
     console.log(`\x1b[90m   Path: ${claudeCheck.path}\x1b[0m`);
 
+    // Check if Claude CLI is authenticated (Dec 22, 2025 fix)
+    const authCheck = await checkClaudeAuth(claudeCheck.path);
+    if (!authCheck.authenticated) {
+      console.log('\x1b[33m⚠️  Claude CLI may need authentication\x1b[0m');
+      console.log(`\x1b[33m   ${authCheck.message}\x1b[0m`);
+      console.log('\x1b[90m   (Continuing anyway - commands may timeout if auth is required)\x1b[0m\n');
+    } else if (authCheck.warning) {
+      console.log(`\x1b[90m   Note: ${authCheck.warning}\x1b[0m`);
+    }
+
     // Get pairing code using readline
     const pairingCode = await askForPairingCode();
 
@@ -208,6 +218,7 @@ program
   });
 
 // Diagnose command - full diagnostic for troubleshooting
+// 🔧 FIX (Jan 4, 2026): Added auth status to diagnostics
 program
   .command('diagnose')
   .description('Full diagnostic check for troubleshooting')
@@ -227,6 +238,16 @@ program
     if (check.installed) {
       console.log(`   ✅ Installed: ${check.path}`);
       console.log(`   Version: ${check.version || 'Unknown'}`);
+
+      // 🔧 FIX: Add authentication status check
+      console.log('\n🔐 Authentication Status:');
+      const authCheck = await checkClaudeAuth(check.path);
+      if (authCheck.authenticated) {
+        console.log('   ✅ Authenticated');
+      } else {
+        console.log('   ❌ NOT AUTHENTICATED');
+        console.log(`   ${authCheck.message || 'Run: claude auth login'}`);
+      }
     } else {
       console.log('   ❌ NOT FOUND');
       console.log('\n   Checked locations:');
@@ -253,6 +274,46 @@ program
     console.log('\n' + '='.repeat(50));
     console.log('Share this output when reporting issues.\n');
   });
+
+// Helper function to check if Claude CLI is authenticated
+// 🔧 FIX (Dec 22, 2025): Check auth status before commands to avoid silent timeouts
+async function checkClaudeAuth(claudePath) {
+  const { execSync } = require('child_process');
+
+  try {
+    // Run a quick test command to see if Claude is responsive
+    const result = execSync(`"${claudePath}" --version 2>&1`, {
+      encoding: 'utf-8',
+      timeout: 15000  // 15 second timeout
+    });
+
+    // Check for auth-related error messages
+    const lowerResult = result.toLowerCase();
+    if (lowerResult.includes('not authenticated') ||
+        lowerResult.includes('please log in') ||
+        lowerResult.includes('auth login') ||
+        lowerResult.includes('unauthorized')) {
+      return {
+        authenticated: false,
+        message: 'Claude CLI requires authentication. Run: claude auth login'
+      };
+    }
+
+    return { authenticated: true };
+  } catch (error) {
+    // If command times out or fails, auth might be the issue
+    if (error.killed || error.signal === 'SIGTERM') {
+      return {
+        authenticated: false,
+        message: 'Claude CLI is not responding (possible auth issue). Run: claude auth status'
+      };
+    }
+    return {
+      authenticated: true,  // Assume ok if just version check failed
+      warning: error.message
+    };
+  }
+}
 
 // Helper function to check Claude CLI
 // 🔧 FIX (Dec 15, 2025): Enhanced to try common paths and always return full path
@@ -281,6 +342,7 @@ async function checkClaudeCLI() {
         `${process.env.HOME}/.local/bin/claude`,      // Common Linux/pip location
         `${process.env.HOME}/.npm-global/bin/claude`,
         `${process.env.HOME}/.claude/bin/claude`,     // Claude's own install location
+        `${process.env.HOME}/.claude/local/claude`,   // OAuth/download install location (Dec 2025)
         '/usr/bin/claude'
       ];
 
