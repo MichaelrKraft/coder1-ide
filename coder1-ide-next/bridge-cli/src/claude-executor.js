@@ -11,13 +11,19 @@
 const { spawn, execSync } = require('child_process');
 const EventEmitter = require('events');
 
-// Try to load node-pty, fall back gracefully if not available
+// Try to load node-pty-prebuilt-multiarch (no compilation required)
+// Falls back gracefully if not available
 let pty;
 try {
-  pty = require('node-pty');
+  pty = require('node-pty-prebuilt-multiarch');
 } catch (error) {
-  console.warn('[Claude] node-pty not available, interactive mode disabled');
-  pty = null;
+  // Try original node-pty as fallback (for users who compiled it)
+  try {
+    pty = require('node-pty');
+  } catch (e) {
+    console.warn('[Claude] node-pty not available, interactive mode disabled');
+    pty = null;
+  }
 }
 
 class ClaudeExecutor extends EventEmitter {
@@ -87,6 +93,7 @@ class ClaudeExecutor extends EventEmitter {
           '/opt/homebrew/bin/claude',
           `${process.env.HOME}/.local/bin/claude`,
           `${process.env.HOME}/.claude/bin/claude`,
+          `${process.env.HOME}/.claude/local/claude`,   // OAuth/download install location (Dec 2025)
           `${process.env.HOME}/.npm-global/bin/claude`,
           '/usr/bin/claude'
         ];
@@ -153,9 +160,51 @@ class ClaudeExecutor extends EventEmitter {
       this.warn(`Using fallback 'claude' command - PATH resolution required`);
     }
 
+    // 🔧 FIX (Jan 4, 2026): Check authentication before executing commands
+    // Skip auth check for version/help commands (they don't need auth)
+    const skipAuthCommands = ['--version', '-v', '--help', '-h', 'auth'];
+    const needsAuthCheck = !skipAuthCommands.some(cmd => command.includes(cmd));
+
+    if (needsAuthCheck) {
+      const authStatus = await this.checkAuthStatus();
+      if (!authStatus.authenticated) {
+        this.error('Claude CLI is not authenticated');
+        this.error('Please run: claude auth login');
+        this.error(`Auth status output: ${authStatus.output || authStatus.error || 'unknown'}`);
+
+        return Promise.resolve({
+          exitCode: 1,
+          signal: null,
+          stdout: '',
+          stderr: `Claude CLI is not authenticated.\n\nTo fix, run:\n  claude auth login\n\nThen try again.\n\nAuth status: ${authStatus.output || authStatus.error || 'Could not determine auth status'}`,
+          duration: 0,
+          interactive: false,
+          error: 'Not authenticated'
+        });
+      }
+      this.log(`Auth check passed: ${authStatus.output}`);
+    }
+
     // Check if this needs interactive mode
-    if (this.needsInteractiveMode(command) && pty) {
-      return this.executeInteractive(command, options);
+    if (this.needsInteractiveMode(command)) {
+      if (pty) {
+        return this.executeInteractive(command, options);
+      } else {
+        // node-pty not available - can't run interactive Claude session
+        this.error('Interactive mode requires node-pty which is not installed.');
+        this.error('Please reinstall with: npm install -g coder1-bridge --build-from-source');
+
+        // Return error immediately instead of timing out
+        return Promise.resolve({
+          exitCode: 1,
+          signal: null,
+          stdout: '',
+          stderr: 'Interactive Claude sessions require node-pty.\n\nTo fix, run:\n  npm install -g coder1-bridge --build-from-source\n\nOr use Claude with a prompt:\n  claude "your question here"',
+          duration: 0,
+          interactive: false,
+          error: 'node-pty not available for interactive mode'
+        });
+      }
     }
 
     // Fall back to non-interactive execution
@@ -247,7 +296,13 @@ class ClaudeExecutor extends EventEmitter {
         // Set timeout for interactive sessions (longer than one-shot)
         const timeout = setTimeout(() => {
           if (!hasExited) {
-            this.warn('Interactive session timeout, killing process...');
+            this.warn(`Interactive session timeout after ${(this.maxTimeout * 5) / 1000}s, killing process...`);
+            this.warn(`Claude path: ${this.claudePath}`);
+            this.warn('');
+            this.warn('This usually means Claude CLI needs authentication.');
+            this.warn('Try running in a regular terminal:');
+            this.warn('  1. claude auth status');
+            this.warn('  2. claude auth login (if not authenticated)');
             ptyProcess.kill();
           }
         }, this.maxTimeout * 5); // 5x longer for interactive
@@ -345,13 +400,17 @@ class ClaudeExecutor extends EventEmitter {
       this.log(`Executing non-interactive: claude ${args.join(' ')}`);
 
       // Spawn Claude process
+      // 🔧 FIX (Jan 4, 2026): Added stdio config to prevent hanging on stdin
+      // Without this, spawn() defaults stdin to 'pipe', causing Claude CLI to
+      // wait for input that never comes (e.g., auth prompts), leading to 120s timeouts
       const claudeProcess = spawn(this.claudePath, args, {
         env: {
           ...process.env,
           CODER1_BRIDGE: 'true',
           TERM: 'xterm-256color'
         },
-        shell: true  // Use shell for proper PATH resolution (finds claude in user's PATH)
+        shell: true,  // Use shell for proper PATH resolution (finds claude in user's PATH)
+        stdio: ['ignore', 'pipe', 'pipe']  // Ignore stdin, capture stdout/stderr
       });
 
       let outputBuffer = '';
@@ -416,10 +475,18 @@ class ClaudeExecutor extends EventEmitter {
         }
       });
 
-      // Set timeout
+      // Set timeout with improved error messaging (Dec 22, 2025)
       const timeout = setTimeout(() => {
         if (!hasExited) {
-          this.warn('Command timeout, killing process...');
+          this.warn(`Command timeout after ${this.maxTimeout / 1000}s, killing process...`);
+          this.warn(`Command: claude ${args.join(' ')}`);
+          this.warn(`Claude path: ${this.claudePath}`);
+          this.warn('');
+          this.warn('Troubleshooting tips:');
+          this.warn('  1. Check auth: claude auth status');
+          this.warn('  2. Re-authenticate: claude auth login');
+          this.warn('  3. Run diagnostic: coder1-bridge diagnose');
+          this.warn('  4. Try verbose mode: coder1-bridge start --verbose');
           claudeProcess.kill('SIGTERM');
 
           setTimeout(() => {
@@ -519,6 +586,40 @@ class ClaudeExecutor extends EventEmitter {
    */
   isInteractiveSupported() {
     return pty !== null;
+  }
+
+  /**
+   * Check if Claude CLI is authenticated
+   * 🔧 FIX (Jan 4, 2026): Added to fail fast instead of timing out after 120s
+   * Returns auth status before attempting commands
+   */
+  async checkAuthStatus() {
+    try {
+      const output = execSync(`"${this.claudePath}" auth status`, {
+        encoding: 'utf-8',
+        timeout: 15000,
+        stdio: ['ignore', 'pipe', 'pipe']
+      });
+
+      // Check for various "not authenticated" indicators
+      const lowerOutput = output.toLowerCase();
+      const authenticated = !lowerOutput.includes('not authenticated') &&
+                           !lowerOutput.includes('no active session') &&
+                           !lowerOutput.includes('please log in') &&
+                           !lowerOutput.includes('not logged in');
+
+      return {
+        authenticated,
+        output: output.trim()
+      };
+    } catch (error) {
+      // If auth status command fails, assume not authenticated
+      return {
+        authenticated: false,
+        error: error.message,
+        output: error.stderr || error.stdout || ''
+      };
+    }
   }
 
   /**
