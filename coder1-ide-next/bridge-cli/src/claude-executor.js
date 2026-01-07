@@ -116,6 +116,52 @@ class ClaudeExecutor extends EventEmitter {
   }
 
   /**
+   * Classify PTY spawn errors for helpful error messages
+   * @param {Error} error - The spawn error
+   * @returns {{ code: string, message: string, recoverable: boolean, userAction: string }}
+   */
+  classifyPtyError(error) {
+    const errorMsg = error.message || '';
+
+    if (errorMsg.includes('posix_spawnp failed') || errorMsg.includes('spawn failed')) {
+      return {
+        code: 'PTY_SPAWN_FAILED',
+        message: 'Native PTY module failed to spawn process. This usually means node-pty needs recompilation.',
+        recoverable: true,
+        userAction: `To fix:
+  1. Reinstall with: npm install -g coder1-bridge --build-from-source
+  2. Or use Node.js LTS (v20): nvm use 20 && npm install -g coder1-bridge
+  3. Or use non-interactive mode: claude "your prompt here"`
+      };
+    }
+
+    if (errorMsg.includes('ENOENT')) {
+      return {
+        code: 'BINARY_NOT_FOUND',
+        message: 'Claude CLI binary not found at resolved path.',
+        recoverable: false,
+        userAction: 'Install Claude Code: npm install -g @anthropic-ai/claude-code'
+      };
+    }
+
+    if (errorMsg.includes('EMFILE') || errorMsg.includes('file descriptors')) {
+      return {
+        code: 'FD_EXHAUSTION',
+        message: 'Too many open file descriptors.',
+        recoverable: true,
+        userAction: 'Close unused terminals/processes and try again'
+      };
+    }
+
+    return {
+      code: 'UNKNOWN_PTY_ERROR',
+      message: errorMsg || 'Unknown PTY error',
+      recoverable: false,
+      userAction: 'Check coder1-bridge diagnose output for details'
+    };
+  }
+
+  /**
    * Check if command needs interactive mode (PTY)
    * Returns true for `claude` alone or `claude chat`
    */
@@ -316,8 +362,41 @@ class ClaudeExecutor extends EventEmitter {
         this.emit('interactive:started', { commandId, pid: ptyProcess.pid });
 
       } catch (error) {
-        this.error('Failed to spawn interactive PTY:', error);
-        reject(error);
+        const classified = this.classifyPtyError(error);
+
+        this.error(`Failed to spawn interactive PTY: ${classified.code}`);
+        this.error(classified.message);
+        this.error('');
+        this.error(classified.userAction);
+
+        if (classified.recoverable) {
+          // Attempt graceful fallback to non-interactive mode
+          this.warn('');
+          this.warn('Attempting fallback to non-interactive mode...');
+          this.warn('Note: Interactive features (welcome screen, real-time input) will be limited.');
+
+          // Fall back to non-interactive execution (use .then() since we're in Promise executor)
+          this.executeNonInteractive(command, options)
+            .then((result) => {
+              resolve({
+                ...result,
+                fallback: true,
+                fallbackReason: classified.code
+              });
+            })
+            .catch((fallbackError) => {
+              this.error('Fallback also failed:', fallbackError.message);
+              reject(new Error(
+                `PTY spawn failed (${classified.code}): ${classified.message}\n\n${classified.userAction}`
+              ));
+            });
+          return; // Don't fall through to reject below
+        }
+
+        // If not recoverable, reject with helpful message
+        reject(new Error(
+          `PTY spawn failed (${classified.code}): ${classified.message}\n\n${classified.userAction}`
+        ));
       }
     });
   }
