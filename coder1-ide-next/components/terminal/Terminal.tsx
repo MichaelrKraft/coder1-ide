@@ -16,7 +16,9 @@ if (typeof window !== 'undefined') {
 }
 import './Terminal.css'; // Re-enabled - critical for xterm viewport fixes
 import { Zap, StopCircle, Brain, Eye, Code2, Mic, MicOff, Speaker, ChevronDown, Plus, Users } from '@/lib/icons';
-import { Edit3, GitBranch, X, Stethoscope } from 'lucide-react';
+import { Edit3, GitBranch, X, Stethoscope, Boxes } from 'lucide-react';
+import { useMCPOverlay, useMCPServers } from '@/hooks/useMCPManager';
+import MCPOverlay from '@/components/MCPManager/MCPOverlay';
 import SandboxPanel from '@/components/sandbox/SandboxPanel';
 import { useModelStore } from '@/stores/useModelStore';
 import TerminalSettings, { TerminalSettingsState } from './TerminalSettings';
@@ -208,7 +210,12 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
   
   // ✅ READ MODEL FROM ZUSTAND STORE - This ensures real-time updates when model is changed
   const selectedClaudeModel = useModelStore(state => state.selectedModel);
-  
+
+  // MCP Manager hooks
+  const { isOpen: isMCPOverlayOpen, toggle: toggleMCPOverlay, close: closeMCPOverlay } = useMCPOverlay();
+  const { servers: mcpServers } = useMCPServers();
+  const mcpEnabledCount = mcpServers.filter(s => s.enabled).length;
+
   // Auto-switch terminal mode based on selected model
   useEffect(() => {
     const modeManager = modeManagerRef.current;
@@ -5502,35 +5509,27 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
             {voiceListening ? <MicOff className="w-4 h-4 text-red-500" /> : <Mic className="w-4 h-4" />}
           </button>
 
-          {/* Planning Mode Icon Button - Only show when staged composer is enabled */}
-          {ENABLE_STAGED_COMPOSER && (
-            <button
-              onClick={() => {
-                setPlanningMode(!planningMode);
-                if (!planningMode) {
-                  // Entering planning mode
-                  xtermRef.current?.writeln('\r\n\x1b[33m📋 PLANNING MODE ACTIVATED\x1b[0m');
-                  xtermRef.current?.writeln('Commands will be collected but not executed until you disable planning mode.\r\n');
-                } else {
-                  // Exiting planning mode
-                  if (plannedCommands.length > 0) {
-                    xtermRef.current?.writeln('\r\n\x1b[32m✅ PLANNING MODE DISABLED\x1b[0m');
-                    xtermRef.current?.writeln(`You have ${plannedCommands.length} planned commands. Execute them now? (y/n)`);
-                  } else {
-                    xtermRef.current?.writeln('\r\n\x1b[32m✅ PLANNING MODE DISABLED\x1b[0m\r\n');
-                  }
-                }
-              }}
-              className={`terminal-control-btn p-1.5 rounded-md transition-all ${
-                planningMode 
-                  ? 'terminal-btn-active-yellow' 
-                  : 'hover:bg-bg-tertiary'
-              }`}
-              title={planningMode ? "Disable planning mode" : "Enable planning mode"}
-            >
-              <GitBranch className={`w-4 h-4 ${planningMode ? 'text-yellow-400' : 'text-text-secondary'}`} />
-            </button>
-          )}
+          {/* MCP Manager Button */}
+          <button
+            onClick={() => {
+              console.log('[MCP] Button clicked! Current isOpen:', isMCPOverlayOpen);
+              toggleMCPOverlay();
+              console.log('[MCP] toggleMCPOverlay called');
+            }}
+            className={`terminal-control-btn p-1.5 rounded-md transition-all relative ${
+              isMCPOverlayOpen
+                ? 'terminal-btn-active-orange'
+                : 'hover:bg-bg-tertiary'
+            }`}
+            title="MCP Servers"
+          >
+            <Boxes className={`w-4 h-4 ${isMCPOverlayOpen ? 'text-orange-400' : 'text-text-secondary'}`} />
+            {mcpEnabledCount > 0 && (
+              <span className="absolute -top-1 -right-1 min-w-[14px] h-[14px] px-0.5 text-[9px] font-medium bg-orange-500 text-white rounded-full flex items-center justify-center">
+                {mcpEnabledCount}
+              </span>
+            )}
+          </button>
 
           {/* Compose Icon Button - Only show when staged composer is enabled */}
           {ENABLE_STAGED_COMPOSER && (
@@ -6117,11 +6116,11 @@ Context: Running in Coder1 IDE development environment`;
       {showSandboxPanel && (
         <div className="fixed inset-0 z-40 flex items-center justify-center">
           {/* Backdrop with blur */}
-          <div 
+          <div
             className="absolute inset-0 bg-black/50 backdrop-blur-sm"
             onClick={() => setShowSandboxPanel(false)}
           />
-          
+
           {/* Modal Container */}
           <div className="relative z-50 w-full max-w-4xl h-[80vh] bg-bg-secondary border-2 border-coder1-cyan/50 rounded-lg shadow-2xl overflow-hidden"
                style={{ boxShadow: '0 0 40px rgba(0, 217, 255, 0.3)' }}>
@@ -6133,7 +6132,7 @@ Context: Running in Coder1 IDE development environment`;
             >
               <X className="w-5 h-5" />
             </button>
-            
+
             {/* SandboxPanel Component */}
             <div className="h-full overflow-hidden">
               <SandboxPanel onRequestClose={() => setShowSandboxPanel(false)} />
@@ -6141,6 +6140,9 @@ Context: Running in Coder1 IDE development environment`;
           </div>
         </div>
       )}
+
+      {/* MCP Manager Overlay */}
+      <MCPOverlay isOpen={isMCPOverlayOpen} onClose={closeMCPOverlay} />
     </div>
   );
 }
