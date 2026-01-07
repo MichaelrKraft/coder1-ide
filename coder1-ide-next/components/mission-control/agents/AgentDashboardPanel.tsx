@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useMissionControlStore, DashboardMode } from '@/stores/useMissionControlStore';
 import ParallelExplorationModal from '@/components/sandbox/ParallelExplorationModal';
+import AgentKanbanBoard from './AgentKanbanBoard';
 import { getSocket } from '@/lib/socket';
 import { extractTerminalContext } from '@/lib/terminal-context';
 
@@ -145,6 +146,9 @@ export default function AgentDashboardPanel() {
 
   // Activity stream state for real-time logs
   const [activityStream, setActivityStream] = useState<string[]>([]);
+
+  // View mode state for Cards vs Kanban toggle
+  const [viewMode, setViewMode] = useState<'cards' | 'kanban'>('cards');
 
   // WebSocket event listeners for REAL agent progress
   useEffect(() => {
@@ -378,6 +382,29 @@ export default function AgentDashboardPanel() {
           </p>
         </div>
         <div className="flex items-center gap-4">
+          {/* View Mode Toggle */}
+          <div className="flex rounded-lg overflow-hidden border border-border-default">
+            <button
+              onClick={() => setViewMode('cards')}
+              className={`px-3 py-1.5 text-xs font-medium transition-colors ${
+                viewMode === 'cards'
+                  ? 'bg-coder1-cyan text-black'
+                  : 'bg-bg-secondary text-text-secondary hover:text-text-primary'
+              }`}
+            >
+              Cards
+            </button>
+            <button
+              onClick={() => setViewMode('kanban')}
+              className={`px-3 py-1.5 text-xs font-medium transition-colors ${
+                viewMode === 'kanban'
+                  ? 'bg-coder1-cyan text-black'
+                  : 'bg-bg-secondary text-text-secondary hover:text-text-primary'
+              }`}
+            >
+              Kanban
+            </button>
+          </div>
           <div className="text-right">
             <div className="text-sm text-text-muted">Overall Progress</div>
             <div className="text-2xl font-bold text-coder1-cyan">
@@ -387,48 +414,54 @@ export default function AgentDashboardPanel() {
         </div>
       </div>
 
-      {/* Agent Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 flex-1 overflow-y-auto">
-        {activeAgents.map(agent => (
-          <div
-            key={agent.id}
-            className="bg-bg-secondary border border-border-default rounded-lg p-4"
-          >
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <span className="text-xl">{agent.icon}</span>
-                <div>
-                  <h4 className="font-medium text-text-primary">{agent.name}</h4>
-                  <p className="text-xs text-text-muted">{agent.role}</p>
+      {/* Agent View - Cards or Kanban */}
+      {viewMode === 'cards' ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 flex-1 overflow-y-auto">
+          {activeAgents.map(agent => (
+            <div
+              key={agent.id}
+              className="bg-bg-secondary border border-border-default rounded-lg p-4"
+            >
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <span className="text-xl">{agent.icon}</span>
+                  <div>
+                    <h4 className="font-medium text-text-primary">{agent.name}</h4>
+                    <p className="text-xs text-text-muted">{agent.role}</p>
+                  </div>
+                </div>
+                <div className={`text-xs font-medium px-2 py-1 rounded ${
+                  agent.status === 'completed'
+                    ? 'bg-green-500/20 text-green-400'
+                    : agent.status === 'working'
+                    ? 'bg-coder1-cyan/20 text-coder1-cyan'
+                    : 'bg-gray-500/20 text-gray-400'
+                }`}>
+                  {agent.status === 'completed' ? '✓ Done' : 'Working'}
                 </div>
               </div>
-              <div className={`text-xs font-medium px-2 py-1 rounded ${
-                agent.status === 'completed'
-                  ? 'bg-green-500/20 text-green-400'
-                  : agent.status === 'working'
-                  ? 'bg-coder1-cyan/20 text-coder1-cyan'
-                  : 'bg-gray-500/20 text-gray-400'
-              }`}>
-                {agent.status === 'completed' ? '✓ Done' : 'Working'}
+
+              {/* Progress Bar */}
+              <div className="w-full h-2 bg-bg-primary rounded-full overflow-hidden mb-2">
+                <div
+                  className={`h-full transition-all duration-500 rounded-full ${
+                    agent.status === 'completed'
+                      ? 'bg-green-500'
+                      : 'bg-gradient-to-r from-coder1-cyan to-blue-500'
+                  }`}
+                  style={{ width: `${agent.progress}%` }}
+                />
               </div>
-            </div>
 
-            {/* Progress Bar */}
-            <div className="w-full h-2 bg-bg-primary rounded-full overflow-hidden mb-2">
-              <div
-                className={`h-full transition-all duration-500 rounded-full ${
-                  agent.status === 'completed'
-                    ? 'bg-green-500'
-                    : 'bg-gradient-to-r from-coder1-cyan to-blue-500'
-                }`}
-                style={{ width: `${agent.progress}%` }}
-              />
+              <p className="text-xs text-text-secondary">{agent.currentTask}</p>
             </div>
-
-            <p className="text-xs text-text-secondary">{agent.currentTask}</p>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      ) : (
+        <div className="flex-1 overflow-hidden">
+          <AgentKanbanBoard agents={activeAgents} />
+        </div>
+      )}
 
       {/* Activity Stream */}
       <div className="mt-4 p-4 bg-bg-tertiary rounded-lg border border-border-default">
