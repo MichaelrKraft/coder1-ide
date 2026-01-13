@@ -53,7 +53,11 @@ services:
       - key: SUMMARIES_DIR
         value: /data/summaries
         
-      # Service URLs (will use origin detection in production)
+      # Service URLs for production
+      # 🎯 CRITICAL (Jan 13, 2026): Must set actual URL for SSR socket connections
+      - key: NEXT_PUBLIC_UNIFIED_SERVER_URL
+        value: https://coder1.ai
+
       - key: NEXT_PUBLIC_UNIFIED_SERVER
         value: true
         

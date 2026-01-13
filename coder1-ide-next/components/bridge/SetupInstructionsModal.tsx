@@ -25,9 +25,16 @@ export function SetupInstructionsModal({
   const [bridgeConnected, setBridgeConnected] = useState(false);
   
   // Detect if running on localhost or production
+  // 🎯 FIX (Jan 13, 2026): More robust localhost detection
   React.useEffect(() => {
     if (typeof window !== 'undefined') {
-      setIsProduction(!window.location.hostname.includes('localhost'));
+      const hostname = window.location.hostname;
+      const isLocalhost = hostname === 'localhost' ||
+                          hostname === '127.0.0.1' ||
+                          hostname.startsWith('192.168.') ||
+                          hostname.startsWith('10.') ||
+                          hostname.endsWith('.local');
+      setIsProduction(!isLocalhost);
 
       // Detect user's OS
       const platform = window.navigator.platform.toLowerCase();
