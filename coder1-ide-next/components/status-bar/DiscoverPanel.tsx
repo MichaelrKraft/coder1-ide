@@ -567,7 +567,7 @@ export default function DiscoverPanel() {
         <div className="px-4 py-3 border-b border-border-default">
           <div className="p-4 border-2 border-orange-500 rounded-lg bg-gradient-to-br from-orange-500/10 to-coder1-cyan/5">
             <a
-              href="http://localhost:3001/templates-hub.html"
+              href="/templates-hub.html"
               target="_blank"
               className="block group"
             >

@@ -85,9 +85,15 @@ export const getSocket = async (sessionId?: string, bridgeAuth: boolean = false)
       // 🎯 CRITICAL FIX (Oct 28, 2025): Always use window.location.origin (already includes port!)
       // Previous bug: We were constructing URL with port when origin already had it
       // This caused Socket.IO to use wrong URLs like /57132/health instead of /socket.io/
+      // 🎯 CRITICAL FIX (Jan 13, 2026): Remove localhost fallback - breaks production SSR
       const unifiedUrl = typeof window !== 'undefined'
         ? window.location.origin // ALWAYS use origin (works in both dev and production)
-        : (process.env.NEXT_PUBLIC_UNIFIED_SERVER_URL || 'http://localhost:3001');
+        : (process.env.NEXT_PUBLIC_UNIFIED_SERVER_URL || '');
+
+      // Warn if URL is empty during SSR (indicates missing env var in production)
+      if (!unifiedUrl && typeof window === 'undefined') {
+        console.error('❌ NEXT_PUBLIC_UNIFIED_SERVER_URL not configured for SSR - socket will fail');
+      }
       console.log(`🎯 CONNECTING TO UNIFIED SERVER: ${unifiedUrl}`);
       
       let newSocket: Socket;
