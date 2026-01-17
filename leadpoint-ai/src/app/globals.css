@@ -1,0 +1,845 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* =============================================================================
+   FUTURISTIC "ALIVE & RESPONSIVE" DESIGN SYSTEM
+   Cool, dark, glowing aesthetic with cyan/purple accents
+   ============================================================================= */
+
+:root {
+  /* Background colors - Deep dark */
+  --background: 240 33% 4%;
+  --foreground: 0 0% 100%;
+
+  /* Card/Surface colors - Dark blue-gray */
+  --card: 215 28% 7%;
+  --card-foreground: 0 0% 100%;
+
+  /* Popover colors */
+  --popover: 215 28% 7%;
+  --popover-foreground: 0 0% 100%;
+
+  /* Primary - Cyan */
+  --primary: 190 100% 50%;
+  --primary-foreground: 240 33% 4%;
+
+  /* Secondary - Purple/Violet */
+  --secondary: 258 90% 66%;
+  --secondary-foreground: 0 0% 100%;
+
+  /* Muted - Dark surfaces */
+  --muted: 215 28% 12%;
+  --muted-foreground: 215 20% 75%;
+
+  /* Accent - Cyan glow */
+  --accent: 190 100% 50%;
+  --accent-foreground: 240 33% 4%;
+
+  /* Destructive - Bright red */
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 0 0% 100%;
+
+  /* Border - Subtle dark borders */
+  --border: 215 28% 17%;
+  --input: 215 28% 17%;
+
+  /* Ring - Cyan glow */
+  --ring: 190 100% 50%;
+
+  /* Radius */
+  --radius: 0.75rem;
+
+  /* Futuristic color palette */
+  --cyan-400: #22d3ee;
+  --cyan-500: #06b6d4;
+  --cyan-600: #0891b2;
+  --purple-400: #c084fc;
+  --purple-500: #a855f7;
+  --purple-600: #9333ea;
+  --violet-500: #8b5cf6;
+  --silver: #c0c0c0;
+  --silver-light: #e2e8f0;
+
+  /* Shadows with glow */
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3);
+  --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.4), 0 1px 2px -1px rgb(0 0 0 / 0.3);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.4), 0 2px 4px -2px rgb(0 0 0 / 0.3);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.4), 0 4px 6px -4px rgb(0 0 0 / 0.3);
+  --shadow-glow-cyan: 0 0 20px rgba(0, 212, 255, 0.3);
+  --shadow-glow-purple: 0 0 20px rgba(139, 92, 246, 0.3);
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+    background: linear-gradient(135deg, #0a0a0f 0%, #050510 50%, #0d1117 100%);
+    min-height: 100vh;
+    font-size: 16px;  /* Larger base for better readability */
+    line-height: 1.65;  /* Improved line spacing */
+    letter-spacing: 0.01em;  /* Slightly looser for readability */
+  }
+
+  /* Typography defaults */
+  h1, h2, h3, h4, h5, h6 {
+    @apply text-white font-semibold tracking-tight;
+  }
+
+  p {
+    @apply text-slate-300;
+  }
+
+  /* Improve readability of commonly used muted text colors */
+  .text-zinc-400 { color: #a1a1aa !important; }  /* Upgraded from #a1a1aa to be visible */
+  .text-zinc-500 { color: #a1a1aa !important; }  /* Same upgrade */
+  .text-slate-400 { color: #94a3b8 !important; } /* Already good, keep same */
+  .text-slate-500 { color: #94a3b8 !important; } /* Upgrade from #64748b */
+  .text-gray-400 { color: #9ca3af !important; }  /* Keep same for readability */
+  .text-gray-500 { color: #9ca3af !important; }  /* Upgrade from #6b7280 */
+}
+
+/* =============================================================================
+   CUSTOM SCROLLBAR - Dark Futuristic
+   ============================================================================= */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(13, 17, 23, 0.5);
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #00d4ff33, #8b5cf633);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #00d4ff66, #8b5cf666);
+}
+
+/* =============================================================================
+   FOCUS & SELECTION STYLES
+   ============================================================================= */
+*:focus-visible {
+  outline: 2px solid hsl(var(--ring));
+  outline-offset: 2px;
+  box-shadow: 0 0 15px rgba(0, 212, 255, 0.3);
+}
+
+::selection {
+  background-color: rgba(0, 212, 255, 0.3);
+  color: #ffffff;
+}
+
+/* =============================================================================
+   GLOW EFFECTS
+   ============================================================================= */
+.glow-cyan {
+  box-shadow: 0 0 20px rgba(0, 212, 255, 0.3);
+}
+
+.glow-purple {
+  box-shadow: 0 0 20px rgba(139, 92, 246, 0.3);
+}
+
+.glow-gradient {
+  box-shadow: 0 0 30px rgba(0, 212, 255, 0.2), 0 0 60px rgba(139, 92, 246, 0.1);
+}
+
+.glow-cyan-strong {
+  box-shadow: 0 0 30px rgba(0, 212, 255, 0.5), 0 0 60px rgba(0, 212, 255, 0.2);
+}
+
+.glow-purple-strong {
+  box-shadow: 0 0 30px rgba(139, 92, 246, 0.5), 0 0 60px rgba(139, 92, 246, 0.2);
+}
+
+/* =============================================================================
+   HOVER GLOW ANIMATIONS
+   ============================================================================= */
+.hover-glow {
+  transition: all 0.3s ease;
+}
+
+.hover-glow:hover {
+  box-shadow: 0 0 25px rgba(0, 212, 255, 0.4);
+  transform: translateY(-2px);
+}
+
+.hover-glow-purple {
+  transition: all 0.3s ease;
+}
+
+.hover-glow-purple:hover {
+  box-shadow: 0 0 25px rgba(139, 92, 246, 0.4);
+  transform: translateY(-2px);
+}
+
+/* =============================================================================
+   PULSE GLOW ANIMATION
+   ============================================================================= */
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(0, 212, 255, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 30px rgba(0, 212, 255, 0.5);
+  }
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+@keyframes pulse-glow-purple {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(139, 92, 246, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 30px rgba(139, 92, 246, 0.5);
+  }
+}
+
+.animate-pulse-glow-purple {
+  animation: pulse-glow-purple 2s ease-in-out infinite;
+}
+
+/* =============================================================================
+   GRADIENT TEXT EFFECTS
+   ============================================================================= */
+.text-gradient-cyan-purple {
+  background: linear-gradient(135deg, #00d4ff, #8b5cf6);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.text-gradient-purple-cyan {
+  background: linear-gradient(135deg, #8b5cf6, #00d4ff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.text-gradient-cyan {
+  background: linear-gradient(135deg, #00d4ff, #06b6d4);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.text-gradient-purple {
+  background: linear-gradient(135deg, #a855f7, #8b5cf6);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.text-gradient {
+  background: linear-gradient(135deg, #00d4ff, #8b5cf6);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* =============================================================================
+   ANIMATED GRADIENT BORDER
+   ============================================================================= */
+@keyframes gradient-shift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.border-gradient-animated {
+  position: relative;
+  background: linear-gradient(90deg, #00d4ff, #8b5cf6, #00d4ff);
+  background-size: 200% 200%;
+  animation: gradient-shift 3s ease infinite;
+  padding: 1px;
+  border-radius: var(--radius);
+}
+
+.border-gradient-animated > * {
+  background: #0d1117;
+  border-radius: calc(var(--radius) - 1px);
+}
+
+/* =============================================================================
+   FUTURISTIC CARD STYLES
+   ============================================================================= */
+.card-futuristic {
+  background: rgba(13, 17, 23, 0.8);
+  border: 1px solid rgba(30, 41, 59, 0.5);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  transition: all 0.3s ease;
+  border-radius: var(--radius);
+}
+
+.card-futuristic:hover {
+  border-color: rgba(0, 212, 255, 0.3);
+  box-shadow: 0 8px 32px rgba(0, 212, 255, 0.15);
+  transform: translateY(-4px);
+}
+
+.card-futuristic-purple:hover {
+  border-color: rgba(139, 92, 246, 0.3);
+  box-shadow: 0 8px 32px rgba(139, 92, 246, 0.15);
+  transform: translateY(-4px);
+}
+
+.card-glass {
+  background: rgba(13, 17, 23, 0.6);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* =============================================================================
+   FUTURISTIC BUTTON STYLES
+   ============================================================================= */
+.btn-futuristic {
+  background: linear-gradient(135deg, #00d4ff, #0891b2);
+  color: #050510;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  border: none;
+  border-radius: var(--radius);
+}
+
+.btn-futuristic:hover {
+  box-shadow: 0 0 30px rgba(0, 212, 255, 0.5);
+  transform: translateY(-2px);
+}
+
+.btn-futuristic-purple {
+  background: linear-gradient(135deg, #8b5cf6, #a855f7);
+  color: #ffffff;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  border: none;
+  border-radius: var(--radius);
+}
+
+.btn-futuristic-purple:hover {
+  box-shadow: 0 0 30px rgba(139, 92, 246, 0.5);
+  transform: translateY(-2px);
+}
+
+.btn-futuristic-outline {
+  background: transparent;
+  color: #00d4ff;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  border: 1px solid rgba(0, 212, 255, 0.5);
+  border-radius: var(--radius);
+}
+
+.btn-futuristic-outline:hover {
+  background: rgba(0, 212, 255, 0.1);
+  border-color: #00d4ff;
+  box-shadow: 0 0 20px rgba(0, 212, 255, 0.3);
+}
+
+/* =============================================================================
+   SHIMMER / SHINE EFFECT
+   ============================================================================= */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.shimmer {
+  position: relative;
+  overflow: hidden;
+}
+
+.shimmer::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.1) 50%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 2s infinite;
+  pointer-events: none;
+}
+
+/* =============================================================================
+   FLOATING ANIMATION
+   ============================================================================= */
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float-slow {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.animate-float-slow {
+  animation: float-slow 5s ease-in-out infinite;
+}
+
+/* =============================================================================
+   SCALE ON HOVER
+   ============================================================================= */
+.hover-scale {
+  transition: transform 0.2s ease;
+}
+
+.hover-scale:hover {
+  transform: scale(1.02);
+}
+
+.hover-scale-lg {
+  transition: transform 0.2s ease;
+}
+
+.hover-scale-lg:hover {
+  transform: scale(1.05);
+}
+
+/* =============================================================================
+   FUTURISTIC INPUT STYLES
+   ============================================================================= */
+.input-futuristic {
+  background: rgba(13, 17, 23, 0.6);
+  border: 1px solid rgba(30, 41, 59, 0.5);
+  color: #ffffff;
+  transition: all 0.3s ease;
+  border-radius: var(--radius);
+}
+
+.input-futuristic::placeholder {
+  color: rgba(148, 163, 184, 0.6);
+}
+
+.input-futuristic:focus {
+  border-color: #00d4ff;
+  box-shadow: 0 0 15px rgba(0, 212, 255, 0.2);
+  outline: none;
+}
+
+.input-futuristic-purple:focus {
+  border-color: #8b5cf6;
+  box-shadow: 0 0 15px rgba(139, 92, 246, 0.2);
+  outline: none;
+}
+
+/* =============================================================================
+   WAVE ANIMATION
+   ============================================================================= */
+@keyframes wave {
+  0%, 100% { transform: rotate(0deg); }
+  20% { transform: rotate(14deg); }
+  40% { transform: rotate(-8deg); }
+  60% { transform: rotate(14deg); }
+  80% { transform: rotate(-4deg); }
+}
+
+.animate-wave {
+  animation: wave 2.5s ease-in-out infinite;
+  display: inline-block;
+  transform-origin: 70% 70%;
+}
+
+/* =============================================================================
+   SMOOTH TRANSITIONS FOR INTERACTIVE ELEMENTS
+   ============================================================================= */
+button, a, input, select, textarea {
+  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, backdrop-filter;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+}
+
+/* =============================================================================
+   GLASS EFFECT
+   ============================================================================= */
+.glass {
+  background: rgba(13, 17, 23, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.glass-strong {
+  background: rgba(13, 17, 23, 0.9);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* =============================================================================
+   CARD SHADOW UTILITIES - Dark Theme
+   ============================================================================= */
+.card-shadow {
+  background: rgba(13, 17, 23, 0.8);
+  box-shadow: var(--shadow);
+  border: 1px solid rgba(30, 41, 59, 0.5);
+}
+
+.card-shadow-md {
+  background: rgba(13, 17, 23, 0.8);
+  box-shadow: var(--shadow-md);
+  border: 1px solid rgba(30, 41, 59, 0.5);
+}
+
+.card-shadow-lg {
+  background: rgba(13, 17, 23, 0.8);
+  box-shadow: var(--shadow-lg);
+  border: 1px solid rgba(30, 41, 59, 0.5);
+}
+
+/* =============================================================================
+   HOVER LIFT EFFECT
+   ============================================================================= */
+.hover-lift {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3), 0 0 20px rgba(0, 212, 255, 0.1);
+}
+
+/* =============================================================================
+   PULSE ANIMATION VARIATION
+   ============================================================================= */
+@keyframes pulse-subtle {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+.animate-pulse-subtle {
+  animation: pulse-subtle 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* =============================================================================
+   BORDER UTILITIES
+   ============================================================================= */
+.border-subtle {
+  border-color: rgba(30, 41, 59, 0.5);
+}
+
+.border-glow-cyan {
+  border: 1px solid rgba(0, 212, 255, 0.3);
+  box-shadow: 0 0 10px rgba(0, 212, 255, 0.1);
+}
+
+.border-glow-purple {
+  border: 1px solid rgba(139, 92, 246, 0.3);
+  box-shadow: 0 0 10px rgba(139, 92, 246, 0.1);
+}
+
+/* =============================================================================
+   TEXT COLOR UTILITIES - Improved Readability
+   ============================================================================= */
+.text-primary-light {
+  color: #ffffff;
+}
+
+.text-secondary-light {
+  color: #cbd5e1;  /* Upgraded from #94a3b8 for better readability */
+}
+
+.text-muted-light {
+  color: #94a3b8;  /* Upgraded from #64748b for better readability */
+}
+
+.text-cyan {
+  color: #00d4ff;
+}
+
+.text-purple {
+  color: #8b5cf6;
+}
+
+.text-silver {
+  color: #c0c0c0;
+}
+
+/* =============================================================================
+   LINK STYLES
+   ============================================================================= */
+a:not([class]) {
+  color: #00d4ff;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+a:not([class]):hover {
+  color: #22d3ee;
+  text-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
+}
+
+/* =============================================================================
+   BUTTON BASE STYLES - Dark Theme
+   ============================================================================= */
+.btn-primary {
+  @apply bg-cyan-500 text-gray-900 hover:bg-cyan-400;
+  box-shadow: 0 0 15px rgba(0, 212, 255, 0.2);
+}
+
+.btn-primary:hover {
+  box-shadow: 0 0 25px rgba(0, 212, 255, 0.4);
+}
+
+.btn-secondary {
+  @apply bg-violet-600 text-white hover:bg-violet-500;
+  box-shadow: 0 0 15px rgba(139, 92, 246, 0.2);
+}
+
+.btn-secondary:hover {
+  box-shadow: 0 0 25px rgba(139, 92, 246, 0.4);
+}
+
+.btn-ghost {
+  @apply bg-transparent text-slate-300 hover:bg-slate-800/50 hover:text-white;
+}
+
+/* =============================================================================
+   INPUT STYLES - Dark Theme
+   ============================================================================= */
+.input-dark {
+  @apply bg-slate-900/50 border-slate-700 text-white placeholder-slate-400;
+  @apply focus:border-cyan-500 focus:ring-cyan-500/20;
+}
+
+/* =============================================================================
+   DIVIDER - Dark Theme
+   ============================================================================= */
+.divider {
+  @apply border-t border-slate-800;
+}
+
+/* =============================================================================
+   SURFACE BACKGROUNDS - Dark Theme
+   ============================================================================= */
+.surface {
+  background: rgba(13, 17, 23, 0.8);
+}
+
+.surface-muted {
+  background: rgba(22, 27, 34, 0.8);
+}
+
+.surface-elevated {
+  background: rgba(13, 17, 23, 0.9);
+  box-shadow: var(--shadow-md);
+}
+
+/* =============================================================================
+   NEON UNDERLINE EFFECT
+   ============================================================================= */
+.neon-underline {
+  position: relative;
+}
+
+.neon-underline::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: linear-gradient(90deg, #00d4ff, #8b5cf6);
+  box-shadow: 0 0 10px rgba(0, 212, 255, 0.5);
+  transform: scaleX(0);
+  transition: transform 0.3s ease;
+}
+
+.neon-underline:hover::after {
+  transform: scaleX(1);
+}
+
+/* =============================================================================
+   LOADING SPINNER - Futuristic
+   ============================================================================= */
+@keyframes spin-glow {
+  0% {
+    transform: rotate(0deg);
+    box-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(0, 212, 255, 0.5);
+  }
+  100% {
+    transform: rotate(360deg);
+    box-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
+  }
+}
+
+.spinner-futuristic {
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(0, 212, 255, 0.1);
+  border-top: 3px solid #00d4ff;
+  border-radius: 50%;
+  animation: spin-glow 1s linear infinite;
+}
+
+/* =============================================================================
+   GRADIENT BACKGROUNDS
+   ============================================================================= */
+.bg-gradient-futuristic {
+  background: linear-gradient(135deg, #0a0a0f 0%, #050510 50%, #0d1117 100%);
+}
+
+.bg-gradient-cyan {
+  background: linear-gradient(135deg, rgba(0, 212, 255, 0.1) 0%, transparent 100%);
+}
+
+.bg-gradient-purple {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, transparent 100%);
+}
+
+.bg-gradient-mesh {
+  background:
+    radial-gradient(at 40% 20%, rgba(0, 212, 255, 0.05) 0px, transparent 50%),
+    radial-gradient(at 80% 0%, rgba(139, 92, 246, 0.05) 0px, transparent 50%),
+    radial-gradient(at 0% 50%, rgba(0, 212, 255, 0.03) 0px, transparent 50%),
+    radial-gradient(at 80% 50%, rgba(139, 92, 246, 0.03) 0px, transparent 50%),
+    radial-gradient(at 0% 100%, rgba(0, 212, 255, 0.05) 0px, transparent 50%),
+    radial-gradient(at 80% 100%, rgba(139, 92, 246, 0.05) 0px, transparent 50%);
+}
+
+/* =============================================================================
+   GRID PATTERN OVERLAY
+   ============================================================================= */
+.bg-grid-pattern {
+  background-image:
+    linear-gradient(rgba(0, 212, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 212, 255, 0.03) 1px, transparent 1px);
+  background-size: 50px 50px;
+}
+
+/* =============================================================================
+   SCANLINE EFFECT
+   ============================================================================= */
+@keyframes scanline {
+  0% {
+    transform: translateY(-100%);
+  }
+  100% {
+    transform: translateY(100vh);
+  }
+}
+
+.scanline-overlay::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(
+    to bottom,
+    transparent,
+    rgba(0, 212, 255, 0.1),
+    transparent
+  );
+  animation: scanline 8s linear infinite;
+  pointer-events: none;
+  z-index: 9999;
+}
+
+/* =============================================================================
+   SUCCESS ANIMATIONS
+   ============================================================================= */
+@keyframes bounce-once {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  25% {
+    transform: translateY(-4px);
+  }
+  50% {
+    transform: translateY(0);
+  }
+  75% {
+    transform: translateY(-2px);
+  }
+}
+
+.animate-bounce-once {
+  animation: bounce-once 0.5s ease-out;
+}
+
+@keyframes checkmark-draw {
+  0% {
+    stroke-dashoffset: 24;
+  }
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
+
+.animate-checkmark {
+  animation: checkmark-draw 0.3s ease-out forwards;
+}
+
+@keyframes scale-in {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.animate-scale-in {
+  animation: scale-in 0.3s ease-out forwards;
+}
