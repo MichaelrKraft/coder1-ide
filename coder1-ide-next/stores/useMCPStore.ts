@@ -25,12 +25,14 @@ interface MCPState {
   servers: MCPServerWithStatus[];
   isLoadingServers: boolean;
   serversError: string | null;
+  isServersInitialized: boolean;
 
   // Profile state
   profiles: (MCPProfile & { matchPercentage?: number })[];
   activeProfileId: string | null;
   isLoadingProfiles: boolean;
   profilesError: string | null;
+  isProfilesInitialized: boolean;
 
   // Token analysis state
   tokenUsage: TokenUsage | null;
@@ -90,11 +92,13 @@ export const useMCPStore = create<MCPState>()(
       servers: [],
       isLoadingServers: false,
       serversError: null,
+      isServersInitialized: false,
 
       profiles: [],
       activeProfileId: null,
       isLoadingProfiles: false,
       profilesError: null,
+      isProfilesInitialized: false,
 
       tokenUsage: null,
       suggestions: [],
@@ -111,17 +115,23 @@ export const useMCPStore = create<MCPState>()(
 
       // === Server Actions ===
       fetchServers: async () => {
+        if (get().isLoadingServers) return; // Prevent double fetch
         set({ isLoadingServers: true, serversError: null });
         try {
           const response = await fetch('/api/mcp/servers');
           if (!response.ok) throw new Error('Failed to fetch servers');
 
           const data: MCPListResponse = await response.json();
-          set({ servers: data.servers, isLoadingServers: false });
+          set({ 
+            servers: data.servers, 
+            isLoadingServers: false,
+            isServersInitialized: true 
+          });
         } catch (error) {
           set({
             serversError: (error as Error).message,
             isLoadingServers: false,
+            isServersInitialized: true
           });
         }
       },
@@ -168,6 +178,7 @@ export const useMCPStore = create<MCPState>()(
 
       // === Profile Actions ===
       fetchProfiles: async () => {
+        if (get().isLoadingProfiles) return; // Prevent double fetch
         set({ isLoadingProfiles: true, profilesError: null });
         try {
           const response = await fetch('/api/mcp/profiles');
@@ -179,11 +190,13 @@ export const useMCPStore = create<MCPState>()(
             profiles: data.profiles,
             activeProfileId: data.activeProfileId || null,
             isLoadingProfiles: false,
+            isProfilesInitialized: true
           });
         } catch (error) {
           set({
             profilesError: (error as Error).message,
             isLoadingProfiles: false,
+            isProfilesInitialized: true
           });
         }
       },
