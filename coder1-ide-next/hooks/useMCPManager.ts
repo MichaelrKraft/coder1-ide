@@ -21,11 +21,31 @@ export function useMCPManager(options: { autoLoad?: boolean } = {}) {
 
   // Auto-load servers and profiles on mount
   useEffect(() => {
-    if (autoLoad && store.servers.length === 0 && !store.isLoadingServers) {
+    // Only fetch if we haven't initialized yet, aren't loading, AND haven't already failed
+    const shouldFetchServers = 
+      autoLoad && 
+      !store.isServersInitialized && 
+      !store.isLoadingServers;
+      
+    const shouldFetchProfiles = 
+      autoLoad && 
+      !store.isProfilesInitialized && 
+      !store.isLoadingProfiles;
+
+    if (shouldFetchServers) {
       store.fetchServers();
+    }
+    
+    if (shouldFetchProfiles) {
       store.fetchProfiles();
     }
-  }, [autoLoad, store.servers.length, store.isLoadingServers]);
+  }, [
+    autoLoad, 
+    store.isServersInitialized, 
+    store.isLoadingServers,
+    store.isProfilesInitialized,
+    store.isLoadingProfiles,
+  ]);
 
   // Refresh all data
   const refresh = useCallback(async () => {
@@ -66,6 +86,8 @@ export function useMCPManager(options: { autoLoad?: boolean } = {}) {
     isLoadingProfiles: store.isLoadingProfiles,
     isAnalyzing: store.isAnalyzing,
     isOptimizing: store.isOptimizing,
+    isServersInitialized: store.isServersInitialized,
+    isProfilesInitialized: store.isProfilesInitialized,
 
     // Errors
     serversError: store.serversError,
@@ -137,12 +159,14 @@ export function useMCPTokens() {
   const tokenUsage = useMCPStore(state => state.tokenUsage);
   const isAnalyzing = useMCPStore(state => state.isAnalyzing);
   const analyzeUsage = useMCPStore(state => state.analyzeUsage);
+  const error = useMCPStore(state => state.analysisError);
 
   useEffect(() => {
-    if (!tokenUsage && !isAnalyzing) {
+    // Prevent infinite loop: only analyze if not analyzing AND no previous error
+    if (!tokenUsage && !isAnalyzing && !error) {
       analyzeUsage();
     }
-  }, [tokenUsage, isAnalyzing, analyzeUsage]);
+  }, [tokenUsage, isAnalyzing, analyzeUsage, error]);
 
   return {
     usage: tokenUsage,
@@ -159,6 +183,7 @@ export function useMCPProfiles() {
   const activeProfileId = useMCPStore(state => state.activeProfileId);
   const isLoading = useMCPStore(state => state.isLoadingProfiles);
   const error = useMCPStore(state => state.profilesError);
+  const isInitialized = useMCPStore(state => state.isProfilesInitialized);
 
   const fetchProfiles = useMCPStore(state => state.fetchProfiles);
   const createProfile = useMCPStore(state => state.createProfile);
@@ -167,10 +192,11 @@ export function useMCPProfiles() {
   const saveCurrentAsProfile = useMCPStore(state => state.saveCurrentAsProfile);
 
   useEffect(() => {
-    if (profiles.length === 0 && !isLoading) {
+    // Prevent infinite loop: check for initialized
+    if (!isInitialized && !isLoading && !error) {
       fetchProfiles();
     }
-  }, [profiles.length, isLoading, fetchProfiles]);
+  }, [isInitialized, isLoading, fetchProfiles, error]);
 
   const activeProfile = profiles.find(p => p.id === activeProfileId);
 
@@ -179,6 +205,7 @@ export function useMCPProfiles() {
     activeProfile,
     activeProfileId,
     isLoading,
+    isInitialized,
     error,
     createProfile,
     applyProfile,
@@ -195,6 +222,7 @@ export function useMCPServers() {
   const servers = useMCPStore(state => state.servers);
   const isLoading = useMCPStore(state => state.isLoadingServers);
   const error = useMCPStore(state => state.serversError);
+  const isInitialized = useMCPStore(state => state.isServersInitialized);
   const filterTab = useMCPStore(state => state.filterTab);
   const searchQuery = useMCPStore(state => state.searchQuery);
   const selectedServers = useMCPStore(state => state.selectedServers);
@@ -209,15 +237,17 @@ export function useMCPServers() {
   const getFilteredServers = useMCPStore(state => state.getFilteredServers);
 
   useEffect(() => {
-    if (servers.length === 0 && !isLoading) {
+    // Prevent infinite loop: check for initialized
+    if (!isInitialized && !isLoading && !error) {
       fetchServers();
     }
-  }, [servers.length, isLoading, fetchServers]);
+  }, [isInitialized, isLoading, fetchServers, error]);
 
   return {
     servers,
     filteredServers: getFilteredServers(),
     isLoading,
+    isInitialized,
     error,
     filterTab,
     searchQuery,
