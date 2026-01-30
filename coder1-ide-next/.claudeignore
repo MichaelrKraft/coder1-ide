@@ -1,0 +1,58 @@
+# Node.js
+node_modules/
+.npm/
+.pnpm-store/
+
+# Build outputs
+.next/
+dist/
+build/
+out/
+
+# Package manager locks (large files)
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# IDE/Editor
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Debug files
+.claude/debug/
+
+# Large binary files
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+*.dmg
+*.exe
+*.dll
+
+# Session/Archive files
+session-archives/
+*.jsonl
+
+# Coverage
+coverage/
+.nyc_output/
+
+# Temporary files
+tmp/
+temp/
+.temp/
+.cache/
+
+# Trigger.dev
+.trigger/
