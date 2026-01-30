@@ -46,7 +46,15 @@ export default function TokenUsageChart({ data, className = '' }: TokenUsageChar
 
   // Format date for display
   const formatDate = (dateStr: string): string => {
+    // Handle time-only strings (HH:mm format from 24h view)
+    if (dateStr.match(/^\d{2}:\d{2}$/)) {
+      return dateStr;
+    }
+    // Handle full date strings
     const date = new Date(dateStr);
+    if (isNaN(date.getTime())) {
+      return dateStr; // Return as-is if can't parse
+    }
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   };
 
