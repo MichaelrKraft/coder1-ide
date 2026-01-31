@@ -540,9 +540,11 @@ class MoltbotBridgeService extends EventEmitter {
 
   private handleConnectChallenge(payload: { nonce: string; ts: number }): void {
     console.log('[MoltbotBridge] Responding to connect challenge...');
+    console.log('[MoltbotBridge] Challenge payload:', JSON.stringify(payload));
 
     // Get auth token from environment (configured by user)
     const authToken = process.env.MOLTBOT_AUTH_TOKEN || '';
+    console.log(`[MoltbotBridge] Auth token length: ${authToken.length}, first 8 chars: ${authToken.substring(0, 8)}...`);
 
     // Exact format - Moltbot requires protocol 3
     const response = {
@@ -594,6 +596,9 @@ class MoltbotBridgeService extends EventEmitter {
 
   private handleResponse(response: { id: string; ok: boolean; payload?: any; error?: any }): void {
     console.log(`[MoltbotBridge] Response received for id=${response.id}, ok=${response.ok}`);
+    if (!response.ok && response.error) {
+      console.error(`[MoltbotBridge] Error details:`, JSON.stringify(response.error));
+    }
 
     // Check if this is the connect handshake response (id="1")
     if (response.id === '1' && response.ok) {
