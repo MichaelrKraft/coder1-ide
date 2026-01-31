@@ -175,6 +175,17 @@ try {
   claudePuppeteer = null;
 }
 
+// Moltbot Bridge for Johnny5 autonomous agent integration
+let moltbotBridge;
+try {
+  const { getMoltbotBridge } = require('./services/johnny5/moltbot-bridge.js');
+  moltbotBridge = getMoltbotBridge();
+  console.log('✅ Moltbot Bridge service loaded');
+} catch (error) {
+  console.warn('⚠️ Moltbot Bridge not available:', error.message);
+  moltbotBridge = null;
+}
+
 // Socket.IO instance (initialized later after HTTP server creation)
 let io;
 
@@ -880,7 +891,14 @@ app.prepare().then(() => {
   // See: tasks/bridge-api-routes-analysis-nov-26-2025.md for full explanation
   
   // Create HTTP server with enhanced error handling
+  // Generate unique ID for this server instance (for debugging load balancing)
+  const INSTANCE_ID = require('crypto').randomUUID().slice(0, 8);
+  console.log(`🆔 Server Instance ID: ${INSTANCE_ID}`);
+
   const server = createServer((req, res) => {
+    // ADDED: Debug header to trace which server instance handled the request
+    res.setHeader('X-Instance-ID', INSTANCE_ID);
+
     const parsedUrl = parse(req.url, true);
     const { pathname } = parsedUrl;
     
@@ -1042,8 +1060,7 @@ app.prepare().then(() => {
         }
       }
     }
-    
-    // Welcome page route
+
     if (pathname === '/welcome') {
       req.url = '/coder1-alpha-welcome.html';
       const cleanParsedUrl = parse(req.url, true);
@@ -1244,8 +1261,8 @@ app.prepare().then(() => {
     path: '/socket.io/',
     transports: ['polling', 'websocket'], // Start with polling, upgrade to websocket
     allowEIO3: true, // Support older clients
-    pingTimeout: 7200000, // INCREASED: 2 hours - covers any realistic idle period during development
-    pingInterval: 300000, // INCREASED: 5 minutes - still detects dead connections without spam
+    pingTimeout: isDevelopment ? 7200000 : 60000, // FIXED: 60s (was 2h) - Detects disconnects faster
+    pingInterval: isDevelopment ? 300000 : 25000, // FIXED: 25s (was 5m) - Keeps connection alive on Render/Cloudflare
     upgradeTimeout: 30000, // Time to wait for upgrade from polling to websocket
     allowUpgrades: true, // Allow upgrade from polling to websocket
     perMessageDeflate: false, // Disable compression for better reliability on Render
@@ -1256,6 +1273,11 @@ app.prepare().then(() => {
     cookie: false, // Disable cookies to prevent extension interference
     destroyUpgrade: false, // Keep upgrade connections alive
     destroyUpgradeTimeout: 1000 // But clean up failed upgrades quickly
+  });
+
+  // Inject Instance ID into Socket.IO handshake headers for sticky-session debugging
+  io.engine.on("headers", (headers, req) => {
+    headers["X-Instance-ID"] = INSTANCE_ID;
   });
 
   // Add WebSocket authentication middleware (if available)
@@ -1381,10 +1403,14 @@ app.prepare().then(() => {
       
       // Handle command completion from bridge
       socket.on('claude:complete', (data) => {
-        // Notify terminal session that command is complete
+        // FIX (Jan 2026): Differentiate success vs failure messages
+        const message = data.exitCode === 0
+          ? `\r\n✅ Command completed successfully\r\n`
+          : `\r\n❌ Command failed (exit code: ${data.exitCode})${data.error ? ': ' + data.error : ''}\r\n`;
+
         io.emit('terminal:data', {
           id: data.sessionId,
-          data: `\r\n✅ Command completed (exit code: ${data.exitCode})\r\n`
+          data: message
         });
       });
       
@@ -1572,7 +1598,44 @@ app.prepare().then(() => {
       console.error(`❌ [BRIDGE] Failed to emit ${eventName}:`, error);
     }
   };
-  
+
+  // Connect to Moltbot if enabled (Johnny5 autonomous agent)
+  if (moltbotBridge && process.env.MOLTBOT_ENABLED === 'true' && process.env.MOLTBOT_GATEWAY_URL) {
+    console.log('🤖 Initializing Moltbot connection...');
+    moltbotBridge.connect(process.env.MOLTBOT_GATEWAY_URL)
+      .then(() => console.log('✅ Connected to Moltbot Gateway'))
+      .catch(err => console.warn('⚠️ Moltbot connection failed (will retry):', err.message));
+  }
+
+  // Forward Moltbot events to Socket.IO clients for Johnny5 dashboard
+  if (moltbotBridge) {
+    moltbotBridge.on('message', (data) => {
+      if (io && data.sessionId) {
+        io.to(`johnny5:${data.sessionId}`).emit('johnny5:message', data);
+      }
+    });
+
+    moltbotBridge.on('session-update', (session) => {
+      if (io) {
+        io.emit('johnny5:session-update', session);
+      }
+    });
+
+    moltbotBridge.on('connected', () => {
+      if (io) {
+        io.emit('johnny5:moltbot-connected');
+      }
+    });
+
+    moltbotBridge.on('disconnected', (reason) => {
+      if (io) {
+        io.emit('johnny5:moltbot-disconnected', { reason });
+      }
+    });
+
+    console.log('🔗 Moltbot event forwarding configured');
+  }
+
   // Event Bridge Note: Event forwarding handled directly in claude-code-bridge.js
   // The bridge service emits directly to global.io when available
   // This avoids TypeScript module import issues in server.js
@@ -1633,7 +1696,7 @@ app.prepare().then(() => {
 
         // Check memory before creating new session (environment-aware threshold)
         const memStats = memoryOptimizer.getMemoryUsage();
-        const memoryThreshold = isDevelopment ? 1500 : 350;
+        const memoryThreshold = isDevelopment ? 3000 : 350; // Increased dev limit to 3GB for heavy local usage
         if (memStats.heapUsedMB > memoryThreshold) {
           socket.emit('terminal:error', { 
             message: 'System under memory pressure. Please try again in a moment.' 
@@ -1695,6 +1758,14 @@ app.prepare().then(() => {
           sessionCleanupTimers.delete(sessionId);
         }
         
+        // 🔧 FIX (Jan 31, 2026): Confirm terminal creation/connection to client
+        // This is required to clear the client-side connection watchdog
+        socket.emit('terminal:created', {
+          sessionId,
+          pid: session.pid
+        });
+        console.log(`✅ Emitted terminal:created for session ${sessionId} (PID: ${session.pid})`);
+
         // 🎯 CRITICAL FIX (Oct 28, 2025): Check for terminal history to detect reconnections
         // Don't rely on cleanup timer - it might have expired already!
         // Check if history exists in memory OR persistent file
@@ -2291,6 +2362,10 @@ app.prepare().then(() => {
               let commandToExecute = await injectEternalMemoryContext(buffer.trim(), sessionId, socket);
               
               // Execute command through bridge (with eternal memory context if available)
+              // FIX (Jan 27, 2026): Get terminal dimensions from PTY for proper Claude Code rendering
+              const terminalCols = session?.pty?.cols || 120;
+              const terminalRows = session?.pty?.rows || 30;
+
               const commandRequest = {
                 sessionId,
                 commandId: `cmd_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
@@ -2299,7 +2374,9 @@ app.prepare().then(() => {
                   workingDirectory: process.cwd(),
                   currentFile: null,
                   selection: null,
-                  selectedClaudeModel: selectedClaudeModel || 'claude-4-sonnet-20250510'
+                  selectedClaudeModel: selectedClaudeModel || 'claude-4-sonnet-20250510',
+                  cols: terminalCols,
+                  rows: terminalRows
                 },
                 timestamp: new Date()
               };
@@ -2338,9 +2415,9 @@ app.prepare().then(() => {
               }
             }
 
-            // No bridge connected OR bridgeManager not available in production
-            // Show help message since server doesn't have Claude CLI
-            console.log('[Terminal] No bridge connected, showing help instead');
+            // FIX (Jan 2026): Show specific error instead of generic help box
+            // Differentiate between "no bridgeManager" and "no bridge connected"
+            console.log('[Terminal] No bridge connected, showing actionable error');
 
             // CRITICAL: Clear bash's input buffer by sending backspaces
             const backspaces = '\b'.repeat(buffer.length);
@@ -2352,28 +2429,23 @@ app.prepare().then(() => {
               data: '\r\x1b[K'
             });
 
-            // Show help message
-            const helpMessage = [
-              '\r\n',
-              '╔═══════════════════════════════════════════════════════════════════╗\r\n',
-              '║                    🌉 Connect Claude Code                          ║\r\n',
-              '╠═══════════════════════════════════════════════════════════════════╣\r\n',
-              '║                                                                     ║\r\n',
-              '║  Quick Setup:                                                      ║\r\n',
-              '║  1. Click the Help button and select Bridge setup instructions.   ║\r\n',
-              '║  2. Follow the popup instructions                                  ║\r\n',
-              '║  3. Type "claude" to start AI-assisted coding                     ║\r\n',
-              '║                                                                     ║\r\n',
-              '╚═══════════════════════════════════════════════════════════════════╝\r\n',
-              '\r\n'
-            ].join('');
+            // Show specific actionable error
+            const errorMessage = !bridgeManager
+              ? '\r\n❌ Bridge system not initialized (server error).\r\n' +
+                '   Please restart the Coder1 server and try again.\r\n\r\n'
+              : '\r\n❌ No bridge connected.\r\n\r\n' +
+                '   Your bridge CLI is not connected to this IDE session.\r\n' +
+                '   Please check:\r\n' +
+                '   1. Is coder1-bridge still running on your machine?\r\n' +
+                '   2. Did the connection time out? (re-run: coder1-bridge start)\r\n' +
+                '   3. Check the Status Bar for bridge connection status\r\n\r\n';
 
             socket.emit('terminal:data', {
               id: sessionId,
-              data: helpMessage
+              data: errorMessage
             });
 
-            // Show a clean prompt after the help message
+            // Show a clean prompt after the error message
             socket.emit('terminal:data', {
               id: sessionId,
               data: 'coder1:coder1-ide-next$ '
@@ -2977,20 +3049,39 @@ app.prepare().then(() => {
     socket.on('team:status:request', () => {
       if (agentTerminalManager) {
         const stats = agentTerminalManager.getStats();
-        
+
         const agents = stats.sessions.map(session => ({
           agentId: session.agentId,
           role: session.role,
           status: session.bufferSize > 0 ? 'working' : 'idle',
           bufferSize: session.bufferSize
         }));
-        
+
         socket.emit('team:status:update', { agents });
       } else {
         socket.emit('team:status:update', { agents: [] });
       }
     });
-    
+
+    // Johnny5 / Moltbot handlers for autonomous agent dashboard
+    socket.on('johnny5:status', () => {
+      if (moltbotBridge) {
+        socket.emit('johnny5:status', moltbotBridge.getStatus());
+      } else {
+        socket.emit('johnny5:status', { connected: false, error: 'Moltbot Bridge not loaded' });
+      }
+    });
+
+    socket.on('johnny5:join-session', (sessionId) => {
+      socket.join(`johnny5:${sessionId}`);
+      console.log(`Socket ${socket.id} joined johnny5 session: ${sessionId}`);
+    });
+
+    socket.on('johnny5:leave-session', (sessionId) => {
+      socket.leave(`johnny5:${sessionId}`);
+      console.log(`Socket ${socket.id} left johnny5 session: ${sessionId}`);
+    });
+
     // Clean up on disconnect
     socket.on('disconnect', () => {
       // REMOVED: // REMOVED: // REMOVED: console.log(`[Socket.IO] Client disconnected: ${socket.id}`);
@@ -3359,6 +3450,12 @@ setInterval(() => {
   const gracefulShutdown = async (signal) => {
     console.log(`[Server] ${signal} received, shutting down gracefully...`);
     
+    // Force exit after 2 seconds if cleanup hangs (common with open sockets)
+    setTimeout(() => {
+      console.error('[Shutdown] ⚠️  Force exiting after timeout');
+      process.exit(0);
+    }, 2000).unref(); // unref so this timer doesn't prevent exit itself
+
     try {
       // 1. Stop all AI Team agents first (kills Claude CLI processes)
       if (claudePuppeteer && typeof claudePuppeteer.emergencyStopAll === 'function') {
@@ -3375,16 +3472,23 @@ setInterval(() => {
       terminalSessions.clear();
       console.log('[Shutdown] ✅ Terminal sessions cleaned');
       
-      // 3. Close Socket.IO
-      io.close(() => {
-        console.log('[Shutdown] ✅ Socket.IO closed');
-      });
+      // 3. Close Socket.IO (promisified-ish)
+      if (io) {
+        io.close(() => console.log('[Shutdown] ✅ Socket.IO closed'));
+      }
       
       // 4. Close HTTP server
-      server.close(() => {
-        console.log('[Shutdown] ✅ HTTP server closed');
+      if (server) {
+        server.close(() => {
+          console.log('[Shutdown] ✅ HTTP server closed');
+          process.exit(0);
+        });
+        
+        // Also force close connections immediately 
+        server.closeAllConnections && server.closeAllConnections();
+      } else {
         process.exit(0);
-      });
+      }
     } catch (error) {
       console.error('[Shutdown] Error during cleanup:', error);
       process.exit(1);
