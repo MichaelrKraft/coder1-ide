@@ -3,6 +3,7 @@ import { claudeCliService } from '@/services/claude-cli-service';
 import { sessionMemoryService } from '@/services/memory/session-memory-service';
 import { features } from '@/lib/feature-flags';
 import { MemoryMode } from '@/lib/memory-types';
+import { handleError, errors } from '@/lib/error-handler';
 
 // Mark as dynamic since this uses request data
 export const dynamic = 'force-dynamic';
@@ -116,12 +117,16 @@ export async function POST(request: NextRequest) {
     }
 
   } catch (error) {
-    console.error('Claude CLI route error:', error);
-    
+    const appError = handleError(error, {
+      endpoint: 'POST /api/claude',
+      action: 'claude_interaction'
+    });
+
     return NextResponse.json(
-      { 
-        error: error instanceof Error ? error.message : 'Unknown error occurred',
-        details: error instanceof Error ? error.stack : undefined
+      {
+        error: appError.userMessage,
+        errorId: appError.id,
+        category: appError.category
       },
       { status: 500 }
     );

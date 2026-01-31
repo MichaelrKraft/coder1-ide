@@ -175,6 +175,17 @@ try {
   claudePuppeteer = null;
 }
 
+// Moltbot Bridge for Johnny5 autonomous agent integration
+let moltbotBridge;
+try {
+  const { getMoltbotBridge } = require('./services/johnny5/moltbot-bridge.js');
+  moltbotBridge = getMoltbotBridge();
+  console.log('✅ Moltbot Bridge service loaded');
+} catch (error) {
+  console.warn('⚠️ Moltbot Bridge not available:', error.message);
+  moltbotBridge = null;
+}
+
 // Socket.IO instance (initialized later after HTTP server creation)
 let io;
 
@@ -1381,10 +1392,14 @@ app.prepare().then(() => {
       
       // Handle command completion from bridge
       socket.on('claude:complete', (data) => {
-        // Notify terminal session that command is complete
+        // FIX (Jan 2026): Differentiate success vs failure messages
+        const message = data.exitCode === 0
+          ? `\r\n✅ Command completed successfully\r\n`
+          : `\r\n❌ Command failed (exit code: ${data.exitCode})${data.error ? ': ' + data.error : ''}\r\n`;
+
         io.emit('terminal:data', {
           id: data.sessionId,
-          data: `\r\n✅ Command completed (exit code: ${data.exitCode})\r\n`
+          data: message
         });
       });
       
@@ -1572,7 +1587,44 @@ app.prepare().then(() => {
       console.error(`❌ [BRIDGE] Failed to emit ${eventName}:`, error);
     }
   };
-  
+
+  // Connect to Moltbot if enabled (Johnny5 autonomous agent)
+  if (moltbotBridge && process.env.MOLTBOT_ENABLED === 'true' && process.env.MOLTBOT_GATEWAY_URL) {
+    console.log('🤖 Initializing Moltbot connection...');
+    moltbotBridge.connect(process.env.MOLTBOT_GATEWAY_URL)
+      .then(() => console.log('✅ Connected to Moltbot Gateway'))
+      .catch(err => console.warn('⚠️ Moltbot connection failed (will retry):', err.message));
+  }
+
+  // Forward Moltbot events to Socket.IO clients for Johnny5 dashboard
+  if (moltbotBridge) {
+    moltbotBridge.on('message', (data) => {
+      if (io && data.sessionId) {
+        io.to(`johnny5:${data.sessionId}`).emit('johnny5:message', data);
+      }
+    });
+
+    moltbotBridge.on('session-update', (session) => {
+      if (io) {
+        io.emit('johnny5:session-update', session);
+      }
+    });
+
+    moltbotBridge.on('connected', () => {
+      if (io) {
+        io.emit('johnny5:moltbot-connected');
+      }
+    });
+
+    moltbotBridge.on('disconnected', (reason) => {
+      if (io) {
+        io.emit('johnny5:moltbot-disconnected', { reason });
+      }
+    });
+
+    console.log('🔗 Moltbot event forwarding configured');
+  }
+
   // Event Bridge Note: Event forwarding handled directly in claude-code-bridge.js
   // The bridge service emits directly to global.io when available
   // This avoids TypeScript module import issues in server.js
@@ -2291,6 +2343,10 @@ app.prepare().then(() => {
               let commandToExecute = await injectEternalMemoryContext(buffer.trim(), sessionId, socket);
               
               // Execute command through bridge (with eternal memory context if available)
+              // FIX (Jan 27, 2026): Get terminal dimensions from PTY for proper Claude Code rendering
+              const terminalCols = session?.pty?.cols || 120;
+              const terminalRows = session?.pty?.rows || 30;
+
               const commandRequest = {
                 sessionId,
                 commandId: `cmd_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
@@ -2299,7 +2355,9 @@ app.prepare().then(() => {
                   workingDirectory: process.cwd(),
                   currentFile: null,
                   selection: null,
-                  selectedClaudeModel: selectedClaudeModel || 'claude-4-sonnet-20250510'
+                  selectedClaudeModel: selectedClaudeModel || 'claude-4-sonnet-20250510',
+                  cols: terminalCols,
+                  rows: terminalRows
                 },
                 timestamp: new Date()
               };
@@ -2338,9 +2396,9 @@ app.prepare().then(() => {
               }
             }
 
-            // No bridge connected OR bridgeManager not available in production
-            // Show help message since server doesn't have Claude CLI
-            console.log('[Terminal] No bridge connected, showing help instead');
+            // FIX (Jan 2026): Show specific error instead of generic help box
+            // Differentiate between "no bridgeManager" and "no bridge connected"
+            console.log('[Terminal] No bridge connected, showing actionable error');
 
             // CRITICAL: Clear bash's input buffer by sending backspaces
             const backspaces = '\b'.repeat(buffer.length);
@@ -2352,28 +2410,23 @@ app.prepare().then(() => {
               data: '\r\x1b[K'
             });
 
-            // Show help message
-            const helpMessage = [
-              '\r\n',
-              '╔═══════════════════════════════════════════════════════════════════╗\r\n',
-              '║                    🌉 Connect Claude Code                          ║\r\n',
-              '╠═══════════════════════════════════════════════════════════════════╣\r\n',
-              '║                                                                     ║\r\n',
-              '║  Quick Setup:                                                      ║\r\n',
-              '║  1. Click the Help button and select Bridge setup instructions.   ║\r\n',
-              '║  2. Follow the popup instructions                                  ║\r\n',
-              '║  3. Type "claude" to start AI-assisted coding                     ║\r\n',
-              '║                                                                     ║\r\n',
-              '╚═══════════════════════════════════════════════════════════════════╝\r\n',
-              '\r\n'
-            ].join('');
+            // Show specific actionable error
+            const errorMessage = !bridgeManager
+              ? '\r\n❌ Bridge system not initialized (server error).\r\n' +
+                '   Please restart the Coder1 server and try again.\r\n\r\n'
+              : '\r\n❌ No bridge connected.\r\n\r\n' +
+                '   Your bridge CLI is not connected to this IDE session.\r\n' +
+                '   Please check:\r\n' +
+                '   1. Is coder1-bridge still running on your machine?\r\n' +
+                '   2. Did the connection time out? (re-run: coder1-bridge start)\r\n' +
+                '   3. Check the Status Bar for bridge connection status\r\n\r\n';
 
             socket.emit('terminal:data', {
               id: sessionId,
-              data: helpMessage
+              data: errorMessage
             });
 
-            // Show a clean prompt after the help message
+            // Show a clean prompt after the error message
             socket.emit('terminal:data', {
               id: sessionId,
               data: 'coder1:coder1-ide-next$ '
@@ -2977,20 +3030,39 @@ app.prepare().then(() => {
     socket.on('team:status:request', () => {
       if (agentTerminalManager) {
         const stats = agentTerminalManager.getStats();
-        
+
         const agents = stats.sessions.map(session => ({
           agentId: session.agentId,
           role: session.role,
           status: session.bufferSize > 0 ? 'working' : 'idle',
           bufferSize: session.bufferSize
         }));
-        
+
         socket.emit('team:status:update', { agents });
       } else {
         socket.emit('team:status:update', { agents: [] });
       }
     });
-    
+
+    // Johnny5 / Moltbot handlers for autonomous agent dashboard
+    socket.on('johnny5:status', () => {
+      if (moltbotBridge) {
+        socket.emit('johnny5:status', moltbotBridge.getStatus());
+      } else {
+        socket.emit('johnny5:status', { connected: false, error: 'Moltbot Bridge not loaded' });
+      }
+    });
+
+    socket.on('johnny5:join-session', (sessionId) => {
+      socket.join(`johnny5:${sessionId}`);
+      console.log(`Socket ${socket.id} joined johnny5 session: ${sessionId}`);
+    });
+
+    socket.on('johnny5:leave-session', (sessionId) => {
+      socket.leave(`johnny5:${sessionId}`);
+      console.log(`Socket ${socket.id} left johnny5 session: ${sessionId}`);
+    });
+
     // Clean up on disconnect
     socket.on('disconnect', () => {
       // REMOVED: // REMOVED: // REMOVED: console.log(`[Socket.IO] Client disconnected: ${socket.id}`);
