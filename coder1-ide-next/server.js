@@ -1706,6 +1706,14 @@ app.prepare().then(() => {
           sessionCleanupTimers.delete(sessionId);
         }
         
+        // 🔧 FIX (Jan 31, 2026): Confirm terminal creation/connection to client
+        // This is required to clear the client-side connection watchdog
+        socket.emit('terminal:created', {
+          sessionId,
+          pid: session.pid
+        });
+        console.log(`✅ Emitted terminal:created for session ${sessionId} (PID: ${session.pid})`);
+
         // 🎯 CRITICAL FIX (Oct 28, 2025): Check for terminal history to detect reconnections
         // Don't rely on cleanup timer - it might have expired already!
         // Check if history exists in memory OR persistent file
