@@ -3408,6 +3408,16 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
         console.log('🔄 Token counter reset for new terminal session');
       }
       
+      // 🎯 CRITICAL FIX (Jan 31, 2026): Clear connection watchdog on success
+      // Without this, the 10s timeout triggers even if connection succeeded!
+      if (connectionTimeoutRef.current) {
+        clearTimeout(connectionTimeoutRef.current);
+        connectionTimeoutRef.current = null;
+      }
+      connectionInProgressRef.current = false;
+      setIsConnected(true);
+      console.log('✅ Connection watchdog cleared - terminal fully connected');
+
       // 🎯 CRITICAL FIX (Oct 28, 2025): Only scroll to top for NEW terminals
       // Don't scroll to top when reconnecting because history restoration handles scrolling
       // Previous bug: Aggressive scroll-to-top was fighting with history restoration scroll-to-bottom
