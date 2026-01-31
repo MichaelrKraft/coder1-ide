@@ -107,16 +107,16 @@ export const getSocket = async (sessionId?: string, bridgeAuth: boolean = false)
         
         newSocket = socketIO(unifiedUrl, {
           path: '/socket.io/',
-          transports: ['polling', 'websocket'], // Start with polling for Render compatibility
+          transports: ['websocket'], // FIXED: Force WebSocket to bypass polling/upgrade issues
           reconnection: true,
           reconnectionAttempts: 15, // INCREASED: More retry attempts
           reconnectionDelay: 1000,
           reconnectionDelayMax: 10000, // INCREASED: Max backoff to 10 seconds
           timeout: 45000, // INCREASED: Match server connectTimeout
           forceNew: false,
-          // UPDATED: Match server ping settings to prevent timeout
-          pingTimeout: 7200000,  // Match server: 2 hours
-          pingInterval: 300000,  // Match server: 5 minutes
+          // FIXED: Standardized Keep-Alive for production Load Balancers
+          pingTimeout: process.env.NODE_ENV !== 'production' ? 7200000 : 60000,    // 60 seconds (was 2 hours)
+          pingInterval: process.env.NODE_ENV !== 'production' ? 300000 : 25000,   // 25 seconds (was 5 minutes)
           // ADDED: Additional stability settings
           autoConnect: true,
           withCredentials: true,
@@ -217,7 +217,7 @@ export const getSocket = async (sessionId?: string, bridgeAuth: boolean = false)
             newSocket.emit('ping', { timestamp: now });
             console.log('💓 Heartbeat ping sent');
           }
-        }, 240000); // 4 minutes - matches new ping frequency
+        }, process.env.NODE_ENV !== 'production' ? 240000 : 20000); // 20 seconds - matches new ping frequency
       };
       
       const stopHeartbeat = () => {
