@@ -1,13 +1,14 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { Eye, X, RefreshCw, ExternalLink, Brain, Sparkles, Search } from '@/lib/icons';
+import { Eye, X, RefreshCw, ExternalLink, Brain, Sparkles, Search, Zap } from '@/lib/icons';
 import { colors, glows } from '@/lib/design-tokens';
 import ContextualMemoryPanel from '@/components/contextual-memory/ContextualMemoryPanel';
 import ParallelReasoningDashboard from '@/components/beta/ParallelReasoningDashboard';
+import { Johnny5Panel } from '@/components/johnny5';
 import { previewLoopPrevention, createDebouncedPreviewUpdate } from '@/lib/preview-loop-prevention';
 
-type PreviewMode = 'preview' | 'terminal' | 'parathink' | 'contextual-memory';
+type PreviewMode = 'preview' | 'terminal' | 'parathink' | 'contextual-memory' | 'johnny5';
 
 interface PreviewPanelProps {
   fileOpen?: boolean;
@@ -36,7 +37,8 @@ const PreviewPanel = React.memo(function PreviewPanel({
   terminalCommands = [],
   claudeActive = false, // 🔧 FIX (Feb 1, 2025): Default to false
 }: PreviewPanelProps) {
-  const [mode, setMode] = useState<PreviewMode>('contextual-memory');
+  // 🤖 Johnny5 is now the default mode (replacing Memory UX)
+  const [mode, setMode] = useState<PreviewMode>('johnny5');
   const [paraThinkSessionId, setParaThinkSessionId] = useState<string | null>(null);
   
   // Live preview state
@@ -303,17 +305,25 @@ const PreviewPanel = React.memo(function PreviewPanel({
       {/* Tabs */}
       <div className="flex items-center justify-between px-4 h-12 shrink-0">
         <div className="flex items-center gap-1">
+          {/* 🤖 Johnny5 - Your AI Employee Dashboard (replaces Memory UX) */}
           {renderTabButton(
-            'contextual-memory',
-            <Brain className="w-4 h-4" />,
-            'Contextual Memory',
-            'View relevant past conversations and solutions based on your current context'
+            'johnny5',
+            <Zap className="w-4 h-4" />,
+            'Johnny5',
+            'Your AI employee dashboard - sessions, security, analytics, and autonomous features'
           )}
           {renderTabButton(
             'preview',
             <Eye className="w-4 h-4" />,
             'Preview',
             'Live preview of your HTML, CSS, and JavaScript code'
+          )}
+          {/* Legacy Contextual Memory - hidden by default, kept for backwards compatibility */}
+          {renderTabButton(
+            'contextual-memory',
+            <Brain className="w-4 h-4" />,
+            'Memory',
+            'View relevant past conversations and solutions based on your current context'
           )}
           {/* Only show ParaThinker tab when we have a session */}
           {paraThinkSessionId && renderTabButton(
@@ -337,7 +347,14 @@ const PreviewPanel = React.memo(function PreviewPanel({
       {/* Content Area */}
       <div className="flex-1 overflow-auto">
 
-            {/* Contextual Memory Panel */}
+            {/* 🤖 Johnny5 AI Employee Dashboard */}
+            {mode === 'johnny5' && (
+              <div className="h-full">
+                <Johnny5Panel />
+              </div>
+            )}
+
+            {/* Contextual Memory Panel (Legacy - kept for backwards compatibility) */}
             {mode === 'contextual-memory' && (
               <div className="h-full">
                 <ContextualMemoryPanel 
