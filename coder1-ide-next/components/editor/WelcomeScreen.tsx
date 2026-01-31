@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useBridgeConnectionState } from '@/lib/useBridgeConnectionState';
 
 interface WelcomeScreenProps {
   onDismiss?: () => void;
@@ -13,7 +14,22 @@ export function WelcomeScreen({ onDismiss, onBridgeClick }: WelcomeScreenProps =
   const [isLoading, setIsLoading] = useState(false);
   const [isProduction, setIsProduction] = useState(true);
   const [userOS, setUserOS] = useState<'mac' | 'windows' | 'linux'>('mac');
-  
+
+  // Track bridge connection state
+  const bridgeState = useBridgeConnectionState();
+
+  // Auto-close modal when bridge connects
+  useEffect(() => {
+    if (bridgeState.isConnected && isModalOpen) {
+      console.log('🌉 Bridge connected - closing pairing modal');
+      setIsModalOpen(false);
+      // Optionally dismiss the welcome screen entirely
+      if (onDismiss) {
+        onDismiss();
+      }
+    }
+  }, [bridgeState.isConnected, isModalOpen, onDismiss]);
+
   // Detect if running on localhost or production
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -121,9 +137,6 @@ export function WelcomeScreen({ onDismiss, onBridgeClick }: WelcomeScreenProps =
                       Copy
                     </button>
                   </div>
-                  <p className="text-[10px] text-gray-400 mt-0.5">
-                    ⏱️ ~1 minute • Installs, starts & prompts for code automatically
-                  </p>
                 </div>
                 
                 <div>

@@ -1,0 +1,42 @@
+# Node.js
+node_modules/
+.npm/
+.pnpm-store/
+
+# Build outputs
+.next/
+dist/
+build/
+out/
+
+# Package manager locks
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# IDE/Editor
+.idea/
+.vscode/
+
+# OS files
+.DS_Store
+
+# Logs
+*.log
+logs/
+
+# Large binary files
+*.zip
+*.tar
+*.tar.gz
+
+# Session files
+*.jsonl
+
+# Coverage
+coverage/
+
+# Temp
+tmp/
+.cache/
+.trigger/

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import fs from 'fs/promises';
 import path from 'path';
 import { withAPIMiddleware } from '@/lib/api-middleware';
+import { handleError, errors } from '@/lib/error-handler';
 
 // Mark as dynamic since this uses request data
 export const dynamic = 'force-dynamic';
@@ -94,13 +95,17 @@ Remember: BE EXHAUSTIVELY DETAILED. The next agent should know EVERYTHING about 
       file: summaryFile,
       metadata: result.metadata
     });
-  } catch (error: any) {
-    console.error('Failed to generate session summary:', error);
-    console.error('Error stack:', error?.stack);
+  } catch (error) {
+    const appError = handleError(error, {
+      endpoint: 'POST /api/claude/session-summary',
+      action: 'generate_session_summary'
+    });
+
     return NextResponse.json(
-      { 
-        error: 'Failed to generate session summary',
-        details: error?.message || 'Unknown error'
+      {
+        error: appError.userMessage,
+        errorId: appError.id,
+        category: appError.category
       },
       { status: 500 }
     );

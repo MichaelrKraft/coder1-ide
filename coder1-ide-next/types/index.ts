@@ -15,6 +15,9 @@ export * from './ui';
 // Mission Control types
 export * from './mission-control';
 
+// Johnny5 AI Employee types
+export * from './johnny5';
+
 // Re-export commonly used React types for convenience
 export type {
   ReactNode,
