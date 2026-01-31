@@ -880,7 +880,14 @@ app.prepare().then(() => {
   // See: tasks/bridge-api-routes-analysis-nov-26-2025.md for full explanation
   
   // Create HTTP server with enhanced error handling
+  // Generate unique ID for this server instance (for debugging load balancing)
+  const INSTANCE_ID = require('crypto').randomUUID().slice(0, 8);
+  console.log(`🆔 Server Instance ID: ${INSTANCE_ID}`);
+
   const server = createServer((req, res) => {
+    // ADDED: Debug header to trace which server instance handled the request
+    res.setHeader('X-Instance-ID', INSTANCE_ID);
+
     const parsedUrl = parse(req.url, true);
     const { pathname } = parsedUrl;
     
@@ -1042,8 +1049,7 @@ app.prepare().then(() => {
         }
       }
     }
-    
-    // Welcome page route
+
     if (pathname === '/welcome') {
       req.url = '/coder1-alpha-welcome.html';
       const cleanParsedUrl = parse(req.url, true);
@@ -1256,6 +1262,11 @@ app.prepare().then(() => {
     cookie: false, // Disable cookies to prevent extension interference
     destroyUpgrade: false, // Keep upgrade connections alive
     destroyUpgradeTimeout: 1000 // But clean up failed upgrades quickly
+  });
+
+  // Inject Instance ID into Socket.IO handshake headers for sticky-session debugging
+  io.engine.on("headers", (headers, req) => {
+    headers["X-Instance-ID"] = INSTANCE_ID;
   });
 
   // Add WebSocket authentication middleware (if available)
@@ -1633,7 +1644,7 @@ app.prepare().then(() => {
 
         // Check memory before creating new session (environment-aware threshold)
         const memStats = memoryOptimizer.getMemoryUsage();
-        const memoryThreshold = isDevelopment ? 1500 : 350;
+        const memoryThreshold = isDevelopment ? 3000 : 350; // Increased dev limit to 3GB for heavy local usage
         if (memStats.heapUsedMB > memoryThreshold) {
           socket.emit('terminal:error', { 
             message: 'System under memory pressure. Please try again in a moment.' 
@@ -3359,6 +3370,12 @@ setInterval(() => {
   const gracefulShutdown = async (signal) => {
     console.log(`[Server] ${signal} received, shutting down gracefully...`);
     
+    // Force exit after 2 seconds if cleanup hangs (common with open sockets)
+    setTimeout(() => {
+      console.error('[Shutdown] ⚠️  Force exiting after timeout');
+      process.exit(0);
+    }, 2000).unref(); // unref so this timer doesn't prevent exit itself
+
     try {
       // 1. Stop all AI Team agents first (kills Claude CLI processes)
       if (claudePuppeteer && typeof claudePuppeteer.emergencyStopAll === 'function') {
@@ -3375,16 +3392,23 @@ setInterval(() => {
       terminalSessions.clear();
       console.log('[Shutdown] ✅ Terminal sessions cleaned');
       
-      // 3. Close Socket.IO
-      io.close(() => {
-        console.log('[Shutdown] ✅ Socket.IO closed');
-      });
+      // 3. Close Socket.IO (promisified-ish)
+      if (io) {
+        io.close(() => console.log('[Shutdown] ✅ Socket.IO closed'));
+      }
       
       // 4. Close HTTP server
-      server.close(() => {
-        console.log('[Shutdown] ✅ HTTP server closed');
+      if (server) {
+        server.close(() => {
+          console.log('[Shutdown] ✅ HTTP server closed');
+          process.exit(0);
+        });
+        
+        // Also force close connections immediately 
+        server.closeAllConnections && server.closeAllConnections();
+      } else {
         process.exit(0);
-      });
+      }
     } catch (error) {
       console.error('[Shutdown] Error during cleanup:', error);
       process.exit(1);
