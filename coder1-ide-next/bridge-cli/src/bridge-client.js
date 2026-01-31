@@ -427,6 +427,19 @@ class BridgeClient extends EventEmitter {
               this.activeInteractiveSessions.delete(sessionId);
               this.commandToSessionMap.delete(commandId);
 
+              // FIX (Jan 2026): If command failed, send the error message to terminal
+              // Previously these errors were swallowed and users saw nothing
+              if (result.exitCode !== 0 && (result.stderr || result.error)) {
+                const errorText = result.stderr || result.error;
+                this.socket.emit('claude:output', {
+                  sessionId,
+                  commandId,
+                  data: `\r\n${errorText}\r\n`,
+                  stream: 'stderr',
+                  timestamp: Date.now()
+                });
+              }
+
               // Send completion
               this.socket.emit('claude:complete', {
                 sessionId,
@@ -483,6 +496,18 @@ class BridgeClient extends EventEmitter {
 
         // Non-interactive: await the full execution
         const result = await this.claudeExecutor.execute(command, executeOptions);
+
+        // FIX (Jan 2026): If command failed, send the error message to terminal
+        if (result.exitCode !== 0 && (result.stderr || result.error)) {
+          const errorText = result.stderr || result.error;
+          this.socket.emit('claude:output', {
+            sessionId,
+            commandId,
+            data: `\r\n${errorText}\r\n`,
+            stream: 'stderr',
+            timestamp: Date.now()
+          });
+        }
 
         // Send completion
         this.socket.emit('claude:complete', {
