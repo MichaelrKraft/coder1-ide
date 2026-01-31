@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { contextProcessor } from '@/services/context-processor';
 import { logger } from '@/lib/logger';
+import { handleError, errors } from '@/lib/error-handler';
 
 // Mark as dynamic since this manages stateful terminal sessions
 export const dynamic = 'force-dynamic';
@@ -19,7 +20,7 @@ export async function POST(request: NextRequest) {
     // 🔍 DEBUG: Log REST API session creation
     console.log('[REST-SESSION-CREATE] New session ID:', sessionId);
     console.log('[REST-SESSION-CREATE] Request cols:', cols, 'rows:', rows);
-    
+
     // Store minimal session info
     sessionCounter.set(sessionId, {
       id: sessionId,
@@ -29,7 +30,7 @@ export async function POST(request: NextRequest) {
       isActive: true,
       type: 'unified-server'
     });
-    
+
     // PHASE 1 FIX: Context processor initialization DISABLED for memory stability
     // - Auto-initializing context for every terminal REST session causes memory exhaustion
     // - Results in 1,673+ sessions created, causing server crashes (exit code 137)
@@ -43,9 +44,7 @@ export async function POST(request: NextRequest) {
       // Continue even if context processor fails - terminal should still work
     }
     */
-    
-    // REMOVED: // REMOVED: console.log(`✅ Terminal session created (unified): ${sessionId}`);
-    
+
     return NextResponse.json({
       sessionId,
       status: 'created',
@@ -53,11 +52,20 @@ export async function POST(request: NextRequest) {
       rows,
       message: 'Terminal managed by unified server via Socket.IO'
     });
-    
+
   } catch (error) {
-    // logger?.error('Error creating terminal session:', error);
+    // Log and handle error through centralized error handler
+    const appError = handleError(error, {
+      endpoint: 'POST /api/terminal-rest/sessions',
+      action: 'create_session'
+    });
+
     return NextResponse.json(
-      { error: 'Failed to create terminal session' },
+      {
+        error: appError.userMessage,
+        errorId: appError.id,
+        category: appError.category
+      },
       { status: 500 }
     );
   }
@@ -71,39 +79,53 @@ export async function DELETE(request: NextRequest) {
   try {
     const url = new URL(request.url);
     const sessionId = url.pathname.split('/').pop();
-    
+
     logger.info(`Terminal session deletion disabled - managed by unified server: ${sessionId}`);
-    
+
     return NextResponse.json({
       sessionId,
       status: 'deletion-disabled',
       message: 'Terminal session cleanup disabled - managed by unified server memory management',
       note: 'Sessions are automatically cleaned up by the unified server to prevent server crashes'
     });
-    
+
   } catch (error) {
-    logger.error('Error in disabled DELETE endpoint:', error);
-    return NextResponse.json(
-      { error: 'Terminal session deletion disabled for stability' },
-      { status: 200 } // Return 200 instead of 500 to prevent cascades
-    );
+    const appError = handleError(error, {
+      endpoint: 'DELETE /api/terminal-rest/sessions',
+      action: 'delete_session'
+    });
+
+    // Return 200 instead of 500 to prevent cascades
+    return NextResponse.json({
+      error: appError.userMessage,
+      errorId: appError.id,
+      status: 'deletion-disabled'
+    });
   }
 }
 
 export async function GET(request: NextRequest) {
   try {
     const activeSessions = Array.from(sessionCounter.values());
-    
+
     return NextResponse.json({
       sessions: activeSessions,
       count: activeSessions.length,
       message: 'Sessions listed, actual terminals managed by unified server via Socket.IO'
     });
-    
+
   } catch (error) {
-    // logger?.error('Error getting terminal sessions:', error);
+    const appError = handleError(error, {
+      endpoint: 'GET /api/terminal-rest/sessions',
+      action: 'list_sessions'
+    });
+
     return NextResponse.json(
-      { error: 'Failed to get terminal sessions' },
+      {
+        error: appError.userMessage,
+        errorId: appError.id,
+        category: appError.category
+      },
       { status: 500 }
     );
   }
