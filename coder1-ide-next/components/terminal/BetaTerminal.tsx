@@ -840,11 +840,16 @@ function BetaTerminal({
       }
     };
 
+    // 🔧 FIX (Jan 27, 2026): Track if we've already emitted terminal:create to prevent duplicates
+    // This flag prevents double welcome boxes when socket is already connected
+    let hasEmittedCreate = false;
+
     // Add connection status listeners
     socket.on('connect', () => {
       console.log('🟢 Beta Terminal: Socket.IO CONNECTED to backend');
-      // If reconnecting, re-establish terminal session
-      if (isConnected && sessionId) {
+      // If reconnecting AND we haven't already emitted, re-establish terminal session
+      if (isConnected && sessionId && hasEmittedCreate) {
+        // Only re-emit on ACTUAL reconnection (not initial connection)
         console.log('🔄 Beta Terminal: Reconnected - re-establishing terminal session');
         socket.emit('terminal:create', { id: sessionId });
         focusOnConnect();
@@ -865,6 +870,7 @@ function BetaTerminal({
     // Join the terminal session
     console.log('📡 Beta Terminal: Emitting terminal:create for session:', sessionId);
     socket.emit('terminal:create', { id: sessionId });
+    hasEmittedCreate = true; // 🔧 FIX: Mark that initial create has been emitted
 
     // Handle terminal output from backend
     socket.on('terminal:data', ({ id, data }: { id: string; data: string }) => {

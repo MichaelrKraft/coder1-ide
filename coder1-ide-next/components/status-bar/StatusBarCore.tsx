@@ -156,17 +156,8 @@ export default function StatusBarCore({
             </div>
           )}
 
-          {/* Bridge Connection Indicator - Shows if local machine is connected */}
-          {bridgeState.isConnected ? (
-            <div
-              className="flex items-center gap-1.5 text-green-400 hover:text-green-300 cursor-help transition-colors"
-              title={`Bridge Connected\n\nYour local machine is connected.\nFiles shown are from your computer.\n\nPlatform: ${bridgeState.platform || 'Unknown'}\nVersion: ${bridgeState.version || 'Unknown'}\nConnected: ${bridgeState.connectedAt?.toLocaleTimeString() || 'Unknown'}`}
-            >
-              <Link className="w-3.5 h-3.5" />
-              <span className="font-medium text-xs">Bridge</span>
-              <span className="w-1.5 h-1.5 rounded-full bg-green-400" />
-            </div>
-          ) : (
+          {/* Bridge Connection Indicator - Only show when NOT connected */}
+          {!bridgeState.isConnected && (
             <div
               className="flex items-center gap-1.5 text-yellow-500/70 hover:text-yellow-400 cursor-pointer transition-colors"
               title="Bridge Not Connected&#10;&#10;Connect your local machine to see your own files.&#10;Click to see setup instructions."
