@@ -228,7 +228,11 @@ class ClaudeExecutor extends EventEmitter {
           error: 'Not authenticated'
         });
       }
-      this.log(`Auth check passed: ${authStatus.output}`);
+      if (authStatus.warning) {
+        this.warn(`Auth check: ${authStatus.warning}`);
+      } else {
+        this.log(`Auth check passed: ${authStatus.output}`);
+      }
     }
 
     // Check if this needs interactive mode
@@ -236,19 +240,48 @@ class ClaudeExecutor extends EventEmitter {
       if (pty) {
         return this.executeInteractive(command, options);
       } else {
-        // node-pty not available - can't run interactive Claude session
-        this.error('Interactive mode requires node-pty which is not installed.');
-        this.error('Please reinstall with: npm install -g coder1-bridge --build-from-source');
+        // FIX (Jan 2026): node-pty not available - try non-interactive fallback
+        // Pre-built binaries can't bundle native C++ addons like node-pty
+        this.warn('Interactive mode unavailable (node-pty not installed).');
+        this.warn('Falling back to non-interactive verification.');
 
-        // Return error immediately instead of timing out
+        // Try running claude --version to verify CLI is accessible
+        try {
+          const versionResult = await this.executeNonInteractive('claude --version', options);
+          if (versionResult.exitCode === 0) {
+            return Promise.resolve({
+              exitCode: 1,
+              signal: null,
+              stdout: '',
+              stderr: `Claude CLI detected (${(versionResult.stdout || '').trim()})\n\n` +
+                      `⚠️  Interactive mode unavailable in this bridge installation.\n` +
+                      `The pre-built binary doesn't include terminal emulation support.\n\n` +
+                      `To get full interactive Claude in Coder1 IDE:\n` +
+                      `  npm install -g coder1-bridge\n` +
+                      `  coder1-bridge start\n\n` +
+                      `Or use Claude with prompts directly:\n` +
+                      `  claude "your question here"\n`,
+              duration: 0,
+              interactive: false,
+              error: 'node-pty not available for interactive mode'
+            });
+          }
+        } catch (e) {
+          // claude --version failed, fall through to generic error
+        }
+
         return Promise.resolve({
           exitCode: 1,
           signal: null,
           stdout: '',
-          stderr: 'Interactive Claude sessions require node-pty.\n\nTo fix, run:\n  npm install -g coder1-bridge --build-from-source\n\nOr use Claude with a prompt:\n  claude "your question here"',
+          stderr: 'Claude CLI not found or not responding.\n\n' +
+                  'Please check:\n' +
+                  '  1. Claude CLI is installed: npm install -g @anthropic-ai/claude-code\n' +
+                  '  2. You are authenticated: claude auth login\n' +
+                  '  3. Reinstall bridge with PTY support: npm install -g coder1-bridge\n',
           duration: 0,
           interactive: false,
-          error: 'node-pty not available for interactive mode'
+          error: 'Claude CLI not accessible'
         });
       }
     }
@@ -476,13 +509,26 @@ class ClaudeExecutor extends EventEmitter {
         }
       }
 
-      this.log(`Executing non-interactive: claude ${args.join(' ')}`);
+      // 🔧 FIX (Jan 27, 2026): Re-quote args with special shell characters
+      // When shell: true is used, spawn() joins args with spaces WITHOUT quotes,
+      // causing parentheses and other special chars to break the shell command.
+      // The eternal memory context often contains "(6 weeks ago)" which breaks sh.
+      const quotedArgs = args.map(arg => {
+        // If arg contains spaces, quotes, or shell special chars, wrap in double quotes
+        if (/[\s"'`$();&|<>\\]/.test(arg)) {
+          // Escape backslashes first, then double quotes, then wrap
+          return `"${arg.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`;
+        }
+        return arg;
+      });
+
+      this.log(`Executing non-interactive: ${this.claudePath} ${quotedArgs.join(' ')}`);
 
       // Spawn Claude process
       // 🔧 FIX (Jan 4, 2026): Added stdio config to prevent hanging on stdin
       // Without this, spawn() defaults stdin to 'pipe', causing Claude CLI to
       // wait for input that never comes (e.g., auth prompts), leading to 120s timeouts
-      const claudeProcess = spawn(this.claudePath, args, {
+      const claudeProcess = spawn(this.claudePath, quotedArgs, {
         env: {
           ...process.env,
           CODER1_BRIDGE: 'true',
@@ -676,7 +722,7 @@ class ClaudeExecutor extends EventEmitter {
     try {
       const output = execSync(`"${this.claudePath}" auth status`, {
         encoding: 'utf-8',
-        timeout: 15000,
+        timeout: 30000,
         stdio: ['ignore', 'pipe', 'pipe']
       });
 
@@ -692,7 +738,15 @@ class ClaudeExecutor extends EventEmitter {
         output: output.trim()
       };
     } catch (error) {
-      // If auth status command fails, assume not authenticated
+      // FIX (Jan 2026): If timeout, don't block - let the actual command fail naturally
+      if (error.message && error.message.includes('ETIMEDOUT')) {
+        return {
+          authenticated: true,
+          warning: 'Auth check timed out - proceeding anyway',
+          output: ''
+        };
+      }
+      // For other errors (CLI not found, etc.), still return false
       return {
         authenticated: false,
         error: error.message,
