@@ -399,6 +399,51 @@ async function checkClaudeCLI() {
   };
 }
 
+// Johnny5 daemon management command
+// Manages the Johnny5/ManusLive daemon as a macOS launchd service
+program
+  .command('johnny5 <action>')
+  .description('Manage Johnny5 daemon (install|start|stop|status|uninstall)')
+  .action(async (action) => {
+    const johnny5Daemon = require('./johnny5-daemon');
+
+    const validActions = ['install', 'start', 'stop', 'status', 'uninstall'];
+    if (!validActions.includes(action)) {
+      console.log('\x1b[31m❌ Invalid action: ' + action + '\x1b[0m');
+      console.log('Valid actions: ' + validActions.join(', '));
+      process.exit(1);
+    }
+
+    try {
+      let result;
+      switch (action) {
+        case 'install':
+          result = johnny5Daemon.install();
+          break;
+        case 'start':
+          result = johnny5Daemon.start();
+          break;
+        case 'stop':
+          result = johnny5Daemon.stop();
+          break;
+        case 'status':
+          result = johnny5Daemon.status();
+          break;
+        case 'uninstall':
+          result = johnny5Daemon.uninstall();
+          break;
+      }
+
+      // For non-status commands, exit with appropriate code
+      if (action !== 'status' && result && !result.success) {
+        process.exit(1);
+      }
+    } catch (error) {
+      console.log('\x1b[31m❌ Error: ' + error.message + '\x1b[0m');
+      process.exit(1);
+    }
+  });
+
 // Parse arguments
 program.parse(process.argv);
 

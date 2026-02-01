@@ -228,44 +228,101 @@ async function handleSaveConfig(config: Johnny5Config): Promise<NextResponse> {
 
 /**
  * Install Johnny5 daemon as system service
- * Requires Coder1 Bridge CLI to be running
+ * Calls the Bridge CLI to handle the actual installation
  */
 async function handleInstallDaemon(): Promise<NextResponse> {
   try {
     const platform = process.platform;
 
-    // This would typically be handled via the Bridge CLI
-    // For now, return instructions for manual setup
-    let instructions: string;
-
-    if (platform === 'darwin') {
-      // macOS - launchd
-      instructions = `To auto-start Johnny5 on login:
-1. Run: coder1-bridge johnny5 install
-Or manually create ~/Library/LaunchAgents/com.coder1.johnny5.plist`;
-    } else if (platform === 'linux') {
-      // Linux - systemd
-      instructions = `To auto-start Johnny5 on login:
-1. Run: coder1-bridge johnny5 install
-Or manually create ~/.config/systemd/user/johnny5.service`;
-    } else {
-      instructions = 'Automatic daemon installation is not supported on this platform. Please start Johnny5 manually.';
+    // Only macOS and Linux are supported for daemon installation
+    if (platform !== 'darwin' && platform !== 'linux') {
+      return NextResponse.json({
+        success: false,
+        error: 'Automatic daemon installation is not supported on this platform.',
+        data: {
+          platform,
+          instructions: 'Please start Johnny5 manually: cd ~/manuslive/manuslive && npm start',
+        },
+      }, { status: 400 });
     }
 
-    return NextResponse.json({
-      success: true,
-      message: 'Daemon installation instructions',
-      data: {
-        platform,
-        instructions,
-        manualStart: 'cd ~/johnny5 && npm start',
-      },
-      timestamp: new Date(),
-    });
+    // Path to the bridge CLI (relative to coder1-ide-next root)
+    const bridgePath = join(process.cwd(), 'bridge-cli', 'src', 'index.js');
+
+    // Check if bridge CLI exists
+    if (!existsSync(bridgePath)) {
+      console.error('[Johnny5 Setup API] Bridge CLI not found at:', bridgePath);
+      return NextResponse.json({
+        success: false,
+        error: 'Bridge CLI not found',
+        data: {
+          bridgePath,
+          instructions: 'Run: coder1-bridge johnny5 install',
+        },
+      }, { status: 500 });
+    }
+
+    // Execute the bridge CLI to install the daemon
+    console.log('[Johnny5 Setup API] Installing daemon via bridge CLI...');
+    let result: string;
+    let installSuccess = false;
+
+    try {
+      result = execSync(`node "${bridgePath}" johnny5 install 2>&1`, {
+        encoding: 'utf-8',
+        timeout: 60000, // 60 second timeout
+        cwd: process.cwd(),
+      });
+      installSuccess = true;
+    } catch (execError) {
+      // execSync throws on non-zero exit code, but we still want the output
+      const error = execError as { stdout?: string; stderr?: string; message?: string };
+      result = error.stdout || error.stderr || error.message || 'Unknown error';
+      // Check if it's actually a success message
+      installSuccess = result.includes('installed') || result.includes('running');
+    }
+
+    console.log('[Johnny5 Setup API] Bridge CLI output:', result);
+
+    // Check the daemon status
+    const johnny5Status = checkJohnny5Status();
+
+    if (installSuccess || johnny5Status.running) {
+      return NextResponse.json({
+        success: true,
+        message: 'Daemon installed successfully',
+        data: {
+          platform,
+          output: result,
+          status: johnny5Status,
+        },
+        timestamp: new Date(),
+      });
+    } else {
+      // Installation didn't fail catastrophically but daemon isn't running
+      return NextResponse.json({
+        success: false,
+        error: 'Daemon installed but not running',
+        data: {
+          platform,
+          output: result,
+          status: johnny5Status,
+          instructions: platform === 'darwin'
+            ? 'Try: cd ~/manuslive/manuslive && node dist/cli.js daemon start'
+            : 'Try: cd ~/manuslive/manuslive && npm start',
+        },
+      }, { status: 500 });
+    }
   } catch (error) {
     console.error('[Johnny5 Setup API] Error installing daemon:', error);
     return NextResponse.json(
-      { success: false, error: 'Failed to install daemon' },
+      {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to install daemon',
+        data: {
+          instructions: 'Manual fallback: cd ~/manuslive/manuslive && npm start',
+        },
+      },
       { status: 500 }
     );
   }

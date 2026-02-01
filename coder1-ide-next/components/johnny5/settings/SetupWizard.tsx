@@ -79,12 +79,14 @@ export default function SetupWizard({
   // Count connected integrations
   const connectedCount = [integrations.zapier.connected, integrations.telegram.connected].filter(Boolean).length;
 
-  // Save configuration to backend
+  // Save configuration and install daemon
   const saveConfiguration = async () => {
     setIsInstalling(true);
-    setInstallStatus('Saving configuration...');
 
     try {
+      // Step 1: Save configuration
+      setInstallStatus('Saving configuration...');
+
       const config = {
         integrations: {
           zapier: integrations.zapier.connected ? { token: integrations.zapier.token } : null,
@@ -97,26 +99,63 @@ export default function SetupWizard({
         proactivityLevel,
       };
 
-      setInstallStatus('Configuring Johnny5 daemon...');
-
-      const response = await fetch('/api/johnny5/setup/config', {
+      const configResponse = await fetch('/api/johnny5/setup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(config),
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to save configuration');
+      if (!configResponse.ok) {
+        const errorData = await configResponse.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Failed to save configuration');
       }
 
-      setInstallStatus('Johnny5 is ready!');
+      // Step 2: Install daemon
+      setInstallStatus('Installing Johnny5 daemon...');
+
+      const installResponse = await fetch('/api/johnny5/setup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'install-daemon' }),
+      });
+
+      const installData = await installResponse.json().catch(() => ({}));
+
+      if (!installResponse.ok) {
+        // Daemon installation failed, but config was saved
+        console.warn('Daemon installation issue:', installData);
+        setInstallStatus(
+          installData.data?.instructions
+            ? `Setup complete. ${installData.data.instructions}`
+            : 'Configuration saved. Start Johnny5 manually.'
+        );
+        // Still continue - config is saved
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        return;
+      }
+
+      // Step 3: Verify daemon is running
+      setInstallStatus('Verifying Johnny5 is running...');
+      await new Promise(resolve => setTimeout(resolve, 2000));
+
+      const statusResponse = await fetch('/api/johnny5/setup');
+      const statusData = await statusResponse.json().catch(() => ({}));
+
+      if (statusData.data?.johnny5?.running) {
+        setInstallStatus('Johnny5 is ready!');
+      } else {
+        setInstallStatus('Johnny5 installed. Starting automatically on next login.');
+      }
 
       // Brief delay to show success message
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await new Promise(resolve => setTimeout(resolve, 1000));
 
     } catch (error) {
       console.error('Setup error:', error);
-      setInstallStatus('Setup completed (config saved locally)');
+      const errorMessage = error instanceof Error ? error.message : 'Setup error';
+      setInstallStatus(`Error: ${errorMessage}`);
+      // Still wait a bit so user can see the error
+      await new Promise(resolve => setTimeout(resolve, 3000));
     } finally {
       setIsInstalling(false);
     }
