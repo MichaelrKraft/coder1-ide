@@ -1,0 +1,12 @@
+version: '3.8'
+
+services:
+  # Simulates the Production Load Balancer (Render/Cloudflare)
+  load-balancer:
+    image: nginx:alpine
+    ports:
+      - "3002:80"  # Access app via http://localhost:3002
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    extra_hosts:
+      - "host.docker.internal:host-gateway" # Allows access to Mac localhost
