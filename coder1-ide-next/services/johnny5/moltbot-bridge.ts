@@ -442,12 +442,13 @@ class MoltbotBridgeService extends EventEmitter {
 
       const parsed = JSON.parse(raw);
 
-      // Moltbot uses nested event format: {"type":"event","event":"...", "payload": {...}}
+      // Moltbot uses nested event format: {"type":"event"|"evt","event":"...", "payload": {...}}
       // Handle both direct events and nested event format
       let eventType = parsed.type;
       let payload = parsed.payload;
 
-      if (parsed.type === 'event' && parsed.event) {
+      // Johnny5 sends type: "evt", Moltbot sends type: "event"
+      if ((parsed.type === 'event' || parsed.type === 'evt') && parsed.event) {
         // Nested event format from Moltbot
         eventType = parsed.event;
         console.log(`[MoltbotBridge] Received Moltbot event: ${eventType}`);
@@ -594,14 +595,16 @@ class MoltbotBridgeService extends EventEmitter {
     this.handleIncomingMessage(message);
   }
 
-  private handleResponse(response: { id: string; ok: boolean; payload?: any; error?: any }): void {
-    console.log(`[MoltbotBridge] Response received for id=${response.id}, ok=${response.ok}`);
-    if (!response.ok && response.error) {
+  private handleResponse(response: { id: string; ok?: boolean; result?: any; payload?: any; error?: any }): void {
+    // Johnny5 returns "result" while Moltbot uses "ok"
+    const success = response.ok === true || !!response.result;
+    console.log(`[MoltbotBridge] Response received for id=${response.id}, success=${success}`);
+    if (!success && response.error) {
       console.error(`[MoltbotBridge] Error details:`, JSON.stringify(response.error));
     }
 
     // Check if this is the connect handshake response (id="1")
-    if (response.id === '1' && response.ok) {
+    if (response.id === '1' && success) {
       this.authenticated = true;
       console.log('[MoltbotBridge] Authentication complete - ready for chat');
       this.emit('authenticated');
@@ -609,13 +612,14 @@ class MoltbotBridgeService extends EventEmitter {
 
     // Check if this is a response to a pending request
     const pending = this.state.pendingMessages.get(response.id);
+    const responsePayload = response.result || response.payload;
     if (pending) {
-      if (response.ok && response.payload) {
-        // Check if this is an async chat response (has runId and status)
-        if (response.payload.runId && response.payload.status === 'started') {
+      if (success && responsePayload) {
+        // Check if this is an async chat response (has runId - Johnny5 doesn't send status)
+        if (responsePayload.runId) {
           // This is the initial acknowledgment - DON'T resolve yet
           // Track runId -> messageId so we can resolve when chat event arrives
-          const runId = response.payload.runId;
+          const runId = responsePayload.runId;
           console.log(`[MoltbotBridge] Async chat started, runId=${runId}, waiting for completion...`);
           this.runIdToMessageId.set(runId, response.id);
           this.agentResponses.set(runId, { content: '', sessionKey: '' });
@@ -627,15 +631,15 @@ class MoltbotBridgeService extends EventEmitter {
         clearTimeout(pending.timeout);
         this.state.pendingMessages.delete(response.id);
         const extractedText = this.extractTextContent(
-          response.payload.content || response.payload.text || response.payload.message
+          responsePayload.content || responsePayload.text || responsePayload.message
         );
         const moltbotResponse: MoltbotResponse = {
           text: extractedText || 'Response received but no text content found.',
-          toolCalls: response.payload.toolCalls,
-          thinking: response.payload.thinking,
-          sessionId: response.payload.sessionId || 'default',
+          toolCalls: responsePayload.toolCalls,
+          thinking: responsePayload.thinking,
+          sessionId: responsePayload.sessionId || 'default',
           messageId: response.id,
-          tokenUsage: response.payload.usage,
+          tokenUsage: responsePayload.usage,
         };
         pending.resolve(moltbotResponse);
       } else if (response.error) {
@@ -704,19 +708,54 @@ class MoltbotBridgeService extends EventEmitter {
       }
     };
 
-    // Text stream contains assistant responses
+    // Text stream contains assistant responses (Moltbot format)
     if (payload.stream === 'text' && payload.data) {
       const text = payload.data.text || payload.data.content || payload.data.delta || '';
       updateContent(text);
     }
 
-    // Also check for content in data object directly
+    // Also check for content in data object directly (Moltbot format)
     if (payload.data?.content || payload.data?.text) {
       const text = payload.data.content || payload.data.text || '';
       updateContent(text);
     }
 
-    // Check for response in lifecycle end event
+    // Johnny5 format: payload.type='delta' with payload.delta.text
+    if (payload.type === 'delta' && payload.delta) {
+      const text = payload.delta.text || payload.delta.content || '';
+      if (text) {
+        updateContent(text);
+        console.log(`[MoltbotBridge] Johnny5 delta: ${text.length} chars`);
+      }
+    }
+
+    // Johnny5 format: payload.type='done' with payload.content (final response)
+    if (payload.type === 'done' && payload.content) {
+      // Done event has the full response - replace
+      resp.content = payload.content;
+      console.log(`[MoltbotBridge] Johnny5 done: ${resp.content.length} chars`);
+
+      // Resolve pending message if we have one
+      const messageId = this.runIdToMessageId.get(runId);
+      if (messageId) {
+        const pending = this.state.pendingMessages.get(messageId);
+        if (pending) {
+          clearTimeout(pending.timeout);
+          this.state.pendingMessages.delete(messageId);
+          this.runIdToMessageId.delete(runId);
+
+          const moltbotResponse: MoltbotResponse = {
+            text: resp.content,
+            sessionId: resp.sessionKey || 'dashboard:main',
+            messageId: messageId,
+          };
+          pending.resolve(moltbotResponse);
+          console.log(`[MoltbotBridge] Resolved message ${messageId} with ${resp.content.length} chars`);
+        }
+      }
+    }
+
+    // Check for response in lifecycle end event (Moltbot format)
     if (payload.stream === 'lifecycle' && payload.data?.phase === 'end') {
       // Sometimes the final response is in the end event
       if (payload.data.response || payload.data.result || payload.data.output) {

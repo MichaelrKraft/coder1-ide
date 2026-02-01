@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
         risk: 'high',
         blocked: true,
         blockReason: 'Prompt injection pattern detected',
-        sessionId: sessionId || 'default',
+        sessionId: sessionId || 'dashboard:main',
       });
 
       return NextResponse.json({
@@ -88,21 +88,33 @@ export async function POST(request: NextRequest) {
       target: 'johnny5_chat',
       source: 'user',
       risk: 'low',
-      sessionId: sessionId || 'default',
+      sessionId: sessionId || 'dashboard:main',
     });
 
     // Check if Moltbot is available and should be used
     const moltbotBridge = getMoltbotBridge();
 
+    // Auto-connect if Moltbot is enabled but not connected
+    if (process.env.MOLTBOT_ENABLED === 'true' && !moltbotBridge.isConnected()) {
+      const gatewayUrl = process.env.MOLTBOT_GATEWAY_URL || 'ws://localhost:18789/dashboard';
+      console.log('[Johnny5 Chat] Auto-connecting to Moltbot at', gatewayUrl);
+      try {
+        await moltbotBridge.connect(gatewayUrl);
+        console.log('[Johnny5 Chat] Connected to Moltbot successfully');
+      } catch (connectError) {
+        console.error('[Johnny5 Chat] Failed to connect to Moltbot:', connectError);
+      }
+    }
+
     if (process.env.MOLTBOT_ENABLED === 'true' && moltbotBridge.isConnected()) {
       try {
         console.log('[Johnny5 Chat] Routing through Moltbot...');
         const response = await moltbotBridge.sendMessage(
-          sessionId || 'default',
+          sessionId || 'dashboard:main',
           message
         );
 
-        const actualSessionId = response.sessionId || sessionId || 'default';
+        const actualSessionId = response.sessionId || sessionId || 'dashboard:main';
 
         // Track usage for analytics
         if (response.tokenUsage) {
@@ -163,7 +175,7 @@ export async function POST(request: NextRequest) {
     if (!apiKey) {
       // Track mock usage for analytics (estimated tokens)
       const mockResponse = getMockResponse(message);
-      const mockSessionId = sessionId || 'default';
+      const mockSessionId = sessionId || 'dashboard:main';
       const mockInputTokens = Math.round(message.length / 4);
       const mockOutputTokens = Math.round(mockResponse.length / 4);
 
@@ -236,7 +248,7 @@ export async function POST(request: NextRequest) {
     // Extract text response
     const textContent = response.content.find((c) => c.type === 'text');
     const responseText = textContent?.type === 'text' ? textContent.text : 'I received your message but had trouble generating a response.';
-    const directSessionId = sessionId || 'default';
+    const directSessionId = sessionId || 'dashboard:main';
 
     // Track usage for analytics
     trackUsage({

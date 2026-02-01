@@ -148,17 +148,12 @@ export default function Johnny5Panel({ className }: Johnny5PanelProps) {
             />
           </div>
 
-          <div>
-            <h2 className="text-sm font-bold text-text-primary tracking-wide">
-              Johnny5
-            </h2>
-            <p className="text-[10px] text-text-muted">
-              {status === 'working' ? 'Working...' :
-               status === 'sleeping' ? 'Sleeping' :
-               status === 'error' ? 'Error' :
-               'Ready'}
-            </p>
-          </div>
+          <span className="text-xs text-text-muted">
+            {status === 'working' ? 'Working...' :
+             status === 'sleeping' ? 'Sleeping' :
+             status === 'error' ? 'Error' :
+             'Ready'}
+          </span>
         </div>
 
         <div className="flex items-center gap-2">
