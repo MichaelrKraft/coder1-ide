@@ -1813,18 +1813,20 @@ app.prepare().then(() => {
           // Race condition: Client emits terminal:create and immediately registers listener,
           // but Socket.IO's event loop might not have processed the registration yet.
           // This delay ensures the client's terminal:history listener is ready.
-          setTimeout(() => {
-            console.log('⏰ [SERVER] Delay complete (100ms) - emitting terminal:history now');
-            
-            // Send history via Socket.IO event
-            socket.emit('terminal:history', { 
-              id: sessionId, 
-              history: historyText,
-              chunkCount: terminalHistory ? terminalHistory.length : 1
-            });
-            
-            console.log('✅ [SERVER] terminal:history emission completed');
-          }, 100);
+          // ⚡ PERFORMANCE FIX (Jan 31, 2026): Removed 100ms delay
+          // The client now registers the listener BEFORE emitting terminal:create,
+          // so the race condition is solved architecturally.
+          // This allows the history to be sent immediately, beating the Chaos Proxy's 100ms kill timer.
+          console.log('⚡ [SERVER] Emitting terminal:history immediately');
+          
+          // Send history via Socket.IO event
+          socket.emit('terminal:history', { 
+            id: sessionId, 
+            history: historyText,
+            chunkCount: terminalHistory ? terminalHistory.length : 1
+          });
+          
+          console.log('✅ [SERVER] terminal:history emission completed');
         } else {
           console.log(`🆕 New session ${sessionId} - no history to restore`);
         }

@@ -25,6 +25,8 @@ interface AutoCheckpointOptions {
   sessionId?: string; // Optional explicit session ID (overrides context)
   onSuccess?: (checkpointId: string) => void;
   onError?: (error: Error) => void;
+  isConnected?: boolean; // Pause checking if disconnected
+  isRestoring?: boolean; // Pause checking if restoring session
 }
 
 interface CheckpointState {
@@ -45,7 +47,9 @@ export function useAutoCheckpoint(options: AutoCheckpointOptions = {}) {
     interval = DEFAULT_INTERVAL,
     sessionId: explicitSessionId,
     onSuccess,
-    onError
+    onError,
+    isConnected = true, // Default to true if not provided (backward compatibility)
+    isRestoring = false // Default to false if not provided
   } = options;
 
   const { currentSession, sessionId: contextSessionId } = useSession();
@@ -115,6 +119,17 @@ export function useAutoCheckpoint(options: AutoCheckpointOptions = {}) {
   const createAutoCheckpoint = useCallback(async () => {
     // Circuit breaker check - don't attempt if circuit is open
     if (isCircuitOpen) {
+      return;
+    }
+
+    // 🔒 PAUSE CHECKPOINTING during connection instability
+    // Trying to read state or hit API during reconnection/restoration can cause freezing
+    if (!isConnected) {
+      console.log('⏸️ Auto-checkpoint paused: Terminal disconnected');
+      return;
+    }
+    if (isRestoring) {
+      console.log('⏸️ Auto-checkpoint paused: Session restoring in progress');
       return;
     }
 
@@ -261,6 +276,12 @@ export function useAutoCheckpoint(options: AutoCheckpointOptions = {}) {
       return;
     }
 
+    // Don't start timer if we're in a bad state
+    if (!isConnected || isRestoring) {
+      console.log('⏳ Auto-checkpoint timer delayed until connection stable');
+      return;
+    }
+
     console.log(`⏰ Auto-checkpoint timer started (interval: ${interval / 1000 / 60} minutes, sessionId: ${activeSessionId})`);
 
     // Create first checkpoint after 1 minute (not immediately)
@@ -274,7 +295,7 @@ export function useAutoCheckpoint(options: AutoCheckpointOptions = {}) {
       clearInterval(intervalId);
       console.log('⏰ Auto-checkpoint timer stopped');
     };
-  }, [enabled, explicitSessionId, currentSession, contextSessionId, interval, createAutoCheckpoint]);
+  }, [enabled, explicitSessionId, currentSession, contextSessionId, interval, createAutoCheckpoint, isConnected, isRestoring]);
 
   /**
    * Retry checkpoint creation - resets circuit breaker
