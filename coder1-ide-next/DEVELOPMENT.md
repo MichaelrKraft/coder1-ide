@@ -212,3 +212,33 @@ If things aren't working:
 ---
 
 *Last Updated: January 2025*
+## 🧪 Advanced Debugging: Resolving "Transport Close" Issues
+
+If you encounter "Connection lost: transport close" errors (typical of Load Balancers like Render/Cloudflare), you can debug locally using our Chaos tools.
+
+### 1. Smart Chaos Proxy (Recommended)
+Simulates random `transport close` events on Socket.IO connections while keeping static assets safe.
+
+```bash
+# Start the proxy (kills 60% of sockets after 100-800ms)
+node debug/smart-chaos-proxy.js
+
+# Access the IDE via the proxy port
+http://localhost:3002/ide
+```
+
+**What to look for:**
+- Terminal should flicker but **recover instantly**.
+- Logs should show `🔪 [CHAOS] Killing socket`.
+- If terminal hangs with "Connection timeout" (10s), the client-side fix is broken.
+
+### 2. Docker Load Balancer Simulation
+Simulates a strict Nginx load balancer with aggressive timeouts.
+
+```bash
+cd debug
+docker-compose up
+# Access at http://localhost:3002
+```
+
+Use this to verify `pingInterval` / `pingTimeout` settings against a strict proxy.
