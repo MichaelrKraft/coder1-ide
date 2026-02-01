@@ -11,3 +11,5 @@
 export { default as InterviewMode } from './InterviewMode';
 export { default as CapabilityCard } from './CapabilityCard';
 export { default as UserProfileSummary } from './UserProfileSummary';
+export { default as ZapierMCPSetupCard } from './ZapierMCPSetupCard';
+export { default as TelegramSetupCard } from './TelegramSetupCard';

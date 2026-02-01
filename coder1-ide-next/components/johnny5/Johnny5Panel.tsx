@@ -11,7 +11,7 @@ import { AnalyticsTab } from './analytics';
 import { ContextTab } from './context';
 import { ReasoningTab } from './reasoning';
 import { MorningBriefTab } from './morning-brief';
-import { SettingsPanel } from './settings';
+import { SettingsPanel, SetupWizard } from './settings';
 import { useJohnny5Store } from '@/stores/useJohnny5Store';
 
 interface Johnny5PanelProps {
@@ -32,9 +32,14 @@ interface Johnny5PanelProps {
  * - Security Monitor: Am I protected? (KEY DIFFERENTIATOR)
  * - Mission Control: Track all Johnny5 tasks
  * - Morning Brief: Daily summary of overnight work
+ *
+ * URL Parameters:
+ * - ?showSetup=true - Force show the setup wizard
+ * - ?resetJohnny5=true - Reset Johnny5 state and show wizard
  */
 export default function Johnny5Panel({ className }: Johnny5PanelProps) {
   const [showSettings, setShowSettings] = React.useState(false);
+  const [showSetupWizard, setShowSetupWizard] = React.useState(false);
   const {
     activeTab,
     setActiveTab,
@@ -43,6 +48,32 @@ export default function Johnny5Panel({ className }: Johnny5PanelProps) {
     setupStatus,
     setSetupStatus,
   } = useJohnny5Store();
+
+  // Check URL parameters for force-show wizard (client-side only, runs once on mount)
+  const hasCheckedUrlParams = React.useRef(false);
+  React.useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (hasCheckedUrlParams.current) return;
+    hasCheckedUrlParams.current = true;
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const showSetupParam = urlParams.get('showSetup');
+    const resetParam = urlParams.get('resetJohnny5');
+
+    if (showSetupParam === 'true' || resetParam === 'true') {
+      // Force show the wizard
+      setShowSetupWizard(true);
+
+      // If reset param, also mark setup as incomplete
+      if (resetParam === 'true') {
+        setSetupStatus({ ...setupStatus, isComplete: false });
+      }
+
+      // Clean up URL to prevent re-triggering
+      const newUrl = window.location.pathname;
+      window.history.replaceState({}, '', newUrl);
+    }
+  }, [setSetupStatus, setupStatus]);
 
   const hasSecurityAlerts = security.warnings.filter(w => !w.dismissed).length > 0 ||
     security.promptInjectionAlerts.filter(a => !a.blocked).length > 0;
@@ -200,16 +231,24 @@ export default function Johnny5Panel({ className }: Johnny5PanelProps) {
 
       {/* Tab Content */}
       <div className="flex-1 overflow-hidden relative z-10">
-        {/* Setup Wizard (if not complete) */}
-        {!setupStatus.isComplete && (
-          <SetupPrompt onSetup={() => {
-            setSetupStatus({ ...setupStatus, isComplete: true });
-            setActiveTab('sessions');
-          }} />
+        {/* Setup Wizard (if not complete OR explicitly triggered) */}
+        {(!setupStatus.isComplete || showSetupWizard) && (
+          <SetupWizard
+            onComplete={() => {
+              setSetupStatus({ ...setupStatus, isComplete: true });
+              setShowSetupWizard(false);
+              setActiveTab('sessions');
+            }}
+            onSkip={() => {
+              setSetupStatus({ ...setupStatus, isComplete: true });
+              setShowSetupWizard(false);
+              setActiveTab('sessions');
+            }}
+          />
         )}
 
         {/* Tab Content Panels */}
-        {setupStatus.isComplete && (
+        {setupStatus.isComplete && !showSetupWizard && (
           <div className="h-full overflow-auto">
             {activeTab === 'chat' && <ChatTab />}
             {activeTab === 'sessions' && <SessionsTab />}
@@ -236,7 +275,13 @@ export default function Johnny5Panel({ className }: Johnny5PanelProps) {
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <SettingsPanel onSave={() => setShowSettings(false)} />
+            <SettingsPanel
+              onSave={() => setShowSettings(false)}
+              onShowSetupWizard={() => {
+                setShowSettings(false);
+                setShowSetupWizard(true);
+              }}
+            />
           </div>
         </div>
       )}
@@ -264,34 +309,4 @@ function SecurityTabConnected() {
   );
 }
 
-// ============================================================================
-// Placeholder Components (to be replaced with full implementations)
-// ============================================================================
-
-function SetupPrompt({ onSetup }: { onSetup: () => void }) {
-  return (
-    <div className="h-full flex flex-col items-center justify-center p-6 text-center">
-      <div className="w-16 h-16 rounded-full bg-coder1-cyan/20 flex items-center justify-center mb-4">
-        <Zap className="w-8 h-8 text-coder1-cyan" />
-      </div>
-      <h3 className="text-lg font-bold text-text-primary mb-2">
-        Meet Johnny5
-      </h3>
-      <p className="text-sm text-text-secondary mb-4 max-w-xs">
-        Your AI employee dashboard. See what your AI does, why it makes decisions,
-        and keep everything secure.
-      </p>
-      <p className="text-xs text-coder1-cyan italic mb-6">
-        "Need more input!"
-      </p>
-      <button
-        onClick={onSetup}
-        className="px-4 py-2 bg-coder1-cyan/20 text-coder1-cyan border border-coder1-cyan/50 rounded-lg
-          hover:bg-coder1-cyan/30 hover:border-coder1-cyan transition-all text-sm font-semibold"
-      >
-        Get Started
-      </button>
-    </div>
-  );
-}
 

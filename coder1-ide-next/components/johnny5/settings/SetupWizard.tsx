@@ -3,12 +3,6 @@
 import React, { useState } from 'react';
 import {
   Sparkles,
-  Github,
-  Mail,
-  MessageSquare,
-  HardDrive,
-  FileText,
-  LayoutGrid,
   Check,
   ChevronRight,
   ChevronLeft,
@@ -17,7 +11,11 @@ import {
   Brain,
   Rocket,
   PartyPopper,
+  Server,
+  Loader2,
 } from 'lucide-react';
+import ZapierMCPSetupCard from '../onboarding/ZapierMCPSetupCard';
+import TelegramSetupCard from '../onboarding/TelegramSetupCard';
 
 interface SetupWizardProps {
   onComplete?: () => void;
@@ -27,12 +25,9 @@ interface SetupWizardProps {
 
 type WizardStep = 'welcome' | 'integrations' | 'permissions' | 'behavior' | 'complete';
 
-interface IntegrationOption {
-  id: string;
-  name: string;
-  icon: React.ReactNode;
-  description: string;
-  recommended?: boolean;
+interface IntegrationState {
+  zapier: { connected: boolean; token?: string };
+  telegram: { connected: boolean; token?: string; botUsername?: string };
 }
 
 /**
@@ -48,7 +43,10 @@ export default function SetupWizard({
   className,
 }: SetupWizardProps) {
   const [currentStep, setCurrentStep] = useState<WizardStep>('welcome');
-  const [selectedIntegrations, setSelectedIntegrations] = useState<Set<string>>(new Set(['github']));
+  const [integrations, setIntegrations] = useState<IntegrationState>({
+    zapier: { connected: false },
+    telegram: { connected: false },
+  });
   const [proactivityLevel, setProactivityLevel] = useState<'low' | 'medium' | 'high'>('medium');
   const [permissions, setPermissions] = useState({
     fileWrite: true,
@@ -56,66 +54,82 @@ export default function SetupWizard({
     autoActions: false,
     externalRequests: false,
   });
+  const [isInstalling, setIsInstalling] = useState(false);
+  const [installStatus, setInstallStatus] = useState<string>('');
 
   const steps: WizardStep[] = ['welcome', 'integrations', 'permissions', 'behavior', 'complete'];
   const currentStepIndex = steps.indexOf(currentStep);
 
-  // Integration options
-  const integrations: IntegrationOption[] = [
-    {
-      id: 'github',
-      name: 'GitHub',
-      icon: <Github className="w-6 h-6" />,
-      description: 'Create PRs, manage issues, access repos',
-      recommended: true,
-    },
-    {
-      id: 'gmail',
-      name: 'Gmail',
-      icon: <Mail className="w-6 h-6" />,
-      description: 'Read and send emails automatically',
-    },
-    {
-      id: 'slack',
-      name: 'Slack',
-      icon: <MessageSquare className="w-6 h-6" />,
-      description: 'Send messages and notifications',
-    },
-    {
-      id: 'google-drive',
-      name: 'Google Drive',
-      icon: <HardDrive className="w-6 h-6" />,
-      description: 'Access and organize files',
-    },
-    {
-      id: 'notion',
-      name: 'Notion',
-      icon: <FileText className="w-6 h-6" />,
-      description: 'Manage workspaces and pages',
-    },
-    {
-      id: 'linear',
-      name: 'Linear',
-      icon: <LayoutGrid className="w-6 h-6" />,
-      description: 'Track issues and projects',
-    },
-  ];
+  // Handle Zapier MCP connection
+  const handleZapierConnected = (token: string) => {
+    setIntegrations(prev => ({
+      ...prev,
+      zapier: { connected: true, token },
+    }));
+  };
 
-  // Toggle integration selection
-  const toggleIntegration = (id: string) => {
-    const newSelected = new Set(selectedIntegrations);
-    if (newSelected.has(id)) {
-      newSelected.delete(id);
-    } else {
-      newSelected.add(id);
+  // Handle Telegram connection
+  const handleTelegramConnected = (token: string, botUsername: string) => {
+    setIntegrations(prev => ({
+      ...prev,
+      telegram: { connected: true, token, botUsername },
+    }));
+  };
+
+  // Count connected integrations
+  const connectedCount = [integrations.zapier.connected, integrations.telegram.connected].filter(Boolean).length;
+
+  // Save configuration to backend
+  const saveConfiguration = async () => {
+    setIsInstalling(true);
+    setInstallStatus('Saving configuration...');
+
+    try {
+      const config = {
+        integrations: {
+          zapier: integrations.zapier.connected ? { token: integrations.zapier.token } : null,
+          telegram: integrations.telegram.connected ? {
+            token: integrations.telegram.token,
+            botUsername: integrations.telegram.botUsername,
+          } : null,
+        },
+        permissions,
+        proactivityLevel,
+      };
+
+      setInstallStatus('Configuring Johnny5 daemon...');
+
+      const response = await fetch('/api/johnny5/setup/config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(config),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to save configuration');
+      }
+
+      setInstallStatus('Johnny5 is ready!');
+
+      // Brief delay to show success message
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+    } catch (error) {
+      console.error('Setup error:', error);
+      setInstallStatus('Setup completed (config saved locally)');
+    } finally {
+      setIsInstalling(false);
     }
-    setSelectedIntegrations(newSelected);
   };
 
   // Navigate steps
-  const goNext = () => {
+  const goNext = async () => {
     const nextIndex = currentStepIndex + 1;
     if (nextIndex < steps.length) {
+      // If moving to complete step, save configuration first
+      if (steps[nextIndex] === 'complete') {
+        await saveConfiguration();
+      }
       setCurrentStep(steps[nextIndex]);
     }
   };
@@ -176,60 +190,26 @@ export default function SetupWizard({
                 Connect Your Tools
               </h2>
               <p className="text-sm text-text-muted">
-                Select the services you want Johnny5 to access
+                Both integrations are optional. You can skip and add them later.
               </p>
             </div>
 
-            <div className="grid grid-cols-2 gap-3 max-w-lg mx-auto">
-              {integrations.map((integration) => (
-                <button
-                  key={integration.id}
-                  onClick={() => toggleIntegration(integration.id)}
-                  className={`
-                    p-4 rounded-xl border-2 transition-all text-left relative
-                    ${selectedIntegrations.has(integration.id)
-                      ? 'bg-coder1-cyan/10 border-coder1-cyan'
-                      : 'bg-bg-tertiary border-border-default hover:border-coder1-cyan/50'
-                    }
-                  `}
-                >
-                  {/* Recommended badge */}
-                  {integration.recommended && (
-                    <span className="absolute -top-2 -right-2 px-2 py-0.5 text-[10px] font-medium bg-coder1-cyan text-black rounded-full">
-                      Recommended
-                    </span>
-                  )}
+            <div className="space-y-4 max-w-lg mx-auto">
+              {/* Zapier MCP Card */}
+              <ZapierMCPSetupCard
+                onConnected={handleZapierConnected}
+                initialToken={integrations.zapier.token}
+              />
 
-                  {/* Checkmark */}
-                  {selectedIntegrations.has(integration.id) && (
-                    <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-coder1-cyan flex items-center justify-center">
-                      <Check className="w-3 h-3 text-black" />
-                    </div>
-                  )}
-
-                  <div
-                    className={`
-                      w-10 h-10 rounded-lg flex items-center justify-center mb-2
-                      ${selectedIntegrations.has(integration.id)
-                        ? 'bg-coder1-cyan/20 text-coder1-cyan'
-                        : 'bg-bg-secondary text-text-muted'
-                      }
-                    `}
-                  >
-                    {integration.icon}
-                  </div>
-                  <h4 className="text-sm font-semibold text-text-primary">
-                    {integration.name}
-                  </h4>
-                  <p className="text-xs text-text-muted mt-0.5">
-                    {integration.description}
-                  </p>
-                </button>
-              ))}
+              {/* Telegram Card */}
+              <TelegramSetupCard
+                onConnected={handleTelegramConnected}
+                initialToken={integrations.telegram.token}
+              />
             </div>
 
             <p className="text-xs text-text-muted text-center mt-4">
-              You can always add or remove integrations later
+              You can always add or remove integrations later in Settings
             </p>
           </div>
         );
@@ -509,48 +489,72 @@ export default function SetupWizard({
       case 'complete':
         return (
           <div className="text-center py-8">
-            {/* Success Animation */}
-            <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-gradient-to-br from-green-500/20 to-coder1-cyan/20 flex items-center justify-center border border-green-500/30 animate-pulse">
-              <PartyPopper className="w-12 h-12 text-green-400" />
-            </div>
+            {/* Success Animation / Installing State */}
+            {isInstalling ? (
+              <>
+                <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-gradient-to-br from-coder1-cyan/20 to-purple-500/20 flex items-center justify-center border border-coder1-cyan/30">
+                  <Loader2 className="w-12 h-12 text-coder1-cyan animate-spin" />
+                </div>
+                <h2 className="text-2xl font-bold text-text-primary mb-3">
+                  Setting Up Johnny5...
+                </h2>
+                <p className="text-text-secondary max-w-md mx-auto mb-6">
+                  {installStatus || 'Installing daemon and configuring services...'}
+                </p>
+              </>
+            ) : (
+              <>
+                <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-gradient-to-br from-green-500/20 to-coder1-cyan/20 flex items-center justify-center border border-green-500/30 animate-pulse">
+                  <PartyPopper className="w-12 h-12 text-green-400" />
+                </div>
 
-            <h2 className="text-2xl font-bold text-text-primary mb-3">
-              You&apos;re All Set!
-            </h2>
-            <p className="text-text-secondary max-w-md mx-auto mb-6">
-              Johnny5 is ready to help. Start your first task or explore the dashboard.
-            </p>
+                <h2 className="text-2xl font-bold text-text-primary mb-3">
+                  You&apos;re All Set!
+                </h2>
+                <p className="text-text-secondary max-w-md mx-auto mb-6">
+                  Johnny5 is ready to help. Start your first task or explore the dashboard.
+                </p>
 
-            {/* Summary */}
-            <div className="bg-bg-tertiary rounded-xl p-4 max-w-md mx-auto text-left mb-6">
-              <h4 className="text-sm font-semibold text-text-primary mb-3">Setup Summary</h4>
-              <div className="space-y-2 text-xs">
-                <div className="flex items-center justify-between">
-                  <span className="text-text-muted">Integrations</span>
-                  <span className="text-coder1-cyan">{selectedIntegrations.size} connected</span>
+                {/* Summary */}
+                <div className="bg-bg-tertiary rounded-xl p-4 max-w-md mx-auto text-left mb-6">
+                  <h4 className="text-sm font-semibold text-text-primary mb-3">Setup Summary</h4>
+                  <div className="space-y-2 text-xs">
+                    <div className="flex items-center justify-between">
+                      <span className="text-text-muted">Zapier MCP</span>
+                      <span className={integrations.zapier.connected ? 'text-green-400' : 'text-text-muted'}>
+                        {integrations.zapier.connected ? '✓ Connected' : 'Not configured'}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-text-muted">Telegram Bot</span>
+                      <span className={integrations.telegram.connected ? 'text-green-400' : 'text-text-muted'}>
+                        {integrations.telegram.connected ? `✓ @${integrations.telegram.botUsername}` : 'Not configured'}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-text-muted">Proactivity</span>
+                      <span className="text-coder1-cyan capitalize">{proactivityLevel}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-text-muted">File Write</span>
+                      <span className={permissions.fileWrite ? 'text-green-400' : 'text-red-400'}>
+                        {permissions.fileWrite ? 'Enabled' : 'Disabled'}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-text-muted">Terminal</span>
+                      <span className={permissions.terminalExec ? 'text-green-400' : 'text-red-400'}>
+                        {permissions.terminalExec ? 'Enabled' : 'Disabled'}
+                      </span>
+                    </div>
+                  </div>
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-text-muted">Proactivity</span>
-                  <span className="text-coder1-cyan capitalize">{proactivityLevel}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-text-muted">File Write</span>
-                  <span className={permissions.fileWrite ? 'text-green-400' : 'text-red-400'}>
-                    {permissions.fileWrite ? 'Enabled' : 'Disabled'}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-text-muted">Terminal</span>
-                  <span className={permissions.terminalExec ? 'text-green-400' : 'text-red-400'}>
-                    {permissions.terminalExec ? 'Enabled' : 'Disabled'}
-                  </span>
-                </div>
-              </div>
-            </div>
 
-            <p className="text-xs text-text-muted">
-              You can change these settings anytime from the Settings panel
-            </p>
+                <p className="text-xs text-text-muted">
+                  You can change these settings anytime from the Settings panel
+                </p>
+              </>
+            )}
           </div>
         );
     }

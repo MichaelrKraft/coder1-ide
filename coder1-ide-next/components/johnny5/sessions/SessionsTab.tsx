@@ -59,7 +59,9 @@ export default function SessionsTab() {
         const response = await fetch('/api/johnny5/sessions');
         if (response.ok) {
           const data = await response.json();
-          setSessions(data.data || []);
+          // API returns paginated response: { success, data: { items, total, page, pageSize, hasMore } }
+          const sessions = data.data?.items || data.data || [];
+          setSessions(sessions);
         } else {
           // Use mock data for development
           setSessions(getMockSessions());
@@ -142,7 +144,9 @@ export default function SessionsTab() {
       const response = await fetch('/api/johnny5/sessions');
       if (response.ok) {
         const data = await response.json();
-        setSessions(data.data || []);
+        // API returns paginated response: { success, data: { items, total, page, pageSize, hasMore } }
+        const sessions = data.data?.items || data.data || [];
+        setSessions(sessions);
       }
     } catch {
       // Keep existing data on error
