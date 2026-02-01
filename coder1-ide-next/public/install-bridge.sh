@@ -8,11 +8,23 @@ set -e
 
 # Parse command line arguments
 AUTO_START=false
+BRIDGE_ARGS=""
+
 for arg in "$@"; do
-    if [ "$arg" = "--auto-start" ]; then
-        AUTO_START=true
-    fi
+    case $arg in
+        --auto-start)
+            AUTO_START=true
+            ;;
+        --dev)
+            BRIDGE_ARGS="$BRIDGE_ARGS --dev"
+            ;;
+    esac
 done
+
+if [[ "$BRIDGE_ARGS" == *"--dev"* ]] && [ -z "$BRIDGE_URL" ]; then
+    BRIDGE_URL="http://localhost:3001/bridge-cli.tar.gz"
+    echo -e "${YELLOW}⚠️  Running in DEV mode - fetching from localhost${NC}"
+fi
 
 # Colors for output
 RED='\033[0;31m'
@@ -110,43 +122,14 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-echo -e "${BLUE}📂 Extracting...${NC}"
 
-# Extract tarball
-cd "$TEMP_DIR"
-tar -xzf bridge-cli.tar.gz
-
-# npm pack creates a "package" directory
-cd package
-
-echo -e "${BLUE}🔧 Installing dependencies...${NC}"
-
-# Install dependencies (critical for node-fetch and other packages)
-npm install --production --silent
-
-# Verify critical dependencies
-if [ ! -d "node_modules/node-fetch" ]; then
-    echo -e "${RED}❌ Critical dependency 'node-fetch' failed to install!${NC}"
-    echo -e "${YELLOW}Retrying installation...${NC}"
-    npm install --production
-    
-    if [ ! -d "node_modules/node-fetch" ]; then
-        echo -e "${RED}❌ Installation failed. Dependencies are missing.${NC}"
-        echo -e "${YELLOW}Please report this issue: https://github.com/MichaelrKraft/coder1-ide/issues${NC}"
-        rm -rf "$TEMP_DIR"
-        exit 1
-    fi
-fi
-
-echo -e "${GREEN}✅ Dependencies verified (node-fetch, socket.io-client, etc.)${NC}"
-
+# Install directly from tarball to ensure copy (not symlink)
 echo -e "${BLUE}🔗 Installing to $INSTALL_PREFIX...${NC}"
 
-# Install based on mode
 if [ "$INSTALL_MODE" = "global" ]; then
-    npm install -g . --prefix=/usr/local --unsafe-perm
+    npm install -g "$TEMP_DIR/bridge-cli.tar.gz" --prefix=/usr/local --unsafe-perm --build-from-source
 else
-    npm install -g . --prefix="$INSTALL_PREFIX" --unsafe-perm
+    npm install -g "$TEMP_DIR/bridge-cli.tar.gz" --prefix="$INSTALL_PREFIX" --unsafe-perm --build-from-source
 fi
 
 # Verify installation
@@ -158,7 +141,9 @@ if command -v coder1-bridge &> /dev/null; then
     if [ "$AUTO_START" = true ]; then
         echo -e "${CYAN}🚀 Starting bridge automatically...${NC}"
         echo
-        exec coder1-bridge start
+        # Clean up BEFORE exec (since exec replaces the process)
+        rm -rf "$TEMP_DIR"
+        exec coder1-bridge start $BRIDGE_ARGS < /dev/tty
     fi
     
     # Normal mode - show instructions
@@ -202,7 +187,9 @@ else
             if [ -x "$BRIDGE_BIN" ]; then
                 echo -e "${GREEN}✅ Bridge activated!${NC}"
                 echo
-                exec "$BRIDGE_BIN" start
+                # Clean up BEFORE exec
+                rm -rf "$TEMP_DIR"
+                exec "$BRIDGE_BIN" start $BRIDGE_ARGS < /dev/tty
             else
                 echo -e "${RED}❌ Could not find bridge binary at $BRIDGE_BIN${NC}"
                 echo -e "${YELLOW}Please restart terminal and run: ${GREEN}coder1-bridge start${NC}"
