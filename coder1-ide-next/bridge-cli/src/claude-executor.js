@@ -11,19 +11,13 @@
 const { spawn, execSync } = require('child_process');
 const EventEmitter = require('events');
 
-// Try to load node-pty-prebuilt-multiarch (no compilation required)
-// Falls back gracefully if not available
+// Load node-pty for interactive sessions
 let pty;
 try {
-  pty = require('node-pty-prebuilt-multiarch');
+  pty = require('node-pty');
 } catch (error) {
-  // Try original node-pty as fallback (for users who compiled it)
-  try {
-    pty = require('node-pty');
-  } catch (e) {
-    console.warn('[Claude] node-pty not available, interactive mode disabled');
-    pty = null;
-  }
+  console.warn('[Claude] node-pty not available, interactive mode disabled', error.message);
+  pty = null;
 }
 
 class ClaudeExecutor extends EventEmitter {
