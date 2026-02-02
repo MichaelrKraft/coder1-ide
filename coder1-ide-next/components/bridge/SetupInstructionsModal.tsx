@@ -219,11 +219,11 @@ export function SetupInstructionsModal({
                   <p className="text-xs text-gray-400 mb-2">Copy-paste this into your terminal:</p>
                   <div className="bg-black rounded p-3 font-mono text-sm flex items-center justify-between group">
                     <div className="flex-1 overflow-x-auto">
-                      <span className="text-green-400">$</span> <span className="text-white select-all">npm install -g coder1-bridge</span>
+                      <span className="text-green-400">$</span> <span className="text-white select-all">curl -sL https://coder1.ai/install-bridge.sh | bash -s -- --auto-start</span>
                     </div>
                     <button
                       onClick={() => {
-                        navigator.clipboard.writeText('npm install -g coder1-bridge');
+                        navigator.clipboard.writeText('curl -sL https://coder1.ai/install-bridge.sh | bash -s -- --auto-start');
                       }}
                       className="ml-2 px-2 py-1 text-xs bg-cyan-600 hover:bg-cyan-500 rounded font-semibold whitespace-nowrap"
                       title="Copy command"
@@ -231,7 +231,7 @@ export function SetupInstructionsModal({
                       Copy
                     </button>
                   </div>
-                  <p className="text-xs text-gray-400 mt-2">⏱️ ~30 seconds • Then run: <code className="bg-gray-800 px-1 rounded">coder1-bridge start</code></p>
+                  <p className="text-xs text-gray-400 mt-2">⏱️ ~30 seconds • Auto-starts the bridge after installation</p>
                 </div>
 
                 {/* Step 3 */}
