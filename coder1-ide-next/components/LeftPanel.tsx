@@ -89,25 +89,6 @@ export default function LeftPanel({ onFileSelect, activeFile, refreshTrigger }: 
         </button>
         <button
           className={`flex-1 px-3 py-2 text-xs font-semibold uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 ${
-            activeTab === 'sessions'
-              ? 'text-coder1-cyan border-b-2 border-coder1-cyan bg-bg-tertiary'
-              : 'text-text-muted hover:text-text-secondary hover:bg-bg-tertiary'
-          }`}
-          onClick={(e) => {
-            e.stopPropagation();
-            // REMOVED: // REMOVED: console.log('🎯 Sessions tab clicked in LeftPanel');
-            setActiveTab('sessions');
-            
-            // Auto-close ContextManagerPanel if it's open
-            window.dispatchEvent(new CustomEvent('ideSessionsTabClicked'));
-          }}
-          title="Sessions - View development sessions, checkpoints, and timeline history"
-        >
-          <Clock className="w-3 h-3" />
-          <span>Sessions</span>
-        </button>
-        <button
-          className={`flex-1 px-3 py-2 text-xs font-semibold uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 ${
             activeTab === 'search'
               ? 'text-coder1-cyan border-b-2 border-coder1-cyan bg-bg-tertiary'
               : 'text-text-muted hover:text-text-secondary hover:bg-bg-tertiary'
@@ -117,6 +98,25 @@ export default function LeftPanel({ onFileSelect, activeFile, refreshTrigger }: 
         >
           <Search className="w-3 h-3" />
           <span>Search</span>
+        </button>
+        <button
+          className={`flex-1 px-3 py-2 text-xs font-semibold uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 ${
+            activeTab === 'sessions'
+              ? 'text-coder1-cyan border-b-2 border-coder1-cyan bg-bg-tertiary'
+              : 'text-text-muted hover:text-text-secondary hover:bg-bg-tertiary'
+          }`}
+          onClick={(e) => {
+            e.stopPropagation();
+            // REMOVED: // REMOVED: console.log('🎯 Sessions tab clicked in LeftPanel');
+            setActiveTab('sessions');
+
+            // Auto-close ContextManagerPanel if it's open
+            window.dispatchEvent(new CustomEvent('ideSessionsTabClicked'));
+          }}
+          title="Sessions - View development sessions, checkpoints, and timeline history"
+        >
+          <Clock className="w-3 h-3" />
+          <span>Sessions</span>
         </button>
       </div>
       
