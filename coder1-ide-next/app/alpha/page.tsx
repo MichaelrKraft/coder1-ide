@@ -469,8 +469,8 @@ function PricingCard({
       {/* Electric pulse border for featured */}
       {featured && (
         <>
-          <div className="absolute inset-[-2px] rounded-2xl border-2 border-coder1-cyan/60 animate-pulse pointer-events-none" />
-          <div className="absolute inset-[-4px] rounded-2xl border-2 border-coder1-cyan/30 blur-sm animate-pulse pointer-events-none" style={{ animationDelay: '0.5s' }} />
+          <div className="absolute inset-[-1px] rounded-2xl border border-coder1-cyan/30 animate-pulse pointer-events-none" />
+          <div className="absolute inset-[-2px] rounded-2xl border border-coder1-cyan/15 blur-[1px] animate-pulse pointer-events-none" style={{ animationDelay: '0.5s' }} />
         </>
       )}
 
@@ -957,7 +957,7 @@ export default function AlphaLandingPage() {
             {[
               { audience: 'Founders', message: 'Ship faster with AI that works while you sleep' },
               { audience: 'Developers', message: 'Full IDE + autonomous agent in one' },
-              { audience: 'Teams', message: 'Enterprise-grade security and transparency' }
+              { audience: 'Vibe Coders', message: 'User-friendly interface with AI power features' }
             ].map((hook, idx) => (
               <ScrollReveal key={idx} delay={idx * 100}>
                 <div className="p-6 bg-[#151515] border border-white/10 rounded-xl hover:border-white/20 transition-all">
@@ -1517,7 +1517,7 @@ export default function AlphaLandingPage() {
               <h2 className="text-4xl md:text-5xl font-bold mb-4 tracking-tight">
                 Frequently Asked Questions
               </h2>
-              <p className="text-lg text-coder1-purple/80">
+              <p className="text-lg text-coder1-cyan">
                 Everything you need to know about Coder1 IDE
               </p>
             </div>
@@ -1647,7 +1647,7 @@ export default function AlphaLandingPage() {
               </span>
             </h2>
             <p className="text-lg text-white/50 mb-10">
-              Alpha access is limited. Get in early to shape the future.
+              Alpha access is limited. Get in for free and shape the future.
             </p>
 
             <form onSubmit={handleSubmit} className="space-y-4 mb-8">
@@ -1675,18 +1675,18 @@ export default function AlphaLandingPage() {
               </button>
             </form>
 
-            <div className="flex flex-wrap justify-center gap-6 text-white/40 text-sm">
-              <div className="flex items-center gap-2">
-                <CreditCard className="w-4 h-4" />
-                <span>No credit card required</span>
+            <div className="flex flex-wrap justify-center gap-4 md:gap-6">
+              <div className="flex items-center gap-2 px-4 py-2 bg-white/5 border border-white/10 rounded-full">
+                <CreditCard className="w-4 h-4 text-coder1-cyan" />
+                <span className="text-white/80 text-sm font-medium">No credit card required</span>
               </div>
-              <div className="flex items-center gap-2">
-                <ShieldCheck className="w-4 h-4" />
-                <span>Enterprise-grade security</span>
+              <div className="flex items-center gap-2 px-4 py-2 bg-white/5 border border-white/10 rounded-full">
+                <ShieldCheck className="w-4 h-4 text-coder1-cyan" />
+                <span className="text-white/80 text-sm font-medium">Enterprise-grade security</span>
               </div>
-              <div className="flex items-center gap-2">
-                <Ban className="w-4 h-4" />
-                <span>Cancel anytime</span>
+              <div className="flex items-center gap-2 px-4 py-2 bg-white/5 border border-white/10 rounded-full">
+                <Ban className="w-4 h-4 text-coder1-cyan" />
+                <span className="text-white/80 text-sm font-medium">Cancel anytime</span>
               </div>
             </div>
           </ScrollReveal>
