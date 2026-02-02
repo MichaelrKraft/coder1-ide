@@ -129,6 +129,15 @@ export class ClaudeCodeBridgeService extends EventEmitter {
 
   public async initialize() {
     try {
+      // 🔧 FIX: Find git root (since we might be running in a subdirectory)
+      const detectedRoot = await this.findGitRoot(this.projectRoot);
+      if (detectedRoot && detectedRoot !== this.projectRoot) {
+        logger.info(`🔍 Found git root at parent: ${detectedRoot}`);
+        this.projectRoot = detectedRoot;
+        // Update derived paths
+        this.workTreeRoot = path.join(this.projectRoot, '.claude-parallel-dev');
+      }
+
       // Validate git repository state before anything else
       await this.validateRepositoryState();
 
@@ -157,6 +166,29 @@ export class ClaudeCodeBridgeService extends EventEmitter {
    */
   public isServiceInitialized(): boolean {
     return this.isInitialized;
+  }
+
+  /**
+   * Find the git root directory by walking up from the current directory
+   */
+  private async findGitRoot(startDir: string): Promise<string> {
+    let currentDir = startDir;
+    const root = path.parse(currentDir).root;
+
+    while (currentDir !== root) {
+      if (await fs.stat(path.join(currentDir, '.git')).then(() => true).catch(() => false)) {
+        return currentDir;
+      }
+      currentDir = path.dirname(currentDir);
+    }
+
+    // Check root one last time
+    if (await fs.stat(path.join(currentDir, '.git')).then(() => true).catch(() => false)) {
+      return currentDir;
+    }
+
+    logger.warn(`⚠️ Could not find .git directory walking up from ${startDir}`);
+    return startDir; // Return original if not found (let validation fail normally)
   }
 
   /**

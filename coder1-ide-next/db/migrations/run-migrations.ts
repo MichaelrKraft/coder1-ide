@@ -11,6 +11,7 @@
 import Database from 'better-sqlite3';
 import fs from 'fs';
 import path from 'path';
+import { getDatabasePath } from '../../lib/database';
 
 interface Migration {
   filename: string;
@@ -23,7 +24,15 @@ export class DatabaseMigrationManager {
   private migrationsDir: string;
 
   constructor(dbPath?: string) {
-    this.dbPath = dbPath || path.join(process.cwd(), 'db', 'context-memory.db');
+    if (dbPath) {
+      this.dbPath = dbPath;
+    } else {
+      this.dbPath = getDatabasePath();
+      // Only log if we are resolving from env/default (not explicit arg)
+      if (process.env.DATABASE_URL && process.env.DATABASE_URL.startsWith('sqlite://')) {
+        console.log(`📂 Migrating persistent database at: ${this.dbPath}`);
+      }
+    }
     this.migrationsDir = path.join(process.cwd(), 'db');
     this.db = new Database(this.dbPath);
     this.db.pragma('journal_mode = WAL'); // Enable Write-Ahead Logging for better performance
@@ -115,6 +124,7 @@ export class DatabaseMigrationManager {
       'evolutionary-sandbox-schema.sql',      // Evolutionary sandbox system
       'oauth-schema.sql',                     // OAuth authentication
       'auth-schema.sql',                      // Additional auth tables
+      'bridge-schema.sql',                    // Bridge pairing persistence
     ];
 
     let appliedCount = 0;

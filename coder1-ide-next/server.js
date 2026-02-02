@@ -41,6 +41,19 @@ try {
   console.error('   Bridge functionality may be limited without TypeScript support');
 }
 
+// 📦 AUTOMATED MIGRATIONS (Feb 1, 2026)
+// Ensure database schema is up-to-date before starting server
+// This handles the new SQLite-based bridge pairing codes table
+try {
+  // Use tsx to load the TypeScript migration runner directly
+  const { runMigrations } = require('./db/migrations/run-migrations.ts');
+  console.log('🔄 Running database migrations...');
+  runMigrations();
+} catch (error) {
+  console.error('⚠️  Migration check failed:', error.message);
+  console.error('   Continuing startup, but database features may be unstable');
+}
+
 const { createServer } = require('http');
 const { parse } = require('url');
 const next = require('next');
@@ -1261,8 +1274,8 @@ app.prepare().then(() => {
     path: '/socket.io/',
     transports: ['polling', 'websocket'], // Start with polling, upgrade to websocket
     allowEIO3: true, // Support older clients
-    pingTimeout: 7200000, // INCREASED: 2 hours - covers any realistic idle period during development
-    pingInterval: 300000, // INCREASED: 5 minutes - still detects dead connections without spam
+    pingTimeout: isDevelopment ? 7200000 : 60000, // FIXED: 60s (was 2h) - Detects disconnects faster
+    pingInterval: isDevelopment ? 300000 : 25000, // FIXED: 25s (was 5m) - Keeps connection alive on Render/Cloudflare
     upgradeTimeout: 30000, // Time to wait for upgrade from polling to websocket
     allowUpgrades: true, // Allow upgrade from polling to websocket
     perMessageDeflate: false, // Disable compression for better reliability on Render
@@ -1758,6 +1771,14 @@ app.prepare().then(() => {
           sessionCleanupTimers.delete(sessionId);
         }
         
+        // 🔧 FIX (Jan 31, 2026): Confirm terminal creation/connection to client
+        // This is required to clear the client-side connection watchdog
+        socket.emit('terminal:created', {
+          sessionId,
+          pid: session.pid
+        });
+        console.log(`✅ Emitted terminal:created for session ${sessionId} (PID: ${session.pid})`);
+
         // 🎯 CRITICAL FIX (Oct 28, 2025): Check for terminal history to detect reconnections
         // Don't rely on cleanup timer - it might have expired already!
         // Check if history exists in memory OR persistent file
@@ -1805,18 +1826,20 @@ app.prepare().then(() => {
           // Race condition: Client emits terminal:create and immediately registers listener,
           // but Socket.IO's event loop might not have processed the registration yet.
           // This delay ensures the client's terminal:history listener is ready.
-          setTimeout(() => {
-            console.log('⏰ [SERVER] Delay complete (100ms) - emitting terminal:history now');
-            
-            // Send history via Socket.IO event
-            socket.emit('terminal:history', { 
-              id: sessionId, 
-              history: historyText,
-              chunkCount: terminalHistory ? terminalHistory.length : 1
-            });
-            
-            console.log('✅ [SERVER] terminal:history emission completed');
-          }, 100);
+          // ⚡ PERFORMANCE FIX (Jan 31, 2026): Removed 100ms delay
+          // The client now registers the listener BEFORE emitting terminal:create,
+          // so the race condition is solved architecturally.
+          // This allows the history to be sent immediately, beating the Chaos Proxy's 100ms kill timer.
+          console.log('⚡ [SERVER] Emitting terminal:history immediately');
+          
+          // Send history via Socket.IO event
+          socket.emit('terminal:history', { 
+            id: sessionId, 
+            history: historyText,
+            chunkCount: terminalHistory ? terminalHistory.length : 1
+          });
+          
+          console.log('✅ [SERVER] terminal:history emission completed');
         } else {
           console.log(`🆕 New session ${sessionId} - no history to restore`);
         }
@@ -2154,6 +2177,13 @@ app.prepare().then(() => {
     
     // Handle terminal input with Conductor command detection
     socket.on('terminal:input', async ({ id, data, selectedClaudeModel, skipPermissions }) => {
+      // 🛡️ SANITIZATION (Feb 1, 2026): Filter focus events that corrupt simple CLI inputs
+      // Tools like readline (used by bridge-cli) treat \x1b[I and \x1b[O as literal input
+      // This causes "invalid code" errors when users click the terminal before typing
+      if (data === '\x1b[I' || data === '\x1b[O') {
+        return;
+      }
+
       const sessionId = id || currentSessionId;
       
       // 🔍 DEBUG: Log session lookup
@@ -2389,9 +2419,10 @@ app.prepare().then(() => {
               try {
                 const result = await bridgeManager.executeCommand(userId, commandRequest);
                 if (!result.success) {
+                  console.error(`[Bridge] Command execution failed for ${sessionId}:`, result.error);
                   socket.emit('terminal:data', {
                     id: sessionId,
-                    data: `\r\n❌ Error: ${result.error}\r\n`
+                    data: `\r\n❌ Execution Error: ${result.error}\r\n`
                   });
                 }
               } catch (error) {
@@ -2804,7 +2835,14 @@ app.prepare().then(() => {
               cleanData = data.replace(/\[200~/g, '').replace(/\[201~/g, '');
               console.log(`🧹 [BRACKETED-PASTE] Stripped paste markers: "${data}" → "${cleanData}"`);
             }
-            buffer += cleanData;
+            
+            // 🔙 BACKSPACE SUPPORT (Feb 2, 2026): Handle deletion to keep buffer in sync with PTY
+            if (cleanData === '\x7f' || cleanData === '\b') {
+              buffer = buffer.slice(0, -1);
+            } else {
+              buffer += cleanData;
+            }
+            
             commandBuffers.set(sessionId, buffer);
           } else {
             console.log(`🔧 [FILTER] Blocked ANSI escape code from command buffer: "${data}"`);
