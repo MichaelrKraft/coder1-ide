@@ -203,7 +203,9 @@ class ClaudeExecutor extends EventEmitter {
     // 🔧 FIX (Jan 4, 2026): Check authentication before executing commands
     // Skip auth check for version/help commands (they don't need auth)
     const skipAuthCommands = ['--version', '-v', '--help', '-h', 'auth'];
-    const needsAuthCheck = !skipAuthCommands.some(cmd => command.includes(cmd));
+    const isInteractive = this.needsInteractiveMode(command);
+    // Skip auth check for interactive commands (let PTY handle prompts) or version/help commands
+    const needsAuthCheck = !isInteractive && !skipAuthCommands.some(cmd => command.includes(cmd));
 
     if (needsAuthCheck) {
       const authStatus = await this.checkAuthStatus();
@@ -733,7 +735,11 @@ class ClaudeExecutor extends EventEmitter {
       };
     } catch (error) {
       // FIX (Jan 2026): If timeout, don't block - let the actual command fail naturally
-      if (error.message && error.message.includes('ETIMEDOUT')) {
+      if (
+        (error.message && error.message.includes('ETIMEDOUT')) ||
+        error.code === 'ETIMEDOUT' ||
+        error.errno === 'ETIMEDOUT'
+      ) {
         return {
           authenticated: true,
           warning: 'Auth check timed out - proceeding anyway',
