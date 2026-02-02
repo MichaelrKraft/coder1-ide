@@ -177,11 +177,20 @@ export function useAutoCheckpoint(options: AutoCheckpointOptions = {}) {
         body: JSON.stringify(checkpointData)
       });
 
-      if (!response.ok) {
-        throw new Error(`Checkpoint API failed: ${response.status}`);
+      let result;
+      try {
+        result = await response.json();
+      } catch (e) {
+        // If JSON parsing fails (e.g. 504 Gateway Timeout HTML), use status text
+        if (!response.ok) {
+          throw new Error(`Checkpoint API failed: ${response.status} ${response.statusText}`);
+        }
       }
 
-      const result = await response.json();
+      if (!response.ok) {
+        const details = result?.details || result?.error || result?.message || 'Unknown server error';
+        throw new Error(`Checkpoint API failed (${response.status}): ${details}`);
+      }
 
       if (result.success) {
         console.log(`✅ Auto-checkpoint created: ${result.checkpoint.id}`);
@@ -200,8 +209,14 @@ export function useAutoCheckpoint(options: AutoCheckpointOptions = {}) {
         cleanupOldCheckpoints(activeSessionId).catch(err => {
           console.warn('⚠️ Cleanup failed:', err);
         });
+      } else if (result.skipped) {
+        // Handle valid skips (e.g. history too small) gracefully
+        console.log(`ℹ️ Auto-checkpoint skipped: ${result.reason || result.message}`);
+        // Do NOT update state so we try again later
+        // Do NOT increment failure count
       } else {
-        throw new Error('Checkpoint creation failed');
+        const details = result?.details || result?.error || result?.reason || 'Unknown error';
+        throw new Error(`Checkpoint creation failed: ${details}`);
       }
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : 'Unknown error';

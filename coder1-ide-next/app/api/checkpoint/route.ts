@@ -384,10 +384,37 @@ export async function POST(request: NextRequest) {
       console.error('⚠️ Failed to save checkpoint to database (JSON file saved successfully):', dbError);
     }
 
-    // Update session metadata
-    const sessionData = JSON.parse(await fs.readFile(sessionMetadataPath, 'utf8'));
-    sessionData.lastUpdated = new Date().toISOString();
-    await fs.writeFile(sessionMetadataPath, JSON.stringify(sessionData, null, 2));
+    // Update session metadata safely
+    try {
+      let sessionData = {};
+      try {
+        const fileContent = await fs.readFile(sessionMetadataPath, 'utf8');
+        sessionData = JSON.parse(fileContent);
+      } catch (readError) {
+        console.warn('⚠️ Session metadata corrupted or missing, recreating:', readError);
+        // Create fresh metadata if read/parse fails
+        const now = new Date();
+        const hour = now.getHours();
+        const timeOfDay = hour < 6 ? 'Late Night' : 
+                         hour < 12 ? 'Morning' : 
+                         hour < 17 ? 'Afternoon' : 
+                         hour < 21 ? 'Evening' : 'Night';
+        const timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+        const dateStr = now.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        
+        sessionData = {
+          id: sessionId,
+          name: `💻 ${timeOfDay} Coding Session - ${dateStr} ${timeStr}`,
+          description: `Coder1 IDE ${timeOfDay.toLowerCase()} development session`,
+          createdAt: now.toISOString()
+        };
+      }
+      
+      (sessionData as any).lastUpdated = new Date().toISOString();
+      await fs.writeFile(sessionMetadataPath, JSON.stringify(sessionData, null, 2));
+    } catch (metaError) {
+       console.warn('⚠️ Failed to update session metadata (non-critical):', metaError);
+    }
     
     return NextResponse.json({
       success: true,
@@ -398,7 +425,10 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Checkpoint API error:', error);
     return NextResponse.json(
-      { error: 'Failed to create checkpoint' },
+      { 
+        error: 'Failed to create checkpoint',
+        details: error instanceof Error ? error.message : String(error)
+      },
       { status: 500 }
     );
   }
