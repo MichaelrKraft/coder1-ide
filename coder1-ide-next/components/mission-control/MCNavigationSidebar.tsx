@@ -7,14 +7,13 @@ import { MCModuleId } from '@/types/mission-control';
 interface NavItem {
   id: MCModuleId;
   label: string;
-  icon: string;
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { id: 'agents', label: 'Agent Dashboard', icon: '🤖' },  // PRIMARY module - first
-  { id: 'browser', label: 'Browser Tests', icon: '🌐' },
-  { id: 'artifacts', label: 'Artifacts', icon: '📦' },
-  { id: 'feedback', label: 'Feedback', icon: '💬' },
+  { id: 'agents', label: 'Agent Dashboard' },
+  { id: 'browser', label: 'Browser Tests' },
+  { id: 'artifacts', label: 'Artifacts' },
+  { id: 'feedback', label: 'Feedback' },
 ];
 
 /**
@@ -44,7 +43,6 @@ export default function MCNavigationSidebar() {
               `}
               data-testid={`mc-nav-${item.id}`}
             >
-              <span className="text-xl">{item.icon}</span>
               <span className="font-medium">{item.label}</span>
             </button>
           );

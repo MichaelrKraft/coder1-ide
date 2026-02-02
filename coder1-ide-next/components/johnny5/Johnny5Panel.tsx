@@ -237,12 +237,12 @@ export default function Johnny5Panel({ className }: Johnny5PanelProps) {
             onComplete={() => {
               setSetupStatus({ ...setupStatus, isComplete: true });
               setShowSetupWizard(false);
-              setActiveTab('sessions');
+              setActiveTab('chat');
             }}
             onSkip={() => {
               setSetupStatus({ ...setupStatus, isComplete: true });
               setShowSetupWizard(false);
-              setActiveTab('sessions');
+              setActiveTab('chat');
             }}
           />
         )}

@@ -330,8 +330,14 @@ const initialState = {
   settings: initialSettings,
   setupStatus: initialSetupStatus,
 
-  // Moltbot
-  moltbotStatus: null as MoltbotConnectionStatus | null,
+  // Moltbot - default to fallback active since chat works via Claude API
+  moltbotStatus: {
+    connected: false,
+    fallbackActive: true, // Chat works via direct Claude API by default
+    reconnectAttempts: 0,
+    lastConnected: null,
+    error: null,
+  } as MoltbotConnectionStatus,
 };
 
 // ================================================================================

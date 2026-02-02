@@ -139,12 +139,16 @@ export default function ChatTab() {
       return { color: 'bg-gray-400', text: 'Unknown', tooltip: 'Checking connection...' };
     }
     if (moltbotStatus.connected) {
-      return { color: 'bg-green-500', text: 'Connected', tooltip: 'Connected to Moltbot' };
+      return { color: 'bg-green-500', text: 'Connected', tooltip: 'Connected to Johnny5 daemon' };
+    }
+    // Fallback mode is active and working - show as connected since chat works
+    if (moltbotStatus.fallbackActive) {
+      return { color: 'bg-green-500', text: 'Connected', tooltip: 'Using Claude API directly' };
     }
     if (moltbotStatus.reconnectAttempts > 0) {
       return { color: 'bg-yellow-500', text: 'Reconnecting', tooltip: `Reconnecting... (attempt ${moltbotStatus.reconnectAttempts})` };
     }
-    return { color: 'bg-red-500', text: 'Disconnected', tooltip: moltbotStatus.fallbackActive ? 'Using direct Claude API' : 'Moltbot unavailable' };
+    return { color: 'bg-red-500', text: 'Disconnected', tooltip: 'Johnny5 unavailable' };
   };
 
   const connectionStatus = getConnectionStatus();
@@ -277,20 +281,6 @@ export default function ChatTab() {
               Online • Ready to assist
             </p>
           </div>
-        </div>
-        {/* Moltbot connection status indicator */}
-        <div className="flex items-center gap-2 text-xs text-text-muted" title={connectionStatus.tooltip}>
-          <span
-            className={`w-2.5 h-2.5 rounded-full ${connectionStatus.color} ${
-              moltbotStatus?.connected ? 'animate-pulse' : ''
-            }`}
-          />
-          <span className={moltbotStatus?.connected ? 'text-green-400' : ''}>
-            {connectionStatus.text}
-          </span>
-          {moltbotStatus?.fallbackActive && (
-            <span className="text-yellow-400 text-[10px]">(using Claude API)</span>
-          )}
         </div>
         <div className="flex items-center gap-2">
           <button
