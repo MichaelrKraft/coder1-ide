@@ -715,24 +715,15 @@ class ClaudeExecutor extends EventEmitter {
    * Returns auth status before attempting commands
    */
   async checkAuthStatus() {
-    try {
-      const output = execSync(`"${this.claudePath}" auth status`, {
-        encoding: 'utf-8',
-        timeout: 30000,
-        stdio: ['ignore', 'pipe', 'pipe']
-      });
-
-      // Check for various "not authenticated" indicators
-      const lowerOutput = output.toLowerCase();
-      const authenticated = !lowerOutput.includes('not authenticated') &&
-                           !lowerOutput.includes('no active session') &&
-                           !lowerOutput.includes('please log in') &&
-                           !lowerOutput.includes('not logged in');
-
-      return {
-        authenticated,
-        output: output.trim()
-      };
+    // FIX (Feb 2026): There is currently NO reliable way to check auth status
+    // non-interactively in Claude CLI v2.x (both 'auth status' and '/status' fail).
+    // Instead of guessing or hanging, we assume authentication is valid and
+    // let the actual command execution fail if it isn't.
+    // This prevents blocking valid users with false positives or timeouts.
+    return {
+      authenticated: true,
+      output: 'Auth check skipped (relies on command execution)'
+    };
     } catch (error) {
       // FIX (Jan 2026): If timeout, don't block - let the actual command fail naturally
       if (
