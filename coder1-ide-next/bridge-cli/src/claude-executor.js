@@ -724,26 +724,6 @@ class ClaudeExecutor extends EventEmitter {
       authenticated: true,
       output: 'Auth check skipped (relies on command execution)'
     };
-    } catch (error) {
-      // FIX (Jan 2026): If timeout, don't block - let the actual command fail naturally
-      if (
-        (error.message && error.message.includes('ETIMEDOUT')) ||
-        error.code === 'ETIMEDOUT' ||
-        error.errno === 'ETIMEDOUT'
-      ) {
-        return {
-          authenticated: true,
-          warning: 'Auth check timed out - proceeding anyway',
-          output: ''
-        };
-      }
-      // For other errors (CLI not found, etc.), still return false
-      return {
-        authenticated: false,
-        error: error.message,
-        output: error.stderr || error.stdout || ''
-      };
-    }
   }
 
   /**
