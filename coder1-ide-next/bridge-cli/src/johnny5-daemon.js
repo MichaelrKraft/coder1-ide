@@ -1,7 +1,7 @@
 /**
  * Johnny5 Daemon Lifecycle Manager
  *
- * Manages the Johnny5/ManusLive daemon as a macOS launchd service.
+ * Manages the Johnny5/Johnny5 daemon as a macOS launchd service.
  * Handles installation, starting, stopping, and status checks.
  *
  * Key features:
@@ -84,7 +84,7 @@ function storeJohnny5Path(p) {
 }
 
 /**
- * Detect the Johnny5/ManusLive installation path
+ * Detect the Johnny5/Johnny5 installation path
  * @returns {string|null} Path to Johnny5 directory, or null if not found
  */
 function detectJohnny5Path() {
@@ -92,7 +92,7 @@ function detectJohnny5Path() {
   const candidates = [
     process.env.JOHNNY5_PATH,
     readStoredJohnny5Path(),
-    path.join(os.homedir(), 'manuslive', 'manuslive'),
+    path.join(os.homedir(), 'johnny5', 'johnny5'),
     path.join(os.homedir(), 'johnny5'),
     path.join(os.homedir(), '.johnny5'),
   ];
@@ -208,15 +208,15 @@ function generatePlist(wrapperPath) {
 }
 
 /**
- * Check if the daemon is installed (either our plist or ManusLive's plist exists)
+ * Check if the daemon is installed (either our plist or Johnny5's plist exists)
  * @returns {boolean}
  */
 function isInstalled() {
   // Check our plist
   if (fs.existsSync(PLIST_PATH)) return true;
-  // Check ManusLive's plist
-  const manuslivePlist = path.join(LAUNCH_AGENTS_DIR, 'com.manuslive.agent.plist');
-  if (fs.existsSync(manuslivePlist)) return true;
+  // Check Johnny5's plist
+  const johnny5Plist = path.join(LAUNCH_AGENTS_DIR, 'com.johnny5.agent.plist');
+  if (fs.existsSync(johnny5Plist)) return true;
   return false;
 }
 
@@ -226,8 +226,8 @@ function isInstalled() {
  */
 function isLoaded() {
   try {
-    // Check for either our service or ManusLive's service
-    const result = execSync(`launchctl list 2>/dev/null | grep -E '(${PLIST_LABEL}|com.manuslive)'`, {
+    // Check for either our service or Johnny5's service
+    const result = execSync(`launchctl list 2>/dev/null | grep -E '(${PLIST_LABEL}|com.johnny5)'`, {
       encoding: 'utf-8',
       stdio: ['pipe', 'pipe', 'pipe'],
     });
@@ -261,7 +261,7 @@ function isRunning() {
 
 /**
  * Install the Johnny5 daemon as a launchd service
- * Delegates to ManusLive's built-in daemon management
+ * Delegates to Johnny5's built-in daemon management
  * @returns {{success: boolean, message: string, path?: string}}
  */
 function install() {
@@ -275,7 +275,7 @@ function install() {
 Checked locations:
 - $JOHNNY5_PATH environment variable
 - ${JOHNNY5_PATH_CONFIG}
-- ${path.join(os.homedir(), 'manuslive', 'manuslive')}
+- ${path.join(os.homedir(), 'johnny5', 'johnny5')}
 - ${path.join(os.homedir(), 'johnny5')}
 
 To fix: Set JOHNNY5_PATH environment variable to your Johnny5 installation directory.`;
@@ -290,10 +290,10 @@ To fix: Set JOHNNY5_PATH environment variable to your Johnny5 installation direc
   // Step 3: Ensure our directories exist
   ensureDirectories();
 
-  // Step 4: Use ManusLive's built-in daemon installer
-  // This is cleaner than creating our own launchd plist since ManusLive
+  // Step 4: Use Johnny5's built-in daemon installer
+  // This is cleaner than creating our own launchd plist since Johnny5
   // already knows how to manage itself
-  console.log('\x1b[90m   Installing daemon via ManusLive CLI...\x1b[0m');
+  console.log('\x1b[90m   Installing daemon via Johnny5 CLI...\x1b[0m');
   try {
     const result = execSync(`cd "${johnny5Path}" && node dist/cli.js daemon install 2>&1`, {
       encoding: 'utf-8',
@@ -326,7 +326,7 @@ To fix: Set JOHNNY5_PATH environment variable to your Johnny5 installation direc
     if (runStatus.running) {
       console.log(`\x1b[32m✅ Johnny5 daemon installed and running (PID: ${runStatus.pid})\x1b[0m`);
       console.log(`\x1b[90m   Gateway: http://localhost:18789\x1b[0m`);
-      console.log(`\x1b[90m   Logs: manuslive daemon logs\x1b[0m`);
+      console.log(`\x1b[90m   Logs: johnny5 daemon logs\x1b[0m`);
       return {
         success: true,
         message: 'Johnny5 daemon installed successfully',
@@ -339,7 +339,7 @@ To fix: Set JOHNNY5_PATH environment variable to your Johnny5 installation direc
     attempts++;
   }
 
-  // Daemon didn't start - get status from ManusLive
+  // Daemon didn't start - get status from Johnny5
   let statusOutput = '';
   try {
     statusOutput = execSync(`cd "${johnny5Path}" && node dist/cli.js daemon status 2>&1`, {
@@ -351,7 +351,7 @@ To fix: Set JOHNNY5_PATH environment variable to your Johnny5 installation direc
 
   const errorMsg = `Daemon installed but failed to start within ${maxAttempts * 0.5}s.
 
-ManusLive daemon status:
+Johnny5 daemon status:
 ${statusOutput}
 
 Try manually: cd ${johnny5Path} && node dist/cli.js daemon start`;
@@ -372,7 +372,7 @@ function uninstall() {
     return { success: true, message: 'Nothing to uninstall' };
   }
 
-  // Use ManusLive's daemon uninstall
+  // Use Johnny5's daemon uninstall
   try {
     const result = execSync(`cd "${johnny5Path}" && node dist/cli.js daemon uninstall 2>&1`, {
       encoding: 'utf-8',
@@ -420,7 +420,7 @@ function start() {
     return { success: true, message: 'Already running', pid: runStatus.pid };
   }
 
-  // Start via ManusLive CLI
+  // Start via Johnny5 CLI
   try {
     const result = execSync(`cd "${johnny5Path}" && node dist/cli.js daemon start 2>&1`, {
       encoding: 'utf-8',
@@ -458,7 +458,7 @@ function stop() {
 
   const johnny5Path = detectJohnny5Path();
   if (johnny5Path) {
-    // Stop via ManusLive CLI
+    // Stop via Johnny5 CLI
     try {
       const result = execSync(`cd "${johnny5Path}" && node dist/cli.js daemon stop 2>&1`, {
         encoding: 'utf-8',

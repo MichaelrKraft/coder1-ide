@@ -400,7 +400,7 @@ async function checkClaudeCLI() {
 }
 
 // Johnny5 daemon management command
-// Manages the Johnny5/ManusLive daemon as a macOS launchd service
+// Manages the Johnny5 daemon as a macOS launchd service
 program
   .command('johnny5 <action>')
   .description('Manage Johnny5 daemon (install|start|stop|status|uninstall)')
