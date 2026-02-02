@@ -24,11 +24,23 @@ console.log('══════════════════════�
 console.log('🔍 [ENV-DIAGNOSTIC] Environment Validation at Startup');
 console.log('   NODE_ENV:', process.env.NODE_ENV);
 console.log('   CLAUDE_CODE_OAUTH_TOKEN exists:', !!process.env.CLAUDE_CODE_OAUTH_TOKEN);
-console.log('   Token prefix:', process.env.CLAUDE_CODE_OAUTH_TOKEN?.substring(0, 20) + '...');
 console.log('   ANTHROPIC_API_KEY exists:', !!process.env.ANTHROPIC_API_KEY);
-console.log('   API key prefix:', process.env.ANTHROPIC_API_KEY?.substring(0, 15) + '...');
 console.log('   .env.local path:', path.join(__dirname, '.env.local'));
 console.log('═══════════════════════════════════════════════════════════');
+
+// Git commit hash for deployment verification
+const { execSync } = require('child_process');
+const getGitCommit = () => {
+  try {
+    return execSync('git rev-parse --short HEAD').toString().trim();
+  } catch {
+    // Fallback to platform-specific env vars (Render removes .git folder after build)
+    return process.env.RENDER_GIT_COMMIT?.slice(0, 7) ||
+           process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) ||
+           'unknown';
+  }
+};
+const GIT_COMMIT = getGitCommit();
 
 // 🔧 CRITICAL FIX (Nov 26, 2025): Enable TypeScript runtime loader
 // Required for loading .ts files like bridge-manager.ts
@@ -833,6 +845,7 @@ function handleHealthCheck(req, res) {
   
   const health = {
     status: stats.status,
+    commit: GIT_COMMIT,
     uptime: Date.now() - (global.serverStartTime || Date.now()),
     memory: {
       used: stats.heapUsedMB,
