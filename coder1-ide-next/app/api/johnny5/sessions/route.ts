@@ -22,8 +22,8 @@ import { getSessionSummaries } from '@/services/johnny5/session-tracker';
 // Force dynamic rendering - sessions data changes frequently
 export const dynamic = 'force-dynamic';
 
-// Johnny5 database path (stored in .manuslive for compatibility)
-const JOHNNY5_DB = join(homedir(), '.manuslive', 'memory.sqlite');
+// Johnny5 database path (stored in .johnny5 directory)
+const JOHNNY5_DB = join(homedir(), '.johnny5', 'memory.sqlite');
 
 /**
  * Fetch sessions directly from Johnny5 SQLite database

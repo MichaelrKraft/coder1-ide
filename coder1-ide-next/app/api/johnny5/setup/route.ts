@@ -17,8 +17,8 @@ import { execSync } from 'child_process';
 // Force dynamic rendering - setup state changes
 export const dynamic = 'force-dynamic';
 
-// Johnny5 daemon config directory (stored in .manuslive for compatibility)
-const JOHNNY5_DAEMON_DIR = join(homedir(), '.manuslive');
+// Johnny5 daemon config directory
+const JOHNNY5_DAEMON_DIR = join(homedir(), '.johnny5');
 const JOHNNY5_DAEMON_CONFIG = join(JOHNNY5_DAEMON_DIR, 'config.json');
 const JOHNNY5_DB = join(JOHNNY5_DAEMON_DIR, 'memory.sqlite');
 
@@ -241,7 +241,7 @@ async function handleInstallDaemon(): Promise<NextResponse> {
         error: 'Automatic daemon installation is not supported on this platform.',
         data: {
           platform,
-          instructions: 'Please start Johnny5 manually: cd ~/manuslive/manuslive && npm start',
+          instructions: 'Please start Johnny5 manually: cd ~/johnny5 && npm start',
         },
       }, { status: 400 });
     }
@@ -308,8 +308,8 @@ async function handleInstallDaemon(): Promise<NextResponse> {
           output: result,
           status: johnny5Status,
           instructions: platform === 'darwin'
-            ? 'Try: cd ~/manuslive/manuslive && node dist/cli.js daemon start'
-            : 'Try: cd ~/manuslive/manuslive && npm start',
+            ? 'Try: cd ~/johnny5 && node dist/cli.js daemon start'
+            : 'Try: cd ~/johnny5 && npm start',
         },
       }, { status: 500 });
     }
@@ -320,7 +320,7 @@ async function handleInstallDaemon(): Promise<NextResponse> {
         success: false,
         error: error instanceof Error ? error.message : 'Failed to install daemon',
         data: {
-          instructions: 'Manual fallback: cd ~/manuslive/manuslive && npm start',
+          instructions: 'Manual fallback: cd ~/johnny5 && npm start',
         },
       },
       { status: 500 }

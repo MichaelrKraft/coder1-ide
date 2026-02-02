@@ -23,9 +23,9 @@ import type { Johnny5APIResponse } from '@/types/johnny5';
 // Force dynamic rendering - connection status changes frequently
 export const dynamic = 'force-dynamic';
 
-// Johnny5 configuration paths (stored in .manuslive for compatibility)
-const MANUSLIVE_CONFIG = join(homedir(), '.manuslive', 'config.json');
-const MANUSLIVE_DB = join(homedir(), '.manuslive', 'memory.sqlite');
+// Johnny5 configuration paths (stored in .johnny5 directory)
+const JOHNNY5_CONFIG = join(homedir(), '.johnny5', 'config.json');
+const JOHNNY5_DB = join(homedir(), '.johnny5', 'memory.sqlite');
 
 // Default Johnny5 gateway port
 const DEFAULT_JOHNNY5_PORT = 18789;
@@ -50,7 +50,7 @@ interface ConnectionStatusResponse {
  * Check if Johnny5 is configured on this machine
  */
 function isJohnny5Configured(): boolean {
-  return existsSync(MANUSLIVE_CONFIG) || existsSync(MANUSLIVE_DB);
+  return existsSync(JOHNNY5_CONFIG) || existsSync(JOHNNY5_DB);
 }
 
 /**
@@ -74,7 +74,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       error: status.error,
       fallbackActive: status.fallbackActive,
       johnny5Configured: isJohnny5Configured(),
-      johnny5ConfigPath: MANUSLIVE_CONFIG,
+      johnny5ConfigPath: JOHNNY5_CONFIG,
     };
 
     const response: Johnny5APIResponse<ConnectionStatusResponse> = {
@@ -167,7 +167,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         error: status.error,
         fallbackActive: status.fallbackActive,
         johnny5Configured: isJohnny5Configured(),
-        johnny5ConfigPath: MANUSLIVE_CONFIG,
+        johnny5ConfigPath: JOHNNY5_CONFIG,
         message,
         skipped,
       };
@@ -187,7 +187,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         success: false,
         error: 'Johnny5 is not configured on this machine',
         data: {
-          message: `No Johnny5 configuration found at ${MANUSLIVE_CONFIG}. Please run the setup wizard first.`,
+          message: `No Johnny5 configuration found at ${JOHNNY5_CONFIG}. Please run the setup wizard first.`,
         },
         timestamp: new Date(),
       };
@@ -232,7 +232,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       error: status.error,
       fallbackActive: status.fallbackActive,
       johnny5Configured: isJohnny5Configured(),
-      johnny5ConfigPath: MANUSLIVE_CONFIG,
+      johnny5ConfigPath: JOHNNY5_CONFIG,
       message,
     };
 
