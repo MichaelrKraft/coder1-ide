@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if code exists and is valid using shared store
-    const pairingData = bridgeStore.validateCode(code);
+    const pairingData = await bridgeStore.validateCode(code);
     
     if (!pairingData) {
       return NextResponse.json({ 
@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
     });
 
     // Remove used pairing code from shared store
-    bridgeStore.consumeCode(code);
+    await bridgeStore.consumeCode(code);
 
     return NextResponse.json({
       success: true,

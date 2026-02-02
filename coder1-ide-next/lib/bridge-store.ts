@@ -1,39 +1,21 @@
 /**
  * Shared storage for bridge pairing codes
- * This singleton ensures both generate-code and pair endpoints share the same data
- * Uses global object to persist across Next.js hot-reloads in development
+ * Uses SQLite database for persistent storage across processes and restarts
+ * Updated Feb 1, 2026 to fix production "Invalid or expired pairing code" errors
  */
+
+import { getDatabase } from './database';
 
 interface PairingData {
   userId: string;
   expires: number;
 }
 
-// Declare global type for TypeScript
-declare global {
-  var bridgePairingCodes: Map<string, PairingData> | undefined;
-  var bridgeCleanupInterval: NodeJS.Timeout | undefined;
-}
-
-class BridgeStore {
+export class BridgeStore {
   private static instance: BridgeStore;
-  private pairingCodes: Map<string, PairingData>;
-  private cleanupInterval: NodeJS.Timeout | null = null;
 
   private constructor() {
-    // Use global storage in development to persist across hot-reloads
-    if (!global.bridgePairingCodes) {
-      console.log('🌉 Initializing new bridge pairing codes store');
-      global.bridgePairingCodes = new Map();
-    }
-    this.pairingCodes = global.bridgePairingCodes;
-    
-    // Reuse existing cleanup interval if it exists
-    if (!global.bridgeCleanupInterval) {
-      this.startCleanup();
-    } else {
-      this.cleanupInterval = global.bridgeCleanupInterval;
-    }
+    // No initialization needed for synchronous members
   }
 
   public static getInstance(): BridgeStore {
@@ -43,70 +25,96 @@ class BridgeStore {
     return BridgeStore.instance;
   }
 
-  private startCleanup() {
-    // Clean up expired codes every minute
-    this.cleanupInterval = setInterval(() => {
+  /**
+   * Clean up expired tokens from the database
+   */
+  private async cleanupExpiredCodes(db: any) {
+    try {
       const now = Date.now();
-      for (const [code, data] of this.pairingCodes.entries()) {
-        if (data.expires < now) {
-          this.pairingCodes.delete(code);
-          console.log(`Cleaned up expired pairing code: ${code}`);
-        }
+      const result = db.prepare('DELETE FROM bridge_pairing_codes WHERE expires < ?').run(now);
+      if (result.changes > 0) {
+        console.log(`Cleaned up ${result.changes} expired bridge pairing codes`);
       }
-    }, 60000);
-    
-    // Store interval globally to prevent multiple intervals in development
-    global.bridgeCleanupInterval = this.cleanupInterval;
-  }
-
-  public generateCode(userId: string): string {
-    // Generate 6-digit code
-    const code = Math.floor(100000 + Math.random() * 900000).toString();
-    
-    // Store with 5 minute expiration
-    this.pairingCodes.set(code, {
-      userId,
-      expires: Date.now() + 300000 // 5 minutes
-    });
-
-    console.log(`Generated pairing code ${code} for user ${userId}`);
-    return code;
-  }
-
-  public validateCode(code: string): PairingData | null {
-    const data = this.pairingCodes.get(code);
-    
-    if (!data) {
-      console.log(`Pairing code ${code} not found`);
-      return null;
+    } catch (error) {
+      console.warn('Failed to cleanup expired codes:', error);
+      // Non-critical error
     }
+  }
 
-    // Check if expired
-    if (data.expires < Date.now()) {
-      console.log(`Pairing code ${code} expired`);
-      this.pairingCodes.delete(code);
-      return null;
+  public async generateCode(userId: string): Promise<string> {
+    const db = await getDatabase();
+    
+    try {
+      // Generate 6-digit code
+      const code = Math.floor(100000 + Math.random() * 900000).toString();
+      const expires = Date.now() + 300000; // 5 minutes
+
+      // Insert into DB
+      db.prepare(`
+        INSERT INTO bridge_pairing_codes (code, user_id, expires)
+        VALUES (?, ?, ?)
+      `).run(code, userId, expires);
+
+      console.log(`Generated persistent pairing code ${code} for user ${userId}`);
+      
+      // Opportunistic cleanup
+      await this.cleanupExpiredCodes(db);
+      
+      return code;
+    } finally {
+      db.close();
     }
-
-    console.log(`Pairing code ${code} validated for user ${data.userId}`);
-    return data;
   }
 
-  public consumeCode(code: string): void {
-    this.pairingCodes.delete(code);
-    console.log(`Pairing code ${code} consumed`);
+  public async validateCode(code: string): Promise<PairingData | null> {
+    const db = await getDatabase();
+    
+    try {
+      const row = db.prepare(`
+        SELECT user_id, expires FROM bridge_pairing_codes WHERE code = ?
+      `).get(code);
+
+      if (!row) {
+        console.log(`Pairing code ${code} not found in DB`);
+        return null;
+      }
+
+      // Check expiry
+      if (row.expires < Date.now()) {
+        console.log(`Pairing code ${code} expired`);
+        // Cleanup this specific code
+        db.prepare('DELETE FROM bridge_pairing_codes WHERE code = ?').run(code);
+        return null;
+      }
+
+      console.log(`Pairing code ${code} validated for user ${row.user_id}`);
+      return {
+        userId: row.user_id,
+        expires: row.expires
+      };
+
+    } finally {
+      db.close();
+    }
   }
 
+  public async consumeCode(code: string): Promise<void> {
+    const db = await getDatabase();
+    try {
+      db.prepare('DELETE FROM bridge_pairing_codes WHERE code = ?').run(code);
+      console.log(`Pairing code ${code} consumed (deleted from DB)`);
+    } finally {
+      db.close();
+    }
+  }
+
+  // Deprecated/Unused methods kept for interface compatibility if needed
   public getAllCodes(): Map<string, PairingData> {
-    return new Map(this.pairingCodes);
+    return new Map();
   }
 
   public cleanup() {
-    if (this.cleanupInterval) {
-      clearInterval(this.cleanupInterval);
-      this.cleanupInterval = null;
-      global.bridgeCleanupInterval = undefined;
-    }
+    // No-op for DB implementation
   }
 }
 

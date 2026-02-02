@@ -41,6 +41,19 @@ try {
   console.error('   Bridge functionality may be limited without TypeScript support');
 }
 
+// 📦 AUTOMATED MIGRATIONS (Feb 1, 2026)
+// Ensure database schema is up-to-date before starting server
+// This handles the new SQLite-based bridge pairing codes table
+try {
+  // Use tsx to load the TypeScript migration runner directly
+  const { runMigrations } = require('./db/migrations/run-migrations.ts');
+  console.log('🔄 Running database migrations...');
+  runMigrations();
+} catch (error) {
+  console.error('⚠️  Migration check failed:', error.message);
+  console.error('   Continuing startup, but database features may be unstable');
+}
+
 const { createServer } = require('http');
 const { parse } = require('url');
 const next = require('next');
@@ -2164,6 +2177,13 @@ app.prepare().then(() => {
     
     // Handle terminal input with Conductor command detection
     socket.on('terminal:input', async ({ id, data, selectedClaudeModel, skipPermissions }) => {
+      // 🛡️ SANITIZATION (Feb 1, 2026): Filter focus events that corrupt simple CLI inputs
+      // Tools like readline (used by bridge-cli) treat \x1b[I and \x1b[O as literal input
+      // This causes "invalid code" errors when users click the terminal before typing
+      if (data === '\x1b[I' || data === '\x1b[O') {
+        return;
+      }
+
       const sessionId = id || currentSessionId;
       
       // 🔍 DEBUG: Log session lookup
@@ -2399,9 +2419,10 @@ app.prepare().then(() => {
               try {
                 const result = await bridgeManager.executeCommand(userId, commandRequest);
                 if (!result.success) {
+                  console.error(`[Bridge] Command execution failed for ${sessionId}:`, result.error);
                   socket.emit('terminal:data', {
                     id: sessionId,
-                    data: `\r\n❌ Error: ${result.error}\r\n`
+                    data: `\r\n❌ Execution Error: ${result.error}\r\n`
                   });
                 }
               } catch (error) {
@@ -2814,7 +2835,14 @@ app.prepare().then(() => {
               cleanData = data.replace(/\[200~/g, '').replace(/\[201~/g, '');
               console.log(`🧹 [BRACKETED-PASTE] Stripped paste markers: "${data}" → "${cleanData}"`);
             }
-            buffer += cleanData;
+            
+            // 🔙 BACKSPACE SUPPORT (Feb 2, 2026): Handle deletion to keep buffer in sync with PTY
+            if (cleanData === '\x7f' || cleanData === '\b') {
+              buffer = buffer.slice(0, -1);
+            } else {
+              buffer += cleanData;
+            }
+            
             commandBuffers.set(sessionId, buffer);
           } else {
             console.log(`🔧 [FILTER] Blocked ANSI escape code from command buffer: "${data}"`);

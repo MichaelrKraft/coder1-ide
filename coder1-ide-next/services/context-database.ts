@@ -6,6 +6,7 @@
 import Database from 'better-sqlite3';
 import fs from 'fs/promises';
 import path from 'path';
+import { getDatabasePath } from '@/lib/database';
 import { logger } from '@/lib/logger';
 
 export interface ContextFolder {
@@ -79,7 +80,7 @@ class ContextDatabase {
   private schemaPath: string;
 
   constructor() {
-    this.dbPath = path.join(process.cwd(), 'db', 'context-memory.db');
+    this.dbPath = getDatabasePath();
     this.schemaPath = path.join(process.cwd(), 'db', 'schema.sql');
   }
 
