@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import {
   Send,
   Bot,
@@ -17,6 +17,49 @@ import {
   Trash2,
   ChevronDown,
 } from 'lucide-react';
+
+// Typewriter effect component for Johnny5's welcome message
+function TypewriterText({
+  text,
+  speed = 25,
+  onComplete
+}: {
+  text: string;
+  speed?: number;
+  onComplete?: () => void;
+}) {
+  const [displayedText, setDisplayedText] = useState('');
+  const [isComplete, setIsComplete] = useState(false);
+
+  useEffect(() => {
+    // Reset state when component mounts (plays every time)
+    setDisplayedText('');
+    setIsComplete(false);
+
+    let index = 0;
+    const timer = setInterval(() => {
+      if (index < text.length) {
+        setDisplayedText(text.slice(0, index + 1));
+        index++;
+      } else {
+        clearInterval(timer);
+        setIsComplete(true);
+        onComplete?.();
+      }
+    }, speed);
+
+    return () => clearInterval(timer);
+  }, [text, speed, onComplete]);
+
+  return (
+    <span>
+      {displayedText}
+      {!isComplete && (
+        <span className="inline-block w-0.5 h-4 bg-coder1-cyan ml-0.5 animate-pulse" />
+      )}
+    </span>
+  );
+}
 import { useJohnny5Store } from '@/stores/useJohnny5Store';
 import { getSocket } from '@/lib/socket';
 
@@ -380,7 +423,13 @@ export default function ChatTab() {
                 )}
 
                 {/* Message text */}
-                <div className="whitespace-pre-wrap">{message.content}</div>
+                <div className="whitespace-pre-wrap">
+                  {message.id === 'welcome' ? (
+                    <TypewriterText text={message.content} speed={25} />
+                  ) : (
+                    message.content
+                  )}
+                </div>
               </div>
 
               {/* Message footer */}
