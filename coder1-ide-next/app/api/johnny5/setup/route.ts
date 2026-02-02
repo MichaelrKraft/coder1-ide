@@ -3,125 +3,196 @@
  *
  * Handles Johnny5 configuration for self-hosted setup.
  *
- * POST /api/johnny5/setup/config - Save Johnny5 configuration
- * GET /api/johnny5/setup/status - Check if Johnny5 is installed/configured
- * POST /api/johnny5/setup/install-daemon - Install system service (requires bridge)
+ * POST /api/johnny5/setup
+ *   - action: 'validate-api-key' - Validate an Anthropic API key
+ *   - action: 'save-config' - Save setup configuration
+ * GET /api/johnny5/setup - Get current setup status
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { writeFileSync, readFileSync, existsSync, mkdirSync } from 'fs';
-import { homedir } from 'os';
-import { join } from 'path';
-import { execSync } from 'child_process';
+import {
+  loadConfig,
+  setApiKey,
+  setPermissions,
+  setProactivityLevel,
+  markSetupComplete,
+  getConfigSummary,
+  Johnny5Permissions,
+} from '@/lib/johnny5-config';
 
 // Force dynamic rendering - setup state changes
 export const dynamic = 'force-dynamic';
 
-// Johnny5 daemon config directory
-const JOHNNY5_DAEMON_DIR = join(homedir(), '.johnny5');
-const JOHNNY5_DAEMON_CONFIG = join(JOHNNY5_DAEMON_DIR, 'config.json');
-const JOHNNY5_DB = join(JOHNNY5_DAEMON_DIR, 'memory.sqlite');
+// ============================================================================
+// Types
+// ============================================================================
 
-// Coder1 local config for storing setup preferences
-const CODER1_DIR = join(homedir(), '.coder1');
-const JOHNNY5_USER_CONFIG = join(CODER1_DIR, 'johnny5-config.json');
+interface ValidateApiKeyRequest {
+  action: 'validate-api-key';
+  apiKey: string;
+}
 
-interface Johnny5Config {
-  integrations: {
-    zapier?: { token: string } | null;
-    telegram?: { token: string; botUsername: string } | null;
-  };
-  permissions: {
-    fileWrite: boolean;
-    terminalExec: boolean;
-    autoActions: boolean;
-    externalRequests: boolean;
-  };
+interface SaveConfigRequest {
+  action: 'save-config';
+  apiKey?: string;
+  permissions: Johnny5Permissions;
   proactivityLevel: 'low' | 'medium' | 'high';
-  setupCompleted?: boolean;
-  setupDate?: string;
 }
 
-interface Johnny5DaemonConfig {
-  telegram?: {
-    token: string;
-    enabled: boolean;
-  };
-  gateway: {
-    port: number;
-  };
-  memory: {
-    path: string;
-  };
+type SetupRequest = ValidateApiKeyRequest | SaveConfigRequest;
+
+interface ApiKeyValidationResult {
+  success: boolean;
+  model?: string;
+  error?: string;
+  errorType?: 'invalid_key' | 'no_credits' | 'rate_limited' | 'network_error' | 'unknown';
 }
+
+// ============================================================================
+// API Key Validation
+// ============================================================================
 
 /**
- * Ensure directories exist
+ * Validate an Anthropic API key by making a test call to the Claude API
  */
-function ensureDirectories(): void {
-  if (!existsSync(CODER1_DIR)) {
-    mkdirSync(CODER1_DIR, { recursive: true });
+async function validateAnthropicApiKey(apiKey: string): Promise<ApiKeyValidationResult> {
+  // Basic format validation first
+  if (!apiKey || typeof apiKey !== 'string') {
+    return {
+      success: false,
+      error: 'API key is required',
+      errorType: 'invalid_key',
+    };
   }
-  if (!existsSync(JOHNNY5_DAEMON_DIR)) {
-    mkdirSync(JOHNNY5_DAEMON_DIR, { recursive: true });
+
+  // Check for Anthropic key format
+  if (!apiKey.startsWith('sk-ant-')) {
+    return {
+      success: false,
+      error: 'Invalid API key format. Anthropic keys start with sk-ant-',
+      errorType: 'invalid_key',
+    };
   }
-}
 
-/**
- * Check if Johnny5 is installed and running
- */
-function checkJohnny5Status(): { installed: boolean; running: boolean; configured: boolean } {
-  const installed = existsSync(JOHNNY5_DB) || existsSync(JOHNNY5_DAEMON_CONFIG);
-  const configured = existsSync(JOHNNY5_DAEMON_CONFIG);
+  if (apiKey.length < 50) {
+    return {
+      success: false,
+      error: 'API key appears to be too short',
+      errorType: 'invalid_key',
+    };
+  }
 
-  let running = false;
   try {
-    // Check if Johnny5 process is running
-    const result = execSync('pgrep -f "johnny5" || pgrep -f "manuslive" || pgrep -f "moltbot" || true', {
-      encoding: 'utf-8',
-      timeout: 2000,
-    }).trim();
-    running = result.length > 0;
-  } catch {
-    // Process check failed, assume not running
-  }
+    // Make a minimal test request to the Claude API
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model: 'claude-3-5-sonnet-20241022',
+        max_tokens: 10,
+        messages: [
+          {
+            role: 'user',
+            content: 'Say "ok" and nothing else.',
+          },
+        ],
+      }),
+    });
 
-  return { installed, running, configured };
+    if (response.ok) {
+      const data = await response.json();
+      return {
+        success: true,
+        model: data.model || 'claude-3-5-sonnet',
+      };
+    }
+
+    // Handle specific error cases
+    const errorData = await response.json().catch(() => ({}));
+    const errorMessage = errorData.error?.message || '';
+
+    if (response.status === 401) {
+      return {
+        success: false,
+        error: 'Invalid API key. Please check your key and try again.',
+        errorType: 'invalid_key',
+      };
+    }
+
+    if (response.status === 403) {
+      if (errorMessage.includes('credit') || errorMessage.includes('billing')) {
+        return {
+          success: false,
+          error: 'No credits available. Please add credits to your Anthropic account.',
+          errorType: 'no_credits',
+        };
+      }
+      return {
+        success: false,
+        error: 'API key does not have permission to use this model.',
+        errorType: 'invalid_key',
+      };
+    }
+
+    if (response.status === 429) {
+      return {
+        success: false,
+        error: 'Rate limited. Please wait a moment and try again.',
+        errorType: 'rate_limited',
+      };
+    }
+
+    if (response.status === 529) {
+      return {
+        success: false,
+        error: 'Claude API is overloaded. Please try again in a few seconds.',
+        errorType: 'rate_limited',
+      };
+    }
+
+    // Generic error
+    return {
+      success: false,
+      error: errorMessage || `API error (${response.status})`,
+      errorType: 'unknown',
+    };
+  } catch (error) {
+    console.error('[Johnny5 Setup API] Network error validating API key:', error);
+    return {
+      success: false,
+      error: 'Network error. Please check your internet connection.',
+      errorType: 'network_error',
+    };
+  }
 }
+
+// ============================================================================
+// Route Handlers
+// ============================================================================
 
 /**
  * GET - Check setup status
  */
 export async function GET() {
   try {
-    const johnny5Status = checkJohnny5Status();
-
-    // Read existing Johnny5 user config if it exists
-    let johnny5Config: Johnny5Config | null = null;
-    if (existsSync(JOHNNY5_USER_CONFIG)) {
-      try {
-        johnny5Config = JSON.parse(readFileSync(JOHNNY5_USER_CONFIG, 'utf-8'));
-      } catch {
-        // Config file corrupted, ignore
-      }
-    }
+    const summary = getConfigSummary();
+    const config = loadConfig();
 
     return NextResponse.json({
       success: true,
       data: {
-        setupCompleted: johnny5Config?.setupCompleted || false,
-        setupDate: johnny5Config?.setupDate,
-        johnny5: johnny5Status,
-        integrations: {
-          zapier: johnny5Config?.integrations?.zapier ? { connected: true } : { connected: false },
-          telegram: johnny5Config?.integrations?.telegram
-            ? { connected: true, botUsername: johnny5Config.integrations.telegram.botUsername }
-            : { connected: false },
-        },
-        permissions: johnny5Config?.permissions || null,
-        proactivityLevel: johnny5Config?.proactivityLevel || 'medium',
+        isSetupComplete: summary.setupComplete,
+        hasApiKey: summary.hasApiKey,
+        permissions: summary.permissions,
+        proactivityLevel: summary.proactivityLevel,
+        setupCompletedAt: config.setupCompletedAt,
+        apiKeyValidatedAt: config.apiKeyValidatedAt,
       },
-      timestamp: new Date(),
+      timestamp: new Date().toISOString(),
     });
   } catch (error) {
     console.error('[Johnny5 Setup API] Error checking status:', error);
@@ -133,195 +204,60 @@ export async function GET() {
 }
 
 /**
- * POST - Save configuration
+ * POST - Handle setup actions
  */
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { action } = body;
+    const body = (await request.json()) as SetupRequest;
 
-    // Handle different actions
-    if (action === 'install-daemon') {
-      return handleInstallDaemon();
+    if (body.action === 'validate-api-key') {
+      // Validate API key
+      const result = await validateAnthropicApiKey(body.apiKey);
+
+      return NextResponse.json({
+        success: result.success,
+        data: result.success
+          ? { model: result.model, validated: true }
+          : undefined,
+        error: result.error,
+        errorType: result.errorType,
+        timestamp: new Date().toISOString(),
+      });
     }
 
-    // Default action: save config
-    return handleSaveConfig(body);
+    if (body.action === 'save-config') {
+      // Save the API key if provided
+      if (body.apiKey) {
+        setApiKey(body.apiKey);
+      }
+
+      // Save permissions
+      setPermissions(body.permissions);
+
+      // Save proactivity level
+      setProactivityLevel(body.proactivityLevel);
+
+      // Mark setup as complete
+      markSetupComplete();
+
+      return NextResponse.json({
+        success: true,
+        message: 'Configuration saved successfully',
+        data: getConfigSummary(),
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    return NextResponse.json(
+      { success: false, error: 'Unknown action' },
+      { status: 400 }
+    );
   } catch (error) {
     console.error('[Johnny5 Setup API] Error:', error);
     return NextResponse.json(
-      { success: false, error: error instanceof Error ? error.message : 'Setup failed' },
-      { status: 500 }
-    );
-  }
-}
-
-/**
- * Save Johnny5 configuration
- */
-async function handleSaveConfig(config: Johnny5Config): Promise<NextResponse> {
-  try {
-    ensureDirectories();
-
-    // Add metadata
-    const fullConfig: Johnny5Config = {
-      ...config,
-      setupCompleted: true,
-      setupDate: new Date().toISOString(),
-    };
-
-    // Save Johnny5 user config
-    writeFileSync(JOHNNY5_USER_CONFIG, JSON.stringify(fullConfig, null, 2), 'utf-8');
-    console.log('[Johnny5 Setup API] Saved Johnny5 user config to', JOHNNY5_USER_CONFIG);
-
-    // If Telegram is configured, update Johnny5 daemon config
-    if (config.integrations?.telegram?.token) {
-      const daemonConfig: Johnny5DaemonConfig = {
-        telegram: {
-          token: config.integrations.telegram.token,
-          enabled: true,
-        },
-        gateway: {
-          port: 18789,
-        },
-        memory: {
-          path: JOHNNY5_DB,
-        },
-      };
-
-      // Read existing daemon config and merge
-      let existingConfig: Johnny5DaemonConfig | null = null;
-      if (existsSync(JOHNNY5_DAEMON_CONFIG)) {
-        try {
-          existingConfig = JSON.parse(readFileSync(JOHNNY5_DAEMON_CONFIG, 'utf-8'));
-        } catch {
-          // Ignore corrupted config
-        }
-      }
-
-      const mergedConfig = {
-        ...existingConfig,
-        ...daemonConfig,
-      };
-
-      writeFileSync(JOHNNY5_DAEMON_CONFIG, JSON.stringify(mergedConfig, null, 2), 'utf-8');
-      console.log('[Johnny5 Setup API] Saved Johnny5 daemon config to', JOHNNY5_DAEMON_CONFIG);
-    }
-
-    return NextResponse.json({
-      success: true,
-      message: 'Configuration saved successfully',
-      data: {
-        configPath: JOHNNY5_USER_CONFIG,
-        daemonConfigPath: config.integrations?.telegram ? JOHNNY5_DAEMON_CONFIG : null,
-      },
-      timestamp: new Date(),
-    });
-  } catch (error) {
-    console.error('[Johnny5 Setup API] Error saving config:', error);
-    return NextResponse.json(
-      { success: false, error: 'Failed to save configuration' },
-      { status: 500 }
-    );
-  }
-}
-
-/**
- * Install Johnny5 daemon as system service
- * Calls the Bridge CLI to handle the actual installation
- */
-async function handleInstallDaemon(): Promise<NextResponse> {
-  try {
-    const platform = process.platform;
-
-    // Only macOS and Linux are supported for daemon installation
-    if (platform !== 'darwin' && platform !== 'linux') {
-      return NextResponse.json({
-        success: false,
-        error: 'Automatic daemon installation is not supported on this platform.',
-        data: {
-          platform,
-          instructions: 'Please start Johnny5 manually: cd ~/johnny5 && npm start',
-        },
-      }, { status: 400 });
-    }
-
-    // Path to the bridge CLI (relative to coder1-ide-next root)
-    const bridgePath = join(process.cwd(), 'bridge-cli', 'src', 'index.js');
-
-    // Check if bridge CLI exists
-    if (!existsSync(bridgePath)) {
-      console.error('[Johnny5 Setup API] Bridge CLI not found at:', bridgePath);
-      return NextResponse.json({
-        success: false,
-        error: 'Bridge CLI not found',
-        data: {
-          bridgePath,
-          instructions: 'Run: coder1-bridge johnny5 install',
-        },
-      }, { status: 500 });
-    }
-
-    // Execute the bridge CLI to install the daemon
-    console.log('[Johnny5 Setup API] Installing daemon via bridge CLI...');
-    let result: string;
-    let installSuccess = false;
-
-    try {
-      result = execSync(`node "${bridgePath}" johnny5 install 2>&1`, {
-        encoding: 'utf-8',
-        timeout: 60000, // 60 second timeout
-        cwd: process.cwd(),
-      });
-      installSuccess = true;
-    } catch (execError) {
-      // execSync throws on non-zero exit code, but we still want the output
-      const error = execError as { stdout?: string; stderr?: string; message?: string };
-      result = error.stdout || error.stderr || error.message || 'Unknown error';
-      // Check if it's actually a success message
-      installSuccess = result.includes('installed') || result.includes('running');
-    }
-
-    console.log('[Johnny5 Setup API] Bridge CLI output:', result);
-
-    // Check the daemon status
-    const johnny5Status = checkJohnny5Status();
-
-    if (installSuccess || johnny5Status.running) {
-      return NextResponse.json({
-        success: true,
-        message: 'Daemon installed successfully',
-        data: {
-          platform,
-          output: result,
-          status: johnny5Status,
-        },
-        timestamp: new Date(),
-      });
-    } else {
-      // Installation didn't fail catastrophically but daemon isn't running
-      return NextResponse.json({
-        success: false,
-        error: 'Daemon installed but not running',
-        data: {
-          platform,
-          output: result,
-          status: johnny5Status,
-          instructions: platform === 'darwin'
-            ? 'Try: cd ~/johnny5 && node dist/cli.js daemon start'
-            : 'Try: cd ~/johnny5 && npm start',
-        },
-      }, { status: 500 });
-    }
-  } catch (error) {
-    console.error('[Johnny5 Setup API] Error installing daemon:', error);
-    return NextResponse.json(
       {
         success: false,
-        error: error instanceof Error ? error.message : 'Failed to install daemon',
-        data: {
-          instructions: 'Manual fallback: cd ~/johnny5 && npm start',
-        },
+        error: error instanceof Error ? error.message : 'Setup failed',
       },
       { status: 500 }
     );

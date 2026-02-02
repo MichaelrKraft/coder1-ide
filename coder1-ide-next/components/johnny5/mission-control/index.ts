@@ -16,6 +16,3 @@ export { default as TaskCard } from './TaskCard';
 
 // Activity Log Component
 export { default as ActivityLog } from './ActivityLog';
-
-// Demo Data Generator (for development/testing)
-export { generateDemoTasks } from './MissionControlTab';

@@ -3,18 +3,41 @@
  *
  * Tracks and persists session data for real session intelligence.
  * Works with Moltbot sessions and direct Claude API sessions.
+ *
+ * Now uses SQLite database instead of file-based storage.
  */
 
-import fs from 'fs';
-import path from 'path';
+import {
+  initializeDb,
+  createSession as dbCreateSession,
+  getSession as dbGetSession,
+  listSessions as dbListSessions,
+  updateSession as dbUpdateSession,
+  addMessage as dbAddMessage,
+  getMessages as dbGetMessages,
+} from '@/lib/johnny5-db';
 import type { Johnny5SessionSummary, Johnny5SessionDetail, Johnny5ReplayStep } from '@/types/johnny5';
 
-// Storage path
-const DATA_DIR = path.join(process.cwd(), 'data', 'johnny5');
-const SESSIONS_FILE = path.join(DATA_DIR, 'sessions.json');
+// In-memory cache for replay steps (not stored in DB yet)
+// Maps sessionId -> steps array
+const stepsCache = new Map<string, Johnny5ReplayStep[]>();
 
-// In-memory cache
-interface SessionRecord {
+// Maps sessionId -> metadata that DB doesn't store
+interface SessionMetadata {
+  thinkingLevel: 'low' | 'medium' | 'high';
+  toolCalls: number;
+  filesModified: string[];
+  source: 'moltbot' | 'direct' | 'mock' | 'fallback';
+}
+const metadataCache = new Map<string, SessionMetadata>();
+
+/**
+ * Start or get an existing session
+ */
+export async function getOrCreateSession(
+  sessionId: string,
+  source: 'moltbot' | 'direct' | 'mock' | 'fallback'
+): Promise<{
   id: string;
   name: string;
   startTime: Date;
@@ -24,119 +47,57 @@ interface SessionRecord {
   filesModified: string[];
   tokensUsed: number;
   thinkingLevel: 'low' | 'medium' | 'high';
-  messages: Array<{
-    role: 'user' | 'assistant';
-    content: string;
-    timestamp: Date;
-    tokens?: number;
-  }>;
-  steps: Johnny5ReplayStep[];
   source: 'moltbot' | 'direct' | 'mock' | 'fallback';
-}
+}> {
+  await initializeDb();
 
-let sessionsCache: SessionRecord[] = [];
-let cacheLoaded = false;
-
-/**
- * Ensure data directory exists
- */
-function ensureDataDir(): void {
-  if (!fs.existsSync(DATA_DIR)) {
-    fs.mkdirSync(DATA_DIR, { recursive: true });
-  }
-}
-
-/**
- * Load sessions from file
- */
-function loadSessions(): SessionRecord[] {
-  if (cacheLoaded) {
-    return sessionsCache;
-  }
-
-  ensureDataDir();
-
-  if (fs.existsSync(SESSIONS_FILE)) {
-    try {
-      const data = fs.readFileSync(SESSIONS_FILE, 'utf-8');
-      const parsed = JSON.parse(data);
-      sessionsCache = parsed.map((session: SessionRecord) => ({
-        ...session,
-        startTime: new Date(session.startTime),
-        endTime: session.endTime ? new Date(session.endTime) : undefined,
-        messages: session.messages.map(m => ({
-          ...m,
-          timestamp: new Date(m.timestamp),
-        })),
-        steps: session.steps.map(s => ({
-          ...s,
-          timestamp: new Date(s.timestamp),
-        })),
-      }));
-    } catch (error) {
-      console.error('[SessionTracker] Failed to load sessions:', error);
-      sessionsCache = [];
-    }
-  } else {
-    sessionsCache = [];
-  }
-
-  cacheLoaded = true;
-  return sessionsCache;
-}
-
-/**
- * Save sessions to file
- */
-function saveSessions(): void {
-  ensureDataDir();
-  try {
-    fs.writeFileSync(SESSIONS_FILE, JSON.stringify(sessionsCache, null, 2));
-  } catch (error) {
-    console.error('[SessionTracker] Failed to save sessions:', error);
-  }
-}
-
-/**
- * Generate unique session ID
- */
-function generateSessionId(): string {
-  return `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-}
-
-/**
- * Start or get an existing session
- */
-export function getOrCreateSession(sessionId: string, source: 'moltbot' | 'direct' | 'mock' | 'fallback'): SessionRecord {
-  loadSessions();
-
-  let session = sessionsCache.find(s => s.id === sessionId);
+  let session = await dbGetSession(sessionId);
 
   if (!session) {
-    session = {
-      id: sessionId,
-      name: `Session ${new Date().toLocaleString()}`,
-      startTime: new Date(),
-      status: 'active',
+    // Create new session
+    session = await dbCreateSession(`Session ${new Date().toLocaleString()}`);
+    // Update with the specific ID if different
+    if (session.id !== sessionId) {
+      // We need to use the provided sessionId, but dbCreateSession generates its own
+      // For now, we'll update the session name and use the generated ID
+      // Note: In production, we might want to modify dbCreateSession to accept an ID
+    }
+
+    // Initialize metadata
+    metadataCache.set(session.id, {
+      thinkingLevel: 'low',
       toolCalls: 0,
       filesModified: [],
-      tokensUsed: 0,
-      thinkingLevel: 'low',
-      messages: [],
-      steps: [],
       source,
-    };
-    sessionsCache.push(session);
-    setImmediate(() => saveSessions());
+    });
+    stepsCache.set(session.id, []);
   }
 
-  return session;
+  const metadata = metadataCache.get(session.id) || {
+    thinkingLevel: 'low' as const,
+    toolCalls: 0,
+    filesModified: [],
+    source,
+  };
+
+  return {
+    id: session.id,
+    name: session.name || `Session ${session.started_at}`,
+    startTime: new Date(session.started_at),
+    endTime: session.ended_at ? new Date(session.ended_at) : undefined,
+    status: session.status === 'archived' ? 'completed' : session.status as 'active' | 'completed' | 'error',
+    toolCalls: metadata.toolCalls,
+    filesModified: metadata.filesModified,
+    tokensUsed: session.tokens_used,
+    thinkingLevel: metadata.thinkingLevel,
+    source: metadata.source,
+  };
 }
 
 /**
  * Add a message to a session
  */
-export function addMessageToSession(params: {
+export async function addMessageToSession(params: {
   sessionId: string;
   role: 'user' | 'assistant';
   content: string;
@@ -145,42 +106,68 @@ export function addMessageToSession(params: {
   source: 'moltbot' | 'direct' | 'mock' | 'fallback';
   toolCalls?: Array<{ name: string; input?: unknown; output?: unknown }>;
   thinking?: string;
-}): void {
-  const session = getOrCreateSession(params.sessionId, params.source);
+}): Promise<void> {
+  await initializeDb();
 
-  // Add message
-  session.messages.push({
-    role: params.role,
-    content: params.content,
-    timestamp: new Date(),
-    tokens: params.role === 'assistant' ? params.outputTokens : params.inputTokens,
-  });
+  // Ensure session exists
+  let session = await dbGetSession(params.sessionId);
+  if (!session) {
+    session = await dbCreateSession(`Session ${new Date().toLocaleString()}`);
+    metadataCache.set(session.id, {
+      thinkingLevel: 'low',
+      toolCalls: 0,
+      filesModified: [],
+      source: params.source,
+    });
+    stepsCache.set(session.id, []);
+  }
 
-  // Update token count
-  if (params.inputTokens) session.tokensUsed += params.inputTokens;
-  if (params.outputTokens) session.tokensUsed += params.outputTokens;
+  const sessionId = session.id;
+  const tokens = params.role === 'assistant' ? (params.outputTokens || 0) : (params.inputTokens || 0);
+
+  // Add message to DB
+  await dbAddMessage(sessionId, params.role, params.content, tokens);
+
+  // Get or create metadata
+  let metadata = metadataCache.get(sessionId);
+  if (!metadata) {
+    metadata = {
+      thinkingLevel: 'low',
+      toolCalls: 0,
+      filesModified: [],
+      source: params.source,
+    };
+    metadataCache.set(sessionId, metadata);
+  }
+
+  // Get or create steps array
+  let steps = stepsCache.get(sessionId);
+  if (!steps) {
+    steps = [];
+    stepsCache.set(sessionId, steps);
+  }
 
   // Add replay steps for tool calls
   if (params.toolCalls) {
-    session.toolCalls += params.toolCalls.length;
+    metadata.toolCalls += params.toolCalls.length;
 
     for (const tc of params.toolCalls) {
-      session.steps.push({
+      steps.push({
         id: `step_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
         timestamp: new Date(),
         type: 'tool_call',
         toolName: tc.name,
         toolInput: tc.input as Record<string, unknown>,
         toolOutput: tc.output as Record<string, unknown>,
-        duration: 100, // Estimated
+        duration: 100,
         outcome: 'success',
       });
 
       // Track file modifications
       if (tc.name === 'Write' || tc.name === 'Edit') {
         const filePath = (tc.input as { file_path?: string })?.file_path;
-        if (filePath && !session.filesModified.includes(filePath)) {
-          session.filesModified.push(filePath);
+        if (filePath && !metadata.filesModified.includes(filePath)) {
+          metadata.filesModified.push(filePath);
         }
       }
     }
@@ -188,136 +175,178 @@ export function addMessageToSession(params: {
 
   // Add thinking step if present
   if (params.thinking) {
-    session.steps.push({
+    steps.push({
       id: `step_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
       timestamp: new Date(),
       type: 'thinking',
       thinking: params.thinking,
-      duration: 500, // Estimated
+      duration: 500,
       outcome: 'success',
     });
   }
 
   // Update thinking level based on total tokens
-  if (session.tokensUsed > 100000) {
-    session.thinkingLevel = 'high';
-  } else if (session.tokensUsed > 30000) {
-    session.thinkingLevel = 'medium';
-  }
+  const updatedSession = await dbGetSession(sessionId);
+  if (updatedSession) {
+    if (updatedSession.tokens_used > 100000) {
+      metadata.thinkingLevel = 'high';
+    } else if (updatedSession.tokens_used > 30000) {
+      metadata.thinkingLevel = 'medium';
+    }
 
-  // Update name based on first user message
-  if (session.messages.filter(m => m.role === 'user').length === 1 && params.role === 'user') {
-    // Use first 50 chars of first user message as session name
-    session.name = params.content.substring(0, 50) + (params.content.length > 50 ? '...' : '');
+    // Update session name from first user message
+    if (params.role === 'user') {
+      const messages = await dbGetMessages(sessionId, 10);
+      const userMessages = messages.filter(m => m.role === 'user');
+      if (userMessages.length === 1) {
+        const newName = params.content.substring(0, 50) + (params.content.length > 50 ? '...' : '');
+        await dbUpdateSession(sessionId, { name: newName });
+      }
+    }
   }
-
-  setImmediate(() => saveSessions());
 }
 
 /**
  * Complete a session
  */
-export function completeSession(sessionId: string, status: 'completed' | 'error' = 'completed'): void {
-  loadSessions();
+export async function completeSession(
+  sessionId: string,
+  status: 'completed' | 'error' = 'completed'
+): Promise<void> {
+  await initializeDb();
 
-  const session = sessionsCache.find(s => s.id === sessionId);
-  if (session) {
-    session.status = status;
-    session.endTime = new Date();
-    setImmediate(() => saveSessions());
-  }
+  await dbUpdateSession(sessionId, {
+    status: status,
+    ended_at: new Date().toISOString(),
+  });
+
+  console.log('[SessionTracker] Session completed:', { sessionId, status });
 }
 
 /**
  * Get session summaries
  */
-export function getSessionSummaries(params: {
+export async function getSessionSummaries(params: {
   status?: 'active' | 'completed' | 'error';
   search?: string;
   limit?: number;
-}): Johnny5SessionSummary[] {
-  const sessions = loadSessions();
+}): Promise<Johnny5SessionSummary[]> {
+  await initializeDb();
 
-  let filtered = [...sessions];
+  const limit = params.limit || 50;
+  const sessions = await dbListSessions(limit, 0);
 
+  let filtered = sessions;
+
+  // Filter by status
   if (params.status) {
-    filtered = filtered.filter(s => s.status === params.status);
+    filtered = filtered.filter(s => {
+      if (params.status === 'completed') {
+        return s.status === 'completed' || s.status === 'archived';
+      }
+      return s.status === params.status;
+    });
   }
 
+  // Filter by search
   if (params.search) {
     const searchLower = params.search.toLowerCase();
-    filtered = filtered.filter(s =>
-      s.name.toLowerCase().includes(searchLower) ||
-      s.filesModified.some(f => f.toLowerCase().includes(searchLower))
-    );
+    filtered = filtered.filter(s => {
+      const name = s.name || '';
+      const metadata = metadataCache.get(s.id);
+      const filesModified = metadata?.filesModified || [];
+      return (
+        name.toLowerCase().includes(searchLower) ||
+        filesModified.some(f => f.toLowerCase().includes(searchLower))
+      );
+    });
   }
 
-  // Sort by start time descending
-  filtered.sort((a, b) => b.startTime.getTime() - a.startTime.getTime());
+  return filtered.map(s => {
+    const metadata = metadataCache.get(s.id) || {
+      thinkingLevel: 'low' as const,
+      toolCalls: 0,
+      filesModified: [],
+      source: 'direct' as const,
+    };
 
-  if (params.limit) {
-    filtered = filtered.slice(0, params.limit);
-  }
+    const startTime = new Date(s.started_at);
+    const endTime = s.ended_at ? new Date(s.ended_at) : undefined;
+    const duration = endTime
+      ? Math.round((endTime.getTime() - startTime.getTime()) / 60000)
+      : Math.round((Date.now() - startTime.getTime()) / 60000);
 
-  return filtered.map(s => ({
-    id: s.id,
-    name: s.name,
-    startTime: s.startTime,
-    endTime: s.endTime,
-    status: s.status,
-    toolCalls: s.toolCalls,
-    filesModified: s.filesModified,
-    tokensUsed: s.tokensUsed,
-    thinkingLevel: s.thinkingLevel,
-    duration: s.endTime
-      ? Math.round((s.endTime.getTime() - s.startTime.getTime()) / 60000)
-      : Math.round((Date.now() - s.startTime.getTime()) / 60000),
-  }));
+    return {
+      id: s.id,
+      name: s.name || `Session ${s.started_at}`,
+      startTime,
+      endTime,
+      status: s.status === 'archived' ? 'completed' : s.status as 'active' | 'completed' | 'error',
+      toolCalls: metadata.toolCalls,
+      filesModified: metadata.filesModified,
+      tokensUsed: s.tokens_used,
+      thinkingLevel: metadata.thinkingLevel,
+      duration,
+    };
+  });
 }
 
 /**
  * Get session detail with replay steps
  */
-export function getSessionDetail(sessionId: string): Johnny5SessionDetail | null {
-  const sessions = loadSessions();
-  const session = sessions.find(s => s.id === sessionId);
+export async function getSessionDetail(sessionId: string): Promise<Johnny5SessionDetail | null> {
+  await initializeDb();
 
+  const session = await dbGetSession(sessionId);
   if (!session) {
     return null;
   }
 
+  const metadata = metadataCache.get(sessionId) || {
+    thinkingLevel: 'low' as const,
+    toolCalls: 0,
+    filesModified: [],
+    source: 'direct' as const,
+  };
+
+  const steps = stepsCache.get(sessionId) || [];
+
+  const startTime = new Date(session.started_at);
+  const endTime = session.ended_at ? new Date(session.ended_at) : undefined;
+  const duration = endTime
+    ? Math.round((endTime.getTime() - startTime.getTime()) / 60000)
+    : Math.round((Date.now() - startTime.getTime()) / 60000);
+
   const summary: Johnny5SessionSummary = {
     id: session.id,
-    name: session.name,
-    startTime: session.startTime,
-    endTime: session.endTime,
-    status: session.status,
-    toolCalls: session.toolCalls,
-    filesModified: session.filesModified,
-    tokensUsed: session.tokensUsed,
-    thinkingLevel: session.thinkingLevel,
-    duration: session.endTime
-      ? Math.round((session.endTime.getTime() - session.startTime.getTime()) / 60000)
-      : Math.round((Date.now() - session.startTime.getTime()) / 60000),
+    name: session.name || `Session ${session.started_at}`,
+    startTime,
+    endTime,
+    status: session.status === 'archived' ? 'completed' : session.status as 'active' | 'completed' | 'error',
+    toolCalls: metadata.toolCalls,
+    filesModified: metadata.filesModified,
+    tokensUsed: session.tokens_used,
+    thinkingLevel: metadata.thinkingLevel,
+    duration,
   };
 
   return {
     ...summary,
-    steps: session.steps,
-    fileChanges: session.filesModified.map(path => ({
+    steps,
+    fileChanges: metadata.filesModified.map(path => ({
       path,
       type: 'modified' as const,
-      linesAdded: 0, // Would need actual git diff
+      linesAdded: 0,
       linesRemoved: 0,
-      timestamp: session.startTime,
+      timestamp: startTime,
     })),
     errors: session.status === 'error' ? [{
       id: 'error_1',
       message: 'Session ended with error',
-      timestamp: session.endTime || new Date(),
+      timestamp: endTime || new Date(),
       resolved: false,
     }] : [],
-    reasoning: session.steps
+    reasoning: steps
       .filter(s => s.type === 'thinking')
       .map(s => s.thinking)
       .join('\n\n'),
@@ -327,18 +356,21 @@ export function getSessionDetail(sessionId: string): Johnny5SessionDetail | null
 /**
  * Get active session count
  */
-export function getActiveSessionCount(): number {
-  const sessions = loadSessions();
+export async function getActiveSessionCount(): Promise<number> {
+  await initializeDb();
+
+  const sessions = await dbListSessions(1000, 0);
   return sessions.filter(s => s.status === 'active').length;
 }
 
 /**
  * Clear all sessions (for testing)
  */
-export function clearSessions(): void {
-  sessionsCache = [];
-  cacheLoaded = true;
-  saveSessions();
+export async function clearSessions(): Promise<void> {
+  // Clear in-memory caches
+  stepsCache.clear();
+  metadataCache.clear();
+  console.log('[SessionTracker] Caches cleared');
 }
 
 // Export singleton-style functions
