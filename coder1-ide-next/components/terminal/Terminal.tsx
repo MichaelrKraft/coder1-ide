@@ -16,7 +16,7 @@ if (typeof window !== 'undefined') {
 }
 import './Terminal.css'; // Re-enabled - critical for xterm viewport fixes
 import { Zap, StopCircle, Brain, Eye, Code2, Mic, MicOff, Speaker, ChevronDown, Plus, Users } from '@/lib/icons';
-import { Edit3, GitBranch, X, Stethoscope, Boxes } from 'lucide-react';
+import { Edit3, GitBranch, X, Stethoscope, Boxes, Loader2 } from 'lucide-react';
 import { useMCPOverlay, useMCPServers } from '@/hooks/useMCPManager';
 import MCPOverlay from '@/components/MCPManager/MCPOverlay';
 import SandboxPanel from '@/components/sandbox/SandboxPanel';
@@ -45,6 +45,7 @@ import { devLog, devWarn, perfLog } from '@/lib/dev-logger'; // Performance: dis
 import StagedComposer from './StagedComposer';
 import SessionMetricsBar from './SessionMetricsBar';
 import TerminalTokenStats from './TerminalTokenStats';
+import { useAutoCheckpoint } from '@/lib/hooks/useAutoCheckpoint';
 
 // Defensive filtering for status lines - Layer 3 protection
 const cleanStatusLines = (data: string): string => {
@@ -148,6 +149,7 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
   // Emergency stop state (Nov 26, 2025)
   const [activeAgentCount, setActiveAgentCount] = useState(0);
   const [isStoppingAgents, setIsStoppingAgents] = useState(false);
+  const [restorationState, setRestorationState] = useState<'hidden' | 'reconnecting' | 'restoring'>('hidden'); // Unified UI state
   const [companionConnected, setCompanionConnected] = useState(false);
   const companionClientRef = useRef<any>(null);
   const currentCommandBuffer = useRef<string>('');
@@ -646,6 +648,17 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
     };
   }, []);
 
+  // Auto-checkpoint hook
+  // 🔧 FIX (Jan 31, 2026): Pause auto-checkpoints during connection instability
+  // This prevents "freezing" when state is churning during restoration
+  useAutoCheckpoint({
+    sessionId: sessionId || undefined,
+    enabled: true,
+    isConnected,
+    isRestoring: restorationState === 'restoring' || restorationState === 'reconnecting'
+  });
+
+  // Listen for terminal settings changes from TerminalSettings component
   // Listen for terminal settings changes from TerminalSettings component
   useEffect(() => {
     const handleSettingsChange = (event: CustomEvent) => {
@@ -3375,9 +3388,13 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
     // Remove existing listener using specific handler ref
     const connectHandler = () => {
       // REMOVED: // REMOVED: console.log('🟢 Socket.IO CONNECTED to backend');
-      // If reconnecting, re-establish terminal session
-      if (isConnected && sessionId) {
-        console.log('🔄 Reconnected - re-establishing terminal session');
+      // If we have a session ID, always ensure terminal session is active
+      // 🔧 FIX (Jan 31, 2026): Removed isConnected check.
+      // On rapid refresh/transport close, isConnected is false, but we MUST re-emit terminal:create
+      // because the buffered initial emit might have been lost on the failed transport.
+      if (sessionId) {
+        console.log('🔄 Socket connected - ensuring terminal session active for:', sessionId);
+        setRestorationState('restoring'); // Show loading overlay
         socket.emit('terminal:create', { id: sessionId });
         focusOnConnect();
       }
@@ -3391,7 +3408,7 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
     // Handle terminal created response from server
     // Remove existing listener using specific handler ref
     const terminalCreatedHandler = ({ sessionId: serverSessionId, pid }: { sessionId: string; pid: number }) => {
-      console.log('✅ Terminal created on server:', { sessionId: serverSessionId, pid });
+      console.log('✅ Terminal created on server:', { sessionId: serverSessionId, pid }); 
       
       // Check if this is a NEW terminal or a RECONNECTION
       const isNewTerminal = !sessionId || sessionId === 'undefined' || sessionId === 'null';
@@ -3406,7 +3423,20 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
         const store = useIDEStore.getState();
         store.resetTokenUsage();
         console.log('🔄 Token counter reset for new terminal session');
+        
+        // New sessions don't need restoration wait time
+        setRestorationState('hidden');
       }
+      
+      // 🎯 CRITICAL FIX (Jan 31, 2026): Clear connection watchdog on success
+      // Without this, the 10s timeout triggers even if connection succeeded!
+      if (connectionTimeoutRef.current) {
+        clearTimeout(connectionTimeoutRef.current);
+        connectionTimeoutRef.current = null;
+      }
+      connectionInProgressRef.current = false;
+      setIsConnected(true);
+      console.log('✅ Connection watchdog cleared - terminal fully connected');
       
       // 🎯 CRITICAL FIX (Oct 28, 2025): Only scroll to top for NEW terminals
       // Don't scroll to top when reconnecting because history restoration handles scrolling
@@ -3474,12 +3504,10 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
         willReconnect: reason !== 'io client disconnect'
       });
       
-      if (term) {
-        // Enhanced disconnect message with reconnection info
-        const reconnectMsg = reason === 'io client disconnect' 
-          ? 'Manual disconnect'
-          : 'Attempting to reconnect...';
-        term.writeln(`\r\n⚠️ Connection lost: ${reason} (${reconnectMsg})`);
+      // ADDED: Immediate feedback - show "Reconnecting" overlay instead of confusing error text
+      // This unifies the UX: Reconnecting -> Restoring -> Connected
+      if (reason !== 'io client disconnect') {
+        setRestorationState('reconnecting');
       }
       
       // ADDED: Track disconnect for session resurrection
@@ -3502,6 +3530,9 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
       if (term) {
         term.writeln(`\r\n❌ Connection error: ${error.message}`);
       }
+      
+      // 🔧 FIX (Jan 31, 2026): Hide overlay on error so user can see the error message
+      setRestorationState('hidden');
     };
     if (socketHandlersRef.current.connectError) {
       socket.off('connect_error', socketHandlersRef.current.connectError);
@@ -3525,8 +3556,8 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
         // ADDED: Re-establish terminal session after reconnection
         if (sessionId && sessionId !== 'undefined' && sessionId !== 'null') {
           console.log('🔄 Re-establishing terminal session:', sessionId);
+          setRestorationState('restoring'); // Transition to restoration phase
           socket.emit('terminal:create', { id: sessionId });
-          term.writeln('🔄 Restoring session...');
         }
       }
     };
@@ -3585,6 +3616,9 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
         
         // 🔒 CRITICAL FIX (Oct 28, 2025): Strip focus codes that corrupt terminal display
         // Focus codes like \x1b[I and \x1b[O at the start of restored history corrupt the display
+        
+        // Restoration complete!
+        setRestorationState('hidden');
         // These codes cause Claude to show internal commands instead of proper welcome message
         cleanedHistory = cleanedHistory.replace(/\x1b\[I/g, '').replace(/\x1b\[O/g, '');
         
@@ -4255,6 +4289,9 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
             });
             // Normal mode - just show connection message
             term.write('\r\n✅ Connected to backend terminal\r\n');
+            
+            // 🔧 FIX (Jan 31, 2026): Ensure overlay is hidden even if no history to restore
+            setRestorationState('hidden');
           }
         }
         connectionInProgressRef.current = false; // Connection complete
@@ -4304,6 +4341,10 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
       term.writeln(`\r\n❌ Terminal error: ${message}`);
       setIsConnected(false);
       connectionInProgressRef.current = false; // Connection failed
+      
+      // 🔧 FIX (Jan 31, 2026): Hide overlay on terminal error (e.g. memory pressure)
+      // Otherwise the "Restoring Session" spinner blocks the error message
+      setRestorationState('hidden');
       
       // ⏰ WATCHDOG: Clear timeout on connection error
       if (connectionTimeoutRef.current) {
@@ -5795,6 +5836,23 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
           <ChevronDown className={`w-4 h-4 ${claudeActive ? 'animate-bounce' : ''}`} />
           <span>{claudeActive ? 'Follow Claude' : 'Follow Output'}</span>
         </button>
+      )}
+
+      {/* UNIFIED RESTORATION OVERLAY - Handles both Reconnecting and Restoring states */}
+      {restorationState !== 'hidden' && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-bg-primary/60 backdrop-blur-md transition-all duration-300">
+          <div className="flex flex-col items-center gap-4 p-8 rounded-xl bg-bg-secondary/90 border border-border-default shadow-2xl">
+            <Loader2 className="w-10 h-10 text-coder1-cyan animate-spin" />
+            <div className="flex flex-col items-center gap-1">
+              <div className="text-base font-semibold text-text-primary">
+                {restorationState === 'reconnecting' ? 'Connection Lost' : 'Restoring Session'}
+              </div>
+              <div className="text-sm text-text-secondary">
+                {restorationState === 'reconnecting' ? 'Reconnecting to server...' : 'Syncing history...'}
+              </div>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Terminal Footer Section - Contains metrics and status */}
