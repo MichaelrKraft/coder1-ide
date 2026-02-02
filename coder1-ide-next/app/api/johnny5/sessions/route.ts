@@ -1,142 +1,157 @@
 /**
  * Johnny5 Sessions API
  *
- * GET /api/johnny5/sessions - Returns REAL list of session summaries
+ * GET /api/johnny5/sessions - List all sessions with pagination and filtering
+ * POST /api/johnny5/sessions - Create a new session
+ * DELETE /api/johnny5/sessions?id=xxx - Archive a session
  *
- * This endpoint fetches sessions directly from Johnny5's SQLite database,
- * falling back to local session tracker if the database is not available.
+ * This endpoint uses the SQLite database via johnny5-db for persistent storage.
+ * Database location: ~/.coder1/johnny5.db
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { execSync } from 'child_process';
-import { existsSync } from 'fs';
-import { homedir } from 'os';
-import { join } from 'path';
-import type {
-  Johnny5APIResponse,
-  Johnny5PaginatedResponse,
-  Johnny5SessionSummary
-} from '@/types/johnny5';
-import { getSessionSummaries } from '@/services/johnny5/session-tracker';
+import {
+  initializeDb,
+  listSessions,
+  createSession,
+  archiveSession,
+  type Session
+} from '@/lib/johnny5-db';
 
 // Force dynamic rendering - sessions data changes frequently
 export const dynamic = 'force-dynamic';
 
-// Johnny5 database path (stored in .johnny5 directory)
-const JOHNNY5_DB = join(homedir(), '.johnny5', 'memory.sqlite');
+/**
+ * Convert database session to API session summary format
+ */
+function toSessionSummary(session: Session) {
+  return {
+    id: session.id,
+    name: session.name || `Session ${session.started_at}`,
+    startTime: new Date(session.started_at),
+    endTime: session.ended_at ? new Date(session.ended_at) : undefined,
+    status: session.status as 'active' | 'completed' | 'error',
+    toolCalls: 0, // Not tracked in sessions table yet
+    filesModified: [],
+    tokensUsed: session.tokens_used,
+    thinkingLevel: session.tokens_used > 100000 ? 'high' as const :
+                   session.tokens_used > 30000 ? 'medium' as const : 'low' as const,
+    messageCount: session.message_count,
+    duration: session.ended_at
+      ? Math.round((new Date(session.ended_at).getTime() - new Date(session.started_at).getTime()) / 60000)
+      : Math.round((Date.now() - new Date(session.started_at).getTime()) / 60000),
+  };
+}
 
 /**
- * Fetch sessions directly from Johnny5 SQLite database
+ * GET /api/johnny5/sessions - List all sessions
  */
-function fetchJohnny5Sessions(): Johnny5SessionSummary[] | null {
+export async function GET(request: NextRequest) {
   try {
-    if (!existsSync(JOHNNY5_DB)) {
-      console.log('[Johnny5 Sessions API] Johnny5 database not found');
-      return null;
-    }
+    await initializeDb();
 
-    // Query sessions aggregated from messages table (same as Johnny5's getAllSessions)
-    const query = `
-      SELECT
-        session_id,
-        user_id,
-        channel,
-        MIN(created_at) as created_at,
-        MAX(created_at) as last_activity,
-        COUNT(*) as message_count
-      FROM messages
-      GROUP BY session_id
-      ORDER BY last_activity DESC
-      LIMIT 100
-    `;
+    const { searchParams } = new URL(request.url);
+    const limit = parseInt(searchParams.get('limit') || '20', 10);
+    const offset = parseInt(searchParams.get('offset') || '0', 10);
+    const status = searchParams.get('status'); // 'active' | 'completed' | 'archived' | null (all)
 
-    const result = execSync(`sqlite3 -json "${JOHNNY5_DB}" "${query}"`, {
-      encoding: 'utf-8',
-      timeout: 5000,
+    // Get sessions from database
+    const sessions = await listSessions(limit + 100, offset); // Get extra for filtering
+
+    // Filter by status if provided
+    let filtered = status
+      ? sessions.filter(s => s.status === status)
+      : sessions;
+
+    // Apply limit after filtering
+    filtered = filtered.slice(0, limit);
+
+    // Convert to API format
+    const apiSessions = filtered.map(toSessionSummary);
+
+    return NextResponse.json({
+      success: true,
+      data: {
+        sessions: apiSessions,
+        total: filtered.length,
+        limit,
+        offset
+      },
+      timestamp: new Date()
     });
 
-    const rows = JSON.parse(result || '[]');
-
-    return rows.map((row: any) => {
-      // Determine session name from session_id
-      const parts = row.session_id.split(':');
-      const channel = parts[0] || 'unknown';
-      const channelName = channel === 'telegram' ? 'Telegram' : channel === 'dashboard' ? 'Dashboard' : channel;
-      const sessionName = `${channelName} Session`;
-
-      return {
-        id: row.session_id,
-        name: sessionName,
-        startTime: new Date(row.created_at),
-        endTime: undefined, // Sessions from messages don't have explicit end times
-        status: 'completed' as const,
-        toolCalls: 0, // Not tracked in messages table
-        filesModified: [],
-        tokensUsed: 0, // Token tracking to be implemented
-        thinkingLevel: 'medium' as const,
-        duration: Math.round((row.last_activity - row.created_at) / 60000),
-        messageCount: row.message_count,
-        channel: row.channel,
-      };
-    });
   } catch (error) {
-    console.log('[Johnny5 Sessions API] Error querying Johnny5:', error);
-    return null;
+    console.error('[Johnny5 Sessions API] Error listing sessions:', error);
+
+    return NextResponse.json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to list sessions',
+      timestamp: new Date()
+    }, { status: 500 });
   }
 }
 
-export async function GET(request: NextRequest) {
+/**
+ * POST /api/johnny5/sessions - Create new session
+ */
+export async function POST(request: NextRequest) {
   try {
-    // Parse query parameters for pagination and filtering
-    const { searchParams } = new URL(request.url);
-    const page = parseInt(searchParams.get('page') || '1', 10);
-    const pageSize = parseInt(searchParams.get('pageSize') || '20', 10);
-    const status = searchParams.get('status'); // 'active' | 'completed' | 'error'
-    const search = searchParams.get('search');
+    await initializeDb();
 
-    // Try to get sessions from Johnny5 database first
-    let sessions: Johnny5SessionSummary[] = [];
-    const johnny5Sessions = fetchJohnny5Sessions();
+    const body = await request.json();
+    const name = body.name || 'New Session';
 
-    if (johnny5Sessions && johnny5Sessions.length > 0) {
-      sessions = johnny5Sessions;
-      console.log(`[Johnny5 Sessions API] Loaded ${sessions.length} sessions from Johnny5`);
-    } else {
-      // Fall back to local session tracker
-      sessions = getSessionSummaries({
-        status: status as 'active' | 'completed' | 'error' | undefined,
-        search: search || undefined,
-      });
-    }
+    const session = await createSession(name);
 
-    // Paginate
-    const total = sessions.length;
-    const startIndex = (page - 1) * pageSize;
-    const paginatedSessions = sessions.slice(startIndex, startIndex + pageSize);
-
-    const response: Johnny5APIResponse<Johnny5PaginatedResponse<Johnny5SessionSummary>> = {
+    return NextResponse.json({
       success: true,
-      data: {
-        items: paginatedSessions,
-        total,
-        page,
-        pageSize,
-        hasMore: startIndex + pageSize < total
-      },
+      data: { session: toSessionSummary(session) },
       timestamp: new Date()
-    };
-
-    return NextResponse.json(response);
+    });
 
   } catch (error) {
-    console.error('[Johnny5 Sessions API] Error:', error);
+    console.error('[Johnny5 Sessions API] Error creating session:', error);
 
-    const response: Johnny5APIResponse<null> = {
+    return NextResponse.json({
       success: false,
-      error: error instanceof Error ? error.message : 'Failed to fetch sessions',
+      error: error instanceof Error ? error.message : 'Failed to create session',
       timestamp: new Date()
-    };
+    }, { status: 500 });
+  }
+}
 
-    return NextResponse.json(response, { status: 500 });
+/**
+ * DELETE /api/johnny5/sessions?id=xxx - Archive a session
+ */
+export async function DELETE(request: NextRequest) {
+  try {
+    await initializeDb();
+
+    const { searchParams } = new URL(request.url);
+    const sessionId = searchParams.get('id');
+
+    if (!sessionId) {
+      return NextResponse.json({
+        success: false,
+        error: 'Session ID required (use ?id=xxx query parameter)',
+        timestamp: new Date()
+      }, { status: 400 });
+    }
+
+    await archiveSession(sessionId);
+
+    return NextResponse.json({
+      success: true,
+      timestamp: new Date()
+    });
+
+  } catch (error) {
+    console.error('[Johnny5 Sessions API] Error archiving session:', error);
+
+    return NextResponse.json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to archive session',
+      timestamp: new Date()
+    }, { status: 500 });
   }
 }

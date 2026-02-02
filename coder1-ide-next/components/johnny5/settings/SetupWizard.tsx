@@ -1,21 +1,22 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   Sparkles,
   Check,
   ChevronRight,
   ChevronLeft,
-  Zap,
+  Key,
   Shield,
-  Brain,
-  Rocket,
-  PartyPopper,
-  Server,
+  MessageSquare,
+  FileText,
+  Terminal,
+  Globe,
   Loader2,
+  AlertCircle,
+  CheckCircle2,
+  ExternalLink,
 } from 'lucide-react';
-import ZapierMCPSetupCard from '../onboarding/ZapierMCPSetupCard';
-import TelegramSetupCard from '../onboarding/TelegramSetupCard';
 
 interface SetupWizardProps {
   onComplete?: () => void;
@@ -23,19 +24,25 @@ interface SetupWizardProps {
   className?: string;
 }
 
-type WizardStep = 'welcome' | 'integrations' | 'permissions' | 'behavior' | 'complete';
+type WizardStep = 'welcome' | 'apikey' | 'permissions' | 'complete';
 
-interface IntegrationState {
-  zapier: { connected: boolean; token?: string };
-  telegram: { connected: boolean; token?: string; botUsername?: string };
+type ValidationStatus = 'idle' | 'validating' | 'success' | 'error';
+
+interface Permissions {
+  readFiles: boolean;
+  suggestCode: boolean;
+  executeTerminal: boolean;
+  externalRequests: boolean;
 }
 
 /**
  * SetupWizard Component
  *
- * First-time setup flow for Johnny5 with multi-step wizard.
- * Guides users through connecting integrations, setting permissions,
- * and configuring AI behavior.
+ * Simplified 4-step setup flow for Johnny5:
+ * 1. Welcome - Introduction
+ * 2. API Key - Connect to Claude with validation
+ * 3. Permissions - Set permissions and proactivity
+ * 4. Complete - Quick start tips
  */
 export default function SetupWizard({
   onComplete,
@@ -43,147 +50,140 @@ export default function SetupWizard({
   className,
 }: SetupWizardProps) {
   const [currentStep, setCurrentStep] = useState<WizardStep>('welcome');
-  const [integrations, setIntegrations] = useState<IntegrationState>({
-    zapier: { connected: false },
-    telegram: { connected: false },
-  });
-  const [proactivityLevel, setProactivityLevel] = useState<'low' | 'medium' | 'high'>('medium');
-  const [permissions, setPermissions] = useState({
-    fileWrite: true,
-    terminalExec: true,
-    autoActions: false,
+
+  // API Key state
+  const [apiKey, setApiKey] = useState('');
+  const [validationStatus, setValidationStatus] = useState<ValidationStatus>('idle');
+  const [validationError, setValidationError] = useState('');
+  const [validatedModel, setValidatedModel] = useState('');
+
+  // Permissions state
+  const [permissions, setPermissions] = useState<Permissions>({
+    readFiles: true,
+    suggestCode: true,
+    executeTerminal: false,
     externalRequests: false,
   });
-  const [isInstalling, setIsInstalling] = useState(false);
-  const [installStatus, setInstallStatus] = useState<string>('');
+  const [proactivityLevel, setProactivityLevel] = useState<'low' | 'medium' | 'high'>('medium');
 
-  const steps: WizardStep[] = ['welcome', 'integrations', 'permissions', 'behavior', 'complete'];
+  // Saving state
+  const [isSaving, setIsSaving] = useState(false);
+
+  const steps: WizardStep[] = ['welcome', 'apikey', 'permissions', 'complete'];
   const currentStepIndex = steps.indexOf(currentStep);
 
-  // Handle Zapier MCP connection
-  const handleZapierConnected = (token: string) => {
-    setIntegrations(prev => ({
-      ...prev,
-      zapier: { connected: true, token },
-    }));
-  };
+  // Validate API key
+  const validateApiKey = useCallback(async () => {
+    if (!apiKey.trim()) {
+      setValidationError('Please enter your API key');
+      return;
+    }
 
-  // Handle Telegram connection
-  const handleTelegramConnected = (token: string, botUsername: string) => {
-    setIntegrations(prev => ({
-      ...prev,
-      telegram: { connected: true, token, botUsername },
-    }));
-  };
-
-  // Count connected integrations
-  const connectedCount = [integrations.zapier.connected, integrations.telegram.connected].filter(Boolean).length;
-
-  // Save configuration and install daemon
-  const saveConfiguration = async () => {
-    setIsInstalling(true);
+    setValidationStatus('validating');
+    setValidationError('');
 
     try {
-      // Step 1: Save configuration
-      setInstallStatus('Saving configuration...');
-
-      const config = {
-        integrations: {
-          zapier: integrations.zapier.connected ? { token: integrations.zapier.token } : null,
-          telegram: integrations.telegram.connected ? {
-            token: integrations.telegram.token,
-            botUsername: integrations.telegram.botUsername,
-          } : null,
-        },
-        permissions,
-        proactivityLevel,
-      };
-
-      const configResponse = await fetch('/api/johnny5/setup', {
+      const response = await fetch('/api/johnny5/setup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(config),
+        body: JSON.stringify({
+          action: 'validate-api-key',
+          apiKey: apiKey.trim(),
+        }),
       });
 
-      if (!configResponse.ok) {
-        const errorData = await configResponse.json().catch(() => ({}));
-        throw new Error(errorData.error || 'Failed to save configuration');
-      }
+      const data = await response.json();
 
-      // Step 2: Install daemon
-      setInstallStatus('Installing Johnny5 daemon...');
-
-      const installResponse = await fetch('/api/johnny5/setup', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'install-daemon' }),
-      });
-
-      const installData = await installResponse.json().catch(() => ({}));
-
-      if (!installResponse.ok) {
-        // Daemon installation failed, but config was saved
-        console.warn('Daemon installation issue:', installData);
-        setInstallStatus(
-          installData.data?.instructions
-            ? `Setup complete. ${installData.data.instructions}`
-            : 'Configuration saved. Start Johnny5 manually.'
-        );
-        // Still continue - config is saved
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        return;
-      }
-
-      // Step 3: Verify daemon is running
-      setInstallStatus('Verifying Johnny5 is running...');
-      await new Promise(resolve => setTimeout(resolve, 2000));
-
-      const statusResponse = await fetch('/api/johnny5/setup');
-      const statusData = await statusResponse.json().catch(() => ({}));
-
-      if (statusData.data?.johnny5?.running) {
-        setInstallStatus('Johnny5 is ready!');
+      if (data.success) {
+        setValidationStatus('success');
+        setValidatedModel(data.data?.model || 'claude-3-5-sonnet');
+        setValidationError('');
       } else {
-        setInstallStatus('Johnny5 installed. Starting automatically on next login.');
+        setValidationStatus('error');
+        setValidationError(data.error || 'Validation failed');
       }
-
-      // Brief delay to show success message
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-    } catch (error) {
-      console.error('Setup error:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Setup error';
-      setInstallStatus(`Error: ${errorMessage}`);
-      // Still wait a bit so user can see the error
-      await new Promise(resolve => setTimeout(resolve, 3000));
-    } finally {
-      setIsInstalling(false);
+    } catch {
+      setValidationStatus('error');
+      setValidationError('Network error. Please check your connection.');
     }
-  };
+  }, [apiKey]);
 
-  // Navigate steps
+  // Save configuration
+  const saveConfiguration = useCallback(async () => {
+    setIsSaving(true);
+
+    try {
+      const response = await fetch('/api/johnny5/setup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'save-config',
+          apiKey: apiKey.trim(),
+          permissions,
+          proactivityLevel,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!data.success) {
+        console.error('Failed to save configuration:', data.error);
+      }
+    } catch (error) {
+      console.error('Error saving configuration:', error);
+    } finally {
+      setIsSaving(false);
+    }
+  }, [apiKey, permissions, proactivityLevel]);
+
+  // Navigate to next step
   const goNext = async () => {
     const nextIndex = currentStepIndex + 1;
     if (nextIndex < steps.length) {
-      // If moving to complete step, save configuration first
+      // Save config before going to complete
       if (steps[nextIndex] === 'complete') {
-        try {
-          await saveConfiguration();
-        } catch (error) {
-          console.error('Failed to save configuration:', error);
-          // Still proceed to complete step even if save fails
-          // The complete step will show appropriate status
-        }
+        await saveConfiguration();
       }
       setCurrentStep(steps[nextIndex]);
     }
   };
 
+  // Navigate to previous step
   const goPrev = () => {
     const prevIndex = currentStepIndex - 1;
     if (prevIndex >= 0) {
       setCurrentStep(steps[prevIndex]);
     }
+  };
+
+  // Toggle helper
+  const Toggle = ({
+    enabled,
+    onChange,
+    color = 'cyan'
+  }: {
+    enabled: boolean;
+    onChange: () => void;
+    color?: 'cyan' | 'yellow' | 'orange';
+  }) => {
+    const colors = {
+      cyan: enabled ? 'bg-coder1-cyan' : 'bg-bg-secondary',
+      yellow: enabled ? 'bg-yellow-500' : 'bg-bg-secondary',
+      orange: enabled ? 'bg-orange-500' : 'bg-bg-secondary',
+    };
+
+    return (
+      <button
+        onClick={onChange}
+        className={`relative w-11 h-6 rounded-full transition-all ${colors[color]}`}
+      >
+        <div
+          className={`absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all shadow-sm ${
+            enabled ? 'left-[22px]' : 'left-0.5'
+          }`}
+        />
+      </button>
+    );
   };
 
   // Render step content
@@ -192,70 +192,151 @@ export default function SetupWizard({
       case 'welcome':
         return (
           <div className="text-center py-8">
-            {/* Johnny5 Logo/Icon */}
+            {/* Johnny5 Avatar */}
             <div className="w-24 h-24 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-coder1-cyan/20 to-purple-500/20 flex items-center justify-center border border-coder1-cyan/30">
               <Sparkles className="w-12 h-12 text-coder1-cyan" />
             </div>
 
             <h2 className="text-2xl font-bold text-text-primary mb-3">
-              Welcome to Johnny5
+              Meet Johnny5
             </h2>
-            <p className="text-text-secondary max-w-md mx-auto mb-6">
-              Your AI employee that works while you sleep. Let&apos;s set up Johnny5 to understand
-              your preferences and connect your tools.
+            <p className="text-text-secondary max-w-md mx-auto mb-8">
+              Your autonomous AI teammate that learns and grows with you.
+              Let&apos;s get you set up in just a few steps.
             </p>
 
             {/* Feature highlights */}
             <div className="grid grid-cols-3 gap-4 max-w-lg mx-auto mb-8">
               <div className="p-4 rounded-xl bg-bg-tertiary border border-border-default">
-                <Zap className="w-6 h-6 text-coder1-cyan mx-auto mb-2" />
-                <p className="text-xs text-text-muted">Autonomous Work</p>
+                <MessageSquare className="w-6 h-6 text-coder1-cyan mx-auto mb-2" />
+                <p className="text-xs text-text-muted">Natural Chat</p>
               </div>
               <div className="p-4 rounded-xl bg-bg-tertiary border border-border-default">
-                <Shield className="w-6 h-6 text-green-400 mx-auto mb-2" />
-                <p className="text-xs text-text-muted">Full Transparency</p>
+                <FileText className="w-6 h-6 text-green-400 mx-auto mb-2" />
+                <p className="text-xs text-text-muted">Code Review</p>
               </div>
               <div className="p-4 rounded-xl bg-bg-tertiary border border-border-default">
-                <Brain className="w-6 h-6 text-purple-400 mx-auto mb-2" />
-                <p className="text-xs text-text-muted">Self-Improving</p>
+                <Shield className="w-6 h-6 text-purple-400 mx-auto mb-2" />
+                <p className="text-xs text-text-muted">Your Control</p>
               </div>
             </div>
 
             <p className="text-xs text-text-muted">
-              This will only take a few minutes
+              Takes about 2 minutes to complete
             </p>
           </div>
         );
 
-      case 'integrations':
+      case 'apikey':
         return (
           <div className="py-4">
             <div className="text-center mb-6">
+              <div className="w-14 h-14 mx-auto mb-4 rounded-xl bg-coder1-cyan/10 flex items-center justify-center">
+                <Key className="w-7 h-7 text-coder1-cyan" />
+              </div>
               <h2 className="text-xl font-bold text-text-primary mb-2">
-                Connect Your Tools
+                Connect to Claude
               </h2>
               <p className="text-sm text-text-muted">
-                Both integrations are optional. You can skip and add them later.
+                Enter your Anthropic API key to power Johnny5
               </p>
             </div>
 
-            <div className="space-y-4 max-w-lg mx-auto">
-              {/* Zapier MCP Card */}
-              <ZapierMCPSetupCard
-                onConnected={handleZapierConnected}
-                initialToken={integrations.zapier.token}
-              />
+            <div className="max-w-md mx-auto space-y-4">
+              {/* API Key Input */}
+              <div>
+                <label className="block text-sm font-medium text-text-secondary mb-2">
+                  Anthropic API Key
+                </label>
+                <div className="relative">
+                  <input
+                    type="password"
+                    value={apiKey}
+                    onChange={(e) => {
+                      setApiKey(e.target.value);
+                      if (validationStatus !== 'idle') {
+                        setValidationStatus('idle');
+                        setValidationError('');
+                      }
+                    }}
+                    placeholder="sk-ant-..."
+                    className={`
+                      w-full px-4 py-3 rounded-lg bg-bg-secondary border text-text-primary
+                      placeholder:text-text-muted focus:outline-none focus:ring-2 transition-all
+                      ${validationStatus === 'error'
+                        ? 'border-red-500 focus:ring-red-500/30'
+                        : validationStatus === 'success'
+                        ? 'border-green-500 focus:ring-green-500/30'
+                        : 'border-border-default focus:ring-coder1-cyan/30 focus:border-coder1-cyan'
+                      }
+                    `}
+                  />
+                  {validationStatus === 'success' && (
+                    <CheckCircle2 className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-green-500" />
+                  )}
+                  {validationStatus === 'error' && (
+                    <AlertCircle className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-red-500" />
+                  )}
+                </div>
 
-              {/* Telegram Card */}
-              <TelegramSetupCard
-                onConnected={handleTelegramConnected}
-                initialToken={integrations.telegram.token}
-              />
+                {/* Validation Status Messages */}
+                {validationStatus === 'success' && (
+                  <p className="mt-2 text-sm text-green-500 flex items-center gap-1">
+                    <Check className="w-4 h-4" />
+                    Key validated! Connected to {validatedModel}
+                  </p>
+                )}
+                {validationStatus === 'error' && validationError && (
+                  <p className="mt-2 text-sm text-red-500 flex items-center gap-1">
+                    <AlertCircle className="w-4 h-4" />
+                    {validationError}
+                  </p>
+                )}
+              </div>
+
+              {/* Validate Button */}
+              <button
+                onClick={validateApiKey}
+                disabled={validationStatus === 'validating' || !apiKey.trim()}
+                className={`
+                  w-full py-3 rounded-lg font-medium text-sm transition-all
+                  flex items-center justify-center gap-2
+                  ${validationStatus === 'success'
+                    ? 'bg-green-500/20 text-green-400 border border-green-500/30'
+                    : 'bg-coder1-cyan hover:bg-coder1-cyan/90 text-black'
+                  }
+                  disabled:opacity-50 disabled:cursor-not-allowed
+                `}
+              >
+                {validationStatus === 'validating' ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Validating...
+                  </>
+                ) : validationStatus === 'success' ? (
+                  <>
+                    <CheckCircle2 className="w-4 h-4" />
+                    Key Validated
+                  </>
+                ) : (
+                  'Validate Key'
+                )}
+              </button>
+
+              {/* Get API Key Link */}
+              <p className="text-center text-sm text-text-muted">
+                Don&apos;t have a key?{' '}
+                <a
+                  href="https://console.anthropic.com/settings/keys"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-coder1-cyan hover:underline inline-flex items-center gap-1"
+                >
+                  Get one from Anthropic
+                  <ExternalLink className="w-3 h-3" />
+                </a>
+              </p>
             </div>
-
-            <p className="text-xs text-text-muted text-center mt-4">
-              You can always add or remove integrations later in Settings
-            </p>
           </div>
         );
 
@@ -264,269 +345,152 @@ export default function SetupWizard({
           <div className="py-4">
             <div className="text-center mb-6">
               <h2 className="text-xl font-bold text-text-primary mb-2">
-                Set Boundaries
+                Set Johnny5&apos;s Permissions
               </h2>
               <p className="text-sm text-text-muted">
-                Control what Johnny5 can do on your behalf
+                Control what Johnny5 can do in your project
               </p>
             </div>
 
             <div className="space-y-3 max-w-lg mx-auto">
-              {/* File Write Permission */}
+              {/* Read Files */}
               <div className="p-4 rounded-xl bg-bg-tertiary border border-border-default">
                 <div className="flex items-center justify-between">
-                  <div>
-                    <h4 className="text-sm font-semibold text-text-primary">
-                      Write Files
-                    </h4>
-                    <p className="text-xs text-text-muted mt-0.5">
-                      Create and modify files in your project
-                    </p>
-                  </div>
-                  <button
-                    onClick={() =>
-                      setPermissions({ ...permissions, fileWrite: !permissions.fileWrite })
-                    }
-                    className={`
-                      relative w-12 h-6 rounded-full transition-all
-                      ${permissions.fileWrite ? 'bg-coder1-cyan' : 'bg-bg-secondary'}
-                    `}
-                  >
-                    <div
-                      className={`
-                        absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all
-                        ${permissions.fileWrite ? 'left-[26px]' : 'left-0.5'}
-                      `}
-                    />
-                  </button>
-                </div>
-              </div>
-
-              {/* Terminal Permission */}
-              <div className="p-4 rounded-xl bg-bg-tertiary border border-border-default">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h4 className="text-sm font-semibold text-text-primary">
-                      Run Terminal Commands
-                    </h4>
-                    <p className="text-xs text-text-muted mt-0.5">
-                      Execute commands in the terminal
-                    </p>
-                  </div>
-                  <button
-                    onClick={() =>
-                      setPermissions({ ...permissions, terminalExec: !permissions.terminalExec })
-                    }
-                    className={`
-                      relative w-12 h-6 rounded-full transition-all
-                      ${permissions.terminalExec ? 'bg-coder1-cyan' : 'bg-bg-secondary'}
-                    `}
-                  >
-                    <div
-                      className={`
-                        absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all
-                        ${permissions.terminalExec ? 'left-[26px]' : 'left-0.5'}
-                      `}
-                    />
-                  </button>
-                </div>
-              </div>
-
-              {/* Auto Actions Permission */}
-              <div className="p-4 rounded-xl bg-bg-tertiary border border-border-default">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h4 className="text-sm font-semibold text-text-primary flex items-center gap-2">
-                      Auto-Execute Actions
-                      <span className="px-1.5 py-0.5 text-[10px] bg-yellow-500/20 text-yellow-400 rounded">
-                        Advanced
-                      </span>
-                    </h4>
-                    <p className="text-xs text-text-muted mt-0.5">
-                      Take actions without asking first
-                    </p>
-                  </div>
-                  <button
-                    onClick={() =>
-                      setPermissions({ ...permissions, autoActions: !permissions.autoActions })
-                    }
-                    className={`
-                      relative w-12 h-6 rounded-full transition-all
-                      ${permissions.autoActions ? 'bg-yellow-500' : 'bg-bg-secondary'}
-                    `}
-                  >
-                    <div
-                      className={`
-                        absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all
-                        ${permissions.autoActions ? 'left-[26px]' : 'left-0.5'}
-                      `}
-                    />
-                  </button>
-                </div>
-              </div>
-
-              {/* External Requests Permission */}
-              <div className="p-4 rounded-xl bg-bg-tertiary border border-border-default">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h4 className="text-sm font-semibold text-text-primary flex items-center gap-2">
-                      External Requests
-                      <span className="px-1.5 py-0.5 text-[10px] bg-red-500/20 text-red-400 rounded">
-                        High Risk
-                      </span>
-                    </h4>
-                    <p className="text-xs text-text-muted mt-0.5">
-                      Make HTTP requests to external services
-                    </p>
-                  </div>
-                  <button
-                    onClick={() =>
-                      setPermissions({
-                        ...permissions,
-                        externalRequests: !permissions.externalRequests,
-                      })
-                    }
-                    className={`
-                      relative w-12 h-6 rounded-full transition-all
-                      ${permissions.externalRequests ? 'bg-red-500' : 'bg-bg-secondary'}
-                    `}
-                  >
-                    <div
-                      className={`
-                        absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all
-                        ${permissions.externalRequests ? 'left-[26px]' : 'left-0.5'}
-                      `}
-                    />
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        );
-
-      case 'behavior':
-        return (
-          <div className="py-4">
-            <div className="text-center mb-6">
-              <h2 className="text-xl font-bold text-text-primary mb-2">
-                Proactivity Level
-              </h2>
-              <p className="text-sm text-text-muted">
-                How much should Johnny5 do on its own?
-              </p>
-            </div>
-
-            <div className="space-y-3 max-w-lg mx-auto">
-              {/* Low */}
-              <button
-                onClick={() => setProactivityLevel('low')}
-                className={`
-                  w-full p-4 rounded-xl border-2 text-left transition-all
-                  ${proactivityLevel === 'low'
-                    ? 'bg-green-500/10 border-green-500'
-                    : 'bg-bg-tertiary border-border-default hover:border-green-500/50'
-                  }
-                `}
-              >
-                <div className="flex items-start gap-3">
-                  <div
-                    className={`
-                      w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0
-                      ${proactivityLevel === 'low' ? 'bg-green-500/20' : 'bg-bg-secondary'}
-                    `}
-                  >
-                    <Shield className="w-5 h-5 text-green-400" />
-                  </div>
-                  <div>
-                    <h4 className="text-sm font-semibold text-text-primary">
-                      Conservative
-                    </h4>
-                    <p className="text-xs text-text-muted mt-0.5">
-                      Always ask before taking action. Ideal for learning how Johnny5 works.
-                    </p>
-                  </div>
-                  {proactivityLevel === 'low' && (
-                    <div className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0">
-                      <Check className="w-3 h-3 text-black" />
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-lg bg-coder1-cyan/10 flex items-center justify-center">
+                      <FileText className="w-5 h-5 text-coder1-cyan" />
                     </div>
-                  )}
-                </div>
-              </button>
-
-              {/* Medium */}
-              <button
-                onClick={() => setProactivityLevel('medium')}
-                className={`
-                  w-full p-4 rounded-xl border-2 text-left transition-all
-                  ${proactivityLevel === 'medium'
-                    ? 'bg-coder1-cyan/10 border-coder1-cyan'
-                    : 'bg-bg-tertiary border-border-default hover:border-coder1-cyan/50'
-                  }
-                `}
-              >
-                <div className="flex items-start gap-3">
-                  <div
-                    className={`
-                      w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0
-                      ${proactivityLevel === 'medium' ? 'bg-coder1-cyan/20' : 'bg-bg-secondary'}
-                    `}
-                  >
-                    <Zap className="w-5 h-5 text-coder1-cyan" />
-                  </div>
-                  <div>
-                    <h4 className="text-sm font-semibold text-text-primary flex items-center gap-2">
-                      Balanced
-                      <span className="px-1.5 py-0.5 text-[10px] bg-coder1-cyan/20 text-coder1-cyan rounded">
-                        Recommended
-                      </span>
-                    </h4>
-                    <p className="text-xs text-text-muted mt-0.5">
-                      Ask for important decisions, handle routine tasks automatically.
-                    </p>
-                  </div>
-                  {proactivityLevel === 'medium' && (
-                    <div className="w-5 h-5 rounded-full bg-coder1-cyan flex items-center justify-center flex-shrink-0">
-                      <Check className="w-3 h-3 text-black" />
+                    <div>
+                      <h4 className="text-sm font-medium text-text-primary">
+                        Read files in your project
+                      </h4>
+                      <p className="text-xs text-text-muted">
+                        Analyze code and understand context
+                      </p>
                     </div>
-                  )}
+                  </div>
+                  <Toggle
+                    enabled={permissions.readFiles}
+                    onChange={() => setPermissions(p => ({ ...p, readFiles: !p.readFiles }))}
+                  />
                 </div>
-              </button>
+              </div>
 
-              {/* High */}
-              <button
-                onClick={() => setProactivityLevel('high')}
-                className={`
-                  w-full p-4 rounded-xl border-2 text-left transition-all
-                  ${proactivityLevel === 'high'
-                    ? 'bg-purple-500/10 border-purple-500'
-                    : 'bg-bg-tertiary border-border-default hover:border-purple-500/50'
-                  }
-                `}
-              >
-                <div className="flex items-start gap-3">
-                  <div
-                    className={`
-                      w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0
-                      ${proactivityLevel === 'high' ? 'bg-purple-500/20' : 'bg-bg-secondary'}
-                    `}
-                  >
-                    <Rocket className="w-5 h-5 text-purple-400" />
-                  </div>
-                  <div>
-                    <h4 className="text-sm font-semibold text-text-primary">
-                      Autonomous
-                    </h4>
-                    <p className="text-xs text-text-muted mt-0.5">
-                      Work independently, only interrupt for critical decisions.
-                    </p>
-                  </div>
-                  {proactivityLevel === 'high' && (
-                    <div className="w-5 h-5 rounded-full bg-purple-500 flex items-center justify-center flex-shrink-0">
-                      <Check className="w-3 h-3 text-white" />
+              {/* Suggest Code */}
+              <div className="p-4 rounded-xl bg-bg-tertiary border border-border-default">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-lg bg-green-500/10 flex items-center justify-center">
+                      <MessageSquare className="w-5 h-5 text-green-400" />
                     </div>
-                  )}
+                    <div>
+                      <h4 className="text-sm font-medium text-text-primary">
+                        Suggest code changes
+                      </h4>
+                      <p className="text-xs text-text-muted">
+                        Provide code suggestions and improvements
+                      </p>
+                    </div>
+                  </div>
+                  <Toggle
+                    enabled={permissions.suggestCode}
+                    onChange={() => setPermissions(p => ({ ...p, suggestCode: !p.suggestCode }))}
+                  />
                 </div>
-              </button>
+              </div>
+
+              {/* Execute Terminal */}
+              <div className="p-4 rounded-xl bg-bg-tertiary border border-border-default">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-lg bg-yellow-500/10 flex items-center justify-center">
+                      <Terminal className="w-5 h-5 text-yellow-400" />
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-medium text-text-primary flex items-center gap-2">
+                        Execute terminal commands
+                        <span className="px-1.5 py-0.5 text-[10px] bg-yellow-500/20 text-yellow-400 rounded">
+                          Advanced
+                        </span>
+                      </h4>
+                      <p className="text-xs text-text-muted">
+                        Run npm, git, and other CLI commands
+                      </p>
+                    </div>
+                  </div>
+                  <Toggle
+                    enabled={permissions.executeTerminal}
+                    onChange={() => setPermissions(p => ({ ...p, executeTerminal: !p.executeTerminal }))}
+                    color="yellow"
+                  />
+                </div>
+              </div>
+
+              {/* External Requests */}
+              <div className="p-4 rounded-xl bg-bg-tertiary border border-border-default">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-lg bg-orange-500/10 flex items-center justify-center">
+                      <Globe className="w-5 h-5 text-orange-400" />
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-medium text-text-primary flex items-center gap-2">
+                        External API requests
+                        <span className="px-1.5 py-0.5 text-[10px] bg-orange-500/20 text-orange-400 rounded">
+                          Advanced
+                        </span>
+                      </h4>
+                      <p className="text-xs text-text-muted">
+                        Make HTTP requests to external services
+                      </p>
+                    </div>
+                  </div>
+                  <Toggle
+                    enabled={permissions.externalRequests}
+                    onChange={() => setPermissions(p => ({ ...p, externalRequests: !p.externalRequests }))}
+                    color="orange"
+                  />
+                </div>
+              </div>
+
+              {/* Proactivity Slider */}
+              <div className="p-4 rounded-xl bg-bg-tertiary border border-border-default mt-4">
+                <h4 className="text-sm font-medium text-text-primary mb-3">
+                  Proactivity Level
+                </h4>
+                <div className="flex items-center gap-3">
+                  <span className={`text-xs ${proactivityLevel === 'low' ? 'text-text-primary' : 'text-text-muted'}`}>
+                    Low
+                  </span>
+                  <div className="flex-1 flex items-center justify-center gap-2">
+                    {(['low', 'medium', 'high'] as const).map((level) => (
+                      <button
+                        key={level}
+                        onClick={() => setProactivityLevel(level)}
+                        className={`
+                          w-8 h-8 rounded-full transition-all
+                          ${proactivityLevel === level
+                            ? 'bg-coder1-cyan scale-110'
+                            : 'bg-bg-secondary hover:bg-bg-secondary/80'
+                          }
+                        `}
+                      >
+                        {proactivityLevel === level && (
+                          <Check className="w-4 h-4 text-black mx-auto" />
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                  <span className={`text-xs ${proactivityLevel === 'high' ? 'text-text-primary' : 'text-text-muted'}`}>
+                    High
+                  </span>
+                </div>
+                <p className="text-xs text-text-muted text-center mt-2">
+                  {proactivityLevel === 'low' && 'Always asks before taking action'}
+                  {proactivityLevel === 'medium' && 'Balances autonomy with confirmation'}
+                  {proactivityLevel === 'high' && 'Works independently, minimal interruptions'}
+                </p>
+              </div>
             </div>
           </div>
         );
@@ -534,75 +498,57 @@ export default function SetupWizard({
       case 'complete':
         return (
           <div className="text-center py-8">
-            {/* Success Animation / Installing State */}
-            {isInstalling ? (
-              <>
-                <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-gradient-to-br from-coder1-cyan/20 to-purple-500/20 flex items-center justify-center border border-coder1-cyan/30">
-                  <Loader2 className="w-12 h-12 text-coder1-cyan animate-spin" />
-                </div>
-                <h2 className="text-2xl font-bold text-text-primary mb-3">
-                  Setting Up Johnny5...
-                </h2>
-                <p className="text-text-secondary max-w-md mx-auto mb-6">
-                  {installStatus || 'Installing daemon and configuring services...'}
-                </p>
-              </>
-            ) : (
-              <>
-                <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-gradient-to-br from-green-500/20 to-coder1-cyan/20 flex items-center justify-center border border-green-500/30 animate-pulse">
-                  <PartyPopper className="w-12 h-12 text-green-400" />
-                </div>
+            {/* Success Icon */}
+            <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-gradient-to-br from-green-500/20 to-coder1-cyan/20 flex items-center justify-center border border-green-500/30">
+              <CheckCircle2 className="w-12 h-12 text-green-400" />
+            </div>
 
-                <h2 className="text-2xl font-bold text-text-primary mb-3">
-                  You&apos;re All Set!
-                </h2>
-                <p className="text-text-secondary max-w-md mx-auto mb-6">
-                  Johnny5 is ready to help. Start your first task or explore the dashboard.
-                </p>
+            <h2 className="text-2xl font-bold text-text-primary mb-3">
+              Johnny5 is Ready!
+            </h2>
+            <p className="text-text-secondary max-w-md mx-auto mb-8">
+              You&apos;re all set. Here are some quick tips to get started.
+            </p>
 
-                {/* Summary */}
-                <div className="bg-bg-tertiary rounded-xl p-4 max-w-md mx-auto text-left mb-6">
-                  <h4 className="text-sm font-semibold text-text-primary mb-3">Setup Summary</h4>
-                  <div className="space-y-2 text-xs">
-                    <div className="flex items-center justify-between">
-                      <span className="text-text-muted">Zapier MCP</span>
-                      <span className={integrations.zapier.connected ? 'text-green-400' : 'text-text-muted'}>
-                        {integrations.zapier.connected ? '✓ Connected' : 'Not configured'}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-text-muted">Telegram Bot</span>
-                      <span className={integrations.telegram.connected ? 'text-green-400' : 'text-text-muted'}>
-                        {integrations.telegram.connected ? `✓ @${integrations.telegram.botUsername}` : 'Not configured'}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-text-muted">Proactivity</span>
-                      <span className="text-coder1-cyan capitalize">{proactivityLevel}</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-text-muted">File Write</span>
-                      <span className={permissions.fileWrite ? 'text-green-400' : 'text-red-400'}>
-                        {permissions.fileWrite ? 'Enabled' : 'Disabled'}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-text-muted">Terminal</span>
-                      <span className={permissions.terminalExec ? 'text-green-400' : 'text-red-400'}>
-                        {permissions.terminalExec ? 'Enabled' : 'Disabled'}
-                      </span>
-                    </div>
+            {/* Quick Start Tips */}
+            <div className="bg-bg-tertiary rounded-xl p-5 max-w-md mx-auto text-left mb-6">
+              <h4 className="text-sm font-semibold text-text-primary mb-3">Quick Start Tips</h4>
+              <ul className="space-y-3 text-sm text-text-secondary">
+                <li className="flex items-start gap-3">
+                  <div className="w-5 h-5 rounded-full bg-coder1-cyan/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <span className="text-xs text-coder1-cyan font-medium">1</span>
                   </div>
-                </div>
+                  <span>Type a message to start chatting with Johnny5</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <div className="w-5 h-5 rounded-full bg-coder1-cyan/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <span className="text-xs text-coder1-cyan font-medium">2</span>
+                  </div>
+                  <span>Use <code className="px-1.5 py-0.5 bg-bg-secondary rounded text-xs">@file</code> to reference code files</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <div className="w-5 h-5 rounded-full bg-coder1-cyan/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <span className="text-xs text-coder1-cyan font-medium">3</span>
+                  </div>
+                  <span>Ask Johnny5 to review, explain, or improve your code</span>
+                </li>
+              </ul>
+            </div>
 
-                <p className="text-xs text-text-muted">
-                  You can change these settings anytime from the Settings panel
-                </p>
-              </>
-            )}
+            <p className="text-xs text-text-muted">
+              You can change settings anytime from the Settings panel
+            </p>
           </div>
         );
     }
+  };
+
+  // Check if can proceed to next step
+  const canProceed = () => {
+    if (currentStep === 'apikey') {
+      return validationStatus === 'success';
+    }
+    return true;
   };
 
   return (
@@ -646,11 +592,13 @@ export default function SetupWizard({
 
         {/* Step Labels */}
         <div className="flex items-center justify-between text-[10px] text-text-muted">
-          <span>Welcome</span>
-          <span>Integrations</span>
-          <span>Permissions</span>
-          <span>Behavior</span>
-          <span>Complete</span>
+          <span className="w-8 text-center">Welcome</span>
+          <span className="flex-1" />
+          <span className="w-8 text-center">API Key</span>
+          <span className="flex-1" />
+          <span className="w-12 text-center">Permissions</span>
+          <span className="flex-1" />
+          <span className="w-8 text-center">Done</span>
         </div>
       </div>
 
@@ -661,13 +609,13 @@ export default function SetupWizard({
 
       {/* Footer Navigation */}
       <div className="p-6 border-t border-border-default flex items-center justify-between">
-        {/* Skip/Back Button */}
+        {/* Left Button: Skip or Back */}
         {currentStep === 'welcome' ? (
           <button
             onClick={onSkip}
-            className="px-4 py-2 text-sm text-text-muted hover:text-text-primary transition-colors"
+            className="text-sm text-text-muted hover:text-text-primary transition-colors"
           >
-            Skip Setup
+            Skip
           </button>
         ) : currentStep !== 'complete' ? (
           <button
@@ -681,26 +629,33 @@ export default function SetupWizard({
           <div />
         )}
 
-        {/* Next/Complete Button */}
+        {/* Right Button: Next or Complete */}
         {currentStep === 'complete' ? (
           <button
             onClick={onComplete}
-            disabled={isInstalling}
-            className="flex items-center gap-2 px-6 py-2.5 rounded-lg bg-coder1-cyan hover:bg-coder1-cyan/90 text-black font-medium text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex items-center gap-2 px-6 py-2.5 rounded-lg bg-coder1-cyan hover:bg-coder1-cyan/90 text-black font-medium text-sm transition-all"
           >
-            <Rocket className="w-4 h-4" />
-            Start Using Johnny5
+            <MessageSquare className="w-4 h-4" />
+            Start Chatting
+          </button>
+        ) : currentStep === 'welcome' ? (
+          <button
+            onClick={goNext}
+            className="flex items-center gap-2 px-6 py-2.5 rounded-lg bg-coder1-cyan hover:bg-coder1-cyan/90 text-black font-medium text-sm transition-all"
+          >
+            Get Started
+            <ChevronRight className="w-4 h-4" />
           </button>
         ) : (
           <button
             onClick={goNext}
-            disabled={isInstalling}
+            disabled={!canProceed() || isSaving}
             className="flex items-center gap-1 px-6 py-2.5 rounded-lg bg-coder1-cyan hover:bg-coder1-cyan/90 text-black font-medium text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {isInstalling ? (
+            {isSaving ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
-                Setting up...
+                Saving...
               </>
             ) : (
               <>

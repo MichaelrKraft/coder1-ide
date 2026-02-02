@@ -68,14 +68,16 @@ export default function MorningBriefTab({ className = '' }: MorningBriefTabProps
         if (data.success && data.data) {
           setMorningBrief(data.data);
         } else {
-          // Use mock data for development
-          setMorningBrief(getMockBrief());
+          console.error('[MorningBriefTab] API returned unsuccessful response');
+          setMorningBrief(null);
         }
       } else {
-        setMorningBrief(getMockBrief());
+        console.error('[MorningBriefTab] Failed to fetch brief:', response.status);
+        setMorningBrief(null);
       }
-    } catch {
-      setMorningBrief(getMockBrief());
+    } catch (error) {
+      console.error('[MorningBriefTab] Error fetching brief:', error);
+      setMorningBrief(null);
     } finally {
       setBriefLoading(false);
     }
@@ -450,99 +452,4 @@ export default function MorningBriefTab({ className = '' }: MorningBriefTabProps
       )}
     </div>
   );
-}
-
-// ============================================================================
-// Mock Data
-// ============================================================================
-
-function getMockBrief(): Johnny5MorningBrief {
-  const now = new Date();
-
-  return {
-    id: `brief-${now.toISOString().split('T')[0]}`,
-    date: now,
-    weather: {
-      temperature: 68,
-      condition: 'Partly Cloudy',
-      location: 'San Francisco, CA',
-    },
-    summary: `While you were away, Johnny5 completed 2 builds, finished 1 research task, spotted 3 interesting trends, and flagged 2 items that need your attention. Overall, a productive night!`,
-    builtOvernight: [
-      {
-        id: 'build-1',
-        title: 'Morning Brief UI Components',
-        description: 'Implemented the complete Morning Brief tab with weather widget, collapsible sections, and historical brief navigation.',
-        link: 'https://github.com/MichaelrKraft/coder1-ide',
-        priority: 'high',
-        actionable: true,
-        action: 'View PR',
-      },
-      {
-        id: 'build-2',
-        title: 'New Skill: Auto Code Review',
-        description: 'Created a skill that automatically reviews PRs for common issues like missing tests, poor naming, and security vulnerabilities.',
-        priority: 'medium',
-        actionable: false,
-      },
-    ],
-    researchCompleted: [
-      {
-        id: 'research-1',
-        title: 'TypeScript 5.5 Features Analysis',
-        description: 'Researched new TypeScript 5.5 features including inferred type predicates and isolated declarations. Identified 3 features that could improve the codebase.',
-        link: 'https://devblogs.microsoft.com/typescript/announcing-typescript-5-5/',
-        priority: 'low',
-        actionable: true,
-        action: 'Read Report',
-      },
-    ],
-    trendsSpotted: [
-      {
-        id: 'trend-1',
-        title: 'Windsurf AI IDE Launch',
-        description: 'New AI-powered IDE launched by Codeium team. Offers unique "Flows" feature for multi-file editing. Over 10k stars in first week.',
-        link: 'https://codeium.com/windsurf',
-        priority: 'high',
-        actionable: true,
-        action: 'Analyze Competitor',
-      },
-      {
-        id: 'trend-2',
-        title: 'Claude 4 Announcement Rumors',
-        description: 'Multiple sources reporting Anthropic may announce Claude 4 soon with significantly improved coding capabilities.',
-        priority: 'medium',
-        actionable: false,
-      },
-      {
-        id: 'trend-3',
-        title: 'React 19 Release Candidate',
-        description: 'React 19 RC released with new use() hook and improved server components. Consider evaluating upgrade path.',
-        link: 'https://react.dev/blog/2024/12/05/react-19',
-        priority: 'medium',
-        actionable: true,
-        action: 'Review Changes',
-      },
-    ],
-    needsAttention: [
-      {
-        id: 'attention-1',
-        title: 'PR #789 Ready for Review',
-        description: 'Your Morning Brief PR has passed all checks and is ready for your review before merging.',
-        link: 'https://github.com/MichaelrKraft/coder1-ide/pulls',
-        priority: 'high',
-        actionable: true,
-        action: 'Review Now',
-      },
-      {
-        id: 'attention-2',
-        title: 'API Key Expiring Soon',
-        description: 'Your OpenAI API key will expire in 3 days. Please renew to avoid service interruption.',
-        link: 'https://platform.openai.com/api-keys',
-        priority: 'high',
-        actionable: true,
-        action: 'Renew Key',
-      },
-    ],
-  };
 }
