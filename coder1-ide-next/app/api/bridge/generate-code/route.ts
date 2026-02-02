@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
   }
 
   // Generate code using shared store
-  const code = bridgeStore.generateCode(userId);
+  const code = await bridgeStore.generateCode(userId);
 
   return NextResponse.json({
     code,
