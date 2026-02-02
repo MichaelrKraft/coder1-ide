@@ -167,7 +167,13 @@ export default function SetupWizard({
     if (nextIndex < steps.length) {
       // If moving to complete step, save configuration first
       if (steps[nextIndex] === 'complete') {
-        await saveConfiguration();
+        try {
+          await saveConfiguration();
+        } catch (error) {
+          console.error('Failed to save configuration:', error);
+          // Still proceed to complete step even if save fails
+          // The complete step will show appropriate status
+        }
       }
       setCurrentStep(steps[nextIndex]);
     }
@@ -679,7 +685,8 @@ export default function SetupWizard({
         {currentStep === 'complete' ? (
           <button
             onClick={onComplete}
-            className="flex items-center gap-2 px-6 py-2.5 rounded-lg bg-coder1-cyan hover:bg-coder1-cyan/90 text-black font-medium text-sm transition-all"
+            disabled={isInstalling}
+            className="flex items-center gap-2 px-6 py-2.5 rounded-lg bg-coder1-cyan hover:bg-coder1-cyan/90 text-black font-medium text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Rocket className="w-4 h-4" />
             Start Using Johnny5
@@ -687,10 +694,20 @@ export default function SetupWizard({
         ) : (
           <button
             onClick={goNext}
-            className="flex items-center gap-1 px-6 py-2.5 rounded-lg bg-coder1-cyan hover:bg-coder1-cyan/90 text-black font-medium text-sm transition-all"
+            disabled={isInstalling}
+            className="flex items-center gap-1 px-6 py-2.5 rounded-lg bg-coder1-cyan hover:bg-coder1-cyan/90 text-black font-medium text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Continue
-            <ChevronRight className="w-4 h-4" />
+            {isInstalling ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Setting up...
+              </>
+            ) : (
+              <>
+                Continue
+                <ChevronRight className="w-4 h-4" />
+              </>
+            )}
           </button>
         )}
       </div>

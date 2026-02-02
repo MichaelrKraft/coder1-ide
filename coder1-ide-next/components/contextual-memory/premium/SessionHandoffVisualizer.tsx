@@ -69,76 +69,73 @@ export const SessionHandoffVisualizer: React.FC = () => {
   }
 
   return (
-    <div className="bg-gradient-to-r from-purple-500/10 to-blue-500/10 border border-purple-500/20 rounded-lg p-4 mt-4">
-      <div className="flex items-center justify-between mb-4">
+    <div className="bg-bg-tertiary rounded-lg p-3 border border-border-default">
+      <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
-          <Link2 className="w-5 h-5 text-purple-400" />
-          <h3 className="text-sm font-semibold text-purple-400">
-            SESSION CONTINUITY TIMELINE
+          <Link2 className="w-4 h-4 text-text-muted" />
+          <h3 className="text-xs font-medium text-text-secondary">
+            Session Continuity Timeline
           </h3>
         </div>
         <button
           onClick={handleTestHandoff}
-          className="px-3 py-1 text-xs bg-purple-500/20 hover:bg-purple-500/30 text-purple-400 rounded border border-purple-500/30 transition-colors"
+          className="px-2 py-1 text-xs bg-bg-secondary hover:bg-bg-primary text-text-secondary rounded border border-border-default transition-colors"
         >
           Test Handoff
         </button>
       </div>
 
       {/* Session Timeline */}
-      <div className="relative mb-4">
+      <div className="relative mb-3">
         {sessions.map((session, index) => (
-          <div key={session.id} className="flex items-center mb-3">
+          <div key={session.id} className="flex items-center mb-2.5">
             {/* Session Node */}
             <div className="relative">
               <div
-                className={`w-12 h-12 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
+                className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium transition-all ${
                   session.isCurrent
-                    ? 'bg-purple-500 text-white ring-4 ring-purple-500/30 animate-pulse'
+                    ? 'bg-coder1-cyan text-black'
                     : session.connected
-                    ? 'bg-purple-500/30 text-purple-300 border border-purple-500/50'
-                    : 'bg-gray-700 text-gray-400 border border-gray-600'
+                    ? 'bg-coder1-cyan/20 text-coder1-cyan border border-coder1-cyan/30'
+                    : 'bg-bg-secondary text-text-muted border border-border-default'
                 }`}
               >
                 #{5 - index}
               </div>
               {index < sessions.length - 1 && (
                 <div
-                  className={`absolute top-12 left-6 w-0.5 h-8 -translate-x-1/2 ${
+                  className={`absolute top-8 left-4 w-0.5 h-6 -translate-x-1/2 ${
                     session.connected && sessions[index + 1].connected
-                      ? 'bg-purple-400'
-                      : 'bg-gray-600'
+                      ? 'bg-coder1-cyan/50'
+                      : 'bg-border-default'
                   }`}
                 />
               )}
             </div>
 
             {/* Session Info */}
-            <div className="ml-4 flex-1">
+            <div className="ml-3 flex-1">
               <div className="flex items-center gap-2">
                 <span className={`text-xs font-medium ${
-                  session.isCurrent ? 'text-purple-300' : 'text-gray-400'
+                  session.isCurrent ? 'text-text-primary' : 'text-text-secondary'
                 }`}>
-                  {session.isCurrent ? 'CURRENT SESSION' : `Session ${5 - index}`}
+                  {session.isCurrent ? 'Current' : `Session ${5 - index}`}
                 </span>
-                {session.connected && !session.isCurrent && (
-                  <ChevronRight className="w-3 h-3 text-green-400" />
-                )}
               </div>
-              <div className="text-xs text-gray-500 mt-1">
-                {session.memoriesCount} memories • {session.patternsLearned} patterns learned
+              <div className="text-xs text-text-muted">
+                {session.memoriesCount} memories • {session.patternsLearned} patterns
               </div>
-              <div className="text-xs text-gray-600">
+              <div className="text-xs text-text-muted">
                 {session.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
               </div>
             </div>
 
             {/* Connection Status */}
             {index > 0 && (
-              <div className={`text-xs px-2 py-1 rounded ${
+              <div className={`text-xs px-1.5 py-0.5 rounded ${
                 session.connected
-                  ? 'bg-green-500/20 text-green-400 border border-green-500/30'
-                  : 'bg-gray-700 text-gray-500 border border-gray-600'
+                  ? 'bg-coder1-cyan/10 text-coder1-cyan border border-coder1-cyan/20'
+                  : 'bg-bg-secondary text-text-muted border border-border-default'
               }`}>
                 {session.connected ? 'Connected' : 'Disconnected'}
               </div>
@@ -149,38 +146,24 @@ export const SessionHandoffVisualizer: React.FC = () => {
 
       {/* Handoff Preview */}
       {handoffPreview && (
-        <div className="bg-green-500/10 border border-green-500/20 rounded p-3 mb-4 animate-slideIn">
-          <div className="text-sm font-medium text-green-400 mb-2">NEXT SESSION WILL REMEMBER:</div>
+        <div className="bg-bg-secondary border border-border-default rounded p-2 mb-3 animate-slideIn">
+          <div className="text-xs font-medium text-text-primary mb-1.5">Next session will remember:</div>
           <div className="space-y-1">
-            <div className="flex items-center gap-2 text-xs text-gray-300">
-              <Check className="w-3 h-3 text-green-400" />
+            <div className="flex items-center gap-2 text-xs text-text-secondary">
+              <Check className="w-3 h-3 text-coder1-cyan" />
               <span>All {totalPatterns} learned patterns</span>
             </div>
-            <div className="flex items-center gap-2 text-xs text-gray-300">
-              <Check className="w-3 h-3 text-green-400" />
+            <div className="flex items-center gap-2 text-xs text-text-secondary">
+              <Check className="w-3 h-3 text-coder1-cyan" />
               <span>Project context and structure</span>
             </div>
-            <div className="flex items-center gap-2 text-xs text-gray-300">
-              <Check className="w-3 h-3 text-green-400" />
+            <div className="flex items-center gap-2 text-xs text-text-secondary">
+              <Check className="w-3 h-3 text-coder1-cyan" />
               <span>Recent commands and solutions</span>
-            </div>
-            <div className="flex items-center gap-2 text-xs text-gray-300">
-              <Check className="w-3 h-3 text-green-400" />
-              <span>Error fixes and optimizations</span>
             </div>
           </div>
         </div>
       )}
-
-      {/* Bottom Message */}
-      <div className="bg-black/30 rounded p-2 text-center">
-        <div className="text-xs text-purple-400 font-medium">
-          Unlike standard Claude Code, ALL your context carries forward
-        </div>
-        <div className="text-xs text-gray-500 mt-1">
-          Close Claude today, open tomorrow - everything is remembered
-        </div>
-      </div>
     </div>
   );
 };
