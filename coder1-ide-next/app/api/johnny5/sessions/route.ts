@@ -1,66 +1,157 @@
 /**
  * Johnny5 Sessions API
  *
- * GET /api/johnny5/sessions - Returns REAL list of session summaries
+ * GET /api/johnny5/sessions - List all sessions with pagination and filtering
+ * POST /api/johnny5/sessions - Create a new session
+ * DELETE /api/johnny5/sessions?id=xxx - Archive a session
  *
- * This endpoint provides session intelligence data showing all
- * Johnny5's work sessions with summary metrics from the session tracker.
+ * This endpoint uses the SQLite database via johnny5-db for persistent storage.
+ * Database location: ~/.coder1/johnny5.db
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import type {
-  Johnny5APIResponse,
-  Johnny5PaginatedResponse,
-  Johnny5SessionSummary
-} from '@/types/johnny5';
-import { getSessionSummaries } from '@/services/johnny5/session-tracker';
+import {
+  initializeDb,
+  listSessions,
+  createSession,
+  archiveSession,
+  type Session
+} from '@/lib/johnny5-db';
 
 // Force dynamic rendering - sessions data changes frequently
 export const dynamic = 'force-dynamic';
 
+/**
+ * Convert database session to API session summary format
+ */
+function toSessionSummary(session: Session) {
+  return {
+    id: session.id,
+    name: session.name || `Session ${session.started_at}`,
+    startTime: new Date(session.started_at),
+    endTime: session.ended_at ? new Date(session.ended_at) : undefined,
+    status: session.status as 'active' | 'completed' | 'error',
+    toolCalls: 0, // Not tracked in sessions table yet
+    filesModified: [],
+    tokensUsed: session.tokens_used,
+    thinkingLevel: session.tokens_used > 100000 ? 'high' as const :
+                   session.tokens_used > 30000 ? 'medium' as const : 'low' as const,
+    messageCount: session.message_count,
+    duration: session.ended_at
+      ? Math.round((new Date(session.ended_at).getTime() - new Date(session.started_at).getTime()) / 60000)
+      : Math.round((Date.now() - new Date(session.started_at).getTime()) / 60000),
+  };
+}
+
+/**
+ * GET /api/johnny5/sessions - List all sessions
+ */
 export async function GET(request: NextRequest) {
   try {
-    // Parse query parameters for pagination and filtering
+    await initializeDb();
+
     const { searchParams } = new URL(request.url);
-    const page = parseInt(searchParams.get('page') || '1', 10);
-    const pageSize = parseInt(searchParams.get('pageSize') || '20', 10);
-    const status = searchParams.get('status'); // 'active' | 'completed' | 'error'
-    const search = searchParams.get('search');
+    const limit = parseInt(searchParams.get('limit') || '20', 10);
+    const offset = parseInt(searchParams.get('offset') || '0', 10);
+    const status = searchParams.get('status'); // 'active' | 'completed' | 'archived' | null (all)
 
-    // Get REAL sessions from session tracker
-    const sessions = getSessionSummaries({
-      status: status as 'active' | 'completed' | 'error' | undefined,
-      search: search || undefined,
-    });
+    // Get sessions from database
+    const sessions = await listSessions(limit + 100, offset); // Get extra for filtering
 
-    // Paginate
-    const total = sessions.length;
-    const startIndex = (page - 1) * pageSize;
-    const paginatedSessions = sessions.slice(startIndex, startIndex + pageSize);
+    // Filter by status if provided
+    let filtered = status
+      ? sessions.filter(s => s.status === status)
+      : sessions;
 
-    const response: Johnny5APIResponse<Johnny5PaginatedResponse<Johnny5SessionSummary>> = {
+    // Apply limit after filtering
+    filtered = filtered.slice(0, limit);
+
+    // Convert to API format
+    const apiSessions = filtered.map(toSessionSummary);
+
+    return NextResponse.json({
       success: true,
       data: {
-        items: paginatedSessions,
-        total,
-        page,
-        pageSize,
-        hasMore: startIndex + pageSize < total
+        sessions: apiSessions,
+        total: filtered.length,
+        limit,
+        offset
       },
       timestamp: new Date()
-    };
-
-    return NextResponse.json(response);
+    });
 
   } catch (error) {
-    console.error('[Johnny5 Sessions API] Error:', error);
+    console.error('[Johnny5 Sessions API] Error listing sessions:', error);
 
-    const response: Johnny5APIResponse<null> = {
+    return NextResponse.json({
       success: false,
-      error: error instanceof Error ? error.message : 'Failed to fetch sessions',
+      error: error instanceof Error ? error.message : 'Failed to list sessions',
       timestamp: new Date()
-    };
+    }, { status: 500 });
+  }
+}
 
-    return NextResponse.json(response, { status: 500 });
+/**
+ * POST /api/johnny5/sessions - Create new session
+ */
+export async function POST(request: NextRequest) {
+  try {
+    await initializeDb();
+
+    const body = await request.json();
+    const name = body.name || 'New Session';
+
+    const session = await createSession(name);
+
+    return NextResponse.json({
+      success: true,
+      data: { session: toSessionSummary(session) },
+      timestamp: new Date()
+    });
+
+  } catch (error) {
+    console.error('[Johnny5 Sessions API] Error creating session:', error);
+
+    return NextResponse.json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to create session',
+      timestamp: new Date()
+    }, { status: 500 });
+  }
+}
+
+/**
+ * DELETE /api/johnny5/sessions?id=xxx - Archive a session
+ */
+export async function DELETE(request: NextRequest) {
+  try {
+    await initializeDb();
+
+    const { searchParams } = new URL(request.url);
+    const sessionId = searchParams.get('id');
+
+    if (!sessionId) {
+      return NextResponse.json({
+        success: false,
+        error: 'Session ID required (use ?id=xxx query parameter)',
+        timestamp: new Date()
+      }, { status: 400 });
+    }
+
+    await archiveSession(sessionId);
+
+    return NextResponse.json({
+      success: true,
+      timestamp: new Date()
+    });
+
+  } catch (error) {
+    console.error('[Johnny5 Sessions API] Error archiving session:', error);
+
+    return NextResponse.json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to archive session',
+      timestamp: new Date()
+    }, { status: 500 });
   }
 }

@@ -104,6 +104,11 @@ const CodeSearch: React.FC<CodeSearchProps> = ({ onOpenFile }) => {
         } else {
             setSuggestions([]);
             setShowSuggestions(false);
+            // Clear search results and error when query is cleared
+            if (searchQuery.length === 0) {
+                setSearchResults(null);
+                setError(null);
+            }
         }
     }, [searchQuery]);
 
@@ -194,9 +199,11 @@ const CodeSearch: React.FC<CodeSearchProps> = ({ onOpenFile }) => {
             const data = JSON.parse(text);
             
             if (data.success) {
-                setSearchResults(data.results);
                 if (data.totalResults === 0) {
+                    setSearchResults(null);
                     setError('No results found. Try a different search term.');
+                } else {
+                    setSearchResults(data.results);
                 }
             } else {
                 setError(data.error || 'Search failed');
@@ -297,7 +304,7 @@ const CodeSearch: React.FC<CodeSearchProps> = ({ onOpenFile }) => {
     return (
         <div className="h-full flex flex-col bg-bg-secondary text-text-primary overflow-hidden border border-coder1-cyan/50 shadow-glow-cyan">
             {/* Header */}
-            <div className="flex-shrink-0 p-4 border-b border-border-default">
+            <div className="flex-shrink-0 p-4 border-b border-border-default relative z-20">
                 <div className="flex items-center justify-between mb-4">
                     <h2 className="text-xl font-bold text-coder1-cyan">
                         Codebase Wiki
@@ -313,7 +320,7 @@ const CodeSearch: React.FC<CodeSearchProps> = ({ onOpenFile }) => {
                 </div>
 
                 {/* Search Container */}
-                <div className="relative">
+                <div className="relative z-10">
                     <div className="flex gap-2">
                         <input
                             ref={searchInputRef}
@@ -392,7 +399,7 @@ const CodeSearch: React.FC<CodeSearchProps> = ({ onOpenFile }) => {
                 )}
 
                 {/* Welcome Message */}
-                {!stats?.lastIndexed && !indexing && (
+                {!stats?.lastIndexed && !indexing && !searchResults && !loading && (
                     <div className="text-center py-8">
                         <h3 className="text-lg font-semibold text-coder1-cyan mb-4">Welcome to Codebase Wiki!</h3>
                         <p className="text-text-muted mb-6 max-w-md mx-auto">

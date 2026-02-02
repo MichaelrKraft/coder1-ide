@@ -75,7 +75,7 @@ export interface MoltbotBridgeEvents {
 // ============================================================================
 
 const DEFAULT_CONFIG: MoltbotConfig = {
-  gatewayUrl: process.env.MOLTBOT_GATEWAY_URL || 'ws://localhost:8765',
+  gatewayUrl: process.env.MOLTBOT_GATEWAY_URL || 'ws://localhost:18789',
   enabled: true,
   reconnectInterval: parseInt(process.env.MOLTBOT_RECONNECT_INTERVAL || '5000', 10),
   maxRetries: parseInt(process.env.MOLTBOT_MAX_RETRIES || '10', 10),

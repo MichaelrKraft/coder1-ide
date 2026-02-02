@@ -2,11 +2,16 @@
  * Johnny5 Usage Tracker Service
  *
  * Tracks and persists token usage data for real analytics.
- * Uses file-based storage for simplicity (can upgrade to DB later).
+ *
+ * Now uses SQLite database instead of file-based storage.
  */
 
-import fs from 'fs';
-import path from 'path';
+import {
+  initializeDb,
+  trackUsage as dbTrackUsage,
+  getUsageStats as dbGetUsageStats,
+  getTodayUsage as dbGetTodayUsage,
+} from '@/lib/johnny5-db';
 
 // Types
 export interface UsageRecord {
@@ -48,64 +53,8 @@ export interface DailyUsage {
 const COST_PER_INPUT_TOKEN = 0.000003;  // $3 per 1M tokens
 const COST_PER_OUTPUT_TOKEN = 0.000015; // $15 per 1M tokens
 
-// Storage path
-const DATA_DIR = path.join(process.cwd(), 'data', 'johnny5');
-const USAGE_FILE = path.join(DATA_DIR, 'usage.json');
-
-// In-memory cache
+// In-memory cache for detailed records (DB only stores daily aggregates)
 let usageCache: UsageRecord[] = [];
-let cacheLoaded = false;
-
-/**
- * Ensure data directory exists
- */
-function ensureDataDir(): void {
-  if (!fs.existsSync(DATA_DIR)) {
-    fs.mkdirSync(DATA_DIR, { recursive: true });
-  }
-}
-
-/**
- * Load usage data from file
- */
-function loadUsageData(): UsageRecord[] {
-  if (cacheLoaded) {
-    return usageCache;
-  }
-
-  ensureDataDir();
-
-  if (fs.existsSync(USAGE_FILE)) {
-    try {
-      const data = fs.readFileSync(USAGE_FILE, 'utf-8');
-      const parsed = JSON.parse(data);
-      usageCache = parsed.map((record: any) => ({
-        ...record,
-        timestamp: new Date(record.timestamp),
-      }));
-    } catch (error) {
-      console.error('[UsageTracker] Failed to load usage data:', error);
-      usageCache = [];
-    }
-  } else {
-    usageCache = [];
-  }
-
-  cacheLoaded = true;
-  return usageCache;
-}
-
-/**
- * Save usage data to file
- */
-function saveUsageData(): void {
-  ensureDataDir();
-  try {
-    fs.writeFileSync(USAGE_FILE, JSON.stringify(usageCache, null, 2));
-  } catch (error) {
-    console.error('[UsageTracker] Failed to save usage data:', error);
-  }
-}
 
 /**
  * Generate unique ID
@@ -124,14 +73,14 @@ function calculateCost(inputTokens: number, outputTokens: number): number {
 /**
  * Track a new usage record
  */
-export function trackUsage(params: {
+export async function trackUsage(params: {
   sessionId: string;
   source: 'moltbot' | 'direct' | 'mock' | 'fallback';
   inputTokens: number;
   outputTokens: number;
   model?: string;
-}): UsageRecord {
-  loadUsageData();
+}): Promise<UsageRecord> {
+  await initializeDb();
 
   const record: UsageRecord = {
     id: generateId(),
@@ -145,10 +94,15 @@ export function trackUsage(params: {
     model: params.model,
   };
 
+  // Add to in-memory cache for detailed queries
   usageCache.push(record);
+  // Keep cache bounded
+  if (usageCache.length > 10000) {
+    usageCache = usageCache.slice(-5000);
+  }
 
-  // Async save to avoid blocking
-  setImmediate(() => saveUsageData());
+  // Track in DB (aggregated by day)
+  await dbTrackUsage(params.inputTokens, params.outputTokens);
 
   console.log('[UsageTracker] Recorded usage:', {
     source: record.source,
@@ -160,7 +114,7 @@ export function trackUsage(params: {
 }
 
 /**
- * Get usage records for a time range
+ * Get usage records for a time range (from in-memory cache)
  */
 export function getUsageRecords(params: {
   startDate?: Date;
@@ -169,9 +123,7 @@ export function getUsageRecords(params: {
   source?: string;
   limit?: number;
 }): UsageRecord[] {
-  const records = loadUsageData();
-
-  let filtered = records;
+  let filtered = [...usageCache];
 
   if (params.startDate) {
     filtered = filtered.filter(r => r.timestamp >= params.startDate!);
@@ -202,69 +154,77 @@ export function getUsageRecords(params: {
 /**
  * Get aggregated usage stats for a time range
  */
-export function getUsageStats(params: {
+export async function getUsageStats(params: {
   startDate?: Date;
   endDate?: Date;
-}): UsageStats {
-  const records = getUsageRecords(params);
+}): Promise<UsageStats> {
+  await initializeDb();
 
-  const stats: UsageStats = {
-    totalInputTokens: 0,
-    totalOutputTokens: 0,
-    totalTokens: 0,
-    totalCost: 0,
-    messageCount: records.length,
-    bySource: {
-      moltbot: 0,
-      direct: 0,
-      mock: 0,
-      fallback: 0,
-    },
+  // Get from DB for broader time ranges
+  const days = params.startDate && params.endDate
+    ? Math.ceil((params.endDate.getTime() - params.startDate.getTime()) / (24 * 60 * 60 * 1000))
+    : 30;
+
+  const dbStats = await dbGetUsageStats(days);
+
+  // Aggregate DB stats
+  let totalInputTokens = 0;
+  let totalOutputTokens = 0;
+  let totalSessions = 0;
+
+  for (const stat of dbStats) {
+    totalInputTokens += stat.tokens_input;
+    totalOutputTokens += stat.tokens_output;
+    totalSessions += stat.sessions_count;
+  }
+
+  // Get source breakdown from in-memory cache
+  const records = getUsageRecords(params);
+  const bySource = {
+    moltbot: 0,
+    direct: 0,
+    mock: 0,
+    fallback: 0,
   };
 
   for (const record of records) {
-    stats.totalInputTokens += record.inputTokens;
-    stats.totalOutputTokens += record.outputTokens;
-    stats.totalTokens += record.totalTokens;
-    stats.totalCost += record.cost;
-    stats.bySource[record.source] += record.totalTokens;
+    bySource[record.source] += record.totalTokens;
   }
 
-  return stats;
+  return {
+    totalInputTokens,
+    totalOutputTokens,
+    totalTokens: totalInputTokens + totalOutputTokens,
+    totalCost: calculateCost(totalInputTokens, totalOutputTokens),
+    messageCount: records.length || totalSessions,
+    bySource,
+  };
 }
 
 /**
  * Get daily usage breakdown for a time range
  */
-export function getDailyUsage(params: {
+export async function getDailyUsage(params: {
   startDate: Date;
   endDate: Date;
-}): DailyUsage[] {
-  const records = getUsageRecords(params);
+}): Promise<DailyUsage[]> {
+  await initializeDb();
 
-  // Group by date
+  const days = Math.ceil((params.endDate.getTime() - params.startDate.getTime()) / (24 * 60 * 60 * 1000));
+  const dbStats = await dbGetUsageStats(days);
+
+  // Convert DB stats to DailyUsage format
   const byDate = new Map<string, DailyUsage>();
 
-  for (const record of records) {
-    const dateKey = record.timestamp.toISOString().split('T')[0];
-
-    if (!byDate.has(dateKey)) {
-      byDate.set(dateKey, {
-        date: dateKey,
-        inputTokens: 0,
-        outputTokens: 0,
-        totalTokens: 0,
-        cost: 0,
-        messageCount: 0,
-      });
-    }
-
-    const day = byDate.get(dateKey)!;
-    day.inputTokens += record.inputTokens;
-    day.outputTokens += record.outputTokens;
-    day.totalTokens += record.totalTokens;
-    day.cost += record.cost;
-    day.messageCount += 1;
+  for (const stat of dbStats) {
+    byDate.set(stat.date, {
+      date: stat.date,
+      inputTokens: stat.tokens_input,
+      outputTokens: stat.tokens_output,
+      totalTokens: stat.tokens_input + stat.tokens_output,
+      cost: calculateCost(stat.tokens_input, stat.tokens_output),
+      messageCount: stat.sessions_count,
+    });
   }
 
   // Fill in missing days with zeros
@@ -295,7 +255,7 @@ export function getDailyUsage(params: {
 }
 
 /**
- * Get hourly usage for last 24 hours
+ * Get hourly usage for last 24 hours (from in-memory cache)
  */
 export function getHourlyUsage(): { hour: string; tokens: number; cost: number }[] {
   const now = new Date();
@@ -379,12 +339,14 @@ export function getBurnRate(hours: number = 24): {
 /**
  * Get efficiency metrics
  */
-export function getEfficiencyMetrics(days: number = 7): {
+export async function getEfficiencyMetrics(days: number = 7): Promise<{
   tokensPerSession: number;
   averageSessionDuration: number;
   successRate: number;
   messagesPerDay: number;
-} {
+}> {
+  await initializeDb();
+
   const now = new Date();
   const startDate = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
 
@@ -418,12 +380,36 @@ export function getEfficiencyMetrics(days: number = 7): {
 }
 
 /**
+ * Get today's usage summary
+ */
+export async function getTodayUsageSummary(): Promise<{
+  inputTokens: number;
+  outputTokens: number;
+  totalTokens: number;
+  cost: number;
+  sessionsCount: number;
+  tasksCount: number;
+}> {
+  await initializeDb();
+
+  const todayStats = await dbGetTodayUsage();
+
+  return {
+    inputTokens: todayStats.tokens_input,
+    outputTokens: todayStats.tokens_output,
+    totalTokens: todayStats.tokens_input + todayStats.tokens_output,
+    cost: calculateCost(todayStats.tokens_input, todayStats.tokens_output),
+    sessionsCount: todayStats.sessions_count,
+    tasksCount: todayStats.tasks_count,
+  };
+}
+
+/**
  * Clear all usage data (for testing)
  */
 export function clearUsageData(): void {
   usageCache = [];
-  cacheLoaded = true;
-  saveUsageData();
+  console.log('[UsageTracker] Cache cleared');
 }
 
 // Export singleton-style functions
@@ -435,6 +421,7 @@ export const UsageTracker = {
   getHourlyUsage,
   getBurnRate,
   getEfficiencyMetrics,
+  getTodayUsageSummary,
   clearUsageData,
 };
 

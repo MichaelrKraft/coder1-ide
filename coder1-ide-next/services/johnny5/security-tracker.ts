@@ -3,10 +3,15 @@
  *
  * Tracks security events, audit logs, and prompt injection detection.
  * This is a KEY DIFFERENTIATOR for Coder1 - visibility into AI actions.
+ *
+ * Now uses SQLite database instead of file-based storage.
  */
 
-import fs from 'fs';
-import path from 'path';
+import {
+  initializeDb,
+  logAudit as dbLogAudit,
+  getAuditLog as dbGetAuditLog,
+} from '@/lib/johnny5-db';
 import type {
   Johnny5AuditEntry,
   Johnny5SecurityWarning,
@@ -14,17 +19,9 @@ import type {
   Johnny5Permission,
 } from '@/types/johnny5';
 
-// Storage paths
-const DATA_DIR = path.join(process.cwd(), 'data', 'johnny5');
-const AUDIT_FILE = path.join(DATA_DIR, 'audit-log.json');
-const WARNINGS_FILE = path.join(DATA_DIR, 'security-warnings.json');
-const ALERTS_FILE = path.join(DATA_DIR, 'prompt-injection-alerts.json');
-
-// In-memory caches
-let auditCache: Johnny5AuditEntry[] = [];
+// In-memory caches for data not stored in DB
 let warningsCache: Johnny5SecurityWarning[] = [];
 let alertsCache: Johnny5PromptInjectionAlert[] = [];
-let cacheLoaded = false;
 
 // Prompt injection patterns to detect
 const INJECTION_PATTERNS = [
@@ -41,104 +38,6 @@ const INJECTION_PATTERNS = [
 ];
 
 /**
- * Ensure data directory exists
- */
-function ensureDataDir(): void {
-  if (!fs.existsSync(DATA_DIR)) {
-    fs.mkdirSync(DATA_DIR, { recursive: true });
-  }
-}
-
-/**
- * Load all security data from files
- */
-function loadSecurityData(): void {
-  if (cacheLoaded) return;
-
-  ensureDataDir();
-
-  // Load audit log
-  if (fs.existsSync(AUDIT_FILE)) {
-    try {
-      const data = fs.readFileSync(AUDIT_FILE, 'utf-8');
-      auditCache = JSON.parse(data).map((entry: Johnny5AuditEntry) => ({
-        ...entry,
-        timestamp: new Date(entry.timestamp),
-      }));
-    } catch (error) {
-      console.error('[SecurityTracker] Failed to load audit log:', error);
-      auditCache = [];
-    }
-  }
-
-  // Load warnings
-  if (fs.existsSync(WARNINGS_FILE)) {
-    try {
-      const data = fs.readFileSync(WARNINGS_FILE, 'utf-8');
-      warningsCache = JSON.parse(data).map((warning: Johnny5SecurityWarning) => ({
-        ...warning,
-        timestamp: new Date(warning.timestamp),
-      }));
-    } catch (error) {
-      console.error('[SecurityTracker] Failed to load warnings:', error);
-      warningsCache = [];
-    }
-  }
-
-  // Load alerts
-  if (fs.existsSync(ALERTS_FILE)) {
-    try {
-      const data = fs.readFileSync(ALERTS_FILE, 'utf-8');
-      alertsCache = JSON.parse(data).map((alert: Johnny5PromptInjectionAlert) => ({
-        ...alert,
-        timestamp: new Date(alert.timestamp),
-      }));
-    } catch (error) {
-      console.error('[SecurityTracker] Failed to load alerts:', error);
-      alertsCache = [];
-    }
-  }
-
-  cacheLoaded = true;
-}
-
-/**
- * Save audit log to file
- */
-function saveAuditLog(): void {
-  ensureDataDir();
-  try {
-    fs.writeFileSync(AUDIT_FILE, JSON.stringify(auditCache.slice(-1000), null, 2)); // Keep last 1000
-  } catch (error) {
-    console.error('[SecurityTracker] Failed to save audit log:', error);
-  }
-}
-
-/**
- * Save warnings to file
- */
-function saveWarnings(): void {
-  ensureDataDir();
-  try {
-    fs.writeFileSync(WARNINGS_FILE, JSON.stringify(warningsCache, null, 2));
-  } catch (error) {
-    console.error('[SecurityTracker] Failed to save warnings:', error);
-  }
-}
-
-/**
- * Save alerts to file
- */
-function saveAlerts(): void {
-  ensureDataDir();
-  try {
-    fs.writeFileSync(ALERTS_FILE, JSON.stringify(alertsCache.slice(-100), null, 2)); // Keep last 100
-  } catch (error) {
-    console.error('[SecurityTracker] Failed to save alerts:', error);
-  }
-}
-
-/**
  * Generate unique ID
  */
 function generateId(prefix: string): string {
@@ -148,7 +47,7 @@ function generateId(prefix: string): string {
 /**
  * Log an audit entry
  */
-export function logAuditEntry(params: {
+export async function logAuditEntry(params: {
   action: Johnny5AuditEntry['action'];
   target: string;
   source: Johnny5AuditEntry['source'];
@@ -157,8 +56,8 @@ export function logAuditEntry(params: {
   blocked?: boolean;
   blockReason?: string;
   sessionId?: string;
-}): Johnny5AuditEntry {
-  loadSecurityData();
+}): Promise<Johnny5AuditEntry> {
+  await initializeDb();
 
   const entry: Johnny5AuditEntry = {
     id: generateId('audit'),
@@ -173,8 +72,16 @@ export function logAuditEntry(params: {
     sessionId: params.sessionId,
   };
 
-  auditCache.push(entry);
-  setImmediate(() => saveAuditLog());
+  // Log to DB
+  await dbLogAudit(params.action, {
+    target: params.target,
+    source: params.source,
+    reasoning: params.reasoning,
+    risk: params.risk || 'low',
+    blocked: params.blocked || false,
+    blockReason: params.blockReason,
+    sessionId: params.sessionId,
+  });
 
   console.log('[SecurityTracker] Audit entry:', {
     action: entry.action,
@@ -189,13 +96,13 @@ export function logAuditEntry(params: {
 /**
  * Add a security warning
  */
-export function addSecurityWarning(params: {
+export async function addSecurityWarning(params: {
   type: Johnny5SecurityWarning['type'];
   message: string;
   severity: Johnny5SecurityWarning['severity'];
   source?: string;
-}): Johnny5SecurityWarning {
-  loadSecurityData();
+}): Promise<Johnny5SecurityWarning> {
+  await initializeDb();
 
   const warning: Johnny5SecurityWarning = {
     id: generateId('warning'),
@@ -208,7 +115,14 @@ export function addSecurityWarning(params: {
   };
 
   warningsCache.push(warning);
-  setImmediate(() => saveWarnings());
+
+  // Also log to audit
+  await dbLogAudit('security_warning', {
+    type: params.type,
+    message: params.message,
+    severity: params.severity,
+    source: params.source,
+  });
 
   console.log('[SecurityTracker] Warning added:', {
     type: warning.type,
@@ -222,8 +136,11 @@ export function addSecurityWarning(params: {
 /**
  * Check text for prompt injection patterns
  */
-export function checkForPromptInjection(text: string, source: Johnny5PromptInjectionAlert['source']): Johnny5PromptInjectionAlert | null {
-  loadSecurityData();
+export async function checkForPromptInjection(
+  text: string,
+  source: Johnny5PromptInjectionAlert['source']
+): Promise<Johnny5PromptInjectionAlert | null> {
+  await initializeDb();
 
   for (const pattern of INJECTION_PATTERNS) {
     const match = text.match(pattern);
@@ -240,10 +157,18 @@ export function checkForPromptInjection(text: string, source: Johnny5PromptInjec
       };
 
       alertsCache.push(alert);
-      setImmediate(() => saveAlerts());
+
+      // Log to DB
+      await dbLogAudit('prompt_injection_detected', {
+        pattern: pattern.toString(),
+        source,
+        severity: 'high',
+        blocked: true,
+        textPreview: alert.text,
+      });
 
       // Also add a security warning
-      addSecurityWarning({
+      await addSecurityWarning({
         type: 'suspicious_activity',
         message: `Potential prompt injection detected from ${source}`,
         severity: 'high',
@@ -265,44 +190,66 @@ export function checkForPromptInjection(text: string, source: Johnny5PromptInjec
 /**
  * Get audit log entries
  */
-export function getAuditLog(params: {
+export async function getAuditLog(params: {
   limit?: number;
   action?: Johnny5AuditEntry['action'];
   risk?: Johnny5AuditEntry['risk'];
   blocked?: boolean;
-}): Johnny5AuditEntry[] {
-  loadSecurityData();
+}): Promise<Johnny5AuditEntry[]> {
+  await initializeDb();
 
-  let filtered = [...auditCache];
+  const limit = params.limit || 100;
+  const dbEntries = await dbGetAuditLog(limit);
 
+  // Convert DB entries to Johnny5AuditEntry format
+  let entries: Johnny5AuditEntry[] = dbEntries.map(e => {
+    const details = e.details as {
+      target?: string;
+      source?: string;
+      reasoning?: string;
+      risk?: string;
+      blocked?: boolean;
+      blockReason?: string;
+      sessionId?: string;
+    } | null;
+
+    return {
+      id: e.id,
+      timestamp: new Date(e.timestamp),
+      action: e.action as Johnny5AuditEntry['action'],
+      target: details?.target || 'unknown',
+      source: (details?.source || 'system') as Johnny5AuditEntry['source'],
+      reasoning: details?.reasoning,
+      risk: (details?.risk || 'low') as Johnny5AuditEntry['risk'],
+      blocked: details?.blocked || false,
+      blockReason: details?.blockReason,
+      sessionId: details?.sessionId,
+    };
+  });
+
+  // Apply filters
   if (params.action) {
-    filtered = filtered.filter(e => e.action === params.action);
+    entries = entries.filter(e => e.action === params.action);
   }
 
   if (params.risk) {
-    filtered = filtered.filter(e => e.risk === params.risk);
+    entries = entries.filter(e => e.risk === params.risk);
   }
 
   if (params.blocked !== undefined) {
-    filtered = filtered.filter(e => e.blocked === params.blocked);
+    entries = entries.filter(e => e.blocked === params.blocked);
   }
 
   // Sort by timestamp descending
-  filtered.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+  entries.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
 
-  if (params.limit) {
-    filtered = filtered.slice(0, params.limit);
-  }
-
-  return filtered;
+  return entries;
 }
 
 /**
  * Get security warnings
  */
 export function getSecurityWarnings(includeDismissed: boolean = false): Johnny5SecurityWarning[] {
-  loadSecurityData();
-
   let warnings = [...warningsCache];
 
   if (!includeDismissed) {
@@ -319,12 +266,9 @@ export function getSecurityWarnings(includeDismissed: boolean = false): Johnny5S
  * Dismiss a security warning
  */
 export function dismissWarning(warningId: string): boolean {
-  loadSecurityData();
-
   const warning = warningsCache.find(w => w.id === warningId);
   if (warning) {
     warning.dismissed = true;
-    setImmediate(() => saveWarnings());
     return true;
   }
   return false;
@@ -334,8 +278,6 @@ export function dismissWarning(warningId: string): boolean {
  * Get prompt injection alerts
  */
 export function getPromptInjectionAlerts(limit: number = 20): Johnny5PromptInjectionAlert[] {
-  loadSecurityData();
-
   const sorted = [...alertsCache].sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
   return sorted.slice(0, limit);
 }
@@ -343,35 +285,41 @@ export function getPromptInjectionAlerts(limit: number = 20): Johnny5PromptInjec
 /**
  * Calculate security score (0-100)
  */
-export function calculateSecurityScore(): {
+export async function calculateSecurityScore(): Promise<{
   score: number;
   status: 'good' | 'warning' | 'critical';
-} {
-  loadSecurityData();
+}> {
+  await initializeDb();
 
   let score = 100;
 
+  // Get recent audit entries from DB
+  const auditEntries = await dbGetAuditLog(100);
+  const oneDayAgo = Date.now() - 24 * 60 * 60 * 1000;
+
   // Deduct for recent high-risk actions
-  const recentHighRisk = auditCache.filter(e =>
-    e.risk === 'high' &&
-    e.timestamp.getTime() > Date.now() - 24 * 60 * 60 * 1000
-  );
+  const recentHighRisk = auditEntries.filter(e => {
+    const details = e.details as { risk?: string } | null;
+    const entryTime = new Date(e.timestamp).getTime();
+    return details?.risk === 'high' && entryTime > oneDayAgo;
+  });
   score -= recentHighRisk.length * 5;
 
   // Deduct for blocked actions
-  const recentBlocked = auditCache.filter(e =>
-    e.blocked &&
-    e.timestamp.getTime() > Date.now() - 24 * 60 * 60 * 1000
-  );
+  const recentBlocked = auditEntries.filter(e => {
+    const details = e.details as { blocked?: boolean } | null;
+    const entryTime = new Date(e.timestamp).getTime();
+    return details?.blocked && entryTime > oneDayAgo;
+  });
   score -= recentBlocked.length * 10;
 
-  // Deduct for active warnings
+  // Deduct for active warnings (from in-memory cache)
   const activeWarnings = warningsCache.filter(w => !w.dismissed);
   score -= activeWarnings.length * 8;
 
-  // Deduct for prompt injection alerts
+  // Deduct for prompt injection alerts (from in-memory cache)
   const recentAlerts = alertsCache.filter(a =>
-    a.timestamp.getTime() > Date.now() - 24 * 60 * 60 * 1000
+    a.timestamp.getTime() > oneDayAgo
   );
   score -= recentAlerts.length * 15;
 
@@ -440,13 +388,9 @@ export function getDefaultPermissions(): Johnny5Permission[] {
  * Clear all security data (for testing)
  */
 export function clearSecurityData(): void {
-  auditCache = [];
   warningsCache = [];
   alertsCache = [];
-  cacheLoaded = true;
-  saveAuditLog();
-  saveWarnings();
-  saveAlerts();
+  console.log('[SecurityTracker] Caches cleared');
 }
 
 // Export singleton-style functions

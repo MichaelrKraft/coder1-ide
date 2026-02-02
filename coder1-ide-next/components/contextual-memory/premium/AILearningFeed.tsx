@@ -83,12 +83,12 @@ export const AILearningFeed: React.FC = () => {
 
   if (feedItems.length === 0) {
     return (
-      <div className="bg-gray-800/50 rounded-lg p-4 border border-gray-700">
-        <div className="flex items-center gap-2 mb-3">
-          <Brain className="w-5 h-5 text-purple-400 animate-pulse" />
-          <h3 className="text-sm font-semibold text-gray-300">AI LEARNING FEED</h3>
+      <div className="bg-bg-tertiary rounded-lg p-3 border border-border-default mb-4">
+        <div className="flex items-center gap-2 mb-2">
+          <Brain className="w-4 h-4 text-text-muted" />
+          <h3 className="text-xs font-medium text-text-secondary">AI Learning Feed</h3>
         </div>
-        <div className="text-xs text-gray-500">
+        <div className="text-xs text-text-muted">
           Your AI will start learning as you code...
         </div>
       </div>
@@ -96,52 +96,38 @@ export const AILearningFeed: React.FC = () => {
   }
 
   return (
-    <div className="bg-gray-800/50 rounded-lg p-4 border border-gray-700">
-      <div className="flex items-center justify-between mb-3">
+    <div className="bg-bg-tertiary rounded-lg p-3 border border-border-default mb-4">
+      <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
-          <Brain className="w-5 h-5 text-purple-400 animate-pulse" />
-          <h3 className="text-sm font-semibold text-gray-300">AI LEARNING IN PROGRESS</h3>
+          <Brain className="w-4 h-4 text-text-muted" />
+          <h3 className="text-xs font-medium text-text-secondary">AI Learning Feed</h3>
         </div>
         {showNewBadge && (
-          <span className="px-2 py-0.5 bg-green-500/20 text-green-400 text-xs rounded-full animate-pulse">
+          <span className="px-1.5 py-0.5 bg-coder1-cyan/10 text-coder1-cyan text-xs rounded">
             NEW
           </span>
         )}
       </div>
 
-      <div className="space-y-2 max-h-60 overflow-y-auto">
+      <div className="space-y-1.5 max-h-40 overflow-y-auto">
         {feedItems.map((item, index) => (
           <div
             key={item.id}
-            className={`flex items-start gap-2 p-2 rounded bg-black/30 border border-gray-700/50 ${
+            className={`flex items-start gap-2 p-2 rounded bg-bg-secondary border border-border-default ${
               index === 0 && showNewBadge ? 'animate-slideIn' : ''
             }`}
           >
             <div className={`mt-0.5 ${item.color}`}>{item.icon}</div>
             <div className="flex-1 min-w-0">
-              <div className={`text-xs font-medium ${item.color} break-words`}>
+              <div className="text-xs text-text-secondary break-words">
                 {item.message}
               </div>
-              <div className="text-xs text-gray-500 mt-1">
+              <div className="text-xs text-text-muted mt-0.5">
                 {new Date(item.timestamp).toLocaleTimeString()}
               </div>
             </div>
           </div>
         ))}
-      </div>
-
-      {/* Intelligence Progress Bar */}
-      <div className="mt-3 pt-3 border-t border-gray-700">
-        <div className="flex justify-between items-center mb-1">
-          <span className="text-xs text-gray-400">AI Intelligence Level</span>
-          <span className="text-xs text-purple-400">+0.1% smarter</span>
-        </div>
-        <div className="h-1 bg-gray-700 rounded-full overflow-hidden">
-          <div 
-            className="h-full bg-gradient-to-r from-purple-400 to-purple-600 transition-all duration-1000"
-            style={{ width: `${Math.min(aiIntelligenceLevel * 10, 100)}%` }}
-          />
-        </div>
       </div>
     </div>
   );

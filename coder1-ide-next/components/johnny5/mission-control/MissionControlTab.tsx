@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect, useCallback } from 'react';
 import {
   Target,
   ListTodo,
@@ -32,9 +32,35 @@ interface MissionControlTabProps {
  * - Real-time task status updates
  */
 export default function MissionControlTab({ className }: MissionControlTabProps) {
-  const { tasks, activityLog, tasksLoading, setTasks } = useJohnny5Store();
+  const { tasks, activityLog, tasksLoading, setTasks, setTasksLoading } = useJohnny5Store();
   const [selectedTask, setSelectedTask] = useState<Johnny5Task | null>(null);
   const [activityExpanded, setActivityExpanded] = useState(true);
+
+  // Fetch tasks from API on mount
+  const fetchTasks = useCallback(async () => {
+    setTasksLoading(true);
+    try {
+      const response = await fetch('/api/johnny5/tasks');
+      if (response.ok) {
+        const data = await response.json();
+        // API returns: { success, data: { items, total, page, pageSize, hasMore } }
+        const tasks = data.data?.items || [];
+        setTasks(tasks);
+      } else {
+        console.error('[MissionControlTab] Failed to fetch tasks:', response.status);
+        setTasks([]);
+      }
+    } catch (error) {
+      console.error('[MissionControlTab] Error fetching tasks:', error);
+      setTasks([]);
+    } finally {
+      setTasksLoading(false);
+    }
+  }, [setTasks, setTasksLoading]);
+
+  useEffect(() => {
+    fetchTasks();
+  }, [fetchTasks]);
 
   // Group tasks by status
   const tasksByStatus = useMemo(() => {
@@ -77,9 +103,7 @@ export default function MissionControlTab({ className }: MissionControlTabProps)
   };
 
   const handleRefresh = () => {
-    // In a real implementation, this would fetch tasks from the API
-    // For now, we just trigger a loading state
-    console.log('Refreshing tasks...');
+    fetchTasks();
   };
 
   // Columns configuration
@@ -256,47 +280,4 @@ function KanbanColumn({
       </div>
     </div>
   );
-}
-
-// ============================================================================
-// Demo Data Generator (for development/testing)
-// ============================================================================
-
-export function generateDemoTasks(): Johnny5Task[] {
-  const types: Johnny5Task['type'][] = ['build', 'research', 'monitor', 'fix', 'create_pr', 'skill', 'trend'];
-  const priorities: Johnny5Task['priority'][] = ['urgent', 'high', 'medium', 'low'];
-  const statuses: Johnny5TaskStatus[] = ['queued', 'in_progress', 'review', 'completed'];
-  const triggers: Johnny5Task['triggeredBy'][] = ['user', 'schedule', 'trend', 'self_improvement', 'conversation'];
-
-  const taskTitles = [
-    'Implement user authentication flow',
-    'Research competitor pricing strategies',
-    'Monitor API performance metrics',
-    'Fix memory leak in session handler',
-    'Create PR for new dashboard features',
-    'Learn new testing patterns',
-    'Trending: React Server Components',
-    'Optimize database queries',
-    'Build export functionality',
-    'Research accessibility best practices',
-  ];
-
-  return taskTitles.map((title, index) => ({
-    id: `task_${index + 1}`,
-    title,
-    description: `Detailed description for: ${title}. This task involves multiple steps and careful consideration.`,
-    status: statuses[index % statuses.length],
-    type: types[index % types.length],
-    priority: priorities[index % priorities.length],
-    createdAt: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000),
-    startedAt: index % 3 === 0 ? new Date(Date.now() - Math.random() * 60 * 60 * 1000) : undefined,
-    completedAt: statuses[index % statuses.length] === 'completed' ? new Date() : undefined,
-    duration: statuses[index % statuses.length] === 'completed' ? Math.random() * 3600000 : undefined,
-    result: statuses[index % statuses.length] === 'completed' ? {
-      summary: 'Task completed successfully',
-      prUrl: index % 2 === 0 ? 'https://github.com/example/repo/pull/123' : undefined,
-    } : undefined,
-    reasoning: `This task was created because ${title.toLowerCase()} is important for the project.`,
-    triggeredBy: triggers[index % triggers.length],
-  }));
 }

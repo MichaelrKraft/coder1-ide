@@ -59,14 +59,16 @@ export default function SessionsTab() {
         const response = await fetch('/api/johnny5/sessions');
         if (response.ok) {
           const data = await response.json();
-          setSessions(data.data || []);
+          // API returns: { success, data: { sessions, total, limit, offset } }
+          const sessions = data.data?.sessions || data.data?.items || [];
+          setSessions(sessions);
         } else {
-          // Use mock data for development
-          setSessions(getMockSessions());
+          console.error('[SessionsTab] Failed to fetch sessions:', response.status);
+          setSessions([]);
         }
-      } catch {
-        // Use mock data for development
-        setSessions(getMockSessions());
+      } catch (error) {
+        console.error('[SessionsTab] Error fetching sessions:', error);
+        setSessions([]);
       } finally {
         setSessionsLoading(false);
       }
@@ -142,10 +144,14 @@ export default function SessionsTab() {
       const response = await fetch('/api/johnny5/sessions');
       if (response.ok) {
         const data = await response.json();
-        setSessions(data.data || []);
+        // API returns: { success, data: { sessions, total, limit, offset } }
+        const sessions = data.data?.sessions || data.data?.items || [];
+        setSessions(sessions);
+      } else {
+        console.error('[SessionsTab] Failed to refresh sessions:', response.status);
       }
-    } catch {
-      // Keep existing data on error
+    } catch (error) {
+      console.error('[SessionsTab] Error refreshing sessions:', error);
     } finally {
       setSessionsLoading(false);
     }
@@ -432,75 +438,4 @@ export default function SessionsTab() {
       )}
     </div>
   );
-}
-
-// Mock data generator for development
-function getMockSessions(): Johnny5SessionSummary[] {
-  const now = Date.now();
-  return [
-    {
-      id: 'session-1',
-      name: 'Implementing Johnny5 Sessions Tab',
-      startTime: new Date(now - 45 * 60 * 1000),
-      endTime: new Date(),
-      status: 'completed',
-      toolCalls: 12,
-      filesModified: ['SessionsTab.tsx', 'SessionCard.tsx', 'SessionDetail.tsx', 'index.ts'],
-      tokensUsed: 24567,
-      thinkingLevel: 'high',
-      duration: 45,
-    },
-    {
-      id: 'session-2',
-      name: 'Refactoring Terminal Component',
-      startTime: new Date(now - 2 * 60 * 60 * 1000),
-      endTime: new Date(now - 90 * 60 * 1000),
-      status: 'completed',
-      toolCalls: 8,
-      filesModified: ['Terminal.tsx', 'Terminal.css'],
-      tokensUsed: 15234,
-      thinkingLevel: 'medium',
-      duration: 30,
-    },
-    {
-      id: 'session-3',
-      name: 'Building Morning Brief Feature',
-      startTime: new Date(now - 10 * 60 * 1000),
-      status: 'active',
-      toolCalls: 3,
-      filesModified: ['MorningBrief.tsx'],
-      tokensUsed: 5678,
-      thinkingLevel: 'high',
-      duration: 10,
-    },
-    {
-      id: 'session-4',
-      name: 'Bug Fix: API Response Handling',
-      startTime: new Date(now - 24 * 60 * 60 * 1000),
-      endTime: new Date(now - 23 * 60 * 60 * 1000),
-      status: 'error',
-      toolCalls: 5,
-      filesModified: ['api/route.ts'],
-      tokensUsed: 8901,
-      thinkingLevel: 'low',
-      duration: 60,
-    },
-    {
-      id: 'session-5',
-      name: 'Adding Security Monitoring',
-      startTime: new Date(now - 3 * 24 * 60 * 60 * 1000),
-      endTime: new Date(now - 3 * 24 * 60 * 60 * 1000 + 2 * 60 * 60 * 1000),
-      status: 'completed',
-      toolCalls: 22,
-      filesModified: [
-        'SecurityMonitor.tsx',
-        'useSecurityStore.ts',
-        'AuditLog.tsx',
-        'PromptInjectionAlert.tsx',
-      ],
-      tokensUsed: 45678,
-      thinkingLevel: 'high',
-      duration: 120,
-    },
-  ];
 }
