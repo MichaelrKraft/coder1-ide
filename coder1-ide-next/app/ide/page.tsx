@@ -25,6 +25,7 @@ import DocumentationPanel from "@/components/documentation/DocumentationPanel";
 import QuickDocsLookup from "@/components/documentation/QuickDocsLookup";
 import AITeamDashboard from "@/components/preview/AITeamDashboard";
 import MissionControlLayout from "@/components/mission-control/MissionControlLayout";
+import AlphaFeedbackButton from "@/components/AlphaFeedbackButton";
 
 // Conductor components removed - using simple multi-Claude tabs instead
 
@@ -1784,6 +1785,9 @@ function IDEPageContent() {
               isOpen={showQuickDocs}
               onClose={() => setShowQuickDocs(false)}
             />
+
+            {/* Alpha Feedback Button - Fixed position in lower-right */}
+            <AlphaFeedbackButton />
           </div>
         </TerminalCommandProvider>
       </EnhancedSupervisionProvider>

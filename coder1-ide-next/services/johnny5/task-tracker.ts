@@ -3,10 +3,18 @@
  *
  * Tracks and persists tasks for Mission Control.
  * Shows queued, in-progress, completed, and failed tasks.
+ *
+ * Now uses SQLite database instead of file-based storage.
  */
 
-import fs from 'fs';
-import path from 'path';
+import {
+  initializeDb,
+  createTask as dbCreateTask,
+  getTask as dbGetTask,
+  listTasks as dbListTasks,
+  updateTask as dbUpdateTask,
+  logAudit,
+} from '@/lib/johnny5-db';
 import type {
   Johnny5Task,
   Johnny5TaskStatus,
@@ -14,72 +22,94 @@ import type {
   Johnny5TaskTrigger
 } from '@/types/johnny5';
 
-// Storage path
-const DATA_DIR = path.join(process.cwd(), 'data', 'johnny5');
-const TASKS_FILE = path.join(DATA_DIR, 'tasks.json');
-
-// In-memory cache
-let tasksCache: Johnny5Task[] = [];
-let cacheLoaded = false;
+// Extended metadata cache for fields not in DB schema
+interface TaskMetadata {
+  reasoning?: string;
+  triggeredBy: Johnny5TaskTrigger;
+  startedAt?: Date;
+  duration?: number;
+}
+const metadataCache = new Map<string, TaskMetadata>();
 
 /**
- * Ensure data directory exists
+ * Map DB task to Johnny5Task type
  */
-function ensureDataDir(): void {
-  if (!fs.existsSync(DATA_DIR)) {
-    fs.mkdirSync(DATA_DIR, { recursive: true });
+function mapDbTaskToJohnny5Task(
+  dbTask: {
+    id: string;
+    title: string;
+    description: string | null;
+    type: string | null;
+    priority: string;
+    status: string;
+    result: string | null;
+    created_at: string;
+    completed_at: string | null;
+  },
+  metadata?: TaskMetadata
+): Johnny5Task {
+  const createdAt = new Date(dbTask.created_at);
+  const completedAt = dbTask.completed_at ? new Date(dbTask.completed_at) : undefined;
+
+  // Calculate duration if we have metadata or completed_at
+  let duration: number | undefined;
+  if (metadata?.duration) {
+    duration = metadata.duration;
+  } else if (metadata?.startedAt && completedAt) {
+    duration = completedAt.getTime() - metadata.startedAt.getTime();
+  }
+
+  return {
+    id: dbTask.id,
+    title: dbTask.title,
+    description: dbTask.description || '',
+    status: mapDbStatusToJohnny5Status(dbTask.status),
+    type: (dbTask.type || 'build') as Johnny5TaskType,
+    priority: dbTask.priority as 'low' | 'medium' | 'high' | 'urgent',
+    createdAt,
+    startedAt: metadata?.startedAt,
+    completedAt,
+    duration,
+    reasoning: metadata?.reasoning || `Task created: ${dbTask.title}`,
+    triggeredBy: metadata?.triggeredBy || 'user',
+    result: dbTask.result ? JSON.parse(dbTask.result) : undefined,
+  };
+}
+
+/**
+ * Map DB status to Johnny5TaskStatus
+ */
+function mapDbStatusToJohnny5Status(status: string): Johnny5TaskStatus {
+  // DB uses: 'pending' | 'in_progress' | 'completed' | 'failed' | 'cancelled'
+  // Johnny5 uses: 'queued' | 'in_progress' | 'completed' | 'failed' | 'review'
+  switch (status) {
+    case 'pending':
+      return 'queued';
+    case 'cancelled':
+      return 'failed';
+    default:
+      return status as Johnny5TaskStatus;
   }
 }
 
 /**
- * Load tasks from disk
+ * Map Johnny5TaskStatus to DB status
  */
-function loadTasks(): Johnny5Task[] {
-  if (cacheLoaded) {
-    return tasksCache;
-  }
-
-  ensureDataDir();
-
-  if (fs.existsSync(TASKS_FILE)) {
-    try {
-      const data = fs.readFileSync(TASKS_FILE, 'utf-8');
-      tasksCache = JSON.parse(data).map((task: Johnny5Task) => ({
-        ...task,
-        createdAt: new Date(task.createdAt),
-        startedAt: task.startedAt ? new Date(task.startedAt) : undefined,
-        completedAt: task.completedAt ? new Date(task.completedAt) : undefined,
-      }));
-    } catch (error) {
-      console.error('[TaskTracker] Failed to load tasks:', error);
-      tasksCache = [];
-    }
-  } else {
-    tasksCache = [];
-  }
-
-  cacheLoaded = true;
-  return tasksCache;
-}
-
-/**
- * Save tasks to disk
- */
-function saveTasks(): void {
-  ensureDataDir();
-  try {
-    // Keep only last 200 tasks
-    const toSave = tasksCache.slice(-200);
-    fs.writeFileSync(TASKS_FILE, JSON.stringify(toSave, null, 2));
-  } catch (error) {
-    console.error('[TaskTracker] Failed to save tasks:', error);
+function mapJohnny5StatusToDbStatus(status: Johnny5TaskStatus): string {
+  switch (status) {
+    case 'queued':
+      return 'pending';
+    case 'review':
+      return 'completed'; // DB doesn't have 'review', map to completed
+    default:
+      return status;
   }
 }
 
 /**
  * Create a new task
  */
-export function createTask(params: {
+export async function createTask(params: {
   title: string;
   description: string;
   type: Johnny5TaskType;
@@ -87,107 +117,139 @@ export function createTask(params: {
   reasoning?: string;
   triggeredBy?: Johnny5TaskTrigger;
   sessionId?: string;
-}): Johnny5Task {
-  loadTasks();
+}): Promise<Johnny5Task> {
+  await initializeDb();
 
-  const task: Johnny5Task = {
-    id: `task-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+  // Map Johnny5TaskType to DB type
+  const dbType = params.type === 'build' || params.type === 'fix' || params.type === 'cleanup' ||
+                 params.type === 'deploy' || params.type === 'analyze' || params.type === 'other'
+    ? 'custom' // Most Johnny5 types map to 'custom' in DB
+    : params.type === 'code_review' ? 'code_review'
+    : params.type === 'documentation' ? 'documentation'
+    : params.type === 'research' ? 'research'
+    : params.type === 'monitoring' ? 'monitoring'
+    : 'custom';
+
+  const dbTask = await dbCreateTask({
     title: params.title,
     description: params.description,
-    status: 'queued',
-    type: params.type,
+    type: dbType as 'research' | 'code_review' | 'documentation' | 'monitoring' | 'custom' | null,
     priority: params.priority || 'medium',
-    createdAt: new Date(),
+    status: 'pending',
+    result: null,
+    completed_at: null,
+  });
+
+  // Store extended metadata
+  const metadata: TaskMetadata = {
     reasoning: params.reasoning || `Task created: ${params.title}`,
     triggeredBy: params.triggeredBy || 'user',
   };
-
-  tasksCache.push(task);
-  setImmediate(() => saveTasks());
+  metadataCache.set(dbTask.id, metadata);
 
   console.log('[TaskTracker] Task created:', {
-    id: task.id,
-    title: task.title,
-    type: task.type,
+    id: dbTask.id,
+    title: dbTask.title,
+    type: params.type,
   });
 
-  return task;
+  return mapDbTaskToJohnny5Task(dbTask, metadata);
 }
 
 /**
  * Update task status
  */
-export function updateTaskStatus(
+export async function updateTaskStatus(
   taskId: string,
   status: Johnny5TaskStatus,
   result?: Johnny5Task['result']
-): Johnny5Task | null {
-  loadTasks();
+): Promise<Johnny5Task | null> {
+  await initializeDb();
 
-  const task = tasksCache.find(t => t.id === taskId);
-  if (!task) {
+  const dbTask = await dbGetTask(taskId);
+  if (!dbTask) {
     return null;
   }
 
-  task.status = status;
-
-  if (status === 'in_progress' && !task.startedAt) {
-    task.startedAt = new Date();
+  // Get or create metadata
+  let metadata = metadataCache.get(taskId);
+  if (!metadata) {
+    metadata = { triggeredBy: 'user' };
+    metadataCache.set(taskId, metadata);
   }
 
+  // Track startedAt if transitioning to in_progress
+  if (status === 'in_progress' && !metadata.startedAt) {
+    metadata.startedAt = new Date();
+  }
+
+  // Calculate duration if completing
   if (status === 'completed' || status === 'failed' || status === 'review') {
-    task.completedAt = new Date();
-    if (task.startedAt) {
-      task.duration = task.completedAt.getTime() - task.startedAt.getTime();
-    }
-    if (result) {
-      task.result = result;
+    if (metadata.startedAt) {
+      metadata.duration = Date.now() - metadata.startedAt.getTime();
     }
   }
 
-  setImmediate(() => saveTasks());
-
-  console.log('[TaskTracker] Task updated:', {
-    id: task.id,
-    status: task.status,
+  // Update in DB
+  await dbUpdateTask(taskId, {
+    status: mapJohnny5StatusToDbStatus(status) as 'pending' | 'in_progress' | 'completed' | 'failed' | 'cancelled',
+    result: result ? JSON.stringify(result) : undefined,
   });
 
-  return task;
+  // Fetch updated task
+  const updatedDbTask = await dbGetTask(taskId);
+  if (!updatedDbTask) {
+    return null;
+  }
+
+  console.log('[TaskTracker] Task updated:', {
+    id: taskId,
+    status,
+  });
+
+  return mapDbTaskToJohnny5Task(updatedDbTask, metadata);
 }
 
 /**
  * Get tasks with optional filters
  */
-export function getTasks(filters?: {
+export async function getTasks(filters?: {
   status?: Johnny5TaskStatus;
   type?: Johnny5TaskType;
   priority?: string;
   triggeredBy?: Johnny5TaskTrigger;
   limit?: number;
-}): Johnny5Task[] {
-  let tasks = loadTasks();
+}): Promise<Johnny5Task[]> {
+  await initializeDb();
 
-  if (filters?.status) {
-    tasks = tasks.filter(t => t.status === filters.status);
-  }
+  // Get tasks from DB, optionally filtered by status
+  const dbStatus = filters?.status ? mapJohnny5StatusToDbStatus(filters.status) : undefined;
+  let tasks = await dbListTasks(dbStatus);
 
+  // Convert to Johnny5Task format
+  let johnny5Tasks = tasks.map(t => {
+    const metadata = metadataCache.get(t.id);
+    return mapDbTaskToJohnny5Task(t, metadata);
+  });
+
+  // Apply additional filters not supported by DB query
   if (filters?.type) {
-    tasks = tasks.filter(t => t.type === filters.type);
+    johnny5Tasks = johnny5Tasks.filter(t => t.type === filters.type);
   }
 
   if (filters?.priority) {
-    tasks = tasks.filter(t => t.priority === filters.priority);
+    johnny5Tasks = johnny5Tasks.filter(t => t.priority === filters.priority);
   }
 
   if (filters?.triggeredBy) {
-    tasks = tasks.filter(t => t.triggeredBy === filters.triggeredBy);
+    johnny5Tasks = johnny5Tasks.filter(t => t.triggeredBy === filters.triggeredBy);
   }
 
   // Sort: in_progress first, then by priority, then by createdAt
   const priorityOrder: Record<string, number> = { urgent: 0, high: 1, medium: 2, low: 3 };
   const statusOrder: Record<string, number> = { in_progress: 0, queued: 1, review: 2, completed: 3, failed: 4 };
 
-  tasks.sort((a, b) => {
+  johnny5Tasks.sort((a, b) => {
     // First by status
     const statusDiff = statusOrder[a.status] - statusOrder[b.status];
     if (statusDiff !== 0) return statusDiff;
@@ -201,24 +263,31 @@ export function getTasks(filters?: {
   });
 
   if (filters?.limit) {
-    tasks = tasks.slice(0, filters.limit);
+    johnny5Tasks = johnny5Tasks.slice(0, filters.limit);
   }
 
-  return tasks;
+  return johnny5Tasks;
 }
 
 /**
  * Get task by ID
  */
-export function getTaskById(taskId: string): Johnny5Task | null {
-  loadTasks();
-  return tasksCache.find(t => t.id === taskId) || null;
+export async function getTaskById(taskId: string): Promise<Johnny5Task | null> {
+  await initializeDb();
+
+  const dbTask = await dbGetTask(taskId);
+  if (!dbTask) {
+    return null;
+  }
+
+  const metadata = metadataCache.get(taskId);
+  return mapDbTaskToJohnny5Task(dbTask, metadata);
 }
 
 /**
  * Get task statistics
  */
-export function getTaskStats(): {
+export async function getTaskStats(): Promise<{
   total: number;
   queued: number;
   inProgress: number;
@@ -227,8 +296,10 @@ export function getTaskStats(): {
   review: number;
   byType: Record<string, number>;
   completedToday: number;
-} {
-  const tasks = loadTasks();
+}> {
+  await initializeDb();
+
+  const tasks = await dbListTasks();
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
@@ -244,8 +315,10 @@ export function getTaskStats(): {
   };
 
   for (const task of tasks) {
+    const johnny5Status = mapDbStatusToJohnny5Status(task.status);
+
     // Status counts
-    switch (task.status) {
+    switch (johnny5Status) {
       case 'queued':
         stats.queued++;
         break;
@@ -254,7 +327,7 @@ export function getTaskStats(): {
         break;
       case 'completed':
         stats.completed++;
-        if (task.completedAt && task.completedAt >= today) {
+        if (task.completed_at && new Date(task.completed_at) >= today) {
           stats.completedToday++;
         }
         break;
@@ -267,7 +340,8 @@ export function getTaskStats(): {
     }
 
     // Type counts
-    stats.byType[task.type] = (stats.byType[task.type] || 0) + 1;
+    const taskType = task.type || 'custom';
+    stats.byType[taskType] = (stats.byType[taskType] || 0) + 1;
   }
 
   return stats;
@@ -276,16 +350,21 @@ export function getTaskStats(): {
 /**
  * Delete a task
  */
-export function deleteTask(taskId: string): boolean {
-  loadTasks();
+export async function deleteTask(taskId: string): Promise<boolean> {
+  await initializeDb();
 
-  const index = tasksCache.findIndex(t => t.id === taskId);
-  if (index === -1) {
+  const dbTask = await dbGetTask(taskId);
+  if (!dbTask) {
     return false;
   }
 
-  tasksCache.splice(index, 1);
-  setImmediate(() => saveTasks());
+  // Mark as cancelled in DB (we don't have a delete function)
+  await dbUpdateTask(taskId, { status: 'cancelled' });
+
+  // Remove from metadata cache
+  metadataCache.delete(taskId);
+
+  await logAudit('task_deleted', { taskId });
 
   console.log('[TaskTracker] Task deleted:', taskId);
   return true;
@@ -295,12 +374,12 @@ export function deleteTask(taskId: string): boolean {
  * Create task from chat/conversation
  * Helper function for when Johnny5 decides to create a task from a conversation
  */
-export function createTaskFromConversation(params: {
+export async function createTaskFromConversation(params: {
   message: string;
   sessionId: string;
   type?: Johnny5TaskType;
   priority?: 'low' | 'medium' | 'high' | 'urgent';
-}): Johnny5Task {
+}): Promise<Johnny5Task> {
   // Extract title from first line or first 50 chars
   const title = params.message.split('\n')[0].substring(0, 100);
 

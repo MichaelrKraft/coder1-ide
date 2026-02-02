@@ -226,12 +226,14 @@ const MenuBar = React.memo(function MenuBar({
   ];
 
   return (
-    <div 
-      className="h-20 bg-bg-secondary border-b flex items-center justify-between px-3"
+    <div
+      className="h-20 bg-bg-secondary border-b flex items-center justify-between px-3 relative"
       style={{
         borderBottomColor: 'var(--primary-cyan)',
         borderBottomWidth: '2px',
-        boxShadow: '0 2px 20px rgba(0, 217, 255, 0.4), 0 1px 10px rgba(0, 217, 255, 0.3)'
+        boxShadow: '0 2px 20px rgba(0, 217, 255, 0.4), 0 1px 10px rgba(0, 217, 255, 0.3)',
+        zIndex: 100,
+        overflow: 'visible'
       }}
     >
       {/* Left section with logo centered in 15% width (matching explorer panel) */}
@@ -268,9 +270,9 @@ const MenuBar = React.memo(function MenuBar({
         {/* File, Edit, View, Run, Help menus */}
         {Object.keys(menuConfig).map(menuName => (
           <div key={menuName} className="relative">
-            <button 
-              className={`px-3 py-1 text-sm rounded transition-all duration-200 ${
-                activeMenu === menuName ? 'bg-bg-tertiary text-text-primary' : 'text-text-secondary'
+            <button
+              className={`px-3 py-2 text-sm rounded transition-all duration-200 cursor-pointer select-none ${
+                activeMenu === menuName ? 'bg-bg-tertiary text-text-primary' : 'text-text-secondary hover:text-text-primary'
               }`}
               style={{
                 textShadow: activeMenu === menuName ? '0 0 15px rgba(251, 146, 60, 0.8)' : 'none',
@@ -292,21 +294,21 @@ const MenuBar = React.memo(function MenuBar({
               {menuName}
             </button>
             {activeMenu === menuName && (
-              <div className="absolute top-full left-0 mt-1 min-w-[200px] bg-bg-secondary border border-border-default rounded-md shadow-lg z-50 py-1">
+              <div className="absolute top-full left-0 mt-1 min-w-[200px] bg-bg-secondary border border-border-default rounded-md shadow-lg py-1" style={{ zIndex: 9999 }}>
                 {menuConfig[menuName].map((item, index) => (
                   item.separator ? (
                     <div key={`sep-${index}`} className="h-px bg-border-default my-1" />
                   ) : (
-                    <div
+                    <button
                       key={`item-${index}`}
-                      className="px-3 py-1.5 text-sm text-text-secondary hover:text-text-primary hover:bg-bg-tertiary cursor-pointer flex justify-between items-center"
+                      className="w-full px-3 py-2 text-sm text-text-secondary hover:text-text-primary hover:bg-bg-tertiary cursor-pointer flex justify-between items-center text-left"
                       onClick={() => handleItemClick(item)}
                     >
                       <span>{item.label}</span>
                       {item.shortcut && (
                         <span className="text-xs text-text-muted ml-4">{item.shortcut}</span>
                       )}
-                    </div>
+                    </button>
                   )
                 ))}
               </div>
@@ -440,7 +442,7 @@ const MenuBar = React.memo(function MenuBar({
 
         {/* Dropdown */}
         {isMenuOpen && (
-          <div className="absolute right-0 mt-2 w-56 bg-bg-secondary border border-border-default rounded-lg shadow-2xl overflow-hidden z-50">
+          <div className="absolute right-0 mt-2 w-56 bg-bg-secondary border border-border-default rounded-lg shadow-2xl overflow-hidden" style={{ zIndex: 9999 }}>
             <div className="py-1">
               {menuItems.map((item) => {
                 const Icon = item.icon;

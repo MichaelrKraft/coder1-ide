@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState, useCallback } from 'react';
-import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
+import { Panel, PanelGroup, PanelResizeHandle, ImperativePanelHandle } from 'react-resizable-panels';
 import { spacing } from '@/lib/design-tokens';
 
 interface ThreePanelLayoutProps {
@@ -35,6 +35,9 @@ export default function ThreePanelLayout({
   const [leftCollapsed, setLeftCollapsed] = useState(false);
   const [rightCollapsed, setRightCollapsed] = useState(false);
 
+  // Panel refs for imperative collapse/expand
+  const rightPanelRef = useRef<ImperativePanelHandle>(null);
+
   const handleLeftCollapse = useCallback(() => {
     setLeftCollapsed(!leftCollapsed);
   }, [leftCollapsed]);
@@ -42,6 +45,22 @@ export default function ThreePanelLayout({
   const handleRightCollapse = useCallback(() => {
     setRightCollapsed(!rightCollapsed);
   }, [rightCollapsed]);
+
+  // Listen for collapse events from child components (e.g., PreviewPanel X button)
+  useEffect(() => {
+    const handleCollapseRight = () => {
+      if (rightPanelRef.current) {
+        if (rightPanelRef.current.isCollapsed()) {
+          rightPanelRef.current.expand();
+        } else {
+          rightPanelRef.current.collapse();
+        }
+      }
+    };
+
+    window.addEventListener('collapseRightPanel', handleCollapseRight);
+    return () => window.removeEventListener('collapseRightPanel', handleCollapseRight);
+  }, []);
 
   return (
     <div className="h-screen w-full bg-bg-primary overflow-hidden">
@@ -88,8 +107,8 @@ export default function ThreePanelLayout({
 
         {/* Center Panel - Editor/Terminal */}
         <Panel
-          defaultSize={65} // Adjusted for new right panel size
-          minSize={centerPanelMinSize}
+          defaultSize={60} // Adjusted: right panel now 25%
+          minSize={15} // Reduced from 30 to allow Johnny5 panel to expand to ~82%
           className="bg-bg-primary"
         >
           <div className="h-full overflow-hidden">
@@ -123,7 +142,8 @@ export default function ThreePanelLayout({
 
         {/* Right Panel - Preview/Agent Dashboard/Codebase Wiki */}
         <Panel
-          defaultSize={20} // Increased by 25% more space as requested
+          ref={rightPanelRef}
+          defaultSize={25} // Johnny5 panel opens wider by default
           minSize={rightPanelMinSize}
           collapsible={true}
           collapsedSize={3}
