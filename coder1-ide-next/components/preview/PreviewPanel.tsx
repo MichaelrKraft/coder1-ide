@@ -295,13 +295,6 @@ const PreviewPanel = React.memo(function PreviewPanel({
     <div className="h-full flex flex-col bg-bg-secondary border-l-2 border-coder1-cyan/50" style={{
       boxShadow: '-2px 0 8px rgba(0, 217, 255, 0.3)'
     }}>
-      {/* Preview Header - matching Explorer style */}
-      <div className="px-3 py-2 border-b border-border-default">
-        <h3 className="text-xs font-semibold text-text-muted uppercase tracking-wider">
-          Preview
-        </h3>
-      </div>
-      
       {/* Tabs */}
       <div className="flex items-center justify-between px-4 h-12 shrink-0">
         <div className="flex items-center gap-1">
@@ -335,9 +328,12 @@ const PreviewPanel = React.memo(function PreviewPanel({
         </div>
         
         {/* Close button */}
-        <button 
+        <button
           className="p-1 hover:bg-bg-tertiary rounded transition-colors"
-          onClick={() => {/* Handle close */}}
+          onClick={() => {
+            // Dispatch event to collapse the right panel
+            window.dispatchEvent(new CustomEvent('collapseRightPanel'));
+          }}
           title="Close preview panel"
         >
           <X className="w-4 h-4 text-text-muted" />

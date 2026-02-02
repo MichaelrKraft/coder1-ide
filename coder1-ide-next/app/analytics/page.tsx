@@ -143,7 +143,7 @@ export default function AnalyticsPage() {
                 <span className="text-white font-mono">{data.costTracking.cliCalls} × $0.00 = ${data.costTracking.cliCost}</span>
               </div>
               <div className="border-t border-gray-700 pt-3 flex justify-between items-center">
-                <span className="text-gray-300 font-semibold">Total Cost:</span>
+                <span className="text-gray-300 font-semibold">Total Estimated Cost:</span>
                 <span className="text-white font-mono font-bold">${data.costTracking.totalCost}</span>
               </div>
               <div className="bg-green-500/10 border border-green-500/20 rounded p-3 mt-3">
