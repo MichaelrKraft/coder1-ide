@@ -2406,7 +2406,8 @@ app.prepare().then(() => {
                 commandId: `cmd_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
                 command: commandToExecute, // May include eternal memory context
                 context: {
-                  workingDirectory: process.cwd(),
+                  // FIX (Feb 2026): Send '~' so bridge uses user's home dir, not Render's cwd
+                  workingDirectory: '~',
                   currentFile: null,
                   selection: null,
                   selectedClaudeModel: selectedClaudeModel || 'claude-4-sonnet-20250510',

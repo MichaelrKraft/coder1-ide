@@ -313,11 +313,16 @@ class ClaudeExecutor extends EventEmitter {
 
       try {
         // Spawn Claude with PTY for full terminal emulation
+        // FIX (Feb 2026): Handle '~' placeholder from server - use user's home directory
+        const resolvedCwd = (options.context?.workingDirectory === '~' || !options.context?.workingDirectory)
+          ? (process.env.HOME || process.cwd())
+          : options.context.workingDirectory;
+
         const ptyProcess = pty.spawn(this.claudePath, args, {
           name: 'xterm-256color',
           cols: options.cols || 120,
           rows: options.rows || 30,
-          cwd: options.context?.workingDirectory || process.cwd(),
+          cwd: resolvedCwd,
           env: {
             ...process.env,
             CODER1_BRIDGE: 'true',
