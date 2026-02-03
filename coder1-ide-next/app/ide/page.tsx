@@ -109,6 +109,47 @@ function IDEPageContent() {
     window.location.href = '/alpha';
   }, []);
 
+  // Handle Stripe checkout success
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const checkoutSuccess = urlParams.get('checkout_success');
+    const sessionId = urlParams.get('session_id');
+
+    if (checkoutSuccess === 'true' && sessionId) {
+      console.log('💳 Stripe checkout successful:', sessionId);
+
+      // Mark user as Pro subscriber (for immediate UI feedback)
+      localStorage.setItem('coder1-subscription-tier', 'pro');
+      localStorage.setItem('coder1-bridge-setup', 'completed');
+
+      // Show success toast
+      const toast = document.createElement('div');
+      toast.className = 'fixed top-4 right-4 bg-gradient-to-r from-coder1-cyan to-coder1-purple text-white px-6 py-4 rounded-lg shadow-lg z-50 transition-all duration-300 flex items-center gap-3';
+      toast.innerHTML = `
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        <div>
+          <div class="font-semibold">Welcome to Coder1 Pro! 🎉</div>
+          <div class="text-sm opacity-80">Unlimited Johnny5 tasks unlocked</div>
+        </div>
+      `;
+      document.body.appendChild(toast);
+
+      // Remove checkout params from URL without page reload
+      const newUrl = window.location.pathname;
+      window.history.replaceState({}, '', newUrl);
+
+      // Remove toast after 5 seconds
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        setTimeout(() => document.body.removeChild(toast), 300);
+      }, 5000);
+    }
+  }, []);
+
   // Show onboarding overlay for first-time users (after Bridge setup)
   useEffect(() => {
     if (typeof window === 'undefined') return;

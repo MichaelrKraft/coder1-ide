@@ -25,8 +25,9 @@ class ClaudeExecutor extends EventEmitter {
     super();
 
     this.verbose = options.verbose || false;
-    // FIXED (Dec 10, 2025): Increased from 60s to 120s to match server timeout
-    this.maxTimeout = options.maxTimeout || 120000; // 120 seconds default
+    // FIXED (Feb 2, 2026): Increased from 120s to 720s (12 min) so interactive sessions last 1 hour
+    // Interactive timeout = maxTimeout × 5 = 3600s = 1 hour
+    this.maxTimeout = options.maxTimeout || 720000; // 12 minutes (×5 = 1 hour for interactive)
 
     // FIXED (Dec 12, 2025): Resolve full path to claude at startup
     // node-pty requires absolute path or binary in PATH - doesn't use shell resolution
@@ -373,19 +374,19 @@ class ClaudeExecutor extends EventEmitter {
           });
         });
 
-        // Set timeout for interactive sessions (longer than one-shot)
+        // Set timeout for interactive sessions (1 hour max inactivity)
+        // FIXED (Feb 2, 2026): Increased from 10 min to 1 hour for alpha launch
+        const interactiveTimeoutMs = this.maxTimeout * 5; // 720000 * 5 = 3600000ms = 1 hour
         const timeout = setTimeout(() => {
           if (!hasExited) {
-            this.warn(`Interactive session timeout after ${(this.maxTimeout * 5) / 1000}s, killing process...`);
+            const timeoutMinutes = Math.round(interactiveTimeoutMs / 60000);
+            this.warn(`Interactive session timeout after ${timeoutMinutes} minutes of inactivity, ending session...`);
             this.warn(`Claude path: ${this.claudePath}`);
             this.warn('');
-            this.warn('This usually means Claude CLI needs authentication.');
-            this.warn('Try running in a regular terminal:');
-            this.warn('  1. claude auth status');
-            this.warn('  2. claude auth login (if not authenticated)');
+            this.warn('The session was idle for too long. Start a new session to continue.');
             ptyProcess.kill();
           }
-        }, this.maxTimeout * 5); // 5x longer for interactive
+        }, interactiveTimeoutMs);
 
         // Clear timeout on exit
         ptyProcess.onExit(() => {

@@ -253,6 +253,11 @@ export interface Johnny5MorningBrief {
   trendsSpotted: Johnny5BriefItem[];
   needsAttention: Johnny5BriefItem[];
   summary: string;
+  stats?: {
+    tokensUsed: number;
+    tasksCompleted: number;
+    sessionsActive: number;
+  };
 }
 
 export interface Johnny5BriefItem {

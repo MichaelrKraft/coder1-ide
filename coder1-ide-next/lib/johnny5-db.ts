@@ -8,6 +8,7 @@
  * - Audit logging for security and compliance
  * - Usage statistics for analytics
  * - User profile and preferences
+ * - Unified memory integration with ManusLive
  *
  * Database Location: ~/.coder1/johnny5.db
  */
@@ -17,6 +18,18 @@ import { join } from 'path';
 import { homedir } from 'os';
 import { existsSync, mkdirSync, copyFileSync } from 'fs';
 import { randomUUID } from 'crypto';
+
+// ManusLive Memory Integration
+import {
+  getManusLiveMemory,
+  getManusLiveUserProfile,
+  getUnifiedManusLiveContext,
+  isManusLiveInstalled,
+  clearManusLiveCache,
+  type ManusLiveMemory,
+  type ManusLiveUserProfile,
+  type UnifiedMemoryContext,
+} from './manuslive-memory';
 
 // ============================================================================
 // Types
@@ -970,9 +983,187 @@ export async function cleanupOldData(options: {
 }
 
 // ============================================================================
+// Unified Context (ManusLive + Local Johnny5 Integration)
+// ============================================================================
+
+/**
+ * Unified context combining ManusLive memory and local Johnny5 profile
+ */
+export interface UnifiedJohnny5Context {
+  /** Local Johnny5 profile from SQLite database */
+  localProfile: UserProfile | null;
+  /** ManusLive MEMORY.md content (facts, preferences, context, goals) */
+  manusLiveMemory: ManusLiveMemory | null;
+  /** ManusLive USER.md content (detailed user profile) */
+  manusLiveUserProfile: ManusLiveUserProfile | null;
+  /** Whether ManusLive is installed */
+  manusLiveInstalled: boolean;
+  /** Combined human-readable context for AI prompts */
+  contextForAI: string;
+  /** When this context was generated */
+  generatedAt: string;
+}
+
+/**
+ * Get unified context combining ManusLive memory with local Johnny5 profile
+ *
+ * This is the primary function to call when building context for Johnny5's AI.
+ * It combines:
+ * 1. ManusLive MEMORY.md - Facts, preferences, context, goals from other channels
+ * 2. ManusLive USER.md - Detailed user profile from other channels
+ * 3. Local johnny5.db profile - Settings and preferences specific to Coder1
+ *
+ * @param forceRefresh - Skip ManusLive cache and read fresh from disk
+ * @returns Unified context object with all available memory
+ *
+ * @example
+ * ```typescript
+ * const context = await getUnifiedContext();
+ *
+ * // Use in AI prompt
+ * const systemPrompt = `
+ *   You are Johnny5, an AI assistant.
+ *   ${context.contextForAI}
+ * `;
+ *
+ * // Check data sources
+ * if (context.manusLiveInstalled) {
+ *   console.log('Cross-channel memory available');
+ * }
+ * ```
+ */
+export async function getUnifiedContext(forceRefresh = false): Promise<UnifiedJohnny5Context> {
+  // Fetch all data sources in parallel
+  const [localProfile, manusLiveContext] = await Promise.all([
+    getProfile(),
+    getUnifiedManusLiveContext(forceRefresh),
+  ]);
+
+  // Build the combined context for AI
+  const contextParts: string[] = [];
+
+  // Add user identification
+  if (manusLiveContext.userProfile?.basicInfo.name) {
+    const { name, role, background } = manusLiveContext.userProfile.basicInfo;
+    contextParts.push(`## About the User`);
+    contextParts.push(`- Name: ${name}`);
+    if (role) contextParts.push(`- Role: ${role}`);
+    if (background) contextParts.push(`- Background: ${background}`);
+  }
+
+  // Add user preferences
+  if (manusLiveContext.userProfile?.preferences) {
+    const prefs = manusLiveContext.userProfile.preferences;
+    if (prefs.favoriteColor || prefs.workStyle.length > 0) {
+      contextParts.push(`\n## User Preferences`);
+      if (prefs.favoriteColor) contextParts.push(`- Favorite color: ${prefs.favoriteColor}`);
+      if (prefs.workStyle.length > 0) {
+        contextParts.push(`- Work style: ${prefs.workStyle.slice(0, 3).join('; ')}`);
+      }
+    }
+  }
+
+  // Add memory facts
+  if (manusLiveContext.memory?.facts.length) {
+    contextParts.push(`\n## Known Facts`);
+    for (const fact of manusLiveContext.memory.facts.slice(0, 10)) {
+      contextParts.push(`- ${fact}`);
+    }
+  }
+
+  // Add current focus/goals
+  if (manusLiveContext.userProfile?.currentFocus.length || manusLiveContext.memory?.goals.length) {
+    contextParts.push(`\n## Current Focus & Goals`);
+    const focus = manusLiveContext.userProfile?.currentFocus || [];
+    const goals = manusLiveContext.memory?.goals || [];
+    for (const item of [...focus.slice(0, 3), ...goals.slice(0, 3)]) {
+      contextParts.push(`- ${item}`);
+    }
+  }
+
+  // Add communication style guidance
+  if (manusLiveContext.userProfile?.communicationStyle) {
+    const comm = manusLiveContext.userProfile.communicationStyle;
+    if (comm.whatWorks.length > 0 || comm.whatDoesntWork.length > 0) {
+      contextParts.push(`\n## Communication Style`);
+      if (comm.whatWorks.length > 0) {
+        contextParts.push(`What works: ${comm.whatWorks.slice(0, 3).join('; ')}`);
+      }
+      if (comm.whatDoesntWork.length > 0) {
+        contextParts.push(`Avoid: ${comm.whatDoesntWork.slice(0, 3).join('; ')}`);
+      }
+    }
+  }
+
+  // Add persistent context from memory
+  if (manusLiveContext.memory?.context.length) {
+    contextParts.push(`\n## Persistent Context`);
+    for (const ctx of manusLiveContext.memory.context.slice(0, 5)) {
+      contextParts.push(`- ${ctx}`);
+    }
+  }
+
+  // Add local Johnny5 profile settings if they differ or add new info
+  if (localProfile) {
+    if (localProfile.roles.length > 0 || localProfile.projects.length > 0) {
+      contextParts.push(`\n## Coder1 IDE Configuration`);
+      if (localProfile.roles.length > 0) {
+        contextParts.push(`- Roles: ${localProfile.roles.join(', ')}`);
+      }
+      if (localProfile.projects.length > 0) {
+        contextParts.push(`- Active projects: ${localProfile.projects.join(', ')}`);
+      }
+      contextParts.push(`- Proactivity level: ${localProfile.proactivity_level}`);
+    }
+  }
+
+  // Fallback if no data available
+  if (contextParts.length === 0) {
+    contextParts.push('No user context available. Ask the user to introduce themselves.');
+  }
+
+  return {
+    localProfile,
+    manusLiveMemory: manusLiveContext.memory,
+    manusLiveUserProfile: manusLiveContext.userProfile,
+    manusLiveInstalled: isManusLiveInstalled(),
+    contextForAI: contextParts.join('\n'),
+    generatedAt: new Date().toISOString(),
+  };
+}
+
+/**
+ * Refresh ManusLive memory cache
+ *
+ * Call this when you know the ManusLive files have been updated
+ * (e.g., after a Telegram message updated the memory)
+ */
+export function refreshManusLiveMemory(): void {
+  clearManusLiveCache();
+}
+
+/**
+ * Check if unified memory is available
+ *
+ * Returns true if either ManusLive is installed or local profile exists
+ */
+export async function hasUnifiedMemory(): Promise<boolean> {
+  const [localProfile, isInstalled] = await Promise.all([
+    getProfile(),
+    Promise.resolve(isManusLiveInstalled()),
+  ]);
+
+  return localProfile !== null || isInstalled;
+}
+
+// ============================================================================
 // Export Database Path for External Use
 // ============================================================================
 
 export const DATABASE_PATH = DB_PATH;
 export const DATABASE_DIR = DB_DIR;
 export const BACKUP_PATH = BACKUP_DIR;
+
+// Re-export ManusLive types for convenience
+export type { ManusLiveMemory, ManusLiveUserProfile, UnifiedMemoryContext };
+export { getManusLiveMemory, getManusLiveUserProfile, isManusLiveInstalled };

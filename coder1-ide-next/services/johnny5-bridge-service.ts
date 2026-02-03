@@ -14,6 +14,7 @@ import {
   getProactivityLevel,
   Johnny5Permissions,
 } from '@/lib/johnny5-config';
+import { getProfile, UserProfile } from '@/lib/johnny5-db';
 
 // ============================================================================
 // Types
@@ -44,8 +45,9 @@ export class Johnny5BridgeService {
 
   /**
    * Build Johnny5's system prompt with current configuration
+   * Includes user profile and preferences from database
    */
-  private buildSystemPrompt(): string {
+  private async buildSystemPrompt(): Promise<string> {
     const permissions = getPermissions();
     const proactivityLevel = getProactivityLevel();
 
@@ -68,6 +70,55 @@ export class Johnny5BridgeService {
         ? capabilityLines.join('\n')
         : '- Basic chat assistance only';
 
+    // Load user profile from database for persistent memory
+    let userContext = '';
+    try {
+      const profile = await getProfile();
+      if (profile) {
+        const contextParts: string[] = [];
+
+        // Add user roles
+        if (profile.roles && profile.roles.length > 0) {
+          contextParts.push(`User's roles: ${profile.roles.join(', ')}`);
+        }
+
+        // Add platforms they use
+        if (profile.platforms && profile.platforms.length > 0) {
+          contextParts.push(`Platforms they use: ${profile.platforms.join(', ')}`);
+        }
+
+        // Add their projects
+        if (profile.projects && profile.projects.length > 0) {
+          contextParts.push(`Projects: ${profile.projects.join(', ')}`);
+        }
+
+        // Add their goals
+        if (profile.goals && profile.goals.length > 0) {
+          contextParts.push(`Goals: ${profile.goals.join(', ')}`);
+        }
+
+        // Add personal preferences (like favorite color, etc.)
+        if (profile.preferences && Object.keys(profile.preferences).length > 0) {
+          const prefLines: string[] = [];
+          for (const [key, value] of Object.entries(profile.preferences)) {
+            // Format preference key nicely (favoriteColor -> favorite color)
+            const formattedKey = key.replace(/([A-Z])/g, ' $1').toLowerCase().trim();
+            prefLines.push(`- ${formattedKey}: ${value}`);
+          }
+          if (prefLines.length > 0) {
+            contextParts.push(`Personal preferences:\n${prefLines.join('\n')}`);
+          }
+        }
+
+        if (contextParts.length > 0) {
+          userContext = `\n## User Context (Remembered from past conversations)\n${contextParts.join('\n')}\n`;
+        }
+      }
+    } catch (error) {
+      console.error('[Johnny5BridgeService] Failed to load user profile:', error);
+      // Continue without user context if database fails
+    }
+
     return `You are Johnny5, an autonomous AI assistant in the Coder1 IDE.
 
 ## Personality
@@ -85,7 +136,7 @@ You are a proactive AI employee that helps users with:
 - Building features and creating PRs
 - Answering questions about the codebase
 - Suggesting improvements and optimizations
-
+${userContext}
 ## Capabilities
 ${capabilities}
 
@@ -94,6 +145,11 @@ Current proactivity level: ${proactivityLevel}
 ${proactivityLevel === 'low' ? '- Wait for explicit requests before suggesting actions' : ''}
 ${proactivityLevel === 'medium' ? "- Offer suggestions when relevant, but don't be pushy" : ''}
 ${proactivityLevel === 'high' ? '- Proactively suggest improvements and next steps' : ''}
+
+## Memory
+You have persistent memory across conversations. When the user tells you personal information
+(like their favorite color, name, preferences, goals, etc.), you should remember it. If asked
+about something you've learned before, use that knowledge. If unsure, you can ask them again.
 
 ## Guidelines
 1. Keep responses concise but helpful
@@ -107,11 +163,11 @@ ${proactivityLevel === 'high' ? '- Proactively suggest improvements and next ste
   /**
    * Build full prompt including system prompt and conversation history
    */
-  private buildFullPrompt(
+  private async buildFullPrompt(
     message: string,
     history: ChatMessage[]
-  ): string {
-    const systemPrompt = this.buildSystemPrompt();
+  ): Promise<string> {
+    const systemPrompt = await this.buildSystemPrompt();
 
     // Format for Claude Code CLI
     let prompt = `[System Context]\n${systemPrompt}\n\n`;
@@ -158,7 +214,7 @@ ${proactivityLevel === 'high' ? '- Proactively suggest improvements and next ste
     }
 
     // 2. Build the full prompt with system context and history
-    const fullPrompt = this.buildFullPrompt(message, conversationHistory);
+    const fullPrompt = await this.buildFullPrompt(message, conversationHistory);
 
     // 3. Execute via Bridge
     const commandId = `johnny5-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;

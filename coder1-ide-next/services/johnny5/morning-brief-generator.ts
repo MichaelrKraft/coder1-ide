@@ -5,8 +5,8 @@
  * Aggregates from task tracker, session tracker, and security tracker.
  */
 
-import fs from 'fs';
-import path from 'path';
+import * as fs from 'fs';
+import * as path from 'path';
 import type {
   Johnny5MorningBrief,
   Johnny5BriefItem,
@@ -93,9 +93,9 @@ function saveBriefs(): void {
 }
 
 /**
- * Generate morning brief from real data
+ * Generate morning brief from real data (async version)
  */
-export function generateMorningBrief(targetDate: Date): Johnny5MorningBrief {
+export async function generateMorningBrief(targetDate: Date): Promise<Johnny5MorningBrief> {
   const dateKey = formatDateKey(targetDate);
 
   // Check cache first
@@ -118,8 +118,15 @@ export function generateMorningBrief(targetDate: Date): Johnny5MorningBrief {
   const trendsSpotted: Johnny5BriefItem[] = [];
   const needsAttention: Johnny5BriefItem[] = [];
 
-  // Get completed tasks
-  const allTasks = getTasks({});
+  // Get completed tasks (async)
+  let allTasks: any[] = [];
+  try {
+    allTasks = await getTasks({});
+  } catch (error) {
+    console.warn('[MorningBriefGenerator] Failed to fetch tasks:', error);
+    allTasks = [];
+  }
+
   const overnightTasks = allTasks.filter(task => {
     if (!task.completedAt) return false;
     const completedTime = new Date(task.completedAt).getTime();
@@ -253,18 +260,20 @@ export function generateMorningBrief(targetDate: Date): Johnny5MorningBrief {
 }
 
 /**
- * Get brief for a specific date
+ * Get brief for a specific date (async)
  */
-export function getBrief(targetDate: Date): Johnny5MorningBrief {
+export async function getBrief(targetDate: Date): Promise<Johnny5MorningBrief> {
   return generateMorningBrief(targetDate);
 }
 
 /**
  * Get brief history (list of available briefs)
+ * Returns minimal data for history selector (id, date, summary)
+ * This is synchronous as it only reads from cache/file
  */
-export function getBriefHistory(limit: number = 7): { date: string; summary: string }[] {
+export function getBriefHistory(limit: number = 7): { id: string; date: string; summary: string }[] {
   const briefs = loadBriefs();
-  const history: { date: string; summary: string }[] = [];
+  const history: { id: string; date: string; summary: string }[] = [];
 
   // Get sorted keys (dates)
   const sortedKeys = Array.from(briefs.keys()).sort().reverse();
@@ -273,6 +282,7 @@ export function getBriefHistory(limit: number = 7): { date: string; summary: str
     const brief = briefs.get(key);
     if (brief) {
       history.push({
+        id: brief.id,
         date: key,
         summary: brief.summary,
       });

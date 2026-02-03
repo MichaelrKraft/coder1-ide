@@ -1,79 +1,122 @@
-# Task: Fix MoltbotBridge WebSocket Port Configuration
+# Johnny5 Setup Wizard Simplification
 
 ## Objective
-Fix the MoltbotBridge service to connect to ManusLive on the correct port (18789 instead of 8765).
+Simplify the Johnny5 Setup Wizard from 5 steps to 4 steps with proper API key validation.
 
-## Todo Items
+## Current State
+- 5 steps: Welcome, Integrations, Permissions, Behavior, Complete
+- Includes Zapier/Telegram integrations (to be removed)
+- Has daemon installation logic (to be removed)
+- No API key validation
 
-- [x] 1. Fix default gateway URL in `moltbot-bridge.ts` (line 78)
-  - Change from `ws://localhost:8765` to `ws://localhost:18789`
+## New 4-Step Flow
+1. **Welcome** - Meet Johnny5 branding
+2. **API Key** - Anthropic API key input with real validation
+3. **Permissions** - 4 toggles + proactivity slider
+4. **Complete** - Quick start tips
 
-- [x] 2. Create new API route `app/api/johnny5/connect/route.ts`
-  - GET: Return connection status (connected/disconnected, gateway URL, last ping)
-  - POST: Trigger connection/reconnection to ManusLive
+## Tasks
 
-- [x] 3. Add auto-connect logic
-  - Check for `~/.manuslive/config.json` before auto-connecting
-  - Add "auto-connect" action that silently skips if ManusLive not configured
+- [x] 1. Update SetupWizard.tsx with new 4-step flow
+  - Remove 'integrations' and 'behavior' steps
+  - Add 'apikey' step
+  - Simplify step type to: 'welcome' | 'apikey' | 'permissions' | 'complete'
 
-## Files Modified
-- `/Users/michaelkraft/autonomous_vibe_interface/coder1-ide-next/services/johnny5/moltbot-bridge.ts`
-  - Line 78: Changed default port from 8765 to 18789
+- [x] 2. Rewrite Welcome step (Step 1)
+  - Title: "Meet Johnny5"
+  - Subtitle: "Your autonomous AI teammate that learns and grows with you"
+  - "Get Started" button
+  - Small "Skip" link
 
-## Files Created
-- `/Users/michaelkraft/autonomous_vibe_interface/coder1-ide-next/app/api/johnny5/connect/route.ts`
+- [x] 3. Create API Key step (Step 2)
+  - Title: "Connect to Claude"
+  - API key input field
+  - "Don't have a key?" link to console.anthropic.com
+  - "Validate Key" button
+  - Show validation status (loading, success, error)
+  - Only allow proceed when validated
+
+- [x] 4. Rewrite Permissions step (Step 3)
+  - Title: "Set Johnny5's Permissions"
+  - 4 toggles: readFiles (ON), suggestCode (ON), executeTerminal (OFF), externalRequests (OFF)
+  - Add proactivity slider: Low - Medium - High
+  - "Continue" button
+
+- [x] 5. Rewrite Complete step (Step 4)
+  - Title: "Johnny5 is Ready!"
+  - Quick start tips
+  - "Start Chatting" button
+
+- [x] 6. Update API route to handle API key validation
+  - Add action: 'validate-api-key' handler
+  - Actually call Claude API with test message
+  - Return success/error with details
+
+- [x] 7. Remove old code
+  - Remove ZapierMCPSetupCard import
+  - Remove TelegramSetupCard import
+  - Remove IntegrationState interface
+  - Remove daemon installation logic
+  - Remove unused icons
+
+- [x] 8. Integrate with johnny5-config module
+  - Use setApiKey, setPermissions, setProactivityLevel, markSetupComplete
+  - Use isSetupComplete for skip logic
 
 ## Review
 
 ### Summary of Changes
 
-**Fix 1** (`services/johnny5/moltbot-bridge.ts` line 78):
-- Changed default gateway URL from `ws://localhost:8765` to `ws://localhost:18789`
-- Env var override still works: `MOLTBOT_GATEWAY_URL`
+**Files Modified:**
 
-**Fix 2** (New API route `app/api/johnny5/connect/route.ts`):
-- **GET /api/johnny5/connect**: Returns connection status including:
-  - `connected`: WebSocket connected state
-  - `authenticated`: Full handshake complete
-  - `gatewayUrl`: Current gateway URL
-  - `lastPingAt`/`lastPongAt`: Heartbeat timestamps
-  - `manusLiveConfigured`: Whether ~/.manuslive/config.json exists
+1. `/Users/michaelkraft/autonomous_vibe_interface/coder1-ide-next/app/api/johnny5/setup/route.ts`
+   - Completely rewrote the API route to use `johnny5-config` module
+   - Added `validate-api-key` action that makes a real test call to Claude API
+   - Added `save-config` action that saves API key (encrypted), permissions, and proactivity level
+   - Removed old daemon installation logic
+   - Removed old file-based config management (now uses johnny5-config module)
 
-- **POST /api/johnny5/connect**: Supports actions:
-  - `connect`: Connect to ManusLive (fails if not configured)
-  - `disconnect`: Disconnect from gateway
-  - `reconnect`: Disconnect and reconnect
-  - `auto-connect`: Connect only if ManusLive is configured (silent skip if not)
+2. `/Users/michaelkraft/autonomous_vibe_interface/coder1-ide-next/components/johnny5/settings/SetupWizard.tsx`
+   - Reduced from 5 steps to 4 steps: Welcome, API Key, Permissions, Complete
+   - Removed Zapier/Telegram integration step entirely
+   - Removed behavior step (merged proactivity slider into permissions step)
+   - Added real API key validation with loading/success/error states
+   - Added link to Anthropic console for getting API keys
+   - Simplified permissions to 4 clear toggles with colored indicators
+   - Added proactivity level selector (Low/Medium/High) with descriptions
+   - Updated Complete step with quick start tips instead of setup summary
+   - Removed unused imports (ZapierMCPSetupCard, TelegramSetupCard)
 
-**Fix 3** (Auto-connect logic):
-- Added `isManusLiveConfigured()` helper that checks for:
-  - `~/.manuslive/config.json`
-  - `~/.manuslive/memory.sqlite`
-- `auto-connect` action returns success even when skipped (for IDE initialization)
+### Key Features
 
-### Verification Commands
+1. **API Key Validation**
+   - Format validation (must start with `sk-ant-` and be 50+ chars)
+   - Real Claude API test call to verify key works
+   - Clear error messages for: invalid key, no credits, rate limited, network error
+   - Shows connected model name on success
 
-```bash
-# Check ManusLive is running on correct port
-lsof -i :18789
+2. **Permissions UI**
+   - 4 toggles with icons and descriptions
+   - Color-coded by risk level (cyan, green, yellow, orange)
+   - "Advanced" badges on terminal and external request permissions
+   - Proactivity slider with contextual descriptions
 
-# Test connection API - GET status
-curl http://localhost:3001/api/johnny5/connect
+3. **Config Persistence**
+   - Uses `johnny5-config` module for encrypted API key storage
+   - Saves to `~/.coder1/johnny5-config.json`
+   - Marks setup as complete with timestamp
 
-# Test connection API - POST auto-connect
-curl -X POST http://localhost:3001/api/johnny5/connect \
-  -H "Content-Type: application/json" \
-  -d '{"action": "auto-connect"}'
+### API Endpoints
 
-# Test connection API - POST explicit connect
-curl -X POST http://localhost:3001/api/johnny5/connect \
-  -H "Content-Type: application/json" \
-  -d '{"action": "connect"}'
 ```
+GET /api/johnny5/setup
+  Returns: isSetupComplete, hasApiKey, permissions, proactivityLevel
 
-### Technical Notes
+POST /api/johnny5/setup
+  action: 'validate-api-key', apiKey: string
+  Returns: success, model (or error, errorType)
 
-- The API follows existing johnny5 route patterns (Johnny5APIResponse typing)
-- Uses the singleton MoltbotBridge instance via `getMoltbotBridge()`
-- Auto-connect is safe to call on every IDE load (idempotent)
-- Connection errors in auto-connect mode are logged but don't fail the request
+POST /api/johnny5/setup
+  action: 'save-config', apiKey?, permissions, proactivityLevel
+  Returns: success, configSummary
+```

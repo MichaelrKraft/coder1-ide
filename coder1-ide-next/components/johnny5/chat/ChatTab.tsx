@@ -203,7 +203,7 @@ export default function ChatTab() {
     setTimeout(() => setCopiedId(null), 2000);
   };
 
-  // Send message
+  // Send message - prefers Moltbot when connected, falls back to Bridge CLI
   const handleSend = async () => {
     if (!inputValue.trim() || isLoading) return;
 
@@ -221,19 +221,33 @@ export default function ChatTab() {
     setIsTyping(true);
 
     try {
-      // Call the Johnny5 chat API
-      const response = await fetch('/api/johnny5/chat', {
+      // Determine which API to use based on Moltbot connection status
+      // Prefer Moltbot for 24/7 daemon capabilities, fall back to Bridge CLI
+      const useMoltbot = moltbotStatus?.connected === true;
+      const apiEndpoint = useMoltbot
+        ? '/api/johnny5/moltbot/chat'
+        : '/api/johnny5/chat';
+
+      console.log(`[ChatTab] Using ${useMoltbot ? 'Moltbot' : 'Bridge'} chat API`);
+
+      // Call the appropriate Johnny5 chat API
+      const response = await fetch(apiEndpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          message: userMessage.content,
-          history: messages.slice(-10), // Send last 10 messages for context
-        }),
+        body: useMoltbot
+          ? JSON.stringify({
+              message: userMessage.content,
+              sessionKey: 'dashboard:main', // Default session for dashboard chat
+            })
+          : JSON.stringify({
+              message: userMessage.content,
+              history: messages.slice(-10), // Send last 10 messages for context
+            }),
       });
 
       const data = await response.json();
 
-      // Handle specific error codes from Bridge-based chat
+      // Handle specific error codes from both Bridge-based and Moltbot chat
       if (!response.ok || !data.success) {
         const errorCode = data.code;
         let errorMessage = "Sorry, I encountered an error. Please try again.";
@@ -244,6 +258,10 @@ export default function ChatTab() {
           errorMessage = "⚠️ Bridge error. Please check that coder1-bridge is running and try again.";
         } else if (errorCode === 'COMMAND_TIMEOUT') {
           errorMessage = "⏳ Request timed out. Please try again with a simpler request.";
+        } else if (response.status === 503) {
+          errorMessage = "🔌 Johnny5 daemon not available. Please ensure ManusLive is running.";
+        } else if (response.status === 401) {
+          errorMessage = "🔑 Authentication failed. Please check your MOLTBOT_AUTH_TOKEN.";
         } else if (data.error) {
           errorMessage = `Error: ${data.error}`;
         }
