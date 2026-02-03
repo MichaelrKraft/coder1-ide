@@ -2,6 +2,7 @@
  * Shared storage for bridge pairing codes
  * Uses SQLite database for persistent storage across processes and restarts
  * Updated Feb 1, 2026 to fix production "Invalid or expired pairing code" errors
+ * Updated Feb 2, 2026 to auto-create table if missing
  */
 
 import { getDatabase } from './database';
@@ -13,6 +14,7 @@ interface PairingData {
 
 export class BridgeStore {
   private static instance: BridgeStore;
+  private tableInitialized = false;
 
   private constructor() {
     // No initialization needed for synchronous members
@@ -23,6 +25,30 @@ export class BridgeStore {
       BridgeStore.instance = new BridgeStore();
     }
     return BridgeStore.instance;
+  }
+
+  /**
+   * Ensure the bridge_pairing_codes table exists
+   * Called before any database operation
+   */
+  private async ensureTable(db: any): Promise<void> {
+    if (this.tableInitialized) return;
+
+    try {
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS bridge_pairing_codes (
+          code TEXT PRIMARY KEY,
+          user_id TEXT NOT NULL,
+          expires INTEGER NOT NULL
+        );
+        CREATE INDEX IF NOT EXISTS idx_bridge_pairing_codes_expires ON bridge_pairing_codes(expires);
+      `);
+      this.tableInitialized = true;
+      console.log('[BridgeStore] Table bridge_pairing_codes ensured');
+    } catch (error) {
+      console.error('[BridgeStore] Failed to create table:', error);
+      throw error;
+    }
   }
 
   /**
@@ -43,8 +69,11 @@ export class BridgeStore {
 
   public async generateCode(userId: string): Promise<string> {
     const db = await getDatabase();
-    
+
     try {
+      // Ensure table exists before any operations
+      await this.ensureTable(db);
+
       // Generate 6-digit code
       const code = Math.floor(100000 + Math.random() * 900000).toString();
       const expires = Date.now() + 300000; // 5 minutes
@@ -55,11 +84,11 @@ export class BridgeStore {
         VALUES (?, ?, ?)
       `).run(code, userId, expires);
 
-      console.log(`Generated persistent pairing code ${code} for user ${userId}`);
-      
+      console.log(`[BridgeStore] Generated pairing code ${code} for user ${userId}, expires in 5 min`);
+
       // Opportunistic cleanup
       await this.cleanupExpiredCodes(db);
-      
+
       return code;
     } finally {
       db.close();
@@ -68,26 +97,29 @@ export class BridgeStore {
 
   public async validateCode(code: string): Promise<PairingData | null> {
     const db = await getDatabase();
-    
+
     try {
+      // Ensure table exists before any operations
+      await this.ensureTable(db);
+
       const row = db.prepare(`
         SELECT user_id, expires FROM bridge_pairing_codes WHERE code = ?
-      `).get(code);
+      `).get(code) as { user_id: string; expires: number } | undefined;
 
       if (!row) {
-        console.log(`Pairing code ${code} not found in DB`);
+        console.log(`[BridgeStore] Pairing code ${code} not found in DB`);
         return null;
       }
 
       // Check expiry
       if (row.expires < Date.now()) {
-        console.log(`Pairing code ${code} expired`);
+        console.log(`[BridgeStore] Pairing code ${code} expired (was valid for user ${row.user_id})`);
         // Cleanup this specific code
         db.prepare('DELETE FROM bridge_pairing_codes WHERE code = ?').run(code);
         return null;
       }
 
-      console.log(`Pairing code ${code} validated for user ${row.user_id}`);
+      console.log(`[BridgeStore] Pairing code ${code} validated for user ${row.user_id}`);
       return {
         userId: row.user_id,
         expires: row.expires
@@ -101,8 +133,11 @@ export class BridgeStore {
   public async consumeCode(code: string): Promise<void> {
     const db = await getDatabase();
     try {
+      // Ensure table exists before any operations
+      await this.ensureTable(db);
+
       db.prepare('DELETE FROM bridge_pairing_codes WHERE code = ?').run(code);
-      console.log(`Pairing code ${code} consumed (deleted from DB)`);
+      console.log(`[BridgeStore] Pairing code ${code} consumed (deleted from DB)`);
     } finally {
       db.close();
     }

@@ -2,17 +2,16 @@
  * Johnny5 Setup API
  *
  * Handles Johnny5 configuration for self-hosted setup.
+ * Johnny5 uses Claude Code CLI via Bridge - no API key required.
  *
  * POST /api/johnny5/setup
- *   - action: 'validate-api-key' - Validate an Anthropic API key
- *   - action: 'save-config' - Save setup configuration
+ *   - action: 'save-config' - Save setup configuration (permissions, proactivity)
  * GET /api/johnny5/setup - Get current setup status
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import {
   loadConfig,
-  setApiKey,
   setPermissions,
   setProactivityLevel,
   markSetupComplete,
@@ -27,148 +26,13 @@ export const dynamic = 'force-dynamic';
 // Types
 // ============================================================================
 
-interface ValidateApiKeyRequest {
-  action: 'validate-api-key';
-  apiKey: string;
-}
-
 interface SaveConfigRequest {
   action: 'save-config';
-  apiKey?: string;
   permissions: Johnny5Permissions;
   proactivityLevel: 'low' | 'medium' | 'high';
 }
 
-type SetupRequest = ValidateApiKeyRequest | SaveConfigRequest;
-
-interface ApiKeyValidationResult {
-  success: boolean;
-  model?: string;
-  error?: string;
-  errorType?: 'invalid_key' | 'no_credits' | 'rate_limited' | 'network_error' | 'unknown';
-}
-
-// ============================================================================
-// API Key Validation
-// ============================================================================
-
-/**
- * Validate an Anthropic API key by making a test call to the Claude API
- */
-async function validateAnthropicApiKey(apiKey: string): Promise<ApiKeyValidationResult> {
-  // Basic format validation first
-  if (!apiKey || typeof apiKey !== 'string') {
-    return {
-      success: false,
-      error: 'API key is required',
-      errorType: 'invalid_key',
-    };
-  }
-
-  // Check for Anthropic key format
-  if (!apiKey.startsWith('sk-ant-')) {
-    return {
-      success: false,
-      error: 'Invalid API key format. Anthropic keys start with sk-ant-',
-      errorType: 'invalid_key',
-    };
-  }
-
-  if (apiKey.length < 50) {
-    return {
-      success: false,
-      error: 'API key appears to be too short',
-      errorType: 'invalid_key',
-    };
-  }
-
-  try {
-    // Make a minimal test request to the Claude API
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model: 'claude-3-5-sonnet-20241022',
-        max_tokens: 10,
-        messages: [
-          {
-            role: 'user',
-            content: 'Say "ok" and nothing else.',
-          },
-        ],
-      }),
-    });
-
-    if (response.ok) {
-      const data = await response.json();
-      return {
-        success: true,
-        model: data.model || 'claude-3-5-sonnet',
-      };
-    }
-
-    // Handle specific error cases
-    const errorData = await response.json().catch(() => ({}));
-    const errorMessage = errorData.error?.message || '';
-
-    if (response.status === 401) {
-      return {
-        success: false,
-        error: 'Invalid API key. Please check your key and try again.',
-        errorType: 'invalid_key',
-      };
-    }
-
-    if (response.status === 403) {
-      if (errorMessage.includes('credit') || errorMessage.includes('billing')) {
-        return {
-          success: false,
-          error: 'No credits available. Please add credits to your Anthropic account.',
-          errorType: 'no_credits',
-        };
-      }
-      return {
-        success: false,
-        error: 'API key does not have permission to use this model.',
-        errorType: 'invalid_key',
-      };
-    }
-
-    if (response.status === 429) {
-      return {
-        success: false,
-        error: 'Rate limited. Please wait a moment and try again.',
-        errorType: 'rate_limited',
-      };
-    }
-
-    if (response.status === 529) {
-      return {
-        success: false,
-        error: 'Claude API is overloaded. Please try again in a few seconds.',
-        errorType: 'rate_limited',
-      };
-    }
-
-    // Generic error
-    return {
-      success: false,
-      error: errorMessage || `API error (${response.status})`,
-      errorType: 'unknown',
-    };
-  } catch (error) {
-    console.error('[Johnny5 Setup API] Network error validating API key:', error);
-    return {
-      success: false,
-      error: 'Network error. Please check your internet connection.',
-      errorType: 'network_error',
-    };
-  }
-}
+type SetupRequest = SaveConfigRequest;
 
 // ============================================================================
 // Route Handlers
@@ -176,6 +40,9 @@ async function validateAnthropicApiKey(apiKey: string): Promise<ApiKeyValidation
 
 /**
  * GET - Check setup status
+ *
+ * Returns the current setup state. Note that Bridge connection status
+ * is checked via /api/bridge/status separately.
  */
 export async function GET() {
   try {
@@ -186,11 +53,10 @@ export async function GET() {
       success: true,
       data: {
         isSetupComplete: summary.setupComplete,
-        hasApiKey: summary.hasApiKey,
         permissions: summary.permissions,
         proactivityLevel: summary.proactivityLevel,
         setupCompletedAt: config.setupCompletedAt,
-        apiKeyValidatedAt: config.apiKeyValidatedAt,
+        // Note: Bridge connection status is checked via /api/bridge/status
       },
       timestamp: new Date().toISOString(),
     });
@@ -205,32 +71,15 @@ export async function GET() {
 
 /**
  * POST - Handle setup actions
+ *
+ * Currently only supports 'save-config' action.
+ * API key handling has been removed - Johnny5 uses Bridge instead.
  */
 export async function POST(request: NextRequest) {
   try {
     const body = (await request.json()) as SetupRequest;
 
-    if (body.action === 'validate-api-key') {
-      // Validate API key
-      const result = await validateAnthropicApiKey(body.apiKey);
-
-      return NextResponse.json({
-        success: result.success,
-        data: result.success
-          ? { model: result.model, validated: true }
-          : undefined,
-        error: result.error,
-        errorType: result.errorType,
-        timestamp: new Date().toISOString(),
-      });
-    }
-
     if (body.action === 'save-config') {
-      // Save the API key if provided
-      if (body.apiKey) {
-        setApiKey(body.apiKey);
-      }
-
       // Save permissions
       setPermissions(body.permissions);
 

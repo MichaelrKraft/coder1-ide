@@ -2,14 +2,20 @@
  * Johnny5 Configuration Management System
  *
  * Manages persistent configuration for the Johnny5 AI companion.
- * Stores settings in ~/.coder1/johnny5-config.json with encrypted API key.
+ * Stores settings in ~/.coder1/johnny5-config.json
+ *
+ * NOTE: Johnny5 now uses Claude Code CLI via Bridge connection instead of
+ * direct Anthropic API calls. This allows Pro/Max plan users to use their
+ * included Claude Code usage rather than paying separately for API calls.
  *
  * Features:
- * - Encrypted API key storage
  * - Permission management
  * - Proactivity level control
  * - Integration configuration (Zapier, Telegram)
- * - Token budget tracking
+ * - Token budget tracking (estimated)
+ *
+ * DEPRECATED: API key functions are maintained for backward compatibility
+ * but are no longer used. Johnny5 uses the Bridge connection instead.
  */
 
 import { existsSync, mkdirSync, readFileSync, writeFileSync, unlinkSync } from 'fs';
@@ -324,11 +330,15 @@ export function deleteConfig(): void {
 }
 
 // ============================================================================
-// API Key Management
+// API Key Management (DEPRECATED)
 // ============================================================================
+// NOTE: These functions are deprecated. Johnny5 now uses Claude Code CLI
+// via the Bridge connection instead of direct Anthropic API calls.
+// Kept for backward compatibility only.
 
 /**
  * Validate API key format (basic validation)
+ * @deprecated Johnny5 uses Bridge connection instead of API keys
  */
 export function validateApiKeyFormat(key: string): boolean {
   // Anthropic API keys start with 'sk-ant-' and are typically 100+ characters
@@ -347,6 +357,7 @@ export function validateApiKeyFormat(key: string): boolean {
 
 /**
  * Set and encrypt the API key
+ * @deprecated Johnny5 uses Bridge connection instead of API keys
  */
 export function setApiKey(key: string): void {
   if (!validateApiKeyFormat(key)) {
@@ -364,6 +375,7 @@ export function setApiKey(key: string): void {
 
 /**
  * Get and decrypt the API key
+ * @deprecated Johnny5 uses Bridge connection instead of API keys
  */
 export function getApiKey(): string | null {
   const config = loadConfig();
@@ -382,6 +394,7 @@ export function getApiKey(): string | null {
 
 /**
  * Check if an API key is configured
+ * @deprecated Johnny5 uses Bridge connection instead of API keys
  */
 export function hasApiKey(): boolean {
   const config = loadConfig();
@@ -390,6 +403,7 @@ export function hasApiKey(): boolean {
 
 /**
  * Clear the API key
+ * @deprecated Johnny5 uses Bridge connection instead of API keys
  */
 export function clearApiKey(): void {
   const config = loadConfig();
