@@ -1,0 +1,37 @@
+name: Release Bridge CLI
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - 'coder1-ide-next/bridge-cli/**'
+
+jobs:
+  package-bridge:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install bridge-cli dependencies
+        working-directory: coder1-ide-next/bridge-cli
+        run: npm install
+
+      - name: Package bridge-cli
+        working-directory: coder1-ide-next/bridge-cli
+        run: npm run release
+
+      - name: Commit and push artifact
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add coder1-ide-next/public/bridge-cli.tar.gz
+          git diff --staged --quiet || git commit -m "chore: update bridge-cli.tar.gz artifact [skip ci]"
+          git push
