@@ -897,7 +897,7 @@ export default function AlphaLandingPage() {
 
           {/* Description */}
           <p className="text-xl text-white/60 max-w-3xl mx-auto mb-10 leading-relaxed">
-            The first IDE with an autonomous AI that works overnight, remembers everything, and shows you exactly what it did
+            A Claude Code IDE with autonomous AI that works overnight, remembers everything, and shows you exactly what it did
           </p>
 
           {/* CTAs */}
