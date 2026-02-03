@@ -193,7 +193,10 @@ function IDEPageContent() {
   
   // Focus mode state
   const [focusMode, setFocusMode] = useState(false);
-  
+
+  // Sandbox mode state
+  const [sandboxMode, setSandboxMode] = useState<{ active: boolean; sandboxId: string | null }>({ active: false, sandboxId: null });
+
   // Terminal state
   const [agentsActive, setAgentsActive] = useState(false);
   const [runningProcesses, setRunningProcesses] = useState<string[]>([]);
@@ -1299,13 +1302,20 @@ function IDEPageContent() {
   }, [searchParams]);
 
   // 🔧 FIX (Nov 26, 2025): Handle sandbox URL parameter for direct sandbox access
+  // 🧪 UX (Feb 2, 2026): Added sandbox mode state and title change for clarity
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    
+
     const sandboxId = searchParams.get('sandbox');
     if (sandboxId) {
       console.log('🏖️ IDE: Sandbox ID detected in URL:', sandboxId);
-      
+
+      // 🧪 Set sandbox mode state for UI indicators
+      setSandboxMode({ active: true, sandboxId });
+
+      // 🧪 Change browser tab title to indicate sandbox mode
+      document.title = `🧪 Sandbox - Coder1 IDE`;
+
       // Wait for terminal to be ready before connecting to sandbox
       const connectToSandbox = () => {
         // Dispatch event to terminal to switch to this sandbox
@@ -1314,7 +1324,7 @@ function IDEPageContent() {
         }));
         console.log('✅ IDE: Sandbox connection event dispatched for:', sandboxId);
       };
-      
+
       // Check if terminal is already ready
       if ((window as any).terminalSessionId) {
         connectToSandbox();
@@ -1325,12 +1335,16 @@ function IDEPageContent() {
           window.removeEventListener('terminalReady', handleTerminalReady);
         };
         window.addEventListener('terminalReady', handleTerminalReady);
-        
+
         // Fallback timeout
         setTimeout(() => {
           connectToSandbox();
         }, 2000);
       }
+    } else {
+      // Not in sandbox mode - ensure state is cleared and title is normal
+      setSandboxMode({ active: false, sandboxId: null });
+      document.title = 'Coder1 IDE';
     }
   }, [searchParams]);
 
@@ -1522,6 +1536,56 @@ function IDEPageContent() {
                 window.dispatchEvent(new CustomEvent('openHandoffMode'));
               }}
             />
+
+            {/* 🧪 Sandbox Mode Banner - Shows when in sandbox environment */}
+            {sandboxMode.active && (
+              <div
+                className="w-full py-2 px-4 flex items-center justify-between border-b"
+                style={{
+                  backgroundColor: 'rgba(234, 179, 8, 0.15)',
+                  borderColor: 'rgba(234, 179, 8, 0.3)'
+                }}
+              >
+                <div className="flex items-center gap-3">
+                  <span className="text-lg">🧪</span>
+                  <div>
+                    <span
+                      className="font-semibold text-sm"
+                      style={{ color: '#EAB308' }}
+                    >
+                      Sandbox Environment
+                    </span>
+                    <span className="text-text-muted text-sm ml-2">
+                      — Changes here are isolated from your main workspace
+                    </span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span
+                    className="text-xs px-2 py-1 rounded font-mono"
+                    style={{
+                      backgroundColor: 'rgba(234, 179, 8, 0.2)',
+                      color: '#EAB308'
+                    }}
+                  >
+                    {sandboxMode.sandboxId?.slice(-8) || 'sandbox'}
+                  </span>
+                  <button
+                    onClick={() => {
+                      // Open a new regular IDE tab (not sandbox)
+                      window.open('/ide', '_blank');
+                    }}
+                    className="text-xs px-3 py-1 rounded border transition-colors hover:bg-bg-tertiary"
+                    style={{
+                      borderColor: 'rgba(234, 179, 8, 0.4)',
+                      color: '#EAB308'
+                    }}
+                  >
+                    Open Main IDE
+                  </button>
+                </div>
+              </div>
+            )}
 
             {/* Blue Banner - Agentic Development Environment */}
             <div 

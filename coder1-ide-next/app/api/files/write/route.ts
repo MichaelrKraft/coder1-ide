@@ -39,11 +39,11 @@ const BLOCKED_FILES = [
 // Maximum file size (5MB)
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 
-async function fileWriteHandler({ req }: { req: NextRequest }): Promise<NextResponse> {
+async function fileWriteHandler({ req, user }: { req: NextRequest; user?: any }): Promise<NextResponse> {
     const request = req;
     try {
         const body = await request.json();
-        const { path: filePath, content, useBridge: useBridgeParam } = body;
+        const { path: filePath, content, useBridge: useBridgeParam, userId: bodyUserId } = body;
         const useBridge = useBridgeParam !== false; // Default to true
 
         if (!filePath || content === undefined) {
@@ -57,7 +57,8 @@ async function fileWriteHandler({ req }: { req: NextRequest }): Promise<NextResp
         }
 
         // Check if bridge is connected and should be used
-        const userId = 'default-user';
+        // Use userId from: auth context > request body > fallback for backwards compatibility
+        const userId = user?.id || bodyUserId || 'default-user';
 
         if (useBridge && bridgeManager.hasBridgeForUser(userId)) {
             // Route through bridge to user's local machine

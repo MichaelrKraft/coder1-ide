@@ -60,12 +60,13 @@ const BLOCKED_PATTERNS = [
     'out/'
 ];
 
-async function fileReadHandler({ req }: { req: NextRequest }): Promise<NextResponse> {
+async function fileReadHandler({ req, user }: { req: NextRequest; user?: any }): Promise<NextResponse> {
     const request = req;
     try {
         const { searchParams } = new URL(request.url);
         const filePath = searchParams.get('path');
         const useBridge = searchParams.get('useBridge') !== 'false'; // Default to true
+        const queryUserId = searchParams.get('userId');
 
         if (!filePath) {
             return NextResponse.json(
@@ -78,7 +79,8 @@ async function fileReadHandler({ req }: { req: NextRequest }): Promise<NextRespo
         }
 
         // Check if bridge is connected and should be used
-        const userId = 'default-user';
+        // Use userId from: auth context > query param > fallback for backwards compatibility
+        const userId = user?.id || queryUserId || 'default-user';
 
         if (useBridge && bridgeManager.hasBridgeForUser(userId)) {
             // Route through bridge to user's local machine

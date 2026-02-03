@@ -273,9 +273,6 @@ export default function ArtifactsInbox() {
         <div className="w-1/2 border-r border-border-default overflow-y-auto">
           {currentItems.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-text-secondary p-6">
-              <div className="text-5xl mb-4">
-                {activeTab === 'inbox' ? '📭' : '📁'}
-              </div>
               <h3 className="text-lg font-medium mb-2">
                 {activeTab === 'inbox' ? 'Inbox Empty' : 'No Saved Items'}
               </h3>
@@ -473,7 +470,6 @@ export default function ArtifactsInbox() {
             </div>
           ) : (
             <div className="h-full flex flex-col items-center justify-center text-text-muted p-6">
-              <div className="text-5xl mb-4">👆</div>
               <p>Select an item to preview</p>
             </div>
           )}
