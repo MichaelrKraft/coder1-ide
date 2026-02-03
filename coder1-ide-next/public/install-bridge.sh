@@ -96,7 +96,16 @@ if [ "$NODE_VERSION" -lt 18 ]; then
     exit 1
 fi
 
-echo -e "${GREEN}✅ Node.js $(node -v) detected${NC}"
+# Warn about Node 23+ compatibility issues with node-pty
+if [ "$NODE_VERSION" -ge 23 ]; then
+    echo -e "${YELLOW}⚠️  Node.js $(node -v) detected - may have compatibility issues${NC}"
+    echo -e "${YELLOW}   node-pty (required for interactive Claude) works best with Node 18-22${NC}"
+    echo -e "${YELLOW}   If you encounter issues, use Node 20 LTS:${NC}"
+    echo -e "${CYAN}   nvm install 20 && nvm use 20${NC}"
+    echo
+else
+    echo -e "${GREEN}✅ Node.js $(node -v) detected${NC}"
+fi
 
 # Check if npm is available
 if ! command -v npm &> /dev/null; then
