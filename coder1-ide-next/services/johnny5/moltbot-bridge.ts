@@ -544,8 +544,15 @@ class MoltbotBridgeService extends EventEmitter {
     console.log('[MoltbotBridge] Challenge payload:', JSON.stringify(payload));
 
     // Get auth token from environment (configured by user)
-    const authToken = process.env.MOLTBOT_AUTH_TOKEN || '';
-    console.log(`[MoltbotBridge] Auth token length: ${authToken.length}, first 8 chars: ${authToken.substring(0, 8)}...`);
+    // Try multiple env var sources for Next.js compatibility
+    const authToken =
+      process.env.MOLTBOT_AUTH_TOKEN ||       // Standard server env
+      process.env.NEXT_PUBLIC_MOLTBOT_AUTH_TOKEN ||  // Client-accessible env
+      '';  // Fallback to empty string for auth mode "none"
+
+    console.log(`[MoltbotBridge] Auth token available: ${authToken !== undefined ? 'Yes' : 'No'}`);
+    console.log(`[MoltbotBridge] Auth token length: ${authToken.length}`);
+    console.log(`[MoltbotBridge] Auth token preview: ${authToken.substring(0, 8)}${authToken.length > 8 ? '...' : ''}`);
 
     // Exact format - Moltbot requires protocol 3
     const response = {
@@ -596,6 +603,16 @@ class MoltbotBridgeService extends EventEmitter {
   }
 
   private handleResponse(response: { id: string; ok?: boolean; result?: any; payload?: any; error?: any }): void {
+    // ENHANCED DEBUG LOGGING
+    console.log('[MoltbotBridge] ===== RESPONSE DEBUG =====');
+    console.log('[MoltbotBridge] Response ID:', response.id);
+    console.log('[MoltbotBridge] Response OK:', response.ok);
+    console.log('[MoltbotBridge] Response Result:', response.result ? 'Present' : 'None');
+    console.log('[MoltbotBridge] Response Payload:', response.payload ? 'Present' : 'None');
+    console.log('[MoltbotBridge] Response Error:', response.error);
+    console.log('[MoltbotBridge] Full Response:', JSON.stringify(response, null, 2).substring(0, 500));
+    console.log('[MoltbotBridge] =========================');
+
     // Johnny5 returns "result" while Moltbot uses "ok"
     const success = response.ok === true || !!response.result;
     console.log(`[MoltbotBridge] Response received for id=${response.id}, success=${success}`);
@@ -604,10 +621,16 @@ class MoltbotBridgeService extends EventEmitter {
     }
 
     // Check if this is the connect handshake response (id="1")
-    if (response.id === '1' && success) {
-      this.authenticated = true;
-      console.log('[MoltbotBridge] Authentication complete - ready for chat');
-      this.emit('authenticated');
+    if (response.id === '1') {
+      // Accept both ok=true OR result with any content
+      const authSuccess = response.ok === true || !!response.result;
+      if (authSuccess) {
+        this.authenticated = true;
+        console.log('[MoltbotBridge] Authentication complete - ready for chat');
+        this.emit('authenticated');
+      } else {
+        console.error('[MoltbotBridge] Authentication failed. Response:', JSON.stringify(response));
+      }
     }
 
     // Check if this is a response to a pending request
