@@ -1,3 +1,50 @@
+# Alpha Landing Page React Conversion - COMPLETED
+
+## Task Summary
+Converted the Coder1 alpha landing page from static HTML to a dynamic React/Next.js page with sharper UI and interactive features.
+
+### Completed Features
+- [x] Animated counter stats (count up when scrolling into view)
+- [x] Typing animation in hero subtitle
+- [x] Interactive Morning Brief demo (click to reveal sections)
+- [x] Comparison table with hover effects and tooltips
+- [x] Scroll-triggered animations (fade up on scroll)
+- [x] Interactive feature cards with hover effects
+- [x] Live terminal demo showing Johnny5 commands
+- [x] Floating grid background with particles
+- [x] Claude Code messaging section ("Purpose-Built for Claude Code")
+- [x] Electric pulse borders on featured pricing card
+- [x] Shimmer text effect on hero title
+- [x] Mobile responsive design
+
+### File Location
+`/Users/michaelkraft/autonomous_vibe_interface/coder1-ide-next/app/alpha/page.tsx`
+
+### Key Components Created
+1. `AnimatedCounter` - Numbers count up when in view using IntersectionObserver
+2. `TypeWriter` - Character-by-character typing animation
+3. `ScrollReveal` - Fade/slide up animation when element enters viewport
+4. `MorningBriefDemo` - Interactive demo with reveal buttons
+5. `FloatingGrid` - Animated background with particles and gradient orbs
+6. `FeatureCard` - Hover effects with glow
+7. `ComparisonRow` - Table rows with hover highlighting and tooltips
+8. `PricingCard` - Electric pulse border animation for featured tier
+9. `LiveTerminalDemo` - Auto-advancing terminal showing Johnny5 commands
+
+### Design Tokens Used
+```typescript
+colors = {
+  primary: '#00D9FF',
+  purple: '#8B5CF6',
+  dark: '#0A0A0A',
+}
+```
+
+### View the page
+http://localhost:3001/alpha
+
+---
+
 # Johnny5 Implementation Todo
 
 **Plan file**: `/Users/michaelkraft/.claude/plans/humming-gliding-nova.md`
@@ -288,10 +335,45 @@
 
 ### Next Steps:
 1. Fork Moltbot repository for autonomous daemon functionality (Phase 1, Step 1)
-2. Connect real data to API routes (replace mock data)
+2. ~~Connect real data to API routes (replace mock data)~~ DONE (Feb 1, 2026)
 3. Test all tabs in the live IDE at http://localhost:3001/ide
 4. Wire up Johnny5 store actions to API routes
 5. Add real-time updates via WebSocket
+
+---
+
+## UI Components Real Data Update (Feb 1, 2026)
+
+### Summary
+All Johnny5 UI tab components now fetch real data from API endpoints instead of using mock data.
+
+### Files Modified
+
+**SessionsTab.tsx**:
+- Removed `getMockSessions()` function (~70 lines of mock data)
+- Now fetches from `/api/johnny5/sessions` and sets empty array on failure
+- Proper error logging added
+
+**MissionControlTab.tsx**:
+- Added `useEffect` to fetch tasks on mount from `/api/johnny5/tasks`
+- Implemented real `handleRefresh` function that calls API
+- Removed `generateDemoTasks()` function (~40 lines of mock data)
+- Added `setTasksLoading` to store usage
+
+**MorningBriefTab.tsx**:
+- Removed `getMockBrief()` function (~90 lines of mock data)
+- Now fetches from `/api/johnny5/morning-brief` and sets null on failure
+- Proper error logging added
+
+**mission-control/index.ts**:
+- Removed `generateDemoTasks` export
+
+### Components Already Correct
+- **AnalyticsTab.tsx**: Already fetches from `/api/johnny5/analytics?range=` and sets empty state on error
+- **ChatTab.tsx**: Already uses `/api/johnny5/chat` API correctly
+
+### Build Status
+Build passes with no errors related to Johnny5 components.
 
 ---
 
@@ -331,3 +413,316 @@ MOLTBOT_GATEWAY_URL=ws://localhost:8765
 ### Testing
 - Server syntax check: Passed (node --check server.js)
 - Integration testing: Pending (requires Moltbot daemon running)
+
+---
+
+## Sessions API Implementation (Feb 1, 2026)
+
+### Overview
+Implemented the real Johnny5 sessions API using the SQLite database (johnny5-db module).
+
+### Files Updated
+- `/Users/michaelkraft/autonomous_vibe_interface/coder1-ide-next/app/api/johnny5/sessions/route.ts`
+- `/Users/michaelkraft/autonomous_vibe_interface/coder1-ide-next/app/api/johnny5/sessions/[sessionId]/route.ts`
+
+### API Endpoints Implemented
+
+**GET /api/johnny5/sessions**
+- Lists all sessions with pagination (`limit`, `offset`)
+- Supports status filtering (`?status=active|completed|archived`)
+- Returns session summaries with token usage, message count, duration
+
+**POST /api/johnny5/sessions**
+- Creates a new session
+- Accepts `{ name: string }` in body
+- Returns the created session
+
+**DELETE /api/johnny5/sessions?id=xxx**
+- Archives a session by ID
+- Uses query parameter for session ID
+
+**GET /api/johnny5/sessions/[sessionId]**
+- Returns detailed session info
+- Optional `?includeMessages=true` (default) to fetch messages
+- Optional `?messageLimit=100` (default) to limit messages
+
+**PATCH /api/johnny5/sessions/[sessionId]**
+- Updates session name or status
+- Accepts `{ name?, status? }` in body
+
+**DELETE /api/johnny5/sessions/[sessionId]**
+- Archives the specific session
+
+### Testing Results
+
+```bash
+# List sessions
+curl http://localhost:3001/api/johnny5/sessions
+# {"success":true,"data":{"sessions":[...]}}
+
+# Create session
+curl -X POST http://localhost:3001/api/johnny5/sessions -H "Content-Type: application/json" -d '{"name":"Test Session"}'
+# {"success":true,"data":{"session":{...}}}
+
+# Get session with messages
+curl "http://localhost:3001/api/johnny5/sessions/SESSION_ID?includeMessages=true"
+# {"success":true,"data":{"session":{...},"messages":[...]}}
+
+# Update session
+curl -X PATCH "http://localhost:3001/api/johnny5/sessions/SESSION_ID" -H "Content-Type: application/json" -d '{"name":"New Name","status":"completed"}'
+# {"success":true,"data":{"session":{...}}}
+
+# Archive session
+curl -X DELETE "http://localhost:3001/api/johnny5/sessions?id=SESSION_ID"
+# {"success":true}
+```
+
+### Database
+- Location: `~/.coder1/johnny5.db`
+- Uses better-sqlite3 for SQLite access
+- Sessions, messages, and tasks tables with proper foreign keys
+
+---
+
+# Sandbox UX Communication Improvements (Feb 2, 2026)
+
+## Problem Statement
+When users create a sandbox, a new browser tab opens at `/ide?sandbox={id}`. This new tab looks **identical** to a regular Coder1 session, which confuses users into thinking they accidentally opened a duplicate.
+
+## Proposed Solution
+
+Implement 4 key UX improvements to clearly communicate sandbox mode:
+
+### Todo Items
+
+- [x] **1. Change Browser Tab Title** (Simple) ✅ DONE
+  - When sandbox detected, set `document.title = "🧪 Sandbox - Coder1 IDE"`
+  - Provides immediate visual distinction in browser tabs
+
+- [x] **2. Add Sandbox Mode Banner** (Medium) ✅ DONE
+  - Display a persistent colored banner at top of IDE when in sandbox mode
+  - Yellow/amber background with icon and text: "🧪 Sandbox Environment - Changes here are isolated"
+  - Shows sandbox ID (last 8 chars) for reference
+  - "Open Main IDE" button to easily open non-sandbox IDE
+
+- [ ] **3. Show Welcome Modal on First Open** (Medium)
+  - One-time modal when sandbox tab first opens explaining:
+    - "You're in an isolated sandbox environment"
+    - "Changes here won't affect your main workspace"
+    - "Use this space to experiment safely"
+    - "Your main Coder1 session is still open in the other tab"
+  - Checkbox: "Don't show this again"
+  - "Got it!" button to dismiss
+
+- [ ] **4. Terminal Header Indicator** (Simple)
+  - Add sandbox badge/pill in terminal header showing sandbox ID
+  - Different terminal prompt color or prefix in sandbox mode
+
+## Files to Modify
+
+1. `app/ide/page.tsx` - Add sandbox detection state, title change, banner
+2. `components/SandboxWelcomeModal.tsx` - New component for welcome modal
+3. `components/SandboxBanner.tsx` - New component for persistent banner
+4. `components/terminal/Terminal.tsx` - Add sandbox indicator in terminal header
+5. `app/globals.css` - Sandbox-specific styling
+
+## Implementation Priority
+
+1. **Tab title** - Quickest win, immediate user feedback
+2. **Banner** - Most visible persistent indicator
+3. **Welcome modal** - Best for education/onboarding
+4. **Terminal indicator** - Reinforces sandbox context
+
+## Acceptance Criteria
+
+- [ ] User can immediately tell they're in a sandbox from browser tab
+- [ ] Persistent visual indicator shows sandbox mode throughout session
+- [ ] First-time users understand what a sandbox is via welcome modal
+- [ ] Easy way to return to main workspace
+- [ ] Sandbox ID is visible somewhere for reference
+
+---
+
+**Status**: Items 1 & 2 Complete
+**Created**: 2026-02-02
+
+---
+
+## Implementation Review (Feb 2, 2026)
+
+### Changes Made
+
+**File Modified**: `app/ide/page.tsx`
+
+1. **Added sandbox mode state** (line ~197):
+   ```typescript
+   const [sandboxMode, setSandboxMode] = useState<{ active: boolean; sandboxId: string | null }>({ active: false, sandboxId: null });
+   ```
+
+2. **Updated sandbox detection useEffect** (line ~1304-1348):
+   - Now sets `sandboxMode` state when sandbox URL param detected
+   - Sets `document.title = "🧪 Sandbox - Coder1 IDE"` for tab distinction
+   - Resets both when not in sandbox mode
+
+3. **Added Sandbox Banner JSX** (line ~1540-1590):
+   - Yellow/amber colored banner appears only when `sandboxMode.active`
+   - Shows "🧪 Sandbox Environment — Changes here are isolated"
+   - Displays sandbox ID badge (last 8 characters)
+   - "Open Main IDE" button opens regular `/ide` in new tab
+
+### Visual Result
+
+When user opens a sandbox:
+- **Browser tab**: Shows "🧪 Sandbox - Coder1 IDE" instead of "Coder1 IDE"
+- **Banner**: Yellow bar at top with sandbox info and "Open Main IDE" button
+
+### Build Status
+✅ Build passed - no errors
+
+---
+
+# Phase 4: Johnny5 Proactive Features (Feb 3, 2026) - COMPLETED
+
+## Status: COMPLETE
+
+## What Was Implemented
+
+### CronService for Scheduled Tasks
+- **File**: `/services/johnny5/cron-service.ts`
+- Supports: one-shot (at), interval (every), cron expressions
+- Uses `croner` library for reliable scheduling
+- File-based persistence at `data/johnny5/cron-jobs.json`
+- Run history tracking with retry logic
+
+### API Routes for Cron Management
+- `GET /api/johnny5/cron` - List all cron jobs
+- `POST /api/johnny5/cron` - Create new cron job
+- `GET /api/johnny5/cron/[jobId]` - Get job details and history
+- `PATCH /api/johnny5/cron/[jobId]` - Enable/disable job
+- `DELETE /api/johnny5/cron/[jobId]` - Remove job
+- `POST /api/johnny5/cron/control` - Control service (start/stop/init-defaults)
+
+### Default Scheduled Jobs (Created Automatically)
+1. **Daily Morning Brief** - `0 9 * * *` (9am PT daily)
+   - Generates brief from overnight activity
+   - Sends WebSocket notification to connected clients
+2. **Trend Monitor Check** - `0 9,11,13,15,17 * * 1-5` (Business hours Mon-Fri)
+   - Checks for new trends and opportunities
+   - Alerts on high-priority findings
+
+### Server Integration
+- Cron service auto-starts when server boots
+- Jobs execute with Socket.IO notifications
+- Default jobs created if not exists
+
+### Bug Fixes
+- Made `generateMorningBrief` async to work with SQLite task tracker
+- Added `stats` field to Johnny5MorningBrief type
+- Fixed history API to include `id` field for UI compatibility
+- Fixed TypeScript imports (`fs`, `path`)
+
+## Files Created/Modified
+- `services/johnny5/cron-service.ts` (NEW)
+- `app/api/johnny5/cron/route.ts` (NEW)
+- `app/api/johnny5/cron/[jobId]/route.ts` (NEW)
+- `app/api/johnny5/cron/control/route.ts` (NEW)
+- `services/johnny5/morning-brief-generator.ts` (MODIFIED - async)
+- `app/api/johnny5/morning-brief/route.ts` (MODIFIED)
+- `app/api/johnny5/morning-brief/history/route.ts` (MODIFIED)
+- `types/johnny5.ts` (MODIFIED - added stats field)
+- `server.js` (MODIFIED - cron initialization)
+
+## Testing Commands
+```bash
+# Test cron service
+curl http://localhost:3001/api/johnny5/cron/control -X POST -H "Content-Type: application/json" -d '{"action":"status"}'
+
+# Initialize default jobs
+curl http://localhost:3001/api/johnny5/cron/control -X POST -H "Content-Type: application/json" -d '{"action":"init-defaults"}'
+
+# Manually trigger morning brief
+curl http://localhost:3001/api/johnny5/cron/control -X POST -H "Content-Type: application/json" -d '{"action":"run-morning-brief"}'
+
+# List all cron jobs
+curl http://localhost:3001/api/johnny5/cron
+```
+
+---
+
+# Stripe Pro Tier Payment Integration (Feb 3, 2026)
+
+## Status: Code Complete - Waiting for Mike's Stripe Config
+
+## Context
+Enable Pro tier ($29/mo) purchases via Stripe for alpha launch. Free and Team tiers stay as-is.
+
+## Tasks
+
+- [ ] **Step 1**: Mike creates "Coder1 Pro" product in Stripe Dashboard ($29/mo) ← **YOUR TURN**
+- [x] **Step 2**: Install Stripe dependencies (`stripe`, `@stripe/stripe-js`)
+- [ ] **Step 3**: Add Stripe env vars to `.env.local` ← **YOUR TURN** (see instructions below)
+- [x] **Step 4**: Create `/app/api/stripe/checkout/route.ts` - checkout session API
+- [x] **Step 5**: Create `/app/api/stripe/webhook/route.ts` - webhook handler
+- [x] **Step 6**: Update Pro button in `/app/alpha/page.tsx` to trigger checkout
+- [x] **Step 7**: Handle success redirect in `/app/ide/page.tsx` with toast
+- [ ] **Step 8**: Test end-to-end with Stripe test mode
+
+## What Mike Needs To Do
+
+### 1. Create Stripe Product (5 min)
+Go to https://dashboard.stripe.com/products and:
+1. Click "Add product"
+2. Name: **Coder1 Pro**
+3. Price: **$29.00 USD** / **Monthly** (recurring)
+4. Click "Save product"
+5. Copy the **Price ID** (starts with `price_...`)
+
+### 2. Get API Keys
+Go to https://dashboard.stripe.com/apikeys and copy:
+- **Publishable key** (starts with `pk_live_...` or `pk_test_...`)
+- **Secret key** (starts with `sk_live_...` or `sk_test_...`)
+
+### 3. Add to .env.local
+Create/edit `/Users/michaelkraft/autonomous_vibe_interface/coder1-ide-next/.env.local` and add:
+```
+STRIPE_SECRET_KEY=sk_live_YOUR_SECRET_KEY
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_live_YOUR_PUBLISHABLE_KEY
+STRIPE_PRO_PRICE_ID=price_YOUR_PRICE_ID
+```
+
+### 4. (Optional) Set Up Webhook for Production
+Go to https://dashboard.stripe.com/webhooks:
+1. Add endpoint: `https://your-domain.com/api/stripe/webhook`
+2. Select events: `checkout.session.completed`, `customer.subscription.*`, `invoice.*`
+3. Copy webhook signing secret to `STRIPE_WEBHOOK_SECRET=whsec_...`
+
+### 5. Test with Test Mode
+Use test card: `4242 4242 4242 4242`, any future expiry, any CVC
+
+## Files Created/Modified
+
+### New Files
+- `app/api/stripe/checkout/route.ts` - Creates Stripe checkout sessions
+- `app/api/stripe/webhook/route.ts` - Handles subscription lifecycle events
+
+### Modified Files
+- `app/alpha/page.tsx` - Pro button now triggers `handleProCheckout()`
+- `app/ide/page.tsx` - Shows welcome toast on checkout success
+- `.env.local.example` - Added Stripe env var documentation
+- `package.json` - Added `stripe` and `@stripe/stripe-js`
+
+## Flow
+
+1. User clicks "Start Pro Trial" on Pro pricing card
+2. Button calls `/api/stripe/checkout` API
+3. API creates Stripe checkout session
+4. User redirected to Stripe's hosted checkout page
+5. After payment → redirected to `/ide?checkout_success=true&session_id=...`
+6. IDE shows "Welcome to Coder1 Pro!" toast notification
+
+## Notes
+
+- Free tier: No changes (keeps signup form)
+- Team tier: No changes (keeps mailto link)
+- Success URL: `/ide?checkout_success=true&session_id={CHECKOUT_SESSION_ID}`
+- Cancel URL: `/alpha#pricing`

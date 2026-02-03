@@ -45,8 +45,8 @@ export async function GET(request: NextRequest) {
       targetDate = new Date();
     }
 
-    // Get REAL brief from morning brief generator
-    const brief = getBrief(targetDate);
+    // Get REAL brief from morning brief generator (async)
+    const brief = await getBrief(targetDate);
     const dateKey = targetDate.toISOString().split('T')[0];
 
     console.log(`[Johnny5 Morning Brief API] Returning brief for ${dateKey}`);

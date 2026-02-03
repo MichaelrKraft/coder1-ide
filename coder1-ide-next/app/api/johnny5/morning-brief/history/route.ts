@@ -27,9 +27,9 @@ export async function GET(request: NextRequest) {
 
     // Generate briefs for recent days if history is empty
     if (history.length === 0) {
-      // Generate today's brief at minimum
+      // Generate today's brief at minimum (async)
       const today = new Date();
-      getBrief(today);
+      await getBrief(today);
 
       // Get updated history
       const updatedHistory = getBriefHistory(limit);

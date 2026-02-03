@@ -1,0 +1,1621 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Coder1 IDE - The First IDE with an AI Employee. Meet Johnny5, an autonomous agent that works overnight, creates PRs, and briefs you every morning.">
+    <meta name="keywords" content="AI IDE, Autonomous Agent, Johnny5, Coder1, AI Development, Autonomous Coding">
+    <title>Coder1 IDE Alpha - The First IDE with an AI Employee | Johnny5</title>
+
+    <!-- Fonts & Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+
+    <style>
+        :root {
+            /* Coder1 cyan color scheme */
+            --primary-cyan: #00D9FF;
+            --secondary-cyan: #00B4D8;
+            --light-cyan: #90E0EF;
+            --accent-cyan: #0077B6;
+
+            /* Memory purple accent */
+            --memory-purple: #8B5CF6;
+            --memory-glow: rgba(139, 92, 246, 0.3);
+
+            /* Electric border effect */
+            --electric-border-color: #00D9FF;
+            --electric-light-color: #66E7FF;
+            --gradient-color: rgba(0, 217, 255, 0.2);
+            --color-neutral-900: #1a1a1a;
+
+            /* Text colors */
+            --dark-text: #030303;
+            --light-text: #666666;
+            --muted-text: #999999;
+
+            /* Backgrounds */
+            --background-white: #FFFFFF;
+            --background-light: #FAFAFA;
+            --background-dark: #0A0A0A;
+
+            /* Gradients */
+            --gradient-primary: linear-gradient(135deg, #00D9FF, #00B4D8);
+            --gradient-memory: linear-gradient(135deg, #8B5CF6, #00D9FF);
+            --gradient-dark: linear-gradient(135deg, #0A0A0A, #1A1A1A);
+
+            /* Effects */
+            --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.07);
+            --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.1);
+            --shadow-xl: 0 20px 40px rgba(0, 0, 0, 0.15);
+
+            --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: var(--font-family);
+            background: var(--background-white);
+            color: var(--dark-text);
+            overflow-x: hidden;
+            line-height: 1.6;
+        }
+
+        /* Container */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* Navigation */
+        nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: #000000;
+            border-bottom: 1px solid rgba(0, 217, 255, 0.3);
+            z-index: 1000;
+            transition: all 0.3s ease;
+        }
+
+        .nav-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem 0;
+            height: 60px;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            text-decoration: none;
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: white;
+        }
+
+        .logo img {
+            height: 40px;
+            width: auto;
+            object-fit: contain;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+        }
+
+        .nav-link {
+            color: #ffffff;
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .nav-link:hover {
+            color: var(--primary-cyan);
+        }
+
+        .nav-cta {
+            padding: 0.75rem 1.5rem;
+            background: var(--gradient-primary);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 217, 255, 0.3);
+        }
+
+        .nav-cta:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 25px rgba(0, 217, 255, 0.4);
+        }
+
+        /* Hero Section */
+        .hero {
+            padding: 10rem 0 5rem;
+            background: linear-gradient(135deg, rgba(0, 217, 255, 0.05) 0%, rgba(139, 92, 246, 0.05) 100%);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero-content {
+            text-align: center;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1.5rem;
+            background: var(--gradient-memory);
+            border-radius: 50px;
+            color: white;
+            font-weight: 600;
+            margin-bottom: 2rem;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .hero-title {
+            font-size: 5rem;
+            font-weight: 900;
+            margin-bottom: 0.5rem;
+            line-height: 1.1;
+            background: var(--gradient-memory);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero-subtitle {
+            font-size: 2rem;
+            color: var(--dark-text);
+            margin-bottom: 1.5rem;
+            font-weight: 700;
+        }
+
+        .hero-description {
+            font-size: 1.25rem;
+            color: var(--light-text);
+            margin-bottom: 2.5rem;
+            max-width: 700px;
+            margin-left: auto;
+            margin-right: auto;
+            line-height: 1.8;
+        }
+
+        .hero-cta-container {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-bottom: 4rem;
+        }
+
+        .hero-cta {
+            display: inline-block;
+            padding: 1.2rem 3rem;
+            background: var(--gradient-primary);
+            color: white;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 30px rgba(0, 217, 255, 0.3);
+        }
+
+        .hero-cta:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 40px rgba(0, 217, 255, 0.4);
+        }
+
+        .hero-cta.outline {
+            background: transparent;
+            border: 2px solid var(--primary-cyan);
+            color: var(--primary-cyan);
+            box-shadow: none;
+        }
+
+        .hero-cta.outline:hover {
+            background: var(--gradient-primary);
+            color: white;
+            box-shadow: 0 10px 30px rgba(0, 217, 255, 0.3);
+        }
+
+        /* Hook Cards */
+        .audience-hooks {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2rem;
+            margin: 3rem 0;
+        }
+
+        .hook-card {
+            padding: 1.5rem;
+            background: white;
+            border-radius: 12px;
+            box-shadow: var(--shadow-md);
+            transition: all 0.3s ease;
+        }
+
+        .hook-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-xl);
+        }
+
+        .hook-audience {
+            font-size: 0.9rem;
+            color: var(--memory-purple);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 0.5rem;
+        }
+
+        .hook-message {
+            font-size: 1.1rem;
+            color: var(--dark-text);
+            font-weight: 600;
+        }
+
+        /* Section Styles */
+        .section-header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .section-title {
+            font-size: 3rem;
+            font-weight: 800;
+            margin-bottom: 1rem;
+            color: var(--dark-text);
+        }
+
+        .section-subtitle {
+            font-size: 1.2rem;
+            color: var(--light-text);
+        }
+
+        /* What is Coder1 Section */
+        .what-is-section {
+            padding: 5rem 0;
+            background: white;
+        }
+
+        .ide-features-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 1.5rem;
+            margin-top: 3rem;
+            margin-bottom: 3rem;
+        }
+
+        .ide-feature-card {
+            padding: 1.5rem;
+            background: var(--background-light);
+            border-radius: 12px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .ide-feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .ide-feature-icon {
+            font-size: 2rem;
+            color: var(--primary-cyan);
+            margin-bottom: 1rem;
+        }
+
+        .ide-feature-name {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--dark-text);
+            margin-bottom: 0.5rem;
+        }
+
+        .ide-feature-desc {
+            font-size: 0.85rem;
+            color: var(--light-text);
+        }
+
+        .transition-text {
+            text-align: center;
+            font-size: 1.5rem;
+            color: var(--memory-purple);
+            font-weight: 700;
+            margin-top: 3rem;
+            padding: 2rem;
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(0, 217, 255, 0.1) 100%);
+            border-radius: 12px;
+        }
+
+        /* Johnny5 Section */
+        .johnny5-section {
+            padding: 5rem 0;
+            background: linear-gradient(135deg, rgba(0, 217, 255, 0.05) 0%, rgba(139, 92, 246, 0.05) 100%);
+        }
+
+        .johnny5-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 2rem;
+            margin-top: 3rem;
+        }
+
+        .johnny5-card {
+            padding: 2rem;
+            background: white;
+            border-radius: 16px;
+            box-shadow: var(--shadow-md);
+            transition: all 0.3s ease;
+        }
+
+        .johnny5-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-xl);
+        }
+
+        .johnny5-card.full-width {
+            grid-column: span 2;
+        }
+
+        .johnny5-icon {
+            font-size: 2.5rem;
+            color: var(--memory-purple);
+            margin-bottom: 1rem;
+        }
+
+        .johnny5-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--dark-text);
+            margin-bottom: 0.75rem;
+        }
+
+        .johnny5-desc {
+            color: var(--light-text);
+            line-height: 1.7;
+        }
+
+        /* Morning Brief Section */
+        .morning-brief-section {
+            padding: 5rem 0;
+            background: white;
+        }
+
+        .morning-brief-card {
+            max-width: 700px;
+            margin: 3rem auto 0;
+            padding: 2rem;
+            background: #1a1a1a;
+            border-radius: 16px;
+            color: white;
+            font-family: 'Monaco', 'Menlo', monospace;
+            box-shadow: var(--shadow-xl);
+        }
+
+        .brief-greeting {
+            color: var(--primary-cyan);
+            font-size: 1.1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .brief-section {
+            margin-bottom: 1.5rem;
+        }
+
+        .brief-section-title {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.75rem;
+            font-size: 0.9rem;
+        }
+
+        .brief-section-title .check {
+            color: #10B981;
+        }
+
+        .brief-section-title .chart {
+            color: var(--primary-cyan);
+        }
+
+        .brief-section-title .trend {
+            color: #F59E0B;
+        }
+
+        .brief-section-title .warning {
+            color: #EF4444;
+        }
+
+        .brief-item {
+            padding-left: 1.5rem;
+            font-size: 0.85rem;
+            color: rgba(255, 255, 255, 0.8);
+            margin-bottom: 0.5rem;
+        }
+
+        .brief-item.sub {
+            padding-left: 2.5rem;
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 0.8rem;
+        }
+
+        /* Security Section */
+        .security-section {
+            padding: 5rem 0;
+            background: linear-gradient(135deg, rgba(0, 217, 255, 0.05) 0%, rgba(139, 92, 246, 0.05) 100%);
+        }
+
+        .security-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1.5rem;
+            margin-top: 3rem;
+        }
+
+        .security-card {
+            padding: 2rem;
+            background: white;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: var(--shadow-md);
+            transition: all 0.3s ease;
+        }
+
+        .security-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-xl);
+        }
+
+        .security-icon {
+            font-size: 2.5rem;
+            color: var(--primary-cyan);
+            margin-bottom: 1rem;
+        }
+
+        .security-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--dark-text);
+            margin-bottom: 0.5rem;
+        }
+
+        .security-desc {
+            font-size: 0.9rem;
+            color: var(--light-text);
+        }
+
+        /* More Features Section */
+        .more-features-section {
+            padding: 5rem 0;
+            background: white;
+        }
+
+        .more-features-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1.5rem;
+            margin-top: 3rem;
+        }
+
+        .more-feature-card {
+            padding: 1.5rem;
+            background: var(--background-light);
+            border-radius: 12px;
+            transition: all 0.3s ease;
+        }
+
+        .more-feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .more-feature-icon {
+            font-size: 1.5rem;
+            color: var(--memory-purple);
+            margin-bottom: 0.75rem;
+        }
+
+        .more-feature-name {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--dark-text);
+            margin-bottom: 0.5rem;
+        }
+
+        .more-feature-desc {
+            font-size: 0.85rem;
+            color: var(--light-text);
+        }
+
+        /* Comparison Section */
+        .comparison-section {
+            padding: 5rem 0;
+            background: var(--background-dark);
+            color: white;
+        }
+
+        .comparison-section .section-title {
+            color: white;
+        }
+
+        .comparison-section .section-subtitle {
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .comparison-table {
+            margin-top: 3rem;
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        th {
+            padding: 1.5rem 1rem;
+            background: rgba(255, 255, 255, 0.1);
+            font-weight: 600;
+            text-align: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        th:first-child {
+            text-align: left;
+        }
+
+        td {
+            padding: 1.25rem 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            text-align: center;
+        }
+
+        td:first-child {
+            text-align: left;
+            font-weight: 500;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        .check {
+            color: #10B981;
+            font-size: 1.25rem;
+        }
+
+        .cross {
+            color: #EF4444;
+            font-size: 1.25rem;
+        }
+
+        .infinity {
+            color: var(--primary-cyan);
+            font-size: 1.25rem;
+        }
+
+        .coder1-column {
+            background: rgba(0, 217, 255, 0.1);
+        }
+
+        .partial {
+            color: #F59E0B;
+            font-size: 0.9rem;
+        }
+
+        /* Pricing Section */
+        .pricing-section {
+            padding: 5rem 0;
+            background: linear-gradient(135deg, rgba(0, 217, 255, 0.05) 0%, rgba(139, 92, 246, 0.05) 100%);
+        }
+
+        .pricing-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2rem;
+            margin-top: 3rem;
+        }
+
+        .pricing-card {
+            padding: 2.5rem;
+            background: white;
+            border-radius: 16px;
+            box-shadow: var(--shadow-md);
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .pricing-card:hover {
+            transform: translateY(-10px);
+            box-shadow: var(--shadow-xl);
+        }
+
+        .pricing-card.featured {
+            transform: scale(1.05);
+            position: relative;
+        }
+
+        .pricing-card.featured::before {
+            content: '';
+            position: absolute;
+            inset: -2px;
+            border: 2px solid rgba(0, 217, 255, 0.6);
+            border-radius: 18px;
+            pointer-events: none;
+            animation: electricPulse1 2s ease-in-out infinite;
+        }
+
+        .pricing-card.featured::after {
+            content: '';
+            position: absolute;
+            inset: -4px;
+            border: 2px solid var(--electric-light-color);
+            border-radius: 20px;
+            filter: blur(4px);
+            pointer-events: none;
+            animation: electricPulse2 3s ease-in-out infinite;
+        }
+
+        @keyframes electricPulse1 {
+            0%, 100% {
+                opacity: 0.6;
+                border-color: rgba(0, 217, 255, 0.6);
+            }
+            50% {
+                opacity: 1;
+                border-color: rgba(0, 217, 255, 1);
+            }
+        }
+
+        @keyframes electricPulse2 {
+            0%, 100% {
+                opacity: 0.4;
+                filter: blur(4px) brightness(1);
+            }
+            50% {
+                opacity: 0.8;
+                filter: blur(6px) brightness(1.5);
+            }
+        }
+
+        .pricing-badge {
+            position: absolute;
+            top: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 0.5rem 1.5rem;
+            background: var(--gradient-primary);
+            color: white;
+            border-radius: 50px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .pricing-tier {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--dark-text);
+            margin-bottom: 0.5rem;
+        }
+
+        .pricing-price {
+            font-size: 3rem;
+            font-weight: 800;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.5rem;
+        }
+
+        .pricing-period {
+            color: var(--light-text);
+            margin-bottom: 2rem;
+        }
+
+        .pricing-features {
+            list-style: none;
+            padding: 0;
+            margin-bottom: 2rem;
+        }
+
+        .pricing-features li {
+            padding: 0.75rem 0;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .pricing-features li:last-child {
+            border-bottom: none;
+        }
+
+        .pricing-features i {
+            color: var(--primary-cyan);
+        }
+
+        .pricing-cta {
+            display: block;
+            width: 100%;
+            padding: 1rem;
+            background: var(--gradient-primary);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            font-weight: 600;
+            text-decoration: none;
+            text-align: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .pricing-cta:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(0, 217, 255, 0.3);
+        }
+
+        .pricing-cta.outline {
+            background: transparent;
+            border: 2px solid var(--primary-cyan);
+            color: var(--primary-cyan);
+        }
+
+        .pricing-cta.outline:hover {
+            background: var(--gradient-primary);
+            color: white;
+        }
+
+        /* Alpha CTA Section */
+        .alpha-cta-section {
+            padding: 5rem 0;
+            background: var(--gradient-memory);
+            text-align: center;
+            color: white;
+        }
+
+        .alpha-cta-title {
+            font-size: 2.5rem;
+            font-weight: 800;
+            margin-bottom: 1rem;
+        }
+
+        .alpha-cta-subtitle {
+            font-size: 1.2rem;
+            margin-bottom: 3rem;
+            opacity: 0.9;
+        }
+
+        .alpha-form {
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 1rem 1.5rem;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .form-input::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: white;
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .form-submit {
+            width: 100%;
+            padding: 1rem 2rem;
+            background: white;
+            color: var(--memory-purple);
+            border: none;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .form-submit:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .trust-elements {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin-top: 2rem;
+            opacity: 0.9;
+            flex-wrap: wrap;
+        }
+
+        .trust-element {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        /* Footer */
+        footer {
+            padding: 3rem 0;
+            background: var(--background-dark);
+            color: white;
+        }
+
+        .footer-content {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .footer-column h4 {
+            margin-bottom: 1rem;
+            color: var(--primary-cyan);
+        }
+
+        .footer-column a {
+            display: block;
+            color: rgba(255, 255, 255, 0.7);
+            text-decoration: none;
+            padding: 0.25rem 0;
+            transition: color 0.3s ease;
+        }
+
+        .footer-column a:hover {
+            color: white;
+        }
+
+        .footer-social {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .footer-social a {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            color: white;
+            transition: all 0.3s ease;
+        }
+
+        .footer-social a:hover {
+            background: var(--primary-cyan);
+            transform: translateY(-3px);
+        }
+
+        .footer-bottom {
+            text-align: center;
+            padding-top: 2rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        /* Mobile Menu */
+        .mobile-menu-toggle {
+            display: none;
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .ide-features-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+
+            .more-features-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .security-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .nav-links {
+                display: none;
+            }
+
+            .mobile-menu-toggle {
+                display: block;
+            }
+
+            .hero-title {
+                font-size: 3rem;
+            }
+
+            .hero-subtitle {
+                font-size: 1.5rem;
+            }
+
+            .hero-cta-container {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .audience-hooks {
+                grid-template-columns: 1fr;
+            }
+
+            .ide-features-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .johnny5-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .johnny5-card.full-width {
+                grid-column: span 1;
+            }
+
+            .security-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .more-features-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .pricing-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .pricing-card.featured {
+                transform: none;
+            }
+
+            .footer-content {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .section-title {
+                font-size: 2rem;
+            }
+
+            table {
+                font-size: 0.85rem;
+            }
+
+            th, td {
+                padding: 0.75rem 0.5rem;
+            }
+
+            .trust-elements {
+                flex-direction: column;
+                align-items: center;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .hero-title {
+                font-size: 2.5rem;
+            }
+
+            .ide-features-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .footer-content {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav>
+        <div class="container">
+            <div class="nav-container">
+                <a href="/" class="logo">
+                    <img src="/Coder1-logo-black.png" alt="Coder1" onerror="this.style.display='none'; this.parentNode.innerHTML='Coder1';" />
+                </a>
+                <div class="nav-links">
+                    <a href="#features" class="nav-link">Features</a>
+                    <a href="#johnny5" class="nav-link">Johnny5</a>
+                    <a href="#pricing" class="nav-link">Pricing</a>
+                    <a href="#alpha" class="nav-cta">Join Alpha</a>
+                </div>
+                <button class="mobile-menu-toggle" aria-label="Toggle menu">
+                    <i class="fas fa-bars"></i>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="container">
+            <div class="hero-content">
+                <div class="hero-badge">
+                    <i class="fas fa-robot"></i>
+                    <span>2026: Year of the Autonomous Agent</span>
+                </div>
+
+                <h1 class="hero-title">Coder1 IDE</h1>
+                <p class="hero-subtitle">The First IDE with an AI Employee</p>
+                <p class="hero-description">
+                    Meet Johnny5 - an autonomous agent built into your IDE that works overnight,
+                    creates pull requests, monitors trends, and briefs you every morning.
+                </p>
+
+                <div class="hero-cta-container">
+                    <a href="#alpha" class="hero-cta">Join the Alpha</a>
+                    <a href="#demo" class="hero-cta outline">Watch Demo</a>
+                </div>
+
+                <div class="audience-hooks">
+                    <div class="hook-card">
+                        <div class="hook-audience">Founders</div>
+                        <div class="hook-message">Ship faster with AI that works while you sleep</div>
+                    </div>
+                    <div class="hook-card">
+                        <div class="hook-audience">Developers</div>
+                        <div class="hook-message">Full IDE + autonomous agent in one</div>
+                    </div>
+                    <div class="hook-card">
+                        <div class="hook-audience">Teams</div>
+                        <div class="hook-message">Enterprise-grade security and transparency</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- What is Coder1 Section -->
+    <section class="what-is-section" id="features">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">A Complete AI-Powered IDE</h2>
+                <p class="section-subtitle">Everything you need to build, all in one place</p>
+            </div>
+
+            <div class="ide-features-grid">
+                <div class="ide-feature-card">
+                    <div class="ide-feature-icon"><i class="fas fa-code"></i></div>
+                    <div class="ide-feature-name">Monaco Editor</div>
+                    <div class="ide-feature-desc">Syntax highlighting, IntelliSense</div>
+                </div>
+                <div class="ide-feature-card">
+                    <div class="ide-feature-icon"><i class="fas fa-terminal"></i></div>
+                    <div class="ide-feature-name">Integrated Terminal</div>
+                    <div class="ide-feature-desc">Full terminal access</div>
+                </div>
+                <div class="ide-feature-card">
+                    <div class="ide-feature-icon"><i class="fas fa-eye"></i></div>
+                    <div class="ide-feature-name">Live Preview</div>
+                    <div class="ide-feature-desc">See changes instantly</div>
+                </div>
+                <div class="ide-feature-card">
+                    <div class="ide-feature-icon"><i class="fas fa-history"></i></div>
+                    <div class="ide-feature-name">Session Management</div>
+                    <div class="ide-feature-desc">Never lose context</div>
+                </div>
+                <div class="ide-feature-card">
+                    <div class="ide-feature-icon"><i class="fas fa-link"></i></div>
+                    <div class="ide-feature-name">Local Bridge</div>
+                    <div class="ide-feature-desc">Connect to your codebase</div>
+                </div>
+            </div>
+
+            <div class="transition-text">
+                <i class="fas fa-arrow-down" style="margin-right: 0.5rem;"></i>
+                But here's what makes Coder1 different...
+            </div>
+        </div>
+    </section>
+
+    <!-- Meet Johnny5 Section -->
+    <section class="johnny5-section" id="johnny5">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">Meet Johnny5 - Your AI Employee</h2>
+                <p class="section-subtitle">The autonomous agent that works while you sleep</p>
+            </div>
+
+            <div class="johnny5-grid">
+                <div class="johnny5-card">
+                    <div class="johnny5-icon"><i class="fas fa-moon"></i></div>
+                    <div class="johnny5-title">Autonomous Overnight Work</div>
+                    <div class="johnny5-desc">
+                        Johnny5 builds features while you rest. Queue up tasks before bed,
+                        wake up to completed code. No more late nights.
+                    </div>
+                </div>
+                <div class="johnny5-card">
+                    <div class="johnny5-icon"><i class="fas fa-code-pull-request"></i></div>
+                    <div class="johnny5-title">Proactive PR Creation</div>
+                    <div class="johnny5-desc">
+                        Notices feature requests in Slack conversations and GitHub issues.
+                        Builds them automatically and creates PRs for your review.
+                    </div>
+                </div>
+                <div class="johnny5-card">
+                    <div class="johnny5-icon"><i class="fas fa-sun"></i></div>
+                    <div class="johnny5-title">Morning Briefings</div>
+                    <div class="johnny5-desc">
+                        Start each day knowing exactly what got done. Clear summaries of
+                        completed work, research findings, and items needing attention.
+                    </div>
+                </div>
+                <div class="johnny5-card">
+                    <div class="johnny5-icon"><i class="fas fa-chart-line"></i></div>
+                    <div class="johnny5-title">Trend Monitoring</div>
+                    <div class="johnny5-desc">
+                        Watches X, GitHub, and HackerNews for opportunities relevant to your
+                        project. Alerts you to new releases, competitor moves, and trends.
+                    </div>
+                </div>
+                <div class="johnny5-card full-width">
+                    <div class="johnny5-icon"><i class="fas fa-shield-halved"></i></div>
+                    <div class="johnny5-title">Security Transparency</div>
+                    <div class="johnny5-desc">
+                        See every decision, every action, full audit trail. Unlike black-box AI tools,
+                        Johnny5 shows you exactly what it's doing and why. Full session replay available.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Morning Brief Demo Section -->
+    <section class="morning-brief-section" id="demo">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">Wake Up to This</h2>
+                <p class="section-subtitle">Your daily briefing from Johnny5</p>
+            </div>
+
+            <div class="morning-brief-card">
+                <div class="brief-greeting">Good morning! While you slept, Johnny5:</div>
+
+                <div class="brief-section">
+                    <div class="brief-section-title">
+                        <i class="fas fa-check-circle check"></i>
+                        Created 3 PRs
+                    </div>
+                    <div class="brief-item sub">- Added dark mode toggle (127 lines)</div>
+                    <div class="brief-item sub">- Optimized API caching (89 lines)</div>
+                    <div class="brief-item sub">- Fixed mobile responsive issues (56 lines)</div>
+                </div>
+
+                <div class="brief-section">
+                    <div class="brief-section-title">
+                        <i class="fas fa-chart-bar chart"></i>
+                        Completed 2 research tasks
+                    </div>
+                    <div class="brief-item sub">- Best practices for WebSocket reconnection</div>
+                    <div class="brief-item sub">- Competitor analysis: Cursor's new features</div>
+                </div>
+
+                <div class="brief-section">
+                    <div class="brief-section-title">
+                        <i class="fas fa-arrow-trend-up trend"></i>
+                        Spotted 3 opportunities
+                    </div>
+                    <div class="brief-item sub">- Next.js 15 released - upgrade recommended</div>
+                    <div class="brief-item sub">- Trending on HN: AI test generation</div>
+                    <div class="brief-item sub">- Your competitor raised Series A</div>
+                </div>
+
+                <div class="brief-section">
+                    <div class="brief-section-title">
+                        <i class="fas fa-exclamation-triangle warning"></i>
+                        1 item needs attention
+                    </div>
+                    <div class="brief-item sub">- PR #124 ready for your review</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Security Section -->
+    <section class="security-section">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">See Everything Your AI Does</h2>
+                <p class="section-subtitle">Other AI tools are black boxes. Johnny5 shows you everything.</p>
+            </div>
+
+            <div class="security-grid">
+                <div class="security-card">
+                    <div class="security-icon"><i class="fas fa-clipboard-list"></i></div>
+                    <div class="security-title">Full Audit Trail</div>
+                    <div class="security-desc">Every action logged with timestamp and reasoning</div>
+                </div>
+                <div class="security-card">
+                    <div class="security-icon"><i class="fas fa-shield-virus"></i></div>
+                    <div class="security-title">Prompt Injection Detection</div>
+                    <div class="security-desc">Real-time blocking of suspicious inputs</div>
+                </div>
+                <div class="security-card">
+                    <div class="security-icon"><i class="fas fa-lock"></i></div>
+                    <div class="security-title">Permission Boundaries</div>
+                    <div class="security-desc">Clear scope definitions, risky ops flagged</div>
+                </div>
+                <div class="security-card">
+                    <div class="security-icon"><i class="fas fa-play-circle"></i></div>
+                    <div class="security-title">Session Replay</div>
+                    <div class="security-desc">Step-by-step playback of AI reasoning</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- More Features Section -->
+    <section class="more-features-section">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">More Than Just Johnny5</h2>
+                <p class="section-subtitle">A complete development experience</p>
+            </div>
+
+            <div class="more-features-grid">
+                <div class="more-feature-card">
+                    <div class="more-feature-icon"><i class="fas fa-brain"></i></div>
+                    <div class="more-feature-name">Contextual Memory</div>
+                    <div class="more-feature-desc">Never re-explain your project</div>
+                </div>
+                <div class="more-feature-card">
+                    <div class="more-feature-icon"><i class="fas fa-microphone"></i></div>
+                    <div class="more-feature-name">Voice-to-Text</div>
+                    <div class="more-feature-desc">Code at the speed of thought</div>
+                </div>
+                <div class="more-feature-card">
+                    <div class="more-feature-icon"><i class="fas fa-eye"></i></div>
+                    <div class="more-feature-name">AI Supervision</div>
+                    <div class="more-feature-desc">AI watches your Claude sessions</div>
+                </div>
+                <div class="more-feature-card">
+                    <div class="more-feature-icon"><i class="fas fa-bolt"></i></div>
+                    <div class="more-feature-name">Templates & Hooks</div>
+                    <div class="more-feature-desc">Intelligent automation</div>
+                </div>
+                <div class="more-feature-card">
+                    <div class="more-feature-icon"><i class="fas fa-book"></i></div>
+                    <div class="more-feature-name">Codebase Wiki</div>
+                    <div class="more-feature-desc">Living documentation</div>
+                </div>
+                <div class="more-feature-card">
+                    <div class="more-feature-icon"><i class="fas fa-file-alt"></i></div>
+                    <div class="more-feature-name">Session Summaries</div>
+                    <div class="more-feature-desc">Seamless handoffs</div>
+                </div>
+                <div class="more-feature-card">
+                    <div class="more-feature-icon"><i class="fas fa-palette"></i></div>
+                    <div class="more-feature-name">Component Studio</div>
+                    <div class="more-feature-desc">Visual component building</div>
+                </div>
+                <div class="more-feature-card">
+                    <div class="more-feature-icon"><i class="fas fa-slash"></i></div>
+                    <div class="more-feature-name">/Commands</div>
+                    <div class="more-feature-desc">Everything at slash-command speed</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Comparison Section -->
+    <section class="comparison-section">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">Why Developers Are Switching</h2>
+                <p class="section-subtitle">See how Coder1 compares to alternatives</p>
+            </div>
+
+            <div class="comparison-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Feature</th>
+                            <th class="coder1-column">Coder1 IDE</th>
+                            <th>Cursor</th>
+                            <th>GitHub Copilot</th>
+                            <th>VS Code + Claude</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Full IDE</td>
+                            <td class="coder1-column"><i class="fas fa-check check"></i></td>
+                            <td><i class="fas fa-check check"></i></td>
+                            <td><i class="fas fa-times cross"></i></td>
+                            <td><i class="fas fa-check check"></i></td>
+                        </tr>
+                        <tr>
+                            <td>Autonomous Overnight Work</td>
+                            <td class="coder1-column"><i class="fas fa-check check"></i></td>
+                            <td><i class="fas fa-times cross"></i></td>
+                            <td><i class="fas fa-times cross"></i></td>
+                            <td><i class="fas fa-times cross"></i></td>
+                        </tr>
+                        <tr>
+                            <td>Morning Briefings</td>
+                            <td class="coder1-column"><i class="fas fa-check check"></i></td>
+                            <td><i class="fas fa-times cross"></i></td>
+                            <td><i class="fas fa-times cross"></i></td>
+                            <td><i class="fas fa-times cross"></i></td>
+                        </tr>
+                        <tr>
+                            <td>Proactive PR Creation</td>
+                            <td class="coder1-column"><i class="fas fa-check check"></i></td>
+                            <td><i class="fas fa-times cross"></i></td>
+                            <td><i class="fas fa-times cross"></i></td>
+                            <td><i class="fas fa-times cross"></i></td>
+                        </tr>
+                        <tr>
+                            <td>Security Audit Trail</td>
+                            <td class="coder1-column"><i class="fas fa-check check"></i></td>
+                            <td><i class="fas fa-times cross"></i></td>
+                            <td><i class="fas fa-times cross"></i></td>
+                            <td><i class="fas fa-times cross"></i></td>
+                        </tr>
+                        <tr>
+                            <td>Contextual Memory</td>
+                            <td class="coder1-column"><i class="fas fa-infinity infinity"></i></td>
+                            <td><span class="partial">Limited</span></td>
+                            <td><i class="fas fa-times cross"></i></td>
+                            <td><span class="partial">Session</span></td>
+                        </tr>
+                        <tr>
+                            <td>Prompt Injection Detection</td>
+                            <td class="coder1-column"><i class="fas fa-check check"></i></td>
+                            <td><i class="fas fa-times cross"></i></td>
+                            <td><i class="fas fa-times cross"></i></td>
+                            <td><i class="fas fa-times cross"></i></td>
+                        </tr>
+                        <tr>
+                            <td>Session Replay</td>
+                            <td class="coder1-column"><i class="fas fa-check check"></i></td>
+                            <td><i class="fas fa-times cross"></i></td>
+                            <td><i class="fas fa-times cross"></i></td>
+                            <td><i class="fas fa-times cross"></i></td>
+                        </tr>
+                        <tr>
+                            <td>Free Forever Plan</td>
+                            <td class="coder1-column"><i class="fas fa-check check"></i></td>
+                            <td><i class="fas fa-times cross"></i></td>
+                            <td><i class="fas fa-times cross"></i></td>
+                            <td><span class="partial">Partial</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pricing Section -->
+    <section class="pricing-section" id="pricing">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">Start Free, Scale When Ready</h2>
+                <p class="section-subtitle">No credit card required to get started</p>
+            </div>
+
+            <div class="pricing-grid">
+                <div class="pricing-card">
+                    <div class="pricing-tier">Free Forever</div>
+                    <div class="pricing-price">$0</div>
+                    <div class="pricing-period">per month</div>
+                    <ul class="pricing-features">
+                        <li><i class="fas fa-check"></i> Basic IDE features</li>
+                        <li><i class="fas fa-check"></i> 5 Johnny5 tasks/day</li>
+                        <li><i class="fas fa-check"></i> Community support</li>
+                        <li><i class="fas fa-check"></i> Basic session history</li>
+                    </ul>
+                    <a href="#alpha" class="pricing-cta outline">Get Started</a>
+                </div>
+
+                <div class="pricing-card featured">
+                    <div class="pricing-badge">Most Popular</div>
+                    <div class="pricing-tier">Pro</div>
+                    <div class="pricing-price">$29</div>
+                    <div class="pricing-period">per month</div>
+                    <ul class="pricing-features">
+                        <li><i class="fas fa-check"></i> Everything in Free</li>
+                        <li><i class="fas fa-check"></i> Unlimited Johnny5 tasks</li>
+                        <li><i class="fas fa-check"></i> Contextual Memory</li>
+                        <li><i class="fas fa-check"></i> Priority support</li>
+                        <li><i class="fas fa-check"></i> Full audit trail</li>
+                        <li><i class="fas fa-check"></i> Session replay</li>
+                    </ul>
+                    <a href="#alpha" class="pricing-cta">Start Pro Trial</a>
+                </div>
+
+                <div class="pricing-card">
+                    <div class="pricing-tier">Team</div>
+                    <div class="pricing-price">Custom</div>
+                    <div class="pricing-period">contact us</div>
+                    <ul class="pricing-features">
+                        <li><i class="fas fa-check"></i> Everything in Pro</li>
+                        <li><i class="fas fa-check"></i> Team collaboration</li>
+                        <li><i class="fas fa-check"></i> Admin dashboard</li>
+                        <li><i class="fas fa-check"></i> SSO/SAML</li>
+                        <li><i class="fas fa-check"></i> Dedicated support</li>
+                        <li><i class="fas fa-check"></i> Custom integrations</li>
+                    </ul>
+                    <a href="mailto:team@coder1.ai" class="pricing-cta outline">Contact Sales</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Alpha CTA Section -->
+    <section class="alpha-cta-section" id="alpha">
+        <div class="container">
+            <h2 class="alpha-cta-title">Be First to Experience Autonomous Development</h2>
+            <p class="alpha-cta-subtitle">Alpha access is limited. Get in early to shape the future.</p>
+
+            <form class="alpha-form" action="#" method="POST" onsubmit="handleAlphaSubmit(event)">
+                <div class="form-group">
+                    <input type="email" class="form-input" placeholder="Your email address" required>
+                </div>
+                <div class="form-group">
+                    <input type="text" class="form-input" placeholder="GitHub username (optional)">
+                </div>
+                <button type="submit" class="form-submit">Request Alpha Access</button>
+            </form>
+
+            <div class="trust-elements">
+                <div class="trust-element">
+                    <i class="fas fa-credit-card"></i>
+                    <span>No credit card required</span>
+                </div>
+                <div class="trust-element">
+                    <i class="fas fa-shield-halved"></i>
+                    <span>Enterprise-grade security</span>
+                </div>
+                <div class="trust-element">
+                    <i class="fas fa-ban"></i>
+                    <span>Cancel anytime</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-column">
+                    <h4>Product</h4>
+                    <a href="#features">Features</a>
+                    <a href="#pricing">Pricing</a>
+                    <a href="#">Changelog</a>
+                    <a href="#">Roadmap</a>
+                </div>
+                <div class="footer-column">
+                    <h4>Resources</h4>
+                    <a href="#">Documentation</a>
+                    <a href="#">Blog</a>
+                    <a href="#">Tutorials</a>
+                    <a href="#">API Reference</a>
+                </div>
+                <div class="footer-column">
+                    <h4>Company</h4>
+                    <a href="#">About</a>
+                    <a href="#">Contact</a>
+                    <a href="#">Careers</a>
+                    <a href="#">Press</a>
+                </div>
+                <div class="footer-column">
+                    <h4>Connect</h4>
+                    <div class="footer-social">
+                        <a href="https://github.com/coder1-ide" aria-label="GitHub"><i class="fab fa-github"></i></a>
+                        <a href="https://discord.gg/coder1" aria-label="Discord"><i class="fab fa-discord"></i></a>
+                        <a href="https://twitter.com/coder1ide" aria-label="Twitter"><i class="fab fa-twitter"></i></a>
+                    </div>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2026 Coder1. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Smooth scroll for anchor links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+
+        // Alpha form submission handler
+        function handleAlphaSubmit(e) {
+            e.preventDefault();
+            const form = e.target;
+            const email = form.querySelector('input[type="email"]').value;
+            const github = form.querySelector('input[type="text"]').value;
+
+            // Show success message
+            alert(`Thanks for your interest! We'll notify ${email} when alpha access is available.`);
+            form.reset();
+        }
+
+        // Mobile menu toggle
+        const mobileMenuToggle = document.querySelector('.mobile-menu-toggle');
+        const navLinks = document.querySelector('.nav-links');
+
+        if (mobileMenuToggle) {
+            mobileMenuToggle.addEventListener('click', () => {
+                navLinks.style.display = navLinks.style.display === 'flex' ? 'none' : 'flex';
+            });
+        }
+
+        // Add scroll effect to nav
+        window.addEventListener('scroll', () => {
+            const nav = document.querySelector('nav');
+            if (window.scrollY > 50) {
+                nav.style.boxShadow = '0 4px 20px rgba(0, 0, 0, 0.3)';
+            } else {
+                nav.style.boxShadow = 'none';
+            }
+        });
+    </script>
+</body>
+</html>

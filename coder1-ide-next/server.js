@@ -201,11 +201,31 @@ try {
 }
 
 // Moltbot Bridge for Johnny5 autonomous agent integration
+// Uses .ts file directly since tsx loader is enabled
 let moltbotBridge;
 try {
-  const { getMoltbotBridge } = require('./services/johnny5/moltbot-bridge.js');
+  const { getMoltbotBridge } = require('./services/johnny5/moltbot-bridge.ts');
   moltbotBridge = getMoltbotBridge();
   console.log('✅ Moltbot Bridge service loaded');
+
+  // Auto-connect to Moltbot gateway on server start if enabled
+  const moltbotEnabled = process.env.MOLTBOT_ENABLED === 'true';
+  const moltbotGatewayUrl = process.env.MOLTBOT_GATEWAY_URL;
+  if (moltbotEnabled && moltbotGatewayUrl) {
+    console.log(`🔌 Moltbot auto-connect enabled, will connect to ${moltbotGatewayUrl}`);
+    // Delayed connection to allow server to fully start
+    setTimeout(async () => {
+      try {
+        await moltbotBridge.connect(moltbotGatewayUrl);
+        console.log('✅ Moltbot Bridge connected to gateway');
+      } catch (err) {
+        console.warn('⚠️ Moltbot auto-connect failed:', err.message);
+        console.warn('   Bridge will retry automatically with exponential backoff');
+      }
+    }, 2000);
+  } else if (!moltbotEnabled) {
+    console.log('ℹ️ Moltbot integration disabled (set MOLTBOT_ENABLED=true to enable)');
+  }
 } catch (error) {
   console.warn('⚠️ Moltbot Bridge not available:', error.message);
   moltbotBridge = null;
@@ -3348,7 +3368,92 @@ app.prepare().then(() => {
       console.log(`IDE Interface: http://localhost:${port}/ide`);
     }
     console.log('');
-    
+
+    // Initialize Johnny5 Cron Service for proactive features
+    try {
+      const { getCronService } = require('./services/johnny5/cron-service.ts');
+      const cronService = getCronService({
+        storePath: path.join(__dirname, 'data', 'johnny5', 'cron-jobs.json'),
+        onJobRun: async (job) => {
+          console.log(`[Johnny5 Cron] Executing job: ${job.name} (${job.payload.action || 'custom'})`);
+
+          // Handle different job actions
+          switch (job.payload.action) {
+            case 'morning_brief':
+              try {
+                const { generateMorningBrief } = require('./services/johnny5/morning-brief-generator.ts');
+                const brief = await generateMorningBrief(new Date());
+                console.log(`[Johnny5 Cron] Morning brief generated: ${brief.id}`);
+
+                // Notify connected clients via Socket.IO
+                io.emit('johnny5:morning-brief', {
+                  type: 'morning_brief_ready',
+                  briefId: brief.id,
+                  summary: brief.summary,
+                  timestamp: new Date().toISOString(),
+                });
+              } catch (error) {
+                console.error('[Johnny5 Cron] Morning brief generation failed:', error.message);
+              }
+              break;
+
+            case 'trend_check':
+              try {
+                const { trendMonitor } = require('./services/johnny5/trend-monitor.ts');
+                const alerts = await trendMonitor.refresh();
+                const highPriorityAlerts = alerts.filter(a => a.relevance === 'high' && !a.dismissed);
+
+                if (highPriorityAlerts.length > 0) {
+                  io.emit('johnny5:trends', {
+                    type: 'new_high_priority_trends',
+                    count: highPriorityAlerts.length,
+                    alerts: highPriorityAlerts.slice(0, 3),
+                    timestamp: new Date().toISOString(),
+                  });
+                }
+                console.log(`[Johnny5 Cron] Trend check complete: ${alerts.length} alerts (${highPriorityAlerts.length} high priority)`);
+              } catch (error) {
+                console.error('[Johnny5 Cron] Trend check failed:', error.message);
+              }
+              break;
+
+            default:
+              console.log(`[Johnny5 Cron] Custom job executed: ${job.name}`);
+          }
+        },
+        onNotify: (message, job) => {
+          // Send notification to connected clients
+          io.emit('johnny5:notification', {
+            type: 'cron_notification',
+            message,
+            jobId: job.id,
+            jobName: job.name,
+            action: job.payload.action,
+            timestamp: new Date().toISOString(),
+          });
+          console.log(`[Johnny5 Cron] Notification sent: ${message}`);
+        },
+      });
+
+      // Initialize and create default jobs
+      cronService.initialize().then(async () => {
+        await cronService.createDefaultJobs('system');
+        await cronService.start();
+
+        const jobs = cronService.getJobs();
+        console.log('✅ Johnny5 Cron Service started');
+        console.log(`   Active jobs: ${jobs.filter(j => j.enabled).length}/${jobs.length}`);
+        jobs.forEach(job => {
+          console.log(`   - ${job.name} (${job.enabled ? 'enabled' : 'disabled'})`);
+        });
+      }).catch(error => {
+        console.error('❌ Johnny5 Cron Service initialization failed:', error.message);
+      });
+
+    } catch (error) {
+      console.warn('⚠️ Johnny5 Cron Service not available:', error.message);
+    }
+
     // Initialize Memory Exporter for Claude Skills
     if (memoryExporter) {
       memoryExporter.initialize().then(() => {
