@@ -231,11 +231,25 @@ export default function ChatTab() {
         }),
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to get response');
-      }
-
       const data = await response.json();
+
+      // Handle specific error codes from Bridge-based chat
+      if (!response.ok || !data.success) {
+        const errorCode = data.code;
+        let errorMessage = "Sorry, I encountered an error. Please try again.";
+
+        if (errorCode === 'BRIDGE_NOT_CONNECTED') {
+          errorMessage = "🔌 Bridge not connected! Please run 'coder1-bridge start' in your terminal and enter the pairing code.";
+        } else if (errorCode === 'BRIDGE_ERROR') {
+          errorMessage = "⚠️ Bridge error. Please check that coder1-bridge is running and try again.";
+        } else if (errorCode === 'COMMAND_TIMEOUT') {
+          errorMessage = "⏳ Request timed out. Please try again with a simpler request.";
+        } else if (data.error) {
+          errorMessage = `Error: ${data.error}`;
+        }
+
+        throw new Error(errorMessage);
+      }
 
       // Update user message status
       setMessages((prev) =>
@@ -248,10 +262,10 @@ export default function ChatTab() {
       const assistantMessage: ChatMessage = {
         id: `assistant-${Date.now()}`,
         role: 'assistant',
-        content: data.response,
+        content: data.data?.response || data.response,
         timestamp: new Date(),
-        toolCalls: data.toolCalls,
-        thinking: data.thinking,
+        toolCalls: data.data?.toolCalls || data.toolCalls,
+        thinking: data.data?.thinking || data.thinking,
       };
 
       setMessages((prev) => [...prev, assistantMessage]);
@@ -265,13 +279,14 @@ export default function ChatTab() {
         )
       );
 
-      // Add error message
+      // Add error message with the specific error text
+      const errorText = error instanceof Error ? error.message : "Sorry, I encountered an error. Please try again or check your API connection.";
       setMessages((prev) => [
         ...prev,
         {
           id: `error-${Date.now()}`,
           role: 'assistant',
-          content: "Sorry, I encountered an error. Please try again or check your API connection.",
+          content: errorText,
           timestamp: new Date(),
         },
       ]);

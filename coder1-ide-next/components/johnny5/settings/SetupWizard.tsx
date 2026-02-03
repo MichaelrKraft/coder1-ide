@@ -1,12 +1,11 @@
 'use client';
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   Sparkles,
   Check,
   ChevronRight,
   ChevronLeft,
-  Key,
   Shield,
   MessageSquare,
   FileText,
@@ -16,6 +15,8 @@ import {
   AlertCircle,
   CheckCircle2,
   ExternalLink,
+  Link2,
+  RefreshCw,
 } from 'lucide-react';
 
 interface SetupWizardProps {
@@ -24,9 +25,7 @@ interface SetupWizardProps {
   className?: string;
 }
 
-type WizardStep = 'welcome' | 'apikey' | 'permissions' | 'complete';
-
-type ValidationStatus = 'idle' | 'validating' | 'success' | 'error';
+type WizardStep = 'welcome' | 'bridge' | 'permissions' | 'complete';
 
 interface Permissions {
   readFiles: boolean;
@@ -40,7 +39,7 @@ interface Permissions {
  *
  * Simplified 4-step setup flow for Johnny5:
  * 1. Welcome - Introduction
- * 2. API Key - Connect to Claude with validation
+ * 2. Bridge - Connect via Coder1 Bridge (uses Claude Code CLI)
  * 3. Permissions - Set permissions and proactivity
  * 4. Complete - Quick start tips
  */
@@ -51,11 +50,10 @@ export default function SetupWizard({
 }: SetupWizardProps) {
   const [currentStep, setCurrentStep] = useState<WizardStep>('welcome');
 
-  // API Key state
-  const [apiKey, setApiKey] = useState('');
-  const [validationStatus, setValidationStatus] = useState<ValidationStatus>('idle');
-  const [validationError, setValidationError] = useState('');
-  const [validatedModel, setValidatedModel] = useState('');
+  // Bridge connection state
+  const [bridgeConnected, setBridgeConnected] = useState(false);
+  const [bridgeChecking, setBridgeChecking] = useState(false);
+  const [bridgeError, setBridgeError] = useState('');
 
   // Permissions state
   const [permissions, setPermissions] = useState<Permissions>({
@@ -69,46 +67,42 @@ export default function SetupWizard({
   // Saving state
   const [isSaving, setIsSaving] = useState(false);
 
-  const steps: WizardStep[] = ['welcome', 'apikey', 'permissions', 'complete'];
+  const steps: WizardStep[] = ['welcome', 'bridge', 'permissions', 'complete'];
   const currentStepIndex = steps.indexOf(currentStep);
 
-  // Validate API key
-  const validateApiKey = useCallback(async () => {
-    if (!apiKey.trim()) {
-      setValidationError('Please enter your API key');
-      return;
-    }
-
-    setValidationStatus('validating');
-    setValidationError('');
+  // Check Bridge connection status
+  const checkBridgeStatus = useCallback(async () => {
+    setBridgeChecking(true);
+    setBridgeError('');
 
     try {
-      const response = await fetch('/api/johnny5/setup', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'validate-api-key',
-          apiKey: apiKey.trim(),
-        }),
-      });
-
+      const response = await fetch('/api/bridge/status?userId=default');
       const data = await response.json();
 
-      if (data.success) {
-        setValidationStatus('success');
-        setValidatedModel(data.data?.model || 'claude-3-5-sonnet');
-        setValidationError('');
+      if (data.connected || (data.bridges && data.bridges.length > 0)) {
+        setBridgeConnected(true);
+        setBridgeError('');
       } else {
-        setValidationStatus('error');
-        setValidationError(data.error || 'Validation failed');
+        setBridgeConnected(false);
+        setBridgeError('');
       }
-    } catch {
-      setValidationStatus('error');
-      setValidationError('Network error. Please check your connection.');
+    } catch (error) {
+      console.error('Failed to check bridge status:', error);
+      setBridgeConnected(false);
+      setBridgeError('Failed to check connection status');
+    } finally {
+      setBridgeChecking(false);
     }
-  }, [apiKey]);
+  }, []);
 
-  // Save configuration
+  // Check bridge status when step changes to 'bridge'
+  useEffect(() => {
+    if (currentStep === 'bridge') {
+      checkBridgeStatus();
+    }
+  }, [currentStep, checkBridgeStatus]);
+
+  // Save configuration (no API key needed - using Bridge)
   const saveConfiguration = useCallback(async () => {
     setIsSaving(true);
 
@@ -118,7 +112,6 @@ export default function SetupWizard({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action: 'save-config',
-          apiKey: apiKey.trim(),
           permissions,
           proactivityLevel,
         }),
@@ -134,7 +127,7 @@ export default function SetupWizard({
     } finally {
       setIsSaving(false);
     }
-  }, [apiKey, permissions, proactivityLevel]);
+  }, [permissions, proactivityLevel]);
 
   // Navigate to next step
   const goNext = async () => {
@@ -227,115 +220,113 @@ export default function SetupWizard({
           </div>
         );
 
-      case 'apikey':
+      case 'bridge':
         return (
           <div className="py-4">
             <div className="text-center mb-6">
               <div className="w-14 h-14 mx-auto mb-4 rounded-xl bg-coder1-cyan/10 flex items-center justify-center">
-                <Key className="w-7 h-7 text-coder1-cyan" />
+                <Link2 className="w-7 h-7 text-coder1-cyan" />
               </div>
               <h2 className="text-xl font-bold text-text-primary mb-2">
-                Connect to Claude
+                Connect via Bridge
               </h2>
               <p className="text-sm text-text-muted">
-                Enter your Anthropic API key to power Johnny5
+                Johnny5 uses Claude Code CLI through your local Bridge
               </p>
             </div>
 
             <div className="max-w-md mx-auto space-y-4">
-              {/* API Key Input */}
-              <div>
-                <label className="block text-sm font-medium text-text-secondary mb-2">
-                  Anthropic API Key
-                </label>
-                <div className="relative">
-                  <input
-                    type="password"
-                    value={apiKey}
-                    onChange={(e) => {
-                      setApiKey(e.target.value);
-                      if (validationStatus !== 'idle') {
-                        setValidationStatus('idle');
-                        setValidationError('');
-                      }
-                    }}
-                    placeholder="sk-ant-..."
-                    className={`
-                      w-full px-4 py-3 rounded-lg bg-bg-secondary border text-text-primary
-                      placeholder:text-text-muted focus:outline-none focus:ring-2 transition-all
-                      ${validationStatus === 'error'
-                        ? 'border-red-500 focus:ring-red-500/30'
-                        : validationStatus === 'success'
-                        ? 'border-green-500 focus:ring-green-500/30'
-                        : 'border-border-default focus:ring-coder1-cyan/30 focus:border-coder1-cyan'
-                      }
-                    `}
-                  />
-                  {validationStatus === 'success' && (
-                    <CheckCircle2 className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-green-500" />
+              {/* Connection Status */}
+              <div className={`
+                p-6 rounded-xl border-2 transition-all
+                ${bridgeConnected
+                  ? 'bg-green-500/10 border-green-500/30'
+                  : 'bg-bg-tertiary border-border-default'
+                }
+              `}>
+                <div className="flex items-center justify-center gap-3 mb-3">
+                  {bridgeChecking ? (
+                    <Loader2 className="w-6 h-6 text-coder1-cyan animate-spin" />
+                  ) : bridgeConnected ? (
+                    <CheckCircle2 className="w-6 h-6 text-green-500" />
+                  ) : (
+                    <AlertCircle className="w-6 h-6 text-yellow-500" />
                   )}
-                  {validationStatus === 'error' && (
-                    <AlertCircle className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-red-500" />
-                  )}
+                  <span className={`text-lg font-semibold ${
+                    bridgeConnected ? 'text-green-400' : 'text-text-primary'
+                  }`}>
+                    {bridgeChecking
+                      ? 'Checking connection...'
+                      : bridgeConnected
+                      ? 'Bridge Connected!'
+                      : 'Bridge Not Connected'
+                    }
+                  </span>
                 </div>
 
-                {/* Validation Status Messages */}
-                {validationStatus === 'success' && (
-                  <p className="mt-2 text-sm text-green-500 flex items-center gap-1">
-                    <Check className="w-4 h-4" />
-                    Key validated! Connected to {validatedModel}
+                {bridgeConnected && (
+                  <p className="text-sm text-green-400/80 text-center">
+                    Ready to use Claude Code CLI
                   </p>
                 )}
-                {validationStatus === 'error' && validationError && (
-                  <p className="mt-2 text-sm text-red-500 flex items-center gap-1">
-                    <AlertCircle className="w-4 h-4" />
-                    {validationError}
-                  </p>
+
+                {!bridgeConnected && !bridgeChecking && (
+                  <div className="space-y-3">
+                    <p className="text-sm text-text-muted text-center">
+                      Run this command in your terminal:
+                    </p>
+                    <div className="bg-bg-secondary rounded-lg p-3 font-mono text-sm text-coder1-cyan">
+                      coder1-bridge start
+                    </div>
+                    <p className="text-xs text-text-muted text-center">
+                      Then enter the pairing code shown in the IDE status bar
+                    </p>
+                  </div>
                 )}
               </div>
 
-              {/* Validate Button */}
+              {/* Refresh Button */}
               <button
-                onClick={validateApiKey}
-                disabled={validationStatus === 'validating' || !apiKey.trim()}
-                className={`
-                  w-full py-3 rounded-lg font-medium text-sm transition-all
+                onClick={checkBridgeStatus}
+                disabled={bridgeChecking}
+                className="w-full py-3 rounded-lg font-medium text-sm transition-all
                   flex items-center justify-center gap-2
-                  ${validationStatus === 'success'
-                    ? 'bg-green-500/20 text-green-400 border border-green-500/30'
-                    : 'bg-coder1-cyan hover:bg-coder1-cyan/90 text-black'
-                  }
-                  disabled:opacity-50 disabled:cursor-not-allowed
-                `}
+                  bg-bg-tertiary hover:bg-bg-secondary text-text-primary
+                  border border-border-default
+                  disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {validationStatus === 'validating' ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Validating...
-                  </>
-                ) : validationStatus === 'success' ? (
-                  <>
-                    <CheckCircle2 className="w-4 h-4" />
-                    Key Validated
-                  </>
-                ) : (
-                  'Validate Key'
-                )}
+                <RefreshCw className={`w-4 h-4 ${bridgeChecking ? 'animate-spin' : ''}`} />
+                {bridgeChecking ? 'Checking...' : 'Check Connection'}
               </button>
 
-              {/* Get API Key Link */}
+              {bridgeError && (
+                <p className="text-sm text-red-500 text-center flex items-center justify-center gap-1">
+                  <AlertCircle className="w-4 h-4" />
+                  {bridgeError}
+                </p>
+              )}
+
+              {/* Help Link */}
               <p className="text-center text-sm text-text-muted">
-                Don&apos;t have a key?{' '}
+                Need help?{' '}
                 <a
-                  href="https://console.anthropic.com/settings/keys"
+                  href="https://docs.coder1.ai/bridge-setup"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-coder1-cyan hover:underline inline-flex items-center gap-1"
                 >
-                  Get one from Anthropic
+                  View setup guide
                   <ExternalLink className="w-3 h-3" />
                 </a>
               </p>
+
+              {/* Pro/Max Plan Note */}
+              <div className="bg-coder1-cyan/5 rounded-lg p-3 border border-coder1-cyan/20">
+                <p className="text-xs text-text-muted text-center">
+                  <span className="text-coder1-cyan font-medium">✨ Pro/Max Plans:</span>{' '}
+                  Johnny5 uses your Claude Code plan - no extra API costs!
+                </p>
+              </div>
             </div>
           </div>
         );
@@ -545,8 +536,8 @@ export default function SetupWizard({
 
   // Check if can proceed to next step
   const canProceed = () => {
-    if (currentStep === 'apikey') {
-      return validationStatus === 'success';
+    if (currentStep === 'bridge') {
+      return bridgeConnected;  // Can only proceed if Bridge is connected
     }
     return true;
   };
@@ -594,7 +585,7 @@ export default function SetupWizard({
         <div className="flex items-center justify-between text-[10px] text-text-muted">
           <span className="w-8 text-center">Welcome</span>
           <span className="flex-1" />
-          <span className="w-8 text-center">API Key</span>
+          <span className="w-8 text-center">Bridge</span>
           <span className="flex-1" />
           <span className="w-12 text-center">Permissions</span>
           <span className="flex-1" />

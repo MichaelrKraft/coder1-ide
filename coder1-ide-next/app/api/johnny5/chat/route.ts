@@ -1,12 +1,12 @@
 /**
- * Johnny5 Chat Route - Direct Mode
+ * Johnny5 Chat Route - Bridge Mode
  *
- * Uses Claude API directly with SQLite database persistence.
- * No Moltbot dependency - simple, direct approach.
+ * Uses Claude Code CLI via Bridge connection instead of direct API calls.
+ * This allows Pro/Max plan users to use their included Claude Code usage
+ * rather than paying separately for API calls.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import Anthropic from '@anthropic-ai/sdk';
 import {
   initializeDb,
   createSession,
@@ -14,14 +14,12 @@ import {
   addMessage,
   getMessages,
   updateSession,
-  trackUsage,
   logAudit,
 } from '@/lib/johnny5-db';
 import {
-  getApiKey,
-  getPermissions,
-  getProactivityLevel,
-} from '@/lib/johnny5-config';
+  Johnny5BridgeService,
+  ChatMessage,
+} from '@/services/johnny5-bridge-service';
 
 // ============================================================================
 // Types
@@ -48,7 +46,12 @@ interface ChatSuccessResponse {
 interface ChatErrorResponse {
   success: false;
   error: string;
-  code: 'NO_API_KEY' | 'INVALID_API_KEY' | 'RATE_LIMITED' | 'API_ERROR' | 'DATABASE_ERROR' | 'VALIDATION_ERROR';
+  code:
+    | 'BRIDGE_NOT_CONNECTED'
+    | 'BRIDGE_ERROR'
+    | 'COMMAND_TIMEOUT'
+    | 'DATABASE_ERROR'
+    | 'VALIDATION_ERROR';
 }
 
 type ChatResponse = ChatSuccessResponse | ChatErrorResponse;
@@ -59,67 +62,6 @@ type ChatResponse = ChatSuccessResponse | ChatErrorResponse;
 
 const MAX_MESSAGE_LENGTH = 50000;
 const MAX_HISTORY_MESSAGES = 20;
-
-/**
- * Build the Johnny5 system prompt with current configuration
- */
-function buildSystemPrompt(): string {
-  const permissions = getPermissions();
-  const proactivityLevel = getProactivityLevel();
-
-  const capabilityLines: string[] = [];
-  if (permissions.readFiles) {
-    capabilityLines.push('- Can read and analyze files in the project');
-  }
-  if (permissions.suggestCode) {
-    capabilityLines.push('- Can suggest code changes and improvements');
-  }
-  if (permissions.executeTerminal) {
-    capabilityLines.push('- Can execute terminal commands when asked');
-  }
-  if (permissions.externalRequests) {
-    capabilityLines.push('- Can make external API requests for research');
-  }
-
-  const capabilities = capabilityLines.length > 0
-    ? capabilityLines.join('\n')
-    : '- Basic chat assistance only';
-
-  return `You are Johnny5, an autonomous AI assistant in the Coder1 IDE.
-
-## Personality
-- Enthusiastic about learning and helping ("No disassemble!")
-- Clear and direct communication
-- Proactive in offering suggestions when appropriate
-- Security-conscious and careful with user data
-- Reference movies/culture occasionally ("Need input!")
-
-## Role
-You are a proactive AI employee that helps users with:
-- Coding tasks and feature development
-- Research and analysis
-- Monitoring projects and identifying opportunities
-- Building features and creating PRs
-- Answering questions about the codebase
-- Suggesting improvements and optimizations
-
-## Capabilities
-${capabilities}
-
-## Behavior Settings
-Current proactivity level: ${proactivityLevel}
-${proactivityLevel === 'low' ? '- Wait for explicit requests before suggesting actions' : ''}
-${proactivityLevel === 'medium' ? '- Offer suggestions when relevant, but don\'t be pushy' : ''}
-${proactivityLevel === 'high' ? '- Proactively suggest improvements and next steps' : ''}
-
-## Guidelines
-1. Keep responses concise but helpful
-2. Offer to take action, not just give advice
-3. When appropriate, break down tasks into steps
-4. Ask clarifying questions if the request is ambiguous
-5. Be honest about limitations
-6. Always be helpful, accurate, and mindful of the user's time`;
-}
 
 // ============================================================================
 // Error Response Helpers
@@ -137,21 +79,31 @@ function errorResponse(
 // Route Handler
 // ============================================================================
 
-export async function POST(request: NextRequest): Promise<NextResponse<ChatResponse>> {
+export async function POST(
+  request: NextRequest
+): Promise<NextResponse<ChatResponse>> {
   try {
     // 1. Parse and validate request
     let body: ChatRequest;
     try {
       body = await request.json();
     } catch {
-      return errorResponse('Invalid JSON in request body', 'VALIDATION_ERROR', 400);
+      return errorResponse(
+        'Invalid JSON in request body',
+        'VALIDATION_ERROR',
+        400
+      );
     }
 
     const { message, sessionId } = body;
 
     // Validate message
     if (!message || typeof message !== 'string') {
-      return errorResponse('Message is required and must be a string', 'VALIDATION_ERROR', 400);
+      return errorResponse(
+        'Message is required and must be a string',
+        'VALIDATION_ERROR',
+        400
+      );
     }
 
     if (message.length === 0) {
@@ -166,13 +118,13 @@ export async function POST(request: NextRequest): Promise<NextResponse<ChatRespo
       );
     }
 
-    // 2. Get API key from config
-    const apiKey = getApiKey();
-    if (!apiKey) {
+    // 2. Check Bridge connection
+    const johnny5Service = new Johnny5BridgeService('default');
+    if (!johnny5Service.isBridgeConnected()) {
       return errorResponse(
-        'No API key configured. Please set up Johnny5 with your Anthropic API key.',
-        'NO_API_KEY',
-        401
+        'Bridge not connected. Please run coder1-bridge start in your terminal.',
+        'BRIDGE_NOT_CONNECTED',
+        503
       );
     }
 
@@ -181,7 +133,11 @@ export async function POST(request: NextRequest): Promise<NextResponse<ChatRespo
       await initializeDb();
     } catch (dbError) {
       console.error('[Johnny5] Database initialization failed:', dbError);
-      return errorResponse('Failed to initialize database', 'DATABASE_ERROR', 500);
+      return errorResponse(
+        'Failed to initialize database',
+        'DATABASE_ERROR',
+        500
+      );
     }
 
     // 4. Get or create session
@@ -191,13 +147,18 @@ export async function POST(request: NextRequest): Promise<NextResponse<ChatRespo
         session = await createSession('Chat Session');
       } catch (sessionError) {
         console.error('[Johnny5] Failed to create session:', sessionError);
-        return errorResponse('Failed to create chat session', 'DATABASE_ERROR', 500);
+        return errorResponse(
+          'Failed to create chat session',
+          'DATABASE_ERROR',
+          500
+        );
       }
     }
 
     // 5. Save user message to database
+    const estimatedInputTokens = Math.ceil(message.length / 4);
     try {
-      await addMessage(session.id, 'user', message, Math.ceil(message.length / 4)); // Estimate tokens
+      await addMessage(session.id, 'user', message, estimatedInputTokens);
     } catch (msgError) {
       console.error('[Johnny5] Failed to save user message:', msgError);
       // Continue anyway - non-critical
@@ -212,58 +173,46 @@ export async function POST(request: NextRequest): Promise<NextResponse<ChatRespo
       // Continue with empty history
     }
 
-    // 7. Build messages array for Claude
-    const messages: Array<{ role: 'user' | 'assistant'; content: string }> = history.map((m) => ({
+    // 7. Build conversation history for Bridge service
+    const conversationHistory: ChatMessage[] = history.map((m) => ({
       role: m.role as 'user' | 'assistant',
       content: m.content,
     }));
 
-    // 8. Call Claude API
-    let response: Anthropic.Messages.Message;
-    try {
-      const anthropic = new Anthropic({ apiKey });
-      response = await anthropic.messages.create({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 4096,
-        system: buildSystemPrompt(),
-        messages,
-      });
-    } catch (apiError) {
-      console.error('[Johnny5] Claude API error:', apiError);
+    // 8. Send prompt via Bridge to Claude Code CLI
+    const result = await johnny5Service.sendPrompt(message, conversationHistory);
 
-      // Handle specific Anthropic error types
-      if (apiError instanceof Anthropic.AuthenticationError) {
+    if (!result.success) {
+      console.error('[Johnny5] Bridge error:', result.error);
+
+      // Map error codes to appropriate responses
+      if (result.errorCode === 'BRIDGE_NOT_CONNECTED') {
         return errorResponse(
-          'Invalid API key. Please check your Anthropic API key configuration.',
-          'INVALID_API_KEY',
-          401
+          'Bridge disconnected. Please ensure coder1-bridge is running.',
+          'BRIDGE_NOT_CONNECTED',
+          503
         );
       }
 
-      if (apiError instanceof Anthropic.RateLimitError) {
+      if (result.errorCode === 'COMMAND_TIMEOUT') {
         return errorResponse(
-          'Rate limit exceeded. Please wait a moment before trying again.',
-          'RATE_LIMITED',
-          429
+          'Request timed out. Please try again with a simpler request.',
+          'COMMAND_TIMEOUT',
+          504
         );
       }
 
-      if (apiError instanceof Anthropic.APIError) {
-        return errorResponse(
-          'Failed to communicate with Claude API. Please try again.',
-          'API_ERROR',
-          502
-        );
-      }
-
-      return errorResponse('An unexpected error occurred', 'API_ERROR', 500);
+      return errorResponse(
+        result.error || 'Failed to get response from Claude Code CLI',
+        'BRIDGE_ERROR',
+        502
+      );
     }
 
-    // 9. Extract response text
-    const responseText =
-      response.content[0]?.type === 'text'
-        ? response.content[0].text
-        : 'I received your message but had trouble generating a response.';
+    const responseText = result.response;
+
+    // 9. Estimate output tokens (CLI doesn't provide exact counts)
+    const estimatedOutputTokens = Math.ceil(responseText.length / 4);
 
     // 10. Save assistant message to database
     let assistantMessageId = '';
@@ -272,7 +221,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<ChatRespo
         session.id,
         'assistant',
         responseText,
-        response.usage.output_tokens
+        estimatedOutputTokens
       );
       assistantMessageId = assistantMsg.id;
     } catch (saveError) {
@@ -280,38 +229,32 @@ export async function POST(request: NextRequest): Promise<NextResponse<ChatRespo
       assistantMessageId = `temp-${Date.now()}`;
     }
 
-    // 11. Track usage statistics
-    try {
-      await trackUsage(response.usage.input_tokens, response.usage.output_tokens);
-    } catch (trackError) {
-      console.error('[Johnny5] Failed to track usage:', trackError);
-      // Non-critical
-    }
-
-    // 12. Update session statistics
+    // 11. Update session statistics
     try {
       await updateSession(session.id, {
         message_count: history.length + 2, // +2 for new user and assistant messages
-        tokens_used: session.tokens_used + response.usage.input_tokens + response.usage.output_tokens,
+        tokens_used:
+          session.tokens_used + estimatedInputTokens + estimatedOutputTokens,
       });
     } catch (updateError) {
       console.error('[Johnny5] Failed to update session:', updateError);
       // Non-critical
     }
 
-    // 13. Log audit entry
+    // 12. Log audit entry
     try {
       await logAudit('chat_interaction', {
         sessionId: session.id,
-        inputTokens: response.usage.input_tokens,
-        outputTokens: response.usage.output_tokens,
+        inputTokens: estimatedInputTokens,
+        outputTokens: estimatedOutputTokens,
+        mode: 'bridge', // Track that this used Bridge mode
       });
     } catch (auditError) {
       console.error('[Johnny5] Failed to log audit entry:', auditError);
       // Non-critical
     }
 
-    // 14. Return success response
+    // 13. Return success response
     return NextResponse.json({
       success: true,
       data: {
@@ -319,13 +262,13 @@ export async function POST(request: NextRequest): Promise<NextResponse<ChatRespo
         sessionId: session.id,
         messageId: assistantMessageId,
         tokensUsed: {
-          input: response.usage.input_tokens,
-          output: response.usage.output_tokens,
+          input: estimatedInputTokens,
+          output: estimatedOutputTokens,
         },
       },
     });
   } catch (error) {
     console.error('[Johnny5] Unexpected error in chat route:', error);
-    return errorResponse('An unexpected error occurred', 'API_ERROR', 500);
+    return errorResponse('An unexpected error occurred', 'BRIDGE_ERROR', 500);
   }
 }
