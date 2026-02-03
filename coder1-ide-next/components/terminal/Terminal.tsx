@@ -751,11 +751,15 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
       }
     };
     
-    // Fetch immediately and then every 60 seconds
-    fetchMCPStatus();
+    // ⚡ PERFORMANCE FIX (Feb 2, 2025): Defer initial MCP status fetch by 3 seconds
+    // The claude mcp list command takes ~7s, so we defer it to not block initial render
+    const initialDelay = setTimeout(() => fetchMCPStatus(), 3000);
     const interval = setInterval(fetchMCPStatus, 60000);
-    
-    return () => clearInterval(interval);
+
+    return () => {
+      clearTimeout(initialDelay);
+      clearInterval(interval);
+    };
   }, [terminalSettings.statusLine.enabled]);
   
   // Calculate block reset timer (resets every 3 hours)
@@ -5550,7 +5554,8 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
             {voiceListening ? <MicOff className="w-4 h-4 text-red-500" /> : <Mic className="w-4 h-4" />}
           </button>
 
-          {/* MCP Manager Button */}
+          {/* MCP Manager Button - HIDDEN for alpha (causes freeze, see POST-ALPHA-mcp-manager-fix.md) */}
+          {/* TODO: Fix render loop in useMCPManager hooks before re-enabling
           <button
             onClick={() => {
               console.log('[MCP] Button clicked! Current isOpen:', isMCPOverlayOpen);
@@ -5571,6 +5576,7 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
               </span>
             )}
           </button>
+          */}
 
           {/* Compose Icon Button - Only show when staged composer is enabled */}
           {ENABLE_STAGED_COMPOSER && (
@@ -6144,7 +6150,7 @@ Context: Running in Coder1 IDE development environment`;
                       }
                     }}
                     disabled={isAnalyzingWithClaude}
-                    className="px-4 py-1.5 text-sm rounded-md bg-gradient-to-r from-purple-600 to-coder1-cyan text-white hover:from-purple-700 hover:to-coder1-cyan-hover disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                    className="px-4 py-1.5 text-sm rounded-md bg-purple-600 text-white hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                   >
                     {isAnalyzingWithClaude ? (
                       <>

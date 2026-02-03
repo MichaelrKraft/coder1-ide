@@ -447,7 +447,8 @@ function PricingCard({
   cta,
   featured = false,
   badge,
-  subtext
+  subtext,
+  onClick
 }: {
   tier: string;
   price: string;
@@ -457,6 +458,7 @@ function PricingCard({
   featured?: boolean;
   badge?: string;
   subtext?: string;
+  onClick?: () => void;
 }) {
   return (
     <div className={`
@@ -497,7 +499,9 @@ function PricingCard({
         ))}
       </ul>
 
-      <button className={`
+      <button
+        onClick={onClick}
+        className={`
         w-full py-3 rounded-xl font-semibold transition-all duration-300
         ${featured
           ? 'bg-gradient-to-r from-coder1-cyan to-coder1-purple text-white hover:shadow-lg hover:shadow-coder1-cyan/30'
@@ -1465,12 +1469,13 @@ export default function AlphaLandingPage() {
                 period="per month"
                 features={[
                   'Basic IDE features',
-                  '5 Johnny5 tasks/day',
+                  'Five Johnny5 tasks/day',
                   'Community support',
                   'Basic session history'
                 ]}
                 cta="Get Started"
                 subtext="No credit card required"
+                onClick={() => document.getElementById('alpha')?.scrollIntoView({ behavior: 'smooth' })}
               />
             </ScrollReveal>
 
@@ -1490,6 +1495,7 @@ export default function AlphaLandingPage() {
                 cta="Start Pro Trial"
                 featured
                 badge="Most Popular"
+                onClick={() => document.getElementById('alpha')?.scrollIntoView({ behavior: 'smooth' })}
               />
             </ScrollReveal>
 
@@ -1507,6 +1513,7 @@ export default function AlphaLandingPage() {
                   'Custom integrations'
                 ]}
                 cta="Contact Sales"
+                onClick={() => window.location.href = 'mailto:alpha@coder1.ai?subject=Coder1 Team Plan Inquiry'}
               />
             </ScrollReveal>
           </div>
