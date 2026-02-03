@@ -885,20 +885,19 @@ export default function AlphaLandingPage() {
             />
           </div>
 
-          {/* Subtitle with styled text - Two lines for larger impact */}
+          {/* Subtitle - Version 3: Build While You Sleep */}
           <div className="mb-6 subtitle-fade-in">
-            <p className="text-4xl md:text-5xl lg:text-6xl text-white/80 font-semibold">
-              The only <span className="text-coder1-cyan">IDE</span> built for
+            <p className="text-5xl md:text-6xl lg:text-7xl text-white font-bold">
+              Build Software
             </p>
-            <p className="text-4xl md:text-5xl lg:text-6xl text-white/80 font-semibold">
-              <span className="text-coder1-cyan">Claude Code</span> users.
+            <p className="text-5xl md:text-6xl lg:text-7xl text-coder1-cyan font-bold">
+              While You Sleep
             </p>
           </div>
 
           {/* Description */}
-          <p className="text-lg text-white/50 max-w-2xl mx-auto mb-10 leading-relaxed">
-            Stop babysitting your Claude Code sessions. Johnny5 works autonomously overnight,
-            creating PRs and briefing you every morning - All within an ADE (Agentic Development Environment) built for Claude Code power users.
+          <p className="text-xl text-white/60 max-w-3xl mx-auto mb-10 leading-relaxed">
+            The first IDE with an autonomous AI that works overnight, remembers everything, and shows you exactly what it did
           </p>
 
           {/* CTAs */}
