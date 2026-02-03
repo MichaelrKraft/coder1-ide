@@ -447,7 +447,8 @@ function PricingCard({
   cta,
   featured = false,
   badge,
-  subtext
+  subtext,
+  onClick
 }: {
   tier: string;
   price: string;
@@ -457,6 +458,7 @@ function PricingCard({
   featured?: boolean;
   badge?: string;
   subtext?: string;
+  onClick?: () => void;
 }) {
   return (
     <div className={`
@@ -497,7 +499,9 @@ function PricingCard({
         ))}
       </ul>
 
-      <button className={`
+      <button
+        onClick={onClick}
+        className={`
         w-full py-3 rounded-xl font-semibold transition-all duration-300
         ${featured
           ? 'bg-gradient-to-r from-coder1-cyan to-coder1-purple text-white hover:shadow-lg hover:shadow-coder1-cyan/30'
@@ -801,9 +805,9 @@ export default function AlphaLandingPage() {
               <Image
                 src="/Coder1-Logo-Sharp.svg"
                 alt="Coder1"
-                width={250}
-                height={80}
-                className="h-20 w-auto"
+                width={200}
+                height={56}
+                className="h-14 w-auto"
               />
             </Link>
 
@@ -837,7 +841,7 @@ export default function AlphaLandingPage() {
       </nav>
 
       {/* ===== HERO SECTION ===== */}
-      <section className="relative min-h-screen flex items-center justify-center pt-20 pb-12">
+      <section className="relative min-h-screen flex items-center justify-center pt-24 pb-12">
         {/* Pure CSS Static Dot Grid Background */}
         <div className="absolute inset-0 overflow-hidden">
           {/* Static dot pattern - no JavaScript, no animation */}
@@ -863,7 +867,7 @@ export default function AlphaLandingPage() {
         <div className="relative z-10 max-w-5xl mx-auto px-6 text-center">
           {/* Badge */}
           <div
-            className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-coder1-purple/20 to-coder1-cyan/20 border border-coder1-purple/30 rounded-full mb-8"
+            className="inline-flex items-center gap-2 px-4 py-2 mt-4 bg-gradient-to-r from-coder1-purple/20 to-coder1-cyan/20 border border-coder1-purple/30 rounded-full mb-8"
             style={{ animation: 'float 3s ease-in-out infinite' }}
           >
             <Sparkles className="w-4 h-4 text-coder1-purple" />
@@ -877,9 +881,9 @@ export default function AlphaLandingPage() {
             <Image
               src="/Coder1-Logo-Sharp.svg"
               alt="Coder1 IDE"
-              width={400}
-              height={128}
-              className="h-20 md:h-28 w-auto animate-[flyIn_0.8s_ease-out_2.8s_forwards]"
+              width={520}
+              height={166}
+              className="h-28 md:h-36 w-auto animate-[flyIn_0.8s_ease-out_2.8s_forwards]"
               style={{ opacity: 0 }}
               priority
             />
@@ -1466,12 +1470,13 @@ export default function AlphaLandingPage() {
                 period="per month"
                 features={[
                   'Basic IDE features',
-                  '5 Johnny5 tasks/day',
+                  'Five Johnny5 tasks/day',
                   'Community support',
                   'Basic session history'
                 ]}
                 cta="Get Started"
                 subtext="No credit card required"
+                onClick={() => document.getElementById('alpha')?.scrollIntoView({ behavior: 'smooth' })}
               />
             </ScrollReveal>
 
@@ -1491,6 +1496,7 @@ export default function AlphaLandingPage() {
                 cta="Start Pro Trial"
                 featured
                 badge="Most Popular"
+                onClick={() => document.getElementById('alpha')?.scrollIntoView({ behavior: 'smooth' })}
               />
             </ScrollReveal>
 
@@ -1508,6 +1514,7 @@ export default function AlphaLandingPage() {
                   'Custom integrations'
                 ]}
                 cta="Contact Sales"
+                onClick={() => window.location.href = 'mailto:alpha@coder1.ai?subject=Coder1 Team Plan Inquiry'}
               />
             </ScrollReveal>
           </div>
