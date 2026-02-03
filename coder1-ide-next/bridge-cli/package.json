@@ -1,6 +1,6 @@
 {
   "name": "coder1-bridge",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Bridge service to connect Coder1 IDE with local Claude CLI",
   "main": "src/index.js",
   "bin": {
@@ -10,6 +10,7 @@
     "start": "node src/index.js",
     "dev": "node src/index.js --dev",
     "test": "echo \"Error: no test specified\" && exit 1",
+    "postinstall": "node -e \"try { require('node-pty'); console.log('✅ node-pty compiled successfully - interactive mode enabled'); } catch(e) { console.warn('⚠️  node-pty failed to compile - interactive mode disabled'); console.warn('   To fix: Install build tools (Xcode on macOS, build-essential on Linux)'); }\"",
     "release": "rm -f *.tgz && npm pack && mv coder1-bridge-*.tgz ../public/bridge-cli.tar.gz && echo '✅ Artifact updated in ../public/bridge-cli.tar.gz'",
     "build": "pkg . --out-path dist",
     "build:macos-arm64": "pkg . --target node20-macos-arm64 --output dist/coder1-bridge-macos-arm64",
@@ -36,7 +37,7 @@
   },
   "optionalDependencies": {},
   "engines": {
-    "node": ">=18.0.0 <19.0.0"
+    "node": ">=18.0.0"
   },
   "preferGlobal": true,
   "repository": {
