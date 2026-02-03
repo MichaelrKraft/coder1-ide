@@ -41,12 +41,8 @@ async function sessionHandler({ req }: { req: NextRequest }): Promise<NextRespon
 
 async function createSession(email?: string, alphaCode?: string): Promise<NextResponse> {
   try {
-    // For alpha launch: Simple validation
-    const validAlphaCodes = [
-      'coder1-alpha-2025',
-      'early-adopter',
-      'claude-code-user'
-    ];
+    // For alpha launch: Simple validation (codes from env var with fallback)
+    const validAlphaCodes = (process.env.ALPHA_CODES || 'coder1-alpha-2025').split(',');
 
     // Validate alpha access
     if (!alphaCode || !validAlphaCodes.includes(alphaCode)) {

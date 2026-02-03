@@ -1,4 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { execSync } from 'child_process';
+
+// Get git commit hash for deployment verification
+const getGitCommit = (): string => {
+  try {
+    return execSync('git rev-parse --short HEAD').toString().trim();
+  } catch {
+    // Fallback for Vercel deployments
+    return process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) || 'unknown';
+  }
+};
 
 export async function GET(request: NextRequest) {
   const health = {
@@ -6,6 +17,7 @@ export async function GET(request: NextRequest) {
     timestamp: new Date().toISOString(),
     service: 'coder1-ide',
     version: process.env.npm_package_version || '1.0.0',
+    commit: getGitCommit(),
     environment: process.env.NODE_ENV || 'development',
     features: {
       bridge: process.env.ENABLE_BRIDGE === 'true',

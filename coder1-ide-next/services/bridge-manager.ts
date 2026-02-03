@@ -681,5 +681,22 @@ export class BridgeManager extends EventEmitter {
   }
 }
 
-// Export singleton instance
-export const bridgeManager = new BridgeManager();
+// Export singleton instance using globalThis to prevent multiple instances
+// across different module contexts (server.js vs Next.js API routes)
+// This is a common Next.js pattern for singletons that need to survive hot-reloads
+
+const BRIDGE_MANAGER_KEY = '__coder1_bridge_manager__' as const;
+
+declare global {
+  // eslint-disable-next-line no-var
+  var __coder1_bridge_manager__: BridgeManager | undefined;
+}
+
+if (!globalThis[BRIDGE_MANAGER_KEY]) {
+  globalThis[BRIDGE_MANAGER_KEY] = new BridgeManager();
+  console.log('[BridgeManager] Created new global singleton instance');
+} else {
+  console.log('[BridgeManager] Reusing existing global singleton instance');
+}
+
+export const bridgeManager = globalThis[BRIDGE_MANAGER_KEY];

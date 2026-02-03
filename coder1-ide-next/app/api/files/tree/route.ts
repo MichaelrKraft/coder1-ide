@@ -121,17 +121,18 @@ async function buildFileTree(dirPath: string, relativePath: string = '', depth: 
     return children;
 }
 
-async function fileTreeHandler({ req }: { req: NextRequest }): Promise<NextResponse> {
+async function fileTreeHandler({ req, user }: { req: NextRequest; user?: any }): Promise<NextResponse> {
     const request = req;
     try {
         // Get rootPath from query parameters
         const url = new URL(request.url);
         const rootPath = url.searchParams.get('rootPath');
         const useBridge = url.searchParams.get('useBridge') !== 'false'; // Default to true
+        const queryUserId = url.searchParams.get('userId');
 
         // Check if bridge is connected and should be used
-        // For now, use a placeholder userId - in production this would come from auth
-        const userId = 'default-user';
+        // Use userId from: auth context > query param > fallback for backwards compatibility
+        const userId = user?.id || queryUserId || 'default-user';
 
         if (useBridge && bridgeManager.hasBridgeForUser(userId)) {
             // Route through bridge to user's local machine

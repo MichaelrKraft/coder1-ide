@@ -11,7 +11,7 @@ interface NavItem {
 
 const NAV_ITEMS: NavItem[] = [
   { id: 'agents', label: 'Agent Dashboard' },
-  { id: 'browser', label: 'Browser Tests' },
+  // { id: 'browser', label: 'Browser Tests' },  // HIDDEN - incomplete feature, restore post-alpha
   { id: 'artifacts', label: 'Artifacts' },
   { id: 'feedback', label: 'Feedback' },
 ];
