@@ -105,6 +105,32 @@ if ! command -v npm &> /dev/null; then
     exit 1
 fi
 
+# Check for build tools (needed for node-pty native compilation)
+echo -e "${BLUE}🔧 Checking build tools for native modules...${NC}"
+BUILD_TOOLS_OK=true
+
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    # macOS - check for Xcode Command Line Tools
+    if ! xcode-select -p &> /dev/null; then
+        echo -e "${YELLOW}⚠️  Xcode Command Line Tools not found${NC}"
+        echo -e "${YELLOW}   Installing... (this may take a few minutes)${NC}"
+        xcode-select --install 2>/dev/null || true
+        echo -e "${YELLOW}   If a dialog appeared, please complete the installation and re-run this script${NC}"
+        BUILD_TOOLS_OK=false
+    else
+        echo -e "${GREEN}✅ Xcode Command Line Tools found${NC}"
+    fi
+elif [[ "$OSTYPE" == "linux-gnu"* ]]; then
+    # Linux - check for build-essential
+    if ! command -v make &> /dev/null || ! command -v g++ &> /dev/null; then
+        echo -e "${YELLOW}⚠️  Build tools (make, g++) not found${NC}"
+        echo -e "${YELLOW}   Install with: sudo apt-get install build-essential${NC}"
+        BUILD_TOOLS_OK=false
+    else
+        echo -e "${GREEN}✅ Build tools found${NC}"
+    fi
+fi
+
 # Create temporary directory
 TEMP_DIR="/tmp/coder1-bridge-install-$$"
 mkdir -p "$TEMP_DIR"
@@ -135,6 +161,20 @@ fi
 # Verify installation
 if command -v coder1-bridge &> /dev/null; then
     echo -e "${GREEN}✅ Coder1 Bridge installed successfully!${NC}"
+
+    # Check if node-pty compiled correctly
+    echo -e "${BLUE}🔍 Verifying interactive mode support...${NC}"
+    if node -e "require('node-pty')" 2>/dev/null; then
+        echo -e "${GREEN}✅ Interactive mode enabled (node-pty compiled)${NC}"
+    else
+        echo -e "${YELLOW}⚠️  Interactive mode disabled (node-pty failed to compile)${NC}"
+        echo -e "${YELLOW}   You can still use non-interactive commands like: claude \"your prompt\"${NC}"
+        if [[ "$OSTYPE" == "darwin"* ]]; then
+            echo -e "${YELLOW}   To fix: Install Xcode Command Line Tools: xcode-select --install${NC}"
+        else
+            echo -e "${YELLOW}   To fix: Install build tools: sudo apt-get install build-essential${NC}"
+        fi
+    fi
     echo
     
     # Handle auto-start mode
