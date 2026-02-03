@@ -10,6 +10,7 @@
     "start": "node src/index.js",
     "dev": "node src/index.js --dev",
     "test": "echo \"Error: no test specified\" && exit 1",
+    "release": "rm -f *.tgz && npm pack && mv coder1-bridge-*.tgz ../public/bridge-cli.tar.gz && echo '✅ Artifact updated in ../public/bridge-cli.tar.gz'",
     "build": "pkg . --out-path dist",
     "build:macos-arm64": "pkg . --target node20-macos-arm64 --output dist/coder1-bridge-macos-arm64",
     "build:macos-x64": "pkg . --target node20-macos-x64 --output dist/coder1-bridge-macos-x64",
