@@ -885,20 +885,21 @@ export default function AlphaLandingPage() {
             />
           </div>
 
-          {/* Subtitle with styled text - Two lines for larger impact */}
+          {/* Subtitle - Version 2: Claudebot hook */}
           <div className="mb-6 subtitle-fade-in">
             <p className="text-4xl md:text-5xl lg:text-6xl text-white/80 font-semibold">
-              The only <span className="text-coder1-cyan">IDE</span> built for
+              You've Heard Of <span className="text-coder1-cyan">Moltbot</span>.
             </p>
             <p className="text-4xl md:text-5xl lg:text-6xl text-white/80 font-semibold">
-              <span className="text-coder1-cyan">Claude Code</span> users.
+              What If It Lived In Your <span className="text-coder1-cyan">IDE</span>?
             </p>
           </div>
 
           {/* Description */}
           <p className="text-lg text-white/50 max-w-2xl mx-auto mb-10 leading-relaxed">
-            Stop babysitting your Claude Code sessions. Johnny5 works autonomously overnight,
-            creating PRs and briefing you every morning - All within an ADE (Agentic Development Environment) built for Claude Code power users.
+            <span className="text-white font-semibold">Johnny5</span> is a clone of Moltbot and works autonomously
+            within your <span className="text-coder1-cyan">ADE</span> (Agentic Development Environment) built for
+            <span className="text-coder1-cyan"> Claude Code</span> Power Users.
           </p>
 
           {/* CTAs */}

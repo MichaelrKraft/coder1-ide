@@ -1,25 +1,30 @@
-'use client';
+import { redirect } from 'next/navigation';
 
-import { useRouter } from 'next/navigation';
-import HeroSection from '@/components/HeroSection';
-
+/**
+ * Landing Page Version Switcher
+ *
+ * Set LANDING_VERSION environment variable to switch:
+ *   - "1" or "alpha"    → /alpha (Version 1: "The only IDE built for Claude Code users")
+ *   - "2" or "alpha-v2" → /alpha-v2 (Version 2: "You've Heard Of Moltbot")
+ *   - "3" or "alpha-v3" → /alpha-v3 (Version 3: "Build Software While You Sleep")
+ *
+ * Default: Version 1
+ *
+ * To switch in production, update .env.local:
+ *   LANDING_VERSION=3
+ */
 export default function HomePage() {
-  const router = useRouter();
+  const version = process.env.LANDING_VERSION || '1';
 
-  const handleTourStart = () => {
-    // Navigate to IDE with tour parameter
-    router.push('/ide?tour=true');
+  const versionMap: Record<string, string> = {
+    '1': '/alpha',
+    'alpha': '/alpha',
+    '2': '/alpha-v2',
+    'alpha-v2': '/alpha-v2',
+    '3': '/alpha-v3',
+    'alpha-v3': '/alpha-v3',
   };
 
-  return (
-    <div className="min-h-screen bg-bg-primary">
-      <HeroSection 
-        onTourStart={handleTourStart}
-        onDismiss={() => {
-          // When dismissed, redirect to IDE
-          router.push('/ide');
-        }}
-      />
-    </div>
-  );
+  const landingPath = versionMap[version] || '/alpha';
+  redirect(landingPath);
 }
