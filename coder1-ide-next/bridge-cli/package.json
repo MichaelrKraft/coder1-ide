@@ -1,6 +1,6 @@
 {
   "name": "coder1-bridge",
-  "version": "1.1.5",
+  "version": "1.2.0",
   "description": "Bridge service to connect Coder1 IDE with local Claude CLI",
   "main": "src/index.js",
   "bin": {
@@ -15,8 +15,7 @@
     "build:macos-arm64": "pkg . --target node20-macos-arm64 --output dist/coder1-bridge-macos-arm64",
     "build:macos-x64": "pkg . --target node20-macos-x64 --output dist/coder1-bridge-macos-x64",
     "build:linux": "pkg . --target node20-linux-x64 --output dist/coder1-bridge-linux",
-    "build:windows": "pkg . --target node20-win-x64 --output dist/coder1-bridge-win.exe",
-    "release": "rm -f *.tgz && npm pack && mv coder1-bridge-*.tgz ../public/bridge-cli.tar.gz && echo '✅ Artifact updated in ../public/bridge-cli.tar.gz'"
+    "build:windows": "pkg . --target node20-win-x64 --output dist/coder1-bridge-win.exe"
   },
   "keywords": [
     "coder1",
