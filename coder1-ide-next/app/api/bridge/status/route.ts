@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { bridgeManager } from '@/services/bridge-manager';
 
-// Keep activeBridges for backwards compatibility with pair validation
-import { activeBridges } from '../pair/route';
+// REMOVED (Feb 2026): activeBridges was causing stale connection status
+// Only bridgeManager tracks real WebSocket connections now
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -45,25 +45,9 @@ export async function GET(request: NextRequest) {
     });
   }
 
-  // Legacy fallback: Check activeBridges from pair route
-  let userBridge = null;
-  for (const [bridgeId, bridge] of activeBridges.entries()) {
-    if (bridge.userId === userId) {
-      userBridge = bridge;
-      break;
-    }
-  }
-
-  if (userBridge) {
-    return NextResponse.json({
-      connected: true,
-      bridgeId: userBridge.bridgeId,
-      connectedAt: userBridge.connectedAt,
-      platform: userBridge.platform,
-      claudeVersion: userBridge.claudeVersion,
-      note: 'Legacy status (JWT validated but WebSocket may not be connected)'
-    });
-  }
+  // REMOVED (Feb 2026): Legacy fallback caused stale "connected" status
+  // activeBridges only tracks JWT validation, not actual WebSocket connection
+  // This caused "Bridge already connected" when no real connection existed
 
   return NextResponse.json({
     connected: false
