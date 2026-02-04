@@ -1612,10 +1612,10 @@ export default function AlphaLandingPage() {
       </section>
 
       {/* ===== ALPHA CTA SECTION ===== */}
-      <section className="relative py-24 overflow-hidden" id="alpha">
-        {/* Purple light rays background */}
-        <div className="absolute inset-0 bg-[#0A0A0A]" />
-        <div className="absolute inset-0">
+      <section className="relative pt-0 pb-24 overflow-visible" id="alpha">
+        {/* Purple light rays background - positioned below FAQ */}
+        <div className="absolute top-8 left-0 right-0 bottom-0 bg-[#0A0A0A]" />
+        <div className="absolute top-0 left-0 right-0 h-[600px]">
           <LightRays
             raysOrigin="top-center"
             raysColor="#8B5CF6"
