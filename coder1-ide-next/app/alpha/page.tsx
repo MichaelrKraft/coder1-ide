@@ -1761,7 +1761,7 @@ export default function AlphaLandingPage() {
                 period="per month"
                 features={[
                   'Everything in Free',
-                  'Unlimited Johnny5 tasks',
+                  'Unlimited Johnny5 messages',
                   'Contextual Memory',
                   'Priority support',
                   'Full audit trail',
