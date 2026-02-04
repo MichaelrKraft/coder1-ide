@@ -26,6 +26,12 @@ import {
   ChatMessage,
 } from '@/services/johnny5-bridge-service';
 import {
+  getJohnny5Quota,
+  incrementJohnny5MessageCount,
+  updateClaudeSubscriptionTier,
+} from '@/lib/auth/db';
+import { verifyAccessToken, extractTokenFromHeader } from '@/lib/auth/jwt';
+import {
   searchMemory,
   formatForPromptInjection,
   createGeminiProvider,
@@ -72,6 +78,13 @@ interface ChatSuccessResponse {
       searchType: string;
       totalMemoryTokens: number;
     };
+    quota?: {
+      messageCount: number;
+      limit: number;
+      remaining: number;
+      tierType: 'gemini_trial' | 'claude_trial' | 'pro_unlimited';
+      isProSubscriber: boolean;
+    };
   };
 }
 
@@ -83,10 +96,23 @@ interface ChatErrorResponse {
     | 'BRIDGE_ERROR'
     | 'COMMAND_TIMEOUT'
     | 'DATABASE_ERROR'
-    | 'VALIDATION_ERROR';
+    | 'VALIDATION_ERROR'
+    | 'QUOTA_EXCEEDED'
+    | 'UNAUTHORIZED';
 }
 
-type ChatResponse = ChatSuccessResponse | ChatErrorResponse;
+interface QuotaExceededResponse {
+  success: false;
+  error: string;
+  code: 'QUOTA_EXCEEDED';
+  type: 'upgrade_required';
+  tierType: 'gemini_trial' | 'claude_trial';
+  messageCount: number;
+  limit: number;
+  upgradeUrl: string;
+}
+
+type ChatResponse = ChatSuccessResponse | ChatErrorResponse | QuotaExceededResponse;
 
 // ============================================================================
 // Constants
@@ -150,7 +176,41 @@ export async function POST(
       );
     }
 
-    // 2. Check Moltbot first (preferred), then Bridge, then GLM fallback
+    // 2. Check user authentication and quota
+    const authHeader = request.headers.get('Authorization');
+    const token = extractTokenFromHeader(authHeader ?? undefined);
+    let userId: string | null = null;
+
+    if (token) {
+      const decoded = verifyAccessToken(token);
+      if (decoded) {
+        userId = decoded.userId;
+
+        // Check Johnny5 quota for authenticated users
+        const quota = getJohnny5Quota(userId);
+        if (quota && !quota.isProSubscriber && quota.messageCount >= quota.limit) {
+          // User has exceeded their quota - return upgrade prompt
+          const upgradeUrl = quota.tierType === 'gemini_trial'
+            ? 'https://claude.ai/download' // Get Claude Code Pro/Max
+            : '/upgrade?plan=pro'; // Get Coder1 Pro
+
+          return NextResponse.json({
+            success: false,
+            error: quota.tierType === 'gemini_trial'
+              ? 'You\'ve used all 50 trial messages! Connect Claude Code Pro/Max to continue.'
+              : 'You\'ve used 100 free messages this month. Upgrade to Coder1 Pro for unlimited access.',
+            code: 'QUOTA_EXCEEDED',
+            type: 'upgrade_required',
+            tierType: quota.tierType,
+            messageCount: quota.messageCount,
+            limit: quota.limit,
+            upgradeUrl,
+          } as QuotaExceededResponse, { status: 402 });
+        }
+      }
+    }
+
+    // 3. Check Moltbot first (preferred), then Bridge, then GLM fallback
     const moltbotBridge = getMoltbotBridge();
     const moltbotStatus = moltbotBridge?.getStatus?.();
     const moltbotConnected = moltbotBridge?.isConnected() ?? false;
@@ -247,6 +307,17 @@ export async function POST(
     const johnny5Service = new Johnny5BridgeService('default');
     const bridgeConnected = johnny5Service.isBridgeConnected();
     const geminiApiKey = process.env.GEMINI_API_KEY;
+
+    // If Bridge is connected, user has Claude Pro/Max - update their tier
+    if (bridgeConnected && userId) {
+      try {
+        // Bridge connection requires Claude Pro/Max subscription
+        updateClaudeSubscriptionTier(userId, 'pro');
+        console.log(`[Johnny5] Updated Claude tier for user ${userId}: pro (Bridge connected)`);
+      } catch (tierError) {
+        console.warn('[Johnny5] Failed to update Claude tier:', tierError);
+      }
+    }
 
     if (!bridgeConnected && !geminiApiKey) {
       return errorResponse(
@@ -702,6 +773,17 @@ export async function POST(
       // Non-critical
     }
 
+    // 12.6. Increment Johnny5 message counter for authenticated users
+    if (userId) {
+      try {
+        const newCount = incrementJohnny5MessageCount(userId);
+        console.log(`[Johnny5] Message count incremented for user ${userId}: ${newCount}`);
+      } catch (counterError) {
+        console.error('[Johnny5] Failed to increment message counter:', counterError);
+        // Non-critical - continue
+      }
+    }
+
     // 12.5. After-Chat Memory Intelligence (NEW)
     // Run fact extraction asynchronously - don't block the response
     // This enables Johnny5 to learn from every conversation
@@ -742,7 +824,22 @@ export async function POST(
       }
     });
 
-    // 13. Return success response
+    // 13. Get updated quota for response
+    let quotaInfo: ChatSuccessResponse['data']['quota'] = undefined;
+    if (userId) {
+      const updatedQuota = getJohnny5Quota(userId);
+      if (updatedQuota) {
+        quotaInfo = {
+          messageCount: updatedQuota.messageCount,
+          limit: updatedQuota.limit === Infinity ? 999999 : updatedQuota.limit,
+          remaining: updatedQuota.remaining === Infinity ? 999999 : updatedQuota.remaining,
+          tierType: updatedQuota.tierType,
+          isProSubscriber: updatedQuota.isProSubscriber,
+        };
+      }
+    }
+
+    // 14. Return success response
     return NextResponse.json({
       success: true,
       data: {
@@ -761,6 +858,7 @@ export async function POST(
               totalMemoryTokens,
             }
           : { enabled: false, memoriesUsed: [], searchType: 'none', totalMemoryTokens: 0 },
+        quota: quotaInfo,
       },
     });
   } catch (error) {

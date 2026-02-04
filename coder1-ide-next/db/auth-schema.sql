@@ -11,6 +11,11 @@ CREATE TABLE IF NOT EXISTS users (
   subscription_status TEXT DEFAULT 'active' CHECK(subscription_status IN ('active', 'cancelled', 'past_due')),
   stripe_customer_id TEXT,
   email_verified BOOLEAN DEFAULT 0,
+  -- Johnny5 tier tracking
+  claude_subscription_tier TEXT DEFAULT 'free' CHECK(claude_subscription_tier IN ('free', 'pro', 'max')),
+  coder1_pro_active BOOLEAN DEFAULT 0,
+  johnny5_message_count INTEGER DEFAULT 0,
+  message_count_reset_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   last_login DATETIME
