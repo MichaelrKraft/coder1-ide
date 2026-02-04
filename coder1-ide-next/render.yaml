@@ -50,6 +50,10 @@ services:
       - key: CODER1_DATA_DIR
         value: /data/.coder1
 
+      # Gemini API for fact extraction (REQUIRED for Johnny5 memory intelligence)
+      - key: GEMINI_API_KEY
+        sync: false  # Set in Render dashboard
+
       # Project paths for dynamic routes
       - key: PROJECT_ROOT
         value: /opt/render/project/src/coder1-ide-next
