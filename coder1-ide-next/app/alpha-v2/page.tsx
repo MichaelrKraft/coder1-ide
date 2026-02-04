@@ -171,12 +171,24 @@ function ScrollReveal({
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    // Trigger animation after mount with delay
-    const timeout = setTimeout(() => setIsVisible(true), delay + 100);
-    return () => clearTimeout(timeout);
+    if (!ref.current) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setTimeout(() => setIsVisible(true), delay);
+        }
+      },
+      {
+        threshold: 0.1,
+        rootMargin: '-50px'
+      }
+    );
+
+    observer.observe(ref.current);
+    return () => observer.disconnect();
   }, [delay]);
 
-  // Always render the same structure - use CSS to control visibility
   return (
     <div
       ref={ref}
@@ -822,7 +834,7 @@ export default function AlphaLandingPage() {
             <div className="hidden md:flex items-center">
               <a
                 href="#alpha"
-                className="px-5 py-2 bg-gradient-to-r from-coder1-cyan to-coder1-purple rounded-full text-sm font-semibold hover:shadow-lg hover:shadow-coder1-cyan/30 transition-all"
+                className="px-5 py-2 bg-coder1-cyan rounded-full text-sm font-semibold text-black hover:shadow-lg hover:shadow-coder1-cyan/30 transition-all "
               >
                 Join Alpha
               </a>
@@ -910,7 +922,7 @@ export default function AlphaLandingPage() {
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-8">
             <a
               href="#alpha"
-              className="px-8 py-4 bg-gradient-to-r from-coder1-cyan to-coder1-purple rounded-full text-lg font-semibold hover:shadow-xl hover:shadow-coder1-cyan/30 transition-all transform hover:scale-105"
+              className="px-8 py-4 bg-coder1-cyan rounded-full text-lg font-semibold text-black hover:shadow-xl hover:shadow-coder1-cyan/30 transition-all transform hover:scale-105 "
             >
               Join the Alpha
             </a>
@@ -920,24 +932,6 @@ export default function AlphaLandingPage() {
             >
               Watch Demo
             </a>
-          </div>
-
-          {/* Key differentiators bar */}
-          <div className="flex flex-wrap items-center justify-center gap-6 md:gap-10 mb-16 py-4 px-6 bg-white/[0.02] border border-white/5 rounded-2xl">
-            <div className="flex items-center gap-2 text-white/70">
-              <span className="icon-shimmer"><Infinity className="w-5 h-5 text-coder1-cyan" /></span>
-              <span className="text-sm font-medium">8,000+ MCP Integrations</span>
-            </div>
-            <div className="hidden md:block w-px h-4 bg-white/10" />
-            <div className="flex items-center gap-2 text-white/70">
-              <span className="icon-shimmer"><Moon className="w-5 h-5 text-coder1-purple" /></span>
-              <span className="text-sm font-medium">24/7 Autonomous Work</span>
-            </div>
-            <div className="hidden md:block w-px h-4 bg-white/10" />
-            <div className="flex items-center gap-2 text-white/70">
-              <span className="icon-shimmer"><Shield className="w-5 h-5 text-orange-400" /></span>
-              <span className="text-sm font-medium">Enterprise Security</span>
-            </div>
           </div>
 
           {/* Trust stats */}
@@ -994,8 +988,8 @@ export default function AlphaLandingPage() {
                 <Bot className="w-5 h-5 text-coder1-cyan" />
                 <span className="text-coder1-cyan text-base font-medium">Claude Code Native</span>
               </div>
-              <h2 className="text-4xl md:text-5xl font-bold mb-6 tracking-tight">
-                Why We Built Coder1 for Claude Code
+              <h2 className="text-5xl md:text-6xl font-bold mb-6 tracking-tight">
+                Why We Built Coder1<br />For Claude Code
               </h2>
               <p className="text-lg text-white/50 max-w-2xl mx-auto">
                 We&apos;re Claude Code power users who got tired of babysitting sessions. Every feature was designed around Claude Code workflows.
@@ -1140,7 +1134,7 @@ export default function AlphaLandingPage() {
 
           {/* Full width security card */}
           <ScrollReveal>
-            <div className="p-8 bg-gradient-to-br from-coder1-cyan/10 to-coder1-purple/10 border border-coder1-cyan/20 rounded-2xl">
+            <div className="p-8 bg-gradient-to-br from-coder1-cyan/10 to-coder1-purple/10 border border-coder1-cyan/20 rounded-2xl transition-all duration-300 hover:border-orange-400/60 hover:shadow-lg hover:shadow-orange-400/40">
               <div className="flex items-start gap-6">
                 <div className="w-16 h-16 rounded-xl bg-coder1-cyan/20 flex items-center justify-center flex-shrink-0">
                   <Shield className="w-8 h-8 text-coder1-cyan" />
@@ -1158,7 +1152,7 @@ export default function AlphaLandingPage() {
 
           {/* Comparison with OpenClaw */}
           <ScrollReveal>
-            <div className="mt-12 p-8 bg-gradient-to-br from-coder1-cyan/5 to-coder1-purple/5 border border-coder1-cyan/20 rounded-2xl">
+            <div className="mt-12 p-8 bg-gradient-to-br from-coder1-cyan/5 to-coder1-purple/5 border-2 border-coder1-cyan/20 rounded-2xl">
               <div className="text-center mb-8">
                 <div className="inline-flex items-center gap-3 mb-4">
                   <span className="text-2xl font-bold text-coder1-cyan">Johnny5</span>
@@ -1216,7 +1210,7 @@ export default function AlphaLandingPage() {
           <div className="mt-12">
             <ScrollReveal>
               <div className="text-center mb-8">
-                <p className="text-white/40 text-sm uppercase tracking-widest">Live Demo</p>
+                <p className="text-white/40 text-4xl uppercase tracking-widest font-bold">DEMO</p>
               </div>
               <LiveTerminalDemo />
             </ScrollReveal>
@@ -1249,9 +1243,9 @@ export default function AlphaLandingPage() {
         <div className="max-w-6xl mx-auto px-6">
           <ScrollReveal>
             <div className="text-center mb-12">
-              <div className="inline-flex items-center gap-2.5 px-5 py-2.5 bg-emerald-500/10 border border-emerald-500/20 rounded-full mb-6">
-                <Coffee className="w-5 h-5 text-emerald-400" />
-                <span className="text-emerald-400 text-base font-medium">Real Results</span>
+              <div className="inline-flex items-center gap-3 px-6 py-3 bg-coder1-cyan/10 border border-coder1-cyan/20 rounded-full mb-6">
+                <Coffee className="w-6 h-6 text-coder1-cyan" />
+                <span className="text-coder1-cyan text-lg font-medium">Real Results</span>
               </div>
               <h2 className="text-4xl md:text-5xl font-bold mb-6 tracking-tight">
                 What Johnny5 Built Last Night
@@ -1287,7 +1281,7 @@ export default function AlphaLandingPage() {
               }
             ].map((item, idx) => (
               <ScrollReveal key={idx} delay={idx * 100}>
-                <div className="p-6 bg-[#0D0D0D] border border-white/10 rounded-xl hover:border-emerald-500/30 transition-all">
+                <div className="p-6 bg-[#0D0D0D] border border-white/10 rounded-xl hover:border-coder1-cyan/30 transition-all">
                   <div className="flex items-center justify-between mb-4">
                     <span className="text-xs text-white/40 font-mono">{item.time}</span>
                     <span className={`text-xs px-2 py-1 rounded-full ${
@@ -1374,7 +1368,7 @@ export default function AlphaLandingPage() {
             </div>
           </ScrollReveal>
 
-          <div className="grid md:grid-cols-4 gap-4">
+          <div className="grid md:grid-cols-4 gap-5">
             {[
               { icon: Brain, name: 'Contextual Memory', desc: 'Never re-explain your project' },
               { icon: Mic, name: 'Voice-to-Text', desc: 'Code at the speed of thought' },
@@ -1387,7 +1381,7 @@ export default function AlphaLandingPage() {
             ].map((feature, idx) => (
               <ScrollReveal key={idx} delay={idx * 50}>
                 <div
-                  className="p-5 bg-white/[0.02] border border-white/5 rounded-xl transition-all duration-300 cursor-pointer group hover:border-orange-500 hover:-translate-y-1"
+                  className="p-6 bg-white/[0.02] border border-white/5 rounded-xl transition-all duration-300 cursor-pointer group hover:border-orange-500 hover:-translate-y-1"
                   style={{}}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.boxShadow = '0 0 20px rgba(249, 115, 22, 0.4), 0 0 40px rgba(249, 115, 22, 0.2), inset 0 0 20px rgba(249, 115, 22, 0.05)';
@@ -1396,9 +1390,9 @@ export default function AlphaLandingPage() {
                     e.currentTarget.style.boxShadow = 'none';
                   }}
                 >
-                  <feature.icon className="w-5 h-5 text-coder1-purple mb-3 transition-transform duration-300 group-hover:scale-110" />
-                  <h3 className="font-semibold text-sm mb-1">{feature.name}</h3>
-                  <p className="text-white/40 text-xs">{feature.desc}</p>
+                  <feature.icon className="w-7 h-7 text-coder1-purple mb-3 transition-transform duration-300 group-hover:scale-110" />
+                  <h3 className="font-semibold text-base mb-1">{feature.name}</h3>
+                  <p className="text-white/40 text-sm">{feature.desc}</p>
                 </div>
               </ScrollReveal>
             ))}
@@ -1645,7 +1639,7 @@ export default function AlphaLandingPage() {
           }}
         />
 
-        <div className="relative z-10 max-w-xl mx-auto px-6 text-center pt-32">
+        <div className="relative z-10 max-w-xl mx-auto px-6 text-center pt-40">
           <ScrollReveal>
             {/* Urgency badge */}
             <div className="inline-flex items-center gap-2 px-4 py-2 bg-amber-500/5 border border-amber-500/20 rounded-full mb-6">

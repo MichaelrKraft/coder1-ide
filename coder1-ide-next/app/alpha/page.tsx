@@ -171,12 +171,24 @@ function ScrollReveal({
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    // Trigger animation after mount with delay
-    const timeout = setTimeout(() => setIsVisible(true), delay + 100);
-    return () => clearTimeout(timeout);
+    if (!ref.current) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setTimeout(() => setIsVisible(true), delay);
+        }
+      },
+      {
+        threshold: 0.1,
+        rootMargin: '-50px'
+      }
+    );
+
+    observer.observe(ref.current);
+    return () => observer.disconnect();
   }, [delay]);
 
-  // Always render the same structure - use CSS to control visibility
   return (
     <div
       ref={ref}
@@ -323,6 +335,240 @@ function MorningBriefDemo() {
             Reset Demo
           </button>
         )}
+      </div>
+    </div>
+  );
+}
+
+// ============================================================================
+// MEMORY COMPARISON DEMO
+// ============================================================================
+interface DemoMessage {
+  type: 'user' | 'claude' | 'indicator' | 'code';
+  text: string;
+  delay: number;
+  side: 'without' | 'with';
+}
+
+// ChatBubble defined at module scope to prevent recreation on parent re-render
+const ChatBubble = ({ msg }: { msg: DemoMessage }) => {
+  const bubbleClasses = {
+    user: 'bg-blue-500/20 text-blue-400',
+    claude: 'bg-white/10 text-white',
+    indicator: msg.side === 'with'
+      ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+      : 'bg-red-500/20 text-red-400 border border-red-500/30',
+    code: 'bg-purple-500/20 text-coder1-cyan font-mono text-xs whitespace-pre-wrap'
+  };
+
+  return (
+    <div
+      className={`mb-3 ${msg.type === 'user' ? 'text-right' : ''}`}
+      style={{
+        animation: 'fadeInMessage 0.4s ease-out forwards',
+        opacity: 0
+      }}
+    >
+      <div className={`inline-block px-3 py-2 rounded-lg max-w-[90%] text-sm ${bubbleClasses[msg.type]}`}>
+        {msg.text}
+      </div>
+    </div>
+  );
+};
+
+function MemoryComparisonDemo() {
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [withoutMessages, setWithoutMessages] = useState<DemoMessage[]>([]);
+  const [withMessages, setWithMessages] = useState<DemoMessage[]>([]);
+  const timeoutRefs = useRef<NodeJS.Timeout[]>([]);
+  const withoutScrollRef = useRef<HTMLDivElement>(null);
+  const withScrollRef = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll when messages are added
+  useEffect(() => {
+    if (withoutScrollRef.current) {
+      withoutScrollRef.current.scrollTop = withoutScrollRef.current.scrollHeight;
+    }
+  }, [withoutMessages]);
+
+  useEffect(() => {
+    if (withScrollRef.current) {
+      withScrollRef.current.scrollTop = withScrollRef.current.scrollHeight;
+    }
+  }, [withMessages]);
+
+  const demoScript: DemoMessage[] = [
+    // Without Memory Flow
+    { type: 'user', text: "Let's continue working on the auth bug we discussed", delay: 500, side: 'without' },
+    { type: 'claude', text: "I'm not familiar with that bug. What project is this regarding?", delay: 2000, side: 'without' },
+    { type: 'user', text: 'My application for lawyer databases', delay: 3500, side: 'without' },
+    { type: 'claude', text: 'You have three projects. Do you know which project the bug we discussed is in?', delay: 5000, side: 'without' },
+    { type: 'user', text: 'The one I was working on three hours ago', delay: 6500, side: 'without' },
+    { type: 'claude', text: 'I apologize, I do not have session memory. Can you give me some hints or keywords?', delay: 8000, side: 'without' },
+    { type: 'indicator', text: '😤 Frustrating context loss...', delay: 10000, side: 'without' },
+
+    // With Memory Flow
+    { type: 'user', text: "Let's continue working on the auth bug we discussed", delay: 11500, side: 'with' },
+    { type: 'claude', text: 'I see the JWT timeout issue from 3 hours ago in your LawyerDB project. The token was expiring after 15 minutes instead of 24 hours. Let me apply the fix...', delay: 13000, side: 'with' },
+    { type: 'code', text: '// Fixing /lawyerdb/api/auth/route.ts\n// Line 47: Changed from 900000 to 86400000\nconst TOKEN_EXPIRY = 24 * 60 * 60 * 1000;', delay: 15500, side: 'with' },
+    { type: 'indicator', text: '✅ Instantly back to work!', delay: 18000, side: 'with' }
+  ];
+
+  const totalDuration = 20000;
+
+  const clearDemo = useCallback(() => {
+    timeoutRefs.current.forEach(clearTimeout);
+    timeoutRefs.current = [];
+    setWithoutMessages([]);
+    setWithMessages([]);
+    setProgress(0);
+    setIsPlaying(false);
+  }, []);
+
+  const startDemo = useCallback(() => {
+    if (isPlaying) {
+      clearDemo();
+      return;
+    }
+
+    setIsPlaying(true);
+    setWithoutMessages([]);
+    setWithMessages([]);
+    setProgress(0);
+
+    // Add messages based on their delays
+    demoScript.forEach((msg) => {
+      const timeout = setTimeout(() => {
+        if (msg.side === 'without') {
+          setWithoutMessages(prev => [...prev, msg]);
+        } else {
+          setWithMessages(prev => [...prev, msg]);
+        }
+      }, msg.delay);
+      timeoutRefs.current.push(timeout);
+    });
+
+    // Progress bar animation
+    const progressInterval = setInterval(() => {
+      setProgress(prev => {
+        const newProgress = prev + (100 / (totalDuration / 100));
+        if (newProgress >= 100) {
+          clearInterval(progressInterval);
+          return 100;
+        }
+        return newProgress;
+      });
+    }, 100);
+    timeoutRefs.current.push(progressInterval as unknown as NodeJS.Timeout);
+
+    // Reset after demo completes
+    const endTimeout = setTimeout(() => {
+      setIsPlaying(false);
+    }, totalDuration);
+    timeoutRefs.current.push(endTimeout);
+  }, [isPlaying, clearDemo]);
+
+  useEffect(() => {
+    return () => {
+      timeoutRefs.current.forEach(clearTimeout);
+    };
+  }, []);
+
+  return (
+    <div className="mt-16">
+      {/* Persistent Memory Feature Box */}
+      <div
+        className="mb-24 p-6 rounded-xl border border-white/5 bg-white/[0.02] transition-all duration-300 cursor-pointer hover:border-orange-500 hover:-translate-y-1"
+        onMouseEnter={(e) => {
+          e.currentTarget.style.boxShadow = '0 0 20px rgba(249, 115, 22, 0.4), 0 0 40px rgba(249, 115, 22, 0.2), inset 0 0 20px rgba(249, 115, 22, 0.05)';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.boxShadow = 'none';
+        }}
+      >
+        <div className="flex items-start gap-4">
+          <div className="w-12 h-12 rounded-lg bg-coder1-purple/20 flex items-center justify-center flex-shrink-0">
+            <Brain className="w-6 h-6 text-coder1-purple" />
+          </div>
+          <div>
+            <h3 className="text-xl font-semibold text-white mb-2">Persistent Memory</h3>
+            <p className="text-white/60">
+              Remember all your context session-to-session. Unlike black-box AI tools, Coder1 maintains
+              complete context awareness across conversations, so you never have to re-explain your project,
+              codebase, or preferences.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className="text-center mb-8">
+        <h3 className="text-3xl md:text-4xl font-bold mb-3 text-white">
+          Watch Claude Remember Everything
+        </h3>
+        <p className="text-white/50">
+          See the dramatic difference memory persistence makes in your development workflow
+        </p>
+      </div>
+
+      <div className="bg-[#0A0A0A] rounded-xl border border-white/10 overflow-hidden" style={{ boxShadow: '0 0 80px rgba(0, 217, 255, 0.2), 0 0 120px rgba(0, 217, 255, 0.12)' }}>
+        {/* Split demo view */}
+        <div className="grid md:grid-cols-2 min-h-[360px]">
+          {/* Without Memory Side */}
+          <div className="p-5 border-b md:border-b-0 md:border-r border-coder1-cyan/30 bg-gradient-to-b from-red-500/5 to-transparent">
+            <div className="flex items-center gap-2 mb-4 text-red-400">
+              <X className="w-5 h-5" />
+              <h4 className="font-semibold">Without Memory</h4>
+            </div>
+            <div ref={withoutScrollRef} className="h-[280px] overflow-y-auto scroll-smooth">
+              {withoutMessages.map((msg, idx) => (
+                <ChatBubble key={idx} msg={msg} />
+              ))}
+            </div>
+          </div>
+
+          {/* With Memory Side */}
+          <div className="p-5 bg-gradient-to-b from-emerald-500/5 to-transparent">
+            <div className="flex items-center gap-2 mb-4 text-emerald-400">
+              <Check className="w-5 h-5" />
+              <h4 className="font-semibold">With Memory</h4>
+            </div>
+            <div ref={withScrollRef} className="h-[280px] overflow-y-auto scroll-smooth">
+              {withMessages.map((msg, idx) => (
+                <ChatBubble key={idx} msg={msg} />
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Progress bar */}
+        <div className="h-1 bg-white/5">
+          <div
+            className="h-full bg-gradient-to-r from-coder1-cyan to-coder1-purple transition-all duration-100"
+            style={{ width: `${progress}%` }}
+          />
+        </div>
+
+        {/* Control button */}
+        <div className="p-4 text-center bg-white/[0.02]">
+          <button
+            onClick={startDemo}
+            className="inline-flex items-center gap-2 px-6 py-2.5 bg-[#0a1a1f] border border-coder1-cyan/50 text-coder1-cyan font-semibold rounded-full transition-all duration-300 hover:bg-coder1-cyan/10 hover:border-coder1-cyan animate-pulse-slow"
+            style={{ animation: isPlaying ? 'none' : 'pulse-glow 2s ease-in-out infinite' }}
+          >
+            {isPlaying ? (
+              <>
+                <X className="w-4 h-4" />
+                Stop Demo
+              </>
+            ) : (
+              <>
+                <PlayCircle className="w-4 h-4" />
+                {progress >= 100 ? 'Replay Demo' : 'Start Demo'}
+              </>
+            )}
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -860,7 +1106,7 @@ export default function AlphaLandingPage() {
             <div className="hidden md:flex items-center">
               <a
                 href="#alpha"
-                className="px-5 py-2 bg-gradient-to-r from-coder1-cyan to-coder1-purple rounded-full text-sm font-semibold hover:shadow-lg hover:shadow-coder1-cyan/30 transition-all"
+                className="px-5 py-2 bg-coder1-cyan rounded-full text-sm font-semibold text-black hover:shadow-lg hover:shadow-coder1-cyan/30 transition-all "
               >
                 Join Alpha
               </a>
@@ -930,10 +1176,10 @@ export default function AlphaLandingPage() {
           {/* Subtitle with styled text - Two lines for larger impact */}
           <div className="mb-6 subtitle-fade-in">
             <p className="text-4xl md:text-5xl lg:text-6xl text-white/80 font-semibold">
-              The only <span className="text-coder1-cyan">IDE</span> built for
+              The Only <span className="text-coder1-cyan">IDE</span> Built For
             </p>
             <p className="text-4xl md:text-5xl lg:text-6xl text-white/80 font-semibold">
-              <span className="text-coder1-cyan">Claude Code</span> users.
+              <span className="text-coder1-cyan">Claude Code</span> Users.
             </p>
           </div>
 
@@ -947,7 +1193,7 @@ export default function AlphaLandingPage() {
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-8">
             <a
               href="#alpha"
-              className="px-8 py-4 bg-gradient-to-r from-coder1-cyan to-coder1-purple rounded-full text-lg font-semibold hover:shadow-xl hover:shadow-coder1-cyan/30 transition-all transform hover:scale-105"
+              className="px-8 py-4 bg-coder1-cyan rounded-full text-lg font-semibold text-black hover:shadow-xl hover:shadow-coder1-cyan/30 transition-all transform hover:scale-105 "
             >
               Join the Alpha
             </a>
@@ -957,24 +1203,6 @@ export default function AlphaLandingPage() {
             >
               Watch Demo
             </a>
-          </div>
-
-          {/* Key differentiators bar */}
-          <div className="flex flex-wrap items-center justify-center gap-6 md:gap-10 mb-16 py-4 px-6 bg-white/[0.02] border border-white/5 rounded-2xl">
-            <div className="flex items-center gap-2 text-white/70">
-              <span className="icon-shimmer"><Infinity className="w-5 h-5 text-coder1-cyan" /></span>
-              <span className="text-sm font-medium">8,000+ MCP Integrations</span>
-            </div>
-            <div className="hidden md:block w-px h-4 bg-white/10" />
-            <div className="flex items-center gap-2 text-white/70">
-              <span className="icon-shimmer"><Moon className="w-5 h-5 text-coder1-purple" /></span>
-              <span className="text-sm font-medium">24/7 Autonomous Work</span>
-            </div>
-            <div className="hidden md:block w-px h-4 bg-white/10" />
-            <div className="flex items-center gap-2 text-white/70">
-              <span className="icon-shimmer"><Shield className="w-5 h-5 text-orange-400" /></span>
-              <span className="text-sm font-medium">Enterprise Security</span>
-            </div>
           </div>
 
           {/* Trust stats */}
@@ -1031,8 +1259,8 @@ export default function AlphaLandingPage() {
                 <Bot className="w-5 h-5 text-coder1-cyan" />
                 <span className="text-coder1-cyan text-base font-medium">Claude Code Native</span>
               </div>
-              <h2 className="text-4xl md:text-5xl font-bold mb-6 tracking-tight">
-                Why We Built Coder1 for Claude Code
+              <h2 className="text-5xl md:text-6xl font-bold mb-6 tracking-tight">
+                Why We Built Coder1<br />For Claude Code
               </h2>
               <p className="text-lg text-white/50 max-w-2xl mx-auto">
                 We&apos;re Claude Code power users who got tired of babysitting sessions. Every feature was designed around Claude Code workflows.
@@ -1177,7 +1405,7 @@ export default function AlphaLandingPage() {
 
           {/* Full width security card */}
           <ScrollReveal>
-            <div className="p-8 bg-gradient-to-br from-coder1-cyan/10 to-coder1-purple/10 border border-coder1-cyan/20 rounded-2xl">
+            <div className="p-8 bg-gradient-to-br from-coder1-cyan/10 to-coder1-purple/10 border border-coder1-cyan/20 rounded-2xl transition-all duration-300 hover:border-orange-400/60 hover:shadow-lg hover:shadow-orange-400/40">
               <div className="flex items-start gap-6">
                 <div className="w-16 h-16 rounded-xl bg-coder1-cyan/20 flex items-center justify-center flex-shrink-0">
                   <Shield className="w-8 h-8 text-coder1-cyan" />
@@ -1195,7 +1423,7 @@ export default function AlphaLandingPage() {
 
           {/* Comparison with OpenClaw */}
           <ScrollReveal>
-            <div className="mt-12 p-8 bg-gradient-to-br from-coder1-cyan/5 to-coder1-purple/5 border border-coder1-cyan/20 rounded-2xl">
+            <div className="mt-12 p-8 bg-gradient-to-br from-coder1-cyan/5 to-coder1-purple/5 border-2 border-coder1-cyan/20 rounded-2xl">
               <div className="text-center mb-8">
                 <div className="inline-flex items-center gap-3 mb-4">
                   <span className="text-2xl font-bold text-coder1-cyan">Johnny5</span>
@@ -1253,7 +1481,7 @@ export default function AlphaLandingPage() {
           <div className="mt-12">
             <ScrollReveal>
               <div className="text-center mb-8">
-                <p className="text-white/40 text-sm uppercase tracking-widest">Live Demo</p>
+                <p className="text-white/40 text-4xl uppercase tracking-widest font-bold">DEMO</p>
               </div>
               <LiveTerminalDemo />
             </ScrollReveal>
@@ -1286,9 +1514,9 @@ export default function AlphaLandingPage() {
         <div className="max-w-6xl mx-auto px-6">
           <ScrollReveal>
             <div className="text-center mb-12">
-              <div className="inline-flex items-center gap-2.5 px-5 py-2.5 bg-emerald-500/10 border border-emerald-500/20 rounded-full mb-6">
-                <Coffee className="w-5 h-5 text-emerald-400" />
-                <span className="text-emerald-400 text-base font-medium">Real Results</span>
+              <div className="inline-flex items-center gap-3 px-6 py-3 bg-coder1-cyan/10 border border-coder1-cyan/20 rounded-full mb-6">
+                <Coffee className="w-6 h-6 text-coder1-cyan" />
+                <span className="text-coder1-cyan text-lg font-medium">Real Results</span>
               </div>
               <h2 className="text-4xl md:text-5xl font-bold mb-6 tracking-tight">
                 What Johnny5 Built Last Night
@@ -1324,7 +1552,7 @@ export default function AlphaLandingPage() {
               }
             ].map((item, idx) => (
               <ScrollReveal key={idx} delay={idx * 100}>
-                <div className="p-6 bg-[#0D0D0D] border border-white/10 rounded-xl hover:border-emerald-500/30 transition-all">
+                <div className="p-6 bg-[#0D0D0D] border border-white/10 rounded-xl hover:border-coder1-cyan/30 transition-all">
                   <div className="flex items-center justify-between mb-4">
                     <span className="text-xs text-white/40 font-mono">{item.time}</span>
                     <span className={`text-xs px-2 py-1 rounded-full ${
@@ -1411,7 +1639,7 @@ export default function AlphaLandingPage() {
             </div>
           </ScrollReveal>
 
-          <div className="grid md:grid-cols-4 gap-4">
+          <div className="grid md:grid-cols-4 gap-5">
             {[
               { icon: Brain, name: 'Contextual Memory', desc: 'Never re-explain your project' },
               { icon: Mic, name: 'Voice-to-Text', desc: 'Code at the speed of thought' },
@@ -1424,7 +1652,7 @@ export default function AlphaLandingPage() {
             ].map((feature, idx) => (
               <ScrollReveal key={idx} delay={idx * 50}>
                 <div
-                  className="p-5 bg-white/[0.02] border border-white/5 rounded-xl transition-all duration-300 cursor-pointer group hover:border-orange-500 hover:-translate-y-1"
+                  className="p-6 bg-white/[0.02] border border-white/5 rounded-xl transition-all duration-300 cursor-pointer group hover:border-orange-500 hover:-translate-y-1"
                   style={{}}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.boxShadow = '0 0 20px rgba(249, 115, 22, 0.4), 0 0 40px rgba(249, 115, 22, 0.2), inset 0 0 20px rgba(249, 115, 22, 0.05)';
@@ -1433,13 +1661,18 @@ export default function AlphaLandingPage() {
                     e.currentTarget.style.boxShadow = 'none';
                   }}
                 >
-                  <feature.icon className="w-5 h-5 text-coder1-purple mb-3 transition-transform duration-300 group-hover:scale-110" />
-                  <h3 className="font-semibold text-sm mb-1">{feature.name}</h3>
-                  <p className="text-white/40 text-xs">{feature.desc}</p>
+                  <feature.icon className="w-7 h-7 text-coder1-purple mb-3 transition-transform duration-300 group-hover:scale-110" />
+                  <h3 className="font-semibold text-base mb-1">{feature.name}</h3>
+                  <p className="text-white/40 text-sm">{feature.desc}</p>
                 </div>
               </ScrollReveal>
             ))}
           </div>
+
+          {/* ===== MEMORY DEMO ===== */}
+          <ScrollReveal delay={200}>
+            <MemoryComparisonDemo />
+          </ScrollReveal>
         </div>
       </section>
 
@@ -1561,7 +1794,7 @@ export default function AlphaLandingPage() {
       </section>
 
       {/* ===== FAQ SECTION ===== */}
-      <section className="py-24 bg-[#080808]">
+      <section className="pt-24 pb-0 bg-[#080808] relative">
         <div className="max-w-3xl mx-auto px-6">
           <ScrollReveal>
             <div className="text-center mb-12">
@@ -1656,10 +1889,10 @@ export default function AlphaLandingPage() {
       </section>
 
       {/* ===== ALPHA CTA SECTION ===== */}
-      <section className="relative py-24 overflow-hidden" id="alpha">
-        {/* Purple light rays background */}
-        <div className="absolute inset-0 bg-[#0A0A0A]" />
-        <div className="absolute inset-0">
+      <section className="relative pt-0 pb-24 overflow-visible" id="alpha">
+        {/* Purple light rays background - positioned below FAQ */}
+        <div className="absolute top-8 left-0 right-0 bottom-0 bg-[#0A0A0A]" />
+        <div className="absolute top-0 left-0 right-0 h-[600px]">
           <LightRays
             raysOrigin="top-center"
             raysColor="#8B5CF6"
@@ -1677,13 +1910,13 @@ export default function AlphaLandingPage() {
         </div>
         {/* Radial fade to soften edges */}
         <div
-          className="absolute inset-0 pointer-events-none"
+          className="absolute top-8 left-0 right-0 bottom-0 pointer-events-none"
           style={{
             background: 'radial-gradient(ellipse 100% 80% at 50% 0%, transparent 0%, transparent 40%, #0A0A0A 85%)'
           }}
         />
 
-        <div className="relative z-10 max-w-xl mx-auto px-6 text-center pt-32">
+        <div className="relative z-10 max-w-xl mx-auto px-6 text-center pt-40">
           <ScrollReveal>
             {/* Urgency badge */}
             <div className="inline-flex items-center gap-2 px-4 py-2 bg-amber-500/5 border border-amber-500/20 rounded-full mb-6">
