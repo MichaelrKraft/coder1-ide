@@ -71,7 +71,7 @@ export class BridgeManager extends EventEmitter {
   private readonly PAIRING_CODE_LENGTH = 6;
   private readonly PAIRING_CODE_EXPIRY = 5 * 60 * 1000; // 5 minutes
   private readonly HEARTBEAT_INTERVAL = 30 * 1000; // 30 seconds
-  private readonly HEARTBEAT_TIMEOUT = 3 * 30 * 1000; // 3 missed heartbeats
+  private readonly HEARTBEAT_TIMEOUT = 4 * 30 * 1000; // 4 missed heartbeats = 120s (aligned with Socket.IO pingTimeout)
   // FIXED (Dec 10, 2025): Increased from 60s to 120s for long-running Claude commands
   private readonly DEFAULT_COMMAND_TIMEOUT = 120 * 1000; // 120 seconds
   private readonly DEFAULT_FILE_TIMEOUT = 30 * 1000; // 30 seconds for file operations
