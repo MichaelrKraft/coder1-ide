@@ -1067,7 +1067,7 @@ export default function AlphaLandingPage() {
           <ScrollReveal>
             <div className="text-center p-8 bg-gradient-to-r from-coder1-purple/10 to-coder1-cyan/10 border border-coder1-purple/20 rounded-2xl">
               <ChevronDown className="w-8 h-8 text-coder1-purple mx-auto mb-4 animate-bounce" />
-              <p className="text-xl font-semibold text-coder1-cyan">
+              <p className="text-[28px] font-semibold text-coder1-cyan">
                 But here&apos;s what makes Coder1 different...
               </p>
             </div>
