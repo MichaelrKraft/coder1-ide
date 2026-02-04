@@ -1,9 +1,14 @@
 /**
- * Johnny5 Chat Route - Bridge Mode
+ * Johnny5 Chat Route - Multi-Provider Support
  *
- * Uses Claude Code CLI via Bridge connection instead of direct API calls.
- * This allows Pro/Max plan users to use their included Claude Code usage
- * rather than paying separately for API calls.
+ * Priority order:
+ * 1. Moltbot (Preferred) - Uses ManusLive daemon for 24/7 capabilities
+ * 2. Bridge (Secondary) - Uses Claude Code CLI via Bridge connection
+ * 3. Gemini (Fallback) - Uses Google Gemini 2.5 Flash (free tier)
+ *
+ * Moltbot mode connects to ManusLive for autonomous agent features.
+ * Bridge mode requires running 'coder1-bridge start' locally.
+ * Gemini mode uses your GEMINI_API_KEY automatically when neither is available.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -20,6 +25,12 @@ import {
   Johnny5BridgeService,
   ChatMessage,
 } from '@/services/johnny5-bridge-service';
+import {
+  searchMemory,
+  formatForPromptInjection,
+  createGeminiProvider,
+} from '@/services/memory';
+import { getMoltbotBridge } from '@/services/johnny5/moltbot-bridge';
 
 // ============================================================================
 // Types
@@ -28,6 +39,14 @@ import {
 interface ChatRequest {
   message: string;
   sessionId?: string;
+  enableMemoryInjection?: boolean; // Toggle for memory injection
+}
+
+interface MemoryUsed {
+  id: string;
+  sourceType: string;
+  score: number;
+  citation: { file: string; startLine: number | null; endLine: number | null };
 }
 
 interface ChatSuccessResponse {
@@ -39,6 +58,12 @@ interface ChatSuccessResponse {
     tokensUsed: {
       input: number;
       output: number;
+    };
+    memoryContext?: {
+      enabled: boolean;
+      memoriesUsed: MemoryUsed[];
+      searchType: string;
+      totalMemoryTokens: number;
     };
   };
 }
@@ -95,7 +120,7 @@ export async function POST(
       );
     }
 
-    const { message, sessionId } = body;
+    const { message, sessionId, enableMemoryInjection = true } = body;
 
     // Validate message
     if (!message || typeof message !== 'string') {
@@ -118,11 +143,107 @@ export async function POST(
       );
     }
 
-    // 2. Check Bridge connection
+    // 2. Check Moltbot first (preferred), then Bridge, then GLM fallback
+    const moltbotBridge = getMoltbotBridge();
+    const moltbotStatus = moltbotBridge?.getStatus?.();
+    const moltbotConnected = moltbotBridge?.isConnected() ?? false;
+
+    console.log('[Johnny5] Moltbot check:', {
+      hasBridge: !!moltbotBridge,
+      isConnected: moltbotConnected,
+      status: moltbotStatus ? {
+        connected: moltbotStatus.connected,
+        authenticated: moltbotStatus.authenticated,
+        gatewayUrl: moltbotStatus.gatewayUrl,
+      } : 'no status',
+    });
+
+    // If Moltbot is connected, use it with memory injection
+    if (moltbotConnected) {
+      console.log('[Johnny5] Moltbot connected - forwarding to Moltbot chat API');
+      try {
+        // Memory injection for Moltbot path
+        let moltbotMessage = message;
+        let moltbotMemoriesUsed: MemoryUsed[] = [];
+        let moltbotSearchType = 'none';
+        let moltbotMemoryTokens = 0;
+
+        if (enableMemoryInjection) {
+          try {
+            const apiKey = process.env.GEMINI_API_KEY;
+            const provider = apiKey ? createGeminiProvider({ apiKey }) : null;
+
+            let queryEmbedding: number[] | undefined;
+            if (provider) {
+              try {
+                const embeddings = await provider.embed([message]);
+                if (embeddings.length > 0) {
+                  queryEmbedding = embeddings[0];
+                }
+              } catch (embeddingError) {
+                console.warn('[Johnny5/Moltbot] Memory embedding failed:', embeddingError);
+              }
+            }
+
+            const searchResult = await searchMemory(message, queryEmbedding, {
+              topK: 5,
+              maxTokens: 2000,
+              minScore: 0.05,  // Lower threshold for keyword-only search
+            });
+
+            console.log(`[Johnny5/Moltbot] Memory search: ${searchResult.results.length} results, type=${searchResult.searchType}, time=${searchResult.processingTimeMs}ms`);
+
+            if (searchResult.results.length > 0) {
+              const memoryContext = formatForPromptInjection(searchResult, 2000);
+              moltbotMessage = `${memoryContext}\n\n---\n\n**User Query:**\n${message}`;
+              moltbotSearchType = searchResult.searchType;
+              moltbotMemoryTokens = searchResult.totalTokens;
+              moltbotMemoriesUsed = searchResult.results.map((r) => ({
+                id: r.chunk_id,
+                sourceType: r.source_type,
+                score: r.combined_score,
+                citation: r.citation,
+              }));
+              console.log(`[Johnny5/Moltbot] Injected ${moltbotMemoriesUsed.length} memories: ${moltbotMemoriesUsed.map(m => m.sourceType).join(', ')}`);
+            } else {
+              console.log('[Johnny5/Moltbot] No memories found for query');
+            }
+          } catch (memoryError) {
+            console.warn('[Johnny5/Moltbot] Memory search failed:', memoryError);
+          }
+        }
+
+        const moltbotResponse = await moltbotBridge!.sendMessage(moltbotMessage, 'dashboard:main');
+        return NextResponse.json({
+          success: true,
+          data: {
+            response: moltbotResponse.text,
+            sessionId: moltbotResponse.sessionId || 'moltbot',
+            messageId: moltbotResponse.messageId || `msg-${Date.now()}`,
+            tokensUsed: { input: 0, output: 0 },
+            memoryContext: enableMemoryInjection
+              ? {
+                  enabled: true,
+                  memoriesUsed: moltbotMemoriesUsed,
+                  searchType: moltbotSearchType,
+                  totalMemoryTokens: moltbotMemoryTokens,
+                }
+              : { enabled: false, memoriesUsed: [], searchType: 'none', totalMemoryTokens: 0 },
+          },
+        });
+      } catch (moltbotError) {
+        console.error('[Johnny5] Moltbot error, falling back:', moltbotError);
+        // Fall through to Bridge/Gemini
+      }
+    }
+
     const johnny5Service = new Johnny5BridgeService('default');
-    if (!johnny5Service.isBridgeConnected()) {
+    const bridgeConnected = johnny5Service.isBridgeConnected();
+    const geminiApiKey = process.env.GEMINI_API_KEY;
+
+    if (!bridgeConnected && !geminiApiKey) {
       return errorResponse(
-        'Bridge not connected. Please run coder1-bridge start in your terminal.',
+        'Johnny5 not available. Either connect to ManusLive, run coder1-bridge start, or set GEMINI_API_KEY in .env.local.',
         'BRIDGE_NOT_CONNECTED',
         503
       );
@@ -173,17 +294,159 @@ export async function POST(
       // Continue with empty history
     }
 
+    // 6.5. Memory injection - search for relevant context
+    let memoryContext: string = '';
+    let memoriesUsed: MemoryUsed[] = [];
+    let searchType = 'none';
+    let totalMemoryTokens = 0;
+
+    if (enableMemoryInjection) {
+      try {
+        // Get embedding provider if available
+        const apiKey = process.env.GEMINI_API_KEY;
+        const provider = apiKey ? createGeminiProvider({ apiKey }) : null;
+
+        // Generate query embedding for hybrid search
+        let queryEmbedding: number[] | undefined;
+        if (provider) {
+          try {
+            const embeddings = await provider.embed([message]);
+            if (embeddings.length > 0) {
+              queryEmbedding = embeddings[0];
+            }
+          } catch (embeddingError) {
+            console.warn('[Johnny5] Memory embedding failed:', embeddingError);
+          }
+        }
+
+        // Search memory for relevant context
+        // Use lower minScore for keyword-only search (no vector search available)
+        const searchResult = await searchMemory(message, queryEmbedding, {
+          topK: 5,
+          maxTokens: 2000,
+          minScore: 0.05,  // Lower threshold for keyword-only search
+        });
+
+        console.log(`[Johnny5] Memory search completed: ${searchResult.results.length} results, type=${searchResult.searchType}, time=${searchResult.processingTimeMs}ms`);
+
+        if (searchResult.results.length > 0) {
+          // Format memories for injection
+          memoryContext = formatForPromptInjection(searchResult, 2000);
+          searchType = searchResult.searchType;
+          totalMemoryTokens = searchResult.totalTokens;
+
+          // Track which memories were used
+          memoriesUsed = searchResult.results.map((r) => ({
+            id: r.chunk_id,
+            sourceType: r.source_type,
+            score: r.combined_score,
+            citation: r.citation,
+          }));
+
+          console.log(
+            `[Johnny5] Injected ${memoriesUsed.length} memories (${searchType} search, ${totalMemoryTokens} tokens)`
+          );
+          console.log('[Johnny5] Memory sources:', memoriesUsed.map(m => `${m.sourceType}:${m.score.toFixed(2)}`).join(', '));
+        } else {
+          console.log('[Johnny5] No memories found for query');
+        }
+      } catch (memoryError) {
+        console.warn('[Johnny5] Memory search failed:', memoryError);
+        // Continue without memory injection
+      }
+    }
+
     // 7. Build conversation history for Bridge service
     const conversationHistory: ChatMessage[] = history.map((m) => ({
       role: m.role as 'user' | 'assistant',
       content: m.content,
     }));
 
-    // 8. Send prompt via Bridge to Claude Code CLI
-    const result = await johnny5Service.sendPrompt(message, conversationHistory);
+    // 8. Send prompt via Bridge or Gemini API
+    // Inject memory context into the message if available
+    const enhancedMessage = memoryContext
+      ? `${memoryContext}\n\n---\n\n**User Query:**\n${message}`
+      : message;
+
+    let result: { success: boolean; response: string; error?: string; errorCode?: string };
+    let modeUsed: 'bridge' | 'gemini' = 'bridge';
+
+    if (bridgeConnected) {
+      // Primary: Use Bridge (Claude Code CLI)
+      console.log('[Johnny5] Using Bridge mode');
+      result = await johnny5Service.sendPrompt(enhancedMessage, conversationHistory);
+    } else {
+      // Fallback: Use Gemini API (Google Gemini 2.5 Flash - free tier)
+      modeUsed = 'gemini';
+      console.log('[Johnny5] Using Gemini API mode (Bridge not connected)');
+      try {
+        // Build conversation history in Gemini format
+        const geminiContents = [
+          // System instruction as first user message
+          {
+            role: 'user',
+            parts: [{ text: 'You are Johnny5, a helpful AI assistant in the Coder1 IDE. You help with coding, debugging, and software development tasks. Be concise, helpful, and friendly. When you receive memory context, use it to provide more relevant responses. Please acknowledge this role.' }],
+          },
+          {
+            role: 'model',
+            parts: [{ text: 'Understood! I am Johnny5, ready to help with coding, debugging, and development tasks in Coder1 IDE.' }],
+          },
+          // Add conversation history
+          ...conversationHistory.map((m) => ({
+            role: m.role === 'assistant' ? 'model' : 'user',
+            parts: [{ text: m.content }],
+          })),
+          // Add current message
+          {
+            role: 'user',
+            parts: [{ text: enhancedMessage }],
+          },
+        ];
+
+        const apiResponse = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiApiKey}`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              contents: geminiContents,
+            }),
+          }
+        );
+
+        if (!apiResponse.ok) {
+          const errorText = await apiResponse.text();
+          console.error('[Johnny5] Gemini API error:', apiResponse.status, errorText);
+          result = {
+            success: false,
+            response: '',
+            error: `Gemini API error: ${apiResponse.status} - ${errorText}`,
+            errorCode: 'BRIDGE_ERROR',
+          };
+        } else {
+          const data = await apiResponse.json();
+          // Gemini response format
+          const responseText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+          result = {
+            success: true,
+            response: responseText,
+          };
+        }
+      } catch (apiError) {
+        console.error('[Johnny5] Gemini API call failed:', apiError);
+        result = {
+          success: false,
+          response: '',
+          error: apiError instanceof Error ? apiError.message : 'Gemini API call failed',
+          errorCode: 'BRIDGE_ERROR',
+        };
+      }
+    }
 
     if (!result.success) {
-      console.error('[Johnny5] Bridge error:', result.error);
+      console.error('[Johnny5] Error:', result.error);
 
       // Map error codes to appropriate responses
       if (result.errorCode === 'BRIDGE_NOT_CONNECTED') {
@@ -203,7 +466,7 @@ export async function POST(
       }
 
       return errorResponse(
-        result.error || 'Failed to get response from Claude Code CLI',
+        result.error || 'Failed to get response from Claude',
         'BRIDGE_ERROR',
         502
       );
@@ -247,7 +510,13 @@ export async function POST(
         sessionId: session.id,
         inputTokens: estimatedInputTokens,
         outputTokens: estimatedOutputTokens,
-        mode: 'bridge', // Track that this used Bridge mode
+        mode: modeUsed, // Track which mode was used (bridge or glm)
+        memoryInjection: {
+          enabled: enableMemoryInjection,
+          memoriesUsed: memoriesUsed.length,
+          searchType,
+          totalTokens: totalMemoryTokens,
+        },
       });
     } catch (auditError) {
       console.error('[Johnny5] Failed to log audit entry:', auditError);
@@ -265,6 +534,14 @@ export async function POST(
           input: estimatedInputTokens,
           output: estimatedOutputTokens,
         },
+        memoryContext: enableMemoryInjection
+          ? {
+              enabled: true,
+              memoriesUsed,
+              searchType,
+              totalMemoryTokens,
+            }
+          : { enabled: false, memoriesUsed: [], searchType: 'none', totalMemoryTokens: 0 },
       },
     });
   } catch (error) {

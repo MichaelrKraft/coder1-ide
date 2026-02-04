@@ -726,3 +726,105 @@ Use test card: `4242 4242 4242 4242`, any future expiry, any CVC
 - Team tier: No changes (keeps mailto link)
 - Success URL: `/ide?checkout_success=true&session_id={CHECKOUT_SESSION_ID}`
 - Cancel URL: `/alpha#pricing`
+
+---
+
+# Gemini Embedding Provider Implementation (Feb 3, 2026) - COMPLETED
+
+## Status: COMPLETE
+
+## What Was Implemented
+
+### Gemini Embedding Provider for Johnny5 Memory System
+
+Created production-quality TypeScript implementation with:
+- Rate limiting (60/min, 1500/day configurable)
+- Batch processing (up to 100 texts)
+- Exponential backoff retries (default 3 retries)
+- LRU caching with configurable TTL
+- Health monitoring
+
+### Files Created
+
+1. **`/services/memory/embeddings/types.ts`**
+   - `EmbeddingProvider` interface
+   - `RateLimiterState` interface
+   - `EmbeddingCache` interface
+   - `EmbeddingCacheEntry` interface
+   - `BatchEmbeddingResult` interface
+   - `ProviderHealth` interface
+   - `EmbeddingErrorType` enum
+   - `EmbeddingError` custom error class
+
+2. **`/services/memory/embeddings/gemini-provider.ts`**
+   - `GeminiConfig` interface with defaults
+   - `LRUCache` implementation with TTL support
+   - `GeminiEmbeddingProvider` class
+   - `createGeminiProvider()` factory function
+
+3. **`/services/memory/embeddings/index.ts`**
+   - Barrel exports for all types and providers
+
+### Package Installed
+- `@google/generative-ai` (added to package.json)
+
+### Edge Cases Handled
+
+| Edge Case | Solution |
+|-----------|----------|
+| API key not set | Throws `EmbeddingError` with `API_KEY_MISSING` type |
+| Rate limit exceeded | Waits for clearance or throws with retry-after info |
+| Empty text input | Returns zero vector of correct dimensions (768) |
+| API timeout | Configurable timeout with retry |
+| Partial batch failure | Retries with exponential backoff |
+| Cache eviction | LRU eviction when maxSize reached |
+| Stale cache | TTL-based expiration (default 24h) |
+
+### Configuration Options
+
+```typescript
+interface GeminiConfig {
+  apiKey: string;              // Required
+  requestsPerMinute?: number;  // Default 60
+  requestsPerDay?: number;     // Default 1500
+  batchSize?: number;          // Default 100
+  retryDelayMs?: number;       // Default 1000
+  maxRetries?: number;         // Default 3
+  cacheTtlMs?: number;         // Default 24 hours
+  maxCacheSize?: number;       // Default 10000
+  timeoutMs?: number;          // Default 30000
+}
+```
+
+### Usage Example
+
+```typescript
+import { createGeminiProvider, EmbeddingError } from '@/services/memory/embeddings';
+
+// Create provider (uses GOOGLE_AI_API_KEY env var)
+const provider = createGeminiProvider();
+
+// Embed texts
+const embeddings = await provider.embed([
+  'First document text',
+  'Second document text',
+]);
+
+// Single embedding
+const embedding = await provider.embedSingle('Some text');
+
+// Check health
+const health = provider.getHealth();
+console.log(health.rateLimitStatus.dayRemaining);
+```
+
+### Environment Variables
+
+Add to `.env.local`:
+```
+GOOGLE_AI_API_KEY=your-gemini-api-key
+# OR
+GEMINI_API_KEY=your-gemini-api-key
+```
+
+---

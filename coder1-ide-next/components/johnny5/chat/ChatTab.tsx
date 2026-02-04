@@ -231,7 +231,7 @@ export default function ChatTab() {
       console.log(`[ChatTab] Using ${useMoltbot ? 'Moltbot' : 'Bridge'} chat API`);
 
       // Call the appropriate Johnny5 chat API
-      const response = await fetch(apiEndpoint, {
+      let response = await fetch(apiEndpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: useMoltbot
@@ -245,7 +245,21 @@ export default function ChatTab() {
             }),
       });
 
-      const data = await response.json();
+      let data = await response.json();
+
+      // Handle MOLTBOT_DISABLED error - retry with main chat endpoint
+      if (data.code === 'MOLTBOT_DISABLED' && useMoltbot) {
+        console.log('[ChatTab] Moltbot disabled, retrying with main chat endpoint');
+        response = await fetch('/api/johnny5/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            message: userMessage.content,
+            history: messages.slice(-10),
+          }),
+        });
+        data = await response.json();
+      }
 
       // Handle specific error codes from both Bridge-based and Moltbot chat
       if (!response.ok || !data.success) {
