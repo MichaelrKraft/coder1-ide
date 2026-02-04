@@ -1414,13 +1414,13 @@ function IDEPageContent() {
             const response = await fetch(restoreUrl, { method: 'POST' });
             if (response.ok) {
               const restoreData = await response.json();
-              const snapshot = restoreData.checkpoint?.data?.snapshot;
+              const snapshot = restoreData?.checkpoint?.data?.snapshot;
 
-              // Import and filter terminal history
+              // Import and filter terminal history - with full defensive null checking
               const { filterThinkingAnimations } = await import('@/lib/checkpoint-utils');
               const terminalHistory =
-                restoreData.checkpoint.terminalHistory ||
-                restoreData.checkpoint.data?.terminalHistory ||
+                restoreData?.checkpoint?.terminalHistory ||
+                restoreData?.checkpoint?.data?.terminalHistory ||
                 snapshot?.terminal || '';
               const cleanedTerminalHistory = terminalHistory ? filterThinkingAnimations(terminalHistory) : '';
 
