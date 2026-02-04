@@ -353,6 +353,21 @@ export function formatSearchResults(response: SearchResponse): string {
 }
 
 /**
+ * Sanitize content for CLI injection
+ * Removes HTML comments and patterns that could be interpreted as CLI flags
+ */
+function sanitizeForCLI(content: string): string {
+  return content
+    // Remove HTML comments (they contain --> which looks like a CLI flag)
+    .replace(/<!--[\s\S]*?-->/g, '')
+    // Remove any standalone --> or -- at start of lines
+    .replace(/^--+>?\s*/gm, '')
+    // Collapse multiple newlines
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
+/**
  * Format results for injection into Claude prompt
  */
 export function formatForPromptInjection(
@@ -375,7 +390,9 @@ export function formatForPromptInjection(
       ? `:${result.citation.startLine}`
       : '';
 
-    const entry = `### From ${source}${lineRef}\n${result.content}\n\n`;
+    // Sanitize content to remove problematic CLI patterns
+    const sanitizedContent = sanitizeForCLI(result.content);
+    const entry = `### From ${source}${lineRef}\n${sanitizedContent}\n\n`;
     const entryTokens = estimateTokens(entry);
 
     if (tokenCount + entryTokens > maxTokens) break;
