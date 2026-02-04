@@ -61,6 +61,7 @@ function TypewriterText({
     </span>
   );
 }
+import { AlertCircle } from 'lucide-react';
 import { useJohnny5Store } from '@/stores/useJohnny5Store';
 import { getSocket } from '@/lib/socket';
 
@@ -73,6 +74,14 @@ interface ChatMessage {
   status?: 'sending' | 'sent' | 'error';
   toolCalls?: ToolCall[];
   thinking?: string;
+}
+
+interface Johnny5Mode {
+  mode: 'moltbot' | 'bridge' | 'gemini';
+  capabilities: string[];
+  hasMCP: boolean;
+  provider: string;
+  isLimitedMode: boolean;
 }
 
 interface ToolCall {
@@ -120,6 +129,7 @@ export default function ChatTab() {
   const [showScrollButton, setShowScrollButton] = useState(false);
   const [quota, setQuota] = useState<QuotaInfo | null>(null);
   const [quotaExceeded, setQuotaExceeded] = useState<QuotaExceeded | null>(null);
+  const [johnny5Mode, setJohnny5Mode] = useState<Johnny5Mode | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
@@ -153,6 +163,31 @@ export default function ChatTab() {
 
   // Moltbot connection status from store
   const { moltbotStatus, setMoltbotStatus } = useJohnny5Store();
+
+  // Fetch Johnny5 mode on mount
+  useEffect(() => {
+    const fetchJohnny5Mode = async () => {
+      try {
+        const response = await fetch('/api/johnny5/mode');
+        if (response.ok) {
+          const mode = await response.json() as Johnny5Mode;
+          setJohnny5Mode(mode);
+        }
+      } catch (err) {
+        console.warn('Failed to fetch Johnny5 mode:', err);
+        // Fallback to gemini mode if fetch fails
+        setJohnny5Mode({
+          mode: 'gemini',
+          capabilities: ['Memory', 'Reasoning'],
+          hasMCP: false,
+          provider: 'Gemini 2.5 Flash',
+          isLimitedMode: true,
+        });
+      }
+    };
+
+    fetchJohnny5Mode();
+  }, []);
 
   // Subscribe to Moltbot status updates via Socket.IO
   useEffect(() => {
@@ -449,6 +484,22 @@ export default function ChatTab() {
           </button>
         </div>
       </div>
+
+      {/* Limited Mode Warning Banner */}
+      {johnny5Mode?.isLimitedMode && (
+        <div className="px-4 py-3 bg-yellow-500/10 border-b border-yellow-500/30">
+          <div className="flex items-start gap-2">
+            <AlertCircle className="w-5 h-5 text-yellow-500 flex-shrink-0 mt-0.5" />
+            <div className="text-sm">
+              <p className="text-yellow-200 font-medium">Limited Mode Active</p>
+              <p className="text-yellow-300/80 mt-1">
+                Johnny5 can remember you and provide advice, but can't access external apps (Google Drive, Calendar, etc.).
+                To unlock full capabilities, run <code className="bg-yellow-900/30 px-1.5 py-0.5 rounded text-xs font-mono">coder1-bridge start</code>
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Messages Area */}
       <div
