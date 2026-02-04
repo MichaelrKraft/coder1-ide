@@ -213,7 +213,7 @@ export default function ContextTab({ className = '' }: ContextTabProps) {
   };
 
   const handleRemoveFile = (path: string) => {
-    if (!contextComposition) return;
+    if (!contextComposition?.breakdown?.files) return;
 
     const updatedFiles = contextComposition.breakdown.files.filter(f => f.path !== path);
     const removedFile = contextComposition.breakdown.files.find(f => f.path === path);
@@ -233,7 +233,7 @@ export default function ContextTab({ className = '' }: ContextTabProps) {
   };
 
   // Calculate file tokens for pie chart
-  const fileTokens = contextComposition?.breakdown.files.reduce((sum, f) => sum + f.tokens, 0) || 0;
+  const fileTokens = contextComposition?.breakdown?.files?.reduce((sum, f) => sum + f.tokens, 0) || 0;
 
   // Get icon for source type
   const getSourceIcon = (sourceType: string) => {
@@ -441,10 +441,10 @@ export default function ContextTab({ className = '' }: ContextTabProps) {
           {/* Context Pie Chart */}
           <ContextPieChart
             breakdown={{
-              system: contextComposition.breakdown.system,
-              conversation: contextComposition.breakdown.conversation,
+              system: contextComposition.breakdown?.system || 0,
+              conversation: contextComposition.breakdown?.conversation || 0,
               files: fileTokens,
-              tools: contextComposition.breakdown.tools,
+              tools: contextComposition.breakdown?.tools || 0,
             }}
             total={contextComposition.total}
             className={contextLoading ? 'opacity-50' : ''}
@@ -452,7 +452,7 @@ export default function ContextTab({ className = '' }: ContextTabProps) {
 
           {/* File Context List */}
           <FileContextList
-            files={contextComposition.breakdown.files}
+            files={contextComposition.breakdown?.files || []}
             onRemoveFile={handleRemoveFile}
             className={contextLoading ? 'opacity-50' : ''}
           />
