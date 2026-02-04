@@ -2566,6 +2566,16 @@
             stat.style.animation = `float ${3 + index * 0.2}s ease-in-out infinite`;
             stat.style.animationDelay = `${index * 0.1}s`;
         });
+
+        // Handle alpha signup form submission
+        const waitlistForm = document.getElementById('waitlist-form');
+        if (waitlistForm) {
+            waitlistForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                // Redirect to alpha IDE with invite code
+                window.location.href = 'https://coder1.ai/ide?invite=ALPHA2026';
+            });
+        }
     </script>
 </body>
 </html>
