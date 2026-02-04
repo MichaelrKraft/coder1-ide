@@ -59,6 +59,7 @@ export default function SetupWizard({
   const [bridgeConnected, setBridgeConnected] = useState(false);
   const [bridgeChecking, setBridgeChecking] = useState(false);
   const [bridgeError, setBridgeError] = useState('');
+  const [isFirstTime, setIsFirstTime] = useState(true);
 
   // Permissions state
   const [permissions, setPermissions] = useState<Permissions>({
@@ -276,16 +277,66 @@ export default function SetupWizard({
                 )}
 
                 {!bridgeConnected && !bridgeChecking && (
-                  <div className="space-y-3">
-                    <p className="text-sm text-text-muted text-center">
-                      Run this command in your terminal:
-                    </p>
-                    <div className="bg-bg-secondary rounded-lg p-3 font-mono text-sm text-coder1-cyan">
-                      coder1-bridge start
+                  <div className="space-y-4">
+                    {/* Tab Toggle */}
+                    <div className="flex bg-bg-tertiary rounded-lg p-1 text-xs">
+                      <button
+                        onClick={() => setIsFirstTime(true)}
+                        className={`flex-1 py-1.5 px-3 rounded-md transition-all ${
+                          isFirstTime
+                            ? 'bg-coder1-cyan text-black font-medium'
+                            : 'text-text-muted hover:text-text-primary'
+                        }`}
+                      >
+                        First Time
+                      </button>
+                      <button
+                        onClick={() => setIsFirstTime(false)}
+                        className={`flex-1 py-1.5 px-3 rounded-md transition-all ${
+                          !isFirstTime
+                            ? 'bg-coder1-cyan text-black font-medium'
+                            : 'text-text-muted hover:text-text-primary'
+                        }`}
+                      >
+                        Returning
+                      </button>
                     </div>
-                    <p className="text-xs text-text-muted text-center">
-                      Then enter the pairing code shown in the IDE status bar
-                    </p>
+
+                    {isFirstTime ? (
+                      <div className="space-y-3">
+                        <p className="text-sm text-text-muted text-center">
+                          Run this command in your terminal:
+                        </p>
+                        <div className="bg-bg-secondary rounded-lg p-3 font-mono text-sm text-coder1-cyan text-center">
+                          coder1-bridge start
+                        </div>
+                        <p className="text-xs text-text-muted text-center">
+                          Enter the 6-digit pairing code from the status bar
+                        </p>
+                        <p className="text-xs text-green-400/70 text-center">
+                          ✓ Credentials saved for next time
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        <p className="text-sm text-text-muted text-center">
+                          Auto-connect (no pairing code):
+                        </p>
+                        <div className="bg-bg-secondary rounded-lg p-3 font-mono text-sm text-coder1-cyan text-center">
+                          coder1-bridge start --auto
+                        </div>
+                        <p className="text-xs text-text-muted text-center">
+                          Uses saved credentials from first setup
+                        </p>
+                        <div className="p-2 rounded-lg bg-purple-500/10 border border-purple-500/20">
+                          <p className="text-xs text-purple-300 text-center">
+                            <span className="font-medium">Pro tip:</span>{' '}
+                            <code className="bg-bg-tertiary px-1 rounded">coder1-bridge daemon install</code>
+                            {' '}= auto-start on Mac login
+                          </p>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

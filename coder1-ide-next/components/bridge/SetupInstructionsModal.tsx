@@ -296,6 +296,22 @@ export function SetupInstructionsModal({
                     <strong className="text-white">Reconnect easily</strong> — Just click the Bridge button in the status bar anytime
                   </p>
                 </div>
+                <div className="flex gap-2">
+                  <span className="text-purple-400 mt-0.5">🚀</span>
+                  <p className="text-gray-300">
+                    <strong className="text-white">Returning users:</strong> Next time, run{' '}
+                    <code className="bg-bg-tertiary px-1 rounded text-cyan-300">coder1-bridge start --auto</code>
+                    {' '}to skip the pairing code!
+                  </p>
+                </div>
+                <div className="flex gap-2">
+                  <span className="text-orange-400 mt-0.5">⚡</span>
+                  <p className="text-gray-300">
+                    <strong className="text-white">Auto-start (Mac):</strong> Run{' '}
+                    <code className="bg-bg-tertiary px-1 rounded text-cyan-300">coder1-bridge daemon install</code>
+                    {' '}once and Bridge launches on login
+                  </p>
+                </div>
               </div>
             </div>
           </div>
