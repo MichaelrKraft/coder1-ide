@@ -443,6 +443,140 @@ export async function POST(
           errorCode: 'BRIDGE_ERROR',
         };
       }
+
+      // Direct Claude CLI fallback - uses your Pro/Max subscription!
+      if (!result.success) {
+        console.log('[Johnny5] Gemini failed, trying direct Claude CLI (uses your subscription)');
+        try {
+          const { execSync, spawnSync } = await import('child_process');
+          const fs = await import('fs');
+          const os = await import('os');
+          const path = await import('path');
+
+          // Check if claude CLI is available
+          try {
+            execSync('which claude', { encoding: 'utf-8', stdio: 'pipe' });
+          } catch {
+            throw new Error('Claude CLI not installed on server');
+          }
+
+          // Build a simple prompt with context embedded
+          let fullPrompt = '[SYSTEM] You are Johnny5, a helpful AI assistant. Be concise and helpful. Use any memory context provided to give relevant responses.\n\n';
+
+          // Add memory context if available
+          fullPrompt += enhancedMessage;
+
+          try {
+            // Call claude CLI with simple --print flag only
+            // IMPORTANT: Pass CLAUDE_CODE_OAUTH_TOKEN for subprocess authentication
+            const homeDir = process.env.HOME || '/Users/michaelkraft';
+            const cliEnv = {
+              ...process.env,
+              HOME: homeDir,
+              USER: process.env.USER || 'michaelkraft',
+              SHELL: '/bin/zsh',
+              TMPDIR: process.env.TMPDIR || '/tmp',
+              // Pass OAuth token for subprocess authentication (uses your Pro/Max subscription!)
+              CLAUDE_CODE_OAUTH_TOKEN: process.env.CLAUDE_CODE_OAUTH_TOKEN,
+            };
+            delete cliEnv.ANTHROPIC_API_KEY; // Remove so CLI uses OAuth instead
+            delete cliEnv.NEXT_PUBLIC_ANTHROPIC_API_KEY;
+
+            console.log('[Johnny5] CLI attempting with input piped, HOME:', cliEnv.HOME);
+
+            // Use stdin to pass the prompt - avoids shell escaping issues
+            const cliResult = spawnSync('claude', ['--print'], {
+              input: fullPrompt,
+              encoding: 'utf-8',
+              timeout: 90000, // 90 second timeout
+              maxBuffer: 10 * 1024 * 1024, // 10MB buffer
+              env: cliEnv,
+              cwd: homeDir,
+            });
+
+            if (cliResult.error) {
+              throw cliResult.error;
+            }
+
+            if (cliResult.status !== 0) {
+              const errorMsg = cliResult.stderr || cliResult.stdout || 'Unknown error';
+              throw new Error(`CLI exited with code ${cliResult.status}: ${errorMsg}`);
+            }
+
+            const cliResponse = cliResult.stdout;
+            if (cliResponse && cliResponse.trim()) {
+              result = {
+                success: true,
+                response: cliResponse.trim(),
+              };
+              modeUsed = 'bridge'; // Track as bridge since it uses subscription
+              console.log('[Johnny5] Direct CLI successful (using your Pro/Max subscription)');
+            } else {
+              throw new Error('Empty response from Claude CLI');
+            }
+          } catch (innerErr) {
+            throw innerErr;
+          }
+        } catch (cliError) {
+          console.warn('[Johnny5] Direct CLI failed:', cliError instanceof Error ? cliError.message : cliError);
+          // Continue to Anthropic API fallback if configured
+        }
+      }
+
+      // Anthropic API fallback (pay-per-use) - only if CLI also failed
+      if (!result.success && process.env.ANTHROPIC_API_KEY) {
+        console.log('[Johnny5] CLI failed, falling back to Anthropic API (pay-per-use)');
+        try {
+          const oauthResponse = await fetch('https://api.anthropic.com/v1/messages', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-api-key': process.env.ANTHROPIC_API_KEY,
+              'anthropic-version': '2023-06-01',
+            },
+            body: JSON.stringify({
+              model: 'claude-sonnet-4-20250514',
+              max_tokens: 4000,
+              system: 'You are Johnny5, a helpful AI assistant in the Coder1 IDE. You help with coding, debugging, and software development tasks. Be concise, helpful, and friendly. When you receive memory context, use it to provide more relevant responses.',
+              messages: [
+                ...conversationHistory.map((m) => ({
+                  role: m.role,
+                  content: m.content,
+                })),
+                { role: 'user', content: enhancedMessage },
+              ],
+            }),
+          });
+
+          if (!oauthResponse.ok) {
+            const errorText = await oauthResponse.text();
+            console.error('[Johnny5] OAuth API error:', oauthResponse.status, errorText);
+            result = {
+              success: false,
+              response: '',
+              error: `OAuth API error: ${oauthResponse.status} - ${errorText}`,
+              errorCode: 'BRIDGE_ERROR',
+            };
+          } else {
+            const data = await oauthResponse.json();
+            const responseText = data.content?.[0]?.text || '';
+            result = {
+              success: true,
+              response: responseText,
+            };
+            modeUsed = 'gemini'; // Still track as gemini since it's not bridge
+            console.log('[Johnny5] OAuth fallback successful');
+          }
+        } catch (oauthError) {
+          console.error('[Johnny5] OAuth fallback failed:', oauthError);
+          result = {
+            success: false,
+            response: '',
+            error: oauthError instanceof Error ? oauthError.message : 'OAuth API call failed',
+            errorCode: 'BRIDGE_ERROR',
+          };
+        }
+      }
     }
 
     if (!result.success) {

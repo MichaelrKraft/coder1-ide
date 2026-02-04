@@ -1429,9 +1429,9 @@ export async function deleteMemoryChunk(id: string): Promise<boolean> {
  * Removes special characters that break FTS5 syntax
  */
 function sanitizeFTS5Query(query: string): string {
-  // Remove FTS5 special characters: * " - + ? ( ) : ^ ~ AND OR NOT
+  // Remove FTS5 special characters and punctuation: * " - + ? ( ) : ^ ~ , . ! ; AND OR NOT
   let sanitized = query
-    .replace(/[*"()\-+?:^~]/g, ' ')  // Remove special chars
+    .replace(/[*"()\-+?:^~,.!;']/g, ' ')  // Remove special chars and punctuation
     .replace(/\b(AND|OR|NOT|NEAR)\b/gi, ' ')  // Remove operators
     .replace(/\s+/g, ' ')  // Collapse whitespace
     .trim();
