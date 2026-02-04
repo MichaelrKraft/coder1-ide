@@ -26,7 +26,7 @@ export default function AlphaSuccessPage() {
         </p>
 
         <a
-          href="/ide"
+          href="/ide?invite=ALPHA2026"
           className="inline-block px-8 py-4 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-lg font-semibold hover:from-cyan-600 hover:to-blue-600 transition-all shadow-lg"
         >
           Open IDE
