@@ -1,7 +1,19 @@
 'use client';
 
-import React, { useEffect } from 'react';
-import { Database, RefreshCw, Loader2, Info, AlertCircle } from 'lucide-react';
+import React, { useEffect, useState, useCallback } from 'react';
+import {
+  Database,
+  RefreshCw,
+  Loader2,
+  Info,
+  AlertCircle,
+  Search,
+  FileText,
+  MessageSquare,
+  User,
+  Trash2,
+  HardDriveDownload,
+} from 'lucide-react';
 import { useJohnny5Store } from '@/stores/useJohnny5Store';
 import ContextUsageBar from './ContextUsageBar';
 import ContextPieChart from './ContextPieChart';
@@ -11,10 +23,29 @@ interface ContextTabProps {
   className?: string;
 }
 
+interface MemorySearchResult {
+  chunk_id: string;
+  content: string;
+  source_type: string;
+  source_id: string;
+  start_line: number | null;
+  end_line: number | null;
+  combined_score: number;
+}
+
+interface MemoryStats {
+  total_chunks: number;
+  manuslive_chunks: number;
+  session_chunks: number;
+  last_indexed: string | null;
+  embedding_model: string | null;
+}
+
 /**
  * ContextTab - Main context visualizer view for Johnny5
  *
  * Shows what the AI currently "remembers":
+ * - Memory search across indexed content
  * - Overall context usage with warning thresholds
  * - Breakdown by type (system, conversation, files, tools)
  * - List of files in context with token counts
@@ -27,27 +58,134 @@ export default function ContextTab({ className = '' }: ContextTabProps) {
     setContextLoading,
   } = useJohnny5Store();
 
-  // Load mock data on mount
+  // Memory search state
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<MemorySearchResult[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [memoryStats, setMemoryStats] = useState<MemoryStats | null>(null);
+  const [isRebuildingIndex, setIsRebuildingIndex] = useState(false);
+
+  // Debounced search
+  const [debouncedQuery, setDebouncedQuery] = useState('');
+
   useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedQuery(searchQuery);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  // Perform search when debounced query changes
+  useEffect(() => {
+    if (debouncedQuery.trim().length < 2) {
+      setSearchResults([]);
+      return;
+    }
+
+    performSearch(debouncedQuery);
+  }, [debouncedQuery]);
+
+  // Load memory stats on mount
+  useEffect(() => {
+    loadMemoryStats();
     if (!contextComposition) {
       loadContext();
     }
   }, []);
 
+  const loadMemoryStats = async () => {
+    try {
+      const response = await fetch('/api/johnny5/context/memory-stats');
+      if (response.ok) {
+        const data = await response.json();
+        setMemoryStats(data);
+      }
+    } catch (err) {
+      console.error('Failed to load memory stats:', err);
+    }
+  };
+
+  const performSearch = async (query: string) => {
+    setIsSearching(true);
+    try {
+      const response = await fetch('/api/johnny5/context/search', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query, topK: 10 }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setSearchResults(data.results || []);
+      }
+    } catch (err) {
+      console.error('Memory search failed:', err);
+      setSearchResults([]);
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  const handleRebuildIndex = async () => {
+    setIsRebuildingIndex(true);
+    try {
+      const response = await fetch('/api/johnny5/context/rebuild-index', {
+        method: 'POST',
+      });
+
+      if (response.ok) {
+        await loadMemoryStats();
+      }
+    } catch (err) {
+      console.error('Failed to rebuild index:', err);
+    } finally {
+      setIsRebuildingIndex(false);
+    }
+  };
+
+  const handleClearCache = async () => {
+    if (!confirm('Clear all indexed memories? This cannot be undone.')) return;
+
+    try {
+      const response = await fetch('/api/johnny5/context/clear-cache', {
+        method: 'POST',
+      });
+
+      if (response.ok) {
+        setSearchResults([]);
+        await loadMemoryStats();
+      }
+    } catch (err) {
+      console.error('Failed to clear cache:', err);
+    }
+  };
+
   const loadContext = async () => {
     setContextLoading(true);
 
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 500));
+    try {
+      const response = await fetch('/api/johnny5/context');
+      if (response.ok) {
+        const data = await response.json();
+        setContextComposition(data);
+      } else {
+        // Fall back to mock data if API not available
+        loadMockContext();
+      }
+    } catch (err) {
+      // Fall back to mock data
+      loadMockContext();
+    }
 
-    // Generate mock data
+    setContextLoading(false);
+  };
+
+  const loadMockContext = () => {
     const mockFiles = [
       { path: '/src/components/Johnny5Panel.tsx', tokens: 2450, addedAt: new Date(Date.now() - 300000) },
       { path: '/src/stores/useJohnny5Store.ts', tokens: 3200, addedAt: new Date(Date.now() - 600000) },
       { path: '/src/types/johnny5.ts', tokens: 1800, addedAt: new Date(Date.now() - 900000) },
       { path: '/CLAUDE.md', tokens: 4500, addedAt: new Date(Date.now() - 1200000) },
-      { path: '/src/lib/claude-service.ts', tokens: 1200, addedAt: new Date(Date.now() - 1500000) },
-      { path: '/package.json', tokens: 350, addedAt: new Date(Date.now() - 1800000) },
     ];
 
     const fileTokens = mockFiles.reduce((sum, f) => sum + f.tokens, 0);
@@ -58,7 +196,7 @@ export default function ContextTab({ className = '' }: ContextTabProps) {
 
     setContextComposition({
       total: Math.round(totalTokens),
-      limit: 128000, // Claude's context window
+      limit: 128000,
       usagePercentage: (totalTokens / 128000) * 100,
       breakdown: {
         system: systemTokens,
@@ -67,12 +205,11 @@ export default function ContextTab({ className = '' }: ContextTabProps) {
         tools: toolTokens,
       },
     });
-
-    setContextLoading(false);
   };
 
   const handleRefresh = () => {
     loadContext();
+    loadMemoryStats();
   };
 
   const handleRemoveFile = (path: string) => {
@@ -98,13 +235,52 @@ export default function ContextTab({ className = '' }: ContextTabProps) {
   // Calculate file tokens for pie chart
   const fileTokens = contextComposition?.breakdown.files.reduce((sum, f) => sum + f.tokens, 0) || 0;
 
+  // Get icon for source type
+  const getSourceIcon = (sourceType: string) => {
+    switch (sourceType) {
+      case 'session':
+        return <MessageSquare className="w-3 h-3 text-purple-400" />;
+      case 'manuslive_user':
+        return <User className="w-3 h-3 text-green-400" />;
+      case 'manuslive_memory':
+        return <FileText className="w-3 h-3 text-blue-400" />;
+      default:
+        return <FileText className="w-3 h-3 text-text-muted" />;
+    }
+  };
+
+  // Format source for display
+  const formatSource = (result: MemorySearchResult) => {
+    if (result.source_type === 'session') {
+      return `Session`;
+    }
+    const fileName = result.source_id.split('/').pop() || result.source_id;
+    const lineInfo = result.start_line ? `:${result.start_line}-${result.end_line}` : '';
+    return `${fileName}${lineInfo}`;
+  };
+
+  // Format last indexed time
+  const formatLastIndexed = (timestamp: string | null) => {
+    if (!timestamp) return 'Never';
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins} min ago`;
+    const diffHours = Math.floor(diffMins / 60);
+    if (diffHours < 24) return `${diffHours} hr ago`;
+    return date.toLocaleDateString();
+  };
+
   return (
     <div className={`p-4 space-y-4 ${className}`}>
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Database className="w-4 h-4 text-coder1-cyan" />
-          <h3 className="text-sm font-semibold text-text-primary">Context Visualizer</h3>
+          <h3 className="text-sm font-semibold text-text-primary">Context & Memory</h3>
         </div>
 
         <button
@@ -116,6 +292,122 @@ export default function ContextTab({ className = '' }: ContextTabProps) {
         >
           <RefreshCw className={`w-3.5 h-3.5 ${contextLoading ? 'animate-spin' : ''}`} />
         </button>
+      </div>
+
+      {/* Memory Search Section */}
+      <div className="bg-bg-tertiary rounded-lg p-3 space-y-3">
+        <div className="flex items-center gap-2">
+          <Search className="w-4 h-4 text-coder1-cyan" />
+          <h4 className="text-xs font-semibold text-text-primary">Memory Search</h4>
+          {isSearching && <Loader2 className="w-3 h-3 animate-spin text-coder1-cyan" />}
+        </div>
+
+        {/* Search Input */}
+        <div className="relative">
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search memories..."
+            className="w-full px-3 py-2 pl-8 bg-bg-secondary border border-border-primary
+              rounded-md text-sm text-text-primary placeholder:text-text-muted
+              focus:outline-none focus:border-coder1-cyan transition-colors"
+          />
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-text-muted" />
+        </div>
+
+        {/* Search Results */}
+        {searchResults.length > 0 && (
+          <div className="space-y-2 max-h-48 overflow-y-auto">
+            <div className="text-[10px] text-text-muted uppercase tracking-wider">
+              {searchResults.length} results
+            </div>
+            {searchResults.map((result) => (
+              <div
+                key={result.chunk_id}
+                className="p-2 bg-bg-secondary rounded-md border border-border-primary
+                  hover:border-coder1-cyan/50 transition-colors"
+              >
+                <div className="flex items-center gap-2 mb-1">
+                  {getSourceIcon(result.source_type)}
+                  <span className="text-[10px] text-text-secondary font-medium">
+                    {formatSource(result)}
+                  </span>
+                  <span className="text-[10px] text-coder1-cyan ml-auto">
+                    {Math.round(result.combined_score * 100)}%
+                  </span>
+                </div>
+                <p className="text-[11px] text-text-muted line-clamp-2">
+                  {result.content.slice(0, 150)}
+                  {result.content.length > 150 ? '...' : ''}
+                </p>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* No Results */}
+        {debouncedQuery.length >= 2 && searchResults.length === 0 && !isSearching && (
+          <div className="text-center py-4 text-text-muted">
+            <p className="text-xs">No memories found for "{debouncedQuery}"</p>
+          </div>
+        )}
+
+        {/* Memory Stats */}
+        {memoryStats && (
+          <div className="pt-2 border-t border-border-primary">
+            <div className="grid grid-cols-3 gap-2 text-center">
+              <div>
+                <div className="text-lg font-bold text-coder1-cyan">
+                  {memoryStats.total_chunks}
+                </div>
+                <div className="text-[9px] text-text-muted uppercase">Chunks</div>
+              </div>
+              <div>
+                <div className="text-lg font-bold text-purple-400">
+                  {memoryStats.session_chunks}
+                </div>
+                <div className="text-[9px] text-text-muted uppercase">Sessions</div>
+              </div>
+              <div>
+                <div className="text-lg font-bold text-green-400">
+                  {memoryStats.manuslive_chunks}
+                </div>
+                <div className="text-[9px] text-text-muted uppercase">ManusLive</div>
+              </div>
+            </div>
+            <div className="text-[10px] text-text-muted text-center mt-2">
+              Last indexed: {formatLastIndexed(memoryStats.last_indexed)}
+            </div>
+          </div>
+        )}
+
+        {/* Actions */}
+        <div className="flex gap-2">
+          <button
+            onClick={handleRebuildIndex}
+            disabled={isRebuildingIndex}
+            className="flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5
+              bg-coder1-cyan/20 text-coder1-cyan text-[10px] font-semibold
+              rounded-md hover:bg-coder1-cyan/30 transition-all disabled:opacity-50"
+          >
+            {isRebuildingIndex ? (
+              <Loader2 className="w-3 h-3 animate-spin" />
+            ) : (
+              <HardDriveDownload className="w-3 h-3" />
+            )}
+            Rebuild Index
+          </button>
+          <button
+            onClick={handleClearCache}
+            className="flex items-center justify-center gap-1.5 px-2 py-1.5
+              bg-red-500/20 text-red-400 text-[10px] font-semibold
+              rounded-md hover:bg-red-500/30 transition-all"
+          >
+            <Trash2 className="w-3 h-3" />
+            Clear
+          </button>
+        </div>
       </div>
 
       {/* Loading State */}

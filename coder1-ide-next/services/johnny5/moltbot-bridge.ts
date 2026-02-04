@@ -291,6 +291,16 @@ class MoltbotBridgeService extends EventEmitter {
 
     this.emit('connected');
     this.emit('connection-status', this.state.status);
+
+    // Auto-authenticate after 2 seconds if no challenge received
+    // This handles ManusLive with auth mode "none" which doesn't send connect.challenge
+    setTimeout(() => {
+      if (!this.authenticated && this.state.status.connected) {
+        console.log('[MoltbotBridge] No auth challenge received, auto-authenticating (auth mode: none)');
+        this.authenticated = true;
+        this.emit('authenticated');
+      }
+    }, 2000);
   }
 
   private handleConnectionClose(code: number, reason: string): void {
@@ -335,28 +345,35 @@ class MoltbotBridgeService extends EventEmitter {
       return; // Already scheduled
     }
 
-    if (this.reconnectAttempts >= this.state.config.maxRetries) {
-      console.log('[MoltbotBridge] Max reconnection attempts reached');
+    // After max retries, continue with longer interval (never give up)
+    const pastMaxRetries = this.reconnectAttempts >= this.state.config.maxRetries;
 
-      if (this.state.config.fallbackToDirect) {
-        console.log('[MoltbotBridge] Activating fallback mode');
+    if (pastMaxRetries) {
+      if (this.state.config.fallbackToDirect && !this.state.status.fallbackActive) {
+        console.log('[MoltbotBridge] Activating fallback mode (will keep trying to reconnect)');
         this.updateStatus({
           fallbackActive: true,
         });
       }
-      return;
     }
 
     // Exponential backoff: base * 2^attempts (capped at 60 seconds)
-    const delay = Math.min(
-      this.state.config.reconnectInterval * Math.pow(2, this.reconnectAttempts),
-      60000
-    );
+    // After max retries, use fixed 60-second interval and keep trying indefinitely
+    const delay = pastMaxRetries
+      ? 60000
+      : Math.min(
+          this.state.config.reconnectInterval * Math.pow(2, this.reconnectAttempts),
+          60000
+        );
 
     this.reconnectAttempts++;
 
+    const attemptDisplay = pastMaxRetries
+      ? `${this.reconnectAttempts} (persistent mode)`
+      : `${this.reconnectAttempts}/${this.state.config.maxRetries}`;
+
     console.log(
-      `[MoltbotBridge] Scheduling reconnection attempt ${this.reconnectAttempts}/${this.state.config.maxRetries} in ${delay}ms`
+      `[MoltbotBridge] Scheduling reconnection attempt ${attemptDisplay} in ${delay}ms`
     );
 
     this.updateStatus({
@@ -482,6 +499,21 @@ class MoltbotBridgeService extends EventEmitter {
           case 'chat':
             // Chat events contain final response state
             this.handleChatEvent(payload);
+            return;
+
+          case 'chat.done':
+            // ManusLive sends this when chat is complete
+            this.handleChatDoneEvent(payload);
+            return;
+
+          case 'chat.running':
+            // ManusLive sends this when chat starts
+            console.log(`[MoltbotBridge] chat.running: runId=${payload?.runId}, sessionKey=${payload?.sessionKey}`);
+            return;
+
+          case 'chat.error':
+            // ManusLive sends this on error
+            this.handleChatErrorEvent(payload);
             return;
 
           default:
@@ -1068,6 +1100,67 @@ class MoltbotBridgeService extends EventEmitter {
   private handleErrorEvent(error: { message: string; code?: string }): void {
     console.error(`[MoltbotBridge] Error from gateway: ${error.message}`);
     this.emit('error', new Error(error.message));
+  }
+
+  /**
+   * Handle chat.done event from ManusLive
+   * This is sent when a chat request completes successfully
+   */
+  private handleChatDoneEvent(payload: { runId: string; sessionKey: string; finalState?: string }): void {
+    const { runId, sessionKey } = payload;
+    console.log(`[MoltbotBridge] chat.done: runId=${runId}, sessionKey=${sessionKey}, finalState=${payload.finalState}`);
+
+    const messageId = this.runIdToMessageId.get(runId);
+    if (!messageId) {
+      console.log(`[MoltbotBridge] chat.done: No messageId found for runId=${runId}`);
+      return;
+    }
+
+    const pending = this.state.pendingMessages.get(messageId);
+    if (!pending) {
+      console.log(`[MoltbotBridge] chat.done: No pending request for messageId=${messageId}`);
+      return;
+    }
+
+    // Get accumulated response from agent events
+    const accumulated = this.agentResponses.get(runId);
+    const responseText = accumulated?.content || 'Response completed but no content captured.';
+
+    console.log(`[MoltbotBridge] chat.done: Resolving with ${responseText.length} chars`);
+
+    clearTimeout(pending.timeout);
+    this.state.pendingMessages.delete(messageId);
+    this.runIdToMessageId.delete(runId);
+    this.agentResponses.delete(runId);
+
+    pending.resolve({
+      text: responseText,
+      sessionId: sessionKey,
+      messageId: messageId,
+    });
+  }
+
+  /**
+   * Handle chat.error event from ManusLive
+   * This is sent when a chat request fails
+   */
+  private handleChatErrorEvent(payload: { runId: string; error?: string; message?: string }): void {
+    const { runId } = payload;
+    const errorMessage = payload.error || payload.message || 'Unknown chat error';
+    console.error(`[MoltbotBridge] chat.error: runId=${runId}, error=${errorMessage}`);
+
+    const messageId = this.runIdToMessageId.get(runId);
+    if (!messageId) return;
+
+    const pending = this.state.pendingMessages.get(messageId);
+    if (!pending) return;
+
+    clearTimeout(pending.timeout);
+    this.state.pendingMessages.delete(messageId);
+    this.runIdToMessageId.delete(runId);
+    this.agentResponses.delete(runId);
+
+    pending.reject(new Error(errorMessage));
   }
 
   // -------------------------------------------------------------------------

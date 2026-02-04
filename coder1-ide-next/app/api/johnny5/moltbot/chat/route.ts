@@ -47,6 +47,21 @@ export async function POST(
   request: NextRequest
 ): Promise<NextResponse<Johnny5APIResponse<ChatSuccessResponse>>> {
   try {
+    // 0. Check if Moltbot is enabled
+    const moltbotEnabled = process.env.MOLTBOT_ENABLED !== 'false';
+    if (!moltbotEnabled) {
+      console.log('[Moltbot Chat] Moltbot disabled via MOLTBOT_ENABLED=false, returning error to trigger fallback');
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Moltbot is disabled. Please use /api/johnny5/chat instead.',
+          code: 'MOLTBOT_DISABLED',
+          timestamp: new Date(),
+        },
+        { status: 503 }
+      );
+    }
+
     // 1. Parse and validate request
     let body: ChatRequest;
     try {

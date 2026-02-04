@@ -1645,15 +1645,8 @@ app.prepare().then(() => {
     }
   };
 
-  // Connect to Moltbot if enabled (Johnny5 autonomous agent)
-  if (moltbotBridge && process.env.MOLTBOT_ENABLED === 'true' && process.env.MOLTBOT_GATEWAY_URL) {
-    console.log('🤖 Initializing Moltbot connection...');
-    moltbotBridge.connect(process.env.MOLTBOT_GATEWAY_URL)
-      .then(() => console.log('✅ Connected to Moltbot Gateway'))
-      .catch(err => console.warn('⚠️ Moltbot connection failed (will retry):', err.message));
-  }
-
   // Forward Moltbot events to Socket.IO clients for Johnny5 dashboard
+  // NOTE: Set up event listeners BEFORE calling connect() to avoid race conditions
   if (moltbotBridge) {
     moltbotBridge.on('message', (data) => {
       if (io && data.sessionId) {
@@ -1668,18 +1661,29 @@ app.prepare().then(() => {
     });
 
     moltbotBridge.on('connected', () => {
+      console.log('🎉 [MoltbotBridge] Connected event received, emitting to Socket.IO');
       if (io) {
         io.emit('johnny5:moltbot-connected');
       }
     });
 
     moltbotBridge.on('disconnected', (reason) => {
+      console.log('⚠️ [MoltbotBridge] Disconnected event received:', reason);
       if (io) {
         io.emit('johnny5:moltbot-disconnected', { reason });
       }
     });
 
     console.log('🔗 Moltbot event forwarding configured');
+  }
+
+  // Connect to Moltbot if enabled (Johnny5 autonomous agent)
+  // NOTE: This MUST come AFTER setting up event listeners above
+  if (moltbotBridge && process.env.MOLTBOT_ENABLED === 'true' && process.env.MOLTBOT_GATEWAY_URL) {
+    console.log('🤖 Initializing Moltbot connection...');
+    moltbotBridge.connect(process.env.MOLTBOT_GATEWAY_URL)
+      .then(() => console.log('✅ Connected to Moltbot Gateway'))
+      .catch(err => console.warn('⚠️ Moltbot connection failed (will retry):', err.message));
   }
 
   // Event Bridge Note: Event forwarding handled directly in claude-code-bridge.js

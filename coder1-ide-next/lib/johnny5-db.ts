@@ -17,7 +17,20 @@ import Database from 'better-sqlite3';
 import { join } from 'path';
 import { homedir } from 'os';
 import { existsSync, mkdirSync, copyFileSync } from 'fs';
-import { randomUUID } from 'crypto';
+import { randomUUID, createHash } from 'crypto';
+
+// Try to load sqlite-vec for vector search (optional, graceful degradation)
+let sqliteVecLoaded = false;
+let vectorTableCreated = false; // Track if vector table was actually created
+try {
+  // sqlite-vec provides vector similarity search
+  // If it fails to load, we fall back to keyword-only search
+  const sqliteVec = require('sqlite-vec');
+  sqliteVecLoaded = true;
+  console.log('[Johnny5 DB] sqlite-vec extension loaded successfully');
+} catch (err) {
+  console.warn('[Johnny5 DB] sqlite-vec not available, falling back to keyword-only search');
+}
 
 // ManusLive Memory Integration
 import {
@@ -94,6 +107,67 @@ export interface UsageStats {
   tokens_output: number;
   sessions_count: number;
   tasks_count: number;
+}
+
+// ============================================================================
+// Memory System Types
+// ============================================================================
+
+export interface MemoryChunk {
+  id: string;
+  source_type: 'manuslive_memory' | 'manuslive_user' | 'session';
+  source_id: string;
+  content: string;
+  content_hash: string;
+  start_line: number | null;
+  end_line: number | null;
+  token_count: number;
+  heading?: string;
+  section_type?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface MemorySearchResult {
+  chunk_id: string;
+  content: string;
+  source_type: string;
+  source_id: string;
+  start_line: number | null;
+  end_line: number | null;
+  vector_score: number;
+  keyword_score: number;
+  combined_score: number;
+}
+
+export interface EmbeddingMetadata {
+  id: string;
+  model_name: string;
+  model_version: string;
+  dimensions: number;
+  created_at: string;
+}
+
+export interface MemoryStats {
+  total_chunks: number;
+  manuslive_chunks: number;
+  session_chunks: number;
+  last_indexed: string | null;
+  embedding_model: string | null;
+}
+
+/**
+ * Check if sqlite-vec extension is available AND the vector table was created
+ */
+export function isVectorSearchAvailable(): boolean {
+  return sqliteVecLoaded && vectorTableCreated;
+}
+
+/**
+ * Generate SHA-256 hash for content deduplication
+ */
+export function generateContentHash(content: string): string {
+  return createHash('sha256').update(content).digest('hex');
 }
 
 // ============================================================================
@@ -237,7 +311,89 @@ function createTables(database: Database.Database): void {
     CREATE INDEX IF NOT EXISTS idx_audit_log_timestamp ON audit_log(timestamp);
     CREATE INDEX IF NOT EXISTS idx_audit_log_action ON audit_log(action);
     CREATE INDEX IF NOT EXISTS idx_usage_stats_date ON usage_stats(date);
+
+    -- =========================================================================
+    -- Memory System Tables (for semantic search)
+    -- =========================================================================
+
+    -- Memory chunks with metadata
+    CREATE TABLE IF NOT EXISTS memory_chunks (
+      id TEXT PRIMARY KEY,
+      source_type TEXT NOT NULL CHECK(source_type IN ('manuslive_memory', 'manuslive_user', 'session')),
+      source_id TEXT NOT NULL,
+      content TEXT NOT NULL,
+      content_hash TEXT NOT NULL,
+      start_line INTEGER,
+      end_line INTEGER,
+      token_count INTEGER DEFAULT 0,
+      heading TEXT,
+      section_type TEXT,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE(source_id, content_hash)
+    );
+
+    -- Embedding metadata (tracks model version for migration)
+    CREATE TABLE IF NOT EXISTS embedding_metadata (
+      id TEXT PRIMARY KEY DEFAULT 'current',
+      model_name TEXT NOT NULL,
+      model_version TEXT NOT NULL,
+      dimensions INTEGER NOT NULL,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    );
+
+    -- Full-text search index for keyword search
+    CREATE VIRTUAL TABLE IF NOT EXISTS memory_fts USING fts5(
+      content,
+      heading,
+      section_type,
+      content='memory_chunks',
+      content_rowid='rowid',
+      tokenize='porter unicode61'
+    );
+
+    -- Triggers to keep FTS index in sync
+    CREATE TRIGGER IF NOT EXISTS memory_chunks_ai AFTER INSERT ON memory_chunks BEGIN
+      INSERT INTO memory_fts(rowid, content, heading, section_type)
+      VALUES (new.rowid, new.content, new.heading, new.section_type);
+    END;
+
+    CREATE TRIGGER IF NOT EXISTS memory_chunks_ad AFTER DELETE ON memory_chunks BEGIN
+      INSERT INTO memory_fts(memory_fts, rowid, content, heading, section_type)
+      VALUES ('delete', old.rowid, old.content, old.heading, old.section_type);
+    END;
+
+    CREATE TRIGGER IF NOT EXISTS memory_chunks_au AFTER UPDATE ON memory_chunks BEGIN
+      INSERT INTO memory_fts(memory_fts, rowid, content, heading, section_type)
+      VALUES ('delete', old.rowid, old.content, old.heading, old.section_type);
+      INSERT INTO memory_fts(rowid, content, heading, section_type)
+      VALUES (new.rowid, new.content, new.heading, new.section_type);
+    END;
+
+    -- Indexes for memory chunks
+    CREATE INDEX IF NOT EXISTS idx_memory_chunks_source ON memory_chunks(source_type, source_id);
+    CREATE INDEX IF NOT EXISTS idx_memory_chunks_hash ON memory_chunks(content_hash);
+    CREATE INDEX IF NOT EXISTS idx_memory_chunks_updated ON memory_chunks(updated_at);
   `);
+
+  // Create vector table if sqlite-vec is available
+  if (sqliteVecLoaded) {
+    try {
+      database.exec(`
+        -- Vector embeddings table (sqlite-vec)
+        CREATE VIRTUAL TABLE IF NOT EXISTS memory_embeddings USING vec0(
+          chunk_id TEXT PRIMARY KEY,
+          embedding FLOAT[768]
+        );
+      `);
+      vectorTableCreated = true;
+      console.log('[Johnny5 DB] Vector table created successfully');
+    } catch (err) {
+      vectorTableCreated = false;
+      console.warn('[Johnny5 DB] Failed to create vector table:', err);
+      console.log('[Johnny5 DB] Falling back to keyword-only search');
+    }
+  }
 }
 
 // ============================================================================
@@ -1163,6 +1319,323 @@ export async function hasUnifiedMemory(): Promise<boolean> {
 export const DATABASE_PATH = DB_PATH;
 export const DATABASE_DIR = DB_DIR;
 export const BACKUP_PATH = BACKUP_DIR;
+
+// ============================================================================
+// Memory Chunk Operations
+// ============================================================================
+
+/**
+ * Insert or update a memory chunk
+ */
+export async function upsertMemoryChunk(chunk: {
+  id: string;
+  source_type: 'manuslive_memory' | 'manuslive_user' | 'session';
+  source_id: string;
+  content: string;
+  content_hash: string;
+  start_line?: number;
+  end_line?: number;
+  token_count?: number;
+  heading?: string;
+  section_type?: string;
+}): Promise<MemoryChunk> {
+  const database = getDb();
+  const now = new Date().toISOString();
+
+  const stmt = database.prepare(`
+    INSERT INTO memory_chunks (id, source_type, source_id, content, content_hash, start_line, end_line, token_count, heading, section_type, created_at, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ON CONFLICT(source_id, content_hash) DO UPDATE SET
+      content = excluded.content,
+      start_line = excluded.start_line,
+      end_line = excluded.end_line,
+      token_count = excluded.token_count,
+      heading = excluded.heading,
+      section_type = excluded.section_type,
+      updated_at = excluded.updated_at
+  `);
+
+  stmt.run(
+    chunk.id,
+    chunk.source_type,
+    chunk.source_id,
+    chunk.content,
+    chunk.content_hash,
+    chunk.start_line ?? null,
+    chunk.end_line ?? null,
+    chunk.token_count ?? 0,
+    chunk.heading ?? null,
+    chunk.section_type ?? null,
+    now,
+    now
+  );
+
+  return {
+    id: chunk.id,
+    source_type: chunk.source_type,
+    source_id: chunk.source_id,
+    content: chunk.content,
+    content_hash: chunk.content_hash,
+    start_line: chunk.start_line ?? null,
+    end_line: chunk.end_line ?? null,
+    token_count: chunk.token_count ?? 0,
+    heading: chunk.heading,
+    section_type: chunk.section_type,
+    created_at: now,
+    updated_at: now,
+  };
+}
+
+/**
+ * Get a memory chunk by ID
+ */
+export async function getMemoryChunk(id: string): Promise<MemoryChunk | null> {
+  const database = getDb();
+  const stmt = database.prepare('SELECT * FROM memory_chunks WHERE id = ?');
+  return stmt.get(id) as MemoryChunk | null;
+}
+
+/**
+ * Get all chunks for a source
+ */
+export async function getChunksBySource(sourceType: string, sourceId: string): Promise<MemoryChunk[]> {
+  const database = getDb();
+  const stmt = database.prepare('SELECT * FROM memory_chunks WHERE source_type = ? AND source_id = ?');
+  return stmt.all(sourceType, sourceId) as MemoryChunk[];
+}
+
+/**
+ * Delete chunks by source
+ */
+export async function deleteChunksBySource(sourceType: string, sourceId: string): Promise<number> {
+  const database = getDb();
+  const stmt = database.prepare('DELETE FROM memory_chunks WHERE source_type = ? AND source_id = ?');
+  const result = stmt.run(sourceType, sourceId);
+  return result.changes;
+}
+
+/**
+ * Delete a specific chunk
+ */
+export async function deleteMemoryChunk(id: string): Promise<boolean> {
+  const database = getDb();
+  const stmt = database.prepare('DELETE FROM memory_chunks WHERE id = ?');
+  const result = stmt.run(id);
+  return result.changes > 0;
+}
+
+/**
+ * Sanitize query for FTS5
+ * Removes special characters that break FTS5 syntax
+ */
+function sanitizeFTS5Query(query: string): string {
+  // Remove FTS5 special characters: * " - + ? ( ) : ^ ~ AND OR NOT
+  let sanitized = query
+    .replace(/[*"()\-+?:^~]/g, ' ')  // Remove special chars
+    .replace(/\b(AND|OR|NOT|NEAR)\b/gi, ' ')  // Remove operators
+    .replace(/\s+/g, ' ')  // Collapse whitespace
+    .trim();
+
+  // If empty after sanitization, return original alphanumeric only
+  if (!sanitized) {
+    sanitized = query.replace(/[^a-zA-Z0-9\s]/g, ' ').trim();
+  }
+
+  // Filter to meaningful words (skip common stop words for better search)
+  const stopWords = new Set(['i', 'me', 'my', 'we', 'you', 'your', 'the', 'a', 'an', 'is', 'are', 'was', 'be', 'do', 'does', 'did', 'have', 'has', 'had', 'to', 'of', 'in', 'for', 'on', 'with', 'at', 'by', 'from', 'it', 'its', 'this', 'that', 'what', 'which', 'who', 'when', 'where', 'why', 'how', 'hello', 'hi', 'hey', 'please', 'thanks', 'thank', 'remember']);
+  const words = sanitized.split(/\s+/).filter(w => w.length > 1 && !stopWords.has(w.toLowerCase()));
+
+  if (words.length === 0) {
+    // If all words were stop words, use original words but with OR
+    const allWords = sanitized.split(/\s+/).filter(w => w.length > 1);
+    if (allWords.length === 0) return '';
+    // FTS5 uses implicit AND - we need explicit OR for broader search
+    return allWords.join(' OR ');
+  }
+
+  if (words.length === 1) return words[0];
+
+  // FTS5 uses implicit AND by default, so we use explicit OR for broader recall
+  return words.join(' OR ');
+}
+
+/**
+ * Keyword search using FTS5
+ */
+export async function searchMemoryKeyword(query: string, limit: number = 10): Promise<MemorySearchResult[]> {
+  const database = getDb();
+
+  // Sanitize query for FTS5
+  const sanitizedQuery = sanitizeFTS5Query(query);
+  if (!sanitizedQuery) {
+    console.warn('[Johnny5 DB] Empty query after sanitization');
+    return [];
+  }
+
+  console.log('[Johnny5 DB] FTS5 query:', sanitizedQuery);
+
+  // FTS5 search with BM25 ranking
+  const stmt = database.prepare(`
+    SELECT
+      mc.id as chunk_id,
+      mc.content,
+      mc.source_type,
+      mc.source_id,
+      mc.start_line,
+      mc.end_line,
+      0.0 as vector_score,
+      bm25(memory_fts) as keyword_score,
+      bm25(memory_fts) as combined_score
+    FROM memory_fts
+    JOIN memory_chunks mc ON memory_fts.rowid = mc.rowid
+    WHERE memory_fts MATCH ?
+    ORDER BY bm25(memory_fts)
+    LIMIT ?
+  `);
+
+  try {
+    return stmt.all(sanitizedQuery, limit) as MemorySearchResult[];
+  } catch (err) {
+    console.error('[Johnny5 DB] FTS search error:', err, 'Query:', sanitizedQuery);
+    return [];
+  }
+}
+
+/**
+ * Store embedding for a chunk (if sqlite-vec available)
+ */
+export async function storeEmbedding(chunkId: string, embedding: number[]): Promise<boolean> {
+  if (!sqliteVecLoaded) {
+    console.warn('[Johnny5 DB] Vector storage not available');
+    return false;
+  }
+
+  const database = getDb();
+  try {
+    const stmt = database.prepare(`
+      INSERT OR REPLACE INTO memory_embeddings (chunk_id, embedding)
+      VALUES (?, ?)
+    `);
+    stmt.run(chunkId, JSON.stringify(embedding));
+    return true;
+  } catch (err) {
+    console.error('[Johnny5 DB] Failed to store embedding:', err);
+    return false;
+  }
+}
+
+/**
+ * Vector similarity search (if sqlite-vec available)
+ */
+export async function searchMemoryVector(
+  queryEmbedding: number[],
+  limit: number = 10
+): Promise<MemorySearchResult[]> {
+  if (!sqliteVecLoaded) {
+    console.warn('[Johnny5 DB] Vector search not available, use keyword search instead');
+    return [];
+  }
+
+  const database = getDb();
+  try {
+    const stmt = database.prepare(`
+      SELECT
+        mc.id as chunk_id,
+        mc.content,
+        mc.source_type,
+        mc.source_id,
+        mc.start_line,
+        mc.end_line,
+        me.distance as vector_score,
+        0.0 as keyword_score,
+        me.distance as combined_score
+      FROM memory_embeddings me
+      JOIN memory_chunks mc ON me.chunk_id = mc.id
+      WHERE me.embedding MATCH ?
+      ORDER BY me.distance
+      LIMIT ?
+    `);
+    return stmt.all(JSON.stringify(queryEmbedding), limit) as MemorySearchResult[];
+  } catch (err) {
+    console.error('[Johnny5 DB] Vector search error:', err);
+    return [];
+  }
+}
+
+/**
+ * Get memory stats
+ */
+export async function getMemoryStats(): Promise<MemoryStats> {
+  const database = getDb();
+
+  const totalStmt = database.prepare('SELECT COUNT(*) as count FROM memory_chunks');
+  const total = (totalStmt.get() as { count: number }).count;
+
+  const manusStmt = database.prepare("SELECT COUNT(*) as count FROM memory_chunks WHERE source_type LIKE 'manuslive%'");
+  const manuslive = (manusStmt.get() as { count: number }).count;
+
+  const sessionStmt = database.prepare("SELECT COUNT(*) as count FROM memory_chunks WHERE source_type = 'session'");
+  const sessions = (sessionStmt.get() as { count: number }).count;
+
+  const lastStmt = database.prepare('SELECT MAX(updated_at) as last FROM memory_chunks');
+  const last = (lastStmt.get() as { last: string | null }).last;
+
+  const modelStmt = database.prepare('SELECT model_name FROM embedding_metadata WHERE id = ?');
+  const model = modelStmt.get('current') as { model_name: string } | undefined;
+
+  return {
+    total_chunks: total,
+    manuslive_chunks: manuslive,
+    session_chunks: sessions,
+    last_indexed: last,
+    embedding_model: model?.model_name ?? null,
+  };
+}
+
+/**
+ * Set the current embedding model metadata
+ */
+export async function setEmbeddingMetadata(
+  modelName: string,
+  modelVersion: string,
+  dimensions: number
+): Promise<void> {
+  const database = getDb();
+  const stmt = database.prepare(`
+    INSERT OR REPLACE INTO embedding_metadata (id, model_name, model_version, dimensions, created_at)
+    VALUES ('current', ?, ?, ?, CURRENT_TIMESTAMP)
+  `);
+  stmt.run(modelName, modelVersion, dimensions);
+}
+
+/**
+ * Get current embedding metadata
+ */
+export async function getEmbeddingMetadata(): Promise<EmbeddingMetadata | null> {
+  const database = getDb();
+  const stmt = database.prepare('SELECT * FROM embedding_metadata WHERE id = ?');
+  return stmt.get('current') as EmbeddingMetadata | null;
+}
+
+/**
+ * Clear all memory chunks (for reindexing)
+ */
+export async function clearAllMemoryChunks(): Promise<number> {
+  const database = getDb();
+  const stmt = database.prepare('DELETE FROM memory_chunks');
+  const result = stmt.run();
+
+  // Also clear embeddings if available
+  if (sqliteVecLoaded) {
+    try {
+      database.exec('DELETE FROM memory_embeddings');
+    } catch (err) {
+      console.warn('[Johnny5 DB] Failed to clear embeddings:', err);
+    }
+  }
+
+  return result.changes;
+}
 
 // Re-export ManusLive types for convenience
 export type { ManusLiveMemory, ManusLiveUserProfile, UnifiedMemoryContext };
