@@ -156,6 +156,22 @@ const MANUSLIVE_DIR = join(homedir(), '.manuslive', 'workspace');
 const MEMORY_FILE_PATH = join(MANUSLIVE_DIR, 'MEMORY.md');
 const USER_FILE_PATH = join(MANUSLIVE_DIR, 'USER.md');
 
+// Log ManusLive availability on first check (helpful for production debugging)
+let manusLiveAvailabilityLogged = false;
+
+function logManusLiveAvailability(): void {
+  if (manusLiveAvailabilityLogged) return;
+  manusLiveAvailabilityLogged = true;
+
+  if (!existsSync(MANUSLIVE_DIR)) {
+    console.log('[ManusLive] Directory not found at:', MANUSLIVE_DIR);
+    console.log('[ManusLive] This is expected in production - memory will rely on Johnny5 database');
+  } else {
+    console.log('[ManusLive] Found local installation at:', MANUSLIVE_DIR);
+    console.log('[ManusLive] Will use ManusLive files for enhanced memory context');
+  }
+}
+
 /**
  * Check if ManusLive directory exists
  */
@@ -282,6 +298,9 @@ function extractNamedSection(content: string, sectionName: string): string[] {
  * ```
  */
 export async function getManusLiveMemory(forceRefresh = false): Promise<ManusLiveMemory | null> {
+  // Log availability status on first call
+  logManusLiveAvailability();
+
   const now = Date.now();
 
   // Check cache
@@ -335,6 +354,9 @@ export async function getManusLiveMemory(forceRefresh = false): Promise<ManusLiv
  * ```
  */
 export async function getManusLiveUserProfile(forceRefresh = false): Promise<ManusLiveUserProfile | null> {
+  // Log availability status on first call
+  logManusLiveAvailability();
+
   const now = Date.now();
 
   // Check cache
@@ -423,6 +445,9 @@ export async function getManusLiveUserProfile(forceRefresh = false): Promise<Man
  * ```
  */
 export async function getUnifiedManusLiveContext(forceRefresh = false): Promise<UnifiedMemoryContext> {
+  // Log availability status on first call
+  logManusLiveAvailability();
+
   const [memory, userProfile] = await Promise.all([
     getManusLiveMemory(forceRefresh),
     getManusLiveUserProfile(forceRefresh),

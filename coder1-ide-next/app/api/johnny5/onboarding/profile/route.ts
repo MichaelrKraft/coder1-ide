@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import type { Johnny5APIResponse } from '@/types/johnny5';
+import { initializeDb, getProfile, saveProfile } from '@/lib/johnny5-db';
 
 /**
  * User Profile for capability matching
+ * Now stored in SQLite database for persistence across deploys
  */
 interface UserProfile {
   id: string;
@@ -20,90 +22,137 @@ interface UserProfile {
   updatedAt: Date;
 }
 
-// Mock user profile (in real implementation, would be stored in database)
-let userProfile: UserProfile = {
-  id: 'user_001',
-  roles: ['founder', 'developer', 'creator'],
-  platforms: ['youtube', 'newsletter', 'twitter'],
-  projects: ['Coder1 IDE', 'Creator Buddy SaaS'],
-  goals: [
-    'Build a successful SaaS',
-    'Grow YouTube to 100K subscribers',
-    'Automate repetitive tasks',
-    'Ship faster with AI assistance',
-  ],
-  preferences: {
-    proactivityLevel: 'medium',
-    notificationChannels: ['panel', 'email'],
-    workingHours: { start: '09:00', end: '18:00' },
-  },
-  extractedFrom: 'conversation',
-  createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
-  updatedAt: new Date(Date.now() - 1 * 60 * 60 * 1000),
-};
+/**
+ * Get default profile for new users
+ */
+function getDefaultProfile(): UserProfile {
+  return {
+    id: 'user_default',
+    roles: [],
+    platforms: [],
+    projects: [],
+    goals: [],
+    preferences: {
+      proactivityLevel: 'medium',
+      notificationChannels: ['panel'],
+    },
+    extractedFrom: 'manual',
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  };
+}
+
+/**
+ * Convert database profile to API profile format
+ */
+function dbProfileToApiProfile(dbProfile: Awaited<ReturnType<typeof getProfile>>): UserProfile | null {
+  if (!dbProfile) return null;
+
+  return {
+    id: dbProfile.id,
+    roles: dbProfile.roles || [],
+    platforms: dbProfile.platforms || [],
+    projects: dbProfile.projects || [],
+    goals: dbProfile.goals || [],
+    preferences: {
+      proactivityLevel: dbProfile.proactivity_level || 'medium',
+      notificationChannels: (dbProfile.preferences as Record<string, unknown>)?.notificationChannels as string[] || ['panel'],
+      workingHours: (dbProfile.preferences as Record<string, unknown>)?.workingHours as { start: string; end: string } | undefined,
+    },
+    extractedFrom: ((dbProfile.preferences as Record<string, unknown>)?.extractedFrom as 'conversation' | 'manual' | 'integration') || 'manual',
+    createdAt: new Date(dbProfile.created_at),
+    updatedAt: new Date(dbProfile.updated_at),
+  };
+}
 
 /**
  * GET /api/johnny5/onboarding/profile
  *
  * Get the current user profile used for capability matching.
+ * Now reads from SQLite database for persistence.
  */
 export async function GET() {
-  const response: Johnny5APIResponse<UserProfile> = {
-    success: true,
-    data: userProfile,
-    timestamp: new Date(),
-  };
-
-  return NextResponse.json(response);
-}
-
-/**
- * POST /api/johnny5/onboarding/profile
- *
- * Update the user profile with new information.
- *
- * Request body:
- * - roles?: string[]
- * - platforms?: string[]
- * - projects?: string[]
- * - goals?: string[]
- * - preferences?: object
- */
-export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-
-    // Update profile fields
-    if (Array.isArray(body.roles)) {
-      userProfile.roles = [...new Set([...userProfile.roles, ...body.roles])];
-    }
-    if (Array.isArray(body.platforms)) {
-      userProfile.platforms = [...new Set([...userProfile.platforms, ...body.platforms])];
-    }
-    if (Array.isArray(body.projects)) {
-      userProfile.projects = [...new Set([...userProfile.projects, ...body.projects])];
-    }
-    if (Array.isArray(body.goals)) {
-      userProfile.goals = [...new Set([...userProfile.goals, ...body.goals])];
-    }
-    if (body.preferences) {
-      userProfile.preferences = {
-        ...userProfile.preferences,
-        ...body.preferences,
-      };
-    }
-
-    userProfile.updatedAt = new Date();
-    userProfile.extractedFrom = body.extractedFrom || 'manual';
+    await initializeDb();
+    const dbProfile = await getProfile();
+    const profile = dbProfileToApiProfile(dbProfile) || getDefaultProfile();
 
     const response: Johnny5APIResponse<UserProfile> = {
       success: true,
-      data: userProfile,
+      data: profile,
       timestamp: new Date(),
     };
 
     return NextResponse.json(response);
   } catch (error) {
+    console.error('[Johnny5 Profile] GET error:', error);
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Failed to get profile',
+        timestamp: new Date(),
+      },
+      { status: 500 }
+    );
+  }
+}
+
+/**
+ * POST /api/johnny5/onboarding/profile
+ *
+ * Update the user profile with new information (merge).
+ * Now persists to SQLite database.
+ */
+export async function POST(request: NextRequest) {
+  try {
+    await initializeDb();
+    const body = await request.json();
+
+    // Get existing profile or create default
+    const existing = await getProfile();
+    const currentProfile = dbProfileToApiProfile(existing) || getDefaultProfile();
+
+    // Merge arrays (add new items, keep existing)
+    const updatedRoles = body.roles
+      ? [...new Set([...currentProfile.roles, ...body.roles])]
+      : currentProfile.roles;
+    const updatedPlatforms = body.platforms
+      ? [...new Set([...currentProfile.platforms, ...body.platforms])]
+      : currentProfile.platforms;
+    const updatedProjects = body.projects
+      ? [...new Set([...currentProfile.projects, ...body.projects])]
+      : currentProfile.projects;
+    const updatedGoals = body.goals
+      ? [...new Set([...currentProfile.goals, ...body.goals])]
+      : currentProfile.goals;
+
+    // Save to database
+    await saveProfile({
+      roles: updatedRoles,
+      platforms: updatedPlatforms,
+      projects: updatedProjects,
+      goals: updatedGoals,
+      proactivity_level: body.preferences?.proactivityLevel || currentProfile.preferences.proactivityLevel,
+      preferences: {
+        ...currentProfile.preferences,
+        ...body.preferences,
+        extractedFrom: body.extractedFrom || 'manual',
+      },
+    });
+
+    // Fetch updated profile
+    const updated = await getProfile();
+    const profile = dbProfileToApiProfile(updated) || getDefaultProfile();
+
+    const response: Johnny5APIResponse<UserProfile> = {
+      success: true,
+      data: profile,
+      timestamp: new Date(),
+    };
+
+    return NextResponse.json(response);
+  } catch (error) {
+    console.error('[Johnny5 Profile] POST error:', error);
     return NextResponse.json(
       {
         success: false,
@@ -118,39 +167,37 @@ export async function POST(request: NextRequest) {
 /**
  * PATCH /api/johnny5/onboarding/profile
  *
- * Replace specific profile fields entirely.
+ * Replace specific profile fields entirely (no merge).
+ * Now persists to SQLite database.
  */
 export async function PATCH(request: NextRequest) {
   try {
+    await initializeDb();
     const body = await request.json();
 
-    // Replace profile fields (instead of merge)
-    if (Array.isArray(body.roles)) {
-      userProfile.roles = body.roles;
-    }
-    if (Array.isArray(body.platforms)) {
-      userProfile.platforms = body.platforms;
-    }
-    if (Array.isArray(body.projects)) {
-      userProfile.projects = body.projects;
-    }
-    if (Array.isArray(body.goals)) {
-      userProfile.goals = body.goals;
-    }
-    if (body.preferences) {
-      userProfile.preferences = body.preferences;
-    }
+    // Save to database (replace mode)
+    await saveProfile({
+      roles: body.roles,
+      platforms: body.platforms,
+      projects: body.projects,
+      goals: body.goals,
+      proactivity_level: body.preferences?.proactivityLevel,
+      preferences: body.preferences,
+    });
 
-    userProfile.updatedAt = new Date();
+    // Fetch updated profile
+    const updated = await getProfile();
+    const profile = dbProfileToApiProfile(updated) || getDefaultProfile();
 
     const response: Johnny5APIResponse<UserProfile> = {
       success: true,
-      data: userProfile,
+      data: profile,
       timestamp: new Date(),
     };
 
     return NextResponse.json(response);
   } catch (error) {
+    console.error('[Johnny5 Profile] PATCH error:', error);
     return NextResponse.json(
       {
         success: false,

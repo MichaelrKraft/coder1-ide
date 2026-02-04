@@ -29,6 +29,13 @@ import {
   searchMemory,
   formatForPromptInjection,
   createGeminiProvider,
+  // Memory Intelligence Services (NEW)
+  buildMemoryContext,
+  extractFactsFromConversation,
+  saveFacts,
+  getExistingFacts,
+  runPatternDetectionCycle,
+  type ConversationMessage as MemoryConversationMessage,
 } from '@/services/memory';
 import { getMoltbotBridge } from '@/services/johnny5/moltbot-bridge';
 
@@ -356,6 +363,30 @@ export async function POST(
       }
     }
 
+    // 6.6. Enhanced Memory Intelligence - facts and patterns (NEW)
+    let factsAndPatternsContext = '';
+    try {
+      const intelligentMemory = await buildMemoryContext({
+        userMessage: message,
+        maxFacts: 8,
+        maxPatterns: 4,
+        minPatternConfidence: 0.7,
+        includeManusLive: true,
+      });
+
+      if (intelligentMemory.combinedContext) {
+        factsAndPatternsContext = intelligentMemory.combinedContext;
+        console.log('[Johnny5] Memory intelligence:', {
+          facts: intelligentMemory.sources.factsCount,
+          patterns: intelligentMemory.sources.patternsCount,
+          manusLive: intelligentMemory.sources.manusLiveAvailable,
+        });
+      }
+    } catch (intelligenceError) {
+      console.warn('[Johnny5] Memory intelligence failed:', intelligenceError);
+      // Continue without enhanced memory
+    }
+
     // 7. Build conversation history for Bridge service
     const conversationHistory: ChatMessage[] = history.map((m) => ({
       role: m.role as 'user' | 'assistant',
@@ -364,9 +395,23 @@ export async function POST(
 
     // 8. Send prompt via Bridge or Gemini API
     // Inject memory context into the message if available
-    const enhancedMessage = memoryContext
-      ? `${memoryContext}\n\n---\n\n**User Query:**\n${message}`
-      : message;
+    // Combine document memory with facts/patterns for comprehensive context
+    let enhancedMessage = message;
+    const contextParts: string[] = [];
+
+    // Add facts and patterns context (user knowledge)
+    if (factsAndPatternsContext) {
+      contextParts.push(factsAndPatternsContext);
+    }
+
+    // Add document/session memory context
+    if (memoryContext) {
+      contextParts.push(memoryContext);
+    }
+
+    if (contextParts.length > 0) {
+      enhancedMessage = `${contextParts.join('\n\n')}\n\n---\n\n**User Query:**\n${message}`;
+    }
 
     let result: { success: boolean; response: string; error?: string; errorCode?: string };
     let modeUsed: 'bridge' | 'gemini' = 'bridge';
@@ -656,6 +701,46 @@ export async function POST(
       console.error('[Johnny5] Failed to log audit entry:', auditError);
       // Non-critical
     }
+
+    // 12.5. After-Chat Memory Intelligence (NEW)
+    // Run fact extraction asynchronously - don't block the response
+    // This enables Johnny5 to learn from every conversation
+    setImmediate(async () => {
+      try {
+        // Build conversation history for extraction
+        const fullHistory: MemoryConversationMessage[] = [
+          ...history.map((m) => ({
+            role: m.role as 'user' | 'assistant' | 'system',
+            content: m.content,
+          })),
+          { role: 'user' as const, content: message },
+          { role: 'assistant' as const, content: responseText },
+        ];
+
+        // Get existing facts to avoid duplicates
+        const existingFacts = await getExistingFacts(session.id, 30);
+
+        // Extract new facts from this conversation
+        const newFacts = await extractFactsFromConversation(fullHistory, existingFacts);
+
+        if (newFacts.length > 0) {
+          await saveFacts(session.id, newFacts);
+          console.log(`[Johnny5] After-chat extraction: saved ${newFacts.length} new facts`);
+        }
+
+        // Run pattern detection every 10 conversations (approximately)
+        // Check if this is roughly a 10th conversation
+        const messageCount = history.length + 2;
+        if (messageCount > 0 && messageCount % 20 === 0) {
+          console.log('[Johnny5] Running pattern detection cycle...');
+          const patternResult = await runPatternDetectionCycle();
+          console.log('[Johnny5] Pattern cycle:', patternResult);
+        }
+      } catch (extractionError) {
+        console.error('[Johnny5] After-chat extraction error:', extractionError);
+        // Non-blocking - don't affect the response
+      }
+    });
 
     // 13. Return success response
     return NextResponse.json({

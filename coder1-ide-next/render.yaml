@@ -45,7 +45,11 @@ services:
         
       - key: MEMORY_PANIC_THRESHOLD_MB
         value: 380
-        
+
+      # Johnny5 Data Persistence (CRITICAL for memory across deploys)
+      - key: CODER1_DATA_DIR
+        value: /data/.coder1
+
       # Project paths for dynamic routes
       - key: PROJECT_ROOT
         value: /opt/render/project/src/coder1-ide-next

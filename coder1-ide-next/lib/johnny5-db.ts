@@ -19,6 +19,9 @@ import { homedir } from 'os';
 import { existsSync, mkdirSync, copyFileSync } from 'fs';
 import { randomUUID, createHash } from 'crypto';
 
+// Centralized data paths for persistent storage (fixes production memory issue)
+import { DATA_DIR, JOHNNY5_DB_PATH, BACKUP_DIR as BACKUP_PATH, ensureDataDir } from './data-paths';
+
 // Try to load sqlite-vec for vector search (optional, graceful degradation)
 let sqliteVecLoaded = false;
 let vectorTableCreated = false; // Track if vector table was actually created
@@ -174,9 +177,10 @@ export function generateContentHash(content: string): string {
 // Database Singleton
 // ============================================================================
 
-const DB_DIR = join(homedir(), '.coder1');
-const DB_PATH = join(DB_DIR, 'johnny5.db');
-const BACKUP_DIR = join(DB_DIR, 'backups');
+// Use centralized data paths for production persistence
+const DB_DIR = DATA_DIR;
+const DB_PATH = JOHNNY5_DB_PATH;
+const BACKUP_DIR = BACKUP_PATH;
 
 let db: Database.Database | null = null;
 
@@ -194,10 +198,8 @@ export function getDb(): Database.Database {
  * Initialize the database synchronously
  */
 function initializeDbSync(): void {
-  // Ensure directory exists
-  if (!existsSync(DB_DIR)) {
-    mkdirSync(DB_DIR, { recursive: true });
-  }
+  // Ensure all data directories exist (including backups, summaries, exports)
+  ensureDataDir();
 
   // Create database connection
   db = new Database(DB_PATH);
@@ -374,6 +376,56 @@ function createTables(database: Database.Database): void {
     CREATE INDEX IF NOT EXISTS idx_memory_chunks_source ON memory_chunks(source_type, source_id);
     CREATE INDEX IF NOT EXISTS idx_memory_chunks_hash ON memory_chunks(content_hash);
     CREATE INDEX IF NOT EXISTS idx_memory_chunks_updated ON memory_chunks(updated_at);
+
+    -- =========================================================================
+    -- Memory Intelligence Tables (for AI-powered fact extraction)
+    -- =========================================================================
+
+    -- Extracted facts from conversations
+    CREATE TABLE IF NOT EXISTS extracted_facts (
+      id TEXT PRIMARY KEY,
+      session_id TEXT,
+      fact_type TEXT NOT NULL CHECK(fact_type IN ('personal', 'preference', 'project', 'technical', 'goal')),
+      fact_key TEXT NOT NULL,
+      fact_value TEXT NOT NULL,
+      confidence REAL DEFAULT 0.8 CHECK(confidence >= 0 AND confidence <= 1),
+      source_message_id TEXT,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      last_referenced TEXT,
+      reference_count INTEGER DEFAULT 0,
+      FOREIGN KEY (session_id) REFERENCES sessions(id) ON DELETE SET NULL
+    );
+
+    -- Learned patterns from user behavior
+    CREATE TABLE IF NOT EXISTS learned_patterns (
+      id TEXT PRIMARY KEY,
+      pattern_type TEXT NOT NULL CHECK(pattern_type IN ('workflow', 'coding_style', 'preference', 'time_pattern', 'communication')),
+      pattern_description TEXT NOT NULL,
+      evidence_count INTEGER DEFAULT 1,
+      first_observed TEXT DEFAULT CURRENT_TIMESTAMP,
+      last_observed TEXT DEFAULT CURRENT_TIMESTAMP,
+      confidence REAL DEFAULT 0.5 CHECK(confidence >= 0 AND confidence <= 1),
+      actionable INTEGER DEFAULT 0,
+      suggested_action TEXT
+    );
+
+    -- Self-improvement tracking
+    CREATE TABLE IF NOT EXISTS self_improvement_log (
+      id TEXT PRIMARY KEY,
+      improvement_type TEXT NOT NULL CHECK(improvement_type IN ('skill_learned', 'pattern_detected', 'feedback_received', 'behavior_adjusted')),
+      description TEXT NOT NULL,
+      impact_score REAL DEFAULT 0.5 CHECK(impact_score >= 0 AND impact_score <= 1),
+      applied INTEGER DEFAULT 0,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    );
+
+    -- Indexes for new tables
+    CREATE INDEX IF NOT EXISTS idx_facts_type ON extracted_facts(fact_type);
+    CREATE INDEX IF NOT EXISTS idx_facts_key ON extracted_facts(fact_key);
+    CREATE INDEX IF NOT EXISTS idx_facts_session ON extracted_facts(session_id);
+    CREATE INDEX IF NOT EXISTS idx_patterns_type ON learned_patterns(pattern_type);
+    CREATE INDEX IF NOT EXISTS idx_patterns_confidence ON learned_patterns(confidence);
+    CREATE INDEX IF NOT EXISTS idx_improvement_type ON self_improvement_log(improvement_type);
   `);
 
   // Create vector table if sqlite-vec is available
@@ -1318,7 +1370,8 @@ export async function hasUnifiedMemory(): Promise<boolean> {
 
 export const DATABASE_PATH = DB_PATH;
 export const DATABASE_DIR = DB_DIR;
-export const BACKUP_PATH = BACKUP_DIR;
+// BACKUP_PATH is already imported and aliased from data-paths, re-export it
+export { BACKUP_PATH };
 
 // ============================================================================
 // Memory Chunk Operations
