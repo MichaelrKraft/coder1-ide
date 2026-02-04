@@ -476,15 +476,15 @@ function PricingCard({
     <div className={`
       relative p-8 rounded-2xl transition-all duration-300
       ${featured
-        ? 'bg-gradient-to-br from-coder1-cyan/10 to-coder1-purple/10 border-2 border-coder1-cyan/40 scale-105'
+        ? 'bg-gradient-to-br from-coder1-cyan/10 to-coder1-purple/10 border-2 border-coder1-cyan/30 scale-105'
         : 'bg-white/[0.02] border border-white/10 hover:border-white/20'
       }
     `}>
       {/* Electric pulse border for featured */}
       {featured && (
         <>
-          <div className="absolute inset-[-1px] rounded-2xl border border-coder1-cyan/30 animate-pulse pointer-events-none" />
-          <div className="absolute inset-[-2px] rounded-2xl border border-coder1-cyan/15 blur-[1px] animate-pulse pointer-events-none" style={{ animationDelay: '0.5s' }} />
+          <div className="absolute inset-[-1px] rounded-2xl border border-coder1-cyan/20 animate-pulse pointer-events-none" />
+          <div className="absolute inset-[-2px] rounded-2xl border border-coder1-cyan/10 blur-[1px] animate-pulse pointer-events-none" style={{ animationDelay: '0.5s' }} />
         </>
       )}
 
