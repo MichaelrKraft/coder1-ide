@@ -1485,6 +1485,8 @@ export default function AlphaLandingPage() {
                   'Everything in Free',
                   'Unlimited Johnny5 messages',
                   'Contextual Memory',
+                  'Voice-to-text',
+                  'AI supervision',
                   'Priority support',
                   'Full audit trail',
                   'Session replay'
