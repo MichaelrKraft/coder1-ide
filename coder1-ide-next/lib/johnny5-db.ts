@@ -1250,16 +1250,48 @@ export async function getUnifiedContext(forceRefresh = false): Promise<UnifiedJo
   // Build the combined context for AI
   const contextParts: string[] = [];
 
-  // Add user identification
+  // Add user identification - prefer ManusLive, fallback to database profile
   if (manusLiveContext.userProfile?.basicInfo.name) {
     const { name, role, background } = manusLiveContext.userProfile.basicInfo;
     contextParts.push(`## About the User`);
     contextParts.push(`- Name: ${name}`);
     if (role) contextParts.push(`- Role: ${role}`);
     if (background) contextParts.push(`- Background: ${background}`);
+  } else if (localProfile) {
+    // FALLBACK: Use database profile when ManusLive not available (production)
+    const prefs = localProfile.preferences as Record<string, unknown>;
+    const name = prefs?.name || prefs?.userName;
+    const background = prefs?.background || prefs?.bio;
+    const favoriteColor = prefs?.favoriteColor;
+    const workPatterns = prefs?.workPatterns;
+
+    if (name || localProfile.roles.length > 0 || background) {
+      contextParts.push(`## About the User`);
+      if (name) contextParts.push(`- Name: ${name}`);
+      if (localProfile.roles.length > 0) contextParts.push(`- Role: ${localProfile.roles.join(', ')}`);
+      if (background) contextParts.push(`- Background: ${background}`);
+      if (favoriteColor) contextParts.push(`- Favorite color: ${favoriteColor}`);
+      if (workPatterns) contextParts.push(`- Work style: ${workPatterns}`);
+    }
+
+    // Add goals from local profile
+    if (localProfile.goals.length > 0) {
+      contextParts.push(`\n## Goals`);
+      for (const goal of localProfile.goals.slice(0, 5)) {
+        contextParts.push(`- ${goal}`);
+      }
+    }
+
+    // Add projects from local profile
+    if (localProfile.projects.length > 0) {
+      contextParts.push(`\n## Active Projects`);
+      for (const project of localProfile.projects.slice(0, 5)) {
+        contextParts.push(`- ${project}`);
+      }
+    }
   }
 
-  // Add user preferences
+  // Add user preferences from ManusLive (only if ManusLive available)
   if (manusLiveContext.userProfile?.preferences) {
     const prefs = manusLiveContext.userProfile.preferences;
     if (prefs.favoriteColor || prefs.workStyle.length > 0) {
