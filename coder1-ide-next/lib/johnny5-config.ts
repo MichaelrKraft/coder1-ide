@@ -18,11 +18,10 @@
  * but are no longer used. Johnny5 uses the Bridge connection instead.
  */
 
-import { existsSync, mkdirSync, readFileSync, writeFileSync, unlinkSync } from 'fs';
-import { join } from 'path';
-import { homedir } from 'os';
+import { existsSync, readFileSync, writeFileSync, unlinkSync } from 'fs';
 import { createCipheriv, createDecipheriv, randomBytes, scryptSync } from 'crypto';
 import { logger } from './logger';
+import { DATA_DIR, JOHNNY5_CONFIG_PATH, ensureDataDir } from './data-paths';
 
 // ============================================================================
 // Types
@@ -83,8 +82,8 @@ export interface Johnny5Config {
 // Constants
 // ============================================================================
 
-const CONFIG_DIR = join(homedir(), '.coder1');
-const CONFIG_FILE = join(CONFIG_DIR, 'johnny5-config.json');
+const CONFIG_DIR = DATA_DIR;
+const CONFIG_FILE = JOHNNY5_CONFIG_PATH;
 const ENCRYPTION_ALGORITHM = 'aes-256-cbc';
 const SALT = 'johnny5-salt-v1';
 
@@ -181,15 +180,7 @@ export function getConfigPath(): string {
  * Ensure the config directory exists
  */
 function ensureConfigDir(): void {
-  if (!existsSync(CONFIG_DIR)) {
-    try {
-      mkdirSync(CONFIG_DIR, { recursive: true, mode: 0o700 });
-      logger.debug('[Johnny5] Created config directory:', CONFIG_DIR);
-    } catch (error) {
-      logger.error('[Johnny5] Failed to create config directory:', error);
-      throw new Error(`Failed to create config directory: ${CONFIG_DIR}`);
-    }
-  }
+  ensureDataDir(); // Use centralized directory creation from data-paths.ts
 }
 
 /**

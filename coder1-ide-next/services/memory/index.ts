@@ -62,3 +62,44 @@ export {
   initializeMemorySources,
   cleanupMemorySources,
 } from './sources';
+
+// ============================================================================
+// Memory Intelligence Services (NEW - for production memory persistence)
+// ============================================================================
+
+// Fact Extraction - AI-powered extraction from conversations
+export {
+  extractFactsFromConversation,
+  saveFacts,
+  getExistingFacts,
+  getRelevantFacts,
+  recordFactReference,
+  getFactsByType,
+  cleanupStaleFacts,
+  type ExtractedFact,
+  type ConversationMessage,
+  type ExistingFact,
+} from './fact-extraction-service';
+
+// Pattern Detection - Learns user behavior patterns
+export {
+  detectPatterns,
+  savePatterns,
+  getHighConfidencePatterns,
+  getPatternsByType,
+  recordPatternApplication,
+  decayStalePatterns,
+  cleanupLowConfidencePatterns,
+  runPatternDetectionCycle,
+  type LearnedPattern,
+  type PatternDetectionResult,
+} from './pattern-detection-service';
+
+// Memory Context Builder - Assembles context for prompt injection
+export {
+  buildMemoryContext,
+  buildQuickContext,
+  getProactiveSuggestion,
+  type MemoryContext,
+  type ContextBuildOptions,
+} from './memory-context-builder';
