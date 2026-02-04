@@ -55,21 +55,54 @@ function initializeSchema() {
     try {
       const oauthSchemaPath = path.join(process.cwd(), 'db', 'oauth-schema.sql');
       const oauthSchema = readFileSync(oauthSchemaPath, 'utf-8');
-      
+
       const oauthStatements = oauthSchema
         .split(';')
         .filter(stmt => stmt.trim())
         .map(stmt => stmt.trim() + ';');
-      
+
       for (const statement of oauthStatements) {
         db.exec(statement);
       }
     } catch (err) {
       // OAuth schema is optional
     }
+
+    // Migrate: Add Johnny5 tier tracking columns if they don't exist
+    migrateJohnny5TierColumns();
   } catch (error) {
     logger?.error('Error initializing auth database schema:', error);
     // Don't throw - allow app to continue even if auth setup fails
+  }
+}
+
+function migrateJohnny5TierColumns() {
+  if (!db) return;
+
+  // Check if columns exist by trying to query them
+  try {
+    db.prepare('SELECT claude_subscription_tier FROM users LIMIT 1').get();
+  } catch {
+    // Column doesn't exist, add it
+    db.exec("ALTER TABLE users ADD COLUMN claude_subscription_tier TEXT DEFAULT 'free'");
+  }
+
+  try {
+    db.prepare('SELECT coder1_pro_active FROM users LIMIT 1').get();
+  } catch {
+    db.exec("ALTER TABLE users ADD COLUMN coder1_pro_active BOOLEAN DEFAULT 0");
+  }
+
+  try {
+    db.prepare('SELECT johnny5_message_count FROM users LIMIT 1').get();
+  } catch {
+    db.exec("ALTER TABLE users ADD COLUMN johnny5_message_count INTEGER DEFAULT 0");
+  }
+
+  try {
+    db.prepare('SELECT message_count_reset_at FROM users LIMIT 1').get();
+  } catch {
+    db.exec("ALTER TABLE users ADD COLUMN message_count_reset_at DATETIME DEFAULT CURRENT_TIMESTAMP");
   }
 }
 
@@ -83,6 +116,11 @@ export interface User {
   subscription_status: 'active' | 'cancelled' | 'past_due';
   stripe_customer_id?: string;
   email_verified: boolean;
+  // Johnny5 tier tracking
+  claude_subscription_tier: 'free' | 'pro' | 'max';
+  coder1_pro_active: boolean;
+  johnny5_message_count: number;
+  message_count_reset_at: string;
   created_at: string;
   updated_at: string;
   last_login?: string;
@@ -413,4 +451,152 @@ export function linkOAuthAccount(account: {
     account.scope,
     account.id_token
   );
+}
+
+// ===========================================
+// Johnny5 Tier Management
+// ===========================================
+
+export interface Johnny5Quota {
+  messageCount: number;
+  limit: number;
+  tierType: 'gemini_trial' | 'claude_trial' | 'pro_unlimited';
+  remaining: number;
+  resetDate: string;
+  isProSubscriber: boolean;
+}
+
+const GEMINI_TRIAL_LIMIT = parseInt(process.env.JOHNNY5_GEMINI_LIMIT || '50', 10);
+const CLAUDE_TRIAL_LIMIT = parseInt(process.env.JOHNNY5_CLAUDE_TRIAL_LIMIT || '100', 10);
+
+/**
+ * Get the user's current Johnny5 quota status
+ */
+export function getJohnny5Quota(userId: string): Johnny5Quota | null {
+  const db = getAuthDatabase();
+
+  const user = db.prepare(`
+    SELECT claude_subscription_tier, coder1_pro_active, johnny5_message_count, message_count_reset_at
+    FROM users WHERE id = ?
+  `).get(userId) as {
+    claude_subscription_tier: string;
+    coder1_pro_active: number;
+    johnny5_message_count: number;
+    message_count_reset_at: string;
+  } | undefined;
+
+  if (!user) return null;
+
+  // Check if we need to reset the counter (monthly reset)
+  const resetDate = new Date(user.message_count_reset_at);
+  const now = new Date();
+  const monthDiff = (now.getFullYear() - resetDate.getFullYear()) * 12 + (now.getMonth() - resetDate.getMonth());
+
+  if (monthDiff >= 1) {
+    // Reset the counter for the new month
+    resetJohnny5MessageCount(userId);
+    user.johnny5_message_count = 0;
+  }
+
+  const isProSubscriber = user.coder1_pro_active === 1;
+  const hasClaudeSubscription = user.claude_subscription_tier === 'pro' || user.claude_subscription_tier === 'max';
+
+  // Determine tier type and limit
+  let tierType: 'gemini_trial' | 'claude_trial' | 'pro_unlimited';
+  let limit: number;
+
+  if (isProSubscriber) {
+    tierType = 'pro_unlimited';
+    limit = Infinity;
+  } else if (hasClaudeSubscription) {
+    tierType = 'claude_trial';
+    limit = CLAUDE_TRIAL_LIMIT;
+  } else {
+    tierType = 'gemini_trial';
+    limit = GEMINI_TRIAL_LIMIT;
+  }
+
+  // Calculate next reset date (1st of next month)
+  const nextReset = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+
+  return {
+    messageCount: user.johnny5_message_count,
+    limit,
+    tierType,
+    remaining: Math.max(0, limit - user.johnny5_message_count),
+    resetDate: nextReset.toISOString(),
+    isProSubscriber,
+  };
+}
+
+/**
+ * Increment the user's Johnny5 message count
+ */
+export function incrementJohnny5MessageCount(userId: string): number {
+  const db = getAuthDatabase();
+
+  const result = db.prepare(`
+    UPDATE users
+    SET johnny5_message_count = johnny5_message_count + 1
+    WHERE id = ?
+    RETURNING johnny5_message_count
+  `).get(userId) as { johnny5_message_count: number } | undefined;
+
+  return result?.johnny5_message_count || 0;
+}
+
+/**
+ * Reset the user's message count (called monthly or manually)
+ */
+export function resetJohnny5MessageCount(userId: string): void {
+  const db = getAuthDatabase();
+
+  db.prepare(`
+    UPDATE users
+    SET johnny5_message_count = 0, message_count_reset_at = CURRENT_TIMESTAMP
+    WHERE id = ?
+  `).run(userId);
+}
+
+/**
+ * Update user's Claude subscription tier (detected from Bridge connection)
+ */
+export function updateClaudeSubscriptionTier(userId: string, tier: 'free' | 'pro' | 'max'): void {
+  const db = getAuthDatabase();
+
+  db.prepare(`
+    UPDATE users SET claude_subscription_tier = ? WHERE id = ?
+  `).run(tier, userId);
+}
+
+/**
+ * Activate Coder1 Pro subscription for user
+ */
+export function activateCoder1Pro(userId: string): void {
+  const db = getAuthDatabase();
+
+  db.prepare(`
+    UPDATE users SET coder1_pro_active = 1 WHERE id = ?
+  `).run(userId);
+}
+
+/**
+ * Deactivate Coder1 Pro subscription for user
+ */
+export function deactivateCoder1Pro(userId: string): void {
+  const db = getAuthDatabase();
+
+  db.prepare(`
+    UPDATE users SET coder1_pro_active = 0 WHERE id = ?
+  `).run(userId);
+}
+
+/**
+ * Get user by Stripe customer ID (for webhook handling)
+ */
+export function getUserByStripeCustomerId(stripeCustomerId: string): User | undefined {
+  const db = getAuthDatabase();
+
+  const stmt = db.prepare('SELECT * FROM users WHERE stripe_customer_id = ?');
+  return stmt.get(stripeCustomerId) as User | undefined;
 }

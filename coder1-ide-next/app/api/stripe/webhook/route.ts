@@ -1,5 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
+import {
+  getUserByStripeCustomerId,
+  getUserByEmail,
+  activateCoder1Pro,
+  deactivateCoder1Pro,
+  getAuthDatabase,
+} from '@/lib/auth/db';
 
 // Initialize Stripe lazily to avoid build-time errors
 function getStripe(): Stripe | null {
@@ -58,16 +65,27 @@ export async function POST(request: NextRequest) {
         console.log('✅ Checkout completed:', {
           sessionId: session.id,
           customerEmail: session.customer_email,
+          customerId: session.customer,
           subscriptionId: session.subscription,
         });
 
-        // TODO: Update user's subscription status in database
-        // await updateUserSubscription({
-        //   email: session.customer_email,
-        //   subscriptionId: session.subscription,
-        //   status: 'active',
-        //   plan: 'pro',
-        // });
+        // Find user by email and activate Pro
+        if (session.customer_email) {
+          const user = getUserByEmail(session.customer_email);
+          if (user) {
+            // Update stripe_customer_id if not set
+            if (!user.stripe_customer_id && session.customer) {
+              const db = getAuthDatabase();
+              db.prepare('UPDATE users SET stripe_customer_id = ? WHERE id = ?')
+                .run(session.customer as string, user.id);
+            }
+            // Activate Coder1 Pro
+            activateCoder1Pro(user.id);
+            console.log(`✅ Activated Coder1 Pro for user: ${user.email}`);
+          } else {
+            console.warn(`User not found for email: ${session.customer_email}`);
+          }
+        }
 
         break;
       }
@@ -84,32 +102,58 @@ export async function POST(request: NextRequest) {
 
       case 'customer.subscription.updated': {
         const subscription = event.data.object as Stripe.Subscription;
+        const customerId = typeof subscription.customer === 'string'
+          ? subscription.customer
+          : subscription.customer?.id;
+
         console.log('🔄 Subscription updated:', {
           subscriptionId: subscription.id,
+          customerId,
           status: subscription.status,
         });
 
         // Handle subscription status changes
-        if (subscription.status === 'past_due') {
-          console.warn('⚠️ Subscription past due:', subscription.id);
-          // TODO: Send reminder email, show UI warning
+        if (customerId) {
+          const user = getUserByStripeCustomerId(customerId);
+          if (user) {
+            if (subscription.status === 'active') {
+              // Subscription reactivated
+              activateCoder1Pro(user.id);
+              console.log(`✅ Reactivated Coder1 Pro for user: ${user.email}`);
+            } else if (subscription.status === 'past_due' || subscription.status === 'unpaid') {
+              // Grace period - keep Pro active but log warning
+              console.warn(`⚠️ Subscription ${subscription.status} for user: ${user.email}`);
+            } else if (subscription.status === 'canceled' || subscription.status === 'incomplete_expired') {
+              // Deactivate Pro
+              deactivateCoder1Pro(user.id);
+              console.log(`❌ Deactivated Coder1 Pro for user: ${user.email} (status: ${subscription.status})`);
+            }
+          }
         }
         break;
       }
 
       case 'customer.subscription.deleted': {
         const subscription = event.data.object as Stripe.Subscription;
+        const customerId = typeof subscription.customer === 'string'
+          ? subscription.customer
+          : subscription.customer?.id;
+
         console.log('❌ Subscription canceled:', {
           subscriptionId: subscription.id,
-          customerId: subscription.customer,
+          customerId,
         });
 
-        // TODO: Downgrade user to free tier
-        // await updateUserSubscription({
-        //   subscriptionId: subscription.id,
-        //   status: 'canceled',
-        //   plan: 'free',
-        // });
+        // Find user by Stripe customer ID and deactivate Pro
+        if (customerId) {
+          const user = getUserByStripeCustomerId(customerId);
+          if (user) {
+            deactivateCoder1Pro(user.id);
+            console.log(`❌ Deactivated Coder1 Pro for user: ${user.email}`);
+          } else {
+            console.warn(`User not found for customer: ${customerId}`);
+          }
+        }
 
         break;
       }

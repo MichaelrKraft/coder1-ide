@@ -1,12 +1,21 @@
 'use client';
 
-import React, { useEffect } from 'react';
-import { BarChart3, RefreshCw, Calendar, Loader2 } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { BarChart3, RefreshCw, Calendar, Loader2, Crown, Zap, MessageSquare } from 'lucide-react';
 import { useJohnny5Store } from '@/stores/useJohnny5Store';
 import { Johnny5AnalyticsRange } from '@/types/johnny5';
 import TokenUsageChart from './TokenUsageChart';
 import BurnRateGauge from './BurnRateGauge';
 import EfficiencyMetrics from './EfficiencyMetrics';
+
+interface QuotaInfo {
+  messageCount: number;
+  limit: number;
+  remaining: number;
+  tierType: 'gemini_trial' | 'claude_trial' | 'pro_unlimited';
+  isProSubscriber: boolean;
+  resetDate: string;
+}
 
 interface AnalyticsTabProps {
   className?: string;
@@ -31,7 +40,45 @@ export default function AnalyticsTab({ className = '' }: AnalyticsTabProps) {
     setAnalyticsLoading,
   } = useJohnny5Store();
 
-  // Load mock data on mount or range change
+  const [quota, setQuota] = useState<QuotaInfo | null>(null);
+  const [quotaLoading, setQuotaLoading] = useState(false);
+
+  // Load quota data
+  useEffect(() => {
+    loadQuota();
+  }, []);
+
+  const loadQuota = async () => {
+    setQuotaLoading(true);
+    try {
+      const authToken = typeof window !== 'undefined'
+        ? localStorage.getItem('coder1_access_token')
+        : null;
+
+      if (!authToken) {
+        setQuotaLoading(false);
+        return;
+      }
+
+      const response = await fetch('/api/johnny5/quota', {
+        headers: {
+          'Authorization': `Bearer ${authToken}`,
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          setQuota(data.data);
+        }
+      }
+    } catch (error) {
+      console.error('[AnalyticsTab] Failed to load quota:', error);
+    }
+    setQuotaLoading(false);
+  };
+
+  // Load analytics data on mount or range change
   useEffect(() => {
     loadAnalytics(analyticsRange);
   }, [analyticsRange]);
@@ -139,6 +186,80 @@ export default function AnalyticsTab({ className = '' }: AnalyticsTabProps) {
           </button>
         </div>
       </div>
+
+      {/* Quota/Usage Section */}
+      {quota && (
+        <div className="bg-gradient-to-r from-bg-tertiary to-bg-secondary rounded-lg p-4 border border-border-default">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <MessageSquare className="w-4 h-4 text-coder1-cyan" />
+              <span className="text-xs font-semibold text-text-primary">Johnny5 Usage</span>
+            </div>
+            {quota.isProSubscriber ? (
+              <div className="flex items-center gap-1.5 px-2 py-1 bg-gradient-to-r from-yellow-500/20 to-orange-500/20 rounded-full">
+                <Crown className="w-3 h-3 text-yellow-400" />
+                <span className="text-[10px] font-semibold text-yellow-400">Pro</span>
+              </div>
+            ) : (
+              <a
+                href="/upgrade?plan=pro"
+                className="flex items-center gap-1 px-2 py-1 bg-coder1-cyan/20 rounded-full hover:bg-coder1-cyan/30 transition-all"
+              >
+                <Zap className="w-3 h-3 text-coder1-cyan" />
+                <span className="text-[10px] font-semibold text-coder1-cyan">Upgrade</span>
+              </a>
+            )}
+          </div>
+
+          {quota.isProSubscriber ? (
+            <div className="text-center py-2">
+              <div className="text-2xl font-bold text-green-400">Unlimited</div>
+              <div className="text-[10px] text-text-muted">Johnny5 messages this month</div>
+            </div>
+          ) : (
+            <>
+              {/* Progress bar */}
+              <div className="mb-2">
+                <div className="h-2 bg-bg-primary rounded-full overflow-hidden">
+                  <div
+                    className={`h-full rounded-full transition-all ${
+                      quota.remaining <= 3
+                        ? 'bg-red-500'
+                        : quota.remaining <= 10
+                        ? 'bg-yellow-500'
+                        : 'bg-gradient-to-r from-coder1-cyan to-purple-500'
+                    }`}
+                    style={{ width: `${Math.min(100, (quota.messageCount / quota.limit) * 100)}%` }}
+                  />
+                </div>
+              </div>
+
+              {/* Stats */}
+              <div className="flex items-center justify-between text-xs">
+                <div>
+                  <span className="font-bold text-text-primary">{quota.messageCount}</span>
+                  <span className="text-text-muted">/{quota.limit} messages</span>
+                </div>
+                <div className="text-right">
+                  <span className={`font-bold ${
+                    quota.remaining <= 3 ? 'text-red-400' :
+                    quota.remaining <= 10 ? 'text-yellow-400' :
+                    'text-green-400'
+                  }`}>
+                    {quota.remaining}
+                  </span>
+                  <span className="text-text-muted"> remaining</span>
+                </div>
+              </div>
+
+              {/* Reset date */}
+              <div className="mt-2 text-center text-[10px] text-text-muted">
+                Resets {new Date(quota.resetDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+              </div>
+            </>
+          )}
+        </div>
+      )}
 
       {/* Loading State */}
       {analyticsLoading && !analytics && (

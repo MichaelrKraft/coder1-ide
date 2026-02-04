@@ -17,6 +17,7 @@ import {
   Trash2,
   ChevronDown,
 } from 'lucide-react';
+import UpgradePrompt, { QuotaMeter } from '../UpgradePrompt';
 
 // Typewriter effect component for Johnny5's welcome message
 function TypewriterText({
@@ -82,6 +83,21 @@ interface ToolCall {
   status: 'pending' | 'running' | 'complete' | 'error';
 }
 
+interface QuotaInfo {
+  messageCount: number;
+  limit: number;
+  remaining: number;
+  tierType: 'gemini_trial' | 'claude_trial' | 'pro_unlimited';
+  isProSubscriber: boolean;
+}
+
+interface QuotaExceeded {
+  tierType: 'gemini_trial' | 'claude_trial';
+  messageCount: number;
+  limit: number;
+  upgradeUrl: string;
+}
+
 /**
  * ChatTab Component
  *
@@ -102,6 +118,8 @@ export default function ChatTab() {
   const [isTyping, setIsTyping] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [showScrollButton, setShowScrollButton] = useState(false);
+  const [quota, setQuota] = useState<QuotaInfo | null>(null);
+  const [quotaExceeded, setQuotaExceeded] = useState<QuotaExceeded | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
@@ -230,10 +248,18 @@ export default function ChatTab() {
 
       console.log(`[ChatTab] Using ${useMoltbot ? 'Moltbot' : 'Bridge'} chat API`);
 
+      // Get auth token from localStorage if available
+      const authToken = typeof window !== 'undefined'
+        ? localStorage.getItem('coder1_access_token')
+        : null;
+
       // Call the appropriate Johnny5 chat API
       let response = await fetch(apiEndpoint, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(authToken ? { 'Authorization': `Bearer ${authToken}` } : {}),
+        },
         body: useMoltbot
           ? JSON.stringify({
               message: userMessage.content,
@@ -259,6 +285,25 @@ export default function ChatTab() {
           }),
         });
         data = await response.json();
+      }
+
+      // Handle quota exceeded (402) response
+      if (response.status === 402 && data.code === 'QUOTA_EXCEEDED') {
+        setQuotaExceeded({
+          tierType: data.tierType,
+          messageCount: data.messageCount,
+          limit: data.limit,
+          upgradeUrl: data.upgradeUrl,
+        });
+        // Update user message status to error
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg.id === userMessage.id ? { ...msg, status: 'error' } : msg
+          )
+        );
+        setIsLoading(false);
+        setIsTyping(false);
+        return; // Don't throw, just show the upgrade prompt
       }
 
       // Handle specific error codes from both Bridge-based and Moltbot chat
@@ -289,6 +334,13 @@ export default function ChatTab() {
           msg.id === userMessage.id ? { ...msg, status: 'sent' } : msg
         )
       );
+
+      // Update quota from response if available
+      if (data.data?.quota) {
+        setQuota(data.data.quota);
+        // Clear any previous quota exceeded state on successful message
+        setQuotaExceeded(null);
+      }
 
       // Add assistant response
       const assistantMessage: ChatMessage = {
@@ -372,7 +424,16 @@ export default function ChatTab() {
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
+          {/* Quota Meter */}
+          {quota && (
+            <QuotaMeter
+              messageCount={quota.messageCount}
+              limit={quota.limit}
+              tierType={quota.tierType}
+              isProSubscriber={quota.isProSubscriber}
+            />
+          )}
           <button
             onClick={handleClearChat}
             className="p-2 rounded-lg hover:bg-bg-tertiary text-text-muted hover:text-text-secondary transition-all"
@@ -522,6 +583,17 @@ export default function ChatTab() {
               </div>
             </div>
           </div>
+        )}
+
+        {/* Upgrade Prompt when quota exceeded */}
+        {quotaExceeded && (
+          <UpgradePrompt
+            tierType={quotaExceeded.tierType}
+            messageCount={quotaExceeded.messageCount}
+            limit={quotaExceeded.limit}
+            upgradeUrl={quotaExceeded.upgradeUrl}
+            onDismiss={() => setQuotaExceeded(null)}
+          />
         )}
 
         <div ref={messagesEndRef} />
