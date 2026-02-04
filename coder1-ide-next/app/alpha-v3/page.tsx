@@ -969,7 +969,7 @@ export default function AlphaLandingPage() {
             ].map((hook, idx) => (
               <ScrollReveal key={idx} delay={idx * 100}>
                 <div className="p-6 bg-[#151515] border border-white/10 rounded-xl hover:border-white/20 transition-all">
-                  <p className="text-coder1-purple text-xs font-semibold uppercase tracking-widest mb-2">{hook.audience}</p>
+                  <p className="text-coder1-purple text-base font-semibold uppercase tracking-widest mb-2">{hook.audience}</p>
                   <p className="text-white font-medium">{hook.message}</p>
                 </div>
               </ScrollReveal>
@@ -988,9 +988,9 @@ export default function AlphaLandingPage() {
         <div className="max-w-6xl mx-auto px-6">
           <ScrollReveal>
             <div className="text-center mb-16">
-              <div className="inline-flex items-center gap-2 px-4 py-2 bg-coder1-cyan/10 border border-coder1-cyan/20 rounded-full mb-6">
-                <Bot className="w-4 h-4 text-coder1-cyan" />
-                <span className="text-coder1-cyan text-sm font-medium">Claude Code Native</span>
+              <div className="inline-flex items-center gap-2.5 px-5 py-2.5 bg-coder1-cyan/10 border border-coder1-cyan/20 rounded-full mb-6">
+                <Bot className="w-5 h-5 text-coder1-cyan" />
+                <span className="text-coder1-cyan text-base font-medium">Claude Code Native</span>
               </div>
               <h2 className="text-4xl md:text-5xl font-bold mb-6 tracking-tight">
                 Why We Built Coder1 for Claude Code
@@ -1084,9 +1084,9 @@ export default function AlphaLandingPage() {
         <div className="max-w-6xl mx-auto px-6">
           <ScrollReveal>
             <div className="text-center mb-16">
-              <div className="inline-flex items-center gap-2 px-4 py-2 bg-coder1-purple/10 border border-coder1-purple/20 rounded-full mb-6">
-                <Bot className="w-4 h-4 text-coder1-purple" />
-                <span className="text-coder1-cyan text-sm font-medium">Your AI Employee</span>
+              <div className="inline-flex items-center gap-2.5 px-5 py-2.5 bg-coder1-purple/10 border border-coder1-purple/20 rounded-full mb-6">
+                <Bot className="w-5 h-5 text-coder1-purple" />
+                <span className="text-coder1-cyan text-base font-medium">Your AI Employee</span>
               </div>
               <h2 className="text-4xl md:text-5xl font-bold mb-6 tracking-tight">
                 Meet <span className="text-shimmer">Johnny5</span>
@@ -1105,21 +1105,6 @@ export default function AlphaLandingPage() {
                 desc: 'Johnny5 builds features while you rest. Queue up tasks before bed, wake up to completed code. No more late nights.'
               },
               {
-                icon: GitPullRequest,
-                title: 'Proactive PR Creation',
-                desc: 'Notices feature requests in Slack conversations and GitHub issues. Builds them automatically and creates PRs for your review.'
-              },
-              {
-                icon: Sun,
-                title: 'Morning Briefings',
-                desc: 'Start each day knowing exactly what got done. Clear summaries of completed work, research findings, and items needing attention.'
-              },
-              {
-                icon: TrendingUp,
-                title: 'Trend Monitoring',
-                desc: 'Watches X, GitHub, and HackerNews for opportunities relevant to your project. Alerts you to new releases, competitor moves, and trends.'
-              },
-              {
                 icon: MessageCircle,
                 title: 'WhatsApp Communication',
                 desc: 'Message Johnny5 directly via WhatsApp. Get updates, ask questions, and give instructions from anywhere - no IDE required.'
@@ -1128,6 +1113,21 @@ export default function AlphaLandingPage() {
                 icon: Infinity,
                 title: '8,000+ MCP Integrations',
                 desc: 'Connect to thousands of tools and services. Johnny5 works autonomously around the clock with access to your entire stack.'
+              },
+              {
+                icon: TrendingUp,
+                title: 'Trend Monitoring',
+                desc: 'Watches X, GitHub, and HackerNews for opportunities relevant to your project. Alerts you to new releases, your competitors, and trends.'
+              },
+              {
+                icon: GitPullRequest,
+                title: 'Proactive PR Creation',
+                desc: 'Notices feature requests in Slack conversations and GitHub issues. Builds them automatically and creates PRs for your review.'
+              },
+              {
+                icon: Sun,
+                title: 'Morning Briefings',
+                desc: 'Start each day knowing exactly what got done. Clear summaries of completed work, research findings, and items needing attention.'
               }
             ].map((card, idx) => (
               <ScrollReveal key={idx} delay={idx * 100}>
@@ -1247,9 +1247,9 @@ export default function AlphaLandingPage() {
         <div className="max-w-6xl mx-auto px-6">
           <ScrollReveal>
             <div className="text-center mb-12">
-              <div className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-500/10 border border-emerald-500/20 rounded-full mb-6">
-                <Coffee className="w-4 h-4 text-emerald-400" />
-                <span className="text-emerald-400 text-sm font-medium">Real Results</span>
+              <div className="inline-flex items-center gap-2.5 px-5 py-2.5 bg-emerald-500/10 border border-emerald-500/20 rounded-full mb-6">
+                <Coffee className="w-5 h-5 text-emerald-400" />
+                <span className="text-emerald-400 text-base font-medium">Real Results</span>
               </div>
               <h2 className="text-4xl md:text-5xl font-bold mb-6 tracking-tight">
                 What Johnny5 Built Last Night
