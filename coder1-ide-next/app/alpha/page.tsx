@@ -1741,7 +1741,10 @@ export default function AlphaLandingPage() {
                 period="per month"
                 features={[
                   'Basic IDE features',
-                  'Five Johnny5 tasks/day',
+                  '50 Johnny5 messages',
+                  '1 click MCP\'s',
+                  'AI agents',
+                  'Sandbox environments',
                   'Community support',
                   'Basic session history'
                 ]}
