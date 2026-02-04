@@ -3463,18 +3463,76 @@ app.prepare().then(() => {
       memoryExporter.initialize().then(() => {
         console.log('✅ Memory Exporter initialized');
         console.log(`   Export directory: ${memoryExporter.getStats().exportDir}`);
-        
+
         // Auto-export every 30 seconds
         setInterval(() => {
           memoryExporter.exportAll().catch(error => {
             console.error('❌ [MemoryExporter] Auto-export failed:', error.message);
           });
         }, 30000);
-        
+
         console.log('   Auto-export: Every 30 seconds');
       }).catch(error => {
         console.error('❌ Memory Exporter initialization failed:', error);
       });
+    }
+
+    // ========================================================================
+    // Initialize Johnny5 Memory Sources (CRITICAL for memory recall)
+    // ========================================================================
+    // This indexes ManusLive files and session history into memory_chunks table
+    // Without this, Johnny5 has no persistent memory!
+    try {
+      // Clear ManusLive cache to ensure fresh reads
+      try {
+        const { clearManusLiveCache } = require('./lib/manuslive-memory.ts');
+        clearManusLiveCache();
+        console.log('[Johnny5] ManusLive cache cleared');
+      } catch (cacheError) {
+        console.warn('[Johnny5] Could not clear ManusLive cache:', cacheError.message);
+      }
+
+      const { initializeMemorySources, cleanupMemorySources } = require('./services/memory/sources/index.ts');
+
+      console.log('[Johnny5 Memory] Starting initialization...');
+
+      initializeMemorySources({
+        indexManusLive: true,
+        indexSessions: true,
+        sessionLimit: 50,
+        startWatcher: true,
+        onProgress: (msg) => console.log(`[Johnny5 Memory] ${msg}`),
+      }).then((result) => {
+        console.log('═══════════════════════════════════════════════════════════');
+        console.log('✅ Johnny5 Memory Sources Initialized');
+        console.log(`   ManusLive chunks: ${result.manusLive?.chunks || 0}`);
+        console.log(`   Session chunks: ${result.sessions?.chunks || 0}`);
+        console.log(`   File watcher: ${result.watcherStarted ? 'RUNNING' : 'STOPPED'}`);
+        console.log(`   TOTAL chunks indexed: ${result.totalChunks}`);
+        console.log('═══════════════════════════════════════════════════════════');
+
+        // Log warning if no data indexed
+        if (result.totalChunks === 0) {
+          console.warn('⚠️  WARNING: No memory chunks indexed!');
+          console.warn('   - Check if ManusLive files exist at ~/.manuslive/workspace/');
+          console.warn('   - Check if sessions exist in johnny5.db');
+        }
+      }).catch((error) => {
+        console.error('═══════════════════════════════════════════════════════════');
+        console.error('❌ Johnny5 Memory Initialization FAILED');
+        console.error('   Error:', error.message);
+        console.error('   Memory recall will NOT work until this is fixed!');
+        console.error('═══════════════════════════════════════════════════════════');
+      });
+
+      // Cleanup on shutdown
+      process.on('SIGTERM', () => {
+        console.log('[Johnny5 Memory] Cleaning up...');
+        cleanupMemorySources();
+      });
+
+    } catch (error) {
+      console.error('❌ Johnny5 Memory Sources module failed to load:', error.message);
     }
   });
 

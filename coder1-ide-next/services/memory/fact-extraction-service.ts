@@ -187,8 +187,14 @@ export async function extractFactsFromConversation(
   messages: ConversationMessage[],
   existingFacts: ExistingFact[] = []
 ): Promise<ExtractedFact[]> {
+  console.log('[FactExtraction] Starting extraction...');
+  console.log('[FactExtraction] Messages count:', messages.length);
+  console.log('[FactExtraction] User messages:', messages.filter(m => m.role === 'user').length);
+  console.log('[FactExtraction] Existing facts to avoid:', existingFacts.length);
+
   const genAI = getGeminiClient();
   if (!genAI) {
+    console.warn('[FactExtraction] Gemini client not available (check GEMINI_API_KEY)');
     return [];
   }
 
@@ -218,12 +224,18 @@ export async function extractFactsFromConversation(
       .replace('{existingFacts}', formatExistingFacts(existingFacts))
       .replace('{conversation}', formatConversation(messages));
 
-    console.log('[FactExtraction] Sending conversation to Gemini...');
+    console.log('[FactExtraction] Calling Gemini API...');
     const result = await model.generateContent(prompt);
     const text = result.response.text();
 
+    console.log('[FactExtraction] Gemini response length:', text.length);
+    console.log('[FactExtraction] Response preview:', text.substring(0, 300));
+
     const facts = parseExtractionResponse(text);
-    console.log(`[FactExtraction] Extracted ${facts.length} new facts`);
+    console.log(`[FactExtraction] Parsed ${facts.length} new facts`);
+    if (facts.length > 0) {
+      console.log('[FactExtraction] First fact:', JSON.stringify(facts[0]));
+    }
 
     return facts;
   } catch (error) {

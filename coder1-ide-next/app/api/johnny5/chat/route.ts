@@ -44,6 +44,7 @@ import {
   type ConversationMessage as MemoryConversationMessage,
 } from '@/services/memory';
 import { getMoltbotBridge } from '@/services/johnny5/moltbot-bridge';
+import { classifyQuery, type ClassificationResult } from '@/services/query-classifier';
 
 // ============================================================================
 // Types
@@ -487,14 +488,37 @@ export async function POST(
     let result: { success: boolean; response: string; error?: string; errorCode?: string };
     let modeUsed: 'bridge' | 'gemini' = 'bridge';
 
-    if (bridgeConnected) {
-      // Primary: Use Bridge (Claude Code CLI)
-      console.log('[Johnny5] Using Bridge mode');
+    // 7.5. Smart Query Routing - Classify query to determine optimal provider
+    // Personal queries → Gemini (respects memory context)
+    // Coding queries → Bridge (project awareness via Claude Code CLI)
+    const queryClassification: ClassificationResult = classifyQuery(message);
+    console.log('[Johnny5] Query classification:', {
+      category: queryClassification.category,
+      confidence: queryClassification.confidence.toFixed(2),
+      shouldUseBridge: queryClassification.shouldUseBridge,
+      reasoning: queryClassification.reasoning,
+    });
+
+    // Determine if we should use Bridge based on both connection status AND query type
+    // Key insight: Even when Bridge is connected, personal queries should use Gemini
+    // because Claude Code CLI ignores injected memory context
+    const shouldUseBridgeForThisQuery = bridgeConnected && queryClassification.shouldUseBridge;
+
+    if (shouldUseBridgeForThisQuery) {
+      // Use Bridge for coding queries (benefits from project context)
+      console.log('[Johnny5] Using Bridge mode (coding query)');
       result = await johnny5Service.sendPrompt(enhancedMessage, conversationHistory);
     } else {
-      // Fallback: Use Gemini API (Google Gemini 2.5 Flash - free tier)
+      // Use Gemini for:
+      // 1. Personal/memory queries (even when Bridge is connected)
+      // 2. All queries when Bridge is not connected
+      if (bridgeConnected) {
+        console.log(`[Johnny5] Bridge connected but using Gemini for ${queryClassification.category} query (memory-critical)`);
+      } else {
+        console.log('[Johnny5] Using Gemini API mode (Bridge not connected)');
+      }
+      // Use Gemini API (Google Gemini 2.5 Flash - respects memory context)
       modeUsed = 'gemini';
-      console.log('[Johnny5] Using Gemini API mode (Bridge not connected)');
       try {
         // Build conversation history in Gemini format
         const geminiContents = [
