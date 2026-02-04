@@ -10,12 +10,13 @@ import {
   Copy,
   ChevronRight,
   X,
+  Terminal,
 } from 'lucide-react';
 
 interface ZapierMCPSetupCardProps {
-  onConnected?: (token: string) => void;
+  onConnected?: (url: string) => void;
   onSkip?: () => void;
-  initialToken?: string;
+  initialUrl?: string;
   className?: string;
 }
 
@@ -30,18 +31,41 @@ type ConnectionStatus = 'idle' | 'validating' | 'connected' | 'error';
 export default function ZapierMCPSetupCard({
   onConnected,
   onSkip,
-  initialToken = '',
+  initialUrl = '',
   className,
 }: ZapierMCPSetupCardProps) {
-  const [token, setToken] = useState(initialToken);
-  const [status, setStatus] = useState<ConnectionStatus>(initialToken ? 'connected' : 'idle');
+  const [mcpUrl, setMcpUrl] = useState(initialUrl);
+  const [status, setStatus] = useState<ConnectionStatus>(initialUrl ? 'connected' : 'idle');
   const [errorMessage, setErrorMessage] = useState<string>('');
   const [showSteps, setShowSteps] = useState(true);
+  const [copiedCommand, setCopiedCommand] = useState<string | null>(null);
 
-  // Handle token validation
-  const validateToken = useCallback(async () => {
-    if (!token.trim()) {
-      setErrorMessage('Please enter a connection token');
+  // Copy command to clipboard
+  const copyCommand = useCallback(async (command: string) => {
+    try {
+      await navigator.clipboard.writeText(command);
+      setCopiedCommand(command);
+      setTimeout(() => setCopiedCommand(null), 2000);
+    } catch {
+      // Clipboard access denied
+    }
+  }, []);
+
+  // Handle URL save (validation is optional for Alpha)
+  const saveUrl = useCallback(async () => {
+    const trimmedUrl = mcpUrl.trim();
+
+    if (!trimmedUrl) {
+      // Empty URL is OK - user may just want to skip
+      setStatus('connected');
+      onConnected?.('');
+      return;
+    }
+
+    // Basic URL format validation
+    const urlRegex = /^https:\/\/actions\.zapier\.com\/mcp\//;
+    if (!urlRegex.test(trimmedUrl)) {
+      setErrorMessage('URL should start with https://actions.zapier.com/mcp/');
       setStatus('error');
       return;
     }
@@ -49,35 +73,19 @@ export default function ZapierMCPSetupCard({
     setStatus('validating');
     setErrorMessage('');
 
-    try {
-      // Call backend to validate the Zapier MCP token
-      const response = await fetch('/api/johnny5/integrations/zapier/validate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token: token.trim() }),
-      });
-
-      if (response.ok) {
-        setStatus('connected');
-        onConnected?.(token.trim());
-      } else {
-        const data = await response.json();
-        setErrorMessage(data.message || 'Invalid token. Please check and try again.');
-        setStatus('error');
-      }
-    } catch {
-      // For now, simulate success since backend endpoint may not exist yet
-      // In production, this would show the error
+    // For Alpha, we just save the URL without backend validation
+    // The actual connection is done via mcporter command
+    setTimeout(() => {
       setStatus('connected');
-      onConnected?.(token.trim());
-    }
-  }, [token, onConnected]);
+      onConnected?.(trimmedUrl);
+    }, 500);
+  }, [mcpUrl, onConnected]);
 
   // Handle paste from clipboard
   const handlePaste = useCallback(async () => {
     try {
       const text = await navigator.clipboard.readText();
-      setToken(text);
+      setMcpUrl(text);
     } catch {
       // Clipboard access denied - user can still type manually
     }
@@ -86,21 +94,31 @@ export default function ZapierMCPSetupCard({
   const setupSteps = [
     {
       number: 1,
+      text: 'Install MC Porter (one-time)',
+      command: 'brew install steipete/tap/mcporter',
+      note: 'Or: npm install -g mcporter',
+      link: 'https://github.com/steipete/mcporter',
+      linkText: 'Learn more',
+    },
+    {
+      number: 2,
       text: 'Go to Zapier MCP',
       link: 'https://zapier.com/mcp',
       linkText: 'Open Zapier',
     },
     {
-      number: 2,
-      text: 'Create an MCP server (free plan works!)',
-    },
-    {
       number: 3,
-      text: 'Add the tools you want Johnny5 to access',
+      text: 'Create an MCP server and add your desired tools',
     },
     {
       number: 4,
-      text: 'Copy the connection details below',
+      text: 'Copy your MCP URL (looks like https://actions.zapier.com/mcp/sk-ak-...)',
+    },
+    {
+      number: 5,
+      text: 'Run this command in your terminal:',
+      command: 'mcporter list --http-url <YOUR_URL> --name zapier --persist',
+      isDynamic: true,
     },
   ];
 
@@ -180,24 +198,58 @@ export default function ZapierMCPSetupCard({
           </button>
 
           {showSteps && (
-            <div className="space-y-2 pl-1">
+            <div className="space-y-3 pl-1">
               {setupSteps.map((step) => (
                 <div key={step.number} className="flex items-start gap-2">
                   <span className="w-5 h-5 rounded-full bg-bg-tertiary text-[10px] font-bold text-text-muted flex items-center justify-center flex-shrink-0 mt-0.5">
                     {step.number}
                   </span>
-                  <div className="flex items-center gap-2 text-sm text-text-secondary">
-                    <span>{step.text}</span>
-                    {step.link && (
-                      <a
-                        href={step.link}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-1 px-2 py-0.5 rounded bg-coder1-cyan/20 hover:bg-coder1-cyan/30 text-coder1-cyan text-xs font-medium transition-all"
-                      >
-                        {step.linkText}
-                        <ExternalLink className="w-3 h-3" />
-                      </a>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 text-sm text-text-secondary flex-wrap">
+                      <span>{step.text}</span>
+                      {step.link && (
+                        <a
+                          href={step.link}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-1 px-2 py-0.5 rounded bg-coder1-cyan/20 hover:bg-coder1-cyan/30 text-coder1-cyan text-xs font-medium transition-all"
+                        >
+                          {step.linkText}
+                          <ExternalLink className="w-3 h-3" />
+                        </a>
+                      )}
+                    </div>
+                    {step.command && (
+                      <div className="mt-1.5">
+                        <div className="flex items-center gap-2 bg-bg-tertiary rounded-lg border border-border-default overflow-hidden">
+                          <div className="flex items-center gap-2 px-3 py-2 flex-1 min-w-0">
+                            <Terminal className="w-3.5 h-3.5 text-text-muted flex-shrink-0" />
+                            <code className="text-xs text-coder1-cyan font-mono truncate">
+                              {step.isDynamic && mcpUrl
+                                ? step.command.replace('<YOUR_URL>', mcpUrl)
+                                : step.command}
+                            </code>
+                          </div>
+                          <button
+                            onClick={() => copyCommand(
+                              step.isDynamic && mcpUrl
+                                ? step.command.replace('<YOUR_URL>', mcpUrl)
+                                : step.command
+                            )}
+                            className="px-3 py-2 bg-bg-secondary hover:bg-bg-tertiary text-text-muted hover:text-text-primary transition-all border-l border-border-default"
+                            title="Copy command"
+                          >
+                            {copiedCommand === (step.isDynamic && mcpUrl ? step.command.replace('<YOUR_URL>', mcpUrl) : step.command) ? (
+                              <Check className="w-3.5 h-3.5 text-green-400" />
+                            ) : (
+                              <Copy className="w-3.5 h-3.5" />
+                            )}
+                          </button>
+                        </div>
+                        {step.note && (
+                          <p className="text-[10px] text-text-muted mt-1">{step.note}</p>
+                        )}
+                      </div>
                     )}
                   </div>
                 </div>
@@ -207,21 +259,21 @@ export default function ZapierMCPSetupCard({
         </div>
       )}
 
-      {/* Token Input Section */}
+      {/* URL Input Section */}
       <div className="px-4 pb-4">
         <label className="block text-xs font-medium text-text-muted mb-1.5">
-          Connection Token
+          MCP URL <span className="text-text-muted/50">(optional - for your records)</span>
         </label>
         <div className="flex gap-2">
           <div className="relative flex-1">
             <input
               type="text"
-              value={token}
+              value={mcpUrl}
               onChange={(e) => {
-                setToken(e.target.value);
+                setMcpUrl(e.target.value);
                 if (status === 'error') setStatus('idle');
               }}
-              placeholder="Paste your Zapier MCP token here..."
+              placeholder="https://actions.zapier.com/mcp/sk-ak-..."
               disabled={status === 'connected'}
               className={`
                 w-full px-3 py-2.5 rounded-lg text-sm
@@ -248,11 +300,11 @@ export default function ZapierMCPSetupCard({
             )}
           </div>
 
-          {/* Connect Button */}
+          {/* Save Button */}
           {status !== 'connected' && (
             <button
-              onClick={validateToken}
-              disabled={status === 'validating' || !token.trim()}
+              onClick={saveUrl}
+              disabled={status === 'validating'}
               className={`
                 px-4 py-2.5 rounded-lg font-medium text-sm transition-all
                 flex items-center gap-2
@@ -266,12 +318,12 @@ export default function ZapierMCPSetupCard({
               {status === 'validating' ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  Validating...
+                  Saving...
                 </>
               ) : (
                 <>
                   <Check className="w-4 h-4" />
-                  Connect
+                  Save
                 </>
               )}
             </button>
@@ -290,7 +342,11 @@ export default function ZapierMCPSetupCard({
         {status === 'connected' && (
           <div className="flex items-center gap-2 mt-2 text-xs text-green-400">
             <Check className="w-3.5 h-3.5 flex-shrink-0" />
-            <span>Connected to Zapier MCP. Johnny5 can now access your connected apps.</span>
+            <span>
+              {mcpUrl
+                ? 'URL saved! Run the mcporter command above to complete the connection.'
+                : 'Skipped Zapier setup. You can configure this later in settings.'}
+            </span>
           </div>
         )}
       </div>
