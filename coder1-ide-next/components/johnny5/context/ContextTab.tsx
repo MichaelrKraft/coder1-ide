@@ -433,8 +433,8 @@ export default function ContextTab({ className = '' }: ContextTabProps) {
 
           {/* Context Usage Bar */}
           <ContextUsageBar
-            used={contextComposition.total}
-            limit={contextComposition.limit}
+            used={contextComposition.total || 0}
+            limit={contextComposition.limit || 200000}
             className={contextLoading ? 'opacity-50' : ''}
           />
 
@@ -446,7 +446,7 @@ export default function ContextTab({ className = '' }: ContextTabProps) {
               files: fileTokens,
               tools: contextComposition.breakdown?.tools || 0,
             }}
-            total={contextComposition.total}
+            total={contextComposition.total || 0}
             className={contextLoading ? 'opacity-50' : ''}
           />
 
