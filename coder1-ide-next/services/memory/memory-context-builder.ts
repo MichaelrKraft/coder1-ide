@@ -235,9 +235,9 @@ export async function buildMemoryContext(
     sections.push(patternsResult.section);
   }
 
-  // Add ManusLive section if no facts/patterns available
-  // (ManusLive may have similar info, so we prefer extracted facts)
-  if (manusLiveResult.section && factsResult.count === 0) {
+  // ALWAYS add ManusLive section if available (not just when facts count is 0)
+  // ManusLive provides rich context even when we have extracted facts
+  if (manusLiveResult.section) {
     sections.push(manusLiveResult.section);
   }
 

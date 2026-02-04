@@ -17,7 +17,10 @@ import {
   ExternalLink,
   Link2,
   RefreshCw,
+  Send,
+  Zap,
 } from 'lucide-react';
+import { TelegramSetupCard, ZapierMCPSetupCard, WhatsAppSetupCard } from '../onboarding';
 
 interface SetupWizardProps {
   onComplete?: () => void;
@@ -25,7 +28,7 @@ interface SetupWizardProps {
   className?: string;
 }
 
-type WizardStep = 'welcome' | 'bridge' | 'permissions' | 'complete';
+type WizardStep = 'welcome' | 'bridge' | 'messaging' | 'integrations' | 'permissions' | 'complete';
 
 interface Permissions {
   readFiles: boolean;
@@ -37,11 +40,13 @@ interface Permissions {
 /**
  * SetupWizard Component
  *
- * Simplified 4-step setup flow for Johnny5:
+ * 6-step setup flow for Johnny5:
  * 1. Welcome - Introduction
  * 2. Bridge - Connect via Coder1 Bridge (uses Claude Code CLI)
- * 3. Permissions - Set permissions and proactivity
- * 4. Complete - Quick start tips
+ * 3. Messaging - Telegram & WhatsApp setup (optional)
+ * 4. Integrations - Zapier MCP setup (optional)
+ * 5. Permissions - Set permissions and proactivity
+ * 6. Complete - Quick start tips
  */
 export default function SetupWizard({
   onComplete,
@@ -67,7 +72,7 @@ export default function SetupWizard({
   // Saving state
   const [isSaving, setIsSaving] = useState(false);
 
-  const steps: WizardStep[] = ['welcome', 'bridge', 'permissions', 'complete'];
+  const steps: WizardStep[] = ['welcome', 'bridge', 'messaging', 'integrations', 'permissions', 'complete'];
   const currentStepIndex = steps.indexOf(currentStep);
 
   // Check Bridge connection status
@@ -331,6 +336,58 @@ export default function SetupWizard({
           </div>
         );
 
+      case 'messaging':
+        return (
+          <div className="py-4">
+            <div className="text-center mb-6">
+              <div className="w-14 h-14 mx-auto mb-4 rounded-xl bg-purple-500/10 flex items-center justify-center">
+                <Send className="w-7 h-7 text-purple-400" />
+              </div>
+              <h2 className="text-xl font-bold text-text-primary mb-2">
+                Connect Messaging
+              </h2>
+              <p className="text-sm text-text-muted">
+                Let Johnny5 reach you via your preferred messaging app (optional)
+              </p>
+            </div>
+
+            {/* Responsive: stack on mobile, side-by-side on larger screens */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl mx-auto">
+              <TelegramSetupCard />
+              <WhatsAppSetupCard />
+            </div>
+
+            <p className="text-xs text-text-muted text-center mt-4">
+              You can skip this step and set up messaging later in Settings
+            </p>
+          </div>
+        );
+
+      case 'integrations':
+        return (
+          <div className="py-4">
+            <div className="text-center mb-6">
+              <div className="w-14 h-14 mx-auto mb-4 rounded-xl bg-coder1-cyan/10 flex items-center justify-center">
+                <Zap className="w-7 h-7 text-coder1-cyan" />
+              </div>
+              <h2 className="text-xl font-bold text-text-primary mb-2">
+                Expand Johnny5&apos;s Reach
+              </h2>
+              <p className="text-sm text-text-muted">
+                Connect to 8000+ apps via Zapier MCP (optional)
+              </p>
+            </div>
+
+            <div className="max-w-md mx-auto">
+              <ZapierMCPSetupCard />
+            </div>
+
+            <p className="text-xs text-text-muted text-center mt-4">
+              Free Zapier plan works! Set this up later in Settings.
+            </p>
+          </div>
+        );
+
       case 'permissions':
         return (
           <div className="py-4">
@@ -583,11 +640,15 @@ export default function SetupWizard({
 
         {/* Step Labels */}
         <div className="flex items-center justify-between text-[10px] text-text-muted">
-          <span className="w-8 text-center">Welcome</span>
+          <span className="w-10 text-center">Welcome</span>
           <span className="flex-1" />
           <span className="w-8 text-center">Bridge</span>
           <span className="flex-1" />
-          <span className="w-12 text-center">Permissions</span>
+          <span className="w-12 text-center">Messaging</span>
+          <span className="flex-1" />
+          <span className="w-14 text-center">Integrations</span>
+          <span className="flex-1" />
+          <span className="w-14 text-center">Permissions</span>
           <span className="flex-1" />
           <span className="w-8 text-center">Done</span>
         </div>
