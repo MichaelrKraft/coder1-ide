@@ -15,6 +15,7 @@ const PQueue = require('p-queue');
 const logger = require('./logger');
 const ClaudeExecutor = require('./claude-executor');
 const FileHandler = require('./file-handler');
+const { saveCredentials, loadCredentials, clearCredentials } = require('./credentials-manager');
 
 class BridgeClient extends EventEmitter {
   constructor(options = {}) {
@@ -166,7 +167,17 @@ class BridgeClient extends EventEmitter {
       this.userId = pairingResponse.userId;
       
       this.log(`Pairing successful. User ID: ${this.userId}`);
-      
+
+      // Save credentials for auto-reconnect
+      saveCredentials({
+        token: this.token,
+        bridgeId: this.bridgeId,
+        userId: this.userId,
+        serverUrl: this.serverUrl,
+        savedAt: new Date().toISOString()
+      });
+      this.log('Credentials saved for auto-reconnect');
+
       // Step 2: Connect WebSocket with token
       await this.connectWebSocket();
       
@@ -179,6 +190,48 @@ class BridgeClient extends EventEmitter {
     } catch (error) {
       this.error('Connection failed:', error);
       throw error;
+    }
+  }
+
+  /**
+   * Attempt to connect using saved credentials (auto-connect)
+   * @returns {Promise<boolean>} true if connected, false if need pairing
+   */
+  async autoConnect() {
+    const creds = loadCredentials();
+    if (!creds) {
+      this.log('No saved credentials found');
+      return false;
+    }
+
+    this.log('Found saved credentials, attempting auto-connect...');
+    this.log(`  Server: ${creds.serverUrl}`);
+    this.log(`  Bridge ID: ${creds.bridgeId}`);
+    this.log(`  Saved: ${creds.savedAt}`);
+
+    // Use saved credentials
+    this.token = creds.token;
+    this.bridgeId = creds.bridgeId;
+    this.userId = creds.userId;
+
+    // Override server URL if credentials have a different one
+    if (creds.serverUrl && creds.serverUrl !== this.serverUrl) {
+      this.log(`Using saved server URL: ${creds.serverUrl}`);
+      this.serverUrl = creds.serverUrl;
+    }
+
+    try {
+      await this.connectWebSocket();
+      this.startHeartbeat();
+      this.connected = true;
+      this.emit('connected', { bridgeId: this.bridgeId, userId: this.userId });
+      this.log('Auto-connect successful!');
+      return true;
+    } catch (error) {
+      this.error(`Auto-connect failed: ${error.message}`);
+      clearCredentials();
+      this.log('Credentials cleared - will need pairing code');
+      return false;
     }
   }
 
@@ -292,7 +345,15 @@ class BridgeClient extends EventEmitter {
       this.socket.on('connect_error', (error) => {
         this.error('Connection error:', error.message);
         this.reconnectAttempts++;
-        
+
+        // Clear credentials if authentication failed (token expired/invalid)
+        if (error.message?.includes('authentication') ||
+            error.message?.includes('invalid token') ||
+            error.message?.includes('unauthorized')) {
+          clearCredentials();
+          this.log('Credentials cleared due to auth failure');
+        }
+
         if (this.reconnectAttempts === 1) {
           reject(error);
         }

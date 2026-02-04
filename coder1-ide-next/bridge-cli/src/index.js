@@ -64,6 +64,7 @@ program
   .option('-d, --dev', 'Development mode (connect to localhost)')
   .option('-v, --verbose', 'Verbose logging')
   .option('--no-banner', 'Skip banner display')
+  .option('--auto', 'Auto-connect using saved credentials (skip pairing code)')
   .action(async (options) => {
     if (!options.banner === false) {
       console.log('\x1b[36m%s\x1b[0m', banner); // Cyan color without chalk
@@ -110,21 +111,33 @@ program
       console.log('\x1b[33m⚠️  Auth check: ' + authCheck.warning + '\x1b[0m\n');
     }
 
-    // Get pairing code using readline
-    const pairingCode = await askForPairingCode();
+    // Create bridge client
+    const bridge = new BridgeClient({
+      serverUrl: options.server,
+      verbose: options.verbose,
+      local: options.dev,  // Pass the dev flag to indicate local connection
+      claudePath: claudeCheck.path  // 🔧 FIX: Pass resolved Claude path to executor
+    });
 
-    // Start bridge client with simple status
-    console.log('🔄 Connecting to Coder1 IDE...');
-    
     try {
-      const bridge = new BridgeClient({
-        serverUrl: options.server,
-        verbose: options.verbose,
-        local: options.dev,  // Pass the dev flag to indicate local connection
-        claudePath: claudeCheck.path  // 🔧 FIX: Pass resolved Claude path to executor
-      });
-
-      await bridge.connect(pairingCode);
+      // Try auto-connect if --auto flag is set
+      if (options.auto) {
+        console.log('🔄 Attempting auto-connect with saved credentials...');
+        const success = await bridge.autoConnect();
+        if (success) {
+          console.log('\x1b[32m✅ Auto-connected successfully!\x1b[0m');
+        } else {
+          console.log('\x1b[33m⚠️  Auto-connect failed. Falling back to pairing code.\x1b[0m');
+          const pairingCode = await askForPairingCode();
+          console.log('🔄 Connecting to Coder1 IDE...');
+          await bridge.connect(pairingCode);
+        }
+      } else {
+        // Standard pairing code flow
+        const pairingCode = await askForPairingCode();
+        console.log('🔄 Connecting to Coder1 IDE...');
+        await bridge.connect(pairingCode);
+      }
       
       console.log('\x1b[32m✅ Bridge connected successfully!\x1b[0m');
       
@@ -164,24 +177,43 @@ program
   .description('Check bridge connection status')
   .option('-s, --server <url>', 'Server URL', 'https://coder1.ai')
   .action(async (options) => {
-    console.log('\x1b[34m🔍 Checking bridge status...\x1b[0m');
-    
+    const { hasCredentials, loadCredentials } = require('./credentials-manager');
+
+    console.log('\x1b[34m🔍 Checking bridge status...\x1b[0m\n');
+
+    // Check saved credentials
+    console.log('\x1b[37mLocal Status:\x1b[0m');
+    if (hasCredentials()) {
+      const creds = loadCredentials();
+      console.log('\x1b[32m  ✅ Saved credentials found\x1b[0m');
+      console.log(`\x1b[90m     Server: ${creds?.serverUrl || 'N/A'}\x1b[0m`);
+      console.log(`\x1b[90m     Saved: ${creds?.savedAt || 'N/A'}\x1b[0m`);
+      console.log('\x1b[90m     Tip: Use --auto flag to connect without pairing code\x1b[0m');
+    } else {
+      console.log('\x1b[33m  ○ No saved credentials\x1b[0m');
+      console.log('\x1b[90m     Connect once to save credentials for auto-reconnect\x1b[0m');
+    }
+
+    // Check server status
+    console.log('\n\x1b[37mServer Status:\x1b[0m');
     try {
       const response = await fetch(`${options.server}/api/bridge/generate-code?userId=test`);
       const data = await response.json();
-      
+
       if (data.connected) {
-        console.log('\x1b[32m✅ Bridge service is online\x1b[0m');
-        console.log('\x1b[37mConnected bridges:\x1b[0m', data.bridges.length);
+        console.log('\x1b[32m  ✅ Bridge service is online\x1b[0m');
+        console.log(`\x1b[90m     Connected bridges: ${data.bridges?.length || 0}\x1b[0m`);
       } else {
-        console.log('\x1b[33m⚠️ No active bridges\x1b[0m');
+        console.log('\x1b[33m  ⚠️ No active bridges\x1b[0m');
       }
     } catch (error) {
-      console.log('\x1b[31m❌ Cannot reach bridge service\x1b[0m');
+      console.log('\x1b[31m  ❌ Cannot reach bridge service\x1b[0m');
       if (options.verbose) {
         console.error(error);
       }
     }
+
+    console.log('');
   });
 
 // Test command
@@ -473,6 +505,59 @@ async function checkClaudeCLI() {
     path: claudePath
   };
 }
+
+// Bridge daemon management command
+// Manages the Bridge as a macOS launchd service for auto-start on login
+program
+  .command('daemon <action>')
+  .description('Manage Bridge daemon for auto-start (install|uninstall|status|logs)')
+  .action(async (action) => {
+    const bridgeDaemon = require('./bridge-daemon');
+    const { hasCredentials } = require('./credentials-manager');
+
+    const validActions = ['install', 'uninstall', 'status', 'logs'];
+    if (!validActions.includes(action)) {
+      console.log('\x1b[31m❌ Invalid action: ' + action + '\x1b[0m');
+      console.log('Valid actions: ' + validActions.join(', '));
+      process.exit(1);
+    }
+
+    try {
+      let result;
+      switch (action) {
+        case 'install':
+          // Check if credentials exist before installing
+          if (!hasCredentials()) {
+            console.log('\x1b[33m⚠️  No saved credentials found!\x1b[0m');
+            console.log('\nBefore installing the daemon, you need to connect once to save credentials:');
+            console.log('  1. Run: coder1-bridge start');
+            console.log('  2. Enter the pairing code from Coder1 IDE');
+            console.log('  3. After connection, credentials are saved');
+            console.log('  4. Then run: coder1-bridge daemon install\n');
+            process.exit(1);
+          }
+          result = bridgeDaemon.install();
+          break;
+        case 'uninstall':
+          result = bridgeDaemon.uninstall();
+          break;
+        case 'status':
+          result = bridgeDaemon.status();
+          break;
+        case 'logs':
+          bridgeDaemon.logs(50);
+          break;
+      }
+
+      // For non-status commands, exit with appropriate code
+      if (action !== 'status' && action !== 'logs' && result && !result.success) {
+        process.exit(1);
+      }
+    } catch (error) {
+      console.log('\x1b[31m❌ Error: ' + error.message + '\x1b[0m');
+      process.exit(1);
+    }
+  });
 
 // Johnny5 daemon management command
 // Manages the Johnny5 daemon as a macOS launchd service
