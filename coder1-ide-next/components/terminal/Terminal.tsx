@@ -5113,53 +5113,103 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
   };
 
   // Staged Composer handlers
-  const handleSendStagedCommand = useCallback(async (command: string, images?: Array<{ base64: string; mimeType: string }>) => {
+  const handleSendStagedCommand = useCallback(async (command: string, images?: Array<{ base64: string; mimeType: string; mode?: 'ocr' | 'vision'; extractedText?: string }>) => {
     if (!socketRef.current?.connected || !sessionId) {
       console.error('Cannot send command: no socket connection or session');
       return;
     }
 
-    // If images are present, show a helpful message about Claude Code limitations
+    // Handle images with dual-mode processing (OCR + Vision API)
     if (images && images.length > 0) {
-      console.log(`🖼️ Detected ${images.length} image(s) - showing guidance`);
-      
-      // Claude Code CLI doesn't support image input in the terminal
-      // We need to guide users to use the web interface instead
-      xtermRef.current?.writeln('\r\n\x1b[33m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\x1b[0m');
-      xtermRef.current?.writeln('\x1b[36m📸 Image Processing Notice\x1b[0m');
-      xtermRef.current?.writeln('\x1b[33m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\x1b[0m\r\n');
-      
-      xtermRef.current?.writeln(`You've attached ${images.length} image(s) with your command.`);
-      xtermRef.current?.writeln('\r\n\x1b[33m⚠️  Important:\x1b[0m Claude Code CLI in the terminal doesn\'t support image input.');
-      xtermRef.current?.writeln('');
-      xtermRef.current?.writeln('To use images with Claude Code:');
-      xtermRef.current?.writeln('  1. Open Claude Code in your browser: \x1b[36mhttps://claude.ai/code\x1b[0m');
-      xtermRef.current?.writeln('  2. Drag and drop your images directly into the chat');
-      xtermRef.current?.writeln('  3. Add your command: \x1b[32m' + command.substring(0, 50) + (command.length > 50 ? '...' : '') + '\x1b[0m');
-      xtermRef.current?.writeln('');
-      xtermRef.current?.writeln('Your command (without images) has been copied to clipboard.');
-      xtermRef.current?.writeln('You can paste it in Claude Code after uploading the images.');
-      xtermRef.current?.writeln('\r\n\x1b[33m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\x1b[0m\r\n');
-      
-      // Copy the command to clipboard for easy pasting in Claude Code
-      try {
-        await navigator.clipboard.writeText(command);
-        console.log('✅ Command copied to clipboard');
-      } catch (err) {
-        console.error('Failed to copy command to clipboard:', err);
+      console.log(`🖼️ Processing ${images.length} image(s) with dual-mode handler`);
+
+      // Separate images by processing mode
+      const ocrImages = images.filter(i => i.mode === 'ocr' || !i.mode); // Default to OCR
+      const visionImages = images.filter(i => i.mode === 'vision');
+
+      let enrichedCommand = command;
+
+      // Process OCR images - extract text and append to command
+      if (ocrImages.length > 0) {
+        xtermRef.current?.writeln('\r\n\x1b[36m🔤 Extracting text from ' + ocrImages.length + ' image(s)...\x1b[0m');
+
+        for (let i = 0; i < ocrImages.length; i++) {
+          const img = ocrImages[i];
+          try {
+            if (img.extractedText) {
+              // Use cached OCR result
+              enrichedCommand += `\n\n[Text extracted from image ${i + 1}]:\n${img.extractedText}`;
+            } else {
+              // Perform OCR via API
+              xtermRef.current?.writeln(`  📄 Processing image ${i + 1}/${ocrImages.length}...`);
+              const res = await fetch('/api/ocr/extract', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ base64: img.base64, mimeType: img.mimeType })
+              });
+              const result = await res.json();
+              if (result.success && result.text) {
+                enrichedCommand += `\n\n[Text extracted from image ${i + 1} (${Math.round(result.confidence)}% confidence)]:\n${result.text}`;
+                xtermRef.current?.writeln(`  ✅ Extracted ${result.text.length} characters`);
+              } else {
+                xtermRef.current?.writeln(`  ⚠️ Could not extract text from image ${i + 1}`);
+              }
+            }
+          } catch (err) {
+            console.error('OCR extraction failed:', err);
+            xtermRef.current?.writeln(`  ❌ OCR failed for image ${i + 1}`);
+          }
+        }
       }
-      
-      // Close composer and reset state
-      setIsProcessingCommand(false);
-      setComposerVisible(false);
-      setStagedCommand('');
-      
-      // Focus terminal
-      if (xtermRef.current) {
-        xtermRef.current.focus();
+
+      // Process Vision images - send to Anthropic API
+      if (visionImages.length > 0) {
+        xtermRef.current?.writeln('\r\n\x1b[35m👁️ Analyzing ' + visionImages.length + ' image(s) with Claude Vision API...\x1b[0m');
+
+        try {
+          const response = await fetch('/api/claude/chat-with-images', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              message: enrichedCommand,
+              images: visionImages.map(i => ({ base64: i.base64, mimeType: i.mimeType }))
+            })
+          });
+
+          const result = await response.json();
+
+          if (result.content || result.response) {
+            const visionResponse = result.content || result.response;
+            xtermRef.current?.writeln('\r\n\x1b[36m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\x1b[0m');
+            xtermRef.current?.writeln('\x1b[35m👁️ Claude Vision Analysis\x1b[0m');
+            xtermRef.current?.writeln('\x1b[36m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\x1b[0m\r\n');
+            // Write response line by line
+            visionResponse.split('\n').forEach((line: string) => {
+              xtermRef.current?.writeln(line);
+            });
+            xtermRef.current?.writeln('\r\n\x1b[36m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\x1b[0m\r\n');
+          } else if (result.error) {
+            xtermRef.current?.writeln(`\r\n\x1b[31m❌ Vision API Error: ${result.error}\x1b[0m\r\n`);
+          }
+
+          // Close composer and reset state after vision processing
+          setIsProcessingCommand(false);
+          setComposerVisible(false);
+          setStagedCommand('');
+          if (xtermRef.current) xtermRef.current.focus();
+          return;
+
+        } catch (err) {
+          console.error('Vision API failed:', err);
+          xtermRef.current?.writeln(`\r\n\x1b[31m❌ Vision API failed: ${err instanceof Error ? err.message : 'Unknown error'}\x1b[0m\r\n`);
+        }
       }
-      
-      return; // Don't send command to terminal
+
+      // If only OCR (no vision), continue with enriched command to CLI
+      if (visionImages.length === 0 && ocrImages.length > 0) {
+        command = enrichedCommand;
+        xtermRef.current?.writeln('\r\n\x1b[32m✅ Text extracted, sending to Claude...\x1b[0m\r\n');
+      }
     }
 
     // If in planning mode, add to planned commands instead of executing

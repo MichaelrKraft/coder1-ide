@@ -18,7 +18,7 @@ declare global {
 interface StagedComposerProps {
   isVisible: boolean;
   onClose: () => void;
-  onSend: (command: string, images?: Array<{ base64: string; mimeType: string }>) => void;
+  onSend: (command: string, images?: Array<{ base64: string; mimeType: string; mode: 'ocr' | 'vision'; extractedText?: string }>) => void;
   currentCommand?: string;
   sessionId: string;
   isProcessing?: boolean;
@@ -37,7 +37,7 @@ export default function StagedComposer({
   onPlanningModeToggle
 }: StagedComposerProps) {
   const [command, setCommand] = useState(currentCommand);
-  const [images, setImages] = useState<Array<{ base64: string; mimeType: string; preview: string }>>([]);
+  const [images, setImages] = useState<Array<{ base64: string; mimeType: string; preview: string; mode: 'ocr' | 'vision'; extractedText?: string }>>([]);
   const [dragActive, setDragActive] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [tokenEstimate, setTokenEstimate] = useState(0);
@@ -915,7 +915,7 @@ export default function StagedComposer({
         console.error('Failed to save command to history:', error);
       }
 
-      onSend(command, images.map(({ base64, mimeType }) => ({ base64, mimeType })));
+      onSend(command, images.map(({ base64, mimeType, mode, extractedText }) => ({ base64, mimeType, mode, extractedText })));
       setCommand('');
       setImages([]);
       setShowHistory(false);
@@ -1149,8 +1149,8 @@ export default function StagedComposer({
           // Add image to preview first
           const base64 = await fileToBase64(file);
           const preview = URL.createObjectURL(file);
-          setImages(prev => [...prev, { base64, mimeType: file.type, preview }]);
-          console.log('✅ Image added to preview');
+          setImages(prev => [...prev, { base64, mimeType: file.type, preview, mode: 'ocr' }]);
+          console.log('✅ Image added to preview (default: OCR mode)');
           
           // Process with OCR
           console.log(`🔍 Starting OCR for ${file.name}...`);
@@ -1302,10 +1302,11 @@ export default function StagedComposer({
         if (file) {
           const base64 = await fileToBase64(file);
           const preview = URL.createObjectURL(file);
-          setImages(prev => [...prev, { 
-            base64, 
+          setImages(prev => [...prev, {
+            base64,
             mimeType: file.type,
-            preview 
+            preview,
+            mode: 'ocr'
           }]);
         }
       }
@@ -1555,6 +1556,12 @@ export default function StagedComposer({
     setImages(prev => prev.filter((_, i) => i !== index));
   };
 
+  const setImageMode = (index: number, mode: 'ocr' | 'vision') => {
+    setImages(prev => prev.map((img, i) =>
+      i === index ? { ...img, mode } : img
+    ));
+  };
+
   if (!isVisible) return null;
 
   return (
@@ -1567,14 +1574,15 @@ export default function StagedComposer({
 
       {/* Composer overlay */}
       <div
-        className={`fixed bg-bg-secondary border border-border-primary rounded-lg shadow-2xl z-[999999] transition-all duration-200 flex flex-col ${
+        className={`fixed bg-bg-secondary border border-border-primary rounded-lg shadow-2xl z-[999999] transition-all duration-200 flex flex-col overflow-hidden ${
           dragActive ? 'ring-2 ring-cyan-500 border-cyan-500' : ''
         } ${isDragging ? 'ring-2 ring-cyan-400' : ''}`}
         style={{
           minWidth: '720px',
           maxWidth: '1152px',
           width: '720px',
-          height: '264px',
+          minHeight: '264px',
+          maxHeight: '80vh',
           left: `${position.x}px`,
           top: `${position.y}px`,
           transform: 'none',
@@ -1767,22 +1775,49 @@ export default function StagedComposer({
             </div>
           )}
 
-          {/* Image previews */}
+          {/* Image previews with mode toggle */}
           {images.length > 0 && (
-            <div className="mt-3 flex gap-2 flex-wrap">
+            <div className="mt-3 flex gap-3 flex-wrap">
               {images.map((img, index) => (
-                <div key={index} className="relative group">
-                  <img
-                    src={img.preview}
-                    alt={`Upload ${index + 1}`}
-                    className="w-20 h-20 object-cover rounded border border-border-primary"
-                  />
-                  <button
-                    onClick={() => removeImage(index)}
-                    className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
-                  >
-                    <X className="w-3 h-3" />
-                  </button>
+                <div key={index} className="relative group flex flex-col items-center">
+                  <div className="relative">
+                    <img
+                      src={img.preview}
+                      alt={`Upload ${index + 1}`}
+                      className="w-20 h-20 object-cover rounded border border-border-primary"
+                    />
+                    <button
+                      onClick={() => removeImage(index)}
+                      className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                  {/* Mode toggle buttons */}
+                  <div className="flex gap-1 mt-1">
+                    <button
+                      onClick={() => setImageMode(index, 'ocr')}
+                      className={`px-2 py-0.5 text-xs rounded transition-colors ${
+                        img.mode === 'ocr'
+                          ? 'bg-green-600 text-white'
+                          : 'bg-gray-600 text-gray-300 hover:bg-gray-500'
+                      }`}
+                      title="Extract text from image (free, local OCR)"
+                    >
+                      🔤 OCR
+                    </button>
+                    <button
+                      onClick={() => setImageMode(index, 'vision')}
+                      className={`px-2 py-0.5 text-xs rounded transition-colors ${
+                        img.mode === 'vision'
+                          ? 'bg-cyan-600 text-white'
+                          : 'bg-gray-600 text-gray-300 hover:bg-gray-500'
+                      }`}
+                      title="Full image analysis via Claude Vision API (~$0.02)"
+                    >
+                      👁️ Vision
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -1790,7 +1825,7 @@ export default function StagedComposer({
         </div>
 
         {/* Footer with actions */}
-        <div className="flex items-center justify-between px-4 py-3 border-t border-border-primary bg-bg-primary/30 rounded-b-lg">
+        <div className="relative flex items-center justify-between px-4 py-3 border-t border-border-primary bg-bg-primary/30 rounded-b-lg">
           <div className="flex items-center gap-3 text-xs text-text-muted">
             {/* Voice input button - moved to left of history dropdown */}
             <button
