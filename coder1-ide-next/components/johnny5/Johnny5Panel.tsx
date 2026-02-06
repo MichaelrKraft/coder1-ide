@@ -1,7 +1,7 @@
 'use client';
 
-import React from 'react';
-import { Settings, Zap, AlertTriangle, X } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Settings, Zap, AlertTriangle, X, FileText, Terminal, ListChecks, UserCog } from 'lucide-react';
 import Johnny5TabBar from './Johnny5TabBar';
 import { ChatTab } from './chat';
 import { MissionControlTab } from './mission-control';
@@ -12,7 +12,25 @@ import { ContextTab } from './context';
 import { ReasoningTab } from './reasoning';
 import { MorningBriefTab } from './morning-brief';
 import { SettingsPanel, SetupWizard } from './settings';
+import ContextBudgetMini from './ContextBudgetMini';
+import PromptTemplates from './PromptTemplates';
+import CommandTranslator from './CommandTranslator';
+import RuleSuggestion from './RuleSuggestion';
+import SessionMemoryPanel from './SessionMemoryPanel';
+import HandoffBanner from './HandoffBanner';
+import WorkflowBuilder from './WorkflowBuilder';
+import AgentPersonas from './AgentPersonas';
+import ErrorPatternCard from './ErrorPatternCard';
+import CoachTip from './CoachTip';
 import { useJohnny5Store } from '@/stores/useJohnny5Store';
+import { useIDEStore } from '@/stores/useIDEStore';
+import { getPatternDetector } from '@/services/johnny5/pattern-detector';
+import { getRuleSuggester } from '@/services/johnny5/rule-suggester';
+import { getModelAdvisor } from '@/services/johnny5/model-advisor';
+import { getSessionMemory } from '@/services/johnny5/session-memory';
+import { getHandoffGenerator } from '@/services/johnny5/handoff-generator';
+import { getErrorPatternLibrary } from '@/services/johnny5/error-pattern-library';
+import { getSessionCoach } from '@/services/johnny5/session-coach';
 
 interface Johnny5PanelProps {
   className?: string;
@@ -38,8 +56,17 @@ interface Johnny5PanelProps {
  * - ?resetJohnny5=true - Reset Johnny5 state and show wizard
  */
 export default function Johnny5Panel({ className }: Johnny5PanelProps) {
-  const [showSettings, setShowSettings] = React.useState(false);
-  const [showSetupWizard, setShowSetupWizard] = React.useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [showSetupWizard, setShowSetupWizard] = useState(false);
+  const [showTemplates, setShowTemplates] = useState(false);
+  const [showCommands, setShowCommands] = useState(false);
+  const [showWorkflows, setShowWorkflows] = useState(false);
+  const [showPersonas, setShowPersonas] = useState(false);
+  const [showRuleSuggestion, setShowRuleSuggestion] = useState(true);
+  const [showMemoryPanel, setShowMemoryPanel] = useState(true);
+  const [showHandoffBanner, setShowHandoffBanner] = useState(true);
+  const [showErrorPattern, setShowErrorPattern] = useState(true);
+  const [showCoachTip, setShowCoachTip] = useState(true);
   const {
     activeTab,
     setActiveTab,
@@ -48,6 +75,43 @@ export default function Johnny5Panel({ className }: Johnny5PanelProps) {
     setupStatus,
     setSetupStatus,
   } = useJohnny5Store();
+
+  const activeFile = useIDEStore((s) => s.editor.activeFile);
+
+  // Listen for johnny5:openTemplates events from MorningBriefTab, SessionCoach, etc.
+  useEffect(() => {
+    const templatesHandler = () => setShowTemplates(true);
+    const workflowsHandler = () => setShowWorkflows(true);
+    window.addEventListener('johnny5:openTemplates', templatesHandler);
+    window.addEventListener('johnny5:openWorkflows', workflowsHandler);
+    return () => {
+      window.removeEventListener('johnny5:openTemplates', templatesHandler);
+      window.removeEventListener('johnny5:openWorkflows', workflowsHandler);
+    };
+  }, []);
+
+  // Start intelligence services on mount (Phase 2 + 3 + 4)
+  const servicesStarted = useRef(false);
+  useEffect(() => {
+    if (servicesStarted.current || typeof window === 'undefined') return;
+    servicesStarted.current = true;
+    getPatternDetector().start();
+    getRuleSuggester().start();
+    getModelAdvisor().start();
+    getSessionMemory().start();
+    getHandoffGenerator().start();
+    getErrorPatternLibrary().start();
+    getSessionCoach().start();
+    return () => {
+      getPatternDetector().stop();
+      getRuleSuggester().stop();
+      getModelAdvisor().stop();
+      getSessionMemory().stop();
+      getHandoffGenerator().stop();
+      getErrorPatternLibrary().stop();
+      getSessionCoach().stop();
+    };
+  }, []);
 
   // Check URL parameters for force-show wizard (client-side only, runs once on mount)
   const hasCheckedUrlParams = React.useRef(false);
@@ -204,6 +268,42 @@ export default function Johnny5Panel({ className }: Johnny5PanelProps) {
             <span>{security.score}</span>
           </div>
 
+          {/* Agent Personas Button */}
+          <button
+            className="p-1.5 rounded-md text-text-muted hover:text-coder1-cyan hover:bg-bg-tertiary transition-all"
+            title="Agent Personas"
+            onClick={() => setShowPersonas(true)}
+          >
+            <UserCog className="w-4 h-4" />
+          </button>
+
+          {/* Workflow Orchestrator Button */}
+          <button
+            className="p-1.5 rounded-md text-text-muted hover:text-coder1-cyan hover:bg-bg-tertiary transition-all"
+            title="Workflow Orchestrator"
+            onClick={() => setShowWorkflows(true)}
+          >
+            <ListChecks className="w-4 h-4" />
+          </button>
+
+          {/* Command Translator Button */}
+          <button
+            className="p-1.5 rounded-md text-text-muted hover:text-coder1-cyan hover:bg-bg-tertiary transition-all"
+            title="Command Translator"
+            onClick={() => setShowCommands(true)}
+          >
+            <Terminal className="w-4 h-4" />
+          </button>
+
+          {/* Prompt Templates Button */}
+          <button
+            className="p-1.5 rounded-md text-text-muted hover:text-coder1-cyan hover:bg-bg-tertiary transition-all"
+            title="Prompt Templates"
+            onClick={() => setShowTemplates(true)}
+          >
+            <FileText className="w-4 h-4" />
+          </button>
+
           {/* Settings Button */}
           <button
             className="p-1.5 rounded-md text-text-muted hover:text-text-primary hover:bg-bg-tertiary transition-all"
@@ -214,6 +314,9 @@ export default function Johnny5Panel({ className }: Johnny5PanelProps) {
           </button>
         </div>
       </div>
+
+      {/* Context Budget Mini Strip */}
+      <ContextBudgetMini onClick={() => setActiveTab('context')} />
 
       {/* Tab Bar */}
       <Johnny5TabBar
@@ -227,6 +330,36 @@ export default function Johnny5Panel({ className }: Johnny5PanelProps) {
         }}
         securityScore={security.score}
         hasAlerts={hasSecurityAlerts}
+      />
+
+      {/* Rule Suggestion Banner (Phase 2) */}
+      <RuleSuggestion
+        isVisible={showRuleSuggestion}
+        onDismiss={() => setShowRuleSuggestion(false)}
+      />
+
+      {/* Context Carry-Forward Banner (Phase 3) */}
+      <HandoffBanner
+        isVisible={showHandoffBanner}
+        onDismiss={() => setShowHandoffBanner(false)}
+      />
+
+      {/* Cross-Session Memory Panel (Phase 3) */}
+      <SessionMemoryPanel
+        isVisible={showMemoryPanel}
+        onDismiss={() => setShowMemoryPanel(false)}
+      />
+
+      {/* Error Pattern Card (Phase 4) */}
+      <ErrorPatternCard
+        isVisible={showErrorPattern}
+        onDismiss={() => setShowErrorPattern(false)}
+      />
+
+      {/* Session Coach Tip (Phase 4) */}
+      <CoachTip
+        isVisible={showCoachTip}
+        onDismiss={() => setShowCoachTip(false)}
       />
 
       {/* Tab Content */}
@@ -285,6 +418,31 @@ export default function Johnny5Panel({ className }: Johnny5PanelProps) {
           </div>
         </div>
       )}
+
+      {/* Prompt Templates Overlay */}
+      <PromptTemplates
+        isOpen={showTemplates}
+        onClose={() => setShowTemplates(false)}
+        activeFile={activeFile || undefined}
+      />
+
+      {/* Command Translator Overlay (Phase 2) */}
+      <CommandTranslator
+        isOpen={showCommands}
+        onClose={() => setShowCommands(false)}
+      />
+
+      {/* Workflow Builder Overlay (Phase 3) */}
+      <WorkflowBuilder
+        isOpen={showWorkflows}
+        onClose={() => setShowWorkflows(false)}
+      />
+
+      {/* Agent Personas Overlay (Phase 4b) */}
+      <AgentPersonas
+        isOpen={showPersonas}
+        onClose={() => setShowPersonas(false)}
+      />
     </div>
   );
 }
