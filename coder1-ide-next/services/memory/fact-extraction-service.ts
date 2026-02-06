@@ -177,6 +177,106 @@ function parseExtractionResponse(text: string): ExtractedFact[] {
 }
 
 /**
+ * Regex-based fact extraction fallback.
+ * Used when Gemini API is unavailable (no GEMINI_API_KEY).
+ * Catches obvious personal statements from USER messages.
+ */
+function extractFactsWithRegex(
+  messages: ConversationMessage[],
+  existingFacts: ExistingFact[] = []
+): ExtractedFact[] {
+  const existingKeys = new Set(existingFacts.map(f => f.fact_key));
+  const facts: ExtractedFact[] = [];
+  const seen = new Set<string>();
+
+  // Only analyze user messages
+  const userMessages = messages.filter(m => m.role === 'user');
+
+  // Patterns: [regex, factType, factKey, valueGroupIndex]
+  const patterns: Array<{
+    regex: RegExp;
+    type: ExtractedFact['type'];
+    key: string;
+    confidence: number;
+  }> = [
+    // Name patterns
+    { regex: /\bmy name is ([A-Z][a-z]+(?:\s[A-Z][a-z]+)?)/i, type: 'personal', key: 'user_name', confidence: 0.95 },
+    { regex: /\bcall me ([A-Z][a-z]+)/i, type: 'personal', key: 'user_name', confidence: 0.9 },
+    { regex: /\bi'm ([A-Z][a-z]+),?\s/i, type: 'personal', key: 'user_name', confidence: 0.7 },
+
+    // Favorite color
+    { regex: /\bmy favou?rite colou?r is ([a-z][a-z\s]{1,20})/i, type: 'preference', key: 'favorite_color', confidence: 0.95 },
+    { regex: /\bfavou?rite colou?r(?:\s+is|\:)\s*([a-z][a-z\s]{1,20})/i, type: 'preference', key: 'favorite_color', confidence: 0.9 },
+
+    // General favorites
+    { regex: /\bmy favou?rite (\w+) is ([^\.,!?]+)/i, type: 'preference', key: '_dynamic_favorite', confidence: 0.9 },
+
+    // Role / occupation
+    { regex: /\bi(?:'m| am) an? ([a-z][a-z\s]{2,30}(?:developer|engineer|designer|founder|entrepreneur|manager|analyst|scientist|architect|consultant|writer|artist))/i, type: 'personal', key: 'user_role', confidence: 0.85 },
+    { regex: /\bi work as an? ([a-z][a-z\s]{2,30})/i, type: 'personal', key: 'user_role', confidence: 0.85 },
+
+    // Location
+    { regex: /\bi(?:'m| am) from ([A-Z][a-z]+(?:\s[A-Z][a-z]+){0,2})/i, type: 'personal', key: 'user_location', confidence: 0.85 },
+    { regex: /\bi live in ([A-Z][a-z]+(?:\s[A-Z][a-z]+){0,2})/i, type: 'personal', key: 'user_location', confidence: 0.85 },
+
+    // Goals
+    { regex: /\bmy goal is (?:to )?([^\.,!?]{5,60})/i, type: 'goal', key: 'user_goal', confidence: 0.85 },
+    { regex: /\bi(?:'m| am) trying to ([^\.,!?]{5,60})/i, type: 'goal', key: 'user_goal', confidence: 0.75 },
+
+    // Projects / Work
+    { regex: /\bi(?:'m| am) (?:working on|building) ([^\.,!?]{3,50})/i, type: 'project', key: 'current_project', confidence: 0.8 },
+    { regex: /\bmy (?:company|startup|business) is (?:called )?([^\.,!?]{2,40})/i, type: 'project', key: 'user_company', confidence: 0.85 },
+
+    // Preferences
+    { regex: /\bi (?:really )?(?:like|love|prefer) ([^\.,!?]{3,40})/i, type: 'preference', key: 'user_likes', confidence: 0.75 },
+
+    // Technical
+    { regex: /\bi (?:mainly )?(?:use|code in|program in|work with) ([^\.,!?]{2,40})/i, type: 'technical', key: 'tech_stack', confidence: 0.8 },
+  ];
+
+  for (const msg of userMessages) {
+    for (const pattern of patterns) {
+      const match = msg.content.match(pattern.regex);
+      if (!match) continue;
+
+      let key = pattern.key;
+      let value: string;
+
+      // Handle dynamic favorite pattern (e.g., "my favorite food is pizza")
+      if (key === '_dynamic_favorite') {
+        key = `favorite_${match[1].toLowerCase().trim()}`;
+        value = match[2].trim();
+      } else {
+        value = match[1].trim();
+      }
+
+      // Clean up value (remove trailing punctuation, whitespace)
+      value = value.replace(/[\s.!?,;:]+$/, '').trim();
+
+      // Skip if empty, too short, or already known
+      if (!value || value.length < 2) continue;
+      if (existingKeys.has(key)) continue;
+      if (seen.has(key)) continue;
+
+      seen.add(key);
+      facts.push({
+        type: pattern.type,
+        key,
+        value,
+        confidence: pattern.confidence,
+      });
+    }
+  }
+
+  if (facts.length > 0) {
+    console.log(`[FactExtraction] Regex fallback extracted ${facts.length} facts:`,
+      facts.map(f => `${f.key}=${f.value}`).join(', '));
+  }
+
+  return facts;
+}
+
+/**
  * Extract facts from a conversation using Gemini AI
  *
  * @param messages - The conversation messages to analyze
@@ -194,16 +294,17 @@ export async function extractFactsFromConversation(
 
   const genAI = getGeminiClient();
   if (!genAI) {
-    console.warn('[FactExtraction] Gemini client not available (check GEMINI_API_KEY)');
+    console.warn('[FactExtraction] Gemini client not available, using regex fallback');
+    const regexFacts = extractFactsWithRegex(messages, existingFacts);
     console.log('[FactExtraction] === Extraction Summary ===', {
       inputMessages: messages.length,
       userMessages: messages.filter(m => m.role === 'user').length,
       existingFactsChecked: existingFacts.length,
-      newFactsExtracted: 0,
+      newFactsExtracted: regexFacts.length,
       geminiAvailable: false,
-      status: 'disabled',
+      status: 'regex_fallback',
     });
-    return [];
+    return regexFacts;
   }
 
   // Skip if conversation is too short
