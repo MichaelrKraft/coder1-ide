@@ -647,6 +647,34 @@ These are minimal-code changes with high impact:
 └──────────┴────────────────────────┴─────────────────────────┘
 ```
 
+### Terminal Activity Collector Review
+
+**Date**: 2026-02-06
+
+**New file**: `services/johnny5/terminal-activity-collector.ts`
+
+A client-side singleton service (~330 lines) that:
+- Listens to existing `terminalOutput` CustomEvents from Terminal.tsx (no changes to Terminal.tsx)
+- Debounces incoming output (200ms), strips ANSI codes, splits into lines
+- Classifies each line against 22 regex rules (first match wins) into 18+ event types:
+  - Claude activity: `claude_active`, `claude_thinking`
+  - Git: `git_commit` (extracts message), `git_push`, `git_branch`, `git_pr`
+  - Tests: `test_run`, `test_pass` (extracts count), `test_fail` (extracts count)
+  - Builds: `build_start`, `build_success`, `build_fail`
+  - Files: `file_create`, `file_modify`, `file_delete` (all extract path)
+  - Packages: `install_packages`
+  - Destructive: `destructive_action` (extracts severity: critical/warning)
+  - Errors: `error_encountered`
+  - User input: `user_prompt` (extracts command text)
+- Stores events in a ring buffer (max 1000 in memory)
+- Batch-flushes to localStorage every 5 seconds (max 5000 per day per key)
+- Provides event subscription system: per-type and wildcard (`*`)
+- Exports `getActivityCollector()` singleton accessor and `TerminalActivityCollector` class
+
+**TypeScript check**: Zero errors in the new file (pre-existing `@types/three` errors are unrelated)
+**Node.js imports**: None (verified with grep)
+**Files touched**: 1 new, 0 modified
+
 ### Remaining Work (Deferred)
 
 1. **Task 1.5**: Document env vars formally (startup log already covers runtime check)

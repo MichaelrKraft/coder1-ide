@@ -3476,6 +3476,23 @@ app.prepare().then(() => {
                     timestamp: new Date().toISOString(),
                   });
                 }
+                // Wire high-priority trends to Opportunity Engine
+                if (highPriorityAlerts.length > 0) {
+                  try {
+                    const { opportunityEngine } = require('./services/johnny5/opportunity-engine.ts');
+                    for (const alert of highPriorityAlerts) {
+                      await opportunityEngine.ingest({
+                        source: 'trend',
+                        type: 'high_relevance_trend',
+                        data: { title: alert.title, description: alert.description, url: alert.url, source: alert.source },
+                        timestamp: new Date(),
+                      });
+                    }
+                  } catch (oeError) {
+                    console.error('[Johnny5 Cron] Opportunity engine ingest failed:', oeError.message);
+                  }
+                }
+
                 console.log(`[Johnny5 Cron] Trend check complete: ${alerts.length} alerts (${highPriorityAlerts.length} high priority)`);
               } catch (error) {
                 console.error('[Johnny5 Cron] Trend check failed:', error.message);
@@ -3517,6 +3534,51 @@ app.prepare().then(() => {
 
     } catch (error) {
       console.warn('⚠️ Johnny5 Cron Service not available:', error.message);
+    }
+
+    // ========================================================================
+    // Initialize Johnny5 Proactive Services
+    // ========================================================================
+    try {
+      const { getJohnny5Config } = require('./lib/johnny5-config.ts');
+      const config = getJohnny5Config();
+
+      // Config validation
+      const warnings = [];
+      if (config.integrations.telegram?.enabled && !config.integrations.telegram?.botToken) {
+        warnings.push('Telegram enabled but botToken missing');
+      }
+      if (config.integrations.telegram?.enabled && !config.integrations.telegram?.chatId) {
+        warnings.push('Telegram enabled but chatId missing');
+      }
+      if (!['low', 'medium', 'high'].includes(config.proactivityLevel)) {
+        warnings.push(`Invalid proactivityLevel: ${config.proactivityLevel}`);
+      }
+      warnings.forEach(w => console.warn(`⚠️ [Johnny5 Config] ${w}`));
+
+      // Start Opportunity Engine (give it access to Socket.IO)
+      const { opportunityEngine } = require('./services/johnny5/opportunity-engine.ts');
+      opportunityEngine.setIO(io);
+      console.log('✅ Johnny5 Opportunity Engine initialized');
+
+      // Start Telegram Bot (if configured)
+      if (config.integrations.telegram?.enabled) {
+        const { telegramBot } = require('./services/johnny5/telegram-bot.ts');
+        telegramBot.start().then(connected => {
+          if (connected) {
+            console.log('✅ Johnny5 Telegram Bot connected');
+          } else {
+            console.warn('⚠️ Johnny5 Telegram Bot failed to connect');
+          }
+        }).catch(error => {
+          console.error('❌ Johnny5 Telegram Bot error:', error.message);
+        });
+      }
+
+      console.log(`   Proactivity level: ${config.proactivityLevel}`);
+      console.log(`   Telegram: ${config.integrations.telegram?.enabled ? 'enabled' : 'disabled'}`);
+    } catch (error) {
+      console.warn('⚠️ Johnny5 Proactive Services not available:', error.message);
     }
 
     // Initialize Memory Exporter for Claude Skills
