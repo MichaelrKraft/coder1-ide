@@ -1734,7 +1734,6 @@ export default function AlphaLandingPage() {
           </ScrollReveal>
 
           <div className="grid md:grid-cols-3 gap-6">
-            <ScrollReveal delay={0}>
               <PricingCard
                 tier="Free Forever"
                 price="$0"
@@ -1752,9 +1751,7 @@ export default function AlphaLandingPage() {
                 subtext="No credit card required"
                 onClick={() => document.getElementById('alpha')?.scrollIntoView({ behavior: 'smooth' })}
               />
-            </ScrollReveal>
 
-            <ScrollReveal delay={100}>
               <PricingCard
                 tier="Pro"
                 price="$29"
@@ -1775,9 +1772,7 @@ export default function AlphaLandingPage() {
                 onClick={handleProCheckout}
                 loading={checkoutLoading}
               />
-            </ScrollReveal>
 
-            <ScrollReveal delay={200}>
               <PricingCard
                 tier="Team"
                 price="Custom"
@@ -1793,7 +1788,6 @@ export default function AlphaLandingPage() {
                 cta="Contact Sales"
                 onClick={() => window.location.href = 'mailto:alpha@coder1.ai?subject=Coder1 Team Plan Inquiry'}
               />
-            </ScrollReveal>
           </div>
         </div>
       </section>
@@ -1813,82 +1807,60 @@ export default function AlphaLandingPage() {
           </ScrollReveal>
 
           <div className="space-y-3">
-            <ScrollReveal delay={50}>
               <FAQItem
                 question="What makes Coder1 different from Cursor or GitHub Copilot?"
                 answer="Coder1 is purpose-built for Claude Code users. Unlike Cursor or Copilot which focus on code completion, Coder1 provides a complete IDE experience with Johnny5 - an autonomous agent that works overnight, creates PRs, and briefs you every morning. Plus, you get full audit trails, session replay, and security transparency that other tools don't offer."
               />
-            </ScrollReveal>
 
-            <ScrollReveal delay={100}>
               <FAQItem
                 question="What exactly is Johnny5?"
                 answer="Johnny5 is your AI employee built into Coder1. It works autonomously while you sleep - monitoring GitHub issues, Slack conversations, and trend feeds to identify work. It then builds features, creates pull requests, and prepares a morning briefing so you wake up to completed work instead of a todo list."
               />
-            </ScrollReveal>
 
-            <ScrollReveal delay={150}>
               <FAQItem
                 question="Do I need to install anything locally?"
                 answer="Coder1 IDE runs in your browser, but to connect it to your local codebase, you'll install our lightweight bridge CLI. This creates a secure tunnel between the web IDE and your machine, letting you run terminal commands, access files, and execute Claude Code locally while using the full IDE interface."
               />
-            </ScrollReveal>
 
-            <ScrollReveal delay={200}>
               <FAQItem
                 question="Is my code secure? Where is it stored?"
                 answer="Your code never leaves your machine unless you explicitly push to GitHub. The bridge CLI runs locally and only transmits terminal output and file contents to your browser session. We don't store your code on our servers. All AI processing happens through your own API keys, and you can see every action in the full audit trail."
               />
-            </ScrollReveal>
 
-            <ScrollReveal delay={250}>
               <FAQItem
                 question="What is Contextual Memory and how does it work?"
                 answer="Contextual Memory eliminates the frustration of re-explaining your project to Claude. It automatically captures important decisions, breakthroughs, and architecture patterns from your sessions. When you start a new session, this context is available so Claude understands your codebase, preferences, and past decisions without you having to repeat yourself."
               />
-            </ScrollReveal>
 
-            <ScrollReveal delay={300}>
               <FAQItem
                 question="Can I use my own Anthropic API key?"
                 answer="Yes! Coder1 works with your own API keys. This means you control costs, have full visibility into usage, and your conversations stay private. We never see your API traffic - it goes directly from your browser to Anthropic's servers."
               />
-            </ScrollReveal>
 
-            <ScrollReveal delay={350}>
               <FAQItem
                 question="What's included in the free plan?"
-                answer="The free plan includes the full IDE experience: Monaco editor, integrated terminal, live preview, session management, and basic Johnny5 functionality (5 tasks per day). You can use it indefinitely - we believe in letting you experience the product before committing."
+                answer="The free plan includes the full IDE experience: Monaco editor, integrated terminal, live preview, session management, and 50 Johnny5 messages per month. You can use it indefinitely - we believe in letting you experience the product before committing."
               />
-            </ScrollReveal>
 
-            <ScrollReveal delay={400}>
               <FAQItem
                 question="How is Johnny5 different from just running Claude Code?"
                 answer="Claude Code is reactive - you give it a task and it executes. Johnny5 is proactive. It monitors your project's ecosystem (GitHub, Slack, news feeds), identifies opportunities and issues, prioritizes them, and takes action autonomously. It's the difference between having an assistant who waits for instructions versus an employee who anticipates needs."
               />
-            </ScrollReveal>
 
-            <ScrollReveal delay={450}>
               <FAQItem
                 question="What if Johnny5 makes a mistake while I'm asleep?"
                 answer="Johnny5 never pushes directly to your main branch. All work is done in feature branches with pull requests for your review. You have full session replay to see exactly what it did and why. Plus, our prompt injection detection and permission boundaries prevent it from taking destructive actions."
               />
-            </ScrollReveal>
 
-            <ScrollReveal delay={500}>
               <FAQItem
                 question="Can I use Coder1 with my existing VS Code setup?"
                 answer="Coder1 is a standalone IDE, not a VS Code extension. However, it's designed to complement your existing workflow. Many users keep VS Code for certain tasks while using Coder1 for Claude Code sessions where the integrated terminal, session management, and Johnny5 features shine."
               />
-            </ScrollReveal>
 
-            <ScrollReveal delay={550}>
               <FAQItem
                 question="How do I get started with the alpha?"
                 answer="Sign up below with your email. We're onboarding alpha users in batches to ensure quality support. Once accepted, you'll get access to the full IDE, documentation, and our Discord community where the team is actively helping users and gathering feedback."
               />
-            </ScrollReveal>
           </div>
         </div>
       </section>
@@ -1942,6 +1914,9 @@ export default function AlphaLandingPage() {
             <form onSubmit={handleSubmit} className="space-y-4 mb-8">
               <input
                 type="email"
+                name="email"
+                id="alpha-email"
+                aria-label="Email address"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Your email address"
@@ -1950,6 +1925,9 @@ export default function AlphaLandingPage() {
               />
               <input
                 type="text"
+                name="github"
+                id="alpha-github"
+                aria-label="GitHub username"
                 value={github}
                 onChange={(e) => setGithub(e.target.value)}
                 placeholder="GitHub username (optional)"
@@ -1991,26 +1969,19 @@ export default function AlphaLandingPage() {
               <div className="space-y-3">
                 <a href="#features" className="block text-white/50 hover:text-white transition-colors text-sm">Features</a>
                 <a href="#pricing" className="block text-white/50 hover:text-white transition-colors text-sm">Pricing</a>
-                <a href="#" className="block text-white/50 hover:text-white transition-colors text-sm">Changelog</a>
-                <a href="#" className="block text-white/50 hover:text-white transition-colors text-sm">Roadmap</a>
+                <a href="#johnny5" className="block text-white/50 hover:text-white transition-colors text-sm">Johnny5</a>
               </div>
             </div>
             <div>
               <h4 className="text-coder1-cyan font-semibold mb-4">Resources</h4>
               <div className="space-y-3">
                 <a href="/documentation" className="block text-white/50 hover:text-white transition-colors text-sm">Documentation</a>
-                <a href="#" className="block text-white/50 hover:text-white transition-colors text-sm">Blog</a>
-                <a href="#" className="block text-white/50 hover:text-white transition-colors text-sm">Tutorials</a>
-                <a href="#" className="block text-white/50 hover:text-white transition-colors text-sm">API Reference</a>
               </div>
             </div>
             <div>
               <h4 className="text-coder1-cyan font-semibold mb-4">Company</h4>
               <div className="space-y-3">
-                <a href="#" className="block text-white/50 hover:text-white transition-colors text-sm">About</a>
                 <a href="mailto:alpha@coder1.ai" className="block text-white/50 hover:text-white transition-colors text-sm">Contact</a>
-                <a href="#" className="block text-white/50 hover:text-white transition-colors text-sm">Careers</a>
-                <a href="#" className="block text-white/50 hover:text-white transition-colors text-sm">Press</a>
               </div>
             </div>
             <div>
@@ -2019,6 +1990,8 @@ export default function AlphaLandingPage() {
                 <a
                   href="https://github.com/coder1-ide"
                   target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Coder1 on GitHub"
                   className="w-10 h-10 bg-white/5 rounded-lg flex items-center justify-center hover:bg-white/10 transition-colors"
                 >
                   <Github className="w-5 h-5" />
@@ -2026,6 +1999,8 @@ export default function AlphaLandingPage() {
                 <a
                   href="https://discord.gg/coder1"
                   target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Coder1 Discord community"
                   className="w-10 h-10 bg-white/5 rounded-lg flex items-center justify-center hover:bg-white/10 transition-colors"
                 >
                   <MessageCircle className="w-5 h-5" />
@@ -2033,6 +2008,8 @@ export default function AlphaLandingPage() {
                 <a
                   href="https://twitter.com/coder1ide"
                   target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Coder1 on Twitter"
                   className="w-10 h-10 bg-white/5 rounded-lg flex items-center justify-center hover:bg-white/10 transition-colors"
                 >
                   <Twitter className="w-5 h-5" />

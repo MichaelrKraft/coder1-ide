@@ -50,7 +50,7 @@ export default function AboutPage() {
           <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
             <Twitter className="w-8 h-8 text-red-400 mb-4" />
             <h3 className="text-xl font-semibold text-white mb-2">Follow Us</h3>
-            <p className="text-gray-400">@CoderOneIDE</p>
+            <p className="text-gray-400">@Coder1IDE</p>
           </div>
         </div>
         

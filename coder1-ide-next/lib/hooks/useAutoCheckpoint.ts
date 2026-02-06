@@ -200,6 +200,10 @@ export function useAutoCheckpoint(options: AutoCheckpointOptions = {}) {
         cleanupOldCheckpoints(activeSessionId).catch(err => {
           console.warn('⚠️ Cleanup failed:', err);
         });
+      } else if (result.skipped) {
+        // Skipped checkpoints (e.g. terminal history too small) are not failures
+        console.log(`⏭️ Auto-checkpoint skipped: ${result.reason || 'unknown reason'}`);
+        return;
       } else {
         throw new Error('Checkpoint creation failed');
       }

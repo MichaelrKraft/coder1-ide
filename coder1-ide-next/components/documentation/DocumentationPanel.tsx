@@ -51,18 +51,30 @@ const DocumentationPanel: React.FC = () => {
 
   const companionClient = React.useMemo(() => getCompanionClient(), []);
 
-  // Listen for external open documentation panel events
+  // Listen for external toggle documentation panel events
   useEffect(() => {
-    const handleOpenDocumentationPanel = () => {
-      setIsOpen(true);
+    const handleToggleDocumentationPanel = () => {
+      setIsOpen(prev => !prev);
     };
 
-    window.addEventListener('openDocumentationPanel', handleOpenDocumentationPanel);
-    
+    window.addEventListener('toggleDocumentationPanel', handleToggleDocumentationPanel);
+
     return () => {
-      window.removeEventListener('openDocumentationPanel', handleOpenDocumentationPanel);
+      window.removeEventListener('toggleDocumentationPanel', handleToggleDocumentationPanel);
     };
   }, []);
+
+  // Close panel on Escape key
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isOpen) {
+        setIsOpen(false);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen]);
 
   // Load documentation list on mount
   useEffect(() => {
@@ -224,6 +236,7 @@ const DocumentationPanel: React.FC = () => {
   };
 
   const formatAge = (age: number) => {
+    if (isNaN(age) || age < 0) return 'Unknown';
     const hours = Math.floor(age / (1000 * 60 * 60));
     if (hours < 1) return 'Just added';
     if (hours < 24) return `${hours}h ago`;

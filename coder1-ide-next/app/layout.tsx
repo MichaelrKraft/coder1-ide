@@ -11,6 +11,9 @@ const inter = Inter({ subsets: ['latin'] })
 export const metadata: Metadata = {
   title: 'Coder1 IDE - AI-Powered Development Environment',
   description: 'The IDE built for Claude Code and the new generation of vibe coders',
+  icons: {
+    icon: '/Coder1-Logo-Sharp.svg',
+  },
 }
 
 export default function RootLayout({

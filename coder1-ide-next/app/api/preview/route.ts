@@ -6,9 +6,10 @@ import { previewRequestCache, previewLoopPrevention } from '@/lib/preview-loop-p
 
 export const dynamic = 'force-dynamic';
 
-// Get project root directory
+// Get project root directory - resolve to user workspace (matches file read API)
 const getProjectRoot = () => {
-  return process.cwd();
+  const workspacePath = process.env.USER_WORKSPACE_PATH || 'user-workspaces';
+  return path.join(process.cwd(), workspacePath);
 };
 
 export async function GET(request: NextRequest) {
