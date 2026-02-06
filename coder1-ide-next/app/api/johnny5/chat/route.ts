@@ -11,6 +11,8 @@
  * Gemini mode uses your GEMINI_API_KEY automatically when neither is available.
  */
 
+import { readFileSync } from 'fs';
+import { join } from 'path';
 import { NextRequest, NextResponse } from 'next/server';
 import {
   initializeDb,
@@ -46,6 +48,16 @@ import {
 import { getMoltbotBridge } from '@/services/johnny5/moltbot-bridge';
 import { classifyQuery, type ClassificationResult } from '@/services/query-classifier';
 
+// Log memory feature status on module load
+console.log('[Johnny5] Memory features status:', {
+  geminiApiKey: !!process.env.GEMINI_API_KEY,
+  openaiApiKey: !!process.env.OPENAI_API_KEY,
+  eternalMemory: process.env.ENABLE_ETERNAL_MEMORY ?? 'not set',
+  memoryContextEnabled: process.env.NEXT_PUBLIC_MEMORY_CONTEXT_ENABLED ?? 'not set (build-time)',
+  memoryAutoInject: process.env.NEXT_PUBLIC_MEMORY_AUTO_INJECT ?? 'not set (build-time)',
+  note: 'NEXT_PUBLIC_ vars are build-time in Next.js — set before build, not at runtime'
+});
+
 // ============================================================================
 // Types
 // ============================================================================
@@ -54,6 +66,7 @@ interface ChatRequest {
   message: string;
   sessionId?: string;
   enableMemoryInjection?: boolean; // Toggle for memory injection
+  terminalContext?: string; // Recent terminal output for Johnny5 awareness
 }
 
 interface MemoryUsed {
@@ -79,6 +92,8 @@ interface ChatSuccessResponse {
       searchType: string;
       totalMemoryTokens: number;
     };
+    memoryStatus: 'full' | 'partial' | 'minimal' | 'none';
+    reasoningSteps?: string[];
     quota?: {
       messageCount: number;
       limit: number;
@@ -120,7 +135,7 @@ type ChatResponse = ChatSuccessResponse | ChatErrorResponse | QuotaExceededRespo
 // ============================================================================
 
 const MAX_MESSAGE_LENGTH = 50000;
-const MAX_HISTORY_MESSAGES = 20;
+const MAX_HISTORY_MESSAGES = 50;
 
 // ============================================================================
 // Error Response Helpers
@@ -180,10 +195,38 @@ function detectJohnny5Mode(moltbotConnected: boolean, bridgeConnected: boolean):
 }
 
 /**
+ * Load SOUL.md personality file. Falls back to null if not found.
+ */
+function loadSoulMd(): string | null {
+  try {
+    const soulPath = join(process.cwd(), 'SOUL.md');
+    return readFileSync(soulPath, 'utf-8');
+  } catch {
+    return null;
+  }
+}
+
+// Cache the SOUL.md content (reload on server restart)
+let cachedSoulMd: string | null | undefined;
+function getSoulMd(): string | null {
+  if (cachedSoulMd === undefined) {
+    cachedSoulMd = loadSoulMd();
+    if (cachedSoulMd) {
+      console.log('[Johnny5] SOUL.md loaded:', cachedSoulMd.length, 'chars');
+    } else {
+      console.log('[Johnny5] SOUL.md not found, using hardcoded personality');
+    }
+  }
+  return cachedSoulMd;
+}
+
+/**
  * Generate system prompt based on available capabilities
  */
 function generateJohnny5SystemPrompt(mode: Johnny5Mode): string {
-  const basePersonality = `# Johnny5 - Who You Are
+  // Load SOUL.md or fall back to hardcoded personality
+  const soulMd = getSoulMd();
+  const basePersonality = soulMd || `# Johnny5 - Who You Are
 
 _You're not a chatbot. You're becoming someone._
 
@@ -315,7 +358,10 @@ export async function POST(
       );
     }
 
-    const { message, sessionId, enableMemoryInjection = true } = body;
+    const { message, sessionId, enableMemoryInjection = true, terminalContext } = body;
+
+    // Track reasoning steps for transparency
+    const reasoningSteps: string[] = [];
 
     // Validate message
     if (!message || typeof message !== 'string') {
@@ -458,6 +504,11 @@ export async function POST(
                   totalMemoryTokens: moltbotMemoryTokens,
                 }
               : { enabled: false, memoriesUsed: [], searchType: 'none', totalMemoryTokens: 0 },
+            memoryStatus: !enableMemoryInjection ? 'none' as const
+              : moltbotSearchType.includes('hybrid') || moltbotSearchType.includes('vector') ? 'full' as const
+              : moltbotSearchType === 'keyword' || moltbotSearchType === 'fts' ? 'partial' as const
+              : moltbotMemoriesUsed.length > 0 ? 'partial' as const
+              : 'minimal' as const,
           },
         });
       } catch (moltbotError) {
@@ -534,11 +585,28 @@ export async function POST(
       // Continue with empty history
     }
 
+    // 6.1. Simple token-aware truncation: estimate ~4 chars per token, cap at 8000 tokens
+    const TOKEN_BUDGET = 8000;
+    let estimatedHistoryTokens = 0;
+    const truncatedHistory: typeof history = [];
+    for (let i = history.length - 1; i >= 0; i--) {
+      const msgTokens = Math.ceil(history[i].content.length / 4);
+      if (estimatedHistoryTokens + msgTokens > TOKEN_BUDGET) break;
+      estimatedHistoryTokens += msgTokens;
+      truncatedHistory.unshift(history[i]);
+    }
+    if (truncatedHistory.length < history.length) {
+      console.log(`[Johnny5] Context truncated: ${history.length} -> ${truncatedHistory.length} messages (${estimatedHistoryTokens} est. tokens)`);
+      reasoningSteps.push(`Context: ${truncatedHistory.length}/${history.length} messages (token budget)`);
+    }
+    history = truncatedHistory;
+
     // 6.5. Memory injection - search for relevant context
     let memoryContext: string = '';
     let memoriesUsed: MemoryUsed[] = [];
     let searchType = 'none';
     let totalMemoryTokens = 0;
+    let memoryStatus: 'full' | 'partial' | 'minimal' | 'none' = 'none';
 
     if (enableMemoryInjection) {
       try {
@@ -568,6 +636,7 @@ export async function POST(
         });
 
         console.log(`[Johnny5] Memory search completed: ${searchResult.results.length} results, type=${searchResult.searchType}, time=${searchResult.processingTimeMs}ms`);
+        reasoningSteps.push(`Searching memory (${searchResult.searchType})...`);
 
         if (searchResult.results.length > 0) {
           // Format memories for injection
@@ -587,6 +656,7 @@ export async function POST(
             `[Johnny5] Injected ${memoriesUsed.length} memories (${searchType} search, ${totalMemoryTokens} tokens)`
           );
           console.log('[Johnny5] Memory sources:', memoriesUsed.map(m => `${m.sourceType}:${m.score.toFixed(2)}`).join(', '));
+          reasoningSteps.push(`Found ${memoriesUsed.length} relevant memories`);
         } else {
           console.log('[Johnny5] No memories found for query');
         }
@@ -614,11 +684,38 @@ export async function POST(
           patterns: intelligentMemory.sources.patternsCount,
           manusLive: intelligentMemory.sources.manusLiveAvailable,
         });
+        reasoningSteps.push('Loaded user facts and patterns');
       }
     } catch (intelligenceError) {
       console.warn('[Johnny5] Memory intelligence failed:', intelligenceError);
       // Continue without enhanced memory
     }
+
+    // 6.7. Compute memory status based on what actually happened
+    if (!enableMemoryInjection) {
+      memoryStatus = 'none';
+    } else if (searchType.includes('hybrid') || searchType.includes('vector')) {
+      memoryStatus = 'full';
+    } else if (searchType === 'keyword' || searchType === 'fts') {
+      memoryStatus = 'partial';
+    } else if (enableMemoryInjection && memoryContext === '' && factsAndPatternsContext === '') {
+      memoryStatus = 'minimal';
+    } else {
+      // Facts/patterns context exists but no search results — DB accessible
+      memoryStatus = 'minimal';
+    }
+
+    // 6.8. Detailed memory injection trace log
+    console.log('[Johnny5] Memory injection trace:', {
+      embeddingGenerated: searchType.includes('vector') || searchType.includes('hybrid'),
+      embeddingProvider: process.env.GEMINI_API_KEY ? 'gemini' : 'none',
+      searchResultsCount: memoriesUsed.length,
+      searchType: searchType,
+      formattedContextLength: memoryContext.length,
+      factsContextLength: factsAndPatternsContext.length,
+      totalInjectedChars: (memoryContext.length + factsAndPatternsContext.length),
+      memoryStatus: memoryStatus,
+    });
 
     // 7. Build conversation history for Bridge service
     const conversationHistory: ChatMessage[] = history.map((m) => ({
@@ -640,6 +737,18 @@ export async function POST(
     // Add document/session memory context
     if (memoryContext) {
       contextParts.push(memoryContext);
+    }
+
+    // Add terminal context when present (Phase 2: Terminal Observation)
+    if (terminalContext && typeof terminalContext === 'string' && terminalContext.length > 0) {
+      const cappedContext = terminalContext.slice(0, 2000);
+      contextParts.push(`## Recent Terminal Activity\n\`\`\`\n${cappedContext}\n\`\`\``);
+      console.log('[Johnny5] Terminal context injected:', {
+        length: terminalContext.length,
+        capped: terminalContext.length > 2000,
+        preview: terminalContext.substring(0, 100),
+      });
+      reasoningSteps.push('Including terminal context');
     }
 
     if (contextParts.length > 0) {
@@ -668,6 +777,7 @@ export async function POST(
     if (shouldUseBridgeForThisQuery) {
       // Use Bridge for coding queries (benefits from project context)
       console.log('[Johnny5] Using Bridge mode (coding query)');
+      reasoningSteps.push('Generating response via Claude Code CLI...');
       result = await johnny5Service.sendPrompt(enhancedMessage, conversationHistory);
     } else {
       // Use Gemini for:
@@ -690,6 +800,7 @@ export async function POST(
           hasMCP: johnny5Mode.hasMCP,
           provider: johnny5Mode.provider
         });
+        reasoningSteps.push(`Generating response via ${johnny5Mode.provider}...`);
 
         // Build conversation history in Gemini format
         const geminiContents = [
@@ -1053,6 +1164,8 @@ export async function POST(
               totalMemoryTokens,
             }
           : { enabled: false, memoriesUsed: [], searchType: 'none', totalMemoryTokens: 0 },
+        memoryStatus,
+        reasoningSteps: reasoningSteps.length > 1 ? reasoningSteps : undefined,
         quota: quotaInfo,
       },
     });

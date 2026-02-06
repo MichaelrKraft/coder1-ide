@@ -195,6 +195,14 @@ export async function extractFactsFromConversation(
   const genAI = getGeminiClient();
   if (!genAI) {
     console.warn('[FactExtraction] Gemini client not available (check GEMINI_API_KEY)');
+    console.log('[FactExtraction] === Extraction Summary ===', {
+      inputMessages: messages.length,
+      userMessages: messages.filter(m => m.role === 'user').length,
+      existingFactsChecked: existingFacts.length,
+      newFactsExtracted: 0,
+      geminiAvailable: false,
+      status: 'disabled',
+    });
     return [];
   }
 
@@ -237,9 +245,28 @@ export async function extractFactsFromConversation(
       console.log('[FactExtraction] First fact:', JSON.stringify(facts[0]));
     }
 
+    console.log('[FactExtraction] === Extraction Summary ===', {
+      inputMessages: messages.length,
+      userMessages: messages.filter(m => m.role === 'user').length,
+      existingFactsChecked: existingFacts.length,
+      newFactsExtracted: facts.length,
+      geminiAvailable: true,
+      status: facts.length > 0 ? 'facts_found' : 'no_new_facts',
+    });
+
     return facts;
   } catch (error) {
     console.error('[FactExtraction] Gemini API error:', error);
+
+    console.log('[FactExtraction] === Extraction Summary ===', {
+      inputMessages: messages.length,
+      userMessages: messages.filter(m => m.role === 'user').length,
+      existingFactsChecked: existingFacts.length,
+      newFactsExtracted: 0,
+      geminiAvailable: true,
+      status: 'error',
+    });
+
     return [];
   }
 }
@@ -258,8 +285,26 @@ export async function saveFacts(
 ): Promise<void> {
   if (facts.length === 0) return;
 
+  console.log(`[FactExtraction] Saving ${facts.length} facts to session ${sessionId}`);
+
   const db = getDb();
   const now = new Date().toISOString();
+
+  // Check for existing facts to detect updates/contradictions
+  try {
+    const placeholders = facts.map(() => '?').join(',');
+    const checkStmt = db.prepare(`SELECT fact_key, fact_value FROM extracted_facts WHERE fact_key IN (${placeholders})`);
+    const existing = checkStmt.all(...facts.map(f => f.key)) as Array<{ fact_key: string; fact_value: string }>;
+    for (const e of existing) {
+      const newFact = facts.find(f => f.key === e.fact_key);
+      if (newFact && newFact.value !== e.fact_value) {
+        console.log(`[FactExtraction] Fact update detected: "${e.fact_key}" changing from "${e.fact_value}" to "${newFact.value}"`);
+      }
+    }
+  } catch (checkError) {
+    // Non-critical, continue with save
+    console.warn('[FactExtraction] Could not check existing facts:', checkError);
+  }
 
   const insertStmt = db.prepare(`
     INSERT INTO extracted_facts (
@@ -276,6 +321,7 @@ export async function saveFacts(
 
   const insertMany = db.transaction((factsToInsert: ExtractedFact[]) => {
     for (const fact of factsToInsert) {
+      console.debug(`[FactExtraction] Upserting fact: ${fact.key} = ${fact.value} (type=${fact.type}, confidence=${fact.confidence})`);
       insertStmt.run(
         randomUUID(),
         sessionId,
@@ -292,9 +338,9 @@ export async function saveFacts(
 
   try {
     insertMany(facts);
-    console.log(`[FactExtraction] Saved ${facts.length} facts to database`);
-  } catch (error) {
-    console.error('[FactExtraction] Failed to save facts:', error);
+    console.log(`[FactExtraction] Successfully saved ${facts.length} facts`);
+  } catch (error: any) {
+    console.error(`[FactExtraction] Database error saving facts: ${error?.message || error}`, error);
   }
 }
 
@@ -436,6 +482,32 @@ export async function cleanupStaleFacts(
   const result = stmt.run(cutoffDate.toISOString(), maxConfidence);
   console.log(`[FactExtraction] Cleaned up ${result.changes} stale facts`);
   return result.changes;
+}
+
+// ============================================================================
+// Direct Fact Extraction (for explicit "remember" commands)
+// ============================================================================
+
+/**
+ * Extract a fact from an explicit "remember that..." command.
+ * Returns null if the message is not a remember command.
+ *
+ * This is a standalone function that can be called by the chat route
+ * without going through the Gemini API.
+ */
+export function extractDirectFact(message: string): ExtractedFact | null {
+  const match = message.match(/^(?:remember|note|save)\s+(?:that\s+)?(.+)/i);
+  if (!match) return null;
+
+  const fact: ExtractedFact = {
+    type: 'personal',
+    key: `user_note_${Date.now()}`,
+    value: match[1].trim(),
+    confidence: 1.0,
+  };
+
+  console.log('[FactExtraction] Direct "remember" command detected:', fact.value);
+  return fact;
 }
 
 // ============================================================================

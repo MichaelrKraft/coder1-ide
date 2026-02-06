@@ -729,6 +729,74 @@ Use test card: `4242 4242 4242 4242`, any future expiry, any CVC
 
 ---
 
+# Fact Extraction Service - Structured Logging & Robustness (Feb 5, 2026)
+
+## Status: IN PROGRESS
+
+## Overview
+Enhance `services/memory/fact-extraction-service.ts` with better structured logging, contradictory fact detection, and an `extractDirectFact()` function for explicit "remember" commands.
+
+## Todo Items
+
+- [x] **1. Add structured logging to `saveFacts()`**
+  - Log before transaction: "Saving N facts to session X"
+  - Debug-level log per fact inside loop
+  - Log success after transaction
+  - Improve error logging with full error message
+
+- [x] **2. Detect contradictory fact updates in `saveFacts()`**
+  - Before the transaction, query existing facts by key
+  - Log when a fact value is changing from old to new
+  - Non-critical: wrap in try/catch so failures don't block save
+
+- [x] **3. Add extraction summary log to `extractFactsFromConversation()`**
+  - Add a summary object log at end of function (both success and error paths)
+  - Include: inputMessages, userMessages, existingFactsChecked, newFactsExtracted, geminiAvailable, status
+
+- [x] **4. Add `extractDirectFact()` exported function**
+  - New standalone function (does NOT modify existing function flow)
+  - Matches "remember/note/save that..." patterns
+  - Returns `ExtractedFact | null`
+  - Can be called separately by the chat route
+
+## Files to Modify
+- `services/memory/fact-extraction-service.ts` (all changes in this one file)
+
+## Principles
+- All changes are ADDITIVE (no restructuring)
+- Keep existing logging intact
+- New function is standalone, no changes to `extractFactsFromConversation` flow
+
+## Review
+
+### Changes Made (single file: `services/memory/fact-extraction-service.ts`)
+
+**1. `saveFacts()` structured logging (lines 288, 324, 341, 342-343)**
+- Added entry log with fact count and session ID before any DB work
+- Added `console.debug` per-fact inside the transaction loop showing key, value, type, confidence
+- Changed success log from "Saved" to "Successfully saved" for clarity
+- Improved error catch to extract `error.message` and pass the full error object
+
+**2. Contradictory fact detection (lines 293-307)**
+- Before the transaction, queries existing facts by key using a parameterized IN clause
+- Compares old vs new values and logs when a fact is changing
+- Wrapped in try/catch so failures here never block the actual save
+
+**3. Extraction summary logs (lines 198-205, 248-255, 261-268)**
+- Added summary object log in 3 places: Gemini unavailable (status=disabled), success path (facts_found or no_new_facts), and error path (status=error)
+- Each summary includes inputMessages, userMessages, existingFactsChecked, newFactsExtracted, geminiAvailable, and status
+
+**4. `extractDirectFact()` function (lines 487-511)**
+- New exported function that matches `/^(?:remember|note|save)\s+(?:that\s+)?(.+)/i`
+- Returns an `ExtractedFact` with type=personal, confidence=1.0, and a timestamped key
+- Returns null if the message does not match
+- Completely standalone -- does not modify the `extractFactsFromConversation` flow
+
+### Build Status
+- No new TypeScript errors introduced (pre-existing `@/lib/johnny5-db` path alias warning and `@types/three` issues remain)
+
+---
+
 # Gemini Embedding Provider Implementation (Feb 3, 2026) - COMPLETED
 
 ## Status: COMPLETE
@@ -826,5 +894,137 @@ GOOGLE_AI_API_KEY=your-gemini-api-key
 # OR
 GEMINI_API_KEY=your-gemini-api-key
 ```
+
+---
+
+# Memory Health Check Enhancement (Feb 5, 2026)
+
+## Status: COMPLETE
+
+## Overview
+Enhance the `/api/johnny5/memory-health` endpoint with comprehensive diagnostics for the production memory system. Currently it only checks ManusLive files and memory chunks. We need to add vector search status, embedding service config, fact extraction stats, env var checks, and database integrity.
+
+## Todo Items
+
+- [x] **1. Add `isVectorSearchAvailable` and `getDb` imports from `@/lib/johnny5-db`**
+  - Import alongside existing `getMemoryStats`
+  - Also need `JOHNNY5_DB_PATH` from `@/lib/data-paths` for the DB path
+  - Added `isSqliteVecLoaded` export to johnny5-db.ts
+
+- [x] **2. Add `vectorSearch` section to response**
+  - `available`: call `isVectorSearchAvailable()`
+  - `sqliteVecLoaded`: check from new `isSqliteVecLoaded()` export
+  - `reason`: string if not available
+
+- [x] **3. Add `embeddingService` section**
+  - `configured`: check GEMINI_API_KEY or OPENAI_API_KEY env vars
+  - `provider`: "gemini", "openai", or "none"
+
+- [x] **4. Add `factExtraction` section**
+  - `enabled`: check GEMINI_API_KEY is set
+  - `factCount`: COUNT(*) from extracted_facts
+  - `lastExtraction`: MAX(created_at) from extracted_facts
+
+- [x] **5. Add `envVars` section**
+  - Boolean flags for API keys (never reveal actual values)
+  - String values for non-secret feature flags
+
+- [x] **6. Add `database` section**
+  - `path`: DB file path
+  - `integrityCheck`: PRAGMA integrity_check(1)
+  - `sessionCount` and `messageCount`
+
+- [x] **7. Update `healthy` determination**
+  - healthy = DB accessible AND (fact extraction enabled OR memory chunks > 0)
+
+- [x] **8. Update HealthCheckResponse interface**
+  - Add all new sections to the type
+  - Update fallback error response to include new fields
+
+## Files to Modify
+- `app/api/johnny5/memory-health/route.ts` (single file change)
+
+## Principles
+- Keep existing response structure intact, ADD new fields
+- All new DB queries wrapped in try/catch
+- Never expose actual API key values
+- Use `getDb()` for direct SQL queries
+
+## Review
+
+### Files Modified
+1. **`lib/johnny5-db.ts`** -- Added `isSqliteVecLoaded()` export function (4 lines). Returns the module-level `sqliteVecLoaded` boolean so the health check can distinguish "extension not installed" from "vector table creation failed".
+
+2. **`app/api/johnny5/memory-health/route.ts`** -- Enhanced with 5 new diagnostic sections:
+   - **vectorSearch**: Reports whether sqlite-vec is loaded and vector table created, with reason string on failure
+   - **embeddingService**: Reports which embedding API key is configured (gemini/openai/none)
+   - **factExtraction**: Reports whether fact extraction is enabled, count of extracted facts, and last extraction timestamp
+   - **envVars**: Boolean flags for API keys (never reveals values), plus feature flag values
+   - **database**: DB file path, integrity check result (PRAGMA integrity_check(1)), session count, message count
+
+### Design Decisions
+- Each new diagnostic section has its own try/catch so a failure in one does not block others
+- `healthy` determination updated: `dbAccessible && (factExtractionEnabled || hasMemoryChunks)` -- meaning the system is healthy if the DB is intact AND either fact extraction is configured or there are memory chunks indexed
+- The error fallback response includes safe defaults for all new fields so the response shape is always consistent
+- API key values are never exposed -- only boolean `true`/`false` for whether they are set
+- Used `PRAGMA integrity_check(1)` (with limit 1) to avoid long scans on large databases
+
+### Build Status
+Next.js build passes with no errors.
+
+---
+
+# Johnny5 Chat Route - Memory Status & Logging (Feb 5, 2026)
+
+## Status: COMPLETE
+
+## Overview
+Added `memoryStatus` field to chat responses, detailed memory injection logging, and a module-level startup log for memory feature status.
+
+## Todo Items
+
+- [x] **1. Add `memoryStatus` to `ChatSuccessResponse` interface** (Task 1.2)
+- [x] **2. Add startup log for memory features at module level** (Task 1.5)
+- [x] **3. Declare `memoryStatus` variable near other memory variables**
+- [x] **4. Compute `memoryStatus` after both memory injection sections**
+- [x] **5. Add detailed memory injection trace log** (Task 1.4)
+- [x] **6. Add `memoryStatus` to main response JSON**
+- [x] **7. Add `memoryStatus` to Moltbot early-return response**
+- [x] **8. Verify no existing code changed -- only additions**
+
+## Review
+
+### File Modified
+`/Users/michaelkraft/autonomous_vibe_interface/coder1-ide-next/app/api/johnny5/chat/route.ts`
+
+### Changes
+
+**1. Module-level startup log (Task 1.5)** -- Lines 49-57
+- `console.log('[Johnny5] Memory features status:', ...)` after imports
+- Logs: GEMINI_API_KEY, OPENAI_API_KEY, ENABLE_ETERNAL_MEMORY, NEXT_PUBLIC_MEMORY_CONTEXT_ENABLED, NEXT_PUBLIC_MEMORY_AUTO_INJECT
+
+**2. `memoryStatus` in `ChatSuccessResponse` interface** -- Line 92
+- `memoryStatus: 'full' | 'partial' | 'minimal' | 'none';`
+
+**3. Variable declaration** -- Line 553
+- `let memoryStatus: 'full' | 'partial' | 'minimal' | 'none' = 'none';`
+
+**4. Status computation** -- Lines 635-646
+- full: searchType contains "hybrid" or "vector"
+- partial: searchType is "keyword" or "fts"
+- minimal: enableMemoryInjection true but both contexts empty, OR facts exist but no search results
+- none: enableMemoryInjection is false
+
+**5. Detailed trace log (Task 1.4)** -- Lines 648-658
+- Logs embeddingGenerated, embeddingProvider, searchResultsCount, searchType, formattedContextLength, factsContextLength, totalInjectedChars, memoryStatus
+
+**6. Main response** -- Line 1093
+- Added `memoryStatus,` to success response JSON
+
+**7. Moltbot early-return** -- Lines 472-476
+- Inline computed memoryStatus for the Moltbot code path
+
+### Build Status
+No new TypeScript errors introduced.
 
 ---
