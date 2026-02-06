@@ -1468,7 +1468,7 @@ app.prepare().then(() => {
       
       // Handle interactive session started from bridge (Dec 10, 2025)
       // When Claude is running in interactive PTY mode, we need to route terminal input to it
-      socket.on('claude:interactive:started', (data) => {
+      socket.on('claude:interactive:started', async (data) => {
         const { commandId, pid, sessionId } = data;
         console.log(`🎭 Interactive Claude session started: commandId=${commandId}, pid=${pid}`);
 
@@ -1489,6 +1489,26 @@ app.prepare().then(() => {
             mode: 'interactive',
             commandId
           });
+
+          // Auto-fetch Johnny5 context for the new Claude session
+          try {
+            const contextUrl = `http://localhost:${port}/api/johnny5/context-for-claude`;
+            const contextResp = await fetch(contextUrl);
+            if (contextResp.ok) {
+              const contextData = await contextResp.json();
+              if (contextData.hasContext) {
+                console.log(`[Johnny5→Claude] Context available: ${contextData.factCount} facts, ${contextData.context.length} chars`);
+                // Emit context to frontend for optional injection
+                io.emit('johnny5:claude-context-ready', {
+                  sessionId,
+                  context: contextData.context,
+                  factCount: contextData.factCount,
+                });
+              }
+            }
+          } catch (contextErr) {
+            console.warn('[Johnny5→Claude] Failed to fetch context:', contextErr.message);
+          }
         }
       });
 
@@ -3148,6 +3168,47 @@ app.prepare().then(() => {
     socket.on('johnny5:leave-session', (sessionId) => {
       socket.leave(`johnny5:${sessionId}`);
       console.log(`Socket ${socket.id} left johnny5 session: ${sessionId}`);
+    });
+
+    // Johnny5 → Claude Code task delegation
+    socket.on('johnny5:delegate-task', async ({ sessionId, task }) => {
+      console.log(`[Johnny5→Claude] Delegating task to terminal ${sessionId}: ${task.substring(0, 100)}`);
+
+      // Check if the terminal session exists
+      const terminalSession = terminalSessions.get(sessionId);
+      if (!terminalSession) {
+        socket.emit('johnny5:delegate-result', {
+          success: false,
+          error: 'No active terminal session found',
+          sessionId
+        });
+        return;
+      }
+
+      // Check if Claude is in interactive mode for this session
+      const isInteractive = interactiveClaudeSessions.has(sessionId);
+
+      if (isInteractive) {
+        // Send the task directly to Claude Code's interactive session
+        const taskInput = task + '\n';
+        if (terminalSession.pty) {
+          terminalSession.pty.write(taskInput);
+          console.log(`[Johnny5→Claude] Task sent to interactive Claude session`);
+          socket.emit('johnny5:delegate-result', { success: true, sessionId, method: 'interactive' });
+        } else {
+          socket.emit('johnny5:delegate-result', { success: false, error: 'PTY not available', sessionId });
+        }
+      } else {
+        // Claude is not running - start a claude command with the task
+        const claudeCommand = `claude "${task.replace(/"/g, '\\"')}"\n`;
+        if (terminalSession.pty) {
+          terminalSession.pty.write(claudeCommand);
+          console.log(`[Johnny5→Claude] Started new Claude session with task`);
+          socket.emit('johnny5:delegate-result', { success: true, sessionId, method: 'new-session' });
+        } else {
+          socket.emit('johnny5:delegate-result', { success: false, error: 'PTY not available', sessionId });
+        }
+      }
     });
 
     // Clean up on disconnect

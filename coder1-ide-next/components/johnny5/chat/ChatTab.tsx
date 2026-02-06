@@ -16,8 +16,15 @@ import {
   RefreshCw,
   Trash2,
   ChevronDown,
+  ChevronRight,
+  Terminal,
+  ShieldAlert,
+  AlertTriangle,
+  ArrowUpRight,
 } from 'lucide-react';
 import UpgradePrompt, { QuotaMeter } from '../UpgradePrompt';
+import { terminalObserver, type TerminalEvent } from '@/lib/terminal-observer';
+import { useTerminalSupervision, type SupervisionAlert } from '@/lib/hooks/useTerminalSupervision';
 
 // Typewriter effect component for Johnny5's welcome message
 function TypewriterText({
@@ -74,6 +81,7 @@ interface ChatMessage {
   status?: 'sending' | 'sent' | 'error';
   toolCalls?: ToolCall[];
   thinking?: string;
+  reasoningSteps?: string[];
 }
 
 interface Johnny5Mode {
@@ -130,6 +138,29 @@ export default function ChatTab() {
   const [quota, setQuota] = useState<QuotaInfo | null>(null);
   const [quotaExceeded, setQuotaExceeded] = useState<QuotaExceeded | null>(null);
   const [johnny5Mode, setJohnny5Mode] = useState<Johnny5Mode | null>(null);
+  const [memoryStatus, setMemoryStatus] = useState<'full' | 'partial' | 'minimal' | 'none' | null>(null);
+  const [memoryBannerDismissed, setMemoryBannerDismissed] = useState(false);
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [observations, setObservations] = useState<TerminalEvent[]>([]);
+  const [isDelegating, setIsDelegating] = useState(false);
+  const lastObservationRef = useRef<number>(0); // Rate limiting
+
+  // Terminal supervision
+  const { alerts: supervisionAlerts, dismissAlert: dismissSupervisionAlert } = useTerminalSupervision({
+    enabled: true,  // Always enabled for now
+    alertThreshold: 'moderate',
+    onAlert: (alert: SupervisionAlert) => {
+      // Add critical/warning supervision alerts as system messages in chat
+      if (alert.severity !== 'info') {
+        setMessages(prev => [...prev, {
+          id: `sup-${alert.id}`,
+          role: 'system' as const,
+          content: `[Supervision] ${alert.message}${alert.details ? '\n' + alert.details : ''}`,
+          timestamp: new Date(alert.timestamp),
+        }]);
+      }
+    },
+  });
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
@@ -213,6 +244,18 @@ export default function ChatTab() {
         socket.on('johnny5:moltbot-disconnected', ({ reason }: { reason: string }) => {
           setMoltbotStatus({ ...moltbotStatus, connected: false, error: reason } as any);
         });
+
+        // Listen for Johnny5 context ready for Claude sessions
+        socket.on('johnny5:claude-context-ready', (data: { sessionId: string; context: string; factCount: number }) => {
+          if (data.factCount > 0) {
+            setMessages(prev => [...prev, {
+              id: `ctx-${Date.now()}`,
+              role: 'system' as const,
+              content: `Context shared with Claude Code session (${data.factCount} facts available)`,
+              timestamp: new Date(),
+            }]);
+          }
+        });
       } catch (err) {
         console.error('Failed to setup socket for Johnny5:', err);
       }
@@ -225,9 +268,66 @@ export default function ChatTab() {
         socket.off('johnny5:status');
         socket.off('johnny5:moltbot-connected');
         socket.off('johnny5:moltbot-disconnected');
+        socket.off('johnny5:claude-context-ready');
       }
     };
   }, [setMoltbotStatus]);
+
+  // Load persisted messages on mount
+  useEffect(() => {
+    const loadPersistedMessages = async () => {
+      try {
+        const response = await fetch('/api/johnny5/messages');
+        if (response.ok) {
+          const data = await response.json();
+          if (data.messages && data.messages.length > 0) {
+            const loaded: ChatMessage[] = data.messages.map((m: any) => ({
+              id: m.id,
+              role: m.role,
+              content: m.content,
+              timestamp: new Date(m.created_at),
+            }));
+            setMessages(loaded);
+            setSessionId(data.sessionId);
+          }
+        }
+      } catch (err) {
+        console.warn('[ChatTab] Failed to load persisted messages:', err);
+      }
+    };
+    loadPersistedMessages();
+  }, []);
+
+  // Subscribe to terminal events for observation
+  useEffect(() => {
+    terminalObserver.connect();
+
+    const unsubscribe = terminalObserver.subscribe((event: TerminalEvent) => {
+      const now = Date.now();
+      // Rate limit: max 1 observation per 10 seconds
+      if (now - lastObservationRef.current < 10000) return;
+      lastObservationRef.current = now;
+
+      // Only show errors, completion, and session events (skip routine commands/file changes)
+      if (event.type === 'command') return;
+
+      // Add observation as a system message
+      setMessages(prev => [...prev, {
+        id: `obs-${now}`,
+        role: 'system' as const,
+        content: event.summary,
+        timestamp: new Date(event.timestamp),
+      }]);
+
+      // Store observation for context
+      setObservations(prev => [...prev.slice(-10), event]); // Keep last 10
+    });
+
+    return () => {
+      unsubscribe();
+      terminalObserver.disconnect();
+    };
+  }, []);
 
   // Helper function to get connection status display
   const getConnectionStatus = () => {
@@ -256,9 +356,74 @@ export default function ChatTab() {
     setTimeout(() => setCopiedId(null), 2000);
   };
 
+  // Delegate task to Claude Code in terminal
+  const handleDelegate = useCallback(async (task: string) => {
+    setIsDelegating(true);
+    try {
+      const socket = await getSocket();
+
+      // Emit delegation request - server will find the active terminal session
+      socket.emit('johnny5:delegate-task', {
+        sessionId: 'default',
+        task
+      });
+
+      // Listen for result (one-time)
+      const resultPromise = new Promise<void>((resolve) => {
+        const handler = (result: { success: boolean; error?: string; method?: string }) => {
+          socket.off('johnny5:delegate-result', handler);
+
+          if (result.success) {
+            setMessages(prev => [...prev, {
+              id: `delegate-${Date.now()}`,
+              role: 'system' as const,
+              content: `Task delegated to Claude Code (${result.method}): "${task}"`,
+              timestamp: new Date(),
+            }]);
+          } else {
+            setMessages(prev => [...prev, {
+              id: `delegate-err-${Date.now()}`,
+              role: 'system' as const,
+              content: `Failed to delegate: ${result.error || 'Unknown error'}. Is Claude Code running in the terminal?`,
+              timestamp: new Date(),
+            }]);
+          }
+          resolve();
+        };
+        socket.on('johnny5:delegate-result', handler);
+
+        // Timeout after 5 seconds
+        setTimeout(() => {
+          socket.off('johnny5:delegate-result', handler);
+          resolve();
+        }, 5000);
+      });
+
+      await resultPromise;
+    } catch (err) {
+      console.error('[ChatTab] Delegation error:', err);
+      setMessages(prev => [...prev, {
+        id: `delegate-err-${Date.now()}`,
+        role: 'system' as const,
+        content: 'Failed to delegate task. Check terminal connection.',
+        timestamp: new Date(),
+      }]);
+    } finally {
+      setIsDelegating(false);
+    }
+  }, []);
+
   // Send message - prefers Moltbot when connected, falls back to Bridge CLI
   const handleSend = async () => {
     if (!inputValue.trim() || isLoading) return;
+
+    // Check for delegation command
+    const delegateMatch = inputValue.trim().match(/^\/delegate\s+(.+)/i);
+    if (delegateMatch) {
+      setInputValue('');
+      await handleDelegate(delegateMatch[1]);
+      return;
+    }
 
     const userMessage: ChatMessage = {
       id: `user-${Date.now()}`,
@@ -303,6 +468,7 @@ export default function ChatTab() {
           : JSON.stringify({
               message: userMessage.content,
               history: messages.slice(-10), // Send last 10 messages for context
+              terminalContext: terminalObserver.getRecentContext(1500),
             }),
       });
 
@@ -377,6 +543,18 @@ export default function ChatTab() {
         setQuotaExceeded(null);
       }
 
+      // Read memory status from response
+      const responseMemoryStatus = data.data?.memoryStatus || data.memoryStatus;
+      if (responseMemoryStatus) {
+        setMemoryStatus(responseMemoryStatus);
+      }
+
+      // Track session ID from response
+      const responseSessionId = data.data?.sessionId || data.sessionId;
+      if (responseSessionId) {
+        setSessionId(responseSessionId);
+      }
+
       // Add assistant response
       const assistantMessage: ChatMessage = {
         id: `assistant-${Date.now()}`,
@@ -385,6 +563,7 @@ export default function ChatTab() {
         timestamp: new Date(),
         toolCalls: data.data?.toolCalls || data.toolCalls,
         thinking: data.data?.thinking || data.thinking,
+        reasoningSteps: data.data?.reasoningSteps,
       };
 
       setMessages((prev) => [...prev, assistantMessage]);
@@ -433,6 +612,10 @@ export default function ChatTab() {
         timestamp: new Date(),
       },
     ]);
+    setMemoryBannerDismissed(false);
+    setMemoryStatus(null);
+    setSessionId(null);
+    setObservations([]);
   };
 
   // Format timestamp
@@ -501,6 +684,57 @@ export default function ChatTab() {
         </div>
       )}
 
+      {/* Memory Status Indicator */}
+      {memoryStatus && memoryStatus !== 'full' && !memoryBannerDismissed && (
+        <div className={`px-4 py-2 border-b flex items-center justify-between text-xs ${
+          memoryStatus === 'none'
+            ? 'bg-red-500/10 border-red-500/30 text-red-300'
+            : memoryStatus === 'minimal'
+            ? 'bg-yellow-500/10 border-yellow-500/30 text-yellow-300'
+            : 'bg-blue-500/10 border-blue-500/30 text-blue-300'
+        }`}>
+          <div className="flex items-center gap-2">
+            <Brain className="w-3.5 h-3.5" />
+            <span>
+              {memoryStatus === 'none' && 'Memory unavailable \u2014 responses won\'t reference past conversations'}
+              {memoryStatus === 'minimal' && 'Memory limited \u2014 basic context only, no past conversation recall'}
+              {memoryStatus === 'partial' && 'Memory: keyword-only \u2014 embeddings unavailable'}
+            </span>
+          </div>
+          <button
+            onClick={() => setMemoryBannerDismissed(true)}
+            className="p-1 hover:bg-white/10 rounded"
+            title="Dismiss"
+          >
+            {'\u00d7'}
+          </button>
+        </div>
+      )}
+
+      {/* Supervision Alerts */}
+      {supervisionAlerts.length > 0 && (
+        <div className="px-4 py-2 border-b border-red-500/30 bg-red-500/10">
+          {supervisionAlerts.slice(0, 3).map(alert => (
+            <div key={alert.id} className="flex items-center justify-between py-1">
+              <div className="flex items-center gap-2 text-xs">
+                <ShieldAlert className={`w-3.5 h-3.5 ${
+                  alert.severity === 'critical' ? 'text-red-400' : 'text-yellow-400'
+                }`} />
+                <span className={alert.severity === 'critical' ? 'text-red-300' : 'text-yellow-300'}>
+                  {alert.message}
+                </span>
+              </div>
+              <button
+                onClick={() => dismissSupervisionAlert(alert.id)}
+                className="text-xs text-text-muted hover:text-text-secondary p-1"
+              >
+                {'\u00d7'}
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* Messages Area */}
       <div
         ref={messagesContainerRef}
@@ -519,11 +753,19 @@ export default function ChatTab() {
               className={`flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center ${
                 message.role === 'user'
                   ? 'bg-coder1-cyan/20 text-coder1-cyan'
+                  : message.role === 'system'
+                  ? message.id.startsWith('sup-')
+                    ? 'bg-red-500/15 text-red-400'
+                    : 'bg-yellow-500/15 text-yellow-400'
                   : 'bg-purple-500/20 text-purple-400'
               }`}
             >
               {message.role === 'user' ? (
                 <User className="w-4 h-4" />
+              ) : message.role === 'system' ? (
+                message.id.startsWith('sup-')
+                  ? <ShieldAlert className="w-3.5 h-3.5" />
+                  : <Terminal className="w-3.5 h-3.5" />
               ) : (
                 <Bot className="w-4 h-4" />
               )}
@@ -539,6 +781,10 @@ export default function ChatTab() {
                 className={`inline-block px-4 py-3 rounded-2xl text-sm ${
                   message.role === 'user'
                     ? 'bg-coder1-cyan/20 text-text-primary rounded-tr-md'
+                    : message.role === 'system'
+                    ? message.id.startsWith('sup-')
+                      ? 'bg-red-500/10 text-red-200/80 rounded-tl-md text-xs border border-red-500/20'
+                      : 'bg-yellow-500/10 text-yellow-200/80 rounded-tl-md text-xs border border-yellow-500/20'
                     : 'bg-bg-tertiary text-text-primary rounded-tl-md'
                 }`}
               >
@@ -553,6 +799,25 @@ export default function ChatTab() {
                       {message.thinking.slice(0, 100)}...
                     </p>
                   </div>
+                )}
+
+                {/* Reasoning steps */}
+                {message.reasoningSteps && message.reasoningSteps.length > 0 && (
+                  <details className="mb-2 pb-2 border-b border-border-default group/reasoning">
+                    <summary className="flex items-center gap-1.5 text-[10px] text-text-muted cursor-pointer hover:text-text-secondary select-none list-none">
+                      <Brain className="w-3 h-3" />
+                      <span>{message.reasoningSteps.length} steps</span>
+                      <ChevronRight className="w-3 h-3 ml-auto" />
+                    </summary>
+                    <div className="mt-1.5 space-y-0.5">
+                      {message.reasoningSteps.map((step, i) => (
+                        <div key={i} className="text-[10px] text-text-muted flex items-center gap-1.5">
+                          <span className="w-1 h-1 rounded-full bg-coder1-cyan/50 flex-shrink-0" />
+                          <span>{step}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </details>
                 )}
 
                 {/* Tool calls */}
@@ -675,6 +940,17 @@ export default function ChatTab() {
           <button className="px-2.5 py-1 rounded-lg bg-bg-tertiary hover:bg-bg-secondary text-[10px] text-text-muted hover:text-text-secondary transition-all flex items-center gap-1.5">
             <RefreshCw className="w-3 h-3" />
             Check status
+          </button>
+          <button
+            onClick={() => {
+              setInputValue('/delegate ');
+              inputRef.current?.focus();
+            }}
+            disabled={isDelegating}
+            className="px-2.5 py-1 rounded-lg bg-bg-tertiary hover:bg-bg-secondary text-[10px] text-text-muted hover:text-coder1-cyan transition-all flex items-center gap-1.5"
+          >
+            <ArrowUpRight className="w-3 h-3" />
+            {isDelegating ? 'Delegating...' : 'Delegate to Claude'}
           </button>
         </div>
 

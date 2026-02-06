@@ -167,6 +167,13 @@ export function isVectorSearchAvailable(): boolean {
 }
 
 /**
+ * Check if sqlite-vec extension loaded (regardless of vector table creation)
+ */
+export function isSqliteVecLoaded(): boolean {
+  return sqliteVecLoaded;
+}
+
+/**
  * Generate SHA-256 hash for content deduplication
  */
 export function generateContentHash(content: string): string {
