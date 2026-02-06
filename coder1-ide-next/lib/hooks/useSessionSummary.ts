@@ -213,7 +213,7 @@ export const useSessionSummary = () => {
 
     try {
       const sessionDate = new Date();
-      const sessionName = `CoderOne v2.0 Session ${sessionDate.toLocaleDateString()} ${sessionDate.toLocaleTimeString()}`;
+      const sessionName = `Coder1 v2.0 Session ${sessionDate.toLocaleDateString()} ${sessionDate.toLocaleTimeString()}`;
       
       const response = await fetch('/api/docs/add', {
         method: 'POST',
@@ -378,7 +378,7 @@ ${extractPattern(summary, 'learning', sessionData)}
 - **Error Rate**: ${sessionData.errors?.length || 0} errors encountered
 - **Breakthrough Moments**: ${sessionData.breakthroughs?.length || 0} successes identified
 
-## CoderOne v2.0 Feature Utilization
+## Coder1 v2.0 Feature Utilization
 - **Checkpoint System**: ${sessionData.checkpoints?.length || 0} checkpoints created
 - **Terminal Integration**: Active session monitoring
 - **File Management**: Real-time change tracking
@@ -408,18 +408,18 @@ ${generateNextStepsList('testing', summary, sessionData)}
 ## Documentation Needs
 ${generateNextStepsList('documentation', summary, sessionData)}
 
-## CoderOne v2.0 Optimization
+## Coder1 v2.0 Optimization
 ${generateNextStepsList('coderone', summary, sessionData)}
 
 ## Session Continuity
 - **Handoff Status**: Ready for next agent
 - **Context Preservation**: Session data captured
 - **State Management**: ${sessionData.openFiles?.filter((f: any) => f.isDirty)?.length || 0} unsaved files
-- **Environment**: CoderOne v2.0 Next.js IDE active
+- **Environment**: Coder1 v2.0 Next.js IDE active
 
 ## Recommended Agent Workflow
 1. **Load Session Context**: Review this summary and insights
-2. **Verify Environment**: Ensure CoderOne v2.0 IDE is running
+2. **Verify Environment**: Ensure Coder1 v2.0 IDE is running
 3. **Check File States**: Address any unsaved changes
 4. **Continue Development**: Based on session type and priorities`;
 
@@ -445,7 +445,7 @@ function extractPattern(summary: string, type: string, sessionData: any): string
 - Error accumulation: ${sessionData.errors?.length || 0} unresolved issues
 - Session cleanup: ${sessionData.breakthroughs?.length > 0 ? 'Good progress made' : 'Consider consolidating work'}`,
 
-    learning: `- CoderOne v2.0 IDE utilization: Active session management
+    learning: `- Coder1 v2.0 IDE utilization: Active session management
 - Development workflow: ${sessionData.sessionType} approach
 - AI collaboration: Session intelligence system engaged
 - Next.js development: Advanced IDE features available`
@@ -459,7 +459,7 @@ function generateNextStepsList(category: string, summary: string, sessionData: a
     immediate: `1. Save ${sessionData.openFiles?.filter((f: any) => f.isDirty)?.length || 0} unsaved files
 2. Address ${sessionData.errors?.length || 0} error${sessionData.errors?.length === 1 ? '' : 's'} if present
 3. Run tests to verify current state
-4. Create checkpoint in CoderOne v2.0`,
+4. Create checkpoint in Coder1 v2.0`,
 
     shortTerm: `1. Complete current ${sessionData.sessionType} work
 2. Implement unit tests for changes
@@ -468,13 +468,13 @@ function generateNextStepsList(category: string, summary: string, sessionData: a
 
     longTerm: `1. Plan architectural improvements for scalability
 2. Address technical debt systematically  
-3. Enhance CoderOne v2.0 workflow integration
+3. Enhance Coder1 v2.0 workflow integration
 4. Consider advanced IDE features`,
 
     testing: `1. Run existing test suite
 2. Add tests for new functionality
 3. Verify edge case handling
-4. Test in CoderOne v2.0 integrated environment`,
+4. Test in Coder1 v2.0 integrated environment`,
 
     documentation: `1. Update README with session changes
 2. Add inline code comments

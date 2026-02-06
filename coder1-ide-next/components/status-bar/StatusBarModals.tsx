@@ -7,7 +7,7 @@
 
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { X, Check, Download, Save, Loader2, FileText, Eye, FileArchive } from 'lucide-react';
 import { useSessionSummary } from '@/lib/hooks/useSessionSummary';
 import { useUIStore } from '@/stores/useUIStore';
@@ -76,11 +76,27 @@ export default function StatusBarModals({
   } = useSessionSummary();
 
   // Handle modal close
-  const handleCloseModal = () => {
+  const handleCloseModal = useCallback(() => {
     closeModal('sessionSummary');
     setCopySuccess(false);
     setActiveTab('summary');
-  };
+  }, [closeModal]);
+
+  // Close modal on Escape key press, and reset modal state on unmount
+  // (prevents BUG-2: modal auto-opening after navigation back)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        handleCloseModal();
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      // Reset modal state on unmount so it does not persist across navigation
+      closeModal('sessionSummary');
+    };
+  }, [handleCloseModal, closeModal]);
 
   // Start generation on mount if not already generated
   React.useEffect(() => {
@@ -158,8 +174,8 @@ export default function StatusBarModals({
 
   return (
     <>
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-bg-secondary border border-border-default rounded-lg w-full max-w-4xl max-h-[80vh] flex flex-col">
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={handleCloseModal}>
+      <div className="bg-bg-secondary border border-border-default rounded-lg w-full max-w-4xl max-h-[80vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
         {/* Modal Header */}
         <div className="flex items-center justify-between p-4 border-b border-border-default">
           <h2 className="text-lg font-semibold text-text-primary">Session Summary</h2>

@@ -465,8 +465,8 @@ const StatusBarActions = React.memo(function StatusBarActions({
   };
 
   const handleDocs = () => {
-    // Dispatch custom event to open the integrated DocumentationPanel
-    window.dispatchEvent(new CustomEvent('openDocumentationPanel'));
+    // Dispatch custom event to toggle the integrated DocumentationPanel
+    window.dispatchEvent(new CustomEvent('toggleDocumentationPanel'));
   };
 
 
