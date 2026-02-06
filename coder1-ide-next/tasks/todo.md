@@ -1,1159 +1,385 @@
-# BUG-3: Preview Panel Shows "File not found" for Open Files (Feb 6, 2026)
+# Johnny5 Phase 1 Implementation (Feb 6, 2026)
 
 ## Status: COMPLETE
 
-## Problem
-Preview panel shows `{"success":false,"error":"File not found"}` for files open in the editor.
+## Completed Features
 
-## Root Cause
-- File tree API (`/api/files/tree`) returns relative paths like `default/index.html` (relative to `user-workspaces/`)
-- File read API (`/api/files/read`) resolves against workspace root: `path.join(cwd, 'user-workspaces', filePath)` -- CORRECT
-- Preview API (`/api/preview`) resolves against `process.cwd()`: `path.resolve(cwd, filePath)` -- WRONG, looks for `{cwd}/default/index.html` which does not exist
+### 1c. Context Budget Visualizer - DONE
+- [x] `components/johnny5/ContextBudgetMini.tsx` - 28px compact bar with color thresholds
+- [x] `components/johnny5/context/ContextTab.tsx` - Wired real token data from IDE store
 
-## Fix
-- [x] Update `getProjectRoot()` in `app/api/preview/route.ts` to resolve against workspace directory, matching file read API behavior
+### 1d. Prompt Templates Library - DONE
+- [x] `data/prompt-templates.json` - 10 templates (Debug, Build, Refactor, Test, Review, PR, Explain, Optimize, Error Handling, Setup)
+- [x] `components/johnny5/PromptTemplates.tsx` - Two-view component (picker + fill) with auto-fill, search, and categories
 
-## Files Modified
-- `app/api/preview/route.ts` -- Updated `getProjectRoot()` to include workspace path
+### 1e. Daily Activity Intelligence Foundation - DONE
+- [x] `services/johnny5/terminal-activity-collector.ts` - Singleton listening to terminalOutput CustomEvent, classifies into 20+ event types, ring buffer + localStorage persistence
+- [x] `services/johnny5/accomplishment-detector.ts` - Processes events into WorkSessions and Accomplishments, extracts intent, generates morning brief data
+- [x] `components/johnny5/morning-brief/MorningBriefTab.tsx` - Enhanced with client-side activity data merging, "since last brief viewed" time window, Resume buttons, Copy as markdown
 
-## Review
+### Integration - DONE
+- [x] `components/johnny5/Johnny5Panel.tsx` - Added ContextBudgetMini strip, Prompt Templates button + overlay, event listener for johnny5:openTemplates
 
-### Change Summary
-Single function update in `app/api/preview/route.ts` (lines 9-13):
-
-**Before:**
-```typescript
-const getProjectRoot = () => {
-  return process.cwd();
-};
-```
-
-**After:**
-```typescript
-const getProjectRoot = () => {
-  const workspacePath = process.env.USER_WORKSPACE_PATH || 'user-workspaces';
-  return path.join(process.cwd(), workspacePath);
-};
-```
-
-This aligns the preview API path resolution with the file read API (`/api/files/read/route.ts` line 14-15), which uses the same pattern. Now when the file explorer passes `default/index.html` as the file path, the preview API correctly resolves it to `{cwd}/user-workspaces/default/index.html`.
-
-The security check on line 124 (`fullPath.startsWith(projectRoot)`) continues to work correctly since the resolved path is within the workspace directory. Absolute paths (used by auto-preview) still bypass resolution and are checked separately.
+### Build Verification - PASS
+- [x] `npx next build` compiles successfully with zero TypeScript errors
+- [x] All 191 pages generate correctly
 
 ---
 
-# Alpha Landing Page React Conversion - COMPLETED
-
-## Task Summary
-Converted the Coder1 alpha landing page from static HTML to a dynamic React/Next.js page with sharper UI and interactive features.
-
-### Completed Features
-- [x] Animated counter stats (count up when scrolling into view)
-- [x] Typing animation in hero subtitle
-- [x] Interactive Morning Brief demo (click to reveal sections)
-- [x] Comparison table with hover effects and tooltips
-- [x] Scroll-triggered animations (fade up on scroll)
-- [x] Interactive feature cards with hover effects
-- [x] Live terminal demo showing Johnny5 commands
-- [x] Floating grid background with particles
-- [x] Claude Code messaging section ("Purpose-Built for Claude Code")
-- [x] Electric pulse borders on featured pricing card
-- [x] Shimmer text effect on hero title
-- [x] Mobile responsive design
-
-### File Location
-`/Users/michaelkraft/autonomous_vibe_interface/coder1-ide-next/app/alpha/page.tsx`
-
-### Key Components Created
-1. `AnimatedCounter` - Numbers count up when in view using IntersectionObserver
-2. `TypeWriter` - Character-by-character typing animation
-3. `ScrollReveal` - Fade/slide up animation when element enters viewport
-4. `MorningBriefDemo` - Interactive demo with reveal buttons
-5. `FloatingGrid` - Animated background with particles and gradient orbs
-6. `FeatureCard` - Hover effects with glow
-7. `ComparisonRow` - Table rows with hover highlighting and tooltips
-8. `PricingCard` - Electric pulse border animation for featured tier
-9. `LiveTerminalDemo` - Auto-advancing terminal showing Johnny5 commands
-
-### Design Tokens Used
-```typescript
-colors = {
-  primary: '#00D9FF',
-  purple: '#8B5CF6',
-  dark: '#0A0A0A',
-}
-```
-
-### View the page
-http://localhost:3001/alpha
-
----
-
-# Johnny5 Implementation Todo
-
-**Plan file**: `/Users/michaelkraft/.claude/plans/humming-gliding-nova.md`
-**Approach**: Fork Moltbot + Add Johnny5 Dashboard UI
-**Status**: ALL PHASES (1-13) COMPLETE - Full Johnny5 Dashboard Implemented!
-
----
-
-## Phase 1: Foundation - COMPLETED ✅
-
-### Step 1: Fork Moltbot Repository
-- [ ] Fork moltbot/moltbot to MichaelrKraft/johnny5-core
-- [ ] Clone locally to autonomous_vibe_interface/johnny5-core
-- [ ] Document Moltbot architecture for integration
-
-### Step 2: Create Johnny5 Types ✅
-- [x] Create `types/johnny5.ts` with all interfaces (500+ lines)
-- [x] SessionSummary, ReplayStep, ContextComposition
-- [x] AuditEntry, SecurityWarning, Permission
-- [x] Johnny5Task, Integration, Skill schemas
-
-### Step 3: Create Johnny5 Store ✅
-- [x] Create `stores/useJohnny5Store.ts` (600+ lines)
-- [x] Follow existing Zustand patterns from useSessionStore.ts
-- [x] Include all state for tabs, sessions, security, settings
-
-### Step 4: Create Component Directory Structure ✅
-- [x] Create `components/johnny5/` directory
-- [x] Create barrel export `components/johnny5/index.ts`
-- [x] Create placeholder components for each tab
-
-### Step 5: Create Johnny5Panel Shell ✅
-- [x] Create `components/johnny5/Johnny5Panel.tsx`
-- [x] Create `components/johnny5/Johnny5TabBar.tsx`
-- [x] Match Coder1 design system (cyan/orange glows)
-
-### Step 6: Wire Up to ThreePanelLayout ✅
-- [x] Modify `components/preview/PreviewPanel.tsx`
-- [x] Add Johnny5 as new tab (default mode)
-- [x] Verify right panel renders Johnny5
-
-### Step 7: Create API Routes Shell ✅
-- [x] Create `app/api/johnny5/sessions/route.ts` - GET sessions list
-- [x] Create `app/api/johnny5/sessions/[sessionId]/route.ts` - GET session detail
-- [x] Create `app/api/johnny5/analytics/route.ts` - GET analytics data
-- [x] Create `app/api/johnny5/context/route.ts` - GET context composition
-- [x] Create `app/api/johnny5/security/score/route.ts` - GET security score
-- [x] Create `app/api/johnny5/security/audit/route.ts` - GET audit log
-- [x] Create `app/api/johnny5/security/alerts/route.ts` - GET/POST prompt injection alerts
-- [x] Create `app/api/johnny5/tasks/route.ts` - GET/POST Mission Control tasks
-
----
-
-## Phase 2: Sessions Tab - COMPLETED ✅
-
-### Sessions Tab Components
-- [x] Create `components/johnny5/sessions/SessionCard.tsx` - Individual session card with metrics
-- [x] Create `components/johnny5/sessions/SessionDetail.tsx` - Expanded session view
-- [x] Create `components/johnny5/sessions/SessionsTab.tsx` - Main sessions list with search/filter
-- [x] Create `components/johnny5/sessions/index.ts` - Barrel export
-
----
-
-## Phase 3: Reasoning Replay Tab - COMPLETED ✅
-
-### Reasoning Tab Components
-- [x] Create `components/johnny5/reasoning/ReasoningTab.tsx` - Session selector and replay
-- [x] Create `components/johnny5/reasoning/TimelineScrubber.tsx` - Horizontal timeline
-- [x] Create `components/johnny5/reasoning/StepDetail.tsx` - Tool call visualization
-- [x] Create `components/johnny5/reasoning/ThinkingBubble.tsx` - AI reasoning display
-- [x] Create `components/johnny5/reasoning/index.ts` - Barrel export
-
----
-
-## Phase 4: Analytics Tab - COMPLETED ✅
-
-### Analytics Tab Components
-- [x] Create `components/johnny5/analytics/AnalyticsTab.tsx` - Time range selector and metrics
-- [x] Create `components/johnny5/analytics/TokenUsageChart.tsx` - CSS-based bar chart
-- [x] Create `components/johnny5/analytics/BurnRateGauge.tsx` - Real-time consumption indicator
-- [x] Create `components/johnny5/analytics/EfficiencyMetrics.tsx` - Score cards grid
-- [x] Create `components/johnny5/analytics/index.ts` - Barrel export
-
----
-
-## Phase 5: Context Tab - COMPLETED ✅
-
-### Context Tab Components
-- [x] Create `components/johnny5/context/ContextTab.tsx` - Main context visualizer
-- [x] Create `components/johnny5/context/ContextPieChart.tsx` - SVG donut chart breakdown
-- [x] Create `components/johnny5/context/ContextUsageBar.tsx` - Progress bar with warnings
-- [x] Create `components/johnny5/context/FileContextList.tsx` - Sortable/searchable file list
-- [x] Create `components/johnny5/context/index.ts` - Barrel export
-
----
-
-## Phase 6: Security Tab (KEY DIFFERENTIATOR) - COMPLETED ✅
-
-### Security Tab Components
-- [x] Create `components/johnny5/security/SecurityTab.tsx` - Main security view
-- [x] Create `components/johnny5/security/SecurityScore.tsx` - Circular gauge (0-100)
-- [x] Create `components/johnny5/security/PermissionsList.tsx` - Active permissions display
-- [x] Create `components/johnny5/security/AuditLog.tsx` - Chronological action log
-- [x] Create `components/johnny5/security/PromptInjectionAlert.tsx` - Suspicious pattern warnings
-- [x] Create `components/johnny5/security/index.ts` - Barrel export
-
----
-
-## Phase 7: Settings & Integrations - COMPLETED ✅
-
-### Settings Components
-- [x] Create `components/johnny5/settings/SettingsPanel.tsx` - Main settings view with 4 tabs (Integrations, Behavior, Security, Privacy)
-- [x] Create `components/johnny5/settings/SetupWizard.tsx` - 5-step first-time setup flow
-- [x] Create `components/johnny5/settings/IntegrationCard.tsx` - Connected service card with status/configure/remove
-- [x] Create `components/johnny5/settings/PermissionBoundaries.tsx` - Permission toggles grouped by category with risk indicators
-- [x] Create `components/johnny5/settings/index.ts` - Barrel export
-
----
-
-## Phase 8: Morning Brief System - COMPLETED ✅
-
-### Morning Brief Components
-- [x] Create `components/johnny5/morning-brief/MorningBriefTab.tsx` - Main morning brief display with greeting, weather, and sections
-- [x] Create `components/johnny5/morning-brief/BriefSection.tsx` - Collapsible section component (Built, Research, Trends, Attention)
-- [x] Create `components/johnny5/morning-brief/BriefItem.tsx` - Individual item within a section with icons and actions
-- [x] Create `components/johnny5/morning-brief/WeatherWidget.tsx` - Optional weather display with condition icons
-- [x] Create `components/johnny5/morning-brief/index.ts` - Barrel export
-
-### Morning Brief API Routes
-- [x] Create `app/api/johnny5/morning-brief/route.ts` - GET today's brief (or specific date)
-- [x] Create `app/api/johnny5/morning-brief/history/route.ts` - GET past briefs list
-
----
-
-## Phase 9: Mission Control - COMPLETED ✅
-
-### Mission Control Components
-- [x] Create `components/johnny5/mission-control/MissionControlTab.tsx` - Kanban view
-- [x] Create `components/johnny5/mission-control/TaskCard.tsx` - Individual task card
-- [x] Create `components/johnny5/mission-control/ActivityLog.tsx` - Chronological activity feed
-- [x] Create `components/johnny5/mission-control/index.ts` - Barrel export
-
----
-
-## Phase 10: Proactive Builder - COMPLETED ✅
-
-### Proactive Builder Components & Services
-- [x] Create `services/johnny5/proactive-builder.ts` - Auto-PR system with safety rules
-- [x] Create `services/johnny5/code-generator.ts` - Code generation service
-- [x] Create `components/johnny5/builder/PRReviewCard.tsx` - Pending PRs display
-- [x] Create `components/johnny5/builder/BuilderTab.tsx` - Main builder view
-- [x] Create `components/johnny5/builder/index.ts` - Barrel export
-- [x] Create `app/api/johnny5/builder/prs/route.ts` - GET/POST PRs
-- [x] Create `app/api/johnny5/builder/prs/[prId]/route.ts` - PR detail/approve/reject
-
----
-
-## Phase 11: Trend Monitor - COMPLETED ✅
-
-### Trend Monitor Components & Services
-- [x] Create `services/johnny5/trend-monitor.ts` - X, GitHub, HackerNews monitoring
-- [x] Create `components/johnny5/trends/TrendAlert.tsx` - Alert card UI
-- [x] Create `components/johnny5/trends/TrendsTab.tsx` - Historical trends view
-- [x] Create `components/johnny5/trends/TrendSource.tsx` - Source indicator
-- [x] Create `components/johnny5/trends/index.ts` - Barrel export
-- [x] Create `app/api/johnny5/trends/route.ts` - GET trends, POST topics
-- [x] Create `app/api/johnny5/trends/alerts/route.ts` - GET/dismiss alerts
-
----
-
-## Phase 12: Self-Improvement Engine - COMPLETED ✅
-
-### Self-Improvement Components & Services
-- [x] Create `services/johnny5/self-improvement.ts` - Conversation analysis
-- [x] Create `services/johnny5/skill-builder.ts` - Creates new skills
-- [x] Create `components/johnny5/skills/SkillsManager.tsx` - Skill management UI
-- [x] Create `components/johnny5/skills/SkillCard.tsx` - Individual skill display
-- [x] Create `components/johnny5/skills/SkillCreator.tsx` - Create new skills
-- [x] Create `components/johnny5/skills/index.ts` - Barrel export
-- [x] Create `app/api/johnny5/skills/route.ts` - GET/POST skills
-- [x] Create `app/api/johnny5/skills/[skillId]/route.ts` - GET/PATCH/DELETE skill
-
----
-
-## Phase 13: Interview Mode - COMPLETED ✅
-
-### Interview Mode Components & Services
-- [x] Create `services/johnny5/capability-matcher.ts` - Matches user to features
-- [x] Create `components/johnny5/onboarding/InterviewMode.tsx` - Capability discovery
-- [x] Create `components/johnny5/onboarding/CapabilityCard.tsx` - Suggested capability
-- [x] Create `components/johnny5/onboarding/UserProfileSummary.tsx` - User profile display
-- [x] Create `components/johnny5/onboarding/index.ts` - Barrel export
-- [x] Create `app/api/johnny5/onboarding/profile/route.ts` - GET/POST user profile
-- [x] Create `app/api/johnny5/onboarding/capabilities/route.ts` - GET/POST capabilities
-
----
-
-## Summary of Implementation (Jan 28, 2025)
-
-### Files Created: 70+ new files
-
-**Types & Store:**
-- `types/johnny5.ts` - 500+ lines of type definitions
-- `stores/useJohnny5Store.ts` - 600+ lines Zustand store
-
-**Main Panel:**
-- `components/johnny5/Johnny5Panel.tsx` - Main container
-- `components/johnny5/Johnny5TabBar.tsx` - Tab navigation
-- `components/johnny5/index.ts` - Barrel export
-
-**Sessions Tab (4 files):**
-- `SessionsTab.tsx`, `SessionCard.tsx`, `SessionDetail.tsx`, `index.ts`
-
-**Security Tab (6 files):**
-- `SecurityTab.tsx`, `SecurityScore.tsx`, `PermissionsList.tsx`, `AuditLog.tsx`, `PromptInjectionAlert.tsx`, `index.ts`
-
-**Analytics Tab (5 files):**
-- `AnalyticsTab.tsx`, `TokenUsageChart.tsx`, `BurnRateGauge.tsx`, `EfficiencyMetrics.tsx`, `index.ts`
-
-**Context Tab (5 files):**
-- `ContextTab.tsx`, `ContextPieChart.tsx`, `ContextUsageBar.tsx`, `FileContextList.tsx`, `index.ts`
-
-**Mission Control (4 files):**
-- `MissionControlTab.tsx`, `TaskCard.tsx`, `ActivityLog.tsx`, `index.ts`
-
-**Morning Brief (5 files):**
-- `MorningBriefTab.tsx`, `BriefSection.tsx`, `BriefItem.tsx`, `WeatherWidget.tsx`, `index.ts`
-
-**Reasoning Replay Tab (5 files):**
-- `ReasoningTab.tsx`, `TimelineScrubber.tsx`, `StepDetail.tsx`, `ThinkingBubble.tsx`, `index.ts`
-
-**Settings & Integrations (5 files):**
-- `SettingsPanel.tsx`, `SetupWizard.tsx`, `IntegrationCard.tsx`, `PermissionBoundaries.tsx`, `index.ts`
-
-**API Routes (18 files):**
-- `app/api/johnny5/sessions/route.ts`
-- `app/api/johnny5/sessions/[sessionId]/route.ts`
-- `app/api/johnny5/analytics/route.ts`
-- `app/api/johnny5/context/route.ts`
-- `app/api/johnny5/security/score/route.ts`
-- `app/api/johnny5/security/audit/route.ts`
-- `app/api/johnny5/security/alerts/route.ts`
-- `app/api/johnny5/tasks/route.ts`
-- `app/api/johnny5/morning-brief/route.ts`
-- `app/api/johnny5/morning-brief/history/route.ts`
-- `app/api/johnny5/builder/prs/route.ts`
-- `app/api/johnny5/builder/prs/[prId]/route.ts`
-- `app/api/johnny5/trends/route.ts`
-- `app/api/johnny5/trends/alerts/route.ts`
-- `app/api/johnny5/skills/route.ts`
-- `app/api/johnny5/skills/[skillId]/route.ts`
-- `app/api/johnny5/onboarding/profile/route.ts`
-- `app/api/johnny5/onboarding/capabilities/route.ts`
-
-**Proactive Builder (3 files):**
-- `BuilderTab.tsx`, `PRReviewCard.tsx`, `index.ts`
-
-**Trend Monitor (4 files):**
-- `TrendsTab.tsx`, `TrendAlert.tsx`, `TrendSource.tsx`, `index.ts`
-
-**Skills Manager (4 files):**
-- `SkillsManager.tsx`, `SkillCard.tsx`, `SkillCreator.tsx`, `index.ts`
-
-**Interview Mode/Onboarding (4 files):**
-- `InterviewMode.tsx`, `CapabilityCard.tsx`, `UserProfileSummary.tsx`, `index.ts`
-
-**Services (6 files):**
-- `services/johnny5/proactive-builder.ts`
-- `services/johnny5/code-generator.ts`
-- `services/johnny5/trend-monitor.ts`
-- `services/johnny5/self-improvement.ts`
-- `services/johnny5/skill-builder.ts`
-- `services/johnny5/capability-matcher.ts`
-
-### Build Status: ✅ PASSING
-
-### Completed Summary:
-- ✅ All 13 phases implemented
-- ✅ 70+ files created
-- ✅ Full dashboard UI with all tabs functional
-- ✅ Security monitoring with prompt injection detection (KEY DIFFERENTIATOR)
-- ✅ Morning Brief system for overnight work summaries
-- ✅ Mission Control for task tracking
-- ✅ Proactive Builder with safety rules for auto-PR creation
-- ✅ Trend Monitor for opportunity detection
-- ✅ Skills Manager for self-improvement
-- ✅ Interview Mode for capability discovery
-
-### Next Steps:
-1. Fork Moltbot repository for autonomous daemon functionality (Phase 1, Step 1)
-2. ~~Connect real data to API routes (replace mock data)~~ DONE (Feb 1, 2026)
-3. Test all tabs in the live IDE at http://localhost:3001/ide
-4. Wire up Johnny5 store actions to API routes
-5. Add real-time updates via WebSocket
-
----
-
-## UI Components Real Data Update (Feb 1, 2026)
-
-### Summary
-All Johnny5 UI tab components now fetch real data from API endpoints instead of using mock data.
-
-### Files Modified
-
-**SessionsTab.tsx**:
-- Removed `getMockSessions()` function (~70 lines of mock data)
-- Now fetches from `/api/johnny5/sessions` and sets empty array on failure
-- Proper error logging added
-
-**MissionControlTab.tsx**:
-- Added `useEffect` to fetch tasks on mount from `/api/johnny5/tasks`
-- Implemented real `handleRefresh` function that calls API
-- Removed `generateDemoTasks()` function (~40 lines of mock data)
-- Added `setTasksLoading` to store usage
-
-**MorningBriefTab.tsx**:
-- Removed `getMockBrief()` function (~90 lines of mock data)
-- Now fetches from `/api/johnny5/morning-brief` and sets null on failure
-- Proper error logging added
-
-**mission-control/index.ts**:
-- Removed `generateDemoTasks` export
-
-### Components Already Correct
-- **AnalyticsTab.tsx**: Already fetches from `/api/johnny5/analytics?range=` and sets empty state on error
-- **ChatTab.tsx**: Already uses `/api/johnny5/chat` API correctly
-
-### Build Status
-Build passes with no errors related to Johnny5 components.
-
----
-
-## MoltbotBridge Integration (Jan 28, 2025)
-
-### Changes Made to server.js
-
-**1. Import MoltbotBridge (lines 178-187)**
-- Added import of `getMoltbotBridge` from `./services/johnny5/moltbot-bridge.ts`
-- Follows same try/catch pattern as other services (claudePuppeteer, etc.)
-- Sets `moltbotBridge = null` if import fails
-
-**2. Moltbot Connection Initialization (lines 1592-1599)**
-- Connects to Moltbot gateway when `MOLTBOT_ENABLED=true` and `MOLTBOT_GATEWAY_URL` is set
-- Uses async connect with promise handling
-- Logs success/failure without blocking server startup
-
-**3. Event Forwarding (lines 1600-1626)**
-- Forwards `message` events to session-specific Socket.IO rooms (`johnny5:{sessionId}`)
-- Broadcasts `session-update` to all clients
-- Emits `johnny5:moltbot-connected` and `johnny5:moltbot-disconnected` events
-
-**4. Socket.IO Handlers (lines 3048-3064)**
-- `johnny5:status` - Returns moltbot connection status to requesting client
-- `johnny5:join-session` - Joins client to session room for targeted messages
-- `johnny5:leave-session` - Removes client from session room
-
-### Files Modified
-- `/Users/michaelkraft/autonomous_vibe_interface/coder1-ide-next/server.js`
-
-### Required Environment Variables
-```env
-MOLTBOT_ENABLED=true
-MOLTBOT_GATEWAY_URL=ws://localhost:8765
-```
-
-### Testing
-- Server syntax check: Passed (node --check server.js)
-- Integration testing: Pending (requires Moltbot daemon running)
-
----
-
-## Sessions API Implementation (Feb 1, 2026)
-
-### Overview
-Implemented the real Johnny5 sessions API using the SQLite database (johnny5-db module).
-
-### Files Updated
-- `/Users/michaelkraft/autonomous_vibe_interface/coder1-ide-next/app/api/johnny5/sessions/route.ts`
-- `/Users/michaelkraft/autonomous_vibe_interface/coder1-ide-next/app/api/johnny5/sessions/[sessionId]/route.ts`
-
-### API Endpoints Implemented
-
-**GET /api/johnny5/sessions**
-- Lists all sessions with pagination (`limit`, `offset`)
-- Supports status filtering (`?status=active|completed|archived`)
-- Returns session summaries with token usage, message count, duration
-
-**POST /api/johnny5/sessions**
-- Creates a new session
-- Accepts `{ name: string }` in body
-- Returns the created session
-
-**DELETE /api/johnny5/sessions?id=xxx**
-- Archives a session by ID
-- Uses query parameter for session ID
-
-**GET /api/johnny5/sessions/[sessionId]**
-- Returns detailed session info
-- Optional `?includeMessages=true` (default) to fetch messages
-- Optional `?messageLimit=100` (default) to limit messages
-
-**PATCH /api/johnny5/sessions/[sessionId]**
-- Updates session name or status
-- Accepts `{ name?, status? }` in body
-
-**DELETE /api/johnny5/sessions/[sessionId]**
-- Archives the specific session
-
-### Testing Results
-
-```bash
-# List sessions
-curl http://localhost:3001/api/johnny5/sessions
-# {"success":true,"data":{"sessions":[...]}}
-
-# Create session
-curl -X POST http://localhost:3001/api/johnny5/sessions -H "Content-Type: application/json" -d '{"name":"Test Session"}'
-# {"success":true,"data":{"session":{...}}}
-
-# Get session with messages
-curl "http://localhost:3001/api/johnny5/sessions/SESSION_ID?includeMessages=true"
-# {"success":true,"data":{"session":{...},"messages":[...]}}
-
-# Update session
-curl -X PATCH "http://localhost:3001/api/johnny5/sessions/SESSION_ID" -H "Content-Type: application/json" -d '{"name":"New Name","status":"completed"}'
-# {"success":true,"data":{"session":{...}}}
-
-# Archive session
-curl -X DELETE "http://localhost:3001/api/johnny5/sessions?id=SESSION_ID"
-# {"success":true}
-```
-
-### Database
-- Location: `~/.coder1/johnny5.db`
-- Uses better-sqlite3 for SQLite access
-- Sessions, messages, and tasks tables with proper foreign keys
-
----
-
-# Sandbox UX Communication Improvements (Feb 2, 2026)
-
-## Problem Statement
-When users create a sandbox, a new browser tab opens at `/ide?sandbox={id}`. This new tab looks **identical** to a regular Coder1 session, which confuses users into thinking they accidentally opened a duplicate.
-
-## Proposed Solution
-
-Implement 4 key UX improvements to clearly communicate sandbox mode:
-
-### Todo Items
-
-- [x] **1. Change Browser Tab Title** (Simple) ✅ DONE
-  - When sandbox detected, set `document.title = "🧪 Sandbox - Coder1 IDE"`
-  - Provides immediate visual distinction in browser tabs
-
-- [x] **2. Add Sandbox Mode Banner** (Medium) ✅ DONE
-  - Display a persistent colored banner at top of IDE when in sandbox mode
-  - Yellow/amber background with icon and text: "🧪 Sandbox Environment - Changes here are isolated"
-  - Shows sandbox ID (last 8 chars) for reference
-  - "Open Main IDE" button to easily open non-sandbox IDE
-
-- [ ] **3. Show Welcome Modal on First Open** (Medium)
-  - One-time modal when sandbox tab first opens explaining:
-    - "You're in an isolated sandbox environment"
-    - "Changes here won't affect your main workspace"
-    - "Use this space to experiment safely"
-    - "Your main Coder1 session is still open in the other tab"
-  - Checkbox: "Don't show this again"
-  - "Got it!" button to dismiss
-
-- [ ] **4. Terminal Header Indicator** (Simple)
-  - Add sandbox badge/pill in terminal header showing sandbox ID
-  - Different terminal prompt color or prefix in sandbox mode
-
-## Files to Modify
-
-1. `app/ide/page.tsx` - Add sandbox detection state, title change, banner
-2. `components/SandboxWelcomeModal.tsx` - New component for welcome modal
-3. `components/SandboxBanner.tsx` - New component for persistent banner
-4. `components/terminal/Terminal.tsx` - Add sandbox indicator in terminal header
-5. `app/globals.css` - Sandbox-specific styling
-
-## Implementation Priority
-
-1. **Tab title** - Quickest win, immediate user feedback
-2. **Banner** - Most visible persistent indicator
-3. **Welcome modal** - Best for education/onboarding
-4. **Terminal indicator** - Reinforces sandbox context
-
-## Acceptance Criteria
-
-- [ ] User can immediately tell they're in a sandbox from browser tab
-- [ ] Persistent visual indicator shows sandbox mode throughout session
-- [ ] First-time users understand what a sandbox is via welcome modal
-- [ ] Easy way to return to main workspace
-- [ ] Sandbox ID is visible somewhere for reference
-
----
-
-**Status**: Items 1 & 2 Complete
-**Created**: 2026-02-02
-
----
-
-## Implementation Review (Feb 2, 2026)
-
-### Changes Made
-
-**File Modified**: `app/ide/page.tsx`
-
-1. **Added sandbox mode state** (line ~197):
-   ```typescript
-   const [sandboxMode, setSandboxMode] = useState<{ active: boolean; sandboxId: string | null }>({ active: false, sandboxId: null });
-   ```
-
-2. **Updated sandbox detection useEffect** (line ~1304-1348):
-   - Now sets `sandboxMode` state when sandbox URL param detected
-   - Sets `document.title = "🧪 Sandbox - Coder1 IDE"` for tab distinction
-   - Resets both when not in sandbox mode
-
-3. **Added Sandbox Banner JSX** (line ~1540-1590):
-   - Yellow/amber colored banner appears only when `sandboxMode.active`
-   - Shows "🧪 Sandbox Environment — Changes here are isolated"
-   - Displays sandbox ID badge (last 8 characters)
-   - "Open Main IDE" button opens regular `/ide` in new tab
-
-### Visual Result
-
-When user opens a sandbox:
-- **Browser tab**: Shows "🧪 Sandbox - Coder1 IDE" instead of "Coder1 IDE"
-- **Banner**: Yellow bar at top with sandbox info and "Open Main IDE" button
-
-### Build Status
-✅ Build passed - no errors
-
----
-
-# Phase 4: Johnny5 Proactive Features (Feb 3, 2026) - COMPLETED
+# Context Budget Mini + ContextTab Real Data Wiring (Feb 6, 2026)
 
 ## Status: COMPLETE
 
-## What Was Implemented
+## Summary of Changes
 
-### CronService for Scheduled Tasks
-- **File**: `/services/johnny5/cron-service.ts`
-- Supports: one-shot (at), interval (every), cron expressions
-- Uses `croner` library for reliable scheduling
-- File-based persistence at `data/johnny5/cron-jobs.json`
-- Run history tracking with retry logic
+### File 1: Created `components/johnny5/ContextBudgetMini.tsx`
+- [x] New compact 28px bar component showing context token usage
+- [x] 4px thin progress bar at top with color thresholds (green/yellow/orange/red)
+- [x] Text showing "~67K / 200K tokens (estimated)" in 10px
+- [x] Reads contextComposition from Johnny5 store, falls back to IDE store tokenUsage
+- [x] Three states: disconnected ("Context: not connected"), no data ("waiting for data..."), and normal display
+- [x] Entire component clickable (onClick prop)
+- [x] Tailwind CSS, dark theme matching Coder1 design
 
-### API Routes for Cron Management
-- `GET /api/johnny5/cron` - List all cron jobs
-- `POST /api/johnny5/cron` - Create new cron job
-- `GET /api/johnny5/cron/[jobId]` - Get job details and history
-- `PATCH /api/johnny5/cron/[jobId]` - Enable/disable job
-- `DELETE /api/johnny5/cron/[jobId]` - Remove job
-- `POST /api/johnny5/cron/control` - Control service (start/stop/init-defaults)
+### File 2: Modified `components/johnny5/context/ContextTab.tsx`
+- [x] Imported `useIDEStore`
+- [x] Added `aiState` read from IDE store
+- [x] Added `useEffect` watching `aiState.tokenUsage.total` that computes real context composition
+- [x] Real data uses estimated breakdown: system 5%, conversation 60%, tools 25%, remaining 10% unaccounted
+- [x] Added "Estimated" cyan info banner below ContextUsageBar
+- [x] Changed mock data limit from 128000 to 200000
+- [x] No changes to ContextUsageBar, ContextPieChart, or FileContextList components
 
-### Default Scheduled Jobs (Created Automatically)
-1. **Daily Morning Brief** - `0 9 * * *` (9am PT daily)
-   - Generates brief from overnight activity
-   - Sends WebSocket notification to connected clients
-2. **Trend Monitor Check** - `0 9,11,13,15,17 * * 1-5` (Business hours Mon-Fri)
-   - Checks for new trends and opportunities
-   - Alerts on high-priority findings
-
-### Server Integration
-- Cron service auto-starts when server boots
-- Jobs execute with Socket.IO notifications
-- Default jobs created if not exists
-
-### Bug Fixes
-- Made `generateMorningBrief` async to work with SQLite task tracker
-- Added `stats` field to Johnny5MorningBrief type
-- Fixed history API to include `id` field for UI compatibility
-- Fixed TypeScript imports (`fs`, `path`)
-
-## Files Created/Modified
-- `services/johnny5/cron-service.ts` (NEW)
-- `app/api/johnny5/cron/route.ts` (NEW)
-- `app/api/johnny5/cron/[jobId]/route.ts` (NEW)
-- `app/api/johnny5/cron/control/route.ts` (NEW)
-- `services/johnny5/morning-brief-generator.ts` (MODIFIED - async)
-- `app/api/johnny5/morning-brief/route.ts` (MODIFIED)
-- `app/api/johnny5/morning-brief/history/route.ts` (MODIFIED)
-- `types/johnny5.ts` (MODIFIED - added stats field)
-- `server.js` (MODIFIED - cron initialization)
-
-## Testing Commands
-```bash
-# Test cron service
-curl http://localhost:3001/api/johnny5/cron/control -X POST -H "Content-Type: application/json" -d '{"action":"status"}'
-
-# Initialize default jobs
-curl http://localhost:3001/api/johnny5/cron/control -X POST -H "Content-Type: application/json" -d '{"action":"init-defaults"}'
-
-# Manually trigger morning brief
-curl http://localhost:3001/api/johnny5/cron/control -X POST -H "Content-Type: application/json" -d '{"action":"run-morning-brief"}'
-
-# List all cron jobs
-curl http://localhost:3001/api/johnny5/cron
-```
+### TypeScript Verification
+- Zero new TypeScript errors introduced
 
 ---
 
-# Stripe Pro Tier Payment Integration (Feb 3, 2026)
+# Johnny5 Phase 2 Implementation (Feb 6, 2026)
 
-## Status: Code Complete - Waiting for Mike's Stripe Config
+## Status: COMPLETE
+
+## Features
+
+### 2a. Loop & Stuck Detection - DONE
+- [x] `services/johnny5/pattern-detector.ts` - Singleton service detecting repeated errors (3+ in 5min), file thrashing (3+ mods in 2min), consecutive build/test failures, and stuck-after-error (60s idle). RingBuffer approach, deduplication, emits `johnny5:loopDetected` CustomEvent
+- [x] Integration: hooks into TerminalActivityCollector via `.on()` for error_encountered, file_modify, build_fail, build_success, test_fail, test_pass, and wildcard events
+
+### 2b. CLAUDE.md Auto-Suggestions - DONE
+- [x] `services/johnny5/rule-suggester.ts` - Singleton service: subscribes to error_encountered events, normalizes patterns, tracks occurrences, emits johnny5:ruleSuggestion CustomEvent at 3+ hits, 15 rule mappings, localStorage persistence
+- [x] `components/johnny5/RuleSuggestion.tsx` - Compact amber banner with monospace rule text, "Add to CLAUDE.md" (dispatches johnny5:applyRule) and "Dismiss" buttons, 15s auto-hide, slide-down animation
+
+### 2c. Model Recommender - DONE
+- [x] `services/johnny5/model-advisor.ts` - Analyzes prompt complexity (word count, keyword heuristics, file reference count), recommends Haiku/Sonnet/Opus with cost savings string, 2-min debounce, only fires when recommendation differs from current model
+
+### 2d. Command Translator - DONE
+- [x] `components/johnny5/CommandTranslator.tsx` - Overlay with natural language search, fuzzy word-overlap matching, category tabs (All/Git/Claude/Dev/Nav), command cards with Copy + Send buttons
+- [x] `data/command-mappings.json` - 20 command mappings across 4 categories with phrases, commands, descriptions, and difficulty levels
+
+### Integration - DONE
+- [x] `components/johnny5/Johnny5Panel.tsx` - Added imports for all 4 features, Terminal icon button in header, CommandTranslator overlay, RuleSuggestion banner, services startup (PatternDetector, RuleSuggester, ModelAdvisor) with cleanup on unmount
+- [x] Build verification: `npx next build` compiles with zero TypeScript errors
+
+---
+
+# Johnny5 Phase 3 Implementation (Feb 6, 2026)
+
+## Status: COMPLETE
+
+## Features
+
+### 3a. Cross-Session Memory - DONE
+- [x] `services/johnny5/session-memory.ts` - Client-side singleton that indexes session summaries by project, files touched, error patterns, and topics. localStorage persistence (key: johnny5_session_memory, max 100 entries, 90-day retention). Relevance scoring: file overlap (3pts), error match (2pts), same project (1pt), same branch (1pt). Auto-recall debounced at 30s on file_modify/file_create. Emits `johnny5:memoryRecall` CustomEvent.
+- [x] `components/johnny5/SessionMemoryPanel.tsx` - Compact violet-themed memory recall card. Shows max 3 entries with session name, time ago, truncated file list, accomplishments. "Resume" button dispatches johnny5:resumeFromMemory. 30s auto-hide paused on hover. Slide-down animation matching RuleSuggestion pattern.
+
+### 3b. Context Carry-Forward - DONE
+- [x] `services/johnny5/handoff-generator.ts` - Client-side singleton with start()/stop() lifecycle. Monitors token usage via johnny5:tokenUpdate CustomEvent + localStorage polling (30s interval). Threshold warnings at 75%/85%/95% via johnny5:contextWarning CustomEvent (only emits once per crossing). generateHandoff() collects accomplishments from AccomplishmentDetector, events from TerminalActivityCollector, builds structured markdown handoff text. Persists last handoff to localStorage.
+- [x] `components/johnny5/HandoffBanner.tsx` - Warning banner with three visual states (yellow/orange/red) based on johnny5:contextWarning level. "Generate Handoff" button creates summary. Handoff text shown in scrollable pre block (max-h-40). "Copy for New Session" copies to clipboard with "Copied!" feedback. Follows RuleSuggestion.tsx compact banner pattern.
+
+### 3c. Workflow Orchestrator - DONE
+- [x] `services/johnny5/workflow-engine.ts` - Client-side singleton with localStorage persistence (key: johnny5_workflows, max 20). 5 built-in templates (Feature, Bugfix, Refactor, Test Coverage, Deploy) with placeholder tokens. CRUD methods: createFromTemplate, createCustom, getWorkflows, updateStepStatus, completeWorkflow, deleteWorkflow, pauseWorkflow, resumeWorkflow. Emits `johnny5:workflowUpdate` CustomEvent.
+- [x] `components/johnny5/WorkflowBuilder.tsx` - Three-view overlay (List, Detail, Create). List view: workflow cards with category badge, status indicator, progress bar, empty state. Detail view: vertical step checklist with status colors (pending=gray, in_progress=cyan, completed=green, skipped=yellow), expandable prompt preview, "Send to Terminal" / "Copy" / "Complete" / "Skip" buttons per step, inline notes editing. Create view: template picker with 5 cards + custom workflow builder with dynamic step editor.
+
+### Integration - DONE
+- [x] `components/johnny5/Johnny5Panel.tsx` - Added imports for all 6 Phase 3 files, ListChecks icon, 3 new state vars (showWorkflows, showMemoryPanel, showHandoffBanner), Phase 3 service initialization (SessionMemory + HandoffGenerator start/stop alongside Phase 2), Workflow Orchestrator header button, HandoffBanner + SessionMemoryPanel banners between RuleSuggestion and tab content, WorkflowBuilder overlay
+- [x] Build verification: `npx next build` compiles with zero TypeScript errors
+
+---
+
+## Review: Cross-Session Memory (3a) - Feb 6, 2026
+
+### Files Created
+1. `services/johnny5/session-memory.ts` - 295 lines
+2. `components/johnny5/SessionMemoryPanel.tsx` - 205 lines
+
+### Key Design Decisions
+- Followed the exact singleton pattern from `pattern-detector.ts` and `rule-suggester.ts` (class + `getSessionMemory()` export)
+- Used `StoredMemoryEntry` separate interface for serialization (Date -> ISO string) to avoid type confusion
+- Error normalization reuses the same approach as pattern-detector (strip ANSI, line numbers, timestamps)
+- File matching uses basename extraction for fuzzy cross-project matching
+- Auto-recall clears the active file set after each recall to prevent repeated notifications for the same context
+- Component follows RuleSuggestion.tsx patterns exactly: auto-hide timer, pause on hover via interactedRef, slide-in-from-top animation
+
+### TypeScript Verification
+- `npx tsc --noEmit` reports zero errors related to the new files
+- All pre-existing errors are in unrelated `__tests__/test-utils/test-helpers.ts`
+
+---
+
+## Review: Workflow Orchestrator (3c) - Feb 6, 2026
+
+### Files Created
+1. `services/johnny5/workflow-engine.ts` - ~390 lines
+2. `components/johnny5/WorkflowBuilder.tsx` - ~540 lines
+
+### Key Design Decisions
+- Followed singleton pattern from `rule-suggester.ts` (class + `getWorkflowEngine()` export, localStorage persistence with serialization/deserialization)
+- Used separate `SerializedWorkflow` interface for Date-to-ISO-string serialization to avoid type confusion
+- Overlay layout matches `CommandTranslator.tsx` and `PromptTemplates.tsx` exactly: `absolute inset-0 z-50 bg-bg-primary/95 backdrop-blur-sm`, header with icon + title + X button, back navigation via ChevronLeft
+- 5 built-in templates with realistic prompt templates containing `{placeholder}` tokens
+- Max 20 workflows enforced by evicting oldest completed workflows first
+- Step status uses discriminated union pattern: pending (numbered circle), in_progress (pulsing cyan dot), completed (check icon), skipped (skip-forward icon)
+- "Send to Terminal" dispatches `johnny5:sendToTerminal` CustomEvent matching the existing pattern used by CommandTranslator and PromptTemplates
+- Custom workflow builder allows dynamic step addition/removal with validation (disabled Create button until name and at least one valid step)
+- Inline notes editing per step with save/cancel, persisted via `updateStepStatus()`
+
+### TypeScript Verification
+- `npx tsc --noEmit` reports zero errors from the new files
+- All 18 pre-existing errors are in `__tests__/test-utils/test-helpers.ts` (JSX in .ts file)
+
+---
+
+## Review: Phase 3 Integration - Feb 6, 2026
+
+### Files Created (6 total)
+1. `services/johnny5/session-memory.ts` - ~295 lines, cross-session memory with localStorage indexing
+2. `components/johnny5/SessionMemoryPanel.tsx` - ~205 lines, violet-themed memory recall card
+3. `services/johnny5/handoff-generator.ts` - ~490 lines, token monitoring + handoff summary generation
+4. `components/johnny5/HandoffBanner.tsx` - context warning banner with three severity levels
+5. `services/johnny5/workflow-engine.ts` - ~615 lines, multi-step workflow management with 5 templates
+6. `components/johnny5/WorkflowBuilder.tsx` - ~540 lines, three-view overlay (List, Detail, Create)
+
+### Files Modified (1)
+- `components/johnny5/Johnny5Panel.tsx` - 6 edits:
+  1. Added imports: SessionMemoryPanel, HandoffBanner, WorkflowBuilder, ListChecks, getSessionMemory, getHandoffGenerator
+  2. Added state: showWorkflows, showMemoryPanel, showHandoffBanner
+  3. Extended service initialization useEffect with getSessionMemory().start/stop() and getHandoffGenerator().start/stop()
+  4. Added ListChecks icon button for Workflow Orchestrator in header
+  5. Added HandoffBanner and SessionMemoryPanel between RuleSuggestion and tab content
+  6. Added WorkflowBuilder overlay alongside CommandTranslator and PromptTemplates
+
+### Architecture Summary
+- All Phase 3 services follow the established singleton pattern (class + `get*()` export + start/stop lifecycle)
+- All services are client-side only (browser), no Node.js imports
+- All use CustomEvents for cross-component communication
+- HandoffGenerator monitors token usage and emits `johnny5:contextWarning` at thresholds (75%/85%/95%)
+- SessionMemory auto-recalls relevant past sessions on file changes (30s debounce)
+- WorkflowEngine provides 5 built-in templates with `{placeholder}` tokens for guided sessions
+
+### Build Verification
+- `npx next build` compiles with zero TypeScript errors
+- All pages generate correctly
+
+---
+
+# Johnny5 Phase 4 Implementation (Feb 6, 2026)
+
+## Status: COMPLETE
+
+## Features
+
+### 4a. Error Pattern Library - DONE
+- [x] `services/johnny5/error-pattern-library.ts` - Client-side singleton that stores error->solution pairs. Listens to TerminalActivityCollector for error_encountered, error_resolved, build_success, test_pass, file_modify, and user_prompt events. Normalizes errors (strip ANSI, paths, line numbers, timestamps), tracks error->resolution sequences within 5-min window, localStorage persistence (key: johnny5_error_patterns, max 200 patterns, 90-day retention). Jaccard word-overlap similarity matching (threshold 0.7). Emits `johnny5:knownErrorMatch` CustomEvent with previous solution. Confidence scoring with boost on resolution and downgrade on "Not Helpful" dismiss.
+- [x] `components/johnny5/ErrorPatternCard.tsx` - Compact emerald-themed card that appears when a recurring error is detected. Shows: error summary (truncated, 2-line clamp, monospace), last resolved time ("X ago"), hit count, confidence percentage, resolution details (files modified, commands run). "Apply Fix" dispatches johnny5:sendToTerminal, "Copy Fix" copies description to clipboard, "Not Helpful" dispatches johnny5:errorPatternDismiss for confidence downgrade, X close button. 30s auto-hide paused on hover. Slide-in animation.
+
+### 4b. Agent Specialization Modes - DONE
+- [x] `data/agent-personas.json` - 6 pre-configured personas with practical CLAUDE.md rules
+- [x] `components/johnny5/AgentPersonas.tsx` - Overlay matching CommandTranslator/PromptTemplates pattern
+- [x] Wire into Johnny5Panel.tsx - Add UserCog button + overlay + state
+- [x] TypeScript verification: zero new errors (pre-existing 17 in test-helpers.ts only)
+
+### 4c. Smart Session Coach - DONE
+- [x] `services/johnny5/session-coach.ts` - Client-side singleton monitoring session patterns. Detects: long sessions without checkpoint (>8 min), high context usage without /compact, idle after error (>2 min), complex task without plan mode, rapid file changes suggesting scope creep. Emits `johnny5:coachTip` CustomEvent with message and action. Debounced to max 1 tip per 5 minutes. Respects dismiss preferences via localStorage.
+- [x] `components/johnny5/CoachTip.tsx` - Subtle teal-themed tip card (non-intrusive). Shows: tip message, suggested action button, "Got it" dismiss, "Don't show again" for that tip type. Slides in from top of Johnny5 panel. 15s auto-hide paused on hover.
+
+### Integration - DONE
+- [x] `components/johnny5/Johnny5Panel.tsx` - Added imports for ErrorPatternCard, CoachTip, getErrorPatternLibrary, getSessionCoach. Added showErrorPattern + showCoachTip state vars. Extended service initialization with getErrorPatternLibrary().start/stop() and getSessionCoach().start/stop(). Added johnny5:openWorkflows event listener for SessionCoach's scope_creep tip. Added ErrorPatternCard + CoachTip banners between SessionMemoryPanel and tab content. Agent 4b already wired in AgentPersonas (UserCog button + overlay + showPersonas state).
+- [x] Build verification: `npx next build` compiles with zero TypeScript errors
+
+---
+
+## Review: Smart Session Coach (4c) - Feb 6, 2026
+
+### Files Created (2 total)
+1. `services/johnny5/session-coach.ts` - ~310 lines, singleton coaching service
+2. `components/johnny5/CoachTip.tsx` - ~175 lines, teal-themed tip card component
+
+### Service: session-coach.ts
+
+**Singleton pattern**: Follows `pattern-detector.ts` exactly -- class with `start()`/`stop()` lifecycle, `getSessionCoach()` export, module-level `let instance` variable.
+
+**5 coaching tip detectors:**
+- `long_session` - Periodic check (60s interval). Tracks `lastCommitTime` reset on every `git_commit` event. Fires when >8 minutes since last commit. Action: dispatch `johnny5:sendToTerminal` with `git add -A && git commit -m "WIP: checkpoint"`.
+- `high_context` - Dual trigger: listens for `johnny5:tokenUpdate` CustomEvent AND polls `johnny5_token_percentage` from localStorage every 60s. Fires at >=70%. Action: dispatch `johnny5:sendToTerminal` with `/compact`.
+- `idle_after_error` - Timer-based. Starts 2-minute timer on `error_encountered`. Cleared by any non-error activity via wildcard `*` listener. Action: dispatch `johnny5:openTemplates`.
+- `scope_creep` - Event-driven. Tracks distinct file paths from `file_modify`/`file_create` in a sliding 5-minute window. Fires when >=10 distinct files. Action: dispatch `johnny5:openWorkflows`.
+- `needs_plan` - Periodic check. After 5 minutes of session, fires if >=5 read/exploration events but 0 file modifications. Action: dispatch `johnny5:sendToTerminal` with `/plan`.
+
+**Constraints:**
+- COACH_COOLDOWN_MS = 5 minutes between any two tips
+- Per-type permanent dismissal stored in localStorage (`johnny5_coach_dismissed`)
+- `dismissType()` public method for UI to call
+- No Node.js imports (browser-only)
+
+### Component: CoachTip.tsx
+
+**Pattern followed**: RuleSuggestion.tsx exactly -- `'use client'`, props `{ isVisible, onDismiss }`, CustomEvent listener, auto-hide timer (15s), pause on hover via `interactedRef`, slide-in animation.
+
+**Design:**
+- Teal/cyan theme: `bg-teal-500/10 border border-teal-500/30`
+- Header: MessageCircle icon + "Session Coach" label in `text-teal-400` + X close button
+- Body: tip message in `text-xs text-text-secondary`
+- Action button: Sparkles icon + label, teal-themed with hover glow
+- "Got it" button: secondary muted style, just dismisses
+- "Don't show again" link: `text-[10px] text-text-muted underline`, calls `getSessionCoach().dismissType()`
+
+**Event dispatching:**
+- Action button dispatches `tip.action` as CustomEvent name, with `{ command: tip.actionPayload }` as detail
+- Consistent with existing patterns (johnny5:sendToTerminal, johnny5:openTemplates, johnny5:openWorkflows)
+
+### Event Names Used (all pre-existing in codebase)
+- `johnny5:sendToTerminal` - used by CommandTranslator, PromptTemplates, WorkflowBuilder
+- `johnny5:openTemplates` - used by Johnny5Panel
+- `johnny5:openWorkflows` - used by Johnny5Panel
+- `johnny5:tokenUpdate` - used by HandoffGenerator, ContextBudgetMini
+- `johnny5:coachTip` - NEW event, emitted by SessionCoach, consumed by CoachTip component
+
+### TypeScript Verification
+- `npx tsc --noEmit` reports zero new errors (only pre-existing test-helpers.ts issues)
+
+---
+
+## Review: Error Pattern Library (4a) - Feb 6, 2026
+
+### Files Created (2 total)
+1. `services/johnny5/error-pattern-library.ts` - ~360 lines, singleton error pattern tracking service
+2. `components/johnny5/ErrorPatternCard.tsx` - ~260 lines, emerald-themed known fix card component
+
+### Key Design Decisions
+
+**Service: error-pattern-library.ts**
+- Followed the exact singleton pattern from `pattern-detector.ts` and `rule-suggester.ts` (class + `getErrorPatternLibrary()` export + start/stop lifecycle)
+- Error normalization reuses the same approach as rule-suggester.ts (strip ANSI, paths, line:col, timestamps, hex addresses, collapse whitespace, lowercase)
+- Uses `StoredPattern` separate interface for serialization (Date -> ISO string) to avoid type confusion
+- Jaccard similarity (word overlap) for fuzzy matching with 0.7 threshold
+- Tracks "pending errors" - when an error_encountered is followed by error_resolved/build_success/test_pass within 5 minutes, the intermediate file_modify and user_prompt events are captured as the resolution
+- Confidence starts at 0.5 for new patterns, boosts +0.1 on each resolution, degrades -0.2 on "Not Helpful" dismiss
+- Max 200 patterns enforced by evicting lowest-confidence/oldest patterns
+- 90-day retention with cleanup on load
+- Periodic cleanup of stale pending errors (every 60s)
+
+**Component: ErrorPatternCard.tsx**
+- Pattern followed: RuleSuggestion.tsx and HandoffBanner.tsx exactly -- `'use client'`, props `{ isVisible, onDismiss }`, CustomEvent listener, auto-hide timer (30s), pause on hover via `interactedRef`, slide-in animation
+- Emerald green theme: `bg-emerald-500/10 border border-emerald-500/30`
+- Header: Lightbulb icon + "Known Fix Available" label in `text-emerald-400` + X close button
+- Body: error summary (truncated, `text-[10px] font-mono line-clamp-2`), metadata row (last resolved time, hit count, confidence percentage), resolution details box (files modified, commands run)
+- "Apply Fix" dispatches `johnny5:sendToTerminal` with commands, "Copy Fix" copies description to clipboard with feedback, "Not Helpful" dispatches `johnny5:errorPatternDismiss` for confidence downgrade
+
+### Event Names
+- `johnny5:knownErrorMatch` - NEW event, emitted by ErrorPatternLibrary, consumed by ErrorPatternCard
+- `johnny5:errorPatternDismiss` - NEW event, emitted by ErrorPatternCard, should be consumed by integration code to call `getErrorPatternLibrary().downgradeConfidence()`
+- `johnny5:sendToTerminal` - EXISTING event, reused for "Apply Fix" button
+
+### TypeScript Verification
+- `npx tsc --noEmit` reports zero new errors (only pre-existing test-helpers.ts issues)
+
+---
+
+## Review: Phase 4 Integration - Feb 6, 2026
+
+### Files Created (8 total)
+1. `services/johnny5/error-pattern-library.ts` - ~360 lines, error→solution pair tracking with Jaccard similarity matching
+2. `components/johnny5/ErrorPatternCard.tsx` - ~260 lines, emerald-themed known fix card
+3. `data/agent-personas.json` - 6 pre-configured personas (Security Auditor, Performance Optimizer, Documentation Writer, Test Engineer, Code Reviewer, Refactoring Expert)
+4. `components/johnny5/AgentPersonas.tsx` - Overlay for browsing/activating personas with CLAUDE.md rule copying
+5. `services/johnny5/session-coach.ts` - ~310 lines, session pattern monitoring with 5 coaching tip detectors
+6. `components/johnny5/CoachTip.tsx` - ~175 lines, teal-themed non-intrusive tip card
+
+### Files Modified (1)
+- `components/johnny5/Johnny5Panel.tsx` - 8 edits total (4 by agent 4b for AgentPersonas, 4 for ErrorPatternCard + CoachTip + services):
+  1. Added imports: ErrorPatternCard, CoachTip, getErrorPatternLibrary, getSessionCoach
+  2. Added state: showErrorPattern, showCoachTip
+  3. Extended service initialization useEffect with getErrorPatternLibrary().start/stop() and getSessionCoach().start/stop()
+  4. Added johnny5:openWorkflows event listener (for SessionCoach's scope_creep tip)
+  5. Added ErrorPatternCard + CoachTip banners between SessionMemoryPanel and tab content
+  6. (Agent 4b) Added AgentPersonas import, UserCog icon, showPersonas state, header button, overlay
+
+### Architecture Summary
+- All Phase 4 services follow the singleton pattern (class + `get*()` export + start/stop lifecycle)
+- All client-side only (browser), no Node.js imports
+- ErrorPatternLibrary hooks into TerminalActivityCollector for error tracking
+- SessionCoach monitors 5 session patterns with 5-minute cooldown between tips
+- AgentPersonas is data-driven from JSON, activates via clipboard + terminal dispatch
+
+### New CustomEvents
+- `johnny5:knownErrorMatch` - ErrorPatternLibrary → ErrorPatternCard
+- `johnny5:errorPatternDismiss` - ErrorPatternCard → confidence downgrade
+- `johnny5:coachTip` - SessionCoach → CoachTip
+- `johnny5:openWorkflows` - SessionCoach → Johnny5Panel (opens workflow builder)
+
+### Build Verification
+- `npx next build` compiles with zero TypeScript errors
+- All pages generate correctly
+
+---
+
+# Johnny5 Proactivity Wiring (Feb 6, 2026)
+
+## Status: COMPLETE
 
 ## Context
-Enable Pro tier ($29/mo) purchases via Stripe for alpha launch. Free and Team tiers stay as-is.
+Wired up disconnected Johnny5 proactive features so Johnny5 can autonomously detect opportunities, classify events via Claude, and notify Mike via Telegram - similar to Klouse from the YouTube video.
 
 ## Tasks
 
-- [ ] **Step 1**: Mike creates "Coder1 Pro" product in Stripe Dashboard ($29/mo) ← **YOUR TURN**
-- [x] **Step 2**: Install Stripe dependencies (`stripe`, `@stripe/stripe-js`)
-- [ ] **Step 3**: Add Stripe env vars to `.env.local` ← **YOUR TURN** (see instructions below)
-- [x] **Step 4**: Create `/app/api/stripe/checkout/route.ts` - checkout session API
-- [x] **Step 5**: Create `/app/api/stripe/webhook/route.ts` - webhook handler
-- [x] **Step 6**: Update Pro button in `/app/alpha/page.tsx` to trigger checkout
-- [x] **Step 7**: Handle success redirect in `/app/ide/page.tsx` with toast
-- [ ] **Step 8**: Test end-to-end with Stripe test mode
+- [x] Install telegraf dependency (`npm install telegraf@^4.16.3`)
+- [x] Create Telegram Bot service (`services/johnny5/telegram-bot.ts`)
+- [x] Create Opportunity Engine service (`services/johnny5/opportunity-engine.ts`)
+- [x] Create Webhook Handler API route (`app/api/johnny5/proactive/webhook/route.ts`)
+- [x] Add Audit Logging API route (`app/api/johnny5/proactive/audit/route.ts`)
+- [x] Wire trend_check to Opportunity Engine (`server.js:3479`)
+- [x] Add Proactivity Level checks (built into Opportunity Engine)
+- [x] Add Config Validation on startup (`server.js:3541`)
+- [x] Create Health Check endpoint (`app/api/johnny5/proactive/health/route.ts`)
 
-## What Mike Needs To Do
-
-### 1. Create Stripe Product (5 min)
-Go to https://dashboard.stripe.com/products and:
-1. Click "Add product"
-2. Name: **Coder1 Pro**
-3. Price: **$29.00 USD** / **Monthly** (recurring)
-4. Click "Save product"
-5. Copy the **Price ID** (starts with `price_...`)
-
-### 2. Get API Keys
-Go to https://dashboard.stripe.com/apikeys and copy:
-- **Publishable key** (starts with `pk_live_...` or `pk_test_...`)
-- **Secret key** (starts with `sk_live_...` or `sk_test_...`)
-
-### 3. Add to .env.local
-Create/edit `/Users/michaelkraft/autonomous_vibe_interface/coder1-ide-next/.env.local` and add:
-```
-STRIPE_SECRET_KEY=sk_live_YOUR_SECRET_KEY
-NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_live_YOUR_PUBLISHABLE_KEY
-STRIPE_PRO_PRICE_ID=price_YOUR_PRICE_ID
-```
-
-### 4. (Optional) Set Up Webhook for Production
-Go to https://dashboard.stripe.com/webhooks:
-1. Add endpoint: `https://your-domain.com/api/stripe/webhook`
-2. Select events: `checkout.session.completed`, `customer.subscription.*`, `invoice.*`
-3. Copy webhook signing secret to `STRIPE_WEBHOOK_SECRET=whsec_...`
-
-### 5. Test with Test Mode
-Use test card: `4242 4242 4242 4242`, any future expiry, any CVC
-
-## Files Created/Modified
-
-### New Files
-- `app/api/stripe/checkout/route.ts` - Creates Stripe checkout sessions
-- `app/api/stripe/webhook/route.ts` - Handles subscription lifecycle events
-
-### Modified Files
-- `app/alpha/page.tsx` - Pro button now triggers `handleProCheckout()`
-- `app/ide/page.tsx` - Shows welcome toast on checkout success
-- `.env.local.example` - Added Stripe env var documentation
-- `package.json` - Added `stripe` and `@stripe/stripe-js`
-
-## Flow
-
-1. User clicks "Start Pro Trial" on Pro pricing card
-2. Button calls `/api/stripe/checkout` API
-3. API creates Stripe checkout session
-4. User redirected to Stripe's hosted checkout page
-5. After payment → redirected to `/ide?checkout_success=true&session_id=...`
-6. IDE shows "Welcome to Coder1 Pro!" toast notification
-
-## Notes
-
-- Free tier: No changes (keeps signup form)
-- Team tier: No changes (keeps mailto link)
-- Success URL: `/ide?checkout_success=true&session_id={CHECKOUT_SESSION_ID}`
-- Cancel URL: `/alpha#pricing`
-
----
-
-# Fact Extraction Service - Structured Logging & Robustness (Feb 5, 2026)
-
-## Status: IN PROGRESS
-
-## Overview
-Enhance `services/memory/fact-extraction-service.ts` with better structured logging, contradictory fact detection, and an `extractDirectFact()` function for explicit "remember" commands.
-
-## Todo Items
-
-- [x] **1. Add structured logging to `saveFacts()`**
-  - Log before transaction: "Saving N facts to session X"
-  - Debug-level log per fact inside loop
-  - Log success after transaction
-  - Improve error logging with full error message
-
-- [x] **2. Detect contradictory fact updates in `saveFacts()`**
-  - Before the transaction, query existing facts by key
-  - Log when a fact value is changing from old to new
-  - Non-critical: wrap in try/catch so failures don't block save
-
-- [x] **3. Add extraction summary log to `extractFactsFromConversation()`**
-  - Add a summary object log at end of function (both success and error paths)
-  - Include: inputMessages, userMessages, existingFactsChecked, newFactsExtracted, geminiAvailable, status
-
-- [x] **4. Add `extractDirectFact()` exported function**
-  - New standalone function (does NOT modify existing function flow)
-  - Matches "remember/note/save that..." patterns
-  - Returns `ExtractedFact | null`
-  - Can be called separately by the chat route
-
-## Files to Modify
-- `services/memory/fact-extraction-service.ts` (all changes in this one file)
-
-## Principles
-- All changes are ADDITIVE (no restructuring)
-- Keep existing logging intact
-- New function is standalone, no changes to `extractFactsFromConversation` flow
+## Future Tasks (not in scope)
+- [ ] Replace `generateMockAlerts()` in trend-monitor.ts with real API calls
+- [ ] Replace `simulateBuildProcess()` in proactive-builder.ts with real Claude calls
+- [ ] Connect self-improvement service weekly cron analysis
 
 ## Review
 
-### Changes Made (single file: `services/memory/fact-extraction-service.ts`)
-
-**1. `saveFacts()` structured logging (lines 288, 324, 341, 342-343)**
-- Added entry log with fact count and session ID before any DB work
-- Added `console.debug` per-fact inside the transaction loop showing key, value, type, confidence
-- Changed success log from "Saved" to "Successfully saved" for clarity
-- Improved error catch to extract `error.message` and pass the full error object
-
-**2. Contradictory fact detection (lines 293-307)**
-- Before the transaction, queries existing facts by key using a parameterized IN clause
-- Compares old vs new values and logs when a fact is changing
-- Wrapped in try/catch so failures here never block the actual save
-
-**3. Extraction summary logs (lines 198-205, 248-255, 261-268)**
-- Added summary object log in 3 places: Gemini unavailable (status=disabled), success path (facts_found or no_new_facts), and error path (status=error)
-- Each summary includes inputMessages, userMessages, existingFactsChecked, newFactsExtracted, geminiAvailable, and status
-
-**4. `extractDirectFact()` function (lines 487-511)**
-- New exported function that matches `/^(?:remember|note|save)\s+(?:that\s+)?(.+)/i`
-- Returns an `ExtractedFact` with type=personal, confidence=1.0, and a timestamped key
-- Returns null if the message does not match
-- Completely standalone -- does not modify the `extractFactsFromConversation` flow
-
-### Build Status
-- No new TypeScript errors introduced (pre-existing `@/lib/johnny5-db` path alias warning and `@types/three` issues remain)
-
----
-
-# Gemini Embedding Provider Implementation (Feb 3, 2026) - COMPLETED
-
-## Status: COMPLETE
-
-## What Was Implemented
-
-### Gemini Embedding Provider for Johnny5 Memory System
-
-Created production-quality TypeScript implementation with:
-- Rate limiting (60/min, 1500/day configurable)
-- Batch processing (up to 100 texts)
-- Exponential backoff retries (default 3 retries)
-- LRU caching with configurable TTL
-- Health monitoring
-
-### Files Created
-
-1. **`/services/memory/embeddings/types.ts`**
-   - `EmbeddingProvider` interface
-   - `RateLimiterState` interface
-   - `EmbeddingCache` interface
-   - `EmbeddingCacheEntry` interface
-   - `BatchEmbeddingResult` interface
-   - `ProviderHealth` interface
-   - `EmbeddingErrorType` enum
-   - `EmbeddingError` custom error class
-
-2. **`/services/memory/embeddings/gemini-provider.ts`**
-   - `GeminiConfig` interface with defaults
-   - `LRUCache` implementation with TTL support
-   - `GeminiEmbeddingProvider` class
-   - `createGeminiProvider()` factory function
-
-3. **`/services/memory/embeddings/index.ts`**
-   - Barrel exports for all types and providers
-
-### Package Installed
-- `@google/generative-ai` (added to package.json)
-
-### Edge Cases Handled
-
-| Edge Case | Solution |
-|-----------|----------|
-| API key not set | Throws `EmbeddingError` with `API_KEY_MISSING` type |
-| Rate limit exceeded | Waits for clearance or throws with retry-after info |
-| Empty text input | Returns zero vector of correct dimensions (768) |
-| API timeout | Configurable timeout with retry |
-| Partial batch failure | Retries with exponential backoff |
-| Cache eviction | LRU eviction when maxSize reached |
-| Stale cache | TTL-based expiration (default 24h) |
-
-### Configuration Options
-
-```typescript
-interface GeminiConfig {
-  apiKey: string;              // Required
-  requestsPerMinute?: number;  // Default 60
-  requestsPerDay?: number;     // Default 1500
-  batchSize?: number;          // Default 100
-  retryDelayMs?: number;       // Default 1000
-  maxRetries?: number;         // Default 3
-  cacheTtlMs?: number;         // Default 24 hours
-  maxCacheSize?: number;       // Default 10000
-  timeoutMs?: number;          // Default 30000
-}
-```
-
-### Usage Example
-
-```typescript
-import { createGeminiProvider, EmbeddingError } from '@/services/memory/embeddings';
-
-// Create provider (uses GOOGLE_AI_API_KEY env var)
-const provider = createGeminiProvider();
-
-// Embed texts
-const embeddings = await provider.embed([
-  'First document text',
-  'Second document text',
-]);
-
-// Single embedding
-const embedding = await provider.embedSingle('Some text');
-
-// Check health
-const health = provider.getHealth();
-console.log(health.rateLimitStatus.dayRemaining);
-```
-
-### Environment Variables
-
-Add to `.env.local`:
-```
-GOOGLE_AI_API_KEY=your-gemini-api-key
-# OR
-GEMINI_API_KEY=your-gemini-api-key
-```
-
----
-
-# BUG-7 Fix: Auto-checkpoint "Checkpoint creation failed" (Feb 6, 2026)
-
-## Status: COMPLETE
-
-## Problem
-Auto-checkpoints failed repeatedly with "Checkpoint creation failed" because:
-1. The checkpoint API rejected all checkpoints with terminal history < 100 chars
-2. Auto-checkpoints often have empty/short terminal history, triggering this rejection
-3. The hook treated `success: false` (even when `skipped: true`) as a hard failure
-4. After 3 consecutive "failures", the circuit breaker opened
-
-## Changes Made (2 edits, 2 files)
-
-### 1. `app/api/checkpoint/route.ts` (line 269)
-- Changed `if (rawTerminalHistory.length < 100)` to `if (!data.autoGenerated && rawTerminalHistory.length < 100)`
-- Auto-generated checkpoints now bypass the 100-char minimum since they capture file/editor state regardless of terminal activity
-- Manual checkpoints still enforce the minimum
-
-### 2. `lib/hooks/useAutoCheckpoint.ts` (lines 203-206)
-- Added `else if (result.skipped)` branch before the `throw` on line 208
-- Skipped checkpoints log a message and return early instead of throwing
-- This prevents skipped checkpoints from counting as failures and tripping the circuit breaker
-
-### Why `autoGenerated: true` was already sent
-The hook already sent `autoGenerated: true` in the request body (line 159), so no change was needed there. The API route already read `data.autoGenerated` on line 144 for determining checkpoint type. The only issue was that the 100-char check on line 267 did not consult this field.
-
----
-
-# BUG-4: Replace "CoderOne" with "Coder1" in Active Source Code (Feb 6, 2026)
-
-## Status: COMPLETE
-
-## Changes Made
-
-Three files updated with simple string replacements (no variable renames, no logic changes):
-
-### 1. `services/SessionSummaryService.ts` -- 13 replacements
-- All user-facing strings changed from "CoderOne" to "Coder1"
-- Affected: fallback session names, session type labels, prompt text, report headers, footer text
-- Examples: `'CoderOne IDE Session'` -> `'Coder1 IDE Session'`, `'CoderOne v2.0 Next.js IDE'` -> `'Coder1 v2.0 Next.js IDE'`
-
-### 2. `lib/hooks/useSessionSummary.ts` -- 9 replacements
-- All user-facing strings changed from "CoderOne" to "Coder1"
-- Affected: session name in storeInDocumentation, insight labels, next-steps text, environment references
-- Examples: `'CoderOne v2.0 Session'` -> `'Coder1 v2.0 Session'`, `'CoderOne v2.0 Feature Utilization'` -> `'Coder1 v2.0 Feature Utilization'`
-
-### 3. `app/about/page.tsx` -- 1 replacement
-- `@CoderOneIDE` -> `@Coder1IDE` (social media handle in About page)
-
-### What was NOT changed
-- No camelCase variable names (none existed in these files)
-- No markdown/documentation files
-- No archived files
-
----
-
-# BUG-1 & BUG-2: Session Summary Modal Fixes (Feb 6, 2026)
-
-## Status: COMPLETE
-
-## BUG-1: Session Summary modal cannot be closed (Escape / backdrop click)
-- [x] Add `useEffect` with Escape key listener calling `handleCloseModal`
-- [x] Add `onClick={handleCloseModal}` on backdrop div
-- [x] Add `e.stopPropagation()` on inner content div
-
-## BUG-2: Session Summary modal auto-opens on navigation back
-- [x] Add `useEffect` cleanup that calls `closeModal('sessionSummary')` on unmount
-
-## File Modified
-`/Users/michaelkraft/autonomous_vibe_interface/coder1-ide-next/components/status-bar/StatusBarModals.tsx`
-
-### Changes (4 edits, all in StatusBarModals.tsx)
-1. **Import line** -- Added `useEffect` and `useCallback` to the React import
-2. **`handleCloseModal`** -- Wrapped in `useCallback` with `[closeModal]` dependency (required for stable reference in useEffect)
-3. **New `useEffect`** (lines 87-99) -- Adds `keydown` listener for Escape, removes it on cleanup, and calls `closeModal('sessionSummary')` on unmount to reset Zustand store state
-4. **Backdrop and content divs** (lines 177-178) -- Added `onClick={handleCloseModal}` on backdrop, `onClick={(e) => e.stopPropagation()}` on inner content
-
-### Root Cause (BUG-2)
-Zustand `useUIStore` stores modal state as `Record<string, boolean>` in memory. Since there is no `persist` middleware, the state survives client-side navigation (Next.js `router.push`) but not full page reloads. When the user opened the modal, navigated away via Timeline, then came back, `modals.sessionSummary` was still `true` and the modal rendered immediately. The unmount cleanup now resets this.
-
-### Build Status
-No new TypeScript errors. Pre-existing errors in `__tests__/test-utils/test-helpers.ts` (JSX in .ts file) are unrelated.
-
----
-
-# Memory Health Check Enhancement (Feb 5, 2026)
-
-## Status: COMPLETE
-
-## Overview
-Enhance the `/api/johnny5/memory-health` endpoint with comprehensive diagnostics for the production memory system. Currently it only checks ManusLive files and memory chunks. We need to add vector search status, embedding service config, fact extraction stats, env var checks, and database integrity.
-
-## Todo Items
-
-- [x] **1. Add `isVectorSearchAvailable` and `getDb` imports from `@/lib/johnny5-db`**
-  - Import alongside existing `getMemoryStats`
-  - Also need `JOHNNY5_DB_PATH` from `@/lib/data-paths` for the DB path
-  - Added `isSqliteVecLoaded` export to johnny5-db.ts
-
-- [x] **2. Add `vectorSearch` section to response**
-  - `available`: call `isVectorSearchAvailable()`
-  - `sqliteVecLoaded`: check from new `isSqliteVecLoaded()` export
-  - `reason`: string if not available
-
-- [x] **3. Add `embeddingService` section**
-  - `configured`: check GEMINI_API_KEY or OPENAI_API_KEY env vars
-  - `provider`: "gemini", "openai", or "none"
-
-- [x] **4. Add `factExtraction` section**
-  - `enabled`: check GEMINI_API_KEY is set
-  - `factCount`: COUNT(*) from extracted_facts
-  - `lastExtraction`: MAX(created_at) from extracted_facts
-
-- [x] **5. Add `envVars` section**
-  - Boolean flags for API keys (never reveal actual values)
-  - String values for non-secret feature flags
-
-- [x] **6. Add `database` section**
-  - `path`: DB file path
-  - `integrityCheck`: PRAGMA integrity_check(1)
-  - `sessionCount` and `messageCount`
-
-- [x] **7. Update `healthy` determination**
-  - healthy = DB accessible AND (fact extraction enabled OR memory chunks > 0)
-
-- [x] **8. Update HealthCheckResponse interface**
-  - Add all new sections to the type
-  - Update fallback error response to include new fields
-
-## Files to Modify
-- `app/api/johnny5/memory-health/route.ts` (single file change)
-
-## Principles
-- Keep existing response structure intact, ADD new fields
-- All new DB queries wrapped in try/catch
-- Never expose actual API key values
-- Use `getDb()` for direct SQL queries
-
-## Review
-
-### Files Modified
-1. **`lib/johnny5-db.ts`** -- Added `isSqliteVecLoaded()` export function (4 lines). Returns the module-level `sqliteVecLoaded` boolean so the health check can distinguish "extension not installed" from "vector table creation failed".
-
-2. **`app/api/johnny5/memory-health/route.ts`** -- Enhanced with 5 new diagnostic sections:
-   - **vectorSearch**: Reports whether sqlite-vec is loaded and vector table created, with reason string on failure
-   - **embeddingService**: Reports which embedding API key is configured (gemini/openai/none)
-   - **factExtraction**: Reports whether fact extraction is enabled, count of extracted facts, and last extraction timestamp
-   - **envVars**: Boolean flags for API keys (never reveals values), plus feature flag values
-   - **database**: DB file path, integrity check result (PRAGMA integrity_check(1)), session count, message count
-
-### Design Decisions
-- Each new diagnostic section has its own try/catch so a failure in one does not block others
-- `healthy` determination updated: `dbAccessible && (factExtractionEnabled || hasMemoryChunks)` -- meaning the system is healthy if the DB is intact AND either fact extraction is configured or there are memory chunks indexed
-- The error fallback response includes safe defaults for all new fields so the response shape is always consistent
-- API key values are never exposed -- only boolean `true`/`false` for whether they are set
-- Used `PRAGMA integrity_check(1)` (with limit 1) to avoid long scans on large databases
-
-### Build Status
-Next.js build passes with no errors.
-
----
-
-# Johnny5 Chat Route - Memory Status & Logging (Feb 5, 2026)
-
-## Status: COMPLETE
-
-## Overview
-Added `memoryStatus` field to chat responses, detailed memory injection logging, and a module-level startup log for memory feature status.
-
-## Todo Items
-
-- [x] **1. Add `memoryStatus` to `ChatSuccessResponse` interface** (Task 1.2)
-- [x] **2. Add startup log for memory features at module level** (Task 1.5)
-- [x] **3. Declare `memoryStatus` variable near other memory variables**
-- [x] **4. Compute `memoryStatus` after both memory injection sections**
-- [x] **5. Add detailed memory injection trace log** (Task 1.4)
-- [x] **6. Add `memoryStatus` to main response JSON**
-- [x] **7. Add `memoryStatus` to Moltbot early-return response**
-- [x] **8. Verify no existing code changed -- only additions**
-
-## Review
-
-### File Modified
-`/Users/michaelkraft/autonomous_vibe_interface/coder1-ide-next/app/api/johnny5/chat/route.ts`
-
-### Changes
-
-**1. Module-level startup log (Task 1.5)** -- Lines 49-57
-- `console.log('[Johnny5] Memory features status:', ...)` after imports
-- Logs: GEMINI_API_KEY, OPENAI_API_KEY, ENABLE_ETERNAL_MEMORY, NEXT_PUBLIC_MEMORY_CONTEXT_ENABLED, NEXT_PUBLIC_MEMORY_AUTO_INJECT
-
-**2. `memoryStatus` in `ChatSuccessResponse` interface** -- Line 92
-- `memoryStatus: 'full' | 'partial' | 'minimal' | 'none';`
-
-**3. Variable declaration** -- Line 553
-- `let memoryStatus: 'full' | 'partial' | 'minimal' | 'none' = 'none';`
-
-**4. Status computation** -- Lines 635-646
-- full: searchType contains "hybrid" or "vector"
-- partial: searchType is "keyword" or "fts"
-- minimal: enableMemoryInjection true but both contexts empty, OR facts exist but no search results
-- none: enableMemoryInjection is false
-
-**5. Detailed trace log (Task 1.4)** -- Lines 648-658
-- Logs embeddingGenerated, embeddingProvider, searchResultsCount, searchType, formattedContextLength, factsContextLength, totalInjectedChars, memoryStatus
-
-**6. Main response** -- Line 1093
-- Added `memoryStatus,` to success response JSON
-
-**7. Moltbot early-return** -- Lines 472-476
-- Inline computed memoryStatus for the Moltbot code path
-
-### Build Status
-No new TypeScript errors introduced.
-
----
+### Files Created (5 new)
+| File | Purpose |
+|------|---------|
+| `services/johnny5/telegram-bot.ts` | Telegram bot with reconnection, rate limiting, message splitting, inline buttons |
+| `services/johnny5/opportunity-engine.ts` | Core engine: event queue, AI classification, proactivity gating, audit logging |
+| `app/api/johnny5/proactive/webhook/route.ts` | Webhook handler with signature verification, Zod validation, rate limiting |
+| `app/api/johnny5/proactive/audit/route.ts` | Audit log query API |
+| `app/api/johnny5/proactive/health/route.ts` | Health check endpoint (200/503) |
+
+### Files Modified (1)
+| File | Change |
+|------|--------|
+| `server.js` | Added Opportunity Engine integration in trend_check handler (+10 lines). Added proactive services initialization block (+40 lines). |
+
+### Dependencies Added (1)
+| Package | Version | Purpose |
+|---------|---------|---------|
+| `telegraf` | ^4.16.3 | Telegram Bot API library |
+
+### Architecture Decisions
+1. **Singleton pattern** - Both telegram-bot.ts and opportunity-engine.ts export singletons matching existing services
+2. **Additive only** - No existing code removed or refactored. Only new code added.
+3. **Graceful degradation** - If Telegram fails, falls back to Socket.IO. If Claude API fails, logs and skips.
+4. **Conservative proactivity** - When in doubt, prompt user rather than auto-act.
