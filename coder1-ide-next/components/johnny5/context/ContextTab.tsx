@@ -15,6 +15,7 @@ import {
   HardDriveDownload,
 } from 'lucide-react';
 import { useJohnny5Store } from '@/stores/useJohnny5Store';
+import { useIDEStore } from '@/stores/useIDEStore';
 import ContextUsageBar from './ContextUsageBar';
 import ContextPieChart from './ContextPieChart';
 import FileContextList from './FileContextList';
@@ -58,6 +59,8 @@ export default function ContextTab({ className = '' }: ContextTabProps) {
     setContextLoading,
   } = useJohnny5Store();
 
+  const aiState = useIDEStore((state) => state.aiState);
+
   // Memory search state
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<MemorySearchResult[]>([]);
@@ -92,6 +95,27 @@ export default function ContextTab({ className = '' }: ContextTabProps) {
       loadContext();
     }
   }, []);
+
+  // Wire real token data from IDE store into context composition
+  useEffect(() => {
+    const total = aiState?.tokenUsage?.total;
+    if (!total || total <= 0) return;
+
+    const limit = 200000;
+    const usagePercentage = Math.round((total / limit) * 100);
+
+    setContextComposition({
+      total,
+      limit,
+      usagePercentage,
+      breakdown: {
+        system: Math.round(total * 0.05),
+        conversation: Math.round(total * 0.60),
+        files: [],
+        tools: Math.round(total * 0.25),
+      },
+    });
+  }, [aiState?.tokenUsage?.total]);
 
   const loadMemoryStats = async () => {
     try {
@@ -196,8 +220,8 @@ export default function ContextTab({ className = '' }: ContextTabProps) {
 
     setContextComposition({
       total: Math.round(totalTokens),
-      limit: 128000,
-      usagePercentage: (totalTokens / 128000) * 100,
+      limit: 200000,
+      usagePercentage: (totalTokens / 200000) * 100,
       breakdown: {
         system: systemTokens,
         conversation: Math.round(conversationTokens),
@@ -437,6 +461,15 @@ export default function ContextTab({ className = '' }: ContextTabProps) {
             limit={contextComposition.limit || 200000}
             className={contextLoading ? 'opacity-50' : ''}
           />
+
+          {/* Estimated data info banner */}
+          <div className="flex items-start gap-2 p-2 bg-coder1-cyan/5 border border-coder1-cyan/20 rounded-lg">
+            <Info className="w-3.5 h-3.5 text-coder1-cyan flex-shrink-0 mt-0.5" />
+            <p className="text-[10px] text-coder1-cyan/80">
+              <span className="font-semibold">Estimated:</span>{' '}
+              Breakdown is approximated from total token usage. Actual distribution may vary.
+            </p>
+          </div>
 
           {/* Context Pie Chart */}
           <ContextPieChart
