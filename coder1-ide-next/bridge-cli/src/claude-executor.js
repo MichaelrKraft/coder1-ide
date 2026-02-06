@@ -494,50 +494,38 @@ class ClaudeExecutor extends EventEmitter {
     return new Promise((resolve, reject) => {
       const startTime = Date.now();
 
-      // Parse command into parts
-      const parts = this.parseCommand(command);
-      const claudeCommand = parts[0]; // Should be 'claude'
-      let args = parts.slice(1);
+      // 🔧 FIX (Feb 6, 2026): Pass command directly to /bin/sh instead of re-parsing.
+      // The server already escapes the command for shell execution using single-quote
+      // escaping (e.g., claude 'prompt with '\'' quotes'). Previously, parseCommand()
+      // + quotedArgs + shell:true double-parsed the command, which broke on multi-line
+      // prompts containing personal data (e.g., "- Name: Mike") because /bin/sh
+      // interpreted each line as a separate shell command.
+      let shellCommand = command;
 
-      // Add model parameter if specified in context
-      if (options.context && options.context.selectedClaudeModel) {
-        const modelIndex = args.findIndex(arg => arg === '--model');
-        if (modelIndex === -1) {
-          // Add model parameter if not already present
-          args.unshift('--model', options.context.selectedClaudeModel);
-        } else {
-          // Replace existing model parameter
-          args[modelIndex + 1] = options.context.selectedClaudeModel;
-        }
+      // Replace 'claude' command name with resolved absolute path
+      if (shellCommand.startsWith('claude ')) {
+        shellCommand = this.claudePath + shellCommand.substring(6);
+      } else if (shellCommand === 'claude') {
+        shellCommand = this.claudePath;
       }
 
-      // 🔧 FIX (Jan 27, 2026): Re-quote args with special shell characters
-      // When shell: true is used, spawn() joins args with spaces WITHOUT quotes,
-      // causing parentheses and other special chars to break the shell command.
-      // The eternal memory context often contains "(6 weeks ago)" which breaks sh.
-      const quotedArgs = args.map(arg => {
-        // If arg contains spaces, quotes, or shell special chars, wrap in double quotes
-        if (/[\s"'`$();&|<>\\]/.test(arg)) {
-          // Escape backslashes first, then double quotes, then wrap
-          return `"${arg.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`;
-        }
-        return arg;
-      });
+      // Add model parameter if specified in context and not already present
+      if (options.context?.selectedClaudeModel && !shellCommand.includes('--model')) {
+        const afterPath = shellCommand.substring(this.claudePath.length);
+        shellCommand = this.claudePath + ' --model ' + options.context.selectedClaudeModel + afterPath;
+      }
 
-      this.log(`Executing non-interactive: ${this.claudePath} ${quotedArgs.join(' ')}`);
+      this.log(`Executing non-interactive: ${shellCommand.substring(0, 200)}...`);
 
-      // Spawn Claude process
-      // 🔧 FIX (Jan 4, 2026): Added stdio config to prevent hanging on stdin
-      // Without this, spawn() defaults stdin to 'pipe', causing Claude CLI to
-      // wait for input that never comes (e.g., auth prompts), leading to 120s timeouts
-      const claudeProcess = spawn(this.claudePath, quotedArgs, {
+      // Spawn via /bin/sh -c to pass the pre-escaped command directly to the shell.
+      // stdin is ignored to prevent Claude CLI from hanging on auth prompts.
+      const claudeProcess = spawn('/bin/sh', ['-c', shellCommand], {
         env: {
           ...process.env,
           CODER1_BRIDGE: 'true',
           TERM: 'xterm-256color'
         },
-        shell: true,  // Use shell for proper PATH resolution (finds claude in user's PATH)
-        stdio: ['ignore', 'pipe', 'pipe']  // Ignore stdin, capture stdout/stderr
+        stdio: ['ignore', 'pipe', 'pipe']
       });
 
       let outputBuffer = '';
