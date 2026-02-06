@@ -218,6 +218,10 @@ export default function ChatTab() {
     };
 
     fetchJohnny5Mode();
+
+    // Poll mode every 30s so the Limited Mode banner clears when bridge connects after page load
+    const interval = setInterval(fetchJohnny5Mode, 30000);
+    return () => clearInterval(interval);
   }, []);
 
   // Subscribe to Moltbot status updates via Socket.IO
