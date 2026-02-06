@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import {
   Sun,
   Coffee,
@@ -12,11 +12,16 @@ import {
   FileText,
   X,
   Sunrise,
+  Play,
+  PlusCircle,
+  Code,
+  Copy,
 } from 'lucide-react';
 import { useJohnny5Store } from '@/stores/useJohnny5Store';
 import type { Johnny5MorningBrief, Johnny5BriefItem } from '@/types/johnny5';
 import BriefSection from './BriefSection';
 import WeatherWidget from './WeatherWidget';
+import { generateMorningBriefFromActivity } from '@/services/johnny5/accomplishment-detector';
 
 interface MorningBriefTabProps {
   className?: string;
@@ -52,12 +57,34 @@ export default function MorningBriefTab({ className = '' }: MorningBriefTabProps
   const [selectedBriefDate, setSelectedBriefDate] = useState<string | null>(null);
   const [showHistoryDropdown, setShowHistoryDropdown] = useState(false);
   const [showWeather, setShowWeather] = useState(true);
+  const [clientActivityData, setClientActivityData] = useState<ReturnType<typeof generateMorningBriefFromActivity> | null>(null);
+
+  // Track when brief was last viewed (for "since last brief" logic)
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('johnny5_lastBriefViewedAt', new Date().toISOString());
+    }
+  }, []);
+
+  // Load client-side activity data from localStorage
+  const loadClientActivity = useCallback(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const lastViewed = localStorage.getItem('johnny5_lastBriefViewedAt');
+      const sinceDate = lastViewed ? new Date(lastViewed) : undefined;
+      const activityBrief = generateMorningBriefFromActivity(sinceDate);
+      setClientActivityData(activityBrief);
+    } catch (e) {
+      console.warn('[MorningBriefTab] Failed to load client activity:', e);
+    }
+  }, []);
 
   // Fetch today's brief on mount
   useEffect(() => {
     loadTodaysBrief();
     loadBriefHistory();
-  }, []);
+    loadClientActivity();
+  }, [loadClientActivity]);
 
   const loadTodaysBrief = async () => {
     setBriefLoading(true);
@@ -66,10 +93,40 @@ export default function MorningBriefTab({ className = '' }: MorningBriefTabProps
       if (response.ok) {
         const data = await response.json();
         if (data.success && data.data) {
-          setMorningBrief(data.data);
+          // Merge server brief with client-side activity data
+          const serverBrief = data.data as Johnny5MorningBrief;
+          if (clientActivityData) {
+            // Append client-side accomplishments to server data
+            serverBrief.builtOvernight = [
+              ...serverBrief.builtOvernight,
+              ...clientActivityData.builtOvernight,
+            ];
+            serverBrief.needsAttention = [
+              ...serverBrief.needsAttention,
+              ...clientActivityData.needsAttention,
+            ];
+            // Use client summary if server has no activity
+            if (serverBrief.builtOvernight.length === 0 && clientActivityData.summary) {
+              serverBrief.summary = clientActivityData.summary;
+            }
+          }
+          setMorningBrief(serverBrief);
         } else {
-          console.error('[MorningBriefTab] API returned unsuccessful response');
-          setMorningBrief(null);
+          // Server returned no data - use client-side data as fallback
+          if (clientActivityData && (clientActivityData.builtOvernight.length > 0 || clientActivityData.needsAttention.length > 0)) {
+            const fallbackBrief: Johnny5MorningBrief = {
+              id: `brief-client-${new Date().toISOString().split('T')[0]}`,
+              date: new Date(),
+              summary: clientActivityData.summary,
+              builtOvernight: clientActivityData.builtOvernight,
+              researchCompleted: clientActivityData.researchCompleted,
+              trendsSpotted: [],
+              needsAttention: clientActivityData.needsAttention,
+            };
+            setMorningBrief(fallbackBrief);
+          } else {
+            setMorningBrief(null);
+          }
         }
       } else {
         console.error('[MorningBriefTab] Failed to fetch brief:', response.status);
@@ -77,7 +134,21 @@ export default function MorningBriefTab({ className = '' }: MorningBriefTabProps
       }
     } catch (error) {
       console.error('[MorningBriefTab] Error fetching brief:', error);
-      setMorningBrief(null);
+      // On error, try client-side data as fallback
+      if (clientActivityData && (clientActivityData.builtOvernight.length > 0 || clientActivityData.needsAttention.length > 0)) {
+        const fallbackBrief: Johnny5MorningBrief = {
+          id: `brief-client-${new Date().toISOString().split('T')[0]}`,
+          date: new Date(),
+          summary: clientActivityData.summary,
+          builtOvernight: clientActivityData.builtOvernight,
+          researchCompleted: clientActivityData.researchCompleted,
+          trendsSpotted: [],
+          needsAttention: clientActivityData.needsAttention,
+        };
+        setMorningBrief(fallbackBrief);
+      } else {
+        setMorningBrief(null);
+      }
     } finally {
       setBriefLoading(false);
     }
@@ -402,9 +473,62 @@ export default function MorningBriefTab({ className = '' }: MorningBriefTabProps
         )}
       </div>
 
-      {/* Footer Actions */}
-      {morningBrief && totalItems > 0 && (
+      {/* Resume Actions - Always show when there's activity data */}
+      {(morningBrief || clientActivityData?.leftOff) && (
         <div className="px-4 py-3 border-t border-border-default bg-bg-secondary/80 backdrop-blur-sm relative z-10">
+          {/* Resume Buttons */}
+          {clientActivityData?.leftOff && (
+            <div className="mb-3 p-3 rounded-lg bg-coder1-cyan/10 border border-coder1-cyan/20">
+              <p className="text-[10px] text-text-muted uppercase tracking-wider mb-2">Pick up where you left off</p>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={() => {
+                    const text = clientActivityData.leftOff?.description
+                      ? `I was working on: ${clientActivityData.leftOff.description}. Let's continue where I left off.`
+                      : 'Let me continue where I left off.';
+                    window.dispatchEvent(new CustomEvent('johnny5:sendToTerminal', { detail: { text } }));
+                  }}
+                  className="
+                    flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold
+                    bg-coder1-cyan/20 text-coder1-cyan hover:bg-coder1-cyan/30
+                    transition-all
+                  "
+                >
+                  <Play className="w-3 h-3" />
+                  Continue{clientActivityData.leftOff.branch ? ` on ${clientActivityData.leftOff.branch}` : ''}
+                </button>
+                <button
+                  onClick={() => {
+                    window.dispatchEvent(new CustomEvent('johnny5:openTemplates'));
+                  }}
+                  className="
+                    flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold
+                    bg-purple-500/20 text-purple-400 hover:bg-purple-500/30
+                    transition-all
+                  "
+                >
+                  <PlusCircle className="w-3 h-3" />
+                  Start new task
+                </button>
+                <button
+                  onClick={() => {
+                    window.dispatchEvent(new CustomEvent('johnny5:sendToTerminal', {
+                      detail: { text: 'Show me a git log of recent commits and a summary of what changed.' }
+                    }));
+                  }}
+                  className="
+                    flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold
+                    bg-bg-tertiary text-text-secondary hover:bg-bg-tertiary/80
+                    transition-all
+                  "
+                >
+                  <Code className="w-3 h-3" />
+                  Review code
+                </button>
+              </div>
+            </div>
+          )}
+
           <div className="flex items-center justify-between gap-3">
             {/* Stats */}
             <div className="text-xs text-text-muted">
@@ -413,7 +537,33 @@ export default function MorningBriefTab({ className = '' }: MorningBriefTabProps
 
             {/* Action Buttons */}
             <div className="flex items-center gap-2">
-              {morningBrief.builtOvernight.some(b => b.link?.includes('/pull/')) && (
+              {/* Copy as Markdown */}
+              {morningBrief && totalItems > 0 && (
+                <button
+                  onClick={() => {
+                    const md = [
+                      `# Daily Brief - ${formatBriefDate(morningBrief.date)}`,
+                      '',
+                      morningBrief.summary,
+                      '',
+                      morningBrief.builtOvernight.length > 0 ? '## Built\n' + morningBrief.builtOvernight.map(b => `- ${b.title}`).join('\n') : '',
+                      morningBrief.needsAttention.length > 0 ? '## Needs Attention\n' + morningBrief.needsAttention.map(b => `- ${b.title}`).join('\n') : '',
+                    ].filter(Boolean).join('\n');
+                    navigator.clipboard.writeText(md);
+                  }}
+                  className="
+                    flex items-center gap-1 px-2 py-1 rounded-md text-[10px]
+                    text-text-muted hover:text-text-secondary hover:bg-bg-tertiary
+                    transition-all
+                  "
+                  title="Copy brief as markdown (for standup)"
+                >
+                  <Copy className="w-3 h-3" />
+                  Copy
+                </button>
+              )}
+
+              {morningBrief?.builtOvernight.some(b => b.link?.includes('/pull/')) && (
                 <button
                   onClick={() => {
                     const prItem = morningBrief.builtOvernight.find(b => b.link?.includes('/pull/'));
@@ -430,7 +580,7 @@ export default function MorningBriefTab({ className = '' }: MorningBriefTabProps
                 </button>
               )}
 
-              {morningBrief.researchCompleted.length > 0 && (
+              {morningBrief && morningBrief.researchCompleted.length > 0 && (
                 <button
                   onClick={() => {
                     const reportItem = morningBrief.researchCompleted[0];
