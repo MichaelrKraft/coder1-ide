@@ -298,15 +298,6 @@ export interface Johnny5PRRequest {
   url?: string;
 }
 
-export interface Johnny5BuilderRules {
-  maxPRsPerDay: number;
-  maxFilesPerPR: number;
-  maxLinesChanged: number;
-  requireTestsPass: boolean;
-  forbidden: string[];
-  required: string[];
-}
-
 // ================================================================================
 // Trend Monitor Types
 // ================================================================================
@@ -350,20 +341,6 @@ export interface Johnny5Skill {
   code?: string;
   dependencies: string[];
   enabled: boolean;
-}
-
-export interface Johnny5SelfImprovement {
-  suggestedSkills: Johnny5Skill[];
-  learnedPatterns: Johnny5LearnedPattern[];
-  userPreferences: Record<string, unknown>;
-}
-
-export interface Johnny5LearnedPattern {
-  id: string;
-  pattern: string;
-  examples: string[];
-  confidence: number; // 0-100
-  lastSeen: Date;
 }
 
 // ================================================================================
@@ -474,16 +451,7 @@ export interface Johnny5State {
   // Morning Brief
   morningBrief: Johnny5MorningBrief | null;
   briefHistory: Johnny5MorningBrief[];
-  
-  // Proactive Builder
-  pendingPRs: Johnny5PRRequest[];
-  
-  // Trend Monitor
-  trendAlerts: Johnny5TrendAlert[];
-  
-  // Self-Improvement
-  skills: Johnny5Skill[];
-  
+
   // Integrations
   connectedIntegrations: Johnny5UserIntegration[];
   

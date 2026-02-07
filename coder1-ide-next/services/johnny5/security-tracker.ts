@@ -11,6 +11,8 @@ import {
   initializeDb,
   logAudit as dbLogAudit,
   getAuditLog as dbGetAuditLog,
+  saveSecurityWarning as dbSaveSecurityWarning,
+  getSecurityWarnings as dbGetSecurityWarnings,
 } from '@/lib/johnny5-db';
 import type {
   Johnny5AuditEntry,
@@ -115,6 +117,9 @@ export async function addSecurityWarning(params: {
   };
 
   warningsCache.push(warning);
+
+  // Persist to DB
+  await dbSaveSecurityWarning(warning);
 
   // Also log to audit
   await dbLogAudit('security_warning', {
@@ -392,6 +397,34 @@ export function clearSecurityData(): void {
   alertsCache = [];
   console.log('[SecurityTracker] Caches cleared');
 }
+
+/**
+ * Load persisted security warnings from DB into in-memory cache
+ * Called once at startup to restore warnings across restarts
+ */
+async function loadWarningsFromDb(): Promise<void> {
+  try {
+    await initializeDb();
+    const dbWarnings = await dbGetSecurityWarnings(500);
+    if (dbWarnings.length > 0 && warningsCache.length === 0) {
+      warningsCache = dbWarnings.map(w => ({
+        id: w.id,
+        type: w.type as Johnny5SecurityWarning['type'],
+        message: w.message,
+        severity: w.severity as Johnny5SecurityWarning['severity'],
+        timestamp: new Date(w.timestamp),
+        dismissed: w.dismissed,
+        source: w.source,
+      }));
+      console.log(`[SecurityTracker] Loaded ${warningsCache.length} warnings from DB`);
+    }
+  } catch (err) {
+    console.warn('[SecurityTracker] Failed to load warnings from DB:', err);
+  }
+}
+
+// Auto-load warnings from DB on module import
+loadWarningsFromDb();
 
 // Export singleton-style functions
 export const SecurityTracker = {
