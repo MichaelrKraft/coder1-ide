@@ -12,6 +12,7 @@ import {
   getUsageStats as dbGetUsageStats,
   getTodayUsage as dbGetTodayUsage,
 } from '@/lib/johnny5-db';
+import { getSessionSummaries } from './session-tracker';
 
 // Types
 export interface UsageRecord {
@@ -371,9 +372,22 @@ export async function getEfficiencyMetrics(days: number = 7): Promise<{
   // Messages per day
   const messagesPerDay = Math.round(records.length / days);
 
+  // Average session duration from real session data
+  let avgDuration = 0;
+  try {
+    const sessions = await getSessionSummaries({ status: 'completed', limit: 200 });
+    const inRange = sessions.filter((s) => s.startTime >= startDate);
+    if (inRange.length > 0) {
+      const totalDuration = inRange.reduce((sum, s) => sum + (s.duration ?? 0), 0);
+      avgDuration = Math.round(totalDuration / inRange.length);
+    }
+  } catch (err) {
+    console.warn('[UsageTracker] Failed to get session durations:', err);
+  }
+
   return {
     tokensPerSession,
-    averageSessionDuration: 15 + Math.random() * 25, // TODO: Track actual session duration
+    averageSessionDuration: avgDuration,
     successRate,
     messagesPerDay,
   };
