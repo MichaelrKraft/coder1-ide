@@ -1,0 +1,146 @@
+[
+  {
+    "id": "debug-error",
+    "name": "Debug an Error",
+    "category": "debug",
+    "icon": "Bug",
+    "description": "Diagnose and fix a specific error in your code",
+    "difficulty": "beginner",
+    "template": "I'm getting this error:\n\n```\n{error_message}\n```\n\nIt happens when I {action}.\nThe relevant file is {file_path}.\n\nPlease diagnose the root cause and fix it.",
+    "placeholders": [
+      { "key": "error_message", "label": "Paste the error message", "type": "multiline", "autofill": "lastError" },
+      { "key": "action", "label": "What were you doing?", "type": "text" },
+      { "key": "file_path", "label": "Which file?", "type": "file", "autofill": "activeFile" }
+    ],
+    "tags": ["error", "debug", "fix"]
+  },
+  {
+    "id": "build-feature",
+    "name": "Build a New Feature",
+    "category": "build",
+    "icon": "Wrench",
+    "description": "Add new functionality to your project",
+    "difficulty": "beginner",
+    "template": "I want to add a new feature: {feature_description}\n\nIt should:\n{requirements}\n\nThe main file to modify is {file_path}.\nPlease plan the approach first, then implement it.",
+    "placeholders": [
+      { "key": "feature_description", "label": "Describe the feature", "type": "text" },
+      { "key": "requirements", "label": "List the requirements", "type": "multiline" },
+      { "key": "file_path", "label": "Main file to modify", "type": "file", "autofill": "activeFile" }
+    ],
+    "tags": ["feature", "build", "new"]
+  },
+  {
+    "id": "refactor-code",
+    "name": "Refactor This Code",
+    "category": "refactor",
+    "icon": "Wrench",
+    "description": "Improve code structure without changing behavior",
+    "difficulty": "intermediate",
+    "template": "Please refactor {file_path} to improve {goal}.\n\nSpecific areas to focus on:\n{areas}\n\nMake sure the behavior stays the same. Run tests after changes.",
+    "placeholders": [
+      { "key": "file_path", "label": "File to refactor", "type": "file", "autofill": "activeFile" },
+      { "key": "goal", "label": "What to improve (readability, performance, etc.)", "type": "text" },
+      { "key": "areas", "label": "Specific areas to focus on", "type": "multiline" }
+    ],
+    "tags": ["refactor", "clean", "improve"]
+  },
+  {
+    "id": "write-tests",
+    "name": "Write Tests for This File",
+    "category": "test",
+    "icon": "TestTube",
+    "description": "Generate comprehensive test coverage",
+    "difficulty": "intermediate",
+    "template": "Write comprehensive tests for {file_path}.\n\nTest framework: {framework}\n\nPlease cover:\n- Happy path cases\n- Edge cases\n- Error handling\n- Any async behavior\n\nPut tests in the standard test directory.",
+    "placeholders": [
+      { "key": "file_path", "label": "File to test", "type": "file", "autofill": "activeFile" },
+      { "key": "framework", "label": "Test framework (jest, vitest, pytest, etc.)", "type": "text" }
+    ],
+    "tags": ["test", "coverage", "quality"]
+  },
+  {
+    "id": "code-review",
+    "name": "Code Review This File",
+    "category": "review",
+    "icon": "Eye",
+    "description": "Get a thorough code review with improvement suggestions",
+    "difficulty": "intermediate",
+    "template": "Please review {file_path} for:\n- Code quality and readability\n- Potential bugs or issues\n- Performance concerns\n- Security vulnerabilities\n- Best practices\n\nProvide specific line-level feedback with suggested improvements.",
+    "placeholders": [
+      { "key": "file_path", "label": "File to review", "type": "file", "autofill": "activeFile" }
+    ],
+    "tags": ["review", "quality", "feedback"]
+  },
+  {
+    "id": "create-pr",
+    "name": "Create a PR",
+    "category": "deploy",
+    "icon": "GitPullRequest",
+    "description": "Create a well-documented pull request",
+    "difficulty": "intermediate",
+    "template": "Create a PR for the current changes on branch {branch}.\n\nPR title: {title}\n\nDescription of changes:\n{description}\n\nPlease use /commit to commit changes first, then create the PR with a clear description.",
+    "placeholders": [
+      { "key": "branch", "label": "Current branch", "type": "text", "autofill": "branch" },
+      { "key": "title", "label": "PR title", "type": "text" },
+      { "key": "description", "label": "What changed and why", "type": "multiline" }
+    ],
+    "tags": ["pr", "git", "deploy"]
+  },
+  {
+    "id": "explain-code",
+    "name": "Explain This Code",
+    "category": "debug",
+    "icon": "Code",
+    "description": "Get a clear explanation of how code works",
+    "difficulty": "beginner",
+    "template": "Please explain what {file_path} does.\n\nI'm specifically confused about:\n{questions}\n\nExplain it clearly, step by step, as if teaching someone new to this codebase.",
+    "placeholders": [
+      { "key": "file_path", "label": "File to explain", "type": "file", "autofill": "activeFile" },
+      { "key": "questions", "label": "What specifically confuses you?", "type": "multiline" }
+    ],
+    "tags": ["explain", "understand", "learn"]
+  },
+  {
+    "id": "optimize-performance",
+    "name": "Optimize Performance",
+    "category": "refactor",
+    "icon": "Zap",
+    "description": "Find and fix performance bottlenecks",
+    "difficulty": "advanced",
+    "template": "I'm experiencing performance issues in {file_path}.\n\nSymptoms: {symptoms}\n\nPlease:\n1. Profile and identify bottlenecks\n2. Suggest optimizations with expected impact\n3. Implement the highest-impact fixes\n4. Verify the improvement",
+    "placeholders": [
+      { "key": "file_path", "label": "File or area with issues", "type": "file", "autofill": "activeFile" },
+      { "key": "symptoms", "label": "What's slow? (load time, rendering, API calls, etc.)", "type": "multiline" }
+    ],
+    "tags": ["performance", "optimize", "speed"]
+  },
+  {
+    "id": "add-error-handling",
+    "name": "Add Error Handling",
+    "category": "build",
+    "icon": "Shield",
+    "description": "Add robust error handling to existing code",
+    "difficulty": "intermediate",
+    "template": "Add proper error handling to {file_path}.\n\nFocus areas:\n{areas}\n\nRequirements:\n- User-friendly error messages\n- Proper logging\n- Graceful fallbacks where possible\n- Don't break existing functionality",
+    "placeholders": [
+      { "key": "file_path", "label": "File to add error handling to", "type": "file", "autofill": "activeFile" },
+      { "key": "areas", "label": "Specific areas (API calls, file ops, user input, etc.)", "type": "multiline" }
+    ],
+    "tags": ["error", "handling", "robust"]
+  },
+  {
+    "id": "setup-project",
+    "name": "Set Up Project Structure",
+    "category": "build",
+    "icon": "FileText",
+    "description": "Create a well-organized project from scratch",
+    "difficulty": "beginner",
+    "template": "Help me set up a new {project_type} project.\n\nProject name: {name}\nKey features needed:\n{features}\n\nPlease create:\n- Proper directory structure\n- Configuration files\n- Basic boilerplate\n- README with setup instructions",
+    "placeholders": [
+      { "key": "project_type", "label": "Project type (Next.js, Express, Python, etc.)", "type": "text" },
+      { "key": "name", "label": "Project name", "type": "text" },
+      { "key": "features", "label": "Key features needed", "type": "multiline" }
+    ],
+    "tags": ["setup", "init", "scaffold"]
+  }
+]
