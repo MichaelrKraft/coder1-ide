@@ -647,7 +647,7 @@ export default function WorkflowBuilder({ isOpen, onClose }: WorkflowBuilderProp
             <button
               key={template.id}
               onClick={() => handleSelectTemplate(template.id)}
-              className="text-left p-3 bg-bg-tertiary border border-border-default rounded-lg hover:border-coder1-cyan/30 hover:bg-bg-tertiary/80 transition-all group"
+              className="text-left p-3 bg-bg-tertiary border border-border-default rounded-lg hover:border-orange-500/60 hover:shadow-[0_0_12px_rgba(249,115,22,0.25)] transition-all group"
             >
               <div className="flex items-start gap-2.5">
                 <div className="w-8 h-8 rounded-lg bg-coder1-cyan/10 flex items-center justify-center shrink-0">
@@ -655,7 +655,7 @@ export default function WorkflowBuilder({ isOpen, onClose }: WorkflowBuilderProp
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-0.5">
-                    <span className="text-xs font-semibold text-text-primary group-hover:text-coder1-cyan transition-colors">
+                    <span className="text-xs font-semibold text-text-primary group-hover:text-orange-400 transition-colors">
                       {template.name}
                     </span>
                     <span className={`px-1.5 py-0.5 rounded text-[9px] font-medium ${CATEGORY_COLORS[template.category]}`}>

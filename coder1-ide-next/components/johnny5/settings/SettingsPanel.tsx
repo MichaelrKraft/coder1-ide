@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState } from 'react';
 import {
   Settings,
   Link2,
@@ -17,14 +17,6 @@ import {
   AlertTriangle,
   Info,
   Sparkles,
-  Server,
-  Power,
-  RefreshCw,
-  Zap,
-  MessageCircle,
-  CheckCircle,
-  XCircle,
-  Loader2,
 } from 'lucide-react';
 import IntegrationCard, { MOCK_INTEGRATIONS } from './IntegrationCard';
 import PermissionBoundaries, { MOCK_PERMISSION_BOUNDARIES } from './PermissionBoundaries';
@@ -87,49 +79,6 @@ export default function SettingsPanel({
     shareAnonymousUsageData: false,
     clearDataOnDisconnect: false,
   });
-
-  // Daemon and setup status
-  const [daemonStatus, setDaemonStatus] = useState<{
-    johnny5: { installed: boolean; running: boolean; configured: boolean };
-    integrations: {
-      zapier: { connected: boolean };
-      telegram: { connected: boolean; botUsername?: string };
-    };
-    loading: boolean;
-    error?: string;
-  }>({
-    johnny5: { installed: false, running: false, configured: false },
-    integrations: { zapier: { connected: false }, telegram: { connected: false } },
-    loading: true,
-  });
-
-  // Fetch daemon status
-  const fetchDaemonStatus = useCallback(async () => {
-    try {
-      const response = await fetch('/api/johnny5/setup');
-      if (response.ok) {
-        const data = await response.json();
-        setDaemonStatus({
-          johnny5: data.data?.johnny5 || { installed: false, running: false, configured: false },
-          integrations: data.data?.integrations || { zapier: { connected: false }, telegram: { connected: false } },
-          loading: false,
-        });
-      } else {
-        setDaemonStatus(prev => ({ ...prev, loading: false, error: 'Failed to fetch status' }));
-      }
-    } catch (error) {
-      setDaemonStatus(prev => ({
-        ...prev,
-        loading: false,
-        error: error instanceof Error ? error.message : 'Connection error',
-      }));
-    }
-  }, []);
-
-  // Fetch status on mount
-  useEffect(() => {
-    fetchDaemonStatus();
-  }, [fetchDaemonStatus]);
 
   // Tab configuration
   const tabs: { id: SettingsTab; label: string; icon: React.ReactNode }[] = [
@@ -241,137 +190,6 @@ export default function SettingsPanel({
 
         return (
           <div className="space-y-4">
-            {/* Johnny5 Daemon Status Card */}
-            <div className="p-4 rounded-xl bg-gradient-to-br from-bg-secondary to-bg-tertiary border border-border-default">
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex items-center gap-3">
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
-                    daemonStatus.johnny5.running
-                      ? 'bg-green-500/20'
-                      : daemonStatus.johnny5.installed
-                      ? 'bg-yellow-500/20'
-                      : 'bg-red-500/20'
-                  }`}>
-                    <Server className={`w-5 h-5 ${
-                      daemonStatus.johnny5.running
-                        ? 'text-green-400'
-                        : daemonStatus.johnny5.installed
-                        ? 'text-yellow-400'
-                        : 'text-red-400'
-                    }`} />
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-semibold text-text-primary">Johnny5 Daemon</h3>
-                    <p className="text-xs text-text-muted">Johnny5 background service</p>
-                  </div>
-                </div>
-                <button
-                  onClick={fetchDaemonStatus}
-                  disabled={daemonStatus.loading}
-                  className="p-2 rounded-lg bg-bg-tertiary hover:bg-bg-secondary text-text-muted hover:text-text-primary transition-all"
-                  title="Refresh status"
-                >
-                  {daemonStatus.loading ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <RefreshCw className="w-4 h-4" />
-                  )}
-                </button>
-              </div>
-
-              {/* Status indicators */}
-              <div className="grid grid-cols-3 gap-3 mb-4">
-                <div className="p-2 rounded-lg bg-zinc-800/80 border border-zinc-700/50">
-                  <div className="flex items-center gap-1.5 mb-1">
-                    {daemonStatus.johnny5.installed ? (
-                      <CheckCircle className="w-3.5 h-3.5 text-green-400" />
-                    ) : (
-                      <XCircle className="w-3.5 h-3.5 text-red-400" />
-                    )}
-                    <span className="text-[10px] font-medium text-zinc-400">Installed</span>
-                  </div>
-                  <span className={`text-xs font-semibold ${
-                    daemonStatus.johnny5.installed ? 'text-green-400' : 'text-red-400'
-                  }`}>
-                    {daemonStatus.johnny5.installed ? 'Yes' : 'No'}
-                  </span>
-                </div>
-                <div className="p-2 rounded-lg bg-zinc-800/80 border border-zinc-700/50">
-                  <div className="flex items-center gap-1.5 mb-1">
-                    {daemonStatus.johnny5.running ? (
-                      <CheckCircle className="w-3.5 h-3.5 text-green-400" />
-                    ) : (
-                      <XCircle className="w-3.5 h-3.5 text-yellow-400" />
-                    )}
-                    <span className="text-[10px] font-medium text-zinc-400">Running</span>
-                  </div>
-                  <span className={`text-xs font-semibold ${
-                    daemonStatus.johnny5.running ? 'text-green-400' : 'text-yellow-400'
-                  }`}>
-                    {daemonStatus.johnny5.running ? 'Active' : 'Stopped'}
-                  </span>
-                </div>
-                <div className="p-2 rounded-lg bg-zinc-800/80 border border-zinc-700/50">
-                  <div className="flex items-center gap-1.5 mb-1">
-                    {daemonStatus.johnny5.configured ? (
-                      <CheckCircle className="w-3.5 h-3.5 text-green-400" />
-                    ) : (
-                      <XCircle className="w-3.5 h-3.5 text-yellow-400" />
-                    )}
-                    <span className="text-[10px] font-medium text-zinc-400">Configured</span>
-                  </div>
-                  <span className={`text-xs font-semibold ${
-                    daemonStatus.johnny5.configured ? 'text-green-400' : 'text-yellow-400'
-                  }`}>
-                    {daemonStatus.johnny5.configured ? 'Yes' : 'No'}
-                  </span>
-                </div>
-              </div>
-
-              {/* Connected integrations summary - Clickable to configure */}
-              <div className="flex items-center gap-3 pt-3 border-t border-border-default">
-                <button
-                  onClick={onShowSetupWizard}
-                  className={`flex items-center gap-1.5 px-2 py-1 rounded-lg transition-all cursor-pointer hover:ring-2 hover:ring-coder1-cyan/50 ${
-                    daemonStatus.integrations.zapier.connected
-                      ? 'bg-green-500/10 text-green-400 hover:bg-green-500/20'
-                      : 'bg-bg-tertiary text-text-muted hover:bg-bg-secondary hover:text-text-primary'
-                  }`}
-                  title={daemonStatus.integrations.zapier.connected ? 'Zapier MCP connected - Click to reconfigure' : 'Click to set up Zapier MCP'}
-                >
-                  <Zap className="w-3.5 h-3.5" />
-                  <span className="text-xs font-medium">Zapier MCP</span>
-                  {daemonStatus.integrations.zapier.connected ? (
-                    <CheckCircle className="w-3 h-3" />
-                  ) : (
-                    <span className="text-[10px] opacity-70">+ Setup</span>
-                  )}
-                </button>
-                <button
-                  onClick={onShowSetupWizard}
-                  className={`flex items-center gap-1.5 px-2 py-1 rounded-lg transition-all cursor-pointer hover:ring-2 hover:ring-coder1-cyan/50 ${
-                    daemonStatus.integrations.telegram.connected
-                      ? 'bg-green-500/10 text-green-400 hover:bg-green-500/20'
-                      : 'bg-bg-tertiary text-text-muted hover:bg-bg-secondary hover:text-text-primary'
-                  }`}
-                  title={daemonStatus.integrations.telegram.connected ? 'Telegram connected - Click to reconfigure' : 'Click to set up Telegram bot'}
-                >
-                  <MessageCircle className="w-3.5 h-3.5" />
-                  <span className="text-xs font-medium">
-                    {daemonStatus.integrations.telegram.connected && daemonStatus.integrations.telegram.botUsername
-                      ? `@${daemonStatus.integrations.telegram.botUsername}`
-                      : 'Telegram'
-                    }
-                  </span>
-                  {daemonStatus.integrations.telegram.connected ? (
-                    <CheckCircle className="w-3 h-3" />
-                  ) : (
-                    <span className="text-[10px] opacity-70">+ Setup</span>
-                  )}
-                </button>
-              </div>
-            </div>
-
             {/* Header */}
             <div className="flex items-center justify-between">
               <div>
