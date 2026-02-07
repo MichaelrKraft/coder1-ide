@@ -62,6 +62,18 @@ export default function ThreePanelLayout({
     return () => window.removeEventListener('collapseRightPanel', handleCollapseRight);
   }, []);
 
+  // Listen for expand events (from AI Team button, status bar team indicator)
+  useEffect(() => {
+    const handleExpandRight = () => {
+      if (rightPanelRef.current && rightPanelRef.current.isCollapsed()) {
+        rightPanelRef.current.expand();
+      }
+    };
+
+    window.addEventListener('expandRightPanel', handleExpandRight);
+    return () => window.removeEventListener('expandRightPanel', handleExpandRight);
+  }, []);
+
   return (
     <div className="h-screen w-full bg-bg-primary overflow-hidden">
       <PanelGroup direction="horizontal" className="h-full">
