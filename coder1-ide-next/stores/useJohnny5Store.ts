@@ -23,9 +23,6 @@ import {
   Johnny5Task,
   Johnny5ActivityEntry,
   Johnny5MorningBrief,
-  Johnny5PRRequest,
-  Johnny5TrendAlert,
-  Johnny5Skill,
   Johnny5UserIntegration,
   Johnny5Settings,
   Johnny5SetupStatus,
@@ -76,16 +73,7 @@ interface Johnny5Store {
   morningBrief: Johnny5MorningBrief | null;
   briefHistory: Johnny5MorningBrief[];
   briefLoading: boolean;
-  
-  // Proactive Builder
-  pendingPRs: Johnny5PRRequest[];
-  
-  // Trend Monitor
-  trendAlerts: Johnny5TrendAlert[];
-  
-  // Self-Improvement
-  skills: Johnny5Skill[];
-  
+
   // Integrations
   connectedIntegrations: Johnny5UserIntegration[];
   
@@ -167,30 +155,6 @@ interface Johnny5Store {
   setBriefHistory: (history: Johnny5MorningBrief[]) => void;
   setBriefLoading: (loading: boolean) => void;
   dismissBriefItem: (briefId: string, itemId: string) => void;
-  
-  // ================================================================================
-  // PR Actions
-  // ================================================================================
-  
-  setPendingPRs: (prs: Johnny5PRRequest[]) => void;
-  addPendingPR: (pr: Johnny5PRRequest) => void;
-  updatePRStatus: (id: string, status: Johnny5PRRequest['status']) => void;
-  
-  // ================================================================================
-  // Trend Actions
-  // ================================================================================
-  
-  setTrendAlerts: (alerts: Johnny5TrendAlert[]) => void;
-  addTrendAlert: (alert: Johnny5TrendAlert) => void;
-  dismissTrendAlert: (id: string) => void;
-  
-  // ================================================================================
-  // Skill Actions
-  // ================================================================================
-  
-  setSkills: (skills: Johnny5Skill[]) => void;
-  addSkill: (skill: Johnny5Skill) => void;
-  toggleSkill: (id: string) => void;
   
   // ================================================================================
   // Integration Actions
@@ -313,16 +277,7 @@ const initialState = {
   morningBrief: null as Johnny5MorningBrief | null,
   briefHistory: [] as Johnny5MorningBrief[],
   briefLoading: false,
-  
-  // Proactive Builder
-  pendingPRs: [] as Johnny5PRRequest[],
-  
-  // Trend Monitor
-  trendAlerts: [] as Johnny5TrendAlert[],
-  
-  // Self-Improvement
-  skills: [] as Johnny5Skill[],
-  
+
   // Integrations
   connectedIntegrations: [] as Johnny5UserIntegration[],
   
@@ -583,74 +538,6 @@ export const useJohnny5Store = create<Johnny5Store>()(
         ),
         
         // ================================================================================
-        // PR Actions
-        // ================================================================================
-        
-        setPendingPRs: (prs) => set({ pendingPRs: prs }, false, 'setPendingPRs'),
-        
-        addPendingPR: (pr) => set(
-          (state) => ({ pendingPRs: [{ ...pr, id: pr.id || generateId() }, ...state.pendingPRs] }),
-          false,
-          'addPendingPR'
-        ),
-        
-        updatePRStatus: (id, status) => set(
-          (state) => ({
-            pendingPRs: state.pendingPRs.map(pr =>
-              pr.id === id ? { ...pr, status } : pr
-            )
-          }),
-          false,
-          'updatePRStatus'
-        ),
-        
-        // ================================================================================
-        // Trend Actions
-        // ================================================================================
-        
-        setTrendAlerts: (alerts) => set({ trendAlerts: alerts }, false, 'setTrendAlerts'),
-        
-        addTrendAlert: (alert) => set(
-          (state) => ({
-            trendAlerts: [{ ...alert, id: alert.id || generateId() }, ...state.trendAlerts]
-          }),
-          false,
-          'addTrendAlert'
-        ),
-        
-        dismissTrendAlert: (id) => set(
-          (state) => ({
-            trendAlerts: state.trendAlerts.map(a =>
-              a.id === id ? { ...a, dismissed: true } : a
-            )
-          }),
-          false,
-          'dismissTrendAlert'
-        ),
-        
-        // ================================================================================
-        // Skill Actions
-        // ================================================================================
-        
-        setSkills: (skills) => set({ skills }, false, 'setSkills'),
-        
-        addSkill: (skill) => set(
-          (state) => ({ skills: [...state.skills, { ...skill, id: skill.id || generateId() }] }),
-          false,
-          'addSkill'
-        ),
-        
-        toggleSkill: (id) => set(
-          (state) => ({
-            skills: state.skills.map(s =>
-              s.id === id ? { ...s, enabled: !s.enabled } : s
-            )
-          }),
-          false,
-          'toggleSkill'
-        ),
-        
-        // ================================================================================
         // Integration Actions
         // ================================================================================
         
@@ -717,7 +604,6 @@ export const useJohnny5Store = create<Johnny5Store>()(
           settings: state.settings,
           setupStatus: state.setupStatus,
           connectedIntegrations: state.connectedIntegrations,
-          skills: state.skills,
         }),
       }
     ),

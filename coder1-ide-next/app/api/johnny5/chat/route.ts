@@ -471,7 +471,12 @@ export async function POST(
 
             if (searchResult.results.length > 0) {
               const memoryContext = formatForPromptInjection(searchResult, 2000);
-              moltbotMessage = `${memoryContext}\n\n---\n\n**User Query:**\n${message}`;
+              const moltbotParts: string[] = [memoryContext];
+              // Include terminal context if provided
+              if (terminalContext && typeof terminalContext === 'string' && terminalContext.length > 0) {
+                moltbotParts.push(`## Recent Terminal Activity\n\`\`\`\n${terminalContext.slice(0, 2000)}\n\`\`\``);
+              }
+              moltbotMessage = `${moltbotParts.join('\n\n')}\n\n---\n\n**User Query:**\n${message}`;
               moltbotSearchType = searchResult.searchType;
               moltbotMemoryTokens = searchResult.totalTokens;
               moltbotMemoriesUsed = searchResult.results.map((r) => ({
@@ -483,13 +488,20 @@ export async function POST(
               console.log(`[Johnny5/Moltbot] Injected ${moltbotMemoriesUsed.length} memories: ${moltbotMemoriesUsed.map(m => m.sourceType).join(', ')}`);
             } else {
               console.log('[Johnny5/Moltbot] No memories found for query');
+              // Still inject terminal context even without memory search results
+              if (terminalContext && typeof terminalContext === 'string' && terminalContext.length > 0) {
+                moltbotMessage = `## Recent Terminal Activity\n\`\`\`\n${terminalContext.slice(0, 2000)}\n\`\`\`\n\n---\n\n**User Query:**\n${message}`;
+              }
             }
           } catch (memoryError) {
             console.warn('[Johnny5/Moltbot] Memory search failed:', memoryError);
           }
+        } else if (terminalContext && typeof terminalContext === 'string' && terminalContext.length > 0) {
+          // Memory injection disabled but terminal context present
+          moltbotMessage = `## Recent Terminal Activity\n\`\`\`\n${terminalContext.slice(0, 2000)}\n\`\`\`\n\n---\n\n**User Query:**\n${message}`;
         }
 
-        const moltbotResponse = await moltbotBridge!.sendMessage(moltbotMessage, 'dashboard:main');
+        const moltbotResponse = await moltbotBridge!.sendMessage('dashboard:main', moltbotMessage);
         return NextResponse.json({
           success: true,
           data: {
@@ -871,7 +883,7 @@ export async function POST(
       if (!result.success) {
         console.log('[Johnny5] Gemini failed, trying direct Claude CLI (uses your subscription)');
         try {
-          const { execSync, spawnSync } = await import('child_process');
+          const { execSync, spawn: spawnAsync } = await import('child_process');
           const fs = await import('fs');
           const os = await import('os');
           const path = await import('path');
@@ -907,26 +919,45 @@ export async function POST(
 
             console.log('[Johnny5] CLI attempting with input piped, HOME:', cliEnv.HOME);
 
-            // Use stdin to pass the prompt - avoids shell escaping issues
-            const cliResult = spawnSync('claude', ['--print'], {
-              input: fullPrompt,
-              encoding: 'utf-8',
-              timeout: 90000, // 90 second timeout
-              maxBuffer: 10 * 1024 * 1024, // 10MB buffer
-              env: cliEnv,
-              cwd: homeDir,
+            // Use async spawn to avoid blocking the Node.js event loop
+            const cliResponse = await new Promise<string>((resolve, reject) => {
+              const child = spawnAsync('claude', ['--print'], {
+                env: cliEnv,
+                cwd: homeDir,
+                stdio: ['pipe', 'pipe', 'pipe'],
+              });
+
+              let stdout = '';
+              let stderr = '';
+
+              child.stdout?.on('data', (data: Buffer) => { stdout += data.toString(); });
+              child.stderr?.on('data', (data: Buffer) => { stderr += data.toString(); });
+
+              // 90-second timeout — kill the process if it hangs
+              const timeout = setTimeout(() => {
+                child.kill('SIGTERM');
+                reject(new Error('Claude CLI timed out after 90 seconds'));
+              }, 90000);
+
+              child.on('error', (err: Error) => {
+                clearTimeout(timeout);
+                reject(err);
+              });
+
+              child.on('close', (code: number | null) => {
+                clearTimeout(timeout);
+                if (code !== 0) {
+                  const errorMsg = stderr || stdout || 'Unknown error';
+                  reject(new Error(`CLI exited with code ${code}: ${errorMsg}`));
+                } else {
+                  resolve(stdout);
+                }
+              });
+
+              // Pipe the prompt to stdin then close it
+              child.stdin?.write(fullPrompt);
+              child.stdin?.end();
             });
-
-            if (cliResult.error) {
-              throw cliResult.error;
-            }
-
-            if (cliResult.status !== 0) {
-              const errorMsg = cliResult.stderr || cliResult.stdout || 'Unknown error';
-              throw new Error(`CLI exited with code ${cliResult.status}: ${errorMsg}`);
-            }
-
-            const cliResponse = cliResult.stdout;
             if (cliResponse && cliResponse.trim()) {
               result = {
                 success: true,

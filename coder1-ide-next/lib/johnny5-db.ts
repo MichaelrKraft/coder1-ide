@@ -818,6 +818,75 @@ export async function getAuditLog(limit: number = 100): Promise<AuditEntry[]> {
 }
 
 // ============================================================================
+// Security Warning Operations
+// ============================================================================
+
+/**
+ * Save a security warning to the audit_log table
+ */
+export async function saveSecurityWarning(warning: {
+  id: string;
+  type: string;
+  message: string;
+  severity: string;
+  timestamp: Date;
+  dismissed: boolean;
+  source?: string;
+}): Promise<void> {
+  const database = getDb();
+  const stmt = database.prepare(`
+    INSERT OR IGNORE INTO audit_log (id, action, details, timestamp)
+    VALUES (?, 'security_warning', ?, ?)
+  `);
+  stmt.run(
+    warning.id,
+    JSON.stringify({
+      type: warning.type,
+      message: warning.message,
+      severity: warning.severity,
+      dismissed: warning.dismissed,
+      source: warning.source,
+    }),
+    warning.timestamp.toISOString()
+  );
+}
+
+/**
+ * Get security warnings from the audit_log table
+ */
+export async function getSecurityWarnings(limit: number = 100): Promise<Array<{
+  id: string;
+  type: string;
+  message: string;
+  severity: string;
+  timestamp: string;
+  dismissed: boolean;
+  source?: string;
+}>> {
+  const database = getDb();
+  const stmt = database.prepare(`
+    SELECT id, details, timestamp FROM audit_log
+    WHERE action = 'security_warning'
+    ORDER BY timestamp DESC
+    LIMIT ?
+  `);
+  const rows = stmt.all(limit) as Array<{ id: string; details: string; timestamp: string }>;
+
+  return rows.map(row => {
+    const details = JSON.parse(row.details);
+    return {
+      id: row.id,
+      type: details.type || 'unknown',
+      message: details.message || '',
+      severity: details.severity || 'low',
+      timestamp: row.timestamp,
+      dismissed: details.dismissed || false,
+      source: details.source,
+    };
+  });
+}
+
+// ============================================================================
 // Usage Tracking
 // ============================================================================
 

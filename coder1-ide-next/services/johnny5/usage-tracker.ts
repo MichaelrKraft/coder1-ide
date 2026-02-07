@@ -258,7 +258,7 @@ export async function getDailyUsage(params: {
 /**
  * Get hourly usage for last 24 hours (from in-memory cache)
  */
-export function getHourlyUsage(): { hour: string; tokens: number; cost: number }[] {
+export function getHourlyUsage(): { hour: string; tokens: number; inputTokens: number; outputTokens: number; cost: number }[] {
   const now = new Date();
   const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 
@@ -268,22 +268,24 @@ export function getHourlyUsage(): { hour: string; tokens: number; cost: number }
   });
 
   // Group by hour
-  const byHour = new Map<string, { tokens: number; cost: number }>();
+  const byHour = new Map<string, { tokens: number; inputTokens: number; outputTokens: number; cost: number }>();
 
   for (const record of records) {
     const hourKey = record.timestamp.toISOString().slice(0, 13); // "2025-01-29T14"
 
     if (!byHour.has(hourKey)) {
-      byHour.set(hourKey, { tokens: 0, cost: 0 });
+      byHour.set(hourKey, { tokens: 0, inputTokens: 0, outputTokens: 0, cost: 0 });
     }
 
     const hour = byHour.get(hourKey)!;
     hour.tokens += record.totalTokens;
+    hour.inputTokens += record.inputTokens;
+    hour.outputTokens += record.outputTokens;
     hour.cost += record.cost;
   }
 
   // Fill in all 24 hours
-  const result: { hour: string; tokens: number; cost: number }[] = [];
+  const result: { hour: string; tokens: number; inputTokens: number; outputTokens: number; cost: number }[] = [];
   const current = new Date(yesterday);
 
   while (current <= now) {
@@ -292,7 +294,7 @@ export function getHourlyUsage(): { hour: string; tokens: number; cost: number }
     if (byHour.has(hourKey)) {
       result.push({ hour: hourKey, ...byHour.get(hourKey)! });
     } else {
-      result.push({ hour: hourKey, tokens: 0, cost: 0 });
+      result.push({ hour: hourKey, tokens: 0, inputTokens: 0, outputTokens: 0, cost: 0 });
     }
 
     current.setHours(current.getHours() + 1);

@@ -31,16 +31,16 @@ export const dynamic = 'force-dynamic';
 /**
  * Get real token usage data from the usage tracker
  */
-function getRealTokenUsage(range: Johnny5AnalyticsRange): Johnny5TokenUsage[] {
+async function getRealTokenUsage(range: Johnny5AnalyticsRange): Promise<Johnny5TokenUsage[]> {
   const now = new Date();
 
   if (range === '24h') {
-    // Get hourly data for 24h view
+    // Get hourly data for 24h view with real input/output breakdown
     const hourlyData = getHourlyUsage();
     return hourlyData.map(h => ({
       date: h.hour.slice(11, 16), // Extract "HH:mm" from ISO string
-      inputTokens: Math.round(h.tokens * 0.4), // Approximate split
-      outputTokens: Math.round(h.tokens * 0.6),
+      inputTokens: h.inputTokens,
+      outputTokens: h.outputTokens,
       totalTokens: h.tokens,
       cost: h.cost,
     }));
@@ -49,7 +49,7 @@ function getRealTokenUsage(range: Johnny5AnalyticsRange): Johnny5TokenUsage[] {
   // For 7d and 30d, get daily data
   const days = range === '7d' ? 7 : 30;
   const startDate = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
-  const dailyData = getDailyUsage({ startDate, endDate: now });
+  const dailyData = await getDailyUsage({ startDate, endDate: now });
 
   return dailyData.map(d => ({
     date: d.date,
@@ -101,7 +101,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Get REAL usage data from usage tracker
-    const tokenUsage = getRealTokenUsage(range);
+    const tokenUsage = await getRealTokenUsage(range);
     const { rate: burnRate, trend: burnRateTrend } = getRealBurnRate(range);
     const efficiency = await getRealEfficiencyMetrics(range);
 

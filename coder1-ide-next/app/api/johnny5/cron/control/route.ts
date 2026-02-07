@@ -14,12 +14,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import type { Johnny5APIResponse } from '@/types/johnny5';
 import { getCronService } from '@/services/johnny5/cron-service';
 import { generateMorningBrief } from '@/services/johnny5/morning-brief-generator';
-import { trendMonitor } from '@/services/johnny5/trend-monitor';
-
 // Force dynamic rendering
 export const dynamic = 'force-dynamic';
 
-type ControlAction = 'start' | 'stop' | 'status' | 'init-defaults' | 'run-morning-brief' | 'run-trend-check';
+type ControlAction = 'start' | 'stop' | 'status' | 'init-defaults' | 'run-morning-brief';
 
 /**
  * POST handler - Control cron service
@@ -122,24 +120,10 @@ export async function POST(request: NextRequest) {
         break;
       }
 
-      case 'run-trend-check': {
-        // Manually trigger trend refresh
-        const alerts = await trendMonitor.refresh();
-        const stats = trendMonitor.getStats();
-        result = {
-          status: 'completed',
-          alertCount: alerts.length,
-          activeAlerts: stats.active,
-          byRelevance: stats.byRelevance,
-        };
-        console.log('[Johnny5 Cron Control] Trend check completed');
-        break;
-      }
-
       default: {
         const response: Johnny5APIResponse<null> = {
           success: false,
-          error: `Unknown action: ${action}. Valid actions: start, stop, status, init-defaults, run-morning-brief, run-trend-check`,
+          error: `Unknown action: ${action}. Valid actions: start, stop, status, init-defaults, run-morning-brief`,
           timestamp: new Date(),
         };
         return NextResponse.json(response, { status: 400 });
