@@ -25,9 +25,9 @@ export interface ModelInfo {
 }
 
 const MODEL_DATABASE: Record<string, ModelInfo> = {
-  'claude-opus-4.1': {
-    id: 'claude-opus-4.1',
-    name: 'Opus 4.1',
+  'claude-opus-4.6': {
+    id: 'claude-opus-4.6',
+    name: 'Opus 4.6',
     icon: '👑',
     color: '#8B5CF6', // purple-500
     capabilities: ['reasoning', 'coding', 'analysis', 'creative']
@@ -189,7 +189,7 @@ export class ModelInfoComponent {
    */
   private parseVersionToModel(version: string): string | null {
     // Example version parsing logic
-    if (version.includes('opus-4')) return 'claude-opus-4.1';
+    if (version.includes('opus-4')) return 'claude-opus-4.6';
     if (version.includes('sonnet-4')) return 'claude-sonnet-4';
     if (version.includes('sonnet-3.7')) return 'claude-sonnet-3.7';
     if (version.includes('haiku-3.5')) return 'claude-3.5-haiku';

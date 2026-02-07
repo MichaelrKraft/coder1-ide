@@ -78,7 +78,7 @@ export default function ErrorDoctor({ lastError, isActive }: ErrorDoctorProps) {
     if (!model) return 'AI';
     if (model === 'glm-4.6') return 'GLM 4.6';
     if (model.includes('claude-sonnet')) return 'Claude Sonnet 4.5';
-    if (model.includes('claude-opus')) return 'Claude Opus 4.1';
+    if (model.includes('claude-opus')) return 'Claude Opus 4.6';
     if (model.includes('claude-haiku')) return 'Claude Haiku 3.5';
     if (model.includes('gemini')) return 'Gemini 2.5 Flash';
     return 'AI';

@@ -321,10 +321,10 @@ export default function TerminalSettings({
                 <span className="text-xs text-coder1-cyan">
                   {(() => {
                     const models = [
+                      { model: 'claude-opus-4-6', label: 'Claude Opus 4.6' },
                       { model: 'claude-sonnet-4-5-20250929', label: 'Claude Sonnet 4.5' },
-                      { model: 'claude-opus-4-1-20250805', label: 'Claude Opus 4.1' },
-                      { model: 'glm-4.6', label: 'GLM 4.6' },
                       { model: 'claude-haiku-3-5-20241022', label: 'Claude Haiku 3.5' },
+                      { model: 'glm-4.6', label: 'GLM 4.6' },
                       { model: 'gemini-2.5-flash-lite', label: 'Gemini 2.5 Flash-Lite' }
                     ];
                     return models.find(m => m.model === selectedClaudeModel)?.label || 'Select Model';
@@ -337,10 +337,10 @@ export default function TerminalSettings({
             {showModelDropdown && (
               <div className="mt-3 space-y-2">
                 {[
-                  { model: 'claude-sonnet-4-5-20250929', label: 'Claude Sonnet 4.5', description: '🆕 Latest (Default)', category: 'Claude', helpText: '' },
-                  { model: 'claude-opus-4-1-20250805', label: 'Claude Opus 4.1', description: 'Most Capable', category: 'Claude', helpText: '' },
-                  { model: 'glm-4.6', label: 'GLM 4.6', description: '💰 Overflow Backend ($0.10/M)', category: 'GLM', helpText: '🔄 Switch here when Claude hits rate limits. Requires Z.AI setup - see Help → GLM 4.6 Setup Guide' },
+                  { model: 'claude-opus-4-6', label: 'Claude Opus 4.6', description: '🆕 Most Capable (Default)', category: 'Claude', helpText: '' },
+                  { model: 'claude-sonnet-4-5-20250929', label: 'Claude Sonnet 4.5', description: 'Fast & Capable', category: 'Claude', helpText: '' },
                   { model: 'claude-haiku-3-5-20241022', label: 'Claude Haiku 3.5', description: 'Ultra Fast', category: 'Claude', helpText: '' },
+                  { model: 'glm-4.6', label: 'GLM 4.6', description: '💰 Overflow Backend ($0.10/M)', category: 'GLM', helpText: '🔄 Switch here when Claude hits rate limits. Requires Z.AI setup - see Help → GLM 4.6 Setup Guide' },
                   { model: 'gemini-2.5-flash-lite', label: 'Gemini 2.5 Flash-Lite', description: '⚡ Cost-Effective ($0.10/M)', category: 'Gemini', helpText: '' }
                 ].map((item) => (
                   <button

@@ -39,7 +39,7 @@ export interface CostSession {
 
 // Real-time pricing for cost projections
 const LIVE_PRICING: Record<string, { input: number; output: number }> = {
-  'claude-opus-4.1': { input: 0.015, output: 0.075 },
+  'claude-opus-4.6': { input: 0.015, output: 0.075 },
   'claude-sonnet-4': { input: 0.003, output: 0.015 },
   'claude-sonnet-3.7': { input: 0.003, output: 0.015 },
   'claude-3.5-haiku': { input: 0.00025, output: 0.00125 },

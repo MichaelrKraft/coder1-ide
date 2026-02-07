@@ -33,6 +33,7 @@ import SupervisionConfigModal from '@/components/supervision/SupervisionConfigMo
 import { features } from '@/lib/feature-flags';
 import { useUIStore } from '@/stores/useUIStore';
 import { useIDEStore } from '@/stores/useIDEStore';
+import { useSessionStore } from '@/stores/useSessionStore';
 import { parseClaudeTokenUsage } from '@/lib/claude-token-parser';
 import { filterThinkingAnimations, extractClaudeCommands } from '@/lib/checkpoint-utils';
 import { getCompanionClient } from '@/lib/companion-client';
@@ -145,6 +146,7 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
   const initialLoadComplete = useRef(false); // Track if initial header has been displayed (prevents auto-scroll on first load)
   const [isConnected, setIsConnected] = useState(false);
   const [agentsRunning, setAgentsRunning] = useState(false);
+  const activeTeam = useSessionStore((state) => state.activeTeam);
   const [voiceListening, setVoiceListening] = useState(false);
   
   // Emergency stop state (Nov 26, 2025)
@@ -3896,7 +3898,7 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
             const line2 = `File: ${currentFileDisplay} | Branch: ${gitBranch}`;
             
             // Line 3: Status and model
-            const modelDisplay = selectedClaudeModel.includes('4-opus') ? 'Opus 4.1' :
+            const modelDisplay = selectedClaudeModel.includes('opus-4-6') ? 'Opus 4.6' :
                                 selectedClaudeModel.includes('4-5-sonnet') ? 'Sonnet 4.5' :
                                 selectedClaudeModel.includes('4-sonnet') ? 'Sonnet 4.0' :
                                 selectedClaudeModel.includes('3-7-sonnet') ? 'Sonnet 3.7' :
@@ -5444,15 +5446,18 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
             </button>
           )}
 
-          {/* AI Team button - Opens Mission Control Agent Dashboard */}
+          {/* AI Team button - Opens Teams panel in right sidebar */}
           <button
             onClick={() => {
-              // Open Mission Control with Agent Dashboard as primary module
-              window.dispatchEvent(new CustomEvent('openMissionControl'));
+              window.dispatchEvent(new CustomEvent('switchToTeamsTab'));
+              window.dispatchEvent(new CustomEvent('expandRightPanel'));
             }}
             className="terminal-control-btn flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md transition-all hover:bg-gradient-to-r hover:from-purple-600/20 hover:to-coder1-cyan/20"
-            title="Open Mission Control to spawn AI agents"
+            title="Open Agent Teams panel"
           >
+            {(agentsRunning || (activeTeam && activeTeam.status !== 'completed' && activeTeam.status !== 'error')) && (
+              <span className="w-2 h-2 rounded-full bg-coder1-cyan animate-pulse" />
+            )}
             <Users className="w-4 h-4" />
             <span>AI Team</span>
           </button>
