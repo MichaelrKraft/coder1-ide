@@ -1,3 +1,6 @@
-# Ignore all data files except this gitignore
+# Ignore all data files except this gitignore and static JSON imports
 *
 !.gitignore
+!agent-personas.json
+!command-mappings.json
+!prompt-templates.json

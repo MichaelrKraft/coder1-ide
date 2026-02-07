@@ -1,0 +1,163 @@
+[
+  {
+    "id": "save-work",
+    "phrases": ["save my work", "save changes", "commit my changes", "save progress", "commit"],
+    "command": "git add . && git commit -m \"Save progress\"",
+    "description": "Stage all changes and create a commit",
+    "category": "git",
+    "difficulty": "beginner"
+  },
+  {
+    "id": "show-changes",
+    "phrases": ["what changed", "show changes", "show diff", "see differences", "what did I change"],
+    "command": "git diff",
+    "description": "Show all unstaged changes in the working directory",
+    "category": "git",
+    "difficulty": "beginner"
+  },
+  {
+    "id": "undo-changes",
+    "phrases": ["undo last change", "revert", "undo changes", "discard changes", "go back"],
+    "command": "git checkout -- .",
+    "description": "Discard all unstaged changes (WARNING: cannot be undone)",
+    "category": "git",
+    "difficulty": "intermediate",
+    "warning": "This will permanently discard all uncommitted changes."
+  },
+  {
+    "id": "create-branch",
+    "phrases": ["create a branch", "new branch", "make a branch", "branch off", "start a branch"],
+    "command": "git checkout -b [branch-name]",
+    "description": "Create and switch to a new branch",
+    "category": "git",
+    "difficulty": "beginner"
+  },
+  {
+    "id": "push-code",
+    "phrases": ["push my code", "upload changes", "push to remote", "push it up", "deploy code"],
+    "command": "git push origin [branch]",
+    "description": "Push local commits to the remote repository",
+    "category": "git",
+    "difficulty": "beginner"
+  },
+  {
+    "id": "check-status",
+    "phrases": ["check status", "what's staged", "git status", "show status", "what's ready to commit"],
+    "command": "git status",
+    "description": "Show the current state of your working directory and staging area",
+    "category": "git",
+    "difficulty": "beginner"
+  },
+  {
+    "id": "code-review",
+    "phrases": ["review my code", "code review", "check my code", "review this", "audit code"],
+    "command": "/review",
+    "description": "Ask Claude to review your current code for issues and improvements",
+    "category": "claude",
+    "difficulty": "beginner"
+  },
+  {
+    "id": "compact-context",
+    "phrases": ["make it shorter", "compact", "compress context", "save context", "reduce context"],
+    "command": "/compact",
+    "description": "Compact the conversation to free up context window space",
+    "category": "claude",
+    "difficulty": "beginner"
+  },
+  {
+    "id": "explain-code",
+    "phrases": ["explain this", "what does this do", "explain the code", "walk me through", "how does this work"],
+    "command": "Explain [current file] step by step, including what each function does and how data flows through the code.",
+    "description": "Get a detailed explanation of the current file or selected code",
+    "category": "claude",
+    "difficulty": "beginner"
+  },
+  {
+    "id": "fix-error",
+    "phrases": ["fix this error", "debug this", "help with error", "something broke", "fix the bug"],
+    "command": "I'm getting an error: [paste error]. Please diagnose the root cause and fix it.",
+    "description": "Send an error to Claude for diagnosis and a fix",
+    "category": "claude",
+    "difficulty": "beginner"
+  },
+  {
+    "id": "write-tests",
+    "phrases": ["write tests", "add tests", "create tests", "test this", "unit tests"],
+    "command": "Write comprehensive tests for [current file], covering edge cases and error handling.",
+    "description": "Generate unit tests for the current file",
+    "category": "claude",
+    "difficulty": "intermediate"
+  },
+  {
+    "id": "new-conversation",
+    "phrases": ["start fresh", "new conversation", "clear chat", "reset", "start over"],
+    "command": "/clear",
+    "description": "Clear the current conversation and start a fresh Claude session",
+    "category": "claude",
+    "difficulty": "beginner"
+  },
+  {
+    "id": "run-dev",
+    "phrases": ["run the app", "start the server", "start dev", "run dev server", "launch app"],
+    "command": "npm run dev",
+    "description": "Start the development server with hot reload",
+    "category": "dev",
+    "difficulty": "beginner"
+  },
+  {
+    "id": "install-packages",
+    "phrases": ["install packages", "add dependencies", "npm install", "install deps", "get packages"],
+    "command": "npm install",
+    "description": "Install all project dependencies from package.json",
+    "category": "dev",
+    "difficulty": "beginner"
+  },
+  {
+    "id": "build-production",
+    "phrases": ["build for production", "create build", "production build", "build it", "compile"],
+    "command": "npm run build",
+    "description": "Create an optimized production build",
+    "category": "dev",
+    "difficulty": "beginner"
+  },
+  {
+    "id": "run-tests",
+    "phrases": ["run tests", "check tests", "test suite", "run test suite", "execute tests"],
+    "command": "npm test",
+    "description": "Run the project test suite",
+    "category": "dev",
+    "difficulty": "beginner"
+  },
+  {
+    "id": "find-file",
+    "phrases": ["find a file", "search files", "locate file", "where is", "find file named"],
+    "command": "find . -name \"[pattern]\" -not -path \"./node_modules/*\"",
+    "description": "Search for files by name pattern, excluding node_modules",
+    "category": "nav",
+    "difficulty": "beginner"
+  },
+  {
+    "id": "search-text",
+    "phrases": ["search for text", "find in code", "grep for", "search codebase", "find string"],
+    "command": "grep -rn \"[text]\" . --include=\"*.{ts,tsx,js,jsx}\" --exclude-dir=node_modules",
+    "description": "Search for a text pattern across all source files",
+    "category": "nav",
+    "difficulty": "beginner"
+  },
+  {
+    "id": "open-file",
+    "phrases": ["open file", "show me", "open this", "view file", "read file"],
+    "command": "cat [file-path]",
+    "description": "Display the contents of a file in the terminal",
+    "category": "nav",
+    "difficulty": "beginner"
+  },
+  {
+    "id": "list-files",
+    "phrases": ["list files", "what's in this folder", "show directory", "ls", "show files"],
+    "command": "ls -la",
+    "description": "List all files and directories with details",
+    "category": "nav",
+    "difficulty": "beginner"
+  }
+]
