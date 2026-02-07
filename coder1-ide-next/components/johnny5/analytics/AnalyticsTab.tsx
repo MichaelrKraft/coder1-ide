@@ -7,6 +7,7 @@ import { Johnny5AnalyticsRange } from '@/types/johnny5';
 import TokenUsageChart from './TokenUsageChart';
 import BurnRateGauge from './BurnRateGauge';
 import EfficiencyMetrics from './EfficiencyMetrics';
+import { getActivityCollector } from '@/services/johnny5/terminal-activity-collector';
 
 interface QuotaInfo {
   messageCount: number;
@@ -85,6 +86,7 @@ export default function AnalyticsTab({ className = '' }: AnalyticsTabProps) {
 
   const loadAnalytics = async (range: Johnny5AnalyticsRange) => {
     setAnalyticsLoading(true);
+    const days = range === '24h' ? 1 : range === '7d' ? 7 : 30;
 
     try {
       // Fetch REAL analytics data from API
@@ -92,7 +94,29 @@ export default function AnalyticsTab({ className = '' }: AnalyticsTabProps) {
       const result = await response.json();
 
       if (result.success && result.data) {
-        setAnalytics(result.data);
+        // Augment prsCreated from client-side terminal activity
+        let prsCreated = 0;
+        try {
+          const collector = getActivityCollector();
+          const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+          const memoryPRs = collector.getEvents({ type: 'git_pr', since });
+          const storedPRs = collector.getStoredEvents(since, new Date())
+            .filter((e) => e.type === 'git_pr');
+          // Deduplicate: stored events may overlap with in-memory
+          const seen = new Set(memoryPRs.map((e) => e.timestamp.getTime()));
+          const uniqueStored = storedPRs.filter((e) => !seen.has(e.timestamp.getTime()));
+          prsCreated = memoryPRs.length + uniqueStored.length;
+        } catch {
+          // Collector may not be initialized; default to 0
+        }
+
+        setAnalytics({
+          ...result.data,
+          efficiency: {
+            ...result.data.efficiency,
+            prsCreated,
+          },
+        });
       } else {
         console.error('[AnalyticsTab] API error:', result.error);
         // Set empty state on error

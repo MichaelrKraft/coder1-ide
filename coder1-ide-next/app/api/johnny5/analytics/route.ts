@@ -63,16 +63,16 @@ function getRealTokenUsage(range: Johnny5AnalyticsRange): Johnny5TokenUsage[] {
 /**
  * Get real efficiency metrics from the usage tracker
  */
-function getRealEfficiencyMetrics(range: Johnny5AnalyticsRange): Johnny5EfficiencyMetrics {
+async function getRealEfficiencyMetrics(range: Johnny5AnalyticsRange): Promise<Johnny5EfficiencyMetrics> {
   const days = range === '24h' ? 1 : range === '7d' ? 7 : 30;
-  const metrics = getEfficiencyMetrics(days);
+  const metrics = await getEfficiencyMetrics(days);
 
   return {
     tokensPerSession: metrics.tokensPerSession,
     successRate: metrics.successRate,
     averageSessionDuration: Math.round(metrics.averageSessionDuration),
-    tasksCompleted: metrics.messagesPerDay * days, // Approximate tasks from messages
-    prsCreated: 0, // TODO: Track PRs separately
+    tasksCompleted: metrics.messagesPerDay * days,
+    prsCreated: 0, // Augmented client-side from TerminalActivityCollector
   };
 }
 
@@ -103,7 +103,7 @@ export async function GET(request: NextRequest) {
     // Get REAL usage data from usage tracker
     const tokenUsage = getRealTokenUsage(range);
     const { rate: burnRate, trend: burnRateTrend } = getRealBurnRate(range);
-    const efficiency = getRealEfficiencyMetrics(range);
+    const efficiency = await getRealEfficiencyMetrics(range);
 
     const analytics: Johnny5Analytics = {
       range,

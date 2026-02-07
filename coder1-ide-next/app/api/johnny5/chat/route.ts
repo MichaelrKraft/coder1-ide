@@ -27,6 +27,7 @@ import {
   Johnny5BridgeService,
   ChatMessage,
 } from '@/services/johnny5-bridge-service';
+import { trackUsage } from '@/services/johnny5/usage-tracker';
 import {
   getJohnny5Quota,
   incrementJohnny5MessageCount,
@@ -1057,6 +1058,20 @@ export async function POST(
       });
     } catch (updateError) {
       console.error('[Johnny5] Failed to update session:', updateError);
+      // Non-critical
+    }
+
+    // 11.5. Track usage for analytics
+    try {
+      await trackUsage({
+        sessionId: session.id,
+        source: modeUsed === 'bridge' ? 'direct' : 'fallback',
+        inputTokens: estimatedInputTokens,
+        outputTokens: estimatedOutputTokens,
+        model: modeUsed === 'bridge' ? 'claude-code-cli' : 'gemini-2.5-flash',
+      });
+    } catch (usageError) {
+      console.error('[Johnny5] Failed to track usage:', usageError);
       // Non-critical
     }
 
