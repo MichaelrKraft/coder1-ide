@@ -5,7 +5,6 @@ import {
   Send,
   Bot,
   User,
-  Loader2,
   Sparkles,
   Zap,
   Brain,
@@ -21,6 +20,7 @@ import {
   ShieldAlert,
   AlertTriangle,
   ArrowUpRight,
+  Square,
 } from 'lucide-react';
 import UpgradePrompt, { QuotaMeter } from '../UpgradePrompt';
 import { terminalObserver, type TerminalEvent } from '@/lib/terminal-observer';
@@ -165,6 +165,7 @@ export default function ChatTab() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   // Auto-scroll to bottom
   const scrollToBottom = useCallback(() => {
@@ -317,6 +318,13 @@ export default function ChatTab() {
     };
   }, []);
 
+  // Abort in-flight request on unmount
+  useEffect(() => {
+    return () => {
+      abortControllerRef.current?.abort();
+    };
+  }, []);
+
   // Helper function to get connection status display
   const getConnectionStatus = () => {
     if (!moltbotStatus) {
@@ -401,6 +409,14 @@ export default function ChatTab() {
     }
   }, []);
 
+  // Stop in-flight Johnny5 request
+  const handleStop = () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+  };
+
   // Send message - prefers Moltbot when connected, falls back to Bridge CLI
   const handleSend = async () => {
     if (!inputValue.trim() || isLoading) return;
@@ -425,6 +441,10 @@ export default function ChatTab() {
     setInputValue('');
     setIsLoading(true);
     setIsTyping(true);
+
+    // Create abort controller for this request
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
 
     try {
       // Determine which API to use based on Moltbot connection status
@@ -459,6 +479,7 @@ export default function ChatTab() {
               history: messages.slice(-10), // Send last 10 messages for context
               terminalContext: terminalObserver.getRecentContext(1500),
             }),
+        signal: controller.signal,
       });
 
       let data = await response.json();
@@ -474,6 +495,7 @@ export default function ChatTab() {
             sessionId: sessionId,
             history: messages.slice(-10),
           }),
+          signal: controller.signal,
         });
         data = await response.json();
       }
@@ -558,6 +580,16 @@ export default function ChatTab() {
 
       setMessages((prev) => [...prev, assistantMessage]);
     } catch (error) {
+      // User cancelled the request — not an error
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg.id === userMessage.id ? { ...msg, status: 'sent' } : msg
+          )
+        );
+        return;
+      }
+
       console.error('Chat error:', error);
 
       // Update user message with error
@@ -581,11 +613,17 @@ export default function ChatTab() {
     } finally {
       setIsLoading(false);
       setIsTyping(false);
+      abortControllerRef.current = null;
     }
   };
 
   // Handle keyboard shortcuts
   const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Escape' && isLoading) {
+      e.preventDefault();
+      handleStop();
+      return;
+    }
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSend();
@@ -594,6 +632,12 @@ export default function ChatTab() {
 
   // Clear chat
   const handleClearChat = () => {
+    // Abort any in-flight request
+    abortControllerRef.current?.abort();
+    abortControllerRef.current = null;
+    setIsLoading(false);
+    setIsTyping(false);
+
     const newSessionId = `session-${Date.now()}`;
     setMessages([
       {
@@ -953,26 +997,32 @@ export default function ChatTab() {
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Message Johnny5..."
+              placeholder={isLoading ? "Press Esc to stop..." : "Message Johnny5..."}
               rows={1}
               className="w-full px-4 py-3 pr-12 rounded-xl bg-bg-tertiary border border-border-default focus:border-coder1-cyan/50 focus:ring-1 focus:ring-coder1-cyan/20 text-sm text-text-primary placeholder-text-muted resize-none transition-all outline-none"
-              disabled={isLoading}
+              disabled={false}
             />
-            <button
-              onClick={handleSend}
-              disabled={!inputValue.trim() || isLoading}
-              className={`absolute right-2 bottom-2 p-2 rounded-lg transition-all ${
-                inputValue.trim() && !isLoading
-                  ? 'bg-coder1-cyan text-bg-primary hover:bg-coder1-cyan/80'
-                  : 'bg-bg-secondary text-text-muted'
-              }`}
-            >
-              {isLoading ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
+            {isLoading ? (
+              <button
+                onClick={handleStop}
+                className="absolute right-2 bottom-2 p-2 rounded-lg transition-all bg-red-500/80 text-white hover:bg-red-500"
+                title="Stop generating (Esc)"
+              >
+                <Square className="w-4 h-4" />
+              </button>
+            ) : (
+              <button
+                onClick={handleSend}
+                disabled={!inputValue.trim()}
+                className={`absolute right-2 bottom-2 p-2 rounded-lg transition-all ${
+                  inputValue.trim()
+                    ? 'bg-coder1-cyan text-bg-primary hover:bg-coder1-cyan/80'
+                    : 'bg-bg-secondary text-text-muted'
+                }`}
+              >
                 <Send className="w-4 h-4" />
-              )}
-            </button>
+              </button>
+            )}
           </div>
         </div>
 
