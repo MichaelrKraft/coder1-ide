@@ -126,7 +126,7 @@ export default function ChatTab() {
     {
       id: 'welcome',
       role: 'assistant',
-      content: "Hey! I'm Johnny5, your autonomous AI assistant. I can help you with coding, research, monitoring your business, and building features while you sleep. What would you like me to work on?",
+      content: "Hi, I'm Johnny5, your always on AI assistant and I'm ready to make your life easier. What can I do for you?",
       timestamp: new Date(),
     },
   ]);
@@ -277,29 +277,13 @@ export default function ChatTab() {
     };
   }, [setMoltbotStatus]);
 
-  // Load persisted messages on mount
+  // Fresh session on every page load - no persisted messages
+  // Each visit to Coder1 starts with a clean chat showing only the welcome message
   useEffect(() => {
-    const loadPersistedMessages = async () => {
-      try {
-        const response = await fetch('/api/johnny5/messages');
-        if (response.ok) {
-          const data = await response.json();
-          if (data.messages && data.messages.length > 0) {
-            const loaded: ChatMessage[] = data.messages.map((m: any) => ({
-              id: m.id,
-              role: m.role,
-              content: m.content,
-              timestamp: new Date(m.created_at),
-            }));
-            setMessages(loaded);
-            setSessionId(data.sessionId);
-          }
-        }
-      } catch (err) {
-        console.warn('[ChatTab] Failed to load persisted messages:', err);
-      }
-    };
-    loadPersistedMessages();
+    // Generate a new session ID for this fresh session
+    const newSessionId = `session-${Date.now()}`;
+    setSessionId(newSessionId);
+    console.log('[ChatTab] Starting fresh session:', newSessionId);
   }, []);
 
   // Subscribe to terminal events for observation
@@ -471,6 +455,7 @@ export default function ChatTab() {
             })
           : JSON.stringify({
               message: userMessage.content,
+              sessionId: sessionId,  // Pass session ID for conversation continuity
               history: messages.slice(-10), // Send last 10 messages for context
               terminalContext: terminalObserver.getRecentContext(1500),
             }),
@@ -486,6 +471,7 @@ export default function ChatTab() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             message: userMessage.content,
+            sessionId: sessionId,
             history: messages.slice(-10),
           }),
         });
@@ -608,17 +594,18 @@ export default function ChatTab() {
 
   // Clear chat
   const handleClearChat = () => {
+    const newSessionId = `session-${Date.now()}`;
     setMessages([
       {
         id: 'welcome-new',
         role: 'assistant',
-        content: "Chat cleared! What would you like me to help with?",
+        content: "Hi, I'm Johnny5, your always on AI assistant and I'm ready to make your life easier. What can I do for you?",
         timestamp: new Date(),
       },
     ]);
     setMemoryBannerDismissed(false);
     setMemoryStatus(null);
-    setSessionId(null);
+    setSessionId(newSessionId);
     setObservations([]);
   };
 
