@@ -211,20 +211,20 @@ export default function SessionDetail({ sessionId, onClose, onStartReplay }: Ses
         {/* Stats Grid */}
         <div className="grid grid-cols-2 gap-3">
           <StatCard icon={Clock} label="Duration" value={formatDuration(session.duration)} />
-          <StatCard icon={Wrench} label="Tool Calls" value={session.toolCalls.toString()} />
-          <StatCard icon={FileText} label="Files Changed" value={session.filesModified.length.toString()} />
-          <StatCard icon={Coins} label="Tokens Used" value={session.tokensUsed.toLocaleString()} />
+          <StatCard icon={Wrench} label="Tool Calls" value={(session.toolCalls ?? 0).toString()} />
+          <StatCard icon={FileText} label="Files Changed" value={(session.filesModified?.length ?? 0).toString()} />
+          <StatCard icon={Coins} label="Tokens Used" value={(session.tokensUsed ?? 0).toLocaleString()} />
         </div>
 
         {/* File Changes Section */}
         <CollapsibleSection
           title="File Changes"
-          count={session.fileChanges.length}
+          count={session.fileChanges?.length ?? 0}
           isExpanded={expandedSections.files}
           onToggle={() => toggleSection('files')}
         >
           <div className="space-y-2">
-            {session.fileChanges.length === 0 ? (
+            {!session.fileChanges || session.fileChanges.length === 0 ? (
               <p className="text-xs text-text-muted italic">No files were modified</p>
             ) : (
               session.fileChanges.map((change, index) => (
@@ -253,12 +253,12 @@ export default function SessionDetail({ sessionId, onClose, onStartReplay }: Ses
         {/* Tool Calls Section */}
         <CollapsibleSection
           title="Tool Calls Timeline"
-          count={session.steps.filter((s) => s.type === 'tool_call').length}
+          count={session.steps?.filter((s) => s.type === 'tool_call').length ?? 0}
           isExpanded={expandedSections.tools}
           onToggle={() => toggleSection('tools')}
         >
           <div className="space-y-2">
-            {session.steps.length === 0 ? (
+            {!session.steps || session.steps.length === 0 ? (
               <p className="text-xs text-text-muted italic">No tool calls recorded</p>
             ) : (
               session.steps.slice(0, 10).map((step) => (
@@ -292,25 +292,25 @@ export default function SessionDetail({ sessionId, onClose, onStartReplay }: Ses
                 </div>
               ))
             )}
-            {session.steps.length > 10 && (
+            {(session.steps?.length ?? 0) > 10 && (
               <p className="text-xs text-text-muted text-center py-2">
-                + {session.steps.length - 10} more steps
+                + {(session.steps?.length ?? 0) - 10} more steps
               </p>
             )}
           </div>
         </CollapsibleSection>
 
         {/* Errors Section (if any) */}
-        {session.errors.length > 0 && (
+        {(session.errors?.length ?? 0) > 0 && (
           <CollapsibleSection
             title="Errors"
-            count={session.errors.length}
+            count={session.errors?.length ?? 0}
             isExpanded={expandedSections.errors}
             onToggle={() => toggleSection('errors')}
             variant="error"
           >
             <div className="space-y-2">
-              {session.errors.map((error) => (
+              {session.errors?.map((error) => (
                 <div
                   key={error.id}
                   className="p-2 bg-red-500/10 border border-red-500/30 rounded-md"
