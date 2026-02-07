@@ -6,8 +6,20 @@ export async function GET() {
   const moltbotBridge = getMoltbotBridge();
   const moltbotConnected = moltbotBridge?.isConnected() ?? false;
 
-  const johnny5Service = new Johnny5BridgeService('default');
-  const bridgeConnected = johnny5Service.isBridgeConnected();
+  // Access global bridgeManager set by server.js to ensure we use the same instance
+  // that has the registered bridges (fixes module singleton isolation issue)
+  const globalBridgeManager = (global as any).bridgeManager;
+  let bridgeConnected = false;
+
+  if (globalBridgeManager) {
+    // Use server.js's bridgeManager instance directly
+    bridgeConnected = globalBridgeManager.hasBridgeForUser?.('default') ||
+                      !!globalBridgeManager.findAnyConnectedBridge?.();
+  } else {
+    // Fallback to module import (for development/testing without custom server)
+    const johnny5Service = new Johnny5BridgeService('default');
+    bridgeConnected = johnny5Service.isBridgeConnected();
+  }
 
   let mode: 'moltbot' | 'bridge' | 'gemini';
   let capabilities: string[];
