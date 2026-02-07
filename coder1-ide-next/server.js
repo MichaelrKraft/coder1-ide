@@ -237,11 +237,24 @@ let io;
 // Conductor system removed - using simple multi-Claude tabs instead
 // Multi-Claude tabs will be handled through the terminal UI directly
 
+// Try to load AI Agent Orchestrator for team status broadcasting
+let aiOrchestratorRef = null;
+try {
+  // Dynamic require - may fail if TypeScript module not compiled
+  const orchModule = require('./services/ai-agent-orchestrator');
+  aiOrchestratorRef = orchModule.aiOrchestrator || null;
+} catch (e) {
+  // Orchestrator not available in plain JS context - will be handled by Next.js API routes
+}
+
 // Broadcast team status updates periodically
 setInterval(() => {
-  if (agentTerminalManager && io) {
+  if (!io) return;
+
+  // Existing agent terminal manager broadcasts
+  if (agentTerminalManager) {
     const stats = agentTerminalManager.getStats();
-    
+
     if (stats.totalSessions > 0) {
       const agents = stats.sessions.map(session => ({
         agentId: session.agentId,
@@ -249,11 +262,39 @@ setInterval(() => {
         status: session.bufferSize > 0 ? 'working' : 'idle',
         bufferSize: session.bufferSize
       }));
-      
+
       // Broadcast to all connected clients
       io.emit('team:status:update', { agents });
     }
   }
+
+  // AI Agent Orchestrator team broadcasts
+  try {
+    const teams = aiOrchestratorRef?.getAllTeams?.() || [];
+    if (teams.length > 0) {
+      const team = teams[0]; // Support one active team at a time
+      io.emit('team:status:update', {
+        type: 'orchestrator',
+        team: {
+          teamId: team.teamId,
+          status: team.status,
+          requirement: team.projectRequirement,
+          overallProgress: Math.round(
+            team.agents.reduce((s, a) => s + a.progress, 0) / Math.max(team.agents.length, 1)
+          )
+        },
+        agents: team.agents.map(a => ({
+          agentId: a.agentId || a.sessionId,
+          agentName: a.agentName,
+          status: a.status,
+          progress: a.progress,
+          currentTask: a.currentTask,
+          filesCount: a.files ? a.files.length : 0,
+          output: (a.output || []).slice(-5)
+        }))
+      });
+    }
+  } catch (e) { /* orchestrator not available */ }
 }, 3000); // Update every 3 seconds
 
 // Agent Coordinator for multi-agent workflows with terminal integration
