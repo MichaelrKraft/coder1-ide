@@ -8,7 +8,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Eye, GitBranch, FileText, Brain, AlertTriangle, Zap, Link, Unlink } from 'lucide-react';
+import { Eye, GitBranch, FileText, Brain, AlertTriangle, Zap, Link, Unlink, Users } from 'lucide-react';
 import StatusBarActions from './StatusBarActions';
 import DiscoverPanel from './DiscoverPanel';
 import CostDisplay from '../terminal/CostDisplay';
@@ -69,6 +69,7 @@ export default function StatusBarCore({
   
   const actuallyConnected = isConnected || connections.terminal;
   const supervisionActive = supervision.isActive;
+  const { activeTeam } = useSessionStore();
 
   // Fetch git information using simple API
   const fetchGitInfo = async () => {
@@ -181,6 +182,24 @@ export default function StatusBarCore({
               {hasActiveSession && (
                 <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
               )}
+            </div>
+          )}
+
+          {/* Agent Team Indicator */}
+          {activeTeam && (activeTeam.status === 'executing' || activeTeam.status === 'planning' || activeTeam.status === 'spawning') && (
+            <div
+              className="flex items-center gap-1.5 text-coder1-cyan hover:text-coder1-cyan/80 cursor-pointer transition-colors"
+              title="Agent team is active - click to view"
+              onClick={() => {
+                window.dispatchEvent(new CustomEvent('switchToTeamsTab'));
+                window.dispatchEvent(new CustomEvent('expandRightPanel'));
+              }}
+            >
+              <span className="w-2 h-2 rounded-full bg-coder1-cyan animate-pulse" />
+              <Users className="w-3.5 h-3.5" />
+              <span className="font-medium text-xs">
+                Team: {activeTeam.agents?.filter((a: any) => a.status === 'working' || a.status === 'thinking').length || 0}/{activeTeam.agents?.length || 0} active
+              </span>
             </div>
           )}
 

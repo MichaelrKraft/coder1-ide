@@ -383,3 +383,46 @@ Wired up disconnected Johnny5 proactive features so Johnny5 can autonomously det
 2. **Additive only** - No existing code removed or refactored. Only new code added.
 3. **Graceful degradation** - If Telegram fails, falls back to Socket.IO. If Claude API fails, logs and skips.
 4. **Conservative proactivity** - When in doubt, prompt user rather than auto-act.
+
+---
+
+# Agent Teams Integration (Feb 6, 2026)
+
+## Status: IN PROGRESS
+
+## Steps
+
+- [x] Step 0: Create default agent definitions in `.coder1/agents/`
+- [x] Step 1: Create `components/teams/TeamSpawnInput.tsx`
+- [x] Step 2: Create `components/teams/AgentCard.tsx`
+- [x] Step 3: Create `components/teams/AgentTeamsPanel.tsx`
+- [x] Step 4: Create `components/teams/index.ts`
+- [x] Step 5: Create `app/api/teams/route.ts` (+ message/route.ts + stop/route.ts)
+- [x] Step 6: Modify `components/preview/PreviewPanel.tsx` (add Teams tab)
+- [x] Step 7: Modify `components/status-bar/StatusBarCore.tsx` (team indicator)
+- [x] Step 8: Modify `server.js` (Socket.IO broadcast)
+- [x] Build verification - `npx next build` passes with zero errors
+
+## Review
+
+### Changes Summary
+
+**New files created (8):**
+- `components/teams/TeamSpawnInput.tsx` - Text area + spawn button with cyan gradient, debounce, Shift+Enter submit, char limit
+- `components/teams/AgentCard.tsx` - Expandable card with status dot (6 colors), progress bar, output log, file list, message input
+- `components/teams/AgentTeamsPanel.tsx` - Main container with 4 states (idle/spawning/active/completed), Socket.IO real-time updates, activity feed, recent teams in localStorage
+- `components/teams/index.ts` - Barrel export
+- `app/api/teams/route.ts` - POST spawn + GET list teams, ANTHROPIC_API_KEY validation, spawn mutex
+- `app/api/teams/message/route.ts` - POST send message to agent
+- `app/api/teams/stop/route.ts` - POST stop team
+
+**Modified files (3):**
+- `components/preview/PreviewPanel.tsx` - Added 'teams' to PreviewMode union, Teams tab button with Users icon, AgentTeamsPanel render, switchToTeamsTab event listener
+- `components/status-bar/StatusBarCore.tsx` - Added Users icon import, activeTeam from store, pulsing cyan team indicator ("Team: X/Y active") with click-to-switch
+- `server.js` - Added orchestrator import (try/catch for JS context), orchestrator team broadcast in 3-second interval alongside existing agentTerminalManager
+
+**Previously created (Step 0):**
+- `.coder1/agents/frontend-engineer.json`
+- `.coder1/agents/backend-engineer.json`
+- `.coder1/agents/qa-testing.json`
+- `.coder1/agents/templates.json`

@@ -1,14 +1,15 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { Eye, X, RefreshCw, ExternalLink, Brain, Sparkles, Search, Zap } from '@/lib/icons';
+import { Eye, X, RefreshCw, ExternalLink, Brain, Sparkles, Search, Zap, Users } from '@/lib/icons';
 import { colors, glows } from '@/lib/design-tokens';
 import ContextualMemoryPanel from '@/components/contextual-memory/ContextualMemoryPanel';
 import ParallelReasoningDashboard from '@/components/beta/ParallelReasoningDashboard';
 import { Johnny5Panel } from '@/components/johnny5';
 import { previewLoopPrevention, createDebouncedPreviewUpdate } from '@/lib/preview-loop-prevention';
+import { AgentTeamsPanel } from '@/components/teams';
 
-type PreviewMode = 'preview' | 'terminal' | 'parathink' | 'contextual-memory' | 'johnny5';
+type PreviewMode = 'preview' | 'terminal' | 'parathink' | 'contextual-memory' | 'johnny5' | 'teams';
 
 interface PreviewPanelProps {
   fileOpen?: boolean;
@@ -121,6 +122,13 @@ const PreviewPanel = React.memo(function PreviewPanel({
       setMode('preview');
     }
   }, [fileOpen, isPreviewable]);
+
+  // Listen for switchToTeamsTab events (from status bar click)
+  useEffect(() => {
+    const handleSwitchToTeams = () => setMode('teams');
+    window.addEventListener('switchToTeamsTab', handleSwitchToTeams);
+    return () => window.removeEventListener('switchToTeamsTab', handleSwitchToTeams);
+  }, []);
 
   // Listen for ParaThinker dashboard open events
   useEffect(() => {
@@ -318,6 +326,12 @@ const PreviewPanel = React.memo(function PreviewPanel({
             'Memory',
             'View relevant past conversations and solutions based on your current context'
           )}
+          {renderTabButton(
+            'teams',
+            <Users className="w-4 h-4" />,
+            'Teams',
+            'Spawn and manage AI agent teams'
+          )}
           {/* Only show ParaThinker tab when we have a session */}
           {paraThinkSessionId && renderTabButton(
             'parathink',
@@ -379,6 +393,13 @@ const PreviewPanel = React.memo(function PreviewPanel({
                     setMode('preview');
                   }}
                 />
+              </div>
+            )}
+
+            {/* Agent Teams Panel */}
+            {mode === 'teams' && (
+              <div className="h-full">
+                <AgentTeamsPanel onOpenFile={onOpenFile} />
               </div>
             )}
 

@@ -1,0 +1,18 @@
+{
+  "name": "QA Testing",
+  "description": "Writes tests, validates functionality, checks edge cases, and ensures code quality",
+  "color": "#4ade80",
+  "model": "claude-sonnet-4-20250514",
+  "instructions": "You are a QA engineer. Write comprehensive tests covering happy paths, edge cases, and error scenarios. Use Jest and React Testing Library for frontend tests. Validate that implementations match requirements.",
+  "tools": ["file_create", "file_modify", "code_review"],
+  "templates": {
+    "test-suite": {
+      "pattern": "Jest test suite with describe/it blocks",
+      "dependencies": ["component", "api-endpoint"],
+      "relatedAgents": ["frontend-engineer", "backend-engineer"],
+      "crossReferences": ["requirements"],
+      "commonIssues": ["Flaky async tests", "Missing cleanup"],
+      "bestPractices": ["Test behavior not implementation", "Use meaningful test names"]
+    }
+  }
+}
