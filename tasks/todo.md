@@ -839,3 +839,34 @@ A client-side singleton service (~330 lines) that:
 
 **Files touched**: 1 modified
 **TypeScript**: Uses standard DOM types (AbortController, DOMException) — no new dependencies
+
+## Terminal Connection Timeout on Idle (2026-02-07)
+
+- [x] Normalize Socket.IO `pingTimeout` and `pingInterval` in `socket.ts` (remove dev/prod branching)
+- [x] Normalize Socket.IO `pingTimeout` and `pingInterval` in `server.js` (remove dev/prod branching)
+- [x] Fix custom heartbeat interval in `socket.ts` (remove dev/prod branching, use 20s)
+- [x] Fix stale detection threshold in `socket.ts` (100min → 2min)
+- [x] Add `visibilitychange` listener in `socket.ts` for tab-return health check
+
+### Review
+
+**Date**: 2026-02-07
+
+**Root Cause**: Development mode had Socket.IO `pingTimeout` set to 2 hours and `pingInterval` to 5 minutes. This meant Socket.IO couldn't detect a dead connection for up to 2 hours in dev mode. Combined with zero `visibilitychange` detection, returning to the tab after idle showed a dead terminal.
+
+**Changes Made**:
+
+1. **`lib/socket.ts`** (~15 lines changed):
+   - `pingTimeout`: removed dev/prod ternary, now `60000` (60s) in all environments
+   - `pingInterval`: removed dev/prod ternary, now `25000` (25s) in all environments
+   - Custom heartbeat interval: removed dev/prod ternary, now `20000` (20s) in all environments
+   - Stale detection threshold: `6000000` (100min) → `120000` (2min)
+   - Added `visibilitychange` listener that checks socket health on tab return:
+     - If disconnected → calls `socket.connect()` immediately
+     - If appears connected → sends a ping, waits 5s for pong, force-reconnects if no response
+
+2. **`server.js`** (2 lines changed):
+   - `pingTimeout`: removed dev/prod ternary, now `60000` (aligned with client)
+   - `pingInterval`: removed dev/prod ternary, now `25000` (aligned with client)
+
+**What was NOT changed**: Terminal.tsx reconnection handlers already work correctly — they just weren't being triggered. The reconnection overlay UI, retry attempts (15), and backoff (1-10s) are all fine.
