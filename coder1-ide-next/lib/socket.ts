@@ -114,9 +114,9 @@ export const getSocket = async (sessionId?: string, bridgeAuth: boolean = false)
           reconnectionDelayMax: 10000, // INCREASED: Max backoff to 10 seconds
           timeout: 45000, // INCREASED: Match server connectTimeout
           forceNew: false,
-          // FIXED: Standardized Keep-Alive for production Load Balancers
-          pingTimeout: process.env.NODE_ENV !== 'production' ? 7200000 : 60000,    // 60 seconds (was 2 hours)
-          pingInterval: process.env.NODE_ENV !== 'production' ? 300000 : 25000,   // 25 seconds (was 5 minutes)
+          // FIXED: Consistent keep-alive across all environments
+          pingTimeout: 60000,   // 60s — detect dead connections within 1 minute
+          pingInterval: 25000,  // 25s — keep connection alive
           // ADDED: Additional stability settings
           autoConnect: true,
           withCredentials: true,
@@ -203,21 +203,21 @@ export const getSocket = async (sessionId?: string, bridgeAuth: boolean = false)
       const startHeartbeat = () => {
         if (heartbeatInterval) clearInterval(heartbeatInterval);
         
-        // Send ping every 4 minutes (more frequent than server's 5-min interval)
+        // Send ping every 20 seconds to keep connection alive
         heartbeatInterval = setInterval(() => {
           if (newSocket?.connected) {
             const now = Date.now();
             const timeSinceLastPong = now - lastPongTime;
             
-            // If we haven't received a pong in 100 minutes, connection may be stale
-            if (timeSinceLastPong > 6000000) {
+            // If we haven't received a pong in 2 minutes, connection may be stale
+            if (timeSinceLastPong > 120000) {
               console.warn(`⚠️ No pong received for ${Math.round(timeSinceLastPong/1000)}s - connection may be stale`);
             }
             
             newSocket.emit('ping', { timestamp: now });
             console.log('💓 Heartbeat ping sent');
           }
-        }, process.env.NODE_ENV !== 'production' ? 240000 : 20000); // 20 seconds - matches new ping frequency
+        }, 20000); // 20s — heartbeat in all environments
       };
       
       const stopHeartbeat = () => {
@@ -244,6 +244,36 @@ export const getSocket = async (sessionId?: string, bridgeAuth: boolean = false)
       newSocket.on('disconnect', () => {
         stopHeartbeat();
       });
+
+      // Detect when user returns to tab and verify socket health
+      if (typeof document !== 'undefined') {
+        document.addEventListener('visibilitychange', () => {
+          if (document.visibilityState === 'visible' && newSocket) {
+            if (!newSocket.connected) {
+              console.log('🔄 Tab visible — socket disconnected, reconnecting...');
+              newSocket.connect();
+            } else {
+              // Socket thinks it's connected — verify with a ping
+              const pingTime = Date.now();
+              newSocket.emit('ping', { timestamp: pingTime });
+
+              // If no pong within 5 seconds, force reconnect
+              const healthCheck = setTimeout(() => {
+                if (lastPongTime < pingTime) {
+                  console.warn('⚠️ Tab visible — socket stale (no pong), forcing reconnect...');
+                  newSocket.disconnect();
+                  newSocket.connect();
+                }
+              }, 5000);
+
+              // Cancel the health check if pong arrives
+              newSocket.once('pong', () => {
+                clearTimeout(healthCheck);
+              });
+            }
+          }
+        });
+      }
 
       // Assign to module variable after setup
       socket = newSocket;

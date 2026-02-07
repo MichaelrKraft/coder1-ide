@@ -1357,8 +1357,8 @@ app.prepare().then(() => {
     path: '/socket.io/',
     transports: ['polling', 'websocket'], // Start with polling, upgrade to websocket
     allowEIO3: true, // Support older clients
-    pingTimeout: isDevelopment ? 7200000 : 120000, // FIXED: 120s - Aligned with bridge client (was 60s, caused premature disconnects)
-    pingInterval: isDevelopment ? 300000 : 25000, // FIXED: 25s (was 5m) - Keeps connection alive on Render/Cloudflare
+    pingTimeout: 60000, // 60s — aligned with client, detect dead connections within 1 minute
+    pingInterval: 25000, // 25s — keep connection alive
     upgradeTimeout: 30000, // Time to wait for upgrade from polling to websocket
     allowUpgrades: true, // Allow upgrade from polling to websocket
     perMessageDeflate: false, // Disable compression for better reliability on Render
