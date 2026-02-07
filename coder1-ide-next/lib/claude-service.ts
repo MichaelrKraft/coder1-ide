@@ -42,7 +42,7 @@ class ClaudeService {
   constructor() {
     this.config = {
       apiKey: process.env.ANTHROPIC_API_KEY || '',
-      model: 'claude-opus-4-1-20250805',  // Claude Opus 4.1 released Aug 5, 2025
+      model: 'claude-opus-4-6',  // Claude Opus 4.6 - Most Capable (Feb 2026)
       maxTokens: 4096,
       temperature: 0.7,
     };

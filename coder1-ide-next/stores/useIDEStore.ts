@@ -41,7 +41,7 @@ interface IDEStore {
   
   // AI state
   aiState: {
-    currentModel: 'claude-opus-4.1' | 'claude-sonnet-4' | 'claude-sonnet-3.7' | 'claude-3.5-haiku';
+    currentModel: 'claude-opus-4.6' | 'claude-sonnet-4' | 'claude-sonnet-3.7' | 'claude-3.5-haiku';
     tokenUsage: {
       input: number;
       output: number;
@@ -223,7 +223,7 @@ const initialState = {
   } as IDESettings,
   
   aiState: {
-    currentModel: 'claude-opus-4.1' as const,  // Default to Opus 4.1 (most capable)
+    currentModel: 'claude-opus-4.6' as const,  // Default to Opus 4.6 (most capable)
     tokenUsage: {
       input: 0,
       output: 0,

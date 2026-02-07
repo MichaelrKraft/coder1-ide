@@ -52,9 +52,9 @@ const MODELS: Record<string, ModelInfo> = {
     inputCostPer1M: 3.00,
     outputCostPer1M: 15.00,
   },
-  'claude-opus-4-1-20250805': {
-    id: 'claude-opus-4-1-20250805',
-    name: 'Opus 4.1',
+  'claude-opus-4-6': {
+    id: 'claude-opus-4-6',
+    name: 'Opus 4.6',
     costTier: '$$$',
     inputCostPer1M: 15.00,
     outputCostPer1M: 75.00,
@@ -64,7 +64,7 @@ const MODELS: Record<string, ModelInfo> = {
 const MODEL_FOR_COMPLEXITY: Record<Complexity, string> = {
   simple: 'claude-haiku-3-5-20241022',
   moderate: 'claude-sonnet-4-5-20250929',
-  complex: 'claude-opus-4-1-20250805',
+  complex: 'claude-opus-4-6',
 };
 
 const DEFAULT_MODEL = 'claude-sonnet-4-5-20250929';
