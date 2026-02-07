@@ -790,3 +790,52 @@ A client-side singleton service (~330 lines) that:
 3. **server.js line 2306**: Changed `bridge?.socket` to `bridge?.socket?.connected` — prevents the interactive Claude session check from silently routing input to a disconnected bridge socket. When the bridge is disconnected, the stale interactive session is cleaned up and input falls through to normal PTY processing.
 
 4. **server.js line 870-883**: Added proactive PTY exit notification — when a PTY process exits, the server now immediately emits `terminal:error` with "Terminal session not found" to the connected client socket. This triggers the auto-reconnect logic from change #2 without waiting for the user's next keystroke. Also cleans up the `terminalSessionSockets` map entry.
+
+---
+
+## Johnny5 Stop/Cancel Button (2026-02-07)
+
+- [x] Add `Square` icon import, remove unused `Loader2` import
+- [x] Add `abortControllerRef` (useRef<AbortController | null>)
+- [x] Add unmount cleanup useEffect (aborts on component unmount)
+- [x] Add `handleStop()` function (aborts controller, nulls ref)
+- [x] Create AbortController before fetch, pass `signal` to primary fetch
+- [x] Pass `signal` to Moltbot retry fetch (line ~489)
+- [x] Handle AbortError in catch block (early return, mark message as 'sent' not 'error')
+- [x] Clear controller ref in finally block
+- [x] Add Escape key handling to `handleKeyDown`
+- [x] Add abort logic to `handleClearChat`
+- [x] Re-enable textarea during loading (`disabled={false}`)
+- [x] Dynamic placeholder: "Press Esc to stop..." during loading
+- [x] Replace single button with stop/send conditional (red square vs cyan arrow)
+
+### Review
+
+**Date**: 2026-02-07
+
+**Changes Made**:
+
+1. **Modified file**: `components/johnny5/chat/ChatTab.tsx` (67 insertions, 17 deletions)
+   - Added `Square` to lucide-react imports, removed unused `Loader2`
+   - Added `abortControllerRef = useRef<AbortController | null>(null)` for tracking in-flight requests
+   - Added unmount cleanup useEffect that calls `abort()` to prevent state updates on unmounted component
+   - Added `handleStop()` function that aborts the controller and nulls the ref
+   - In `handleSend()`: creates AbortController before try block, passes `signal` to both primary fetch and Moltbot retry fetch
+   - In catch block: detects `AbortError` (DOMException with name 'AbortError'), marks user message as 'sent' (not 'error'), returns early (finally still runs)
+   - In finally block: clears `abortControllerRef.current = null`
+   - In `handleKeyDown`: added Escape key check that calls `handleStop()` when `isLoading` is true
+   - In `handleClearChat`: added abort + state reset at top of function
+   - Textarea: changed `disabled={isLoading}` to `disabled={false}`, added dynamic placeholder
+   - Button: replaced single button with conditional — red square stop button during loading, cyan arrow send button otherwise
+
+**Browser Testing Results**:
+- Stop button (red square) appears correctly during loading state
+- Placeholder changes to "Press Esc to stop..." during loading
+- Textarea remains enabled during loading (users can compose next message)
+- Normal flow completes without regression
+- No console errors (AbortError is caught before console.error)
+- Button reverts to cyan send arrow after loading completes
+- Note: Gemini API responds too fast for manual abort testing via browser automation; AbortController logic verified by code review (standard Web API)
+
+**Files touched**: 1 modified
+**TypeScript**: Uses standard DOM types (AbortController, DOMException) — no new dependencies
