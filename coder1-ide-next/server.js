@@ -868,9 +868,18 @@ function getOrCreateSession(sessionId, userId = 'default') {
     
     // Set up PTY exit handler only (data handler will be set up in socket connection)
     session.pty.onExit(({ exitCode, signal }) => {
-      // REMOVED: // REMOVED: // REMOVED: console.log(`[Terminal] Session ${sessionId} exited with code ${exitCode}`);
+      // 🔧 FIX (Feb 2026): Notify connected client that session is gone
+      // This triggers auto-reconnect on the client instead of silent input loss
+      const sessionSocket = terminalSessionSockets.get(sessionId);
+      if (sessionSocket?.connected) {
+        sessionSocket.emit('terminal:error', {
+          message: 'Terminal session not found'
+        });
+      }
+
       terminalSessions.delete(sessionId);
-      
+      terminalSessionSockets.delete(sessionId);
+
       // 🎯 Clean up terminal history buffer
       if (terminalHistoryBuffers.has(sessionId)) {
         terminalHistoryBuffers.delete(sessionId);
@@ -2303,7 +2312,7 @@ app.prepare().then(() => {
 
         // Find the bridge socket
         const bridge = bridgeManager.getBridge?.(interactiveSession.bridgeId);
-        if (bridge?.socket) {
+        if (bridge?.socket?.connected) {
           // Route input directly to the interactive Claude session via bridge
           bridge.socket.emit('claude:input', {
             sessionId,
@@ -2312,8 +2321,9 @@ app.prepare().then(() => {
           });
           return; // Don't send to local PTY
         } else {
-          console.warn('[INTERACTIVE] Bridge not found, cleaning up session');
+          console.warn('[INTERACTIVE] Bridge socket disconnected, cleaning up stale session');
           interactiveClaudeSessions.delete(sessionId);
+          // Fall through to normal PTY processing
         }
       }
 
@@ -3213,6 +3223,26 @@ app.prepare().then(() => {
 
     // Johnny5 → Claude Code task delegation
     socket.on('johnny5:delegate-task', async ({ sessionId, task }) => {
+      // Auth check: require authenticated socket with terminal permission
+      if (socket.authenticated === false && !socket.userId) {
+        socket.emit('johnny5:delegate-result', {
+          success: false,
+          error: 'Authentication required for task delegation',
+          sessionId
+        });
+        console.warn(`[Johnny5→Claude] Rejected unauthenticated delegate-task from socket ${socket.id}`);
+        return;
+      }
+      if (socket.permissions && !socket.permissions.includes('terminal')) {
+        socket.emit('johnny5:delegate-result', {
+          success: false,
+          error: 'Terminal permission required for task delegation',
+          sessionId
+        });
+        console.warn(`[Johnny5→Claude] Rejected delegate-task: missing terminal permission for socket ${socket.id}`);
+        return;
+      }
+
       console.log(`[Johnny5→Claude] Delegating task to terminal ${sessionId}: ${task.substring(0, 100)}`);
 
       // Check if the terminal session exists

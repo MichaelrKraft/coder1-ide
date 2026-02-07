@@ -129,6 +129,7 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
   const sessionIdForVoiceRef = useRef<string | null>(null); // Move this up here
   const sessionCreatedRef = useRef(false); // Track if session was already created
   const onDataDisposableRef = useRef<any>(null); // Store onData disposable
+  const reconnectInProgressRef = useRef(false); // Prevent duplicate auto-reconnects
   const connectionInProgressRef = useRef(false); // Prevent concurrent connections
   const connectionTimeoutRef = useRef<NodeJS.Timeout | null>(null); // Watchdog timer for connection
   const pasteHandlerRef = useRef<((e: ClipboardEvent) => Promise<void>) | null>(null); // Store paste handler for cleanup
@@ -226,7 +227,6 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
     if (!xterm || !modeManager) return;
     
     const currentMode = modeManager.getCurrentMode();
-    console.log('🔄 [MODE-SWITCH-EFFECT] Triggered - Model:', selectedClaudeModel, 'Current Mode:', currentMode);
     
     const notifyUser = (message: string) => {
       xterm.writeln(`\r\n${message}`);
@@ -234,19 +234,16 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
     
     // Only switch if we're not already in the correct mode
     if (selectedClaudeModel.startsWith('gemini-') && currentMode !== 'GEMINI_API') {
-      console.log('🔄 Switching to GEMINI_API');
       // Switch to Gemini mode
       modeManager.switchToGemini(xterm, { notifyUser }).catch(err => {
         console.error('Failed to switch to Gemini:', err);
       });
     } else if ((selectedClaudeModel.startsWith('claude-') || selectedClaudeModel.startsWith('glm-')) && currentMode !== 'CLAUDE_CLI') {
-      console.log('🔄 Switching to CLAUDE_CLI (model:', selectedClaudeModel, ')');
       // Switch to Claude CLI for Claude models and GLM (GLM uses Z.AI backend)
       modeManager.switchToClaude({ notifyUser }).catch(err => {
         console.error('Failed to switch to Claude:', err);
       });
     } else {
-      console.log('✅ [MODE-SWITCH-EFFECT] Already in correct mode, skipping switch');
     }
   }, [selectedClaudeModel]);
   
@@ -367,7 +364,6 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
       // 1. Session changed (different ID) OR
       // 2. Component stayed mounted (flag is true, indicating navigation without unmount)
       if (restoredSessionId !== sessionId || sessionCreatedRef.current) {
-        console.log('🔄 Navigation detected - resetting session creation flag');
         console.log('   restoredSessionId:', restoredSessionId, 'sessionId:', sessionId, 'flagWasSet:', sessionCreatedRef.current);
         sessionCreatedRef.current = false;
       }
@@ -417,7 +413,6 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
   // Fetch context stats (moved from StatusBarCore)
   const fetchContextStats = async () => {
     try {
-      console.log('🔍 Terminal: Fetching context stats...');
       setContextStats(prev => ({ ...prev, isLoading: true }));
       
       const response = await fetch('/api/context/stats', {
@@ -427,7 +422,6 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
       
       if (response.ok) {
         const stats = await response.json();
-        console.log('🔍 Terminal: Context stats received:', stats);
         
         const newContextStats = {
           totalSessions: stats.totalSessions || 0,
@@ -436,14 +430,11 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
           isLoading: false
         };
         
-        console.log('🔍 Terminal: Setting context stats:', newContextStats);
         setContextStats(newContextStats);
       } else {
-        console.log('🔍 Terminal: Context stats response not ok:', response.status);
         setContextStats(prev => ({ ...prev, isLoading: false }));
       }
     } catch (error) {
-      console.log('🔍 Terminal: Context stats fetch failed:', error);
       setContextStats(prev => ({ ...prev, isLoading: false }));
     }
   };
@@ -482,10 +473,6 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
       const savedEnabled = localStorage.getItem('soundAlertsEnabled');
       const savedPreset = localStorage.getItem('soundAlertPreset');
       
-      console.log('🔊 Terminal: Loading sound settings from localStorage', {
-        savedEnabled,
-        savedPreset
-      });
       
       if (savedEnabled !== null) {
         const enabled = JSON.parse(savedEnabled);
@@ -514,7 +501,6 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
   // Previous: setInterval → setState every 60s → re-render → new TerminalModeManager
   // Result: Progressive lag as intervals accumulate overhead
   useEffect(() => {
-    console.log('🔍 Terminal: Component mounted, calling fetchContextStats...');
     fetchContextStats(); // Fetch once on mount
     
     // DISABLED: Interval polling causes unnecessary re-renders
@@ -561,7 +547,6 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
       
       // Debug logging
       if (captured.length > 0) {
-        console.log(`🔍 Console errors captured: ${captured.length} errors`);
       }
       
       // Update hasActiveError using a callback to get current state
@@ -592,7 +577,6 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
     if (showErrorDoctorModal) {
       const captured = consoleCaptureService.getErrors();
       setConsoleErrors(captured);
-      console.log(`🔍 Error Doctor opened - syncing ${captured.length} console errors`);
     }
   }, [showErrorDoctorModal]);
 
@@ -941,7 +925,6 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
       
       // Check if we already have a session ID from prop restoration
       if (sessionId && !sandboxMode && !agentMode) {
-        console.log('🔄 Using existing session ID from prop:', sessionId);
         setTerminalReady(true);
         notifyTerminalReady(sessionId, true);
         return; // Server will reconnect to this session
@@ -973,7 +956,6 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
         
         if (response.ok) {
           const data = await response.json();
-          console.log('✅ Session created via REST API:', data.sessionId);
           setSessionId(data.sessionId);
           // Immediately update the ref for voice recognition
           sessionIdForVoiceRef.current = data.sessionId;
@@ -983,22 +965,18 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
             // 🔧 FIX: Store session ID in localStorage for persistence
             if (!sandboxMode && !agentMode) {
               localStorage.setItem('ide-terminalSessionId', data.sessionId);
-              console.log('💾 Stored terminal session ID for reconnection');
             }
-            console.log('🔌 Terminal session ID made globally available for drag-drop');
           }
           setTerminalReady(true);
           // Notify parent component - performance-safe callback
           notifyTerminalReady(data.sessionId, true);
         } else {
           // Fallback: let server generate session ID via Socket.IO
-          console.log('⚠️ REST API failed, will use Socket.IO session creation');
           // Don't set a session ID here - let the server generate one
           setTerminalReady(true);
           notifyTerminalReady(null, true);
         }
       } catch (error) {
-        console.log('⚠️ REST API error, will use Socket.IO session creation:', error);
         // Don't set a session ID here - let the server generate one via Socket.IO
         setTerminalReady(true);
         notifyTerminalReady(null, true);
@@ -1145,8 +1123,6 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
       // memory management system (server.js lines 784-851).
       const currentSessionId = sessionIdForVoiceRef.current || sessionId;
       if (currentSessionId && !currentSessionId.startsWith('simulated-')) {
-        console.log('🧹 Terminal component cleanup (HTTP DELETE disabled):', currentSessionId);
-        console.log('📝 Sessions are managed by unified server memory management');
         
         // Only perform local component cleanup - no HTTP requests
         // The unified server will handle session cleanup automatically
@@ -1164,7 +1140,6 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
     // 🔧 FIX (Nov 19, 2025): Prevent double initialization with both instance check and flag
     if (xtermRef.current || initializingRef.current) {
       if (xtermRef.current) {
-        console.log('✅ [XTERM-INIT] Xterm already initialized, skipping');
       } else {
         console.log('⏳ [XTERM-INIT] Initialization in progress, skipping duplicate call');
       }
@@ -1189,8 +1164,6 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
         return;
       }
       
-      console.log('🖥️ [XTERM-INIT] Terminal ref ready after', attempts * 100, 'ms');
-      console.log('🖥️ [XTERM-INIT] Initializing xterm for:', { agentMode, agentSessionId: agentSession?.id, sandboxMode, sandboxSessionId: sandboxSession?.id });
       try {
         // REMOVED: // REMOVED: console.log('🔧 Creating XTerm instance...');
         // Wait for xterm.js to load if not already available
@@ -1204,7 +1177,6 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
           
           // Import CSS
           await import('@xterm/xterm/css/xterm.css');
-          console.log('✅ xterm.js loaded successfully');
         }
         
         // Initialize terminal with performance-optimized settings
@@ -1295,7 +1267,6 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
                 
                 if (response.ok) {
                   const data = await response.json();
-                  console.log('✅ Image bridged successfully:', data);
                   
                   // Store in session context
                   if (typeof window !== 'undefined') {
@@ -1329,7 +1300,6 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
         // Add paste listener at document level with capture phase
         setTimeout(() => {
           document.addEventListener('paste', handleImagePaste, true);
-          console.log('📋 Image paste handler initialized');
         }, 100);
         
         // ✅ AUTO-SCROLL DURING TEXT SELECTION - v3 (Using xterm.js Selection API)
@@ -1413,7 +1383,6 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
               mousemove: handleMouseMove
             };
             
-            console.log('✅ Auto-scroll during selection enabled (v3 - xterm.js API)');
           } else {
             console.warn('⚠️ Could not find .xterm-screen element for auto-scroll');
           }
@@ -1441,7 +1410,6 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
               
               // Handle agent terminals (including Claude tabs)
               if (agentMode && agentSession) {
-                console.log('🤖 Terminal: Agent mode with session:', agentSession);
                 
                 // Check if this is a Claude tab (starts with "Claude ")
                 const isClaudeTab = agentSession.name && agentSession.name.startsWith('Claude ');
@@ -1461,7 +1429,6 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
                     const sessionId = sessionIdForVoiceRef.current;
                     
                     if (socket?.connected && sessionId) {
-                      console.log('🚀 Auto-running claude command for tab:', agentSession.name);
                       socket.emit('terminal:input', {
                         id: sessionId,
                         data: 'claude\r',
@@ -1612,7 +1579,6 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
                 }
                 
               } else if (sandboxMode) {
-                console.log('🎯 Terminal: Sandbox mode with session:', sandboxSession);
                 
                 // Display checkpoint terminal history if available
                 if (sandboxSession?.terminalHistory) {
@@ -1672,7 +1638,6 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
                 
                 if (sandboxSession?.checkpointData) {
                   const data = sandboxSession.checkpointData;
-                  console.log('📊 Terminal: Checkpoint data:', data);
                   if (data.timestamp) {
                     term.writeln(`📅 Created: ${new Date(data.timestamp).toLocaleString()}`);
                   }
@@ -1742,7 +1707,6 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
           if (restoredHistory && !sandboxMode && !agentMode) {
             historyToRestore = restoredHistory;
             historySource = 'checkpoint restore (prop)';
-            console.log('📜 Using restored history from prop, length:', restoredHistory.length);
           }
           
           // Priority 2: Check localStorage with terminal-type-specific keys
@@ -1775,7 +1739,6 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
           
           // Only restore if terminal is visible (prevents race conditions during tab switching)
           if (historyToRestore && historyToRestore.trim() && isVisible) {
-            console.log(`🔄 Terminal: Restoring terminal history from ${historySource}`);
             console.log(`  - Original length: ${historyToRestore.length}`);
             console.log(`  - First 200 chars:`, historyToRestore.substring(0, 200));
             
@@ -1792,11 +1755,9 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
             
             // Write the restored history
             if (filteredHistory && filteredHistory.trim()) {
-              console.log(`✅ Writing ${filteredHistory.length} chars to terminal`);
               
               // Split into lines and write in chunks to avoid blocking UI thread
               const lines = filteredHistory.split(/\r?\n/);
-              console.log(`📊 Restored history contains ${lines.length} lines`);
               
               // 🚀 PERFORMANCE FIX (Nov 19, 2025): Write in chunks to keep UI responsive
               // Writing 10,000+ lines synchronously blocks UI for 40+ seconds
@@ -1808,8 +1769,6 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
                 
                 // Write this chunk
                 for (let i = currentIndex; i < endIndex; i++) {
-                  if (i === 0) console.log(`📝 First line:`, lines[i].substring(0, 100));
-                  if (i === lines.length - 1) console.log(`📝 Last line:`, lines[i].substring(0, 100));
                   term.writeln(lines[i]);
                 }
                 
@@ -1819,11 +1778,9 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
                 if (currentIndex < lines.length) {
                   const percentComplete = Math.round((currentIndex / lines.length) * 100);
                   if (percentComplete % 20 === 0) {
-                    console.log(`📊 Terminal restoration: ${percentComplete}% complete (${currentIndex}/${lines.length} lines)`);
                   }
                   setTimeout(writeChunk, 0); // Yield to browser event loop
                 } else {
-                  console.log(`✅ Wrote ${lines.length} lines to terminal (100% complete)`);
                 }
               };
               
@@ -1848,21 +1805,14 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
                 if (terminalRef.current && terminalRef.current.parentElement) {
                   const container = terminalRef.current.parentElement;
                   container.scrollTop = container.scrollHeight;
-                  console.log('📜 Scrolled container to bottom:', {
-                    scrollTop: container.scrollTop,
-                    scrollHeight: container.scrollHeight,
-                    clientHeight: container.clientHeight
-                  });
                 }
                 
-                console.log('📜 Scrolled to bottom after terminal history restoration');
               }
             }, 200); // Increased timeout to ensure rendering is complete
             
             // 🔒 CRITICAL FIX (Oct 28, 2025): DO NOT clear localStorage after restoration!
             // We need to keep it so users can navigate Timeline -> IDE -> Timeline -> IDE repeatedly
             // The history should persist until explicitly cleared or terminal session ends
-            console.log(`✅ Terminal history restored and kept in localStorage for future navigation`);
           }
         }
 
@@ -2044,7 +1994,6 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
 
   // Simplified: No complex positioning - work WITH terminal architecture
   const positionButtonSimply = (fileCount: number) => {
-    console.log('🔧 Positioning copy button simply for', fileCount, 'files');
     // No complex calculations - use predictable CSS positioning
     // Button will appear in bottom-right of terminal area, clearly visible
     // Button uses simple CSS positioning - no complex calculations needed
@@ -2054,18 +2003,14 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
   // Listen for Claude files ready event from IDE page (drag-drop files)
   useEffect(() => {
     const handleClaudeFilesReady = (event: CustomEvent) => {
-      console.log('📋 Terminal: Received Claude files ready event', event.detail);
       const { content, fileCount } = event.detail;
-      console.log('📋 Terminal: Processing event - content length:', content?.length, 'fileCount:', fileCount);
       
       if (content && fileCount > 0) {
-        console.log('📋 Terminal: Setting up copy button and calculating position...');
         setClaudeCopyContent(content);
         setShowClaudeCopyButton(true);
         setCurrentFileCount(fileCount); // Store file count for resize recalculation
         
         // Button will use simple, predictable positioning - no complex calculations needed
-        console.log('📋 Terminal: File drop completed, button will appear in predictable location');
         
         // Auto-hide after 30 seconds
         setTimeout(() => {
@@ -2095,27 +2040,15 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
   useEffect(() => {
     // Don't connect to backend if in sandbox mode - it's read-only (but allow agent terminals)
     if (sandboxMode && !agentMode) {
-      console.log('🏖️ Sandbox mode - skipping backend connection');
       return;
     }
     
     // Agent terminals need backend connection for interactive commands
     if (agentMode) {
-      console.log('🤖 Agent terminal mode - enabling backend connection for:', agentSession?.name);
     }
     
     // 🔍 DIAGNOSTIC: Log connection check values
     console.log('═══════════════════════════════════════════════════════════');
-    console.log('🔍 [CONNECTION CHECK] useEffect running');
-    console.log('📊 Values:', {
-      terminalReady,
-      hasXtermRef: !!xtermRef.current,
-      isConnected,
-      connectionInProgress: connectionInProgressRef.current,
-      sessionId,
-      sandboxMode,
-      agentMode
-    });
     console.log('═══════════════════════════════════════════════════════════');
     
     // Connect when terminal is ready (session ID can be created by server if needed)
@@ -2125,10 +2058,8 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
     // Claude tabs have agentMode=true but need a PTY session like regular terminals
     const isClaudeTab = agentMode && agentSession?.name?.startsWith('Claude ');
     if (terminalReady && xtermRef.current && !isConnected && !connectionInProgressRef.current && (!agentMode || isClaudeTab)) {
-      console.log('🚀 Terminal ready, connecting to backend...', { sessionId, agentMode, agentSession, isClaudeTab });
       connectToBackend(xtermRef.current);
     } else {
-      console.log('❌ Connection condition failed - not connecting', { terminalReady, hasXterm: !!xtermRef.current, isConnected, connectionInProgress: connectionInProgressRef.current, agentMode, isClaudeTab });
     }
     
     // 🎯 CRITICAL FIX (Oct 28, 2025): Cleanup Socket.IO listeners on unmount
@@ -2136,7 +2067,6 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
     // Previous bug: socket.off('event') removed ALL listeners including ones from new component instances
     // This caused race condition where cleanup removed listeners registered by remounted component
     return () => {
-      console.log('🧹 Cleanup: Resetting connection state');
       
       // ⏰ WATCHDOG: Clear timeout on component unmount
       if (connectionTimeoutRef.current) {
@@ -2150,7 +2080,6 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
       
       // Synchronous cleanup using stored socket ref
       if (socketRef.current) {
-        console.log('🧹 Cleaning up Socket.IO event listeners for session:', sessionIdForVoiceRef.current);
         
         // Remove only THIS component's specific handler functions
         if (socketHandlersRef.current.terminalHistory) {
@@ -2222,7 +2151,6 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
         // console.log('🔌 Disconnecting socket to trigger server cleanup timer');
         // socketRef.current.disconnect(); // ← This killed shared socket for all terminals!
         
-        console.log('✅ Cleanup complete - removed listeners only (socket stays alive for other terminals)');
       }
     };
   }, [sessionId, terminalReady, sandboxMode]); // 🔧 FIX (Nov 17, 2025): Removed agentMode and isConnected from deps
@@ -2261,7 +2189,6 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
   
   useEffect(() => {
     console.log('═══════════════════════════════════════════════════════');
-    console.log('🔍 [AGENT-DIAGNOSTIC] useEffect triggered');
     console.log('  agentMode:', agentMode);
     console.log('  agentSession:', agentSession);
     console.log('  agentSession.id:', agentSession?.id);
@@ -2272,7 +2199,6 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
     console.log('═══════════════════════════════════════════════════════');
     
     if (!agentMode || !agentSession) {
-      console.log('❌ [AGENT-DIAGNOSTIC] BLOCKED: Missing agentMode or agentSession');
       console.log('   agentMode:', agentMode, '(needs to be true)');
       console.log('   agentSession:', agentSession, '(needs to be defined)');
       return;
@@ -2282,7 +2208,6 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
     // Skip agent terminal connection for Claude tabs - they get output via terminal:data not agent:terminal:data
     const isClaudeTab = agentSession.name?.startsWith('Claude ');
     if (isClaudeTab) {
-      console.log('🔄 [AGENT-DIAGNOSTIC] Claude tab detected - using regular PTY, skipping agent terminal connection');
       return;
     }
     
@@ -2302,7 +2227,6 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
     // 🔧 FIX #4 (Nov 19, 2025): Diagnostic function for debugging agent terminal issues
     const logFullDiagnostic = async () => {
       const socket = await getSocket();
-      console.log('🔍 ===== AGENT TERMINAL DIAGNOSTIC =====');
       console.log('Agent Mode:', agentMode);
       console.log('Agent Session:', agentSession);
       console.log('Socket Connected:', socket?.connected);
@@ -2314,9 +2238,7 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
     };
 
     const setupAgentTerminalConnection = async () => {
-      console.log('🚀 [AGENT-SETUP] setupAgentTerminalConnection STARTED');
       const socket = await getSocket();
-      console.log('🔌 [AGENT-SETUP] Got socket, connected:', socket?.connected);
       agentSocketRef = socket; // 🔧 Store for synchronous cleanup
       
       // 🔧 FIX PART 2 (Nov 23, 2025): Agent terminals don't need xterm to connect
@@ -2344,7 +2266,6 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
           return;
         }
         
-        console.log('✅ [AGENT-SETUP] Xterm is ready after', attempts * 100, 'ms');
         
         // 🔧 UX (Nov 21, 2025): Show immediate feedback while agent initializes
         term.writeln('\x1b[36m⏳ Agent initializing... Please wait.\x1b[0m');
@@ -2353,8 +2274,6 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
       } else {
         // 🔧 Agent terminal: Connect immediately even if hidden
         // Data will be buffered until terminal becomes visible (Part 3)
-        console.log('✅ [AGENT-SETUP] Agent terminal - skipping xterm wait (likely hidden)');
-        console.log('✅ [AGENT-SETUP] Will connect immediately and buffer data until visible');
         
         // If xterm IS available (terminal is visible), show welcome message
         if (term) {
@@ -2372,9 +2291,12 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
       // Run diagnostic after 2 seconds to check final state
       setTimeout(logFullDiagnostic, 2000);
 
-      // 🔧 FIX (Nov 26, 2025): Remove ALL existing listeners before adding new one
-      // This prevents duplicate listeners from accumulating
-      socket.removeAllListeners('agent:terminal:data');
+      // 🔧 FIX: Remove previous handler before adding new one (targeted removal)
+      // Using socket.off with the handler ref instead of removeAllListeners
+      // to avoid removing listeners from other component instances
+      if (handleAgentTerminalData) {
+        socket.off('agent:terminal:data', handleAgentTerminalData);
+      }
       
       // Listen for agent terminal data
       handleAgentTerminalData = ({ agentId, data }: { agentId: string; data: string }) => {
@@ -2441,7 +2363,6 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
         }
 
         console.log('═══════════════════════════════════════════════════════');
-        console.log(`📤 [AGENT-CONNECT] Emitting agent:terminal:connect`);
         console.log('   Agent ID:', agentSession.id);
         console.log('   Attempt:', `${retryCount + 1}/${maxRetries}`);
         console.log('   Socket connected:', socket.connected);
@@ -2455,7 +2376,6 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
         if (agentId === agentSession.id) {
           isConnectedToAgent = true;
           if (retryTimeoutRef) clearTimeout(retryTimeoutRef);
-          console.log('✅ Successfully connected to agent terminal:', agentId);
         }
       };
 
@@ -2479,7 +2399,6 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
 
       attemptConnect();
       connectedAgentIdRef.current = agentSession.id;
-      console.log('🔄 Agent terminal connection initiated for:', agentSession.id);
     };
 
     setupAgentTerminalConnection();
@@ -2501,7 +2420,6 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
         agentSocketRef.off('agent:terminal:connected');
         agentSocketRef.off('agent:terminal:error');
         agentSocketRef.off('agent:terminal:pending');
-        console.log('🧹 [SYNC-CLEANUP] Removed agent terminal listeners for:', agentSession.id);
         connectedAgentIdRef.current = null;
         agentSocketRef = null;
       }
@@ -2534,7 +2452,6 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
     
     // If xterm is now ready AND we have buffered data, flush it
     if (term && bufferedData.length > 0) {
-      console.log('🚀 [BUFFER-FLUSH] Xterm now ready! Flushing', bufferedData.length, 'chars of buffered data');
       
       // Show welcome message first (if not already shown)
       term.writeln('\x1b[36m⏳ Agent initializing... Please wait.\x1b[0m');
@@ -2546,9 +2463,7 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
       
       // Clear the buffer
       agentDataBufferRef.current = '';
-      console.log('✅ [BUFFER-FLUSH] Buffer flushed and cleared');
     } else if (term && bufferedData.length === 0) {
-      console.log('✅ [BUFFER-FLUSH] Xterm ready, but no buffered data (all live data written)');
     } else if (!term && bufferedData.length > 0) {
       console.log('⏳ [BUFFER-FLUSH] Data buffered, waiting for xterm... (', bufferedData.length, 'chars buffered)');
     }
@@ -2564,7 +2479,6 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
   useEffect(() => {
     // Only focus if this terminal is visible
     if (!isVisible) {
-      console.log(`🚫 Terminal ${sessionId} not visible, skipping focus`);
       return;
     }
 
@@ -2573,7 +2487,6 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
       if (xtermRef.current && terminalRef.current && isVisible) {
         try {
           xtermRef.current.focus();
-          console.log(`✅ Terminal ${sessionId} auto-focused (visible)`);
         } catch (error) {
           console.warn('Could not auto-focus terminal:', error);
         }
@@ -2591,7 +2504,6 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
         if (xtermRef.current) {
           try {
             xtermRef.current.focus();
-            console.log(`🖱️ Terminal ${sessionId} focused on click`);
           } catch (error) {
             console.warn('Could not focus terminal on click:', error);
           }
@@ -2614,7 +2526,6 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
       const timer = setTimeout(() => {
         try {
           xtermRef.current?.focus();
-          console.log(`👁️ Terminal ${sessionId} focused on visibility change`);
         } catch (error) {
           console.warn('Could not focus terminal on visibility change:', error);
         }
@@ -2629,7 +2540,6 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
     
     // Debounced handler to prevent rapid-fire restoration attempts
     const debouncedCheckpointRestore = debounce((event: CustomEvent) => {
-      console.log('🔄 Terminal: Checkpoint restoration event received (debounced)', event.detail);
       
       // For checkpointRestored event: { checkpoint, snapshot }
       const snapshot = event.detail?.snapshot;
@@ -2637,7 +2547,6 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
       const conversationHistory = snapshot?.conversationHistory;
       
       if (!xtermRef.current) {
-        console.log('⚠️ Terminal: Terminal not initialized yet');
         return;
       }
       
@@ -2646,7 +2555,6 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
       
       // ENHANCED: Display conversation history first if available
       if (conversationHistory && Array.isArray(conversationHistory) && conversationHistory.length > 0) {
-        console.log(`📚 Terminal: Restoring ${conversationHistory.length} previous conversations`);
         
         // Display conversation history header
         xtermRef.current.write('\r\n\x1b[38;5;174m══════════════════════════════════════════════════════════════════════════════════════════════════════════\x1b[0m\r\n');
@@ -2678,36 +2586,24 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
       
       // Restore current terminal session (if available)
       if (terminalData && typeof terminalData === 'string') {
-        console.log(`📜 Terminal: Restoring current terminal session from checkpoint`);
         
         // 🚨 DIAGNOSTIC: Log raw terminal data before filtering
-        console.log('🔍 TERMINAL DIAGNOSTIC: Raw terminal data analysis:');
-        console.log('  📏 Raw data length:', terminalData.length);
-        console.log('  📝 Raw data first 500 chars:', terminalData.substring(0, 500));
-        console.log('  📝 Raw data last 500 chars:', terminalData.substring(terminalData.length - 500));
         
         const rawPlanModeCount = (terminalData.match(/plan mode on/gi) || []).length;
         const rawPauseCount = (terminalData.match(/⏸/g) || []).length;
         const rawShiftTabCount = (terminalData.match(/shift\+tab/gi) || []).length;
         
-        console.log('🔍 TERMINAL DIAGNOSTIC: Raw data pattern analysis:');
-        console.log('  📝 "plan mode on" occurrences:', rawPlanModeCount);
         console.log('  ⏸ Pause symbol occurrences:', rawPauseCount);
-        console.log('  📝 "shift+tab" occurrences:', rawShiftTabCount);
         
         if (rawPlanModeCount > 10) {
-          console.log('🚨 TERMINAL DIAGNOSTIC: HIGH REPETITION detected in raw terminal data!');
           const lines = terminalData.split('\n');
           const planModeLines = lines.filter(line => line.toLowerCase().includes('plan mode on'));
-          console.log('🔍 TERMINAL DIAGNOSTIC: Plan mode lines sample (first 3):');
           planModeLines.slice(0, 3).forEach((line, i) => {
             console.log(`    ${i + 1}. "${line.substring(0, 100)}${line.length > 100 ? '...' : ''}"`);
           });
-          console.log('🔍 TERMINAL DIAGNOSTIC: Total plan mode lines in raw data:', planModeLines.length);
         }
         
         // Filter out thinking animations before writing
-        console.log('🧽 TERMINAL DIAGNOSTIC: Applying filterThinkingAnimations...');
         let filteredData = filterThinkingAnimations(terminalData);
         filteredData = cleanStatusLines(filteredData);  // Layer 3 defense
         
@@ -2716,33 +2612,22 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
         const filteredPauseCount = (filteredData.match(/⏸/g) || []).length;
         const filteredShiftTabCount = (filteredData.match(/shift\+tab/gi) || []).length;
         
-        console.log('🧽 TERMINAL DIAGNOSTIC: Filtering results:');
-        console.log('  📏 Data length: ', terminalData.length, '→', filteredData.length, '(', terminalData.length - filteredData.length, 'chars removed)');
-        console.log('  📝 "plan mode on": ', rawPlanModeCount, '→', filteredPlanModeCount, '(', rawPlanModeCount - filteredPlanModeCount, 'instances removed)');
         console.log('  ⏸ Pause symbols: ', rawPauseCount, '→', filteredPauseCount, '(', rawPauseCount - filteredPauseCount, 'symbols removed)');
-        console.log('  📝 "shift+tab": ', rawShiftTabCount, '→', filteredShiftTabCount, '(', rawShiftTabCount - filteredShiftTabCount, 'instances removed)');
         
         if (filteredPlanModeCount > 0) {
-          console.log('🚨 TERMINAL DIAGNOSTIC: FILTERING FAILED - "plan mode on" still present after filtering!');
           const filteredLines = filteredData.split('\n');
           const remainingPlanModeLines = filteredLines.filter(line => line.toLowerCase().includes('plan mode on'));
-          console.log('🔍 TERMINAL DIAGNOSTIC: Remaining plan mode lines (first 3):');
           remainingPlanModeLines.slice(0, 3).forEach((line, i) => {
             console.log(`    ${i + 1}. "${line.substring(0, 100)}${line.length > 100 ? '...' : ''}"`);
           });
         } else {
-          console.log('✅ TERMINAL DIAGNOSTIC: Filtering successful - all "plan mode on" removed');
         }
         
-        console.log('💻 TERMINAL DIAGNOSTIC: Writing filtered data to xterm...');
-        console.log('  📏 Writing', filteredData.length, 'characters to terminal');
         
         // Write the filtered terminal string
         xtermRef.current.write(filteredData);
         
-        console.log('✅ TERMINAL DIAGNOSTIC: Data written to xterm successfully');
       } else {
-        console.log('⚠️ Terminal: No current terminal data in checkpoint');
         // Start fresh Claude CLI session
         xtermRef.current.write('Terminal ready. Type \x1b[38;5;174mclaude\x1b[0m to start a new session.\r\n\r\n');
       }
@@ -2777,31 +2662,21 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
           setTimeout(() => {
             if (xtermRef.current) {
               xtermRef.current.focus();
-              console.log('🎯 Terminal: Focused existing Claude session');
             }
           }, 200);
           return;
         }
         
         setTimeout(async () => {
-          console.log('🔄 TERMINAL DIAGNOSTIC: Enhanced reconnection for sandbox after checkpoint restoration...');
-          console.log('🔍 TERMINAL DIAGNOSTIC: Current terminal state before reconnection:');
-          console.log('  📍 sessionId:', sessionId);
-          console.log('  📍 claudeActive:', claudeActive);
-          console.log('  📍 isConnected:', isConnected);
-          console.log('  📍 sandboxMode:', sandboxMode);
           
           // Clear any old session references that might cause conflicts
           const oldSessionId = sessionIdForVoiceRef.current || sessionId;
           if (oldSessionId) {
-            console.log('🧹 TERMINAL DIAGNOSTIC: Clearing old session reference:', oldSessionId);
             // Add to failed cleanup list to prevent cleanup attempts
             failedCleanupSessionsRef.current.add(oldSessionId);
           }
           
           // Always create a fresh session after checkpoint restoration
-          console.log('📡 TERMINAL DIAGNOSTIC: Creating fresh session for restored checkpoint...');
-          console.log('⚠️  TERMINAL DIAGNOSTIC: CRITICAL - This is where live Claude Code might be triggered!');
           try {
             const response = await fetch('/api/terminal-rest/sessions', {
               method: 'POST',
@@ -2813,41 +2688,20 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
               const data = await response.json();
               const newSessionId = data.sessionId;
               
-              console.log('📡 TERMINAL DIAGNOSTIC: Session creation response:', {
-                sessionId: newSessionId,
-                responseData: data
-              });
               
               // Update all session references
               setSessionId(newSessionId);
               sessionIdForVoiceRef.current = newSessionId;
               setTerminalReady(true);
               
-              console.log('✅ TERMINAL DIAGNOSTIC: Fresh session created after restoration:', newSessionId);
-              console.log('🔍 TERMINAL DIAGNOSTIC: Session state updated - sessionId, voiceRef, terminalReady all set');
               
               // Only connect if we have a valid terminal instance and haven't connected already
               if (xtermRef.current && (!socketRef.current?.connected || !onDataDisposableRef.current)) {
-                console.log('🔌 TERMINAL DIAGNOSTIC: About to connect to backend with fresh session...');
-                console.log('⚠️  TERMINAL DIAGNOSTIC: CRITICAL - connectToBackend() might trigger Claude Code statusline!');
-                console.log('🔍 TERMINAL DIAGNOSTIC: Connection state before connectToBackend:');
-                console.log('  📍 socket connected:', socketRef.current?.connected || 'no socket');
-                console.log('  📍 onData disposable exists:', !!onDataDisposableRef.current);
-                console.log('  📍 terminal exists:', !!xtermRef.current);
                 
                 await connectToBackend(xtermRef.current);
                 
-                console.log('✅ TERMINAL DIAGNOSTIC: connectToBackend completed');
-                console.log('🔍 TERMINAL DIAGNOSTIC: Connection state after connectToBackend:');
-                console.log('  📍 socket connected:', socketRef.current?.connected || 'no socket');
-                console.log('  📍 onData disposable exists:', !!onDataDisposableRef.current);
-                console.log('  📍 isConnected state:', isConnected);
               } else {
                 console.log('ℹ️ TERMINAL DIAGNOSTIC: Skipping connection - already connected or terminal not ready');
-                console.log('🔍 TERMINAL DIAGNOSTIC: Skip reasons:');
-                console.log('  📍 terminal exists:', !!xtermRef.current);
-                console.log('  📍 socket connected:', socketRef.current?.connected || 'no socket');
-                console.log('  📍 onData disposable exists:', !!onDataDisposableRef.current);
               }
             } else {
               console.error('❌ Terminal: Failed to create session, status:', response.status);
@@ -2862,7 +2716,6 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
           setTimeout(() => {
             if (xtermRef.current) {
               xtermRef.current.focus();
-              console.log('🎯 Terminal: Focused and ready for input after restoration');
             }
           }, 500);
         }, 300); // Small delay to ensure terminal content is rendered first
@@ -2875,7 +2728,6 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
         setTimeout(() => {
           if (xtermRef.current) {
             xtermRef.current.focus();
-            console.log('🎯 Main terminal: Focused after checkpoint event (no reconnection needed)');
           }
         }, 500);
       }
@@ -2886,7 +2738,6 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
       // 🚨 CRITICAL FIX: Only sandbox terminals should handle checkpoint restoration events
       // Main terminal should ignore these events to prevent content duplication
       if (!sandboxMode) {
-        console.log('🚫 Main terminal: Ignoring checkpoint restoration event (sandbox-only)');
         return;
       }
       debouncedCheckpointRestore(event);
@@ -2896,7 +2747,6 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
       if (event.detail?.type === 'checkpoint-restored') {
         // 🚨 CRITICAL FIX: Only sandbox terminals should handle checkpoint IDE state changes
         if (!sandboxMode) {
-          console.log('🚫 Main terminal: Ignoring IDE state change (sandbox-only)');
           return;
         }
         
@@ -2904,18 +2754,15 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
         const terminalData = event.detail?.data?.terminal;
         
         if (!terminalData || typeof terminalData !== 'string') {
-          console.log('⚠️ Terminal: No terminal data in ide state change');
           return;
         }
         
         if (!xtermRef.current) {
-          console.log('⚠️ Terminal: Terminal not initialized yet');
           return;
         }
         
         // Clear and restore terminal
         xtermRef.current.clear();
-        console.log(`📜 Terminal: Restoring terminal from IDE state change`);
         // Filter out thinking animations before writing
         let filteredData = filterThinkingAnimations(terminalData);
         filteredData = cleanStatusLines(filteredData);  // Layer 3 defense
@@ -2943,7 +2790,6 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
     const handleInjectCommand = (event: CustomEvent) => {
       const { command } = event.detail;
       if (command && xtermRef.current && !sandboxMode && socketRef.current?.connected) {
-        console.log('🎯 Injecting Claude command into main terminal:', command);
         
         // Inject the command into the terminal as if the user typed it
         xtermRef.current.write('\r\n\x1b[38;5;214m🎯 Executing extracted command:\x1b[0m\r\n');
@@ -2964,16 +2810,13 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
       // For sandbox/agent terminals, only focus if they are visible
       // This allows timeline restore to focus the sandbox terminal
       if ((sandboxMode || agentMode) && !isVisible) {
-        console.log('🚫 Ignoring terminal:refocus for non-visible sandbox/agent terminal');
         return;
       }
 
       if (xtermRef.current && isVisible) {
-        console.log(`🎯 Terminal: Refocusing ${sandboxMode ? 'sandbox' : agentMode ? 'agent' : 'main'} terminal`);
         setTimeout(() => {
           try {
             xtermRef.current?.focus();
-            console.log('✅ Terminal refocused successfully');
           } catch (error) {
             console.warn('Could not refocus terminal:', error);
           }
@@ -3190,7 +3033,6 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
       });
       
       if (res.ok) {
-        console.log('✅ Emergency stop successful');
         setActiveAgentCount(0);
       } else {
         console.error('❌ Emergency stop failed');
@@ -3307,13 +3149,11 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
     
     // Allow connection even without sessionId (server will generate one)
     if (!terminalReady) {
-      console.log('❌ Terminal not ready yet');
       return;
     }
     
     // If we have a session ID, validate it
     if (sessionId && !validateCurrentSession()) {
-      console.log('❌ Invalid session, will let server generate new one');
       // Don't return - continue and let server generate a new session
     }
     
@@ -3341,7 +3181,6 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
     // Make socket globally available for file drop functionality
     if (typeof window !== 'undefined') {
       (window as any).terminalSocket = socket;
-      console.log('🔌 Terminal socket made globally available for drag-drop');
     }
     
     // Critical diagnostic: Check if we're using mock socket
@@ -3371,7 +3210,6 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
         xtermRef.current.writeln('See DEVELOPMENT.md for details.');
       }
     } else {
-      console.log('✅ Using real Socket.IO connection');
     }
     
     // Focus terminal immediately when backend is connected
@@ -3380,7 +3218,6 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
         setTimeout(() => {
           try {
             term.focus();
-            console.log('✅ Terminal focused after backend connection');
           } catch (error) {
             console.warn('Could not focus terminal after connection:', error);
           }
@@ -3397,7 +3234,6 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
       // On rapid refresh/transport close, isConnected is false, but we MUST re-emit terminal:create
       // because the buffered initial emit might have been lost on the failed transport.
       if (sessionId) {
-        console.log('🔄 Socket connected - ensuring terminal session active for:', sessionId);
         setRestorationState('restoring'); // Show loading overlay
         socket.emit('terminal:create', { id: sessionId });
         focusOnConnect();
@@ -3412,21 +3248,18 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
     // Handle terminal created response from server
     // Remove existing listener using specific handler ref
     const terminalCreatedHandler = ({ sessionId: serverSessionId, pid }: { sessionId: string; pid: number }) => {
-      console.log('✅ Terminal created on server:', { sessionId: serverSessionId, pid }); 
       
       // Check if this is a NEW terminal or a RECONNECTION
       const isNewTerminal = !sessionId || sessionId === 'undefined' || sessionId === 'null';
       
       // If we didn't have a session ID, use the one from the server
       if (isNewTerminal) {
-        console.log('📝 Updating session ID from server:', serverSessionId);
         setSessionId(serverSessionId);
         sessionIdForVoiceRef.current = serverSessionId;
         
         // Reset token counter for new terminal sessions
         const store = useIDEStore.getState();
         store.resetTokenUsage();
-        console.log('🔄 Token counter reset for new terminal session');
         
         // New sessions don't need restoration wait time
         setRestorationState('hidden');
@@ -3440,7 +3273,6 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
       }
       connectionInProgressRef.current = false;
       setIsConnected(true);
-      console.log('✅ Connection watchdog cleared - terminal fully connected');
       
       // 🎯 CRITICAL FIX (Oct 28, 2025): Only scroll to top for NEW terminals
       // Don't scroll to top when reconnecting because history restoration handles scrolling
@@ -3469,7 +3301,6 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
                 }
               }
               
-              console.log('📜 Aggressively scrolled to top');
             } catch (e) {
               console.warn('Scroll to top failed:', e);
             }
@@ -3485,10 +3316,8 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
         // Enable normal auto-scroll after 3 seconds
         setTimeout(() => {
           initialLoadComplete.current = true;
-          console.log('✅ Initial load complete - auto-scroll now enabled');
         }, 3000);
       } else {
-        console.log('🔄 Reconnection detected - skipping aggressive scroll-to-top (history restoration will handle scrolling)');
         // For reconnections, enable auto-scroll immediately
         initialLoadComplete.current = true;
       }
@@ -3501,12 +3330,6 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
     
     // Handle disconnect
     const disconnectHandler = (reason: string) => {
-      console.log('🔴 Socket.IO DISCONNECTED:', {
-        reason,
-        sessionId,
-        timestamp: new Date().toISOString(),
-        willReconnect: reason !== 'io client disconnect'
-      });
       
       // ADDED: Immediate feedback - show "Reconnecting" overlay instead of confusing error text
       // This unifies the UX: Reconnecting -> Restoring -> Connected
@@ -3546,11 +3369,6 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
     
     // ADDED: Reconnection success handler with session resurrection
     const reconnectHandler = (attemptNumber: number) => {
-      console.log('✅ Socket.IO RECONNECTED:', {
-        attempts: attemptNumber,
-        sessionId,
-        timestamp: new Date().toISOString()
-      });
       
       setIsConnected(true);
       
@@ -3559,7 +3377,6 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
         
         // ADDED: Re-establish terminal session after reconnection
         if (sessionId && sessionId !== 'undefined' && sessionId !== 'null') {
-          console.log('🔄 Re-establishing terminal session:', sessionId);
           setRestorationState('restoring'); // Transition to restoration phase
           socket.emit('terminal:create', { id: sessionId });
         }
@@ -3583,12 +3400,6 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
       console.log('═══════════════════════════════════════════════════════');
       devLog('🔍 [CLIENT] terminal:history EVENT RECEIVED');
       console.log(`⏰ Timestamp: ${timestamp}`);
-      console.log(`📥 Server sent session ID: "${id}"`);
-      console.log(`💻 Client expects session ID: "${clientSessionId}"`);
-      console.log(`✅ Session IDs match: ${sessionMatch}`);
-      console.log(`📦 Chunks received: ${chunkCount}`);
-      console.log(`📏 History length: ${history?.length || 0} chars`);
-      console.log(`📝 First 100 chars: ${history?.substring(0, 100)}`);
       console.log('═══════════════════════════════════════════════════════');
       
       if (!sessionMatch) {
@@ -3599,7 +3410,6 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
       }
       
       if (id === sessionIdForVoiceRef.current && term) {
-        console.log(`📜 Received terminal history on reconnection: ${chunkCount} chunks, ${history.length} chars`);
         
         // 🔧 CRITICAL FIX (Oct 29, 2025): Different filtering for reconnection vs checkpoint viewing
         // Two scenarios require different filtering levels:
@@ -3609,12 +3419,10 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
         
         if (sandboxMode) {
           // Scenario 2: Viewing checkpoint/summary - apply FULL aggressive filtering
-          console.log('📜 Checkpoint viewing mode - applying full filtering');
           cleanedHistory = filterThinkingAnimations(history);
           cleanedHistory = cleanStatusLines(cleanedHistory);
         } else {
           // Scenario 1: Reconnection to live session - apply MINIMAL filtering only
-          console.log('📜 Reconnection mode - applying minimal filtering');
           // Only remove codes that corrupt display, keep all conversation content
         }
         
@@ -3637,7 +3445,6 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
           .filter(line => !line.includes('Connection lost. Reconnecting'))
           .join('\n');
         
-        console.log(`📜 After filtering: ${cleanedHistory.length} chars (removed ${history.length - cleanedHistory.length} chars)`);
         
         // 🎯 CRITICAL FIX (Oct 28, 2025): Always restore history when reconnecting to existing session
         // The key insight: If we're receiving terminal:history event, it means we're RECONNECTING
@@ -3646,8 +3453,6 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
         
         const hasCleanedHistory = cleanedHistory && cleanedHistory.trim();
         
-        console.log(`📜 Restoration decision: history length = ${cleanedHistory.length} chars`);
-        console.log(`📜 This is a RECONNECTION to preserved session - restoring history`);
         
         const shouldRestoreHistory = hasCleanedHistory;
         
@@ -3668,10 +3473,8 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
             // Only save if we have MORE data than what's already stored
             // This prevents overwriting large checkpoint data (454KB) with small prompts (10 chars)
             if (cleanedHistory.length > existingLength) {
-              console.log(`💾 Saving terminal history to localStorage (${storageKey}): ${cleanedHistory.length} chars`);
               localStorage.setItem(storageKey, cleanedHistory);
             } else {
-              console.log(`🛟 Preserving existing localStorage data (${existingLength} chars) - not overwriting with smaller data (${cleanedHistory.length} chars)`);
             }
           }
           
@@ -3698,11 +3501,9 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
                 term.scrollToBottom();
               }
               
-              console.log('📜 Scrolled to bottom after history restoration');
             }
           }, 200);
         } else {
-          console.log('📜 Skipping minimal history - terminal already has fresh PTY content (hard refresh scenario)');
         }
       }
     };
@@ -3912,10 +3713,8 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
     // ⚡ FIX (Feb 2, 2025): Renamed to avoid shadowing imported terminalCommandHandler singleton
     const terminalCommandSocketHandler = ({ id, command }: { id: string; command: string }) => {
       if (id === sessionIdForVoiceRef.current) {
-        console.log('🧠 [CLIENT] Received command from server for contextual memory:', command);
         if (onTerminalCommand) {
           onTerminalCommand(command);
-          console.log('✅ [CLIENT] Forwarded command to contextual memory system');
         } else {
           console.warn('⚠️ [CLIENT] onTerminalCommand callback not available');
         }
@@ -4056,7 +3855,6 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
           claudeActivityTimeoutRef.current = setTimeout(() => {
             setClaudeActive(false);
             claudeActivityStartedRef.current = false; // Reset for next response
-            console.log('🔄 Claude activity timeout - reset claudeActive to false');
           }, 3000); // Reset after 3 seconds of no Claude output
           
           // ⚡ PERFORMANCE FIX (Feb 2, 2025): Removed store.updateTokenUsage() from hot path
@@ -4069,7 +3867,6 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
         if (data.length > 10) { // Skip tiny fragments
           const tokenUpdate = parseClaudeTokenUsage(data);
           if (tokenUpdate) {
-            console.log('📊 Token usage detected:', tokenUpdate);
             const store = useIDEStore.getState();
             store.updateTokenUsage(tokenUpdate);
           }
@@ -4161,7 +3958,6 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
         
         // Check for errors to trigger Error Doctor
         if (data.includes('error') || data.includes('Error') || data.includes('failed') || data.includes('command not found') || data.includes('No such file') || data.includes('permission denied') || data.includes('cannot find module') || data.includes('Permission denied')) {
-          console.log('❌ ERROR DETECTED by Error Doctor:', data.substring(0, 200));
           
           // Clean the error data by removing ANSI escape codes
           const cleanedData = data.replace(/\x1b\[[0-9;]*[a-zA-Z]/g, '').trim();
@@ -4194,7 +3990,6 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
           const isAgentTerminal = !!(sandboxSession.checkpointData?.role || sandboxSession.checkpointData?.teamId);
           
           if (isAgentTerminal) {
-            console.log('🤖 Connecting to agent terminal:', sandboxSession.id);
             
             // Connect to agent terminal session via WebSocket
             socket.emit('agent:terminal:connect', {
@@ -4239,7 +4034,6 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
             };
           } else if (sandboxSession.terminalHistory) {
             // Regular sandbox mode - restore history
-            console.log('📜 Restoring terminal history for sandbox, length:', sandboxSession.terminalHistory.length);
             
             // Write the historical terminal content
             // Use the same comprehensive cleaning as initial sandbox setup to remove Claude thinking animations
@@ -4259,7 +4053,6 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
         } else if (!sandboxMode && term) {
           // Check for restored history from checkpoint restore (timeline page)
           if (restoredHistory && restoredHistory.trim() && isVisible) {
-            console.log('📜 Restoring terminal history from checkpoint (prop)');
             console.log('  - Original length:', restoredHistory.length);
             console.log('  - First 200 chars:', restoredHistory.substring(0, 200));
             
@@ -4285,12 +4078,6 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
             term.write('\x1b[38;5;174m══════════════════════════════════════════════════════════════════════════════\x1b[0m\r\n');
             term.write('\r\n');
           } else {
-            console.log('📜 No restored history to display:', {
-              hasRestoredHistory: !!restoredHistory,
-              length: restoredHistory?.length || 0,
-              trimmedLength: restoredHistory?.trim()?.length || 0,
-              isVisible
-            });
             // Normal mode - just show connection message
             term.write('\r\n✅ Connected to backend terminal\r\n');
             
@@ -4345,16 +4132,53 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
       term.writeln(`\r\n❌ Terminal error: ${message}`);
       setIsConnected(false);
       connectionInProgressRef.current = false; // Connection failed
-      
+
       // 🔧 FIX (Jan 31, 2026): Hide overlay on terminal error (e.g. memory pressure)
       // Otherwise the "Restoring Session" spinner blocks the error message
       setRestorationState('hidden');
-      
+
       // ⏰ WATCHDOG: Clear timeout on connection error
       if (connectionTimeoutRef.current) {
         clearTimeout(connectionTimeoutRef.current);
         connectionTimeoutRef.current = null;
         console.log('⏰ Connection watchdog cleared (error)');
+      }
+
+      // 🔧 AUTO-RECONNECT (Feb 2026): Create fresh session when server reports session not found
+      // Handles: server restarts, PTY exits, stale localStorage session IDs
+      if (message.toLowerCase().includes('session not found') && !reconnectInProgressRef.current) {
+        reconnectInProgressRef.current = true;
+        term.writeln('\r\n🔄 Reconnecting...');
+        localStorage.removeItem('ide-terminalSessionId');
+
+        fetch('/api/terminal-rest/sessions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ cols: 130, rows: 30 }),
+        })
+          .then(res => {
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            return res.json();
+          })
+          .then(data => {
+            if (data.sessionId) {
+              setSessionId(data.sessionId);
+              sessionIdForVoiceRef.current = data.sessionId;
+              localStorage.setItem('ide-terminalSessionId', data.sessionId);
+              if (typeof window !== 'undefined') {
+                (window as any).terminalSessionId = data.sessionId;
+              }
+              socket.emit('terminal:create', { id: data.sessionId });
+              term.writeln('✅ Session restored.\r\n');
+            }
+          })
+          .catch(err => {
+            console.error('[Terminal] Auto-reconnect failed:', err);
+            term.writeln('\r\n❌ Reconnect failed. Please refresh the page.');
+          })
+          .finally(() => {
+            reconnectInProgressRef.current = false;
+          });
       }
     };
     if (socketHandlersRef.current.terminalExit) {
@@ -4382,29 +4206,17 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
         term.writeln(`\r\n✅ Claude session completed in ${(duration / 1000).toFixed(2)}s`);
         
         // Debug logging for audio alert decision
-        console.log('🔊 Audio Alert Debug:', {
-          sessionId: claudeSessionId,
-          duration: duration,
-          durationSeconds: (duration / 1000).toFixed(2),
-          audioAlertsEnabled: audioAlertsEnabled,
-          meetsThreshold: duration > 20000,
-          willPlaySound: audioAlertsEnabled && duration > 20000
-        });
         
         // Play sound alert if enabled and duration > 20s
         if (audioAlertsEnabled && duration > 20000) {
-          console.log('🔊 Playing completion alert sound...');
           soundAlertService.playCompletionAlert().then(() => {
-            console.log('🔊 Completion alert sound played successfully');
           }).catch((error) => {
             console.warn('🔇 Failed to play completion alert:', error);
           });
         } else {
           if (!audioAlertsEnabled) {
-            console.log('🔇 Audio alerts disabled - no sound played');
           }
           if (duration <= 20000) {
-            console.log(`🔇 Session too short (${(duration / 1000).toFixed(2)}s ≤ 20s) - no sound played`);
           }
         }
       }
@@ -4520,11 +4332,6 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
 
     // Handle agent:spawn event from WebSocket (real-time team spawning)
     const agentSpawnHandler = async (data: any) => {
-      console.log('🚀 [WEBSOCKET] Received agent:spawn event:', {
-        teamId: data.teamId,
-        agentCount: data.agents?.length,
-        agents: data.agents?.map((a: any) => ({ id: a.id, role: a.role, name: a.name }))
-      });
       
       if (term) {
         term.writeln(`\r\n✅ AI Team spawned with ${data.agents?.length || 0} agents`);
@@ -4536,7 +4343,6 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
         if (term) {
           term.writeln(`📋 Creating ${data.agents.length} agent terminal tabs...`);
         }
-        console.log(`📋 [WEBSOCKET] Processing ${data.agents.length} agents for tab creation`);
         
         // Get socket for agent terminal communication
         const socket = await getSocket();
@@ -4557,14 +4363,11 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
               processId: agent.processId
             };
             
-            console.log(`📋 [WEBSOCKET] Creating agent tab for: ${agentSessionData.name} (${agentSessionData.id})`);
             
             // Dispatch event to create agent tab
-            console.log(`🎯 [WEBSOCKET] Dispatching terminal:createAgentSession event`);
             window.dispatchEvent(new CustomEvent('terminal:createAgentSession', {
               detail: agentSessionData
             }));
-            console.log(`✅ [WEBSOCKET] Event dispatched for ${agentSessionData.name}`);
             
             // Create agent terminal session via WebSocket
             if (socket?.connected) {
@@ -4573,7 +4376,6 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
                 teamId: agentSessionData.teamId,
                 role: agentSessionData.role
               });
-              console.log(`🤖 [WEBSOCKET] Created terminal session for ${agentSessionData.name}`);
             } else {
               console.warn(`⚠️ [WEBSOCKET] Socket not connected, cannot create terminal session`);
             }
@@ -4591,20 +4393,16 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
     }
     socketHandlersRef.current.agentSpawn = agentSpawnHandler;
     socket.on('agent:spawn', agentSpawnHandler);
-    console.log('✅ agent:spawn listener registered in connectToBackend');
 
     // Listen for agent terminal creation confirmation and connect socket
     const agentTerminalCreatedHandler = ({ agentId, teamId, role }: { agentId: string; teamId: string; role: string }) => {
-      console.log(`🔌 Agent terminal created: ${agentId}, connecting socket...`);
       socket.emit('agent:terminal:connect', { agentId });
-      console.log(`✅ Sent agent:terminal:connect for ${agentId}`);
     };
     if (socketHandlersRef.current.agentTerminalCreated) {
       socket.off('agent:terminal:created', socketHandlersRef.current.agentTerminalCreated);
     }
     socketHandlersRef.current.agentTerminalCreated = agentTerminalCreatedHandler;
     socket.on('agent:terminal:created', agentTerminalCreatedHandler);
-    console.log('✅ agent:terminal:created listener registered in connectToBackend');
 
     // 🔧 FIX #1 (Nov 19, 2025): REMOVED DUPLICATE LISTENER
     // This was creating MaxListenersExceededWarning and causing socket churn
@@ -4615,13 +4413,11 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
     // Set up terminal input handling - send to backend
     // Skip in sandbox mode - it's read-only (but allow agent terminals)
     if (sandboxMode && !agentMode) {
-      console.log('🏖️ Sandbox mode - terminal is read-only');
       return;
     }
     
     // Agent terminals can accept input for interactive commands
     if (agentMode) {
-      console.log('🤖 Agent terminal input enabled for:', agentSession?.name);
     }
     
     // Clean up any existing handler first
@@ -4741,7 +4537,6 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
       if (data === '\r') {
         // 🔧 FIX (Feb 1, 2025): Set claudeActive TRUE when Enter is pressed
         // This allows contextual memory to skip regex processing BEFORE Claude responds
-        console.log('🎯 [CLAUDE-ACTIVE] Setting claudeActive = true (Enter pressed)');
         setClaudeActive(true);
         
         // 🔧 FIX (Feb 1, 2025): Auto-reset claudeActive after 5 seconds if no response
@@ -4750,7 +4545,6 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
           clearTimeout(claudeActivityTimeoutRef.current);
         }
         claudeActivityTimeoutRef.current = setTimeout(() => {
-          console.log('🔄 Claude activity timeout (Enter) - reset claudeActive to false');
           setClaudeActive(false);
         }, 5000); // Reset after 5 seconds if no Claude output detected
         
@@ -4758,7 +4552,6 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
         // ⚡ PERFORMANCE FIX (Feb 2, 2025): Read from ref instead of state (no setState on keystrokes)
         if (lineBufferRef.current.trim()) {
           const command = lineBufferRef.current.trim();
-          console.log('🔍 [CONTEXTUAL-DEBUG] Processing command:', command);
           setCommandHistory(prev => [...prev, command]);
           
           // Check for copy-files command first
@@ -4768,9 +4561,7 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
             if (copyFunction && typeof copyFunction === 'function') {
               copyFunction().then((success: boolean) => {
                 if (success) {
-                  console.log('✅ Files copied to clipboard via terminal command');
                 } else {
-                  console.log('❌ Failed to copy files via terminal command');
                 }
               });
             } else {
@@ -4820,7 +4611,6 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
           // Notify parent component about the command
           if (onTerminalCommand) {
             onTerminalCommand(command);
-            console.log('✅ [CALLBACK] onTerminalCommand called with:', command);
           } else {
             console.warn('⚠️ [CALLBACK] onTerminalCommand callback missing');
           }
@@ -5024,15 +4814,9 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
         
         // Create agent terminal tabs (Phase 1) - Always enabled now
         // FIX: Removed env var check to avoid race condition
-        console.log('🚀 Agent spawn event received:', {
-          teamId: data.teamId,
-          agentCount: data.agents?.length,
-          agents: data.agents?.map((a: any) => ({ id: a.id, role: a.role, name: a.name }))
-        });
         
         if (data.agents && data.agents.length > 0) {
           xtermRef.current.writeln('\r\n📋 Creating agent terminal tabs...');
-          console.log(`📋 Processing ${data.agents.length} agents for tab creation`);
           
           // Get socket for WebSocket communication
           const socket = await getSocket();
@@ -5054,15 +4838,11 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
                 processId: agent.processId
               };
               
-              console.log(`📋 Creating agent tab for: ${agentSessionData.name} (${agentSessionData.id})`);
-              console.log(`📋 Agent data:`, agentSessionData);
               
               // Dispatch event to create agent tab
-              console.log(`🎯 Dispatching terminal:createAgentSession event for ${agentSessionData.id}`);
               window.dispatchEvent(new CustomEvent('terminal:createAgentSession', {
                 detail: agentSessionData
               }));
-              console.log(`✅ Event dispatched successfully`);
               
               // Phase 2: Also create agent terminal session via WebSocket
               if (socket?.connected) {
@@ -5071,7 +4851,6 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
                   teamId: agentSessionData.teamId,
                   role: agentSessionData.role
                 });
-                console.log(`🤖 Created agent terminal session for ${agentSessionData.name}`);
               } else {
                 console.warn(`⚠️ Socket not connected, cannot create terminal session for ${agentSessionData.name}`);
               }
@@ -5121,7 +4900,6 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
 
     // Handle images with dual-mode processing (OCR + Vision API)
     if (images && images.length > 0) {
-      console.log(`🖼️ Processing ${images.length} image(s) with dual-mode handler`);
 
       // Separate images by processing mode
       const ocrImages = images.filter(i => i.mode === 'ocr' || !i.mode); // Default to OCR
@@ -5361,11 +5139,9 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
     // Production users would get 404 errors because the hardcoded path doesn't exist on the server
     // TODO: Re-enable when bridge can report session data from the user's local machine
     if (typeof window !== 'undefined' && window.location.hostname !== 'localhost') {
-      console.log('📊 Token monitoring disabled in production (requires local Claude Code session access)');
       return;
     }
 
-    console.log('📊 Starting Claude Code session token monitoring');
 
     // Poll every 5 seconds for token usage updates
     const pollSessionUsage = async () => {
@@ -5385,7 +5161,6 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
               output: data.usage.output,
               total: data.usage.total
             });
-            console.log('📊 Updated token usage from Claude Code session:', data.usage);
           }
         }
       } catch (error) {
@@ -5443,16 +5218,12 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
 
   // Handle sandbox panel modal
   const handleSandboxAction = () => {
-    console.log('🎯 [SANDBOX] Button clicked - Opening Sandbox Panel modal');
-    console.log('🎯 [SANDBOX] Current showSandboxPanel state:', showSandboxPanel);
     
     try {
       setShowSandboxPanel(true);
-      console.log('🎯 [SANDBOX] Modal state set to true');
       
       // Verify state was set
       setTimeout(() => {
-        console.log('🎯 [SANDBOX] Modal should now be visible. Check DOM for modal element.');
       }, 100);
     } catch (error) {
       console.error('❌ [SANDBOX] Error opening sandbox panel:', error);
@@ -5461,16 +5232,13 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
 
   // Legacy sandbox creation function (kept for reference)
   const createSandboxDirect = async () => {
-    console.log('🎯 handleSandboxAction called from Terminal');
     
     // Reset previous status
-    console.log('🔄 Setting status to: creating');
     setSandboxCreationStatus('creating');
     setSandboxCreationMessage('');
     setCreatedSandboxId('');
     
     // Add console logging for debugging
-    console.log('🚀 Creating new sandbox...');
     
     const projectName = `sandbox-${Date.now().toString(36).slice(-6)}`;
     
@@ -5487,16 +5255,13 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
       });
       
       const data = await response.json();
-      console.log('📦 Sandbox API response:', data);
       
       if (data.success) {
-        console.log('🔄 Setting status to: success');
         setSandboxCreationStatus('success');
         setSandboxCreationMessage(`✅ Sandbox "${projectName}" created successfully!`);
         setCreatedSandboxId(data.sandbox.id);
         
         // Log success
-        console.log('✅ Sandbox created:', data.sandbox);
         
         // Show alert for immediate feedback
         alert(`✅ Sandbox created successfully!\n\nID: ${data.sandbox.id}\nProject: ${data.sandbox.projectId}\nPath: ${data.sandbox.path}\n\nA new tab will open with your sandbox workspace.`);
@@ -5518,7 +5283,6 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
         
         // Navigate to consultation workspace after short delay
         setTimeout(() => {
-          console.log('🔄 Opening sandbox workspace:', data.sandbox.id);
           // Open consultation page with sandbox ID as parameter
           const workspaceUrl = `/consultation?sandbox=${data.sandbox.id}`;
           window.open(workspaceUrl, '_blank');
@@ -5699,7 +5463,6 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
             onDoubleClick={() => {
               // Debug: manually trigger an error for testing
               const testError = "bash: invalidcommand: command not found";
-              console.log('🧪 Manual error triggered for testing');
               setLastError(testError);
               setHasActiveError(true);
               setErrorHistory(prev => [...prev.slice(-9), testError]);
@@ -6138,11 +5901,9 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
                     // If no errors, show helpful message
                     if (!hasErrors) {
                       addToast('ℹ️ No errors to send. Generate some errors first, then try again.', 'info');
-                      console.log('📊 No errors available - Terminal: 0, Console: 0');
                       
                       // Enable debug mode for better capture
                       consoleCaptureService.enableDebugMode();
-                      console.log('🔍 Enabled debug mode for console capture - all console output will be captured');
                       return;
                     }
                     

@@ -681,3 +681,112 @@ A client-side singleton service (~330 lines) that:
 2. **Task 4.1**: MCPorter/MCP tool integration (needs user decisions on which MCP servers to connect)
 3. **Task 5.1 MCP wrapper**: Wrap the REST API endpoints in proper MCP protocol (needs @modelcontextprotocol/sdk)
 4. **Production testing**: All changes need testing on deployed Render instance with real API keys
+
+---
+
+## Production Readiness Cleanup (2026-02-06)
+
+**Team**: 1 Opus lead + 3 Sonnet agents (chat-route-fixer, bug-fixer, mock-remover)
+**Branch**: `refactor/clean-phase1`
+
+### Phase 1: Critical Bug Fixes — COMPLETE
+
+- [x] **1.1 Socket.IO auth on `johnny5:delegate-task`** — `server.js:3215-3234`: Added auth checks rejecting unauthenticated sockets (no userId) and sockets missing `terminal` permission
+- [x] **1.2 Replace `spawnSync` with async `spawn`** — `chat/route.ts:922-960`: Non-blocking with Promise wrapper + 90s timeout + SIGTERM kill
+- [x] **1.3 Fix `removeAllListeners`** — `Terminal.tsx:2375-2380`: Replaced nuclear `removeAllListeners` with targeted `socket.off()` using handler ref
+- [x] **1.4 Fix `sendMessage` parameter order** — `chat/route.ts:504`: Swapped to `sendMessage('dashboard:main', moltbotMessage)`
+
+### Phase 2: Remove Mock/Fake Services — COMPLETE
+
+- [x] **2.1 Delete `self-improvement.ts`** — 379 lines of dead code, zero imports
+- [x] **2.2 Proactive Builder → Coming Soon** — Deleted service + code-generator + API routes, replaced BuilderTab with placeholder
+- [x] **2.3 Trend Monitor → Coming Soon** — Deleted service + API routes, replaced TrendsTab with placeholder
+- [x] **2.4 Remove deprecated config functions** — 5 `@deprecated` API key functions from `johnny5-config.ts`
+- [x] **2.5 Morning Brief** — Investigated, LEFT AS-IS (uses real accomplishment-detector data)
+- [x] **2.6 Created `ComingSoonPlaceholder.tsx`** — Shared reusable component with dark theme + cyan accents
+
+### Phase 3: Wire Up Real Features — COMPLETE
+
+- [x] **3.1 Terminal Context → Chat** — Injected into Moltbot early-return path (was the gap); other providers already had it via `enhancedMessage`
+- [x] **3.2 Memory Context verified** — All 5 providers confirmed to receive memory context
+- [x] **3.3 Persist Security Warnings** — Added `saveSecurityWarning()`/`getSecurityWarnings()` to johnny5-db.ts, auto-loads on startup
+- [x] **3.4 Analytics real data** — Fixed fake 40/60 token split using `Math.round(h.tokens * 0.4)`, now uses real `inputTokens`/`outputTokens`; fixed missing `await` on `getDailyUsage()`
+
+### Phase 4 & 5: Cleanup — COMPLETE
+
+- [x] **Console.log cleanup** — Removed 233 emoji-prefixed diagnostic logs from Terminal.tsx (6284→6004 lines)
+- [x] **Delete .bak files** — Removed 13 backup files from `components/terminal/`
+- [x] **Zustand store cleanup** — Removed `pendingPRs`, `trendAlerts`, `skills` state + all related actions
+- [x] **Type cleanup** — Removed `Johnny5BuilderRules`, `Johnny5SelfImprovement`, `Johnny5LearnedPattern` types
+- [x] **Fix broken import** — Removed trendMonitor import from `cron/control/route.ts`
+
+### Verification
+
+- `npx tsc --noEmit` — Zero type errors in production code (pre-existing test file errors only)
+- All deleted files confirmed gone (4 services, 2 API route dirs, 13 .bak files)
+- New `ComingSoonPlaceholder.tsx` confirmed present
+- No `@deprecated` markers remaining in `johnny5-config.ts`
+
+### Files Modified
+
+| File | Change |
+|------|--------|
+| `app/api/johnny5/chat/route.ts` | spawnSync→spawn, param fix, terminal context in Moltbot path, memory verified |
+| `server.js` | Socket.IO auth on delegate-task handler |
+| `components/terminal/Terminal.tsx` | removeAllListeners→socket.off, 233 console.logs removed |
+| `services/johnny5/security-tracker.ts` | DB persistence for warnings, load-on-init |
+| `lib/johnny5-db.ts` | saveSecurityWarning/getSecurityWarnings functions |
+| `services/johnny5/usage-tracker.ts` | Real inputTokens/outputTokens in hourly usage |
+| `app/api/johnny5/analytics/route.ts` | Real token split, async fix |
+| `stores/useJohnny5Store.ts` | Remove mock state/actions |
+| `types/johnny5.ts` | Remove deleted feature types |
+| `lib/johnny5-config.ts` | Remove deprecated functions |
+| `app/api/johnny5/cron/control/route.ts` | Remove broken trendMonitor import |
+| `components/johnny5/builder/BuilderTab.tsx` | → Coming Soon placeholder |
+| TrendsTab component | → Coming Soon placeholder |
+
+### Files Created
+
+| File | Purpose |
+|------|---------|
+| `components/johnny5/shared/ComingSoonPlaceholder.tsx` | Reusable Coming Soon placeholder |
+
+### Files Deleted
+
+| File | Reason |
+|------|--------|
+| `services/johnny5/self-improvement.ts` | Dead code (zero imports) |
+| `services/johnny5/proactive-builder.ts` | 100% mock |
+| `services/johnny5/code-generator.ts` | 100% mock stubs |
+| `services/johnny5/trend-monitor.ts` | 100% mock |
+| `app/api/johnny5/builder/*` | Served hardcoded mock data |
+| `app/api/johnny5/trends/*` | Served mock alerts |
+| `components/terminal/Terminal.tsx.bak*` (13 files) | Old backups |
+
+---
+
+## Terminal Auto-Reconnect Fix (2026-02-06)
+
+- [x] 1. Add `reconnectInProgressRef` guard ref in Terminal.tsx (line 132)
+- [x] 2. Update `terminalErrorHandler` with auto-reconnect logic in Terminal.tsx (line 4130)
+- [x] 3. Add `.connected` check on bridge socket in server.js (line 2306)
+- [x] 4. Add PTY exit notification to client in server.js (line 870)
+
+### Review
+
+**Changes Made:**
+
+1. **Terminal.tsx line 132**: Added `reconnectInProgressRef = useRef(false)` — prevents duplicate auto-reconnect attempts when user types rapidly into a dead session (each keystroke would trigger a separate `terminal:error`).
+
+2. **Terminal.tsx line 4130-4178**: Extended `terminalErrorHandler` — when the error message contains "session not found", the handler now:
+   - Guards against concurrent reconnects via `reconnectInProgressRef`
+   - Clears stale session ID from localStorage
+   - Creates a fresh session via REST API (`/api/terminal-rest/sessions`)
+   - Updates `sessionId` state, `sessionIdForVoiceRef`, localStorage, and `window.terminalSessionId`
+   - Emits `terminal:create` to register the new session on the server
+   - Shows "Reconnecting..." → "Session restored" feedback in terminal
+   - Falls back to "Please refresh" message if REST API fails
+
+3. **server.js line 2306**: Changed `bridge?.socket` to `bridge?.socket?.connected` — prevents the interactive Claude session check from silently routing input to a disconnected bridge socket. When the bridge is disconnected, the stale interactive session is cleaned up and input falls through to normal PTY processing.
+
+4. **server.js line 870-883**: Added proactive PTY exit notification — when a PTY process exits, the server now immediately emits `terminal:error` with "Terminal session not found" to the connected client socket. This triggers the auto-reconnect logic from change #2 without waiting for the user's next keystroke. Also cleans up the `terminalSessionSockets` map entry.
