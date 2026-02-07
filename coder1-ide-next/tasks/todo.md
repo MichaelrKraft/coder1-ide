@@ -390,7 +390,7 @@ Wired up disconnected Johnny5 proactive features so Johnny5 can autonomously det
 
 ## Status: IN PROGRESS
 
-## Steps
+## Initial Integration Steps (Complete)
 
 - [x] Step 0: Create default agent definitions in `.coder1/agents/`
 - [x] Step 1: Create `components/teams/TeamSpawnInput.tsx`
@@ -402,6 +402,28 @@ Wired up disconnected Johnny5 proactive features so Johnny5 can autonomously det
 - [x] Step 7: Modify `components/status-bar/StatusBarCore.tsx` (team indicator)
 - [x] Step 8: Modify `server.js` (Socket.IO broadcast)
 - [x] Build verification - `npx next build` passes with zero errors
+
+## UX Unification + Bug Fixes
+
+- [x] Step 1: Copy agent files from repo root `.coder1/agents/` to `coder1-ide-next/.coder1/agents/` (fix "Workflow not found" error)
+- [x] Step 2: Rewire "AI Team" terminal button to open Teams tab (not Mission Control)
+- [x] Step 3: Add `expandRightPanel` event listener to ThreePanelLayout
+- [x] Step 4: Add active team pulsing indicator on AI Team button + import useSessionStore
+- [x] Step 5: Better error/onboarding card when API key is missing
+- [x] Build verification - `npx next build` passes with zero errors
+
+## Review: UX Unification
+
+### Files Copied (4)
+- `coder1-ide-next/.coder1/agents/frontend-engineer.json`
+- `coder1-ide-next/.coder1/agents/backend-engineer.json`
+- `coder1-ide-next/.coder1/agents/qa-testing.json`
+- `coder1-ide-next/.coder1/agents/templates.json`
+
+### Files Modified (3)
+1. `components/terminal/Terminal.tsx` - Rewired AI Team button (openMissionControl → switchToTeamsTab + expandRightPanel), added useSessionStore import + activeTeam selector, added pulsing cyan indicator for active teams
+2. `components/layout/ThreePanelLayout.tsx` - Added expandRightPanel event listener (expand-only, never collapses an open panel)
+3. `components/teams/AgentTeamsPanel.tsx` - API key errors show yellow onboarding card with 3-step setup guide, other errors show red dismissable card
 
 ## Review
 

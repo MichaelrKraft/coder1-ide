@@ -1,0 +1,78 @@
+{
+  "workflows": {
+    "crud-with-ui": {
+      "name": "CRUD Application with UI",
+      "description": "Full-stack CRUD application with React frontend and Express backend",
+      "category": "full-stack",
+      "agents": ["frontend-engineer", "backend-engineer", "qa-testing"],
+      "sequence": [
+        {
+          "agent": "backend-engineer",
+          "task": "Create API endpoints for CRUD operations with proper validation and error handling",
+          "dependencies": [],
+          "deliverables": ["api-routes", "data-models"]
+        },
+        {
+          "agent": "frontend-engineer",
+          "task": "Build React UI components for creating, reading, updating, and deleting items",
+          "dependencies": [],
+          "deliverables": ["ui-components", "form-handling"]
+        },
+        {
+          "agent": "frontend-engineer",
+          "task": "Connect frontend components to backend API endpoints",
+          "dependencies": ["api-routes"],
+          "deliverables": ["api-integration"]
+        },
+        {
+          "agent": "qa-testing",
+          "task": "Write tests for API endpoints and UI components",
+          "dependencies": ["api-routes", "ui-components"],
+          "deliverables": ["test-suite"]
+        }
+      ],
+      "commonIssues": ["CORS configuration", "State management complexity"],
+      "bestPractices": ["Start with API design", "Use optimistic UI updates"]
+    },
+    "auth-full-stack": {
+      "name": "Full Stack with Authentication",
+      "description": "Full-stack application with user authentication and protected routes",
+      "category": "full-stack",
+      "agents": ["backend-engineer", "frontend-engineer", "qa-testing"],
+      "sequence": [
+        {
+          "agent": "backend-engineer",
+          "task": "Set up authentication system with JWT tokens, login, signup, and protected route middleware",
+          "dependencies": [],
+          "deliverables": ["auth-middleware", "auth-routes", "user-model"]
+        },
+        {
+          "agent": "frontend-engineer",
+          "task": "Create login and signup forms with validation and auth state management",
+          "dependencies": [],
+          "deliverables": ["auth-ui", "auth-context"]
+        },
+        {
+          "agent": "backend-engineer",
+          "task": "Create protected CRUD API endpoints that require authentication",
+          "dependencies": ["auth-middleware"],
+          "deliverables": ["protected-routes", "data-models"]
+        },
+        {
+          "agent": "frontend-engineer",
+          "task": "Build protected pages and connect to authenticated API endpoints",
+          "dependencies": ["auth-context", "protected-routes"],
+          "deliverables": ["protected-pages", "api-integration"]
+        },
+        {
+          "agent": "qa-testing",
+          "task": "Write tests for authentication flow, protected routes, and CRUD operations",
+          "dependencies": ["auth-routes", "auth-ui", "protected-routes"],
+          "deliverables": ["auth-tests", "integration-tests"]
+        }
+      ],
+      "commonIssues": ["Token refresh handling", "CORS with credentials"],
+      "bestPractices": ["Use httpOnly cookies for tokens", "Implement refresh token rotation"]
+    }
+  }
+}

@@ -270,7 +270,45 @@ export default function AgentTeamsPanel({ onOpenFile }: AgentTeamsPanelProps) {
         </div>
 
         {/* Spawn Input */}
-        <TeamSpawnInput onSpawn={handleSpawn} isSpawning={isSpawning} error={spawnError} />
+        <TeamSpawnInput
+          onSpawn={handleSpawn}
+          isSpawning={isSpawning}
+          error={spawnError && !spawnError.includes('API_KEY') ? spawnError : null}
+        />
+
+        {/* API Key Setup Guide */}
+        {spawnError && spawnError.includes('API_KEY') && (
+          <div className="mt-3 p-4 rounded-lg border border-yellow-500/30 bg-yellow-500/5">
+            <h4 className="text-sm font-medium text-yellow-400 mb-2">Setup Required</h4>
+            <p className="text-xs text-text-secondary mb-3">
+              Add your Anthropic API key to use Agent Teams:
+            </p>
+            <ol className="text-xs text-text-muted space-y-1.5 list-decimal list-inside">
+              <li>Open <code className="text-coder1-cyan bg-bg-primary px-1 rounded">.env.local</code> in the coder1-ide-next directory</li>
+              <li>Add: <code className="text-coder1-cyan bg-bg-primary px-1 rounded">ANTHROPIC_API_KEY=sk-ant-...</code></li>
+              <li>Restart the dev server</li>
+            </ol>
+            <button
+              onClick={() => setSpawnError(null)}
+              className="mt-3 text-xs text-text-muted hover:text-text-secondary transition-colors"
+            >
+              Dismiss
+            </button>
+          </div>
+        )}
+
+        {/* Generic error display */}
+        {spawnError && !spawnError.includes('API_KEY') && (
+          <div className="mt-3 p-3 rounded-lg border border-red-500/30 bg-red-500/5">
+            <p className="text-xs text-red-400">{spawnError}</p>
+            <button
+              onClick={() => setSpawnError(null)}
+              className="mt-2 text-xs text-text-muted hover:text-text-secondary transition-colors"
+            >
+              Dismiss
+            </button>
+          </div>
+        )}
 
         {/* Recent Teams */}
         {recentTeams.length > 0 && (
