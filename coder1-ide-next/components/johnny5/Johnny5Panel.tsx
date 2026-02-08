@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
-import { Settings, Zap, AlertTriangle, X, FileText, Terminal, ListChecks, UserCog } from 'lucide-react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { Settings, Zap, AlertTriangle, X, FileText, Terminal, ListChecks, UserCog, Users } from 'lucide-react';
 import Johnny5TabBar from './Johnny5TabBar';
 import { ChatTab } from './chat';
 import { MissionControlTab } from './mission-control';
@@ -22,6 +22,9 @@ import WorkflowBuilder from './WorkflowBuilder';
 import AgentPersonas from './AgentPersonas';
 import ErrorPatternCard from './ErrorPatternCard';
 import CoachTip from './CoachTip';
+import CrewPanel from './CrewPanel';
+import { LiveFeed } from './LiveFeed';
+import crewData from '@/data/crew-members.json';
 import { useJohnny5Store } from '@/stores/useJohnny5Store';
 import { useIDEStore } from '@/stores/useIDEStore';
 import { getPatternDetector } from '@/services/johnny5/pattern-detector';
@@ -74,6 +77,13 @@ export default function Johnny5Panel({ className }: Johnny5PanelProps) {
     security,
     setupStatus,
     setSetupStatus,
+    activeCrewMember,
+    crewStatus,
+    crewActivityFeed,
+    showCrewPanel,
+    setActiveCrewMember,
+    setCrewStatus,
+    setShowCrewPanel,
   } = useJohnny5Store();
 
   const activeFile = useIDEStore((s) => s.editor.activeFile);
@@ -141,6 +151,20 @@ export default function Johnny5Panel({ className }: Johnny5PanelProps) {
 
   const hasSecurityAlerts = security.warnings.filter(w => !w.dismissed).length > 0 ||
     security.promptInjectionAlerts.filter(a => !a.blocked).length > 0;
+
+  // Crew stats
+  const crewMembers = useMemo(() => (crewData as { crewMembers: { id: string; name: string; icon: string; category: string; description: string; promptPrefix: string; exampleTasks: string[] }[] }).crewMembers, []);
+  const totalCrewCount = crewMembers.length;
+  const activeCrewCount = useMemo(() => {
+    return Object.values(crewStatus).filter(s => s === 'working').length;
+  }, [crewStatus]);
+
+  // Crew activation handler — sets active crew member, closes panel, switches to chat
+  const handleActivateCrew = (crewMemberId: string) => {
+    setActiveCrewMember(crewMemberId);
+    setShowCrewPanel(false);
+    setActiveTab('chat');
+  };
 
   return (
     <div className={`h-full flex flex-col bg-bg-secondary relative overflow-hidden ${className || ''}`}>
@@ -252,6 +276,24 @@ export default function Johnny5Panel({ className }: Johnny5PanelProps) {
         </div>
 
         <div className="flex items-center gap-2">
+          {/* Crew Status Badge */}
+          <button
+            onClick={() => setShowCrewPanel(true)}
+            className={`
+              px-2 py-1 rounded-md text-xs font-bold flex items-center gap-1 transition-all
+              ${activeCrewCount > 0
+                ? 'bg-coder1-cyan/20 text-coder1-cyan hover:bg-coder1-cyan/30'
+                : 'bg-purple-500/20 text-purple-400 hover:bg-purple-500/30'}
+            `}
+            title={`Crew: ${totalCrewCount} members, ${activeCrewCount} active`}
+          >
+            <Users className="w-3 h-3" />
+            <span>{totalCrewCount}</span>
+            {activeCrewCount > 0 && (
+              <span className="text-[9px] opacity-80">| {activeCrewCount} active</span>
+            )}
+          </button>
+
           {/* Security Score Badge */}
           <div
             className={`
@@ -443,6 +485,22 @@ export default function Johnny5Panel({ className }: Johnny5PanelProps) {
         isOpen={showPersonas}
         onClose={() => setShowPersonas(false)}
       />
+
+      {/* Crew Panel Overlay */}
+      <CrewPanel
+        isOpen={showCrewPanel}
+        onClose={() => setShowCrewPanel(false)}
+        onActivate={handleActivateCrew}
+        activeCrewMember={activeCrewMember || undefined}
+        crewStatus={crewStatus}
+      />
+
+      {/* Live Feed - Fixed at bottom when crew is active */}
+      {activeCrewCount > 0 && (
+        <div className="absolute bottom-0 left-0 right-0 z-30">
+          <LiveFeed entries={crewActivityFeed} maxEntries={20} />
+        </div>
+      )}
     </div>
   );
 }

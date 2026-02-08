@@ -70,6 +70,7 @@ function TypewriterText({
 }
 import { AlertCircle } from 'lucide-react';
 import { useJohnny5Store } from '@/stores/useJohnny5Store';
+import crewData from '@/data/crew-members.json';
 import { getSocket } from '@/lib/socket';
 
 // Message interface
@@ -193,8 +194,15 @@ export default function ChatTab() {
     }
   }, [inputValue]);
 
-  // Moltbot connection status from store
-  const { moltbotStatus, setMoltbotStatus } = useJohnny5Store();
+  // Store state
+  const { moltbotStatus, setMoltbotStatus, activeCrewMember } = useJohnny5Store();
+
+  // Resolve active crew member details for prompt injection
+  const activeCrewInfo = useMemo(() => {
+    if (!activeCrewMember) return null;
+    const members = (crewData as { crewMembers: { id: string; name: string; promptPrefix: string }[] }).crewMembers;
+    return members.find(m => m.id === activeCrewMember) || null;
+  }, [activeCrewMember]);
 
   // Fetch Johnny5 mode on mount
   useEffect(() => {
@@ -478,6 +486,7 @@ export default function ChatTab() {
               sessionId: sessionId,  // Pass session ID for conversation continuity
               history: messages.slice(-10), // Send last 10 messages for context
               terminalContext: terminalObserver.getRecentContext(1500),
+              ...(activeCrewInfo ? { crewContext: { name: activeCrewInfo.name, promptPrefix: activeCrewInfo.promptPrefix } } : {}),
             }),
         signal: controller.signal,
       });
@@ -997,7 +1006,7 @@ export default function ChatTab() {
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder={isLoading ? "Press Esc to stop..." : "Message Johnny5..."}
+              placeholder={isLoading ? "Press Esc to stop..." : activeCrewInfo ? `Ask the ${activeCrewInfo.name}...` : "Message Johnny5..."}
               rows={1}
               className="w-full px-4 py-3 pr-12 rounded-xl bg-bg-tertiary border border-border-default focus:border-coder1-cyan/50 focus:ring-1 focus:ring-coder1-cyan/20 text-sm text-text-primary placeholder-text-muted resize-none transition-all outline-none"
               disabled={false}

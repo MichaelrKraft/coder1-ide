@@ -68,6 +68,7 @@ interface ChatRequest {
   sessionId?: string;
   enableMemoryInjection?: boolean; // Toggle for memory injection
   terminalContext?: string; // Recent terminal output for Johnny5 awareness
+  crewContext?: { name: string; promptPrefix: string }; // Active crew member persona
 }
 
 interface MemoryUsed {
@@ -359,7 +360,7 @@ export async function POST(
       );
     }
 
-    const { message, sessionId, enableMemoryInjection = true, terminalContext } = body;
+    const { message, sessionId, enableMemoryInjection = true, terminalContext, crewContext } = body;
 
     // Track reasoning steps for transparency
     const reasoningSteps: string[] = [];
@@ -762,6 +763,14 @@ export async function POST(
         preview: terminalContext.substring(0, 100),
       });
       reasoningSteps.push('Including terminal context');
+    }
+
+    // Add active crew member context when user explicitly activated one via Crew Panel
+    if (crewContext && typeof crewContext === 'object' && crewContext.name && crewContext.promptPrefix) {
+      contextParts.push(
+        `## Active Crew Member: ${crewContext.name}\nThe user has explicitly activated the ${crewContext.name} crew persona. Channel this persona for your response:\n${crewContext.promptPrefix}`
+      );
+      reasoningSteps.push(`Crew member active: ${crewContext.name}`);
     }
 
     if (contextParts.length > 0) {
