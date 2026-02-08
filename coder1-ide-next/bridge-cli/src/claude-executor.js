@@ -25,9 +25,9 @@ class ClaudeExecutor extends EventEmitter {
     super();
 
     this.verbose = options.verbose || false;
-    // FIXED (Feb 2, 2026): Increased from 120s to 720s (12 min) so interactive sessions last 1 hour
-    // Interactive timeout = maxTimeout × 5 = 3600s = 1 hour
-    this.maxTimeout = options.maxTimeout || 720000; // 12 minutes (×5 = 1 hour for interactive)
+    // Interactive inactivity timeout = maxTimeout × 5
+    // 4320000 × 5 = 21600000ms = 6 hours of true inactivity before session is killed
+    this.maxTimeout = options.maxTimeout || 4320000; // 72 minutes (×5 = 6 hours for interactive)
 
     // FIXED (Dec 12, 2025): Resolve full path to claude at startup
     // node-pty requires absolute path or binary in PATH - doesn't use shell resolution
@@ -332,15 +332,38 @@ class ClaudeExecutor extends EventEmitter {
           }
         });
 
-        // Store session for input routing
-        this.activeSessions.set(commandId, ptyProcess);
-
         let outputBuffer = '';
         let hasExited = false;
+
+        // Resettable inactivity timer — resets on user input and PTY output
+        const interactiveTimeoutMs = this.maxTimeout * 5; // 720000 * 5 = 3600000ms = 1 hour
+        let inactivityTimer = null;
+
+        const resetInactivityTimer = () => {
+          if (hasExited) return;
+          if (inactivityTimer) clearTimeout(inactivityTimer);
+          inactivityTimer = setTimeout(() => {
+            if (!hasExited) {
+              const timeoutMinutes = Math.round(interactiveTimeoutMs / 60000);
+              this.warn(`Interactive session timeout after ${timeoutMinutes} minutes of inactivity, ending session...`);
+              this.warn(`Claude path: ${this.claudePath}`);
+              this.warn('');
+              this.warn('The session was idle for too long. Start a new session to continue.');
+              ptyProcess.kill();
+            }
+          }, interactiveTimeoutMs);
+        };
+
+        // Store session for input routing (includes resetTimer for writeToSession)
+        this.activeSessions.set(commandId, { ptyProcess, resetInactivityTimer });
+
+        // Start the inactivity timer
+        resetInactivityTimer();
 
         // Handle PTY output
         ptyProcess.onData((data) => {
           outputBuffer += data;
+          resetInactivityTimer(); // Claude responding = session is active
 
           if (options.onData) {
             options.onData(data);
@@ -356,8 +379,9 @@ class ClaudeExecutor extends EventEmitter {
 
           const duration = Date.now() - startTime;
 
-          // Clean up session
+          // Clean up session and timer
           this.activeSessions.delete(commandId);
+          if (inactivityTimer) clearTimeout(inactivityTimer);
 
           this.log(`Interactive process exited with code ${exitCode} after ${duration}ms`);
 
@@ -372,25 +396,6 @@ class ClaudeExecutor extends EventEmitter {
             interactive: true,
             error: exitCode !== 0 ? 'Command failed' : null
           });
-        });
-
-        // Set timeout for interactive sessions (1 hour max inactivity)
-        // FIXED (Feb 2, 2026): Increased from 10 min to 1 hour for alpha launch
-        const interactiveTimeoutMs = this.maxTimeout * 5; // 720000 * 5 = 3600000ms = 1 hour
-        const timeout = setTimeout(() => {
-          if (!hasExited) {
-            const timeoutMinutes = Math.round(interactiveTimeoutMs / 60000);
-            this.warn(`Interactive session timeout after ${timeoutMinutes} minutes of inactivity, ending session...`);
-            this.warn(`Claude path: ${this.claudePath}`);
-            this.warn('');
-            this.warn('The session was idle for too long. Start a new session to continue.');
-            ptyProcess.kill();
-          }
-        }, interactiveTimeoutMs);
-
-        // Clear timeout on exit
-        ptyProcess.onExit(() => {
-          clearTimeout(timeout);
         });
 
         // Notify that interactive session has started
@@ -440,9 +445,10 @@ class ClaudeExecutor extends EventEmitter {
    * Send input to an active interactive session
    */
   writeToSession(commandId, data) {
-    const ptyProcess = this.activeSessions.get(commandId);
-    if (ptyProcess) {
-      ptyProcess.write(data);
+    const session = this.activeSessions.get(commandId);
+    if (session) {
+      session.ptyProcess.write(data);
+      session.resetInactivityTimer(); // User input resets the inactivity timer
       return true;
     }
     return false;
@@ -452,9 +458,9 @@ class ClaudeExecutor extends EventEmitter {
    * Resize an active interactive session
    */
   resizeSession(commandId, cols, rows) {
-    const ptyProcess = this.activeSessions.get(commandId);
-    if (ptyProcess) {
-      ptyProcess.resize(cols, rows);
+    const session = this.activeSessions.get(commandId);
+    if (session) {
+      session.ptyProcess.resize(cols, rows);
       return true;
     }
     return false;
@@ -464,9 +470,9 @@ class ClaudeExecutor extends EventEmitter {
    * Kill an active interactive session
    */
   killSession(commandId) {
-    const ptyProcess = this.activeSessions.get(commandId);
-    if (ptyProcess) {
-      ptyProcess.kill();
+    const session = this.activeSessions.get(commandId);
+    if (session) {
+      session.ptyProcess.kill();
       this.activeSessions.delete(commandId);
       return true;
     }
