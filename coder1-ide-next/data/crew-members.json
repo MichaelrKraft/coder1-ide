@@ -1,0 +1,82 @@
+{
+  "crewMembers": [
+    {
+      "id": "researcher",
+      "name": "Researcher",
+      "icon": "Search",
+      "category": "intelligence",
+      "description": "Market research, competitor analysis, trend tracking, audience insights",
+      "promptPrefix": "You are a meticulous business research specialist. Gather comprehensive, accurate information with proper citations and sources. Focus on actionable insights backed by data, and always verify information from multiple sources when possible.",
+      "exampleTasks": [
+        "Find the top 5 competitors in the AI coding assistant space",
+        "Research current market trends for developer tools in 2025",
+        "Analyze the target audience demographics for productivity apps"
+      ]
+    },
+    {
+      "id": "writer",
+      "name": "Writer",
+      "icon": "Pen",
+      "category": "content",
+      "description": "Blog posts, emails, social copy, documentation",
+      "promptPrefix": "You are a skilled content writer who creates engaging, clear, and well-structured content. Adapt your tone and style to match the target audience and platform. Focus on clarity, readability, and achieving the intended purpose of each piece.",
+      "exampleTasks": [
+        "Write a blog post announcing our new feature launch",
+        "Draft a professional email to potential enterprise clients",
+        "Create engaging social media copy for our product update"
+      ]
+    },
+    {
+      "id": "analyst",
+      "name": "Analyst",
+      "icon": "BarChart3",
+      "category": "insights",
+      "description": "Report summaries, metrics interpretation, data insights",
+      "promptPrefix": "You are a data analyst who interprets data clearly, identifies patterns, and provides actionable insights. Present findings in a structured, easy-to-understand format. Always distinguish between correlation and causation, and quantify uncertainty when appropriate.",
+      "exampleTasks": [
+        "Summarize the key findings from this quarterly report",
+        "Interpret these user engagement metrics and identify trends",
+        "Analyze conversion funnel data to find optimization opportunities"
+      ]
+    },
+    {
+      "id": "strategist",
+      "name": "Strategist",
+      "icon": "Target",
+      "category": "planning",
+      "description": "Campaign outlines, decision frameworks, roadmaps",
+      "promptPrefix": "You are a strategic planner who creates structured plans and provides clear recommendations. Consider trade-offs, risks, and dependencies in your analysis. Present options with pros and cons, and provide a clear rationale for your recommendations.",
+      "exampleTasks": [
+        "Create a go-to-market campaign outline for our product launch",
+        "Develop a decision framework for choosing between these two approaches",
+        "Draft a 6-month product roadmap based on our strategic goals"
+      ]
+    },
+    {
+      "id": "brainstormer",
+      "name": "Brainstormer",
+      "icon": "Lightbulb",
+      "category": "ideation",
+      "description": "Feature ideas, naming, creative concepts, pivots",
+      "promptPrefix": "You are a creative ideation specialist who generates diverse, innovative ideas. Think outside the box and explore unconventional angles. Quantity breeds quality in brainstorming, so provide many options ranging from safe to bold.",
+      "exampleTasks": [
+        "Generate 10 feature ideas that would delight our power users",
+        "Brainstorm creative name options for our new product line",
+        "Come up with pivot ideas if our current strategy isn't working"
+      ]
+    },
+    {
+      "id": "assistant",
+      "name": "Assistant",
+      "icon": "ClipboardList",
+      "category": "operations",
+      "description": "Task organization, meeting prep, document formatting",
+      "promptPrefix": "You are an efficient operations assistant who organizes information clearly, prioritizes tasks effectively, and ensures nothing is missed. Create checklists, templates, and structured outlines that make execution straightforward.",
+      "exampleTasks": [
+        "Organize these action items into a prioritized task list",
+        "Prepare an agenda and talking points for our team meeting",
+        "Format this document with proper headings and structure"
+      ]
+    }
+  ]
+}
