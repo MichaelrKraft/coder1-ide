@@ -4,6 +4,8 @@ import React, { useRef, useEffect, useState, useMemo, useCallback } from 'react'
 import dynamic from 'next/dynamic';
 import type * as monaco from 'monaco-editor';
 import { WelcomeScreen } from './WelcomeScreen';
+import { useCollaborativeEditor } from '@/lib/hooks/useCollaborativeEditor';
+import { getUserColor } from '@/lib/collab-user-colors';
 
 // Dynamically import HeroSection to avoid SSR issues
 // Using a wrapper to prevent removeChild errors during unmount
@@ -67,9 +69,19 @@ interface MonacoEditorProps {
   onMount?: (editor: monaco.editor.IStandaloneCodeEditor) => void;
   file?: string | null;
   onTourStart?: () => void;
+  /** Whether collaborative editing is enabled */
+  collaborationEnabled?: boolean;
+  /** Team ID for collaborative editing */
+  teamId?: string | null;
+  /** User ID for cursor display */
+  userId?: string;
+  /** User display name for cursor label */
+  userName?: string;
+  /** Whether the file is still loading from server */
+  isFileLoading?: boolean;
 }
 
-export default function MonacoEditor({ 
+export default function MonacoEditor({
   value,
   language = 'typescript',
   theme = 'vs-dark',
@@ -77,13 +89,22 @@ export default function MonacoEditor({
   onChange,
   onMount,
   file,
-  onTourStart
+  onTourStart,
+  collaborationEnabled = false,
+  teamId = null,
+  userId = '',
+  userName = '',
+  isFileLoading = false,
 }: MonacoEditorProps) {
   const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
+  const monacoRef = useRef<typeof monaco | null>(null);
   const lastFileRef = useRef<string | null>(null);
   const lastValueRef = useRef<string | undefined>(undefined);
   const [setupViewed, setSetupViewed] = useState<boolean | null>(null);
   const [heroSectionDismissed, setHeroSectionDismissed] = useState<boolean | null>(null);
+
+  // C1 FIX: Shared ref that blocks setValue() when Yjs is managing content
+  const collabActiveRef = useRef(false);
 
   // Removed CDN configuration - using Monaco's default loading
 
@@ -138,7 +159,9 @@ export default function MonacoEditor({
   // Update editor value when file content loads (after mount)
   useEffect(() => {
     if (!editorRef.current || !value) return;
-    
+    // C1 FIX: Skip setValue when Yjs is managing content
+    if (collabActiveRef.current) return;
+
     // Only update if this is actual file content (not placeholder)
     if (value !== lastValueRef.current && value.length > 100) {
       try {
@@ -161,13 +184,13 @@ export default function MonacoEditor({
   // Listen for tour events and session refresh events
   useEffect(() => {
     const handleTourAddCode = (event: CustomEvent) => {
-      if (editorRef.current && event.detail?.code) {
+      if (editorRef.current && event.detail?.code && !collabActiveRef.current) {
         editorRef.current.setValue(event.detail.code);
       }
     };
 
     const handleTourClearCode = () => {
-      if (editorRef.current) {
+      if (editorRef.current && !collabActiveRef.current) {
         editorRef.current.setValue('');
       }
     };
@@ -197,18 +220,22 @@ export default function MonacoEditor({
     };
   }, []);
 
-  const handleEditorDidMount = (editor: any, monaco: any) => {
+  const handleEditorDidMount = (editor: any, monacoInstance: any) => {
     editorRef.current = editor;
-    
+    monacoRef.current = monacoInstance;
+
     // CRITICAL: Set initial value when editor mounts
-    const computedValue = value !== undefined ? value : getFileContent(file || null);
-    if (computedValue && editor) {
-      try {
-        editor.setValue(computedValue);
-        lastValueRef.current = computedValue;
-        lastFileRef.current = file;
-      } catch (error) {
-        console.error('[MonacoEditor] Failed to set initial value:', error);
+    // C1 FIX: Skip if Yjs is already managing content
+    if (!collabActiveRef.current) {
+      const computedValue = value !== undefined ? value : getFileContent(file || null);
+      if (computedValue && editor) {
+        try {
+          editor.setValue(computedValue);
+          lastValueRef.current = computedValue;
+          lastFileRef.current = file;
+        } catch (error) {
+          console.error('[MonacoEditor] Failed to set initial value:', error);
+        }
       }
     }
     
@@ -218,7 +245,7 @@ export default function MonacoEditor({
     }
     
     // Configure Monaco theme to match our IDE
-    monaco.editor.defineTheme('coder1-dark', {
+    monacoInstance.editor.defineTheme('coder1-dark', {
       base: 'vs-dark',
       inherit: true,
       rules: [
@@ -252,7 +279,7 @@ export default function MonacoEditor({
       },
     });
     
-    monaco.editor.setTheme('coder1-dark');
+    monacoInstance.editor.setTheme('coder1-dark');
     
     // Configure editor options
     editor.updateOptions({
@@ -314,15 +341,30 @@ export default function MonacoEditor({
   const editorValue = useMemo(() => {
     return value !== undefined ? value : getFileContent(file || null);
   }, [value, file]);
-  
+
   const editorLanguage = useMemo(() => {
     return language || (file ? getLanguage(file) : 'javascript');
   }, [language, file]);
 
-  // Stable key for editor instance to prevent removeChild errors
+  // C3 FIX: Stable key — file REMOVED to prevent editor remount/Yjs destruction on file switch
   const editorKey = useMemo(() => {
-    return `editor-${file || 'welcome'}-${heroSectionDismissed ? 'dismissed' : 'active'}`;
-  }, [file, heroSectionDismissed]);
+    return `editor-${heroSectionDismissed ? 'dismissed' : 'active'}`;
+  }, [heroSectionDismissed]);
+
+  // Collaborative editing hook
+  const collabUserColor = useMemo(() => userId ? getUserColor(userId) : '#00D9FF', [userId]);
+  const { isConnected: collabConnected, isSyncing: collabSyncing, connectedUsers, error: collabError } = useCollaborativeEditor({
+    fileId: file || null,
+    editorRef,
+    monacoRef,
+    teamId: teamId || null,
+    userId: userId || 'local-user',
+    userName: userName || 'You',
+    userColor: collabUserColor,
+    isFileLoading,
+    enabled: collaborationEnabled && !!file,
+    collabActiveRef,
+  });
 
   // Show welcome screen or hero section if no file is open and no value provided
   if (!file && value === undefined) {
@@ -397,6 +439,29 @@ export default function MonacoEditor({
 
   return (
     <div key={editorKey} className="h-full w-full monaco-editor-container relative">
+      {/* Collaborative editing status indicator */}
+      {collaborationEnabled && connectedUsers.length > 0 && (
+        <div className="absolute top-2 right-14 z-10 flex items-center gap-1 px-2 py-1 bg-bg-secondary/80 backdrop-blur-sm rounded-full border border-border-default text-xs">
+          {connectedUsers.slice(0, 3).map((user) => (
+            <div
+              key={user.userId}
+              className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold text-white"
+              style={{ backgroundColor: user.color }}
+              title={user.userName}
+            >
+              {user.userName.charAt(0).toUpperCase()}
+            </div>
+          ))}
+          {connectedUsers.length > 3 && (
+            <span className="text-text-muted ml-1">+{connectedUsers.length - 3}</span>
+          )}
+        </div>
+      )}
+      {collaborationEnabled && collabSyncing && (
+        <div className="absolute top-2 right-14 z-10 px-2 py-1 bg-bg-secondary/80 backdrop-blur-sm rounded-full border border-border-default text-xs text-text-muted">
+          Syncing...
+        </div>
+      )}
       <Editor
         height="100%"
         defaultLanguage="typescript"

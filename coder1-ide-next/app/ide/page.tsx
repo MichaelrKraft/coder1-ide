@@ -235,7 +235,11 @@ function IDEPageContent() {
 
   // Mission Control state
   const [missionControlActive, setMissionControlActive] = useState(false);
-  
+
+  // Collaborative editing: reactive reads from auth + team stores
+  const authUser = useAuthStore((s) => s.user);
+  const syncTeam = useTeamStore((s) => s.syncTeam);
+
   // Editor state
   const [activeFile, setActiveFile] = useState<string | null>(null);
   const [files, setFiles] = useState<Record<string, string>>({});
@@ -1747,6 +1751,11 @@ function IDEPageContent() {
                             theme="tokyo-night"
                             fontSize={fontSize}
                             onTourStart={() => setShowTour(true)}
+                            collaborationEnabled={!!syncTeam}
+                            teamId={syncTeam?.id || null}
+                            userId={authUser?.id || ''}
+                            userName={authUser?.username || ''}
+                            isFileLoading={activeFile ? loadingFiles.has(activeFile) : false}
                           />
                         </div>
                       </Panel>
