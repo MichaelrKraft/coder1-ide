@@ -283,7 +283,7 @@ export default function MonacoEditor({
   // Support both file-based and value-based content
   const getFileContent = (filePath: string | null) => {
     if (!filePath) {
-      return '// Welcome to Coder1 IDE\n// Open a file to start coding';
+      return '// Coder1 IDE — Code Viewer\n// Use the terminal to run Claude Code';
     }
     
     if (filePath.endsWith('.tsx')) {
@@ -342,7 +342,7 @@ export default function MonacoEditor({
             height="100%"
             defaultLanguage="typescript"
             language="javascript"
-            value="// Welcome back to Coder1 IDE\n// Open a file or drag & drop files to start coding\n// Type 'claude' in the terminal below to start Claude Code\n"
+            value="// Coder1 IDE — Code Viewer\n// This panel displays code from Claude Code sessions\n// Use the terminal below to run Claude Code commands\n// Drag & drop files here to preview them\n"
             theme={theme}
             onMount={handleEditorDidMount}
             onChange={onChange}

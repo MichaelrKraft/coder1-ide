@@ -1,5 +1,6 @@
 import Database from 'better-sqlite3';
 import { readFileSync } from 'fs';
+import { randomBytes } from 'crypto';
 import path from 'path';
 
 // Database singleton instance
@@ -14,8 +15,10 @@ export function getAuthDatabase(): Database.Database {
       verbose: process.env.NODE_ENV === 'development' ? console.log : undefined
     });
 
-    // Enable foreign keys
+    // Enable foreign keys and WAL mode for concurrent access
     db.exec('PRAGMA foreign_keys = ON');
+    db.exec('PRAGMA journal_mode = WAL');
+    db.exec('PRAGMA busy_timeout = 5000');
     
     // Initialize schema if needed
     initializeSchema();
@@ -68,6 +71,18 @@ function initializeSchema() {
       // OAuth schema is optional
     }
 
+    // Always try to create team tables (they have IF NOT EXISTS)
+    try {
+      const teamSchemaPath = path.join(process.cwd(), 'db', 'team-schema.sql');
+      const teamSchema = readFileSync(teamSchemaPath, 'utf-8');
+      db.exec(teamSchema);
+    } catch (err) {
+      // Team schema is optional - log but don't throw
+      if (err instanceof Error && !err.message.includes('already exists')) {
+        console.warn('[Auth DB] Team schema load warning:', err.message);
+      }
+    }
+
     // Migrate: Add Johnny5 tier tracking columns if they don't exist
     migrateJohnny5TierColumns();
   } catch (error) {
@@ -102,7 +117,7 @@ function migrateJohnny5TierColumns() {
   try {
     db.prepare('SELECT message_count_reset_at FROM users LIMIT 1').get();
   } catch {
-    db.exec("ALTER TABLE users ADD COLUMN message_count_reset_at DATETIME DEFAULT CURRENT_TIMESTAMP");
+    db.exec("ALTER TABLE users ADD COLUMN message_count_reset_at DATETIME DEFAULT NULL");
   }
 }
 
@@ -218,6 +233,15 @@ export function getSessionByToken(token: string): AuthSession | undefined {
   
   const stmt = db.prepare('SELECT * FROM auth_sessions WHERE token = ?');
   return stmt.get(token) as AuthSession | undefined;
+}
+
+export function refreshSessionToken(refreshToken: string, newAccessToken: string, newExpiresAt: Date): AuthSession | undefined {
+  const db = getAuthDatabase();
+
+  const stmt = db.prepare(
+    'UPDATE auth_sessions SET token = ?, expires_at = ? WHERE refresh_token = ? RETURNING *'
+  );
+  return stmt.get(newAccessToken, newExpiresAt.toISOString(), refreshToken) as AuthSession | undefined;
 }
 
 export function deleteSession(token: string): void {
@@ -599,4 +623,156 @@ export function getUserByStripeCustomerId(stripeCustomerId: string): User | unde
 
   const stmt = db.prepare('SELECT * FROM users WHERE stripe_customer_id = ?');
   return stmt.get(stripeCustomerId) as User | undefined;
+}
+
+// ===========================================
+// Team Knowledge Sync
+// ===========================================
+
+export interface Team {
+  id: string;
+  name: string;
+  slug: string;
+  owner_id: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface TeamMember {
+  id: string;
+  team_id: string;
+  user_id: string;
+  role: 'owner' | 'admin' | 'member';
+  joined_at: string;
+}
+
+export interface TeamInvitation {
+  id: string;
+  team_id: string;
+  email: string;
+  invited_by: string;
+  token: string;
+  status: 'pending' | 'accepted' | 'expired';
+  expires_at: string;
+  created_at: string;
+}
+
+export function createTeam(name: string, slug: string, ownerId: string): Team {
+  const db = getAuthDatabase();
+
+  const team = db.prepare(`
+    INSERT INTO teams (name, slug, owner_id)
+    VALUES (?, ?, ?)
+    RETURNING *
+  `).get(name, slug, ownerId) as Team;
+
+  // Add owner as team member with 'owner' role
+  db.prepare(`
+    INSERT INTO team_members (team_id, user_id, role)
+    VALUES (?, ?, 'owner')
+  `).run(team.id, ownerId);
+
+  return team;
+}
+
+export function getTeamById(id: string): Team | undefined {
+  const db = getAuthDatabase();
+
+  const stmt = db.prepare('SELECT * FROM teams WHERE id = ?');
+  return stmt.get(id) as Team | undefined;
+}
+
+export function getTeamBySlug(slug: string): Team | undefined {
+  const db = getAuthDatabase();
+
+  const stmt = db.prepare('SELECT * FROM teams WHERE slug = ?');
+  return stmt.get(slug) as Team | undefined;
+}
+
+export function getUserTeams(userId: string): Team[] {
+  const db = getAuthDatabase();
+
+  const stmt = db.prepare(`
+    SELECT t.* FROM teams t
+    JOIN team_members tm ON t.id = tm.team_id
+    WHERE tm.user_id = ?
+    ORDER BY t.updated_at DESC
+  `);
+  return stmt.all(userId) as Team[];
+}
+
+export function addTeamMember(teamId: string, userId: string, role: string): void {
+  const db = getAuthDatabase();
+
+  db.prepare(`
+    INSERT INTO team_members (team_id, user_id, role)
+    VALUES (?, ?, ?)
+  `).run(teamId, userId, role);
+}
+
+export function removeTeamMember(teamId: string, userId: string): void {
+  const db = getAuthDatabase();
+
+  db.prepare(`
+    DELETE FROM team_members WHERE team_id = ? AND user_id = ?
+  `).run(teamId, userId);
+}
+
+export function getTeamMembers(teamId: string): (User & { role: string })[] {
+  const db = getAuthDatabase();
+
+  const stmt = db.prepare(`
+    SELECT u.*, tm.role FROM users u
+    JOIN team_members tm ON u.id = tm.user_id
+    WHERE tm.team_id = ?
+    ORDER BY tm.joined_at ASC
+  `);
+  return stmt.all(teamId) as (User & { role: string })[];
+}
+
+export function createTeamInvitation(teamId: string, email: string, invitedBy: string): TeamInvitation {
+  const db = getAuthDatabase();
+
+  const token = randomBytes(32).toString('hex');
+
+  // Expires in 7 days
+  const expiresAt = new Date();
+  expiresAt.setDate(expiresAt.getDate() + 7);
+
+  const stmt = db.prepare(`
+    INSERT INTO team_invitations (team_id, email, invited_by, token, expires_at)
+    VALUES (?, ?, ?, ?, ?)
+    RETURNING *
+  `);
+
+  return stmt.get(teamId, email, invitedBy, token, expiresAt.toISOString()) as TeamInvitation;
+}
+
+export function getTeamInvitationByToken(token: string): TeamInvitation | undefined {
+  const db = getAuthDatabase();
+
+  const stmt = db.prepare('SELECT * FROM team_invitations WHERE token = ?');
+  return stmt.get(token) as TeamInvitation | undefined;
+}
+
+export function acceptTeamInvitation(token: string, userId: string): void {
+  const db = getAuthDatabase();
+
+  // Find valid, non-expired, pending invitation
+  const invitation = db.prepare(`
+    SELECT * FROM team_invitations
+    WHERE token = ? AND status = 'pending' AND expires_at > CURRENT_TIMESTAMP
+  `).get(token) as TeamInvitation | undefined;
+
+  if (!invitation) {
+    throw new Error('Invalid or expired invitation');
+  }
+
+  // Update invitation status
+  db.prepare(`
+    UPDATE team_invitations SET status = 'accepted' WHERE token = ?
+  `).run(token);
+
+  // Add user as team member
+  addTeamMember(invitation.team_id, userId, 'member');
 }
