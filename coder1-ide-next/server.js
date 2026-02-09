@@ -519,6 +519,9 @@ const memoryDebounceTimers = new Map(); // sessionId -> timer reference
 // Team presence tracking: teamId -> Map<userId, { userId, username, sockets: Set<socketId> }>
 const teamPresence = new Map();
 
+// Collaborative editing document state: fileId -> { updates[], userCount, lastActivity, cleanupTimer }
+const collabDocs = new Map();
+
 function broadcastPresence(teamId) {
   const members = teamPresence.get(teamId);
   const onlineList = members
@@ -1216,7 +1219,13 @@ app.prepare().then(() => {
       const cleanParsedUrl = parse(req.url, true);
       return handle(req, res, cleanParsedUrl);
     }
-    
+
+    // OAuth routes must bypass custom server handling and reach Next.js App Router
+    if (pathname?.startsWith('/api/v2/auth/')) {
+      console.log(`🔐 Delegating OAuth route to Next.js App Router: ${pathname}`);
+      return handle(req, res, parsedUrl);
+    }
+
     // Alpha validation for protected routes
     if (isAlphaMode && (pathname === '/' || pathname === '/ide' || pathname?.startsWith('/api/claude'))) {
       if (!validateAlphaAccess(req, res)) {
@@ -1896,6 +1905,172 @@ app.prepare().then(() => {
         ? Array.from(members.values()).map(m => ({ userId: m.userId, username: m.username }))
         : [];
       socket.emit('team:presence:update', { teamId, online: onlineList });
+    });
+
+    // ===============================================
+    // COLLABORATIVE EDITING (Yjs)
+    // ===============================================
+
+    // Per-socket rate limiting for collab events
+    const collabRateEntry = { count: 0, resetTime: Date.now() + 60000 };
+
+    function checkCollabRate(limit = 300) {
+      const now = Date.now();
+      if (now > collabRateEntry.resetTime) {
+        collabRateEntry.count = 1;
+        collabRateEntry.resetTime = now + 60000;
+        return true;
+      }
+      if (++collabRateEntry.count > limit) {
+        socket.emit('collab:error', { code: 429, message: 'Too many events' });
+        return false;
+      }
+      return true;
+    }
+
+    function validateCollabAuth(teamId) {
+      // In development, allow if user has team presence set
+      if (!socket._teamPresence) {
+        socket.emit('collab:error', { code: 401, message: 'Join a team first' });
+        return false;
+      }
+      // Verify claimed teamId matches socket's team
+      if (socket._teamPresence.teamId !== teamId) {
+        socket.emit('collab:error', { code: 403, message: 'Team mismatch' });
+        return false;
+      }
+      // Verify user is actually in the team presence map
+      const members = teamPresence.get(teamId);
+      if (!members || !members.has(socket._teamPresence.userId)) {
+        socket.emit('collab:error', { code: 403, message: 'Not a team member' });
+        return false;
+      }
+      return true;
+    }
+
+    // Join a collaborative editing room for a file
+    socket.on('collab:join', ({ fileId, teamId }) => {
+      if (!checkCollabRate()) return;
+      if (!fileId) return;
+      // Allow joining without team for single-user editing (no auth required)
+      if (teamId && !validateCollabAuth(teamId)) return;
+
+      const room = `collab:${fileId}`;
+      socket.join(room);
+      socket._collabSession = { fileId, teamId };
+
+      if (!collabDocs.has(fileId)) {
+        collabDocs.set(fileId, { updates: [], userCount: 0, lastActivity: Date.now(), cleanupTimer: null });
+      }
+      const doc = collabDocs.get(fileId);
+      doc.userCount++;
+      doc.lastActivity = Date.now();
+
+      // Clear any pending cleanup timer
+      if (doc.cleanupTimer) {
+        clearTimeout(doc.cleanupTimer);
+        doc.cleanupTimer = null;
+      }
+
+      // Send existing updates to late joiner
+      if (doc.updates.length > 0) {
+        socket.emit('y:sync-response', { fileId, updates: doc.updates });
+      }
+
+      // Notify room
+      const userId = socket._teamPresence?.userId || socket.id;
+      const userName = socket._teamPresence?.username || 'Anonymous';
+      socket.to(room).emit('collab:user-joined', { userId, userName });
+
+      console.log(`[COLLAB] ${userId} joined ${room} (${doc.userCount} users)`);
+    });
+
+    // Leave a collaborative editing room
+    socket.on('collab:leave', ({ fileId }) => {
+      if (!socket._collabSession || socket._collabSession.fileId !== fileId) return;
+
+      const room = `collab:${fileId}`;
+      socket.leave(room);
+
+      if (collabDocs.has(fileId)) {
+        const doc = collabDocs.get(fileId);
+        doc.userCount = Math.max(0, doc.userCount - 1);
+
+        // Schedule cleanup if room is empty
+        if (doc.userCount <= 0 && !doc.cleanupTimer) {
+          doc.cleanupTimer = setTimeout(() => {
+            const current = collabDocs.get(fileId);
+            if (current && current.userCount <= 0) {
+              collabDocs.delete(fileId);
+              console.log(`[COLLAB] Cleaned up empty doc: ${fileId}`);
+            }
+          }, 5 * 60 * 1000); // 5 min cleanup delay
+        }
+      }
+
+      const userId = socket._teamPresence?.userId || socket.id;
+      socket.to(room).emit('collab:user-left', { userId });
+      socket._collabSession = null;
+    });
+
+    // Yjs document update relay
+    socket.on('y:update', ({ fileId, update }) => {
+      if (!checkCollabRate()) return;
+      if (!socket._collabSession || socket._collabSession.fileId !== fileId) return;
+
+      // Size guard
+      if (update && update.length > 512 * 1024) {
+        socket.emit('collab:error', { code: 413, message: 'Update too large' });
+        return;
+      }
+
+      // Broadcast to room (excluding sender)
+      socket.to(`collab:${fileId}`).emit('y:update', {
+        update,
+        senderId: socket.id,
+        timestamp: Date.now(),
+      });
+
+      // Store for late joiners
+      if (collabDocs.has(fileId)) {
+        const doc = collabDocs.get(fileId);
+        doc.updates.push(update);
+        doc.lastActivity = Date.now();
+
+        // Prune stored updates to prevent unbounded growth
+        if (doc.updates.length > 200) {
+          // Keep only the last 100 updates (simple pruning without Y.mergeUpdates on server)
+          doc.updates = doc.updates.slice(-100);
+        }
+      }
+    });
+
+    // Yjs awareness relay (cursor positions, selections)
+    socket.on('y:awareness', ({ fileId, state }) => {
+      if (!checkCollabRate(600)) return; // Higher limit for awareness
+      if (!socket._collabSession || socket._collabSession.fileId !== fileId) return;
+
+      socket.to(`collab:${fileId}`).emit('y:awareness', {
+        clientId: socket.id,
+        userId: socket._teamPresence?.userId || socket.id,
+        userName: socket._teamPresence?.username || 'Anonymous',
+        state,
+        timestamp: Date.now(),
+      });
+    });
+
+    // Sync request (for reconnecting clients)
+    socket.on('y:sync-request', ({ fileId }) => {
+      if (!socket._collabSession) return;
+      if (collabDocs.has(fileId)) {
+        socket.emit('y:sync-response', {
+          fileId,
+          updates: collabDocs.get(fileId).updates,
+        });
+      } else {
+        // No stored state — signal synced with empty updates
+        socket.emit('y:sync-response', { fileId, updates: [] });
+      }
     });
 
     let currentSessionId = null;
@@ -3431,6 +3606,26 @@ app.prepare().then(() => {
       
       // Clean up socket-to-session mapping
       socketToSession.delete(socket.id);
+
+      // Clean up collaborative editing on disconnect
+      if (socket._collabSession) {
+        const { fileId } = socket._collabSession;
+        const userId = socket._teamPresence?.userId || socket.id;
+        socket.to(`collab:${fileId}`).emit('collab:user-left', { userId });
+        if (collabDocs.has(fileId)) {
+          const doc = collabDocs.get(fileId);
+          doc.userCount = Math.max(0, doc.userCount - 1);
+          if (doc.userCount <= 0 && !doc.cleanupTimer) {
+            doc.cleanupTimer = setTimeout(() => {
+              const current = collabDocs.get(fileId);
+              if (current && current.userCount <= 0) {
+                collabDocs.delete(fileId);
+                console.log(`[COLLAB] Cleaned up on disconnect: ${fileId}`);
+              }
+            }, 5 * 60 * 1000);
+          }
+        }
+      }
 
       // Clean up team presence on disconnect
       if (socket._teamPresence) {
