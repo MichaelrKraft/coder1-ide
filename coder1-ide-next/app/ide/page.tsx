@@ -2,12 +2,13 @@
 
 import React, { useState, useEffect, useRef, useCallback, useMemo, Suspense } from "react";
 import dynamic from "next/dynamic";
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { loadComponentForEditor } from '@/lib/component-formatter';
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import InteractiveTour from "@/components/InteractiveTour";
 import SettingsModal from "@/components/SettingsModal";
 import KeyboardShortcutsModal from "@/components/KeyboardShortcutsModal";
+import TeamPanel from "@/components/team/TeamPanel";
 import { MenuActionsService, FileInfo } from '@/lib/services/menu-actions';
 import type { editor } from 'monaco-editor';
 import { filterThinkingAnimations } from '@/lib/checkpoint-utils';
@@ -62,15 +63,22 @@ import { TerminalCommandProvider } from "@/contexts/TerminalCommandContext";
 
 // Import auto-checkpoint hook
 import { useAutoCheckpoint } from "@/lib/hooks/useAutoCheckpoint";
+import { useAuth } from "@/lib/hooks/useAuth";
+import { useTeamActivityToasts } from "@/lib/hooks/useTeamActivityToasts";
+import { useTeamStore } from "@/stores/useTeamStore";
+import { useAuthStore } from "@/stores/useAuthStore";
 
 function IDEPageContent() {
   // Feature flags
   const FOCUS_MODE_ENABLED = true; // ✅ ENABLED: Focus mode feature is now active
-  
+
+  // Team activity push notifications
+  useTeamActivityToasts();
+
   // Tour state
   const [showTour, setShowTour] = useState(false);
   const [showOnboardingOverlay, setShowOnboardingOverlay] = useState(false);
-  
+
   // 🌉 Bridge setup check - redirect first-time users to /alpha
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -215,6 +223,14 @@ function IDEPageContent() {
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [showKeyboardShortcuts, setShowKeyboardShortcuts] = useState(false);
   const [showQuickDocs, setShowQuickDocs] = useState(false);
+  const [showTeamPanel, setShowTeamPanel] = useState(false);
+
+  // Listen for openTeamPanel events from status bar
+  useEffect(() => {
+    const handler = () => setShowTeamPanel(prev => !prev);
+    window.addEventListener('openTeamPanel', handler);
+    return () => window.removeEventListener('openTeamPanel', handler);
+  }, []);
   const [fontSize, setFontSize] = useState(14);
 
   // Mission Control state
@@ -275,8 +291,10 @@ function IDEPageContent() {
     if (savedFiles) {
       try {
         const parsedFiles = JSON.parse(savedFiles);
-        setFiles(parsedFiles);
-        console.log('✅ Restored', Object.keys(parsedFiles).length, 'open files');
+        if (parsedFiles && typeof parsedFiles === 'object') {
+          setFiles(parsedFiles);
+          console.log('✅ Restored', Object.keys(parsedFiles).length, 'open files');
+        }
       } catch (e) {
         console.warn('Failed to parse saved files:', e);
       }
@@ -581,6 +599,42 @@ function IDEPageContent() {
       },
       getEditorInstance: () => editorRef.current
     });
+  }, []);
+
+  // Auto-sync team knowledge on IDE load and after own pushes
+  useEffect(() => {
+    const team = useTeamStore.getState().syncTeam;
+    if (!team) return;
+
+    // Sync on IDE load
+    useTeamStore.getState().triggerSync();
+
+    let sock: any = null;
+    let cleanupFn: (() => void) | null = null;
+
+    const setup = async () => {
+      const { getSocket } = await import('@/lib/socket');
+      sock = await getSocket();
+      if (!sock) return;
+
+      const handleCodeEvent = (event: any) => {
+        // Only auto-sync on own pushes
+        const currentUser = useAuthStore.getState().user;
+        if (event.type !== 'push' || !currentUser || event.userId !== currentUser.id) return;
+
+        // 30s debounce
+        const lastSync = useTeamStore.getState().syncStatus.lastPushAt;
+        if (lastSync && Date.now() - new Date(lastSync).getTime() < 30000) return;
+
+        useTeamStore.getState().triggerSync();
+      };
+
+      sock.on('team:codeEvent', handleCodeEvent);
+      cleanupFn = () => { sock?.off('team:codeEvent', handleCodeEvent); };
+    };
+
+    setup();
+    return () => { cleanupFn?.(); };
   }, []);
 
   const handleFileDrop = async (files: File[]) => {
@@ -1777,7 +1831,7 @@ function IDEPageContent() {
               <StatusBarCore
                 activeFile={activeFile}
                 isConnected={true} // Connected to terminal
-                openFiles={Object.keys(files).map((path) => ({
+                openFiles={Object.keys(files || {}).map((path) => ({
                   path,
                   name: path.split("/").pop() || path,
                   content: files[path],
@@ -1876,6 +1930,20 @@ function IDEPageContent() {
               onFontSizeChange={setFontSize}
             />
             
+            {/* Team Panel Slide-out — z-index must exceed MenuBar's inline z-index:100 */}
+            {showTeamPanel && (
+              <div className="fixed inset-0 flex justify-end" style={{ zIndex: 110 }}>
+                <div className="absolute inset-0 bg-black/40" onClick={() => setShowTeamPanel(false)} />
+                <div className="relative w-[380px] bg-bg-primary border-l border-border-default shadow-2xl overflow-y-auto">
+                  <button
+                    onClick={() => setShowTeamPanel(false)}
+                    className="absolute top-3 right-3 z-10 text-text-muted hover:text-text-primary text-lg leading-none w-6 h-6 flex items-center justify-center rounded hover:bg-bg-tertiary"
+                  >&times;</button>
+                  <TeamPanel />
+                </div>
+              </div>
+            )}
+
             {/* Keyboard Shortcuts Modal */}
             <KeyboardShortcutsModal
               isOpen={showKeyboardShortcuts}
@@ -1900,10 +1968,38 @@ function IDEPageContent() {
   );
 }
 
+// Auth guard wrapper — keeps hooks rule safe (no useState in IDEPageContent is skipped)
+function AuthGuard({ children }: { children: React.ReactNode }) {
+  const { isLoading, isAuthenticated } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated) {
+      router.push('/login');
+    }
+  }, [isLoading, isAuthenticated, router]);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-screen" style={{ background: '#0a0a0f' }}>
+        <div className="text-[#00D9FF] text-lg">Loading Coder1...</div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return null; // redirect is happening via useEffect
+  }
+
+  return <>{children}</>;
+}
+
 export default function IDEPage() {
   return (
     <Suspense fallback={<div>Loading IDE...</div>}>
-      <IDEPageContent />
+      <AuthGuard>
+        <IDEPageContent />
+      </AuthGuard>
     </Suspense>
   );
 }

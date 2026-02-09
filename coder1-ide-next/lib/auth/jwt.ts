@@ -11,7 +11,7 @@ const REFRESH_TOKEN_EXPIRES_IN = '7d'; // 7 days
 
 // Log warning in development if using generated secrets
 if (process.env.NODE_ENV === 'development' && !process.env.JWT_SECRET) {
-  logger?.warn('⚠️  Using generated JWT secret. Set JWT_SECRET in .env for production');
+  console.warn('⚠️  Using generated JWT secret. Set JWT_SECRET in .env for production');
 }
 
 export interface TokenPayload {

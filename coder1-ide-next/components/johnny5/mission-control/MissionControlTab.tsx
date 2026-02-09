@@ -3,9 +3,11 @@
 import React, { useMemo, useState, useEffect, useCallback } from 'react';
 import {
   Target,
+  Inbox,
   ListTodo,
   Play,
   Eye,
+  AlertCircle,
   CheckCircle2,
   Activity,
   ChevronDown,
@@ -26,7 +28,7 @@ interface MissionControlTabProps {
  * MissionControlTab - Main Kanban view for Johnny5 tasks
  *
  * Features:
- * - 4 column Kanban board: Queued, In Progress, Review, Completed
+ * - 6 column Kanban board: Inbox, Queued, In Progress, Review, Blocked, Completed
  * - Task cards with type, priority, and duration
  * - Collapsible activity log at bottom
  * - Real-time task status updates
@@ -65,9 +67,11 @@ export default function MissionControlTab({ className }: MissionControlTabProps)
   // Group tasks by status
   const tasksByStatus = useMemo(() => {
     const grouped: Record<Johnny5TaskStatus, Johnny5Task[]> = {
+      inbox: [],
       queued: [],
       in_progress: [],
       review: [],
+      blocked: [],
       completed: [],
       failed: [],
     };
@@ -114,6 +118,12 @@ export default function MissionControlTab({ className }: MissionControlTabProps)
     accentColor: string;
   }[] = [
     {
+      status: 'inbox',
+      title: 'Inbox',
+      icon: Inbox,
+      accentColor: 'text-purple-400',
+    },
+    {
       status: 'queued',
       title: 'Queued',
       icon: ListTodo,
@@ -130,6 +140,12 @@ export default function MissionControlTab({ className }: MissionControlTabProps)
       title: 'Review',
       icon: Eye,
       accentColor: 'text-yellow-400',
+    },
+    {
+      status: 'blocked',
+      title: 'Blocked',
+      icon: AlertCircle,
+      accentColor: 'text-red-400',
     },
     {
       status: 'completed',

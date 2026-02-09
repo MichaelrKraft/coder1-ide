@@ -199,10 +199,48 @@ export interface Johnny5PromptInjectionAlert {
 }
 
 // ================================================================================
+// Crew Types (Johnny5 Crew Feature)
+// ================================================================================
+
+export type CrewMemberStatus = 'idle' | 'working' | 'completed';
+
+export interface CrewMember {
+  id: string;
+  name: string;
+  icon: string;
+  category: string;
+  description: string;
+  promptPrefix: string;
+  exampleTasks: string[];
+}
+
+export interface CrewActivityEntry {
+  id: string;
+  crewMember: string;
+  action: 'started' | 'completed' | 'error';
+  message: string;
+  timestamp: Date;
+}
+
+export interface CrewState {
+  members: CrewMember[];
+  activeCrewMember: string | null;
+  crewStatus: Record<string, CrewMemberStatus>;
+  activityFeed: CrewActivityEntry[];
+}
+
+// ================================================================================
 // Mission Control Types (Task Tracking)
 // ================================================================================
 
-export type Johnny5TaskStatus = 'queued' | 'in_progress' | 'review' | 'completed' | 'failed';
+export type Johnny5TaskStatus =
+  | 'inbox'
+  | 'queued'
+  | 'in_progress'
+  | 'review'
+  | 'blocked'
+  | 'completed'
+  | 'failed';
 export type Johnny5TaskType = 'build' | 'research' | 'monitor' | 'fix' | 'create_pr' | 'skill' | 'trend';
 export type Johnny5TaskTrigger = 'user' | 'schedule' | 'trend' | 'self_improvement' | 'conversation';
 
@@ -226,6 +264,9 @@ export interface Johnny5Task {
   };
   reasoning: string;
   triggeredBy: Johnny5TaskTrigger;
+  assignedCrewMember?: string;
+  blockReason?: string;
+  parallelCrewMembers?: string[];
 }
 
 export interface Johnny5ActivityEntry {

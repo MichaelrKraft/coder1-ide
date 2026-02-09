@@ -218,8 +218,39 @@ export async function isGitRepository(cwd?: string): Promise<boolean> {
 export async function getRepositoryName(cwd?: string): Promise<string | null> {
   const remoteUrl = await executeGitCommand('git config --get remote.origin.url', cwd);
   if (!remoteUrl) return null;
-  
+
   // Extract repository name from various URL formats
   const match = remoteUrl.match(/\/([^\/]+)\.git$/) || remoteUrl.match(/\/([^\/]+)$/);
   return match ? match[1] : null;
+}
+
+/**
+ * Detect GitHub org and repo from git remote.
+ * Tries upstream first, falls back to origin.
+ * Returns null if not a GitHub repo or no git remote.
+ */
+export function detectGitRemoteContext(): { org: string; repo: string; remote: string } | null {
+  try {
+    const { execSync } = require('child_process');
+
+    // Try upstream first, fallback to origin
+    let remoteUrl = '';
+    try {
+      remoteUrl = execSync('git remote get-url upstream', { encoding: 'utf8', timeout: 3000 }).trim();
+    } catch {
+      remoteUrl = execSync('git remote get-url origin', { encoding: 'utf8', timeout: 3000 }).trim();
+    }
+
+    // Parse SSH: git@github.com:org/repo.git
+    const sshMatch = remoteUrl.match(/git@github\.com:([^/]+)\/([^.]+)/);
+    if (sshMatch) return { org: sshMatch[1], repo: sshMatch[2], remote: remoteUrl };
+
+    // Parse HTTPS: https://github.com/org/repo.git
+    const httpsMatch = remoteUrl.match(/github\.com\/([^/]+)\/([^/.]+)/);
+    if (httpsMatch) return { org: httpsMatch[1], repo: httpsMatch[2], remote: remoteUrl };
+
+    return null; // Non-GitHub remote
+  } catch {
+    return null; // No git remote
+  }
 }

@@ -285,7 +285,7 @@ export default function Johnny5Panel({ className }: Johnny5PanelProps) {
                 ? 'bg-coder1-cyan/20 text-coder1-cyan hover:bg-coder1-cyan/30'
                 : 'bg-purple-500/20 text-purple-400 hover:bg-purple-500/30'}
             `}
-            title={`Crew: ${totalCrewCount} members, ${activeCrewCount} active`}
+            title={`AI Crew Members (${totalCrewCount} total, ${activeCrewCount} active)\nClick to manage your AI team`}
           >
             <Users className="w-3 h-3" />
             <span>{totalCrewCount}</span>
@@ -297,12 +297,12 @@ export default function Johnny5Panel({ className }: Johnny5PanelProps) {
           {/* Security Score Badge */}
           <div
             className={`
-              px-2 py-1 rounded-md text-xs font-bold flex items-center gap-1
+              px-2 py-1 rounded-md text-xs font-bold flex items-center gap-1 cursor-help
               ${security.scoreStatus === 'good' ? 'bg-green-500/20 text-green-400' :
                 security.scoreStatus === 'warning' ? 'bg-yellow-500/20 text-yellow-400' :
                 'bg-red-500/20 text-red-400'}
             `}
-            title={`Security Score: ${security.score}/100`}
+            title={`Security Score: ${security.score}/100\n${security.scoreStatus === 'good' ? 'Your session is secure' : security.scoreStatus === 'warning' ? 'Some security concerns detected' : 'Security issues need attention'}`}
           >
             {hasSecurityAlerts && (
               <AlertTriangle className="w-3 h-3" />
@@ -313,7 +313,7 @@ export default function Johnny5Panel({ className }: Johnny5PanelProps) {
           {/* Agent Personas Button */}
           <button
             className="p-1.5 rounded-md text-text-muted hover:text-coder1-cyan hover:bg-bg-tertiary transition-all"
-            title="Agent Personas"
+            title="Agent Personas&#10;Switch between different AI personality modes"
             onClick={() => setShowPersonas(true)}
           >
             <UserCog className="w-4 h-4" />
@@ -322,7 +322,7 @@ export default function Johnny5Panel({ className }: Johnny5PanelProps) {
           {/* Workflow Orchestrator Button */}
           <button
             className="p-1.5 rounded-md text-text-muted hover:text-coder1-cyan hover:bg-bg-tertiary transition-all"
-            title="Workflow Orchestrator"
+            title="Workflow Orchestrator&#10;Create and manage automated task workflows"
             onClick={() => setShowWorkflows(true)}
           >
             <ListChecks className="w-4 h-4" />
@@ -331,7 +331,7 @@ export default function Johnny5Panel({ className }: Johnny5PanelProps) {
           {/* Command Translator Button */}
           <button
             className="p-1.5 rounded-md text-text-muted hover:text-coder1-cyan hover:bg-bg-tertiary transition-all"
-            title="Command Translator"
+            title="Command Translator&#10;Convert natural language to terminal commands"
             onClick={() => setShowCommands(true)}
           >
             <Terminal className="w-4 h-4" />
@@ -340,7 +340,7 @@ export default function Johnny5Panel({ className }: Johnny5PanelProps) {
           {/* Prompt Templates Button */}
           <button
             className="p-1.5 rounded-md text-text-muted hover:text-coder1-cyan hover:bg-bg-tertiary transition-all"
-            title="Prompt Templates"
+            title="Prompt Templates&#10;Quick access to pre-built prompt snippets"
             onClick={() => setShowTemplates(true)}
           >
             <FileText className="w-4 h-4" />
@@ -349,7 +349,7 @@ export default function Johnny5Panel({ className }: Johnny5PanelProps) {
           {/* Settings Button */}
           <button
             className="p-1.5 rounded-md text-text-muted hover:text-text-primary hover:bg-bg-tertiary transition-all"
-            title="Johnny5 Settings"
+            title="Johnny5 Settings&#10;Configure AI preferences and integrations"
             onClick={() => setShowSettings(true)}
           >
             <Settings className="w-4 h-4" />

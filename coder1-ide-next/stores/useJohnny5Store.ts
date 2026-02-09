@@ -27,6 +27,8 @@ import {
   Johnny5Settings,
   Johnny5SetupStatus,
   MoltbotConnectionStatus,
+  CrewMemberStatus,
+  CrewActivityEntry,
 } from '@/types';
 
 // ================================================================================
@@ -83,6 +85,12 @@ interface Johnny5Store {
 
   // Moltbot connection state
   moltbotStatus: MoltbotConnectionStatus | null;
+
+  // Crew state
+  activeCrewMember: string | null;
+  crewStatus: Record<string, CrewMemberStatus>;
+  crewActivityFeed: CrewActivityEntry[];
+  showCrewPanel: boolean;
 
   // ================================================================================
   // View Actions
@@ -177,6 +185,17 @@ interface Johnny5Store {
   // ================================================================================
 
   setMoltbotStatus: (status: MoltbotConnectionStatus | null) => void;
+
+  // ================================================================================
+  // Crew Actions
+  // ================================================================================
+
+  setActiveCrewMember: (memberId: string | null) => void;
+  setCrewStatus: (memberId: string, status: CrewMemberStatus) => void;
+  addCrewActivity: (entry: Omit<CrewActivityEntry, 'id'>) => void;
+  clearCrewActivityFeed: () => void;
+  setShowCrewPanel: (show: boolean) => void;
+  getActiveCrewCount: () => number;
 
   // ================================================================================
   // Utility Actions
@@ -293,6 +312,12 @@ const initialState = {
     lastConnected: null,
     error: null,
   } as MoltbotConnectionStatus,
+
+  // Crew state
+  activeCrewMember: null as string | null,
+  crewStatus: {} as Record<string, CrewMemberStatus>,
+  crewActivityFeed: [] as CrewActivityEntry[],
+  showCrewPanel: false,
 };
 
 // ================================================================================
@@ -587,6 +612,40 @@ export const useJohnny5Store = create<Johnny5Store>()(
         // ================================================================================
 
         setMoltbotStatus: (status) => set({ moltbotStatus: status }, false, 'setMoltbotStatus'),
+
+        // ================================================================================
+        // Crew Actions
+        // ================================================================================
+
+        setActiveCrewMember: (memberId) => set({ activeCrewMember: memberId }, false, 'setActiveCrewMember'),
+
+        setCrewStatus: (memberId, status) => set(
+          (state) => ({
+            crewStatus: { ...state.crewStatus, [memberId]: status }
+          }),
+          false,
+          'setCrewStatus'
+        ),
+
+        addCrewActivity: (entry) => set(
+          (state) => ({
+            crewActivityFeed: [
+              { ...entry, id: generateId() },
+              ...state.crewActivityFeed.slice(0, 99) // Keep last 100 entries
+            ]
+          }),
+          false,
+          'addCrewActivity'
+        ),
+
+        clearCrewActivityFeed: () => set({ crewActivityFeed: [] }, false, 'clearCrewActivityFeed'),
+
+        setShowCrewPanel: (show) => set({ showCrewPanel: show }, false, 'setShowCrewPanel'),
+
+        getActiveCrewCount: () => {
+          const state = get();
+          return Object.values(state.crewStatus).filter(s => s === 'working').length;
+        },
 
         // ================================================================================
         // Utility Actions
