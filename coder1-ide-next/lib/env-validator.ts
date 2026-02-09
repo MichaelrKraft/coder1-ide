@@ -54,7 +54,7 @@ const ENV_CONFIG: EnvVarConfig[] = [
   {
     name: 'NEXTAUTH_SECRET',
     required: false,
-    defaultValue: process.env.NODE_ENV === 'development' ? 'dev-nextauth-secret' : undefined,
+    defaultValue: process.env.NODE_ENV === 'development' ? 'dev-nextauth-secret-coder1-local-dev' : undefined,
     validate: (v) => v.length >= 32,
     description: 'NextAuth secret for session management'
   },

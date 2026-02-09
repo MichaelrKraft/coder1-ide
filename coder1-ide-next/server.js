@@ -516,6 +516,60 @@ const terminalHistoryBuffers = new Map(); // sessionId -> array of terminal outp
 // 🚀 PERFORMANCE FIX: Debounce timers for memory API calls
 const memoryDebounceTimers = new Map(); // sessionId -> timer reference
 
+// Team presence tracking: teamId -> Map<userId, { userId, username, sockets: Set<socketId> }>
+const teamPresence = new Map();
+
+function broadcastPresence(teamId) {
+  const members = teamPresence.get(teamId);
+  const onlineList = members
+    ? Array.from(members.values()).map(m => ({ userId: m.userId, username: m.username }))
+    : [];
+  io.to(`team:${teamId}`).emit('team:presence:update', { teamId, online: onlineList });
+}
+
+// Git output detection for team code awareness
+const gitOutputBuffer = new Map(); // sessionId -> string buffer
+const teamActivityBuffers = new Map(); // teamId -> array of events (max 30)
+const MAX_ACTIVITY_BUFFER = 30;
+
+// Maps terminal sessions to teams for activity broadcasting
+const sessionTeamMapping = new Map(); // sessionId -> { teamId, userId, username }
+
+function detectGitEvent(sessionId, rawData) {
+  const clean = rawData.replace(/\x1b\[[0-9;]*[a-zA-Z]/g, '');
+  const prev = gitOutputBuffer.get(sessionId) || '';
+  const combined = prev + clean;
+  const lines = combined.split('\n');
+  gitOutputBuffer.set(sessionId, lines.pop() || '');
+
+  const events = [];
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+
+    // Git commit: "[main abc1234] commit message"
+    const commitMatch = trimmed.match(/^\[([\w\-\/\.]+)\s+([a-f0-9]{7,})\]\s*(.*)/);
+    if (commitMatch) {
+      events.push({ type: 'commit', branch: commitMatch[1], sha: commitMatch[2], message: commitMatch[3] });
+      continue;
+    }
+
+    // Git push: "To github.com:user/repo.git" or "To https://github.com/..."
+    if (/^To\s+(git@|https?:\/\/).*\.git/.test(trimmed)) {
+      const pushMatch = trimmed.match(/^To\s+(.+\.git)/);
+      events.push({ type: 'push', remote: pushMatch?.[1] || 'origin' });
+      continue;
+    }
+
+    // Branch switch: "Switched to branch 'feature'" or "Switched to a new branch 'feature'"
+    if (/^Switched to (?:a new )?branch/.test(trimmed)) {
+      const branchMatch = trimmed.match(/branch '([^']+)'/);
+      events.push({ type: 'branch', branch: branchMatch?.[1] || 'unknown' });
+    }
+  }
+  return events;
+}
+
 // Claude Code session management helpers
 function isInClaudeCodeSession(sessionId) {
   const sessionState = claudeCodeSessions.get(sessionId);
@@ -1684,6 +1738,18 @@ app.prepare().then(() => {
         }
       });
 
+      // Forward bridge connection events to all Socket.IO clients
+      // This enables the frontend to hide the "Connect Bridge" button when connected
+      bridgeManager.on('bridge:connected', (data) => {
+        console.log(`[Bridge] Connected: ${data.bridgeId} for user ${data.userId}`);
+        io.emit('bridge:connected', data);
+      });
+
+      bridgeManager.on('bridge:disconnected', (data) => {
+        console.log(`[Bridge] Disconnected: ${data.bridgeId} for user ${data.userId}`);
+        io.emit('bridge:disconnected', data);
+      });
+
       console.log(`✅ Coder1 Bridge registered: ${bridgeId}`);
     });
     
@@ -1787,9 +1853,53 @@ app.prepare().then(() => {
         serverTime: now
       });
     });
-    
+
+    // Team presence: join
+    socket.on('team:presence:join', ({ teamId, userId, username }) => {
+      if (!teamId || !userId) return;
+      socket.join(`team:${teamId}`);
+      if (!teamPresence.has(teamId)) teamPresence.set(teamId, new Map());
+      const members = teamPresence.get(teamId);
+      socket._teamPresence = { teamId, userId, username };
+      if (!members.has(userId)) {
+        members.set(userId, { userId, username, sockets: new Set() });
+      }
+      members.get(userId).sockets.add(socket.id);
+      broadcastPresence(teamId);
+
+      // Map terminal sessions to team for code activity tracking
+      // Use the socketToSession map to find this socket's terminal session
+      if (socketToSession) {
+        const termSessionId = socketToSession.get(socket.id);
+        if (termSessionId) {
+          sessionTeamMapping.set(termSessionId, { teamId, userId, username });
+        }
+      }
+    });
+
+    // Team presence: leave
+    socket.on('team:presence:leave', ({ teamId, userId }) => {
+      const members = teamPresence.get(teamId);
+      if (members && members.has(userId)) {
+        const entry = members.get(userId);
+        entry.sockets.delete(socket.id);
+        if (entry.sockets.size === 0) members.delete(userId);
+      }
+      socket.leave(`team:${teamId}`);
+      broadcastPresence(teamId);
+    });
+
+    // Team presence: request current state
+    socket.on('team:presence:request', ({ teamId }) => {
+      const members = teamPresence.get(teamId);
+      const onlineList = members
+        ? Array.from(members.values()).map(m => ({ userId: m.userId, username: m.username }))
+        : [];
+      socket.emit('team:presence:update', { teamId, online: onlineList });
+    });
+
     let currentSessionId = null;
-    
+
     // Handle terminal creation
     socket.on('terminal:create', async (data) => {
       // Extract trace context from payload for distributed tracing
@@ -2003,6 +2113,30 @@ app.prepare().then(() => {
               // Log filtered focus codes for debugging
               if (data.length < 50) {
                 console.log(`🔍 [SERVER-CONTEXT] Blocked focus code from context capture: "${data}"`);
+              }
+            }
+
+            // Git event detection for team code awareness
+            const gitEvents = detectGitEvent(sessionId, data);
+            if (gitEvents.length > 0 && sessionTeamMapping.has(sessionId)) {
+              const { teamId, userId, username } = sessionTeamMapping.get(sessionId);
+              for (const event of gitEvents) {
+                const fullEvent = {
+                  ...event,
+                  userId,
+                  username,
+                  timestamp: new Date().toISOString(),
+                  id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+                };
+
+                // Buffer
+                if (!teamActivityBuffers.has(teamId)) teamActivityBuffers.set(teamId, []);
+                const buffer = teamActivityBuffers.get(teamId);
+                buffer.push(fullEvent);
+                if (buffer.length > MAX_ACTIVITY_BUFFER) buffer.splice(0, buffer.length - MAX_ACTIVITY_BUFFER);
+
+                // Broadcast to team room
+                io.to(`team:${teamId}`).emit('team:codeEvent', fullEvent);
               }
             }
           });
@@ -3297,7 +3431,19 @@ app.prepare().then(() => {
       
       // Clean up socket-to-session mapping
       socketToSession.delete(socket.id);
-      
+
+      // Clean up team presence on disconnect
+      if (socket._teamPresence) {
+        const { teamId, userId } = socket._teamPresence;
+        const members = teamPresence.get(teamId);
+        if (members && members.has(userId)) {
+          const entry = members.get(userId);
+          entry.sockets.delete(socket.id);
+          if (entry.sockets.size === 0) members.delete(userId);
+        }
+        broadcastPresence(teamId);
+      }
+
       // Note: We keep terminal session alive for reconnection
       // Sessions are only destroyed explicitly or on timeout
     });

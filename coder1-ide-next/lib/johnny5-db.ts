@@ -214,6 +214,7 @@ function initializeDbSync(): void {
   // Enable foreign keys and WAL mode for better performance
   db.pragma('journal_mode = WAL');
   db.pragma('foreign_keys = ON');
+  db.pragma('busy_timeout = 5000');
 
   // Create tables
   createTables(db);
@@ -430,9 +431,28 @@ function createTables(database: Database.Database): void {
     CREATE INDEX IF NOT EXISTS idx_facts_type ON extracted_facts(fact_type);
     CREATE INDEX IF NOT EXISTS idx_facts_key ON extracted_facts(fact_key);
     CREATE INDEX IF NOT EXISTS idx_facts_session ON extracted_facts(session_id);
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_facts_key_unique ON extracted_facts(fact_key);
     CREATE INDEX IF NOT EXISTS idx_patterns_type ON learned_patterns(pattern_type);
     CREATE INDEX IF NOT EXISTS idx_patterns_confidence ON learned_patterns(confidence);
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_patterns_type_desc_unique ON learned_patterns(pattern_type, pattern_description);
     CREATE INDEX IF NOT EXISTS idx_improvement_type ON self_improvement_log(improvement_type);
+
+    -- =========================================================================
+    -- Crew History Table (for Johnny5 Crew member task tracking)
+    -- =========================================================================
+
+    CREATE TABLE IF NOT EXISTS crew_history (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      crew_member TEXT NOT NULL,
+      task TEXT NOT NULL,
+      result TEXT,
+      model_used TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+
+    -- Indexes for crew history
+    CREATE INDEX IF NOT EXISTS idx_crew_history_member ON crew_history(crew_member);
+    CREATE INDEX IF NOT EXISTS idx_crew_history_created ON crew_history(created_at);
   `);
 
   // Create vector table if sqlite-vec is available
@@ -1431,6 +1451,39 @@ export async function getUnifiedContext(forceRefresh = false): Promise<UnifiedJo
       }
       contextParts.push(`- Proactivity level: ${localProfile.proactivity_level}`);
     }
+  }
+
+  // Team knowledge section — with attribution for inline citations
+  try {
+    if (db) {
+      // Check if team_sync_log table exists before querying
+      const teamTableCheck = db.prepare(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name='team_sync_log'"
+      ).get();
+
+      if (teamTableCheck) {
+        const teamFacts = db.prepare(`
+          SELECT ef.fact_key, ef.fact_value, ef.confidence,
+                 tsl.synced_by as contributor
+          FROM extracted_facts ef
+          INNER JOIN team_sync_log tsl ON tsl.record_id = ef.id AND tsl.direction = 'pull'
+          ORDER BY ef.confidence DESC
+          LIMIT 15
+        `).all() as Array<{ fact_key: string; fact_value: string; confidence: number; contributor: string }>;
+
+        if (teamFacts.length > 0) {
+          contextParts.push('\n## Team Knowledge');
+          contextParts.push('When using team knowledge, preserve the [team:@name] attribution prefix.');
+          contextParts.push('If you notice conflicting facts from different contributors on the same topic, acknowledge both perspectives and suggest the team discuss it rather than silently picking one.');
+          for (const fact of teamFacts) {
+            const confirmed = fact.confidence >= 0.9 ? ' (confirmed by team)' : '';
+            contextParts.push(`- [team:@${fact.contributor}] ${fact.fact_key}: ${fact.fact_value}${confirmed}`);
+          }
+        }
+      }
+    }
+  } catch {
+    // Team tables may not exist yet — graceful degradation
   }
 
   // Fallback if no data available

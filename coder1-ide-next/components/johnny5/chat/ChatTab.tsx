@@ -699,13 +699,13 @@ export default function ChatTab() {
           <button
             onClick={handleClearChat}
             className="p-2 rounded-lg hover:bg-bg-tertiary text-text-muted hover:text-text-secondary transition-all"
-            title="Clear chat"
+            title="Clear Chat&#10;Start a fresh conversation with Johnny5"
           >
             <Trash2 className="w-4 h-4" />
           </button>
           <button
             className="p-2 rounded-lg hover:bg-bg-tertiary text-text-muted hover:text-text-secondary transition-all"
-            title="Chat settings"
+            title="Chat Settings&#10;Configure message display and behavior"
           >
             <Settings2 className="w-4 h-4" />
           </button>
@@ -973,15 +973,33 @@ export default function ChatTab() {
       <div className="px-4 py-3 border-t border-border-default bg-bg-secondary/30">
         {/* Quick actions */}
         <div className="flex items-center gap-2 mb-2">
-          <button className="px-2.5 py-1 rounded-lg bg-bg-tertiary hover:bg-bg-secondary text-[10px] text-text-muted hover:text-text-secondary transition-all flex items-center gap-1.5">
+          <button
+            onClick={() => {
+              setInputValue('Build a feature: ');
+              inputRef.current?.focus();
+            }}
+            className="px-2.5 py-1 rounded-lg bg-bg-tertiary hover:bg-bg-secondary text-[10px] text-text-muted hover:text-text-secondary transition-all flex items-center gap-1.5"
+          >
             <Sparkles className="w-3 h-3" />
             Build a feature
           </button>
-          <button className="px-2.5 py-1 rounded-lg bg-bg-tertiary hover:bg-bg-secondary text-[10px] text-text-muted hover:text-text-secondary transition-all flex items-center gap-1.5">
+          <button
+            onClick={() => {
+              setInputValue('Research: ');
+              inputRef.current?.focus();
+            }}
+            className="px-2.5 py-1 rounded-lg bg-bg-tertiary hover:bg-bg-secondary text-[10px] text-text-muted hover:text-text-secondary transition-all flex items-center gap-1.5"
+          >
             <Brain className="w-3 h-3" />
             Research
           </button>
-          <button className="px-2.5 py-1 rounded-lg bg-bg-tertiary hover:bg-bg-secondary text-[10px] text-text-muted hover:text-text-secondary transition-all flex items-center gap-1.5">
+          <button
+            onClick={() => {
+              setInputValue('/status');
+              inputRef.current?.focus();
+            }}
+            className="px-2.5 py-1 rounded-lg bg-bg-tertiary hover:bg-bg-secondary text-[10px] text-text-muted hover:text-text-secondary transition-all flex items-center gap-1.5"
+          >
             <RefreshCw className="w-3 h-3" />
             Check status
           </button>

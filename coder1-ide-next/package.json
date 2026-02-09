@@ -53,6 +53,7 @@
     "@react-oauth/google": "^0.12.2",
     "@react-three/fiber": "^8.17.10",
     "@stripe/stripe-js": "^8.7.0",
+    "@supabase/supabase-js": "^2.95.3",
     "@tabler/icons-react": "^3.34.1",
     "@types/pdf-parse": "^1.1.5",
     "@types/sharp": "^0.31.1",
