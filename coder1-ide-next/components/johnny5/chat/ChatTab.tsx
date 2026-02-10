@@ -718,7 +718,7 @@ export default function ChatTab() {
         <div className="px-4 py-1.5 bg-yellow-500/10 border-b border-yellow-500/30 flex items-center justify-between text-xs">
           <div className="flex items-center gap-2 text-yellow-300">
             <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
-            <span>Limited Mode — run <code className="bg-yellow-900/30 px-1 rounded font-mono">coder1-bridge start</code> for full access</span>
+            <span>Limited Mode — run <code className="bg-cyan-900/40 px-1 rounded font-mono text-cyan-300">coder1-bridge start</code> for full access</span>
           </div>
           <button
             onClick={() => setLimitedModeDismissed(true)}
