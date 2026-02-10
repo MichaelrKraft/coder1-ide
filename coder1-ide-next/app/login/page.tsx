@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { useAuth } from '@/lib/hooks/useAuth';
 
 // ================================================================================
@@ -146,16 +147,15 @@ function LoginPageContent() {
       <div className="w-full max-w-[400px] space-y-6">
         {/* Logo */}
         <div className="text-center">
-          <h1
-            className="text-3xl font-bold"
-            style={{
-              color: '#00D9FF',
-              textShadow: '0 0 20px rgba(0, 217, 255, 0.4)',
-            }}
-          >
-            Coder1
-          </h1>
-          <p className="text-sm mt-1" style={{ color: '#6b7280' }}>
+          <Image
+            src="/Coder1-Logo-Sharp.svg"
+            alt="Coder1"
+            width={200}
+            height={60}
+            className="mx-auto"
+            priority
+          />
+          <p className="text-sm mt-2" style={{ color: '#6b7280' }}>
             The AI-Powered IDE
           </p>
         </div>
