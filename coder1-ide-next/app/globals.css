@@ -47,6 +47,11 @@ body {
   color: var(--text-primary);
 }
 
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 80px; /* Account for fixed navigation */
+}
+
 /* Interactive Tour Highlight Classes - for production deployment */
 @keyframes pulse {
   0% {

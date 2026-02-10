@@ -106,10 +106,10 @@ export async function POST(request: NextRequest) {
 export async function GET(request: NextRequest) {
   try {
     const db = getDatabase();
-    
+
     const stmt = db.prepare('SELECT COUNT(*) as count FROM alpha_waitlist');
     const result = stmt.get() as { count: number };
-    
+
     db.close();
 
     return NextResponse.json({
@@ -121,6 +121,49 @@ export async function GET(request: NextRequest) {
     console.error('Waitlist stats error:', error);
     return NextResponse.json(
       { error: 'Failed to retrieve statistics' },
+      { status: 500 }
+    );
+  }
+}
+
+// DELETE - Remove email from waitlist (dev only)
+export async function DELETE(request: NextRequest) {
+  // Only allow in development
+  if (process.env.NODE_ENV === 'production') {
+    return NextResponse.json(
+      { error: 'Not available in production' },
+      { status: 403 }
+    );
+  }
+
+  try {
+    const { searchParams } = new URL(request.url);
+    const email = searchParams.get('email');
+
+    if (!email) {
+      return NextResponse.json(
+        { error: 'Email parameter required' },
+        { status: 400 }
+      );
+    }
+
+    const db = getDatabase();
+    const stmt = db.prepare('DELETE FROM alpha_waitlist WHERE email = ?');
+    const result = stmt.run(email.toLowerCase().trim());
+    db.close();
+
+    return NextResponse.json({
+      success: true,
+      deleted: result.changes > 0,
+      message: result.changes > 0
+        ? `Removed ${email} from waitlist`
+        : 'Email not found in waitlist'
+    });
+
+  } catch (error: any) {
+    console.error('Delete error:', error);
+    return NextResponse.json(
+      { error: 'Failed to delete', details: error.message },
       { status: 500 }
     );
   }
