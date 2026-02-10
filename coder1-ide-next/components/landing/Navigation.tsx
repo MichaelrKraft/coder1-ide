@@ -3,9 +3,15 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { usePathname } from 'next/navigation';
 
 export function Navigation() {
   const [scrolled, setScrolled] = useState(false);
+  const pathname = usePathname();
+
+  // If we're on a subpage (like /teams), link back to /alpha for anchor links
+  const isOnAlphaPage = pathname === '/alpha';
+  const anchorBase = isOnAlphaPage ? '' : '/alpha';
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 50);
@@ -18,7 +24,7 @@ export function Navigation() {
       scrolled ? 'bg-black/95 backdrop-blur-sm border-b border-cyan-500/30' : 'bg-black border-b border-cyan-500/20'
     }`}>
       <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-        <Link href="/" className="flex items-center">
+        <Link href="/alpha" className="flex items-center">
           <Image
             src="/Coder1-Logo-Sharp.svg"
             alt="Coder1"
@@ -29,9 +35,9 @@ export function Navigation() {
         </Link>
         <div className="hidden md:flex items-center gap-8">
           <Link href="/teams" className="text-white/80 hover:text-cyan-400 transition-colors font-medium">Teams</Link>
-          <a href="#features" className="text-white/80 hover:text-cyan-400 transition-colors font-medium">Features</a>
-          <a href="#pricing" className="text-white/80 hover:text-cyan-400 transition-colors font-medium">Pricing</a>
-          <a href="#comparison" className="text-white/80 hover:text-cyan-400 transition-colors font-medium">Compare</a>
+          <Link href={`${anchorBase}#features`} className="text-white/80 hover:text-cyan-400 transition-colors font-medium">Features</Link>
+          <Link href={`${anchorBase}#pricing`} className="text-white/80 hover:text-cyan-400 transition-colors font-medium">Pricing</Link>
+          <Link href={`${anchorBase}#comparison`} className="text-white/80 hover:text-cyan-400 transition-colors font-medium">Compare</Link>
         </div>
         <Link
           href="/ide"
